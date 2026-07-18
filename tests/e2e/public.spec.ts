@@ -21,8 +21,8 @@ test.describe("Public site", () => {
   });
 
   test("unauthenticated slot click routes to login", async ({ page }) => {
-    await page.goto("/rezervace?w=1"); // next week → future slots
-    const slot = page.getByRole("link", { name: /^\d{1,2}:00$/ }).first();
+    await page.goto("/rezervace?d=1"); // tomorrow → future slots only
+    const slot = page.getByRole("link", { name: /\d{1,2}:00 – \d{1,2}:00/ }).first();
     await slot.click();
     await expect(page).toHaveURL(/\/login/);
     await expect(page.getByRole("heading", { name: /Přihlášení/i })).toBeVisible();

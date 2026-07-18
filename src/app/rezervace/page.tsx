@@ -1,41 +1,84 @@
 import Link from "next/link";
-import { Info } from "lucide-react";
-import { getWeekSlots, mondayOf } from "@/lib/services/slots";
+import { ChevronLeft, ChevronRight, Info, Moon, Sun, Sunrise } from "lucide-react";
+import { getDaySlots, BOOKING_DAYS_AHEAD, type Slot } from "@/lib/services/slots";
 import { loadSiteContent } from "@/lib/content/site";
 import { getSession } from "@/lib/auth/guards";
 import { formatMoney, formatTime } from "@/lib/helpers/format";
-import { addMinutes } from "@/lib/helpers/datetime";
+import { addMinutes, minuteOfDay, startOfDayTz } from "@/lib/helpers/datetime";
+import { cn } from "@/lib/utils";
 import { Container, Section } from "@/components/ui/container";
-import { Badge } from "@/components/ui/badge";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { RealtimeRefresher } from "@/components/realtime-refresher";
-import { SlotButton } from "./slot-button";
+import { SlotButton, slotCardClass } from "./slot-button";
 
 export const metadata = { title: "Rezervace" };
 // Availability must be fresh on every request.
 export const dynamic = "force-dynamic";
 
-const DAY_LABELS = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
+// All labels follow the gym's timezone, same as slot generation (see slots.ts).
+const TZ = "Europe/Prague";
+const WEEKDAY_LONG = new Intl.DateTimeFormat("cs-CZ", { weekday: "long", timeZone: TZ });
+const WEEKDAY_SHORT = new Intl.DateTimeFormat("cs-CZ", { weekday: "short", timeZone: TZ });
+const DATE_LONG = new Intl.DateTimeFormat("cs-CZ", { day: "numeric", month: "long", timeZone: TZ });
+const DAY_NUM = new Intl.DateTimeFormat("cs-CZ", { day: "numeric", timeZone: TZ });
 
+/** "Dnes" / "Zítra" / capitalized weekday for the day navigation heading. */
+function dayLabel(offset: number, date: Date): string {
+  if (offset === 0) return "Dnes";
+  if (offset === 1) return "Zítra";
+  const weekday = WEEKDAY_LONG.format(date);
+  return weekday.charAt(0).toUpperCase() + weekday.slice(1);
+}
+
+/** Group label + icon for a slot by its start hour (in the gym's timezone). */
+function daypartOf(slot: Slot): "Ráno" | "Odpoledne" | "Večer" {
+  const hour = Math.floor(minuteOfDay(slot.start) / 60);
+  if (hour < 12) return "Ráno";
+  if (hour < 17) return "Odpoledne";
+  return "Večer";
+}
+
+const DAYPART_ICONS = { Ráno: Sunrise, Odpoledne: Sun, Večer: Moon } as const;
+
+/**
+ * Public booking page — one day at a time (arrows + a day strip on top switch
+ * days), slots grouped into morning / afternoon / evening. Past slots of the
+ * current day are hidden; taken ones show as "obsazeno".
+ */
 export default async function BookingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ w?: string }>;
+  searchParams: Promise<{ d?: string }>;
 }) {
-  const { w } = await searchParams;
+  const { d } = await searchParams;
   const now = new Date();
-  const baseMonday = mondayOf(now);
-  const weekOffset = Number.isFinite(Number(w)) ? Number(w) : 0;
-  const weekStart = addMinutes(baseMonday, weekOffset * 7 * 24 * 60);
+  const today = startOfDayTz(now);
 
-  const [{ days, source }, content, session] = await Promise.all([
-    getWeekSlots(weekStart, now),
+  const parsed = Number(d);
+  const dayOffset = Number.isFinite(parsed)
+    ? Math.min(Math.max(Math.trunc(parsed), 0), BOOKING_DAYS_AHEAD - 1)
+    : 0;
+  // Anchor at the day's local noon so labels/queries stay put across DST.
+  const dayStart = addMinutes(today, dayOffset * 24 * 60 + 12 * 60);
+
+  const [{ slots, source }, content, session] = await Promise.all([
+    getDaySlots(dayStart, now),
     loadSiteContent(),
     getSession(),
   ]);
   const price = formatMoney(content.entryPriceCents);
   const isAuthed = Boolean(session);
+
+  // Hide slots that already ended today; group the rest by daypart.
+  const visible = slots.filter((s) => !s.inPast);
+  const freeCount = visible.filter((s) => s.available).length;
+  const dayparts = (["Ráno", "Odpoledne", "Večer"] as const)
+    .map((label) => ({ label, slots: visible.filter((s) => daypartOf(s) === label) }))
+    .filter((g) => g.slots.length > 0);
+
+  const prevDisabled = dayOffset <= 0;
+  const nextDisabled = dayOffset >= BOOKING_DAYS_AHEAD - 1;
 
   return (
     <>
@@ -44,29 +87,71 @@ export default async function BookingPage({
       <RealtimeRefresher table="reservation" />
       <main>
         <Section className="py-12 sm:py-16">
-          <Container>
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <div className="text-sm font-semibold text-primary">Rezervace</div>
-                <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Vyberte si termín</h1>
-                <p className="mt-2 text-muted-foreground">
-                  Celý gym jen pro vás. Jeden trénink za {price}. Kliknutím na volný čas pokračujete k platbě.
-                </p>
+          <Container className="max-w-4xl">
+            <div className="text-center">
+              <div className="text-sm font-semibold text-primary">Rezervace</div>
+              <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Vyberte si termín</h1>
+              <p className="mx-auto mt-2 max-w-md text-muted-foreground">
+                Celý gym jen pro vás. Jeden trénink za {price}.
+              </p>
+            </div>
+
+            {/* Day navigation: ← Dnes — pátek 18. července → */}
+            <div className="mt-8 flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm">
+              <DayArrow
+                href={`/rezervace?d=${dayOffset - 1}`}
+                disabled={prevDisabled}
+                label="Předchozí den"
+              >
+                <ChevronLeft className="size-5" />
+              </DayArrow>
+              <div className="text-center">
+                <div className="text-lg font-bold sm:text-xl">
+                  {dayLabel(dayOffset, dayStart)}{" "}
+                  <span className="font-medium text-muted-foreground">
+                    · {WEEKDAY_LONG.format(dayStart)} {DATE_LONG.format(dayStart)}
+                  </span>
+                </div>
+                <div className="mt-0.5 text-xs text-muted-foreground">
+                  {freeCount > 0
+                    ? `Volných termínů: ${freeCount}`
+                    : "Žádný volný termín"}
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Link
-                  href={`/rezervace?w=${weekOffset - 1}`}
-                  aria-disabled={weekOffset <= 0}
-                  className={`rounded-md border border-border px-3 py-1.5 text-sm ${weekOffset <= 0 ? "pointer-events-none opacity-40" : "hover:bg-secondary"}`}
-                >
-                  ← Předchozí
-                </Link>
-                <Link
-                  href={`/rezervace?w=${weekOffset + 1}`}
-                  className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
-                >
-                  Další →
-                </Link>
+              <DayArrow
+                href={`/rezervace?d=${dayOffset + 1}`}
+                disabled={nextDisabled}
+                label="Další den"
+              >
+                <ChevronRight className="size-5" />
+              </DayArrow>
+            </div>
+
+            {/* Quick day strip (14 days ahead) */}
+            <div className="mt-4 overflow-x-auto pb-1 [scrollbar-width:thin]">
+              <div className="flex w-max gap-1.5">
+                {Array.from({ length: BOOKING_DAYS_AHEAD }, (_, i) => {
+                  const date = addMinutes(today, i * 24 * 60 + 12 * 60);
+                  const active = i === dayOffset;
+                  return (
+                    <Link
+                      key={i}
+                      href={`/rezervace?d=${i}`}
+                      aria-current={active ? "date" : undefined}
+                      className={cn(
+                        "flex min-w-14 flex-col items-center rounded-xl border px-3 py-2 text-sm transition-colors",
+                        active
+                          ? "border-transparent bg-primary font-semibold text-primary-foreground"
+                          : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                      )}
+                    >
+                      <span className="text-[11px] uppercase tracking-wide">
+                        {i === 0 ? "dnes" : WEEKDAY_SHORT.format(date).replace(".", "")}
+                      </span>
+                      <span className="text-base font-bold leading-tight">{DAY_NUM.format(date)}</span>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
 
@@ -77,60 +162,75 @@ export default async function BookingPage({
               </div>
             )}
 
-            {/* Week grid */}
-            <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-              {days.map((day, i) => (
-                <div key={i} className="rounded-xl border border-border bg-card p-3">
-                  <div className="mb-3 text-center">
-                    <div className="text-xs font-semibold uppercase text-muted-foreground">{DAY_LABELS[i]}</div>
-                    <div className="text-lg font-bold">{day.date.getDate()}.</div>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    {day.slots.length === 0 && (
-                      <div className="rounded-md bg-muted py-2 text-center text-xs text-muted-foreground">Zavřeno</div>
-                    )}
-                    {day.slots.map((slot, j) =>
-                      slot.available ? (
-                        isAuthed ? (
-                          <SlotButton
-                            key={j}
-                            startsAtISO={slot.start.toISOString()}
-                            label={formatTime(slot.start)}
-                          />
-                        ) : (
-                          <Link
-                            key={j}
-                            href={`/login?next=${encodeURIComponent(`/rezervace?w=${weekOffset}`)}`}
-                            className="rounded-md border border-primary/30 bg-primary/10 py-1.5 text-center text-sm font-medium transition-colors hover:bg-primary hover:text-primary-foreground"
-                          >
-                            {formatTime(slot.start)}
-                          </Link>
-                        )
-                      ) : (
-                        <div
-                          key={j}
-                          className="cursor-not-allowed rounded-md border border-border bg-muted py-1.5 text-center text-sm text-muted-foreground line-through"
-                        >
-                          {formatTime(slot.start)}
-                        </div>
-                      ),
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                <Badge className="bg-primary/10">volno</Badge> lze rezervovat
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Badge variant="muted">obsazeno</Badge> už zabráno
-              </span>
-            </div>
+            {/* Slots for the selected day, grouped by daypart */}
+            {dayparts.length === 0 ? (
+              <div className="mt-10 rounded-2xl border border-border bg-card p-10 text-center">
+                <p className="font-medium">
+                  {slots.length === 0
+                    ? "Tento den je zavřeno."
+                    : "Dnes už žádné termíny nezbývají."}
+                </p>
+                {!nextDisabled && (
+                  <Link
+                    href={`/rezervace?d=${dayOffset + 1}`}
+                    className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+                  >
+                    Zkusit další den <ChevronRight className="size-4" />
+                  </Link>
+                )}
+              </div>
+            ) : (
+              <div className="mt-8 space-y-8">
+                {dayparts.map((group) => {
+                  const GroupIcon = DAYPART_ICONS[group.label];
+                  return (
+                    <section key={group.label} aria-label={group.label}>
+                      <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                        <GroupIcon className="size-4" /> {group.label}
+                      </h2>
+                      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4">
+                        {group.slots.map((slot) => {
+                          const label = `${formatTime(slot.start)} – ${formatTime(slot.end)}`;
+                          if (!slot.available) {
+                            return (
+                              <div
+                                key={slot.start.toISOString()}
+                                className={cn(slotCardClass, "cursor-not-allowed border-border bg-muted/60 text-muted-foreground/80")}
+                              >
+                                <span className="line-through">{label}</span>
+                                <span className="block text-[10px] font-normal uppercase tracking-wider">obsazeno</span>
+                              </div>
+                            );
+                          }
+                          return isAuthed ? (
+                            <SlotButton
+                              key={slot.start.toISOString()}
+                              startsAtISO={slot.start.toISOString()}
+                              label={label}
+                            />
+                          ) : (
+                            <Link
+                              key={slot.start.toISOString()}
+                              href={`/login?next=${encodeURIComponent(`/rezervace?d=${dayOffset}`)}`}
+                              className={cn(
+                                slotCardClass,
+                                "border-primary/40 bg-primary/10 hover:bg-primary hover:text-primary-foreground",
+                              )}
+                            >
+                              {label}
+                              <span className="block text-[10px] font-normal uppercase tracking-wider opacity-70">volno</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  );
+                })}
+              </div>
+            )}
 
             {!isAuthed && (
-              <p className="mt-8 text-sm text-muted-foreground">
+              <p className="mt-10 text-center text-sm text-muted-foreground">
                 Platbu a doručení vstupního kódu (e-mail + WhatsApp) dokončíte po přihlášení. Nemáte účet?{" "}
                 <Link href="/login" className="font-medium text-foreground underline">
                   Zaregistrujte se
@@ -143,5 +243,35 @@ export default async function BookingPage({
       </main>
       <SiteFooter brand={content.get("brand.name")} termsUrl={content.termsUrl} />
     </>
+  );
+}
+
+/** Round arrow button for day navigation; renders inert when disabled. */
+function DayArrow({
+  href,
+  disabled,
+  label,
+  children,
+}: {
+  href: string;
+  disabled: boolean;
+  label: string;
+  children: React.ReactNode;
+}) {
+  const className = cn(
+    "grid size-11 shrink-0 place-items-center rounded-full border border-border transition-colors",
+    disabled ? "opacity-35" : "hover:border-primary/50 hover:bg-primary/10",
+  );
+  if (disabled) {
+    return (
+      <span aria-hidden className={className}>
+        {children}
+      </span>
+    );
+  }
+  return (
+    <Link href={href} aria-label={label} className={className}>
+      {children}
+    </Link>
   );
 }

@@ -1,7 +1,7 @@
-import { and, gte, inArray, lte } from "drizzle-orm";
+import { and, eq, gte, inArray, lte } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { blockedSlot, openingHours, reservation } from "@/lib/db/schema";
-import { addMinutes, dayOfWeek, intervalsOverlap } from "@/lib/helpers/datetime";
+import { addMinutes, dayOfWeek, intervalsOverlap, startOfDayTz } from "@/lib/helpers/datetime";
 import { logger } from "@/lib/helpers/logger";
 import {
   DEFAULT_CLOSE_MINUTE,
@@ -10,9 +10,9 @@ import {
 } from "@/lib/config/schedule";
 
 /**
- * Slot generation for the public booking calendar. Produces a week of bookable
- * slots from the opening hours, marking each as available/unavailable against
- * existing reservations and blocks.
+ * Slot generation for the public booking calendar. Produces one day of
+ * bookable slots from the opening hours, marking each as available or not
+ * against existing reservations and blocks (and whether it already passed).
  *
  * Resilient by design: if the database is not yet provisioned it falls back to
  * default opening hours with everything free, so the booking page still renders
@@ -22,18 +22,20 @@ import {
 export interface Slot {
   start: Date;
   end: Date;
+  /** Bookable right now (not past, not taken, not blocked). */
   available: boolean;
+  /** The slot's end already passed — hidden on the booking page. */
+  inPast: boolean;
 }
 
 export interface DaySlots {
   date: Date;
   slots: Slot[];
-}
-
-export interface WeekSlots {
-  days: DaySlots[];
   source: "live" | "demo";
 }
+
+/** How many days ahead a member can browse/book (0 = today). */
+export const BOOKING_DAYS_AHEAD = 14;
 
 interface DayHours {
   openMinute: number;
@@ -42,74 +44,61 @@ interface DayHours {
   isClosed: boolean;
 }
 
-// Fallback week: open every day 05:00–21:00 with 1-hour slots (mirrors the seed
-// and src/lib/config/schedule.ts). Used only until the DB has opening hours.
+// Fallback day: open 05:00–21:00 with 1-hour slots (mirrors the seed and
+// src/lib/config/schedule.ts). Used only until the DB has opening hours.
 const DEFAULT_DAY: DayHours = {
   openMinute: DEFAULT_OPEN_MINUTE,
   closeMinute: DEFAULT_CLOSE_MINUTE,
   slotMinutes: DEFAULT_SLOT_MINUTES,
   isClosed: false,
 };
-const DEFAULT_HOURS: Record<number, DayHours> = {
-  0: DEFAULT_DAY,
-  1: DEFAULT_DAY,
-  2: DEFAULT_DAY,
-  3: DEFAULT_DAY,
-  4: DEFAULT_DAY,
-  5: DEFAULT_DAY,
-  6: DEFAULT_DAY,
-};
-
-/** Midnight (local-ish) for a date. */
-function startOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
 
 function buildDaySlots(
-  day: Date,
+  dayStart: Date,
   hours: DayHours,
   busy: { start: Date; end: Date }[],
   now: Date,
 ): Slot[] {
   if (hours.isClosed || hours.closeMinute <= hours.openMinute) return [];
   const slots: Slot[] = [];
-  const base = startOfDay(day);
+  const base = dayStart;
   for (let m = hours.openMinute; m + hours.slotMinutes <= hours.closeMinute; m += hours.slotMinutes) {
     const start = addMinutes(base, m);
     const end = addMinutes(start, hours.slotMinutes);
     const inPast = end.getTime() <= now.getTime();
     const clash = busy.some((b) => intervalsOverlap(start, end, b.start, b.end));
-    slots.push({ start, end, available: !inPast && !clash });
+    slots.push({ start, end, inPast, available: !inPast && !clash });
   }
   return slots;
 }
 
 /**
- * Get one week of slots starting at `weekStart` (7 days). `now` defaults to the
- * current time and is injectable for testing/determinism.
+ * Get the bookable slots for the single day containing `date` — days and
+ * minute-of-day offsets are anchored to the gym's timezone (Europe/Prague),
+ * matching the opening-hours check in services/availability.ts. `now` defaults
+ * to the current time and is injectable for testing/determinism.
  */
-export async function getWeekSlots(weekStart: Date, now: Date = new Date()): Promise<WeekSlots> {
-  const start = startOfDay(weekStart);
-  const end = addMinutes(start, 7 * 24 * 60);
+export async function getDaySlots(date: Date, now: Date = new Date()): Promise<DaySlots> {
+  const start = startOfDayTz(date);
+  const end = addMinutes(start, 24 * 60);
 
-  let hoursByDow: Record<number, DayHours> = DEFAULT_HOURS;
+  let hours: DayHours = DEFAULT_DAY;
   let busy: { start: Date; end: Date }[] = [];
   let source: "live" | "demo" = "demo";
 
   try {
-    const hoursRows = await db.select().from(openingHours);
-    if (hoursRows.length > 0) {
-      hoursByDow = {};
-      for (const h of hoursRows) {
-        hoursByDow[h.dayOfWeek] = {
-          openMinute: h.openMinute,
-          closeMinute: h.closeMinute,
-          slotMinutes: h.slotMinutes,
-          isClosed: h.isClosed === 1,
-        };
-      }
+    const [hoursRow] = await db
+      .select()
+      .from(openingHours)
+      .where(eq(openingHours.dayOfWeek, dayOfWeek(start)))
+      .limit(1);
+    if (hoursRow) {
+      hours = {
+        openMinute: hoursRow.openMinute,
+        closeMinute: hoursRow.closeMinute,
+        slotMinutes: hoursRow.slotMinutes,
+        isClosed: hoursRow.isClosed === 1,
+      };
     }
 
     const [reservations, blocks] = await Promise.all([
@@ -131,23 +120,8 @@ export async function getWeekSlots(weekStart: Date, now: Date = new Date()): Pro
     busy = [...reservations, ...blocks].map((b) => ({ start: b.startsAt, end: b.endsAt }));
     source = "live";
   } catch (e) {
-    logger.warn("getWeekSlots: demo mode (DB unavailable)", { error: String(e) });
+    logger.warn("getDaySlots: demo mode (DB unavailable)", { error: String(e) });
   }
 
-  const days: DaySlots[] = [];
-  for (let i = 0; i < 7; i++) {
-    const date = addMinutes(start, i * 24 * 60);
-    const hours = hoursByDow[dayOfWeek(date)] ?? { openMinute: 0, closeMinute: 0, slotMinutes: 60, isClosed: true };
-    days.push({ date, slots: buildDaySlots(date, hours, busy, now) });
-  }
-
-  return { days, source };
-}
-
-/** Monday of the week containing `date` (weeks start Monday for the UI). */
-export function mondayOf(date: Date): Date {
-  const d = startOfDay(date);
-  const dow = dayOfWeek(d); // 0=Sun..6=Sat
-  const diff = dow === 0 ? -6 : 1 - dow;
-  return addMinutes(d, diff * 24 * 60);
+  return { date: start, slots: buildDaySlots(start, hours, busy, now), source };
 }

@@ -2,7 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 import { startCheckoutAction } from "./actions";
+
+/** Shared look of one slot card (button, link and the disabled "obsazeno"). */
+export const slotCardClass =
+  "block w-full rounded-xl border py-3 text-center text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 /**
  * A bookable slot for a signed-in member. Clicking starts checkout: for a paid
@@ -36,9 +41,16 @@ export function SlotButton({ startsAtISO, label }: { startsAtISO: string; label:
       onClick={onClick}
       disabled={pending}
       title={error ?? undefined}
-      className="rounded-md border border-primary/30 bg-primary/10 py-1.5 text-center text-sm font-medium transition-colors hover:bg-primary hover:text-primary-foreground disabled:opacity-60"
+      className={cn(
+        slotCardClass,
+        "border-primary/40 bg-primary/10 hover:bg-primary hover:text-primary-foreground disabled:opacity-60",
+        error && "border-destructive/60 bg-destructive/10",
+      )}
     >
-      {pending ? "…" : label}
+      {label}
+      <span className="block text-[10px] font-normal uppercase tracking-wider opacity-70">
+        {pending ? "rezervuji…" : error ? "zkuste jiný čas" : "volno"}
+      </span>
     </button>
   );
 }

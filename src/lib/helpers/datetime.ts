@@ -61,3 +61,48 @@ export function dayOfWeek(date: Date, timeZone = "Europe/Prague"): number {
 export function isFuture(date: Date): boolean {
   return date.getTime() > Date.now();
 }
+
+/** Minutes east of UTC for `date` in `timeZone` (Prague summer = +120). */
+function tzOffsetMinutes(date: Date, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(date);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? 0);
+  const asUtc = Date.UTC(
+    get("year"),
+    get("month") - 1,
+    get("day"),
+    get("hour") % 24, // some ICU versions render midnight as "24"
+    get("minute"),
+    get("second"),
+  );
+  return Math.round((asUtc - date.getTime()) / MINUTE_MS);
+}
+
+/**
+ * Midnight of the calendar day containing `date` in `timeZone`, as an absolute
+ * instant. Keeps slot generation anchored to the gym's local day regardless of
+ * the server's timezone (Vercel runs UTC). Two passes absorb a DST switch.
+ */
+export function startOfDayTz(date: Date, timeZone = "Europe/Prague"): Date {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? 0);
+  const utcMidnight = Date.UTC(get("year"), get("month") - 1, get("day"));
+  let ts = utcMidnight;
+  for (let i = 0; i < 2; i++) {
+    ts = utcMidnight - tzOffsetMinutes(new Date(ts), timeZone) * MINUTE_MS;
+  }
+  return new Date(ts);
+}
