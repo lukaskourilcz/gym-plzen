@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/guards";
+import { isPreviewMode } from "@/lib/preview";
 import { SignOutButton } from "@/components/admin/sign-out-button";
 
 /**
  * Admin shell. `requireAdmin()` guards every route under /admin at the layout
- * level, so individual pages can assume an authenticated admin.
+ * level, so individual pages can assume an authenticated admin. In client
+ * preview the guard resolves to a synthetic admin and sign-out is replaced by
+ * a "back to the site" link.
  */
 export default async function AdminLayout({
   children,
@@ -12,6 +15,7 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const admin = await requireAdmin();
+  const preview = isPreviewMode();
 
   return (
     <div className="flex min-h-screen">
@@ -32,8 +36,14 @@ export default async function AdminLayout({
           ))}
         </nav>
         <div className="mt-8 border-t border-border pt-4 text-xs text-muted-foreground">
-          <div className="truncate">{admin.email}</div>
-          <SignOutButton />
+          <div className="truncate">{preview ? "Režim náhledu (bez přihlášení)" : admin.email}</div>
+          {preview ? (
+            <Link href="/" className="mt-1 inline-block text-primary hover:underline">
+              Zpět na web
+            </Link>
+          ) : (
+            <SignOutButton />
+          )}
         </div>
       </aside>
       <main className="max-w-6xl flex-1 p-6">{children}</main>

@@ -13,6 +13,8 @@ export interface Inspiration {
   closest?: boolean;
   /** Included mainly as a visual-design benchmark (may be staffed). */
   designBenchmark?: boolean;
+  /** Set when this inspiration has been applied to our site — what and where. */
+  applied?: string;
   access: string;
   booking: string;
   payment: string;
@@ -208,6 +210,8 @@ export const INSPIRATIONS: Inspiration[] = [
     location: "Londýn, UK",
     url: "https://elysiumgyms.com/",
     closest: true,
+    applied:
+      "Aplikováno na homepage (07/2026): řada pěti ikon s odlišujícími vlastnostmi hned pod hero, šestikrokový pruh „jak to funguje“ (rezervace → platba → kód → vstup → odemknout → trénink) a carousel prostoru místo statické mřížky galerie.",
     access: "Bez obsluhy. Dveře odemkne appka na váš slot. Rezervace po hodinách.",
     booking: "Privátní boutique micro-gymy po hodinách; trénink sám, s přáteli nebo s trenérem.",
     payment: "Platba za session nebo kreditové balíčky v appce.",

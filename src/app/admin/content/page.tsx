@@ -1,5 +1,7 @@
 import { cms } from "@/lib/services";
 import { groupBy } from "@/lib/helpers/collection";
+import { withDemoFallback } from "@/lib/demo/dummy";
+import { DemoBanner } from "@/components/admin/demo-banner";
 import { PageHeader } from "@/components/admin/page-header";
 import { BlockForm } from "./block-form";
 
@@ -8,10 +10,15 @@ export const dynamic = "force-dynamic";
 
 /**
  * CMS admin — the "redakční systém". Lists content blocks grouped by section
- * with an inline editor, plus a form to add new blocks.
+ * with an inline editor, plus a form to add new blocks. Before the database is
+ * connected, the site's default copy is shown as demo blocks so every editable
+ * text is visible (saving stays disabled).
  */
 export default async function ContentPage() {
-  const blocks = await cms.listBlocks();
+  const { rows: blocks, demo } = await withDemoFallback(
+    () => cms.listBlocks(),
+    (d) => d.contentBlocks,
+  );
   const groups = groupBy(blocks, (b) => b.groupName ?? "ostatní");
 
   return (
@@ -20,6 +27,7 @@ export default async function ContentPage() {
         title="Obsah webu"
         description="Upravte jakýkoli text na webu. Změny se projeví okamžitě po uložení."
       />
+      {demo && <DemoBanner />}
 
       {Object.entries(groups).map(([group, items]) => (
         <section key={group} className="mt-6">

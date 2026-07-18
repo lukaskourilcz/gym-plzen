@@ -1,18 +1,27 @@
 import Link from "next/link";
 import {
+  ArrowRight,
   CalendarClock,
-  CreditCard,
-  KeyRound,
-  ShieldCheck,
-  Sparkles,
-  MapPin,
-  Mail,
-  Phone,
   Clock,
-  Wifi,
+  CreditCard,
+  DoorOpen,
+  Dumbbell,
+  HeartPulse,
+  KeyRound,
   Lock,
+  Mail,
+  MapPin,
+  Music,
+  PersonStanding,
+  Phone,
+  ShieldCheck,
+  ShowerHead,
+  Smartphone,
+  Sparkles,
+  Wifi,
 } from "lucide-react";
-import { loadSiteContent } from "@/lib/content/site";
+import { loadSiteContent, type SiteContentKey } from "@/lib/content/site";
+import { getSession } from "@/lib/auth/guards";
 import { formatMoney } from "@/lib/helpers/format";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
@@ -24,19 +33,54 @@ import { SiteFooter } from "@/components/site/site-footer";
 // Revalidate so CMS content edits appear without a redeploy.
 export const revalidate = 60;
 
+/*
+ * Homepage layout applies the Elysium Gyms inspiration (docs/INSPIRATIONS.md,
+ * admin → Inspirace): hero → five-icon "proč my" row above the fold →
+ * six-step "jak to funguje" strip (book → pay → code → train) → space
+ * carousel — carried out in our own dark-ink + lime token palette.
+ */
+
+/** The five differentiators shown Elysium-style right under the hero. */
+const WHY_US = [
+  { icon: Dumbbell, label: "Celý gym jen pro vás", sub: "žádné sdílení prostoru" },
+  { icon: CalendarClock, label: "Hodinové sloty", sub: "rezervace online" },
+  { icon: KeyRound, label: "Vstup na kód", sub: "bez recepce a obsluhy" },
+  { icon: CreditCard, label: "Platba předem", sub: "karta, Apple i Google Pay" },
+  { icon: Sparkles, label: "Věrnost se vyplácí", sub: "každý 10. vstup zdarma" },
+] as const;
+
+/** Icons for the six how-it-works steps (copy comes from the CMS). */
+const STEP_ICONS = [CalendarClock, CreditCard, Smartphone, DoorOpen, KeyRound, Dumbbell] as const;
+
+/** Space carousel placeholders until real photos land in the CMS. */
+const SPACES = [
+  { icon: Dumbbell, label: "Silová zóna", note: "činky, rack a osa" },
+  { icon: HeartPulse, label: "Kardio", note: "rozehřátí i finisher" },
+  { icon: PersonStanding, label: "Stretching", note: "prostor na protažení" },
+  { icon: Music, label: "Hudba a TV", note: "prostor hraje podle vás" },
+  { icon: ShowerHead, label: "Sprcha a zázemí", note: "čas navíc po tréninku" },
+  { icon: DoorOpen, label: "Vstup na kód", note: "chytrý zámek Nuki" },
+] as const;
+
 export default async function HomePage() {
-  const content = await loadSiteContent();
+  const [content, session] = await Promise.all([loadSiteContent(), getSession()]);
   const t = content.get;
   const brand = t("brand.name");
   const price = formatMoney(content.entryPriceCents);
   const email = t("contact.email");
   const phone = t("contact.phone");
 
+  const steps = Array.from({ length: 6 }, (_, i) => ({
+    icon: STEP_ICONS[i]!,
+    title: t(`home.about.step${i + 1}.title` as SiteContentKey),
+    body: t(`home.about.step${i + 1}.body` as SiteContentKey),
+  }));
+
   return (
     <>
-      <SiteHeader brand={brand} logoUrl={content.logoUrl} />
+      <SiteHeader brand={brand} logoUrl={content.logoUrl} user={session?.user ?? null} />
       <main>
-        {/* Hero */}
+        {/* Hero — dark ink, one dominant CTA */}
         <section className="relative overflow-hidden bg-ink text-ink-foreground">
           <div className="pointer-events-none absolute inset-0 opacity-30 [background:radial-gradient(60%_60%_at_70%_0%,var(--color-primary)_0%,transparent_60%)]" />
           <Container className="relative grid gap-10 py-20 sm:py-28 lg:grid-cols-2 lg:items-center">
@@ -50,13 +94,16 @@ export default async function HomePage() {
               <p className="mt-5 max-w-lg text-lg text-ink-foreground/75">
                 {t("home.hero.subtitle")}
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
+              <div className="mt-8 flex flex-wrap items-center gap-5">
                 <Button href="/rezervace" size="lg">
                   {t("home.hero.cta")}
                 </Button>
-                <Button href="/#jak-to-funguje" size="lg" variant="outline" className="border-white/25 text-ink-foreground hover:bg-white/10">
-                  Jak to funguje
-                </Button>
+                <Link
+                  href="/#jak-to-funguje"
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-foreground/80 transition-colors hover:text-ink-foreground"
+                >
+                  Jak to funguje <ArrowRight className="size-4" />
+                </Link>
               </div>
               <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-ink-foreground/60">
                 <span className="inline-flex items-center gap-1.5"><Clock className="size-4" /> Otevřeno dle rezervací</span>
@@ -91,27 +138,54 @@ export default async function HomePage() {
           </Container>
         </section>
 
-        {/* How it works */}
+        {/* Five-icon "proč my" row above the fold (Elysium) */}
+        <section aria-label="Proč trénovat u nás" className="border-b border-border bg-background">
+          <Container>
+            <ul className="grid grid-cols-2 gap-x-4 gap-y-8 py-10 sm:grid-cols-3 lg:grid-cols-5">
+              {WHY_US.map((item) => (
+                <li key={item.label} className="flex flex-col items-center gap-2 text-center">
+                  <span className="grid size-11 place-items-center rounded-full bg-primary/15 text-foreground">
+                    <item.icon className="size-5" />
+                  </span>
+                  <span className="text-sm font-semibold leading-tight">{item.label}</span>
+                  <span className="text-xs text-muted-foreground">{item.sub}</span>
+                </li>
+              ))}
+            </ul>
+          </Container>
+        </section>
+
+        {/* How it works — six-step strip (Elysium: book → pay → code → train) */}
         <Section id="jak-to-funguje">
           <Container>
             <SectionHeading eyebrow="Jednoduše" title={t("home.about.title")} />
-            <div className="mt-12 grid gap-6 md:grid-cols-3">
-              {[
-                { icon: CalendarClock, title: t("home.about.step1.title"), body: t("home.about.step1.body") },
-                { icon: CreditCard, title: t("home.about.step2.title"), body: t("home.about.step2.body") },
-                { icon: KeyRound, title: t("home.about.step3.title"), body: t("home.about.step3.body") },
-              ].map((step, i) => (
-                <Card key={step.title} className="relative">
-                  <CardContent className="p-6">
-                    <div className="mb-4 grid size-11 place-items-center rounded-lg bg-primary/15 text-foreground">
+            <ol className="mt-12 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+              {steps.map((step, i) => (
+                <li key={step.title} className="relative">
+                  {/* Connector line between steps on wide screens */}
+                  {i < steps.length - 1 && (
+                    <span
+                      aria-hidden
+                      className="absolute left-[calc(50%+2rem)] right-[calc(-50%+2rem)] top-6 hidden h-px bg-border xl:block"
+                    />
+                  )}
+                  <div className="flex flex-col items-center text-center">
+                    <span className="relative grid size-12 place-items-center rounded-full border border-primary/40 bg-primary/10">
                       <step.icon className="size-5" />
-                    </div>
-                    <div className="text-xs font-semibold text-muted-foreground">Krok {i + 1}</div>
-                    <h3 className="mt-1 text-lg font-semibold">{step.title}</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">{step.body}</p>
-                  </CardContent>
-                </Card>
+                      <span className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                        {i + 1}
+                      </span>
+                    </span>
+                    <h3 className="mt-3 text-sm font-semibold">{step.title}</h3>
+                    <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{step.body}</p>
+                  </div>
+                </li>
               ))}
+            </ol>
+            <div className="mt-12 text-center">
+              <Button href="/rezervace" size="lg">
+                {t("home.hero.cta")}
+              </Button>
             </div>
           </Container>
         </Section>
@@ -136,7 +210,7 @@ export default async function HomePage() {
                 ))}
               </ul>
             </div>
-            <Card className="lg:justify-self-end lg:w-96">
+            <Card className="lg:w-96 lg:justify-self-end">
               <CardContent className="p-8 text-center">
                 <div className="text-sm font-medium text-muted-foreground">Vstupné</div>
                 <div className="mt-2 text-5xl font-extrabold tracking-tight">{price}</div>
@@ -150,23 +224,36 @@ export default async function HomePage() {
           </Container>
         </Section>
 
-        {/* Gallery (placeholders until real photos are added via the CMS) */}
+        {/* Space carousel (Elysium's rotating spaces; photos come via the CMS) */}
         <Section id="galerie">
           <Container>
             <SectionHeading eyebrow="Prostor" title={t("home.gallery.title")} />
-            <div className="mt-12 grid grid-cols-2 gap-4 md:grid-cols-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="aspect-square rounded-xl border border-border bg-gradient-to-br from-secondary to-muted"
-                  aria-hidden
-                />
-              ))}
-            </div>
-            <p className="mt-4 text-center text-sm text-muted-foreground">
-              Fotografie prostoru doplníte v administraci (Obsah webu).
-            </p>
           </Container>
+          <div className="mt-12 overflow-x-auto pb-4 [scrollbar-width:thin]">
+            <ul className="mx-auto flex w-max snap-x snap-mandatory gap-4 px-4 sm:px-6">
+              {SPACES.map((space, i) => (
+                <li
+                  key={space.label}
+                  className="w-64 shrink-0 snap-center overflow-hidden rounded-xl border border-border bg-card sm:w-72"
+                >
+                  <div
+                    className={`grid aspect-[4/3] place-items-center bg-gradient-to-br ${
+                      i % 2 === 0 ? "from-secondary to-muted" : "from-primary/15 via-secondary to-muted"
+                    }`}
+                  >
+                    <space.icon className="size-10 text-muted-foreground/70" strokeWidth={1.5} />
+                  </div>
+                  <div className="p-4">
+                    <div className="text-sm font-semibold">{space.label}</div>
+                    <div className="text-xs text-muted-foreground">{space.note}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <p className="mt-2 text-center text-sm text-muted-foreground">
+            Skutečné fotografie prostoru doplníte v administraci (Obsah webu).
+          </p>
         </Section>
 
         {/* Rules */}

@@ -42,11 +42,18 @@ export default function InspirationsPage() {
                   <span className="text-sm font-normal text-muted-foreground">{g.location}</span>
                   {g.closest && <Badge>nejblíž našemu konceptu</Badge>}
                   {g.designBenchmark && <Badge variant="muted">designová inspirace</Badge>}
+                  {g.applied && <Badge variant="accent">✓ aplikováno u nás</Badge>}
                 </h2>
                 <a href={g.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
                   otevřít web ↗
                 </a>
               </div>
+
+              {g.applied && (
+                <p className="mt-3 rounded-lg border border-primary/30 bg-primary/10 p-3 text-sm">
+                  {g.applied}
+                </p>
+              )}
 
               <dl className="mt-3 grid grid-cols-[10rem_1fr] gap-x-4 gap-y-1.5 text-sm">
                 <Term label="Přístup" value={g.access} />

@@ -1,6 +1,8 @@
 import type { EventInput } from "@fullcalendar/core";
 import { availability } from "@/lib/services";
 import { addMinutes } from "@/lib/helpers/datetime";
+import { loadDemoData, safeValue } from "@/lib/demo/dummy";
+import { DemoBanner } from "@/components/admin/demo-banner";
 import { PageHeader } from "@/components/admin/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookingCalendar } from "@/components/admin/booking-calendar";
@@ -17,7 +19,17 @@ export default async function CalendarPage() {
   const now = new Date();
   const rangeStart = addMinutes(now, -14 * 24 * 60);
   const rangeEnd = addMinutes(now, 60 * 24 * 60);
-  const { reservations, blocks } = await availability.listCalendarEntries(rangeStart, rangeEnd);
+  let { reservations, blocks } = await safeValue(
+    () => availability.listCalendarEntries(rangeStart, rangeEnd),
+    { reservations: [], blocks: [] },
+  );
+
+  const demo = reservations.length === 0;
+  if (demo) {
+    const d = await loadDemoData(now);
+    reservations = d.reservations;
+    blocks = d.blocks;
+  }
 
   const events: EventInput[] = [
     ...reservations
@@ -46,6 +58,7 @@ export default async function CalendarPage() {
         title="Kalendář"
         description="Přehled rezervací a bloků. Tažením přes prázdný čas přidáte blok (např. úklid). Sloty jsou hodinové, provoz 05:00–21:00."
       />
+      {demo && <DemoBanner />}
       <Card>
         <CardContent className="p-3">
           <BookingCalendar events={events} />

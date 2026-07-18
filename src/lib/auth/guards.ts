@@ -1,12 +1,17 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ensureProfileForUser } from "@/lib/services/members";
+import { isPreviewMode, PREVIEW_ADMIN } from "@/lib/preview";
 
 /**
  * Authentication guards over **Supabase Auth**. `getSessionUser()` reads the
  * verified Supabase user, ensures a `profiles` row exists, and resolves the
  * app role. Server Components use `requireUser`/`requireAdmin`; server actions
  * use `assertAdmin` (throws instead of redirecting).
+ *
+ * Client-preview mode (src/lib/preview.ts): while active, every guard resolves
+ * to the synthetic PREVIEW_ADMIN so the whole app — including /admin — works
+ * with no login. Turns itself off once Supabase/DB env vars are configured.
  */
 
 export const ADMIN_ROLE = "admin";
@@ -20,6 +25,8 @@ export interface SessionUser {
 
 /** The current user (verified via Supabase), or null when signed out. */
 export async function getSessionUser(): Promise<SessionUser | null> {
+  if (isPreviewMode()) return { ...PREVIEW_ADMIN };
+
   const supabase = await createClient();
   if (!supabase) return null;
 

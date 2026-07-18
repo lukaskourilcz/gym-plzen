@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 /** Per-channel delivery status for every outbound message. */
 export default async function MessagesPage() {
-  const { rows, demo } = await withDemoFallback(await messages.listRecent(200), (d) => d.messages);
+  const { rows, demo } = await withDemoFallback(() => messages.listRecent(200), (d) => d.messages);
 
   return (
     <div>

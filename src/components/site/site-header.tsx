@@ -1,18 +1,32 @@
 import Link from "next/link";
 import { Dumbbell } from "lucide-react";
+import type { SessionUser } from "@/lib/auth/guards";
+import { isAdmin } from "@/lib/auth/guards";
 import { Container } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 
 const NAV = [
   { href: "/#jak-to-funguje", label: "Jak to funguje" },
   { href: "/#cenik", label: "Ceník" },
-  { href: "/#galerie", label: "Galerie" },
+  { href: "/#galerie", label: "Prostor" },
   { href: "/#pravidla", label: "Řád" },
   { href: "/#kontakt", label: "Kontakt" },
 ];
 
-/** Public site header with brand, section nav, and the primary CTA. */
-export function SiteHeader({ brand = "Gym Plzeň", logoUrl }: { brand?: string; logoUrl?: string | null }) {
+/**
+ * Public site header with brand, section nav, and the primary CTA. Pass the
+ * session `user` (if the page has one) to swap "Přihlásit" for account/admin
+ * links — in client preview every visitor counts as the preview admin.
+ */
+export function SiteHeader({
+  brand = "Gym Plzeň",
+  logoUrl,
+  user,
+}: {
+  brand?: string;
+  logoUrl?: string | null;
+  user?: SessionUser | null;
+}) {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur">
       <Container className="flex h-16 items-center justify-between">
@@ -37,9 +51,22 @@ export function SiteHeader({ brand = "Gym Plzeň", logoUrl }: { brand?: string; 
         </nav>
 
         <div className="flex items-center gap-2">
-          <Button href="/login" variant="ghost" size="sm" className="hidden sm:inline-flex">
-            Přihlásit
-          </Button>
+          {user ? (
+            <>
+              {isAdmin(user) && (
+                <Button href="/admin" variant="ghost" size="sm" className="hidden md:inline-flex">
+                  Administrace
+                </Button>
+              )}
+              <Button href="/account" variant="ghost" size="sm" className="hidden sm:inline-flex">
+                Můj účet
+              </Button>
+            </>
+          ) : (
+            <Button href="/login" variant="ghost" size="sm" className="hidden sm:inline-flex">
+              Přihlásit
+            </Button>
+          )}
           <Button href="/rezervace" size="sm">
             Rezervovat
           </Button>

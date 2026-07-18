@@ -1,7 +1,9 @@
 import { requireUser } from "@/lib/auth/guards";
 import { loyalty, reservations } from "@/lib/services";
+import { deriveLoyaltyStatus } from "@/lib/services/loyalty";
 import { loadSiteContent } from "@/lib/content/site";
 import { formatDateTime, formatMoney } from "@/lib/helpers/format";
+import { loadDemoData, safeRows, safeValue } from "@/lib/demo/dummy";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { LoyaltyWidget } from "@/components/loyalty-widget";
@@ -12,19 +14,32 @@ export const metadata = { title: "Můj účet" };
 
 /**
  * Member account page. Shows the loyalty counter (progress to the next free
- * entry) and upcoming reservations.
+ * entry) and upcoming reservations. Without a database (client preview) it
+ * shows a demo loyalty state and demo bookings instead of crashing.
  */
 export default async function AccountPage() {
   const user = await requireUser("/account");
-  const [status, upcoming, content] = await Promise.all([
-    loyalty.getLoyaltyStatus(user.id),
-    reservations.listUpcomingForUser(user.id),
+  const [liveStatus, liveUpcoming, content] = await Promise.all([
+    safeValue(() => loyalty.getLoyaltyStatus(user.id), null),
+    safeRows(() => reservations.listUpcomingForUser(user.id)),
     loadSiteContent(),
   ]);
+  let status = liveStatus;
+  let upcoming = liveUpcoming;
+
+  // Demo fallback: 7 past entries and the nearest upcoming demo bookings.
+  if (!status) {
+    status = deriveLoyaltyStatus(7);
+    const d = await loadDemoData();
+    upcoming = d.reservations
+      .filter((r) => r.status === "confirmed" && r.startsAt > new Date())
+      .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+      .slice(0, 3);
+  }
 
   return (
     <>
-      <SiteHeader brand={content.get("brand.name")} logoUrl={content.logoUrl} />
+      <SiteHeader brand={content.get("brand.name")} logoUrl={content.logoUrl} user={user} />
       <main>
         <Section className="py-12">
           <Container className="max-w-2xl">

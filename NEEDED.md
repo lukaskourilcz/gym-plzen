@@ -10,6 +10,15 @@ Postupuj podle priority (5 = nejdůležitější, blokuje spuštění; 1 = dolad
 
 Legenda: ⬜ = udělat, ✅ = hotovo, ⚠️ = pozor.
 
+> **🧪 Klientský náhled (než cokoli z toho nastavíš):** dokud nejsou vyplněné
+> `DATABASE_URL` ani Supabase klíče, aplikace se sama přepne do **režimu
+> náhledu** — web, rezervace i celá administrace běží **bez přihlášení** nad
+> ukázkovými daty (DummyJSON), ukládání je vypnuté a všude svítí lišta
+> „Náhled pro klienta“. Jakmile doplníš Supabase (P5 níže), náhled se sám
+> vypne a naskočí normální přihlašování. Ruční override: `PREVIEW_MODE=1`
+> vynutí náhled (⚠️ nikdy s produkčními daty — administrace je pak veřejná),
+> `PREVIEW_MODE=0` ho zakáže.
+
 ---
 
 ## Priorita 5 — bez tohoto systém nespustíš

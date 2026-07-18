@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { err, ok, type Result } from "./result";
 import { logger } from "./logger";
+import { PreviewDbError, PREVIEW_WRITE_MESSAGE } from "@/lib/preview";
 
 /**
  * Factory for type-safe Server Actions. It:
@@ -45,6 +46,9 @@ export function defineAction<S extends z.ZodTypeAny, TOutput, TCtx = void>(confi
       const data = await config.handler(parsed.data, ctx);
       return ok(data);
     } catch (e) {
+      // Client-preview mode: the DB stub rejects every write — answer politely
+      // instead of logging it as an unexpected failure.
+      if (e instanceof PreviewDbError) return err(PREVIEW_WRITE_MESSAGE);
       logger.error(e, { where: "defineAction.handler" });
       const message =
         e instanceof ActionError

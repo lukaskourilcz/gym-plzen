@@ -187,6 +187,10 @@ under **Inspirace** (`src/lib/data/inspirations.ts`).
   micro-gyms, hourly, app-unlock. Homepage: hero → five-icon "why us" row →
   space carousel → app CTAs. *Borrow:* the six-step "how it works" strip; the
   five-icon differentiator row above the fold.
+  **→ APPLIED (07/2026):** this is the inspiration we implemented on our
+  homepage — five-icon "proč my" row under the hero, the six-step
+  "jak to funguje" strip (book → pay → code → arrive → unlock → train), and a
+  space carousel replacing the static gallery grid (`src/app/page.tsx`).
 - **EVO Fitness — CH/DE/AT/Nordics** — https://evofitness.ch/en/ — staff-free
   premium chain via "Credlock", ~5am–midnight. *Borrow:* side-by-side pricing
   tiers (committed vs no-commitment); floating dismissible promo banner over a

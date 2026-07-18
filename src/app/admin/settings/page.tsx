@@ -5,6 +5,7 @@ import {
   SMS_ACCESS_TEMPLATE_KEY,
   TERMS_URL_KEY,
 } from "@/lib/config/branding";
+import { safeValue } from "@/lib/demo/dummy";
 import { PageHeader } from "@/components/admin/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { BrandingForm, FileUploader, SmsTemplateForm } from "./settings-forms";
@@ -15,9 +16,9 @@ export const dynamic = "force-dynamic";
 /** Configure the front-end assets (logo, terms PDF) and message templates. */
 export default async function SettingsPage() {
   const [logoUrl, termsUrl, smsTemplate] = await Promise.all([
-    cms.getSetting<string>(LOGO_URL_KEY),
-    cms.getSetting<string>(TERMS_URL_KEY),
-    cms.getSetting<string>(SMS_ACCESS_TEMPLATE_KEY),
+    safeValue(() => cms.getSetting<string>(LOGO_URL_KEY), null),
+    safeValue(() => cms.getSetting<string>(TERMS_URL_KEY), null),
+    safeValue(() => cms.getSetting<string>(SMS_ACCESS_TEMPLATE_KEY), null),
   ]);
 
   return (

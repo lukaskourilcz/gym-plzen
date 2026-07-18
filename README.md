@@ -6,7 +6,13 @@ na chytrý zámek (Nuki) přes e-mail/WhatsApp, a administrace umožňuje spravo
 obsah webu, rezervace, členy, ceny a sledovat spolehlivost systému.
 
 > **Stav:** kompletní kostra a architektura + plná administrace (backend).
-> Vizuální design veřejného webu a live kalendář jsou další fází — viz plán.
+> Homepage má aplikovaný design podle inspirace Elysium Gyms (viz
+> `docs/INSPIRATIONS.md` → „APPLIED“).
+
+> **🧪 Režim náhledu:** bez vyplněného `DATABASE_URL` a Supabase klíčů běží
+> celá aplikace (web i `/admin`) **bez přihlášení** nad ukázkovými daty — stačí
+> `npm install && npm run dev` a lze ji ukázat klientovi. Po připojení Supabase
+> se náhled sám vypne. Detaily: `src/lib/preview.ts` a `NEEDED.md`.
 
 ## Tech stack
 

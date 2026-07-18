@@ -1,10 +1,15 @@
 import { httpRequest } from "@/lib/helpers/http";
 import { addMinutes } from "@/lib/helpers/datetime";
+import { logger } from "@/lib/helpers/logger";
 import { aggregateStats, type Stats } from "@/lib/services/stats";
+import { SITE_DEFAULTS } from "@/lib/content/site";
 import type {
+  BlockedSlot,
+  ContentBlock,
   EntryLog,
   MessageDelivery,
   Reservation,
+  SystemAlert,
 } from "@/lib/db/types";
 import type { MemberWithProfile } from "@/lib/services/members";
 
@@ -182,17 +187,130 @@ export function buildDemoStats(reservations: Reservation[], now = new Date()): S
   );
 }
 
+/** Demo operational alerts (one open, some resolved) for the alerts screen. */
+export function buildDemoAlerts(now = new Date()): SystemAlert[] {
+  const mk = (
+    i: number,
+    severity: SystemAlert["severity"],
+    title: string,
+    body: string,
+    ageHours: number,
+    resolved: boolean,
+  ): SystemAlert => ({
+    id: `demo-a-${i}`,
+    severity,
+    dedupeKey: `demo:${i}`,
+    title,
+    body,
+    context: null,
+    notifiedAt: addMinutes(now, -ageHours * 60 + 2),
+    resolvedAt: resolved ? addMinutes(now, -ageHours * 60 + 45) : null,
+    createdAt: addMinutes(now, -ageHours * 60),
+  });
+  return [
+    mk(1, "warning", "WhatsApp zpráva nedoručena", "Kód byl doručen e-mailem, WhatsApp selhal (ukázka).", 5, false),
+    mk(2, "critical", "Vytvoření kódu Nuki selhalo", "Automatický pokus 3/3 — kód nakonec vytvořen (ukázka).", 30, true),
+    mk(3, "info", "Watchdog: vše v pořádku", "Pravidelná kontrola pipeline proběhla bez nálezu (ukázka).", 52, true),
+  ];
+}
+
+/** Demo blocked slots (cleaning window + maintenance) for schedule/calendar. */
+export function buildDemoBlocks(now = new Date()): BlockedSlot[] {
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(11, 0, 0, 0);
+  const nextWeek = new Date(now);
+  nextWeek.setDate(nextWeek.getDate() + 6);
+  nextWeek.setHours(8, 0, 0, 0);
+  return [
+    {
+      id: "demo-b-1",
+      startsAt: tomorrow,
+      endsAt: addMinutes(tomorrow, 60),
+      reason: "maintenance",
+      note: "Úklid a dezinfekce (ukázka)",
+      createdByAdminId: null,
+      createdAt: addMinutes(now, -60 * 24),
+    },
+    {
+      id: "demo-b-2",
+      startsAt: nextWeek,
+      endsAt: addMinutes(nextWeek, 120),
+      reason: "private_event",
+      note: "Focení prostoru (ukázka)",
+      createdByAdminId: null,
+      createdAt: addMinutes(now, -60 * 24),
+    },
+  ];
+}
+
+/** Human-friendly admin groups for the demo CMS blocks, keyed by key prefix. */
+const CONTENT_GROUPS: Record<string, string> = {
+  brand: "značka",
+  home: "domovská stránka",
+  contact: "kontakt",
+};
+
 /**
- * Show demo data when a real query comes back empty. Returns the live rows plus
- * `demo: false` when there is real data, or the demo rows plus `demo: true`
- * otherwise — so a page reads `const { rows, demo } = await withDemoFallback(...)`
- * instead of repeating the empty-check everywhere.
+ * Demo CMS blocks derived from the site's default copy, so the "Obsah webu"
+ * editor shows every editable text (with its real current value) before the
+ * database exists.
+ */
+export function buildDemoContentBlocks(now = new Date()): ContentBlock[] {
+  return Object.entries(SITE_DEFAULTS).map(([key, valueText], i) => ({
+    id: `demo-c-${i}`,
+    key,
+    locale: "cs",
+    type: "text" as const,
+    valueText,
+    valueJson: null,
+    mediaId: null,
+    label: null,
+    groupName: CONTENT_GROUPS[key.split(".")[0] ?? ""] ?? "ostatní",
+    sortOrder: i,
+    updatedByAdminId: null,
+    createdAt: now,
+    updatedAt: now,
+  }));
+}
+
+/**
+ * Run a query, treating ANY database failure as "no rows". This is what makes
+ * the admin work in client-preview mode (src/lib/preview.ts), where `db` throws
+ * on first touch: the empty result flows into the demo fallback below.
+ */
+export async function safeRows<T>(query: () => Promise<T[]>): Promise<T[]> {
+  try {
+    return await query();
+  } catch (e) {
+    logger.warn("safeRows: falling back to empty result (DB unavailable)", { error: String(e) });
+    return [];
+  }
+}
+
+/** Like `safeRows` for a single value: returns `fallback` on a DB failure. */
+export async function safeValue<T>(query: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await query();
+  } catch (e) {
+    logger.warn("safeValue: using fallback (DB unavailable)", { error: String(e) });
+    return fallback;
+  }
+}
+
+/**
+ * Show demo data when a real query fails (no DB yet) or comes back empty.
+ * Returns the live rows plus `demo: false` when there is real data, or the
+ * demo rows plus `demo: true` otherwise — so a page reads
+ * `const { rows, demo } = await withDemoFallback(() => query, pick)` instead
+ * of repeating the empty-check everywhere.
  */
 export async function withDemoFallback<T>(
-  live: T[],
+  live: () => Promise<T[]>,
   pick: (demo: Awaited<ReturnType<typeof loadDemoData>>) => T[],
 ): Promise<{ rows: T[]; demo: boolean }> {
-  if (live.length > 0) return { rows: live, demo: false };
+  const rows = await safeRows(live);
+  if (rows.length > 0) return { rows, demo: false };
   const data = await loadDemoData();
   return { rows: pick(data), demo: true };
 }
@@ -208,5 +326,8 @@ export async function loadDemoData(now = new Date()) {
   const messages = buildDemoMessages(reservations);
   const entries = buildDemoEntries(reservations);
   const stats = buildDemoStats(reservations, now);
-  return { users, members, reservations, messages, entries, stats };
+  const alerts = buildDemoAlerts(now);
+  const blocks = buildDemoBlocks(now);
+  const contentBlocks = buildDemoContentBlocks(now);
+  return { users, members, reservations, messages, entries, stats, alerts, blocks, contentBlocks };
 }

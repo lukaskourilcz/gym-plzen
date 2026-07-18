@@ -1,5 +1,7 @@
 import { alerts } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
+import { withDemoFallback } from "@/lib/demo/dummy";
+import { DemoBanner } from "@/components/admin/demo-banner";
 import { PageHeader } from "@/components/admin/page-header";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -8,11 +10,12 @@ export const dynamic = "force-dynamic";
 
 /** Operational alerts history — failures pushed to the WhatsApp group. */
 export default async function AlertsPage() {
-  const rows = await alerts.listRecentAlerts(100);
+  const { rows, demo } = await withDemoFallback(() => alerts.listRecentAlerts(100), (d) => d.alerts);
 
   return (
     <div>
       <PageHeader title="Upozornění" />
+      {demo && <DemoBanner />}
       <Table>
         <TableHeader>
           <TableRow>

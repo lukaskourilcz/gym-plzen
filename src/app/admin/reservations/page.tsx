@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 /** Reservations admin: manual booking form + a list of recent reservations. */
 export default async function ReservationsPage() {
   const { rows, demo } = await withDemoFallback(
-    await reservations.listRecent(100),
+    () => reservations.listRecent(100),
     (d) => d.reservations,
   );
 

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { reservations, alerts, messages } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
-import { loadDemoData } from "@/lib/demo/dummy";
+import { loadDemoData, safeRows } from "@/lib/demo/dummy";
 import { DemoBanner } from "@/components/admin/demo-banner";
 import { PageHeader } from "@/components/admin/page-header";
 import { StatCard } from "@/components/admin/stat-card";
@@ -15,15 +15,16 @@ export const dynamic = "force-dynamic";
  * unresolved alerts, and recent message deliveries.
  */
 export default async function AdminDashboard() {
-  const [liveReservations, recentAlerts, liveMessages] = await Promise.all([
-    reservations.listRecent(8),
-    alerts.listRecentAlerts(8),
-    messages.listRecent(8),
+  const [liveReservations, liveAlerts, liveMessages] = await Promise.all([
+    safeRows(() => reservations.listRecent(8)),
+    safeRows(() => alerts.listRecentAlerts(8)),
+    safeRows(() => messages.listRecent(8)),
   ]);
 
   const demo = liveReservations.length === 0;
   const d = demo ? await loadDemoData() : null;
   const recentReservations = d ? d.reservations.slice(0, 8) : liveReservations;
+  const recentAlerts = d ? d.alerts : liveAlerts;
   const recentMessages = d ? d.messages.slice(0, 8) : liveMessages;
   const upcoming = recentReservations.filter((r) => r.startsAt > new Date());
 

@@ -39,7 +39,7 @@ export default async function BookingPage({
 
   return (
     <>
-      <SiteHeader brand={content.get("brand.name")} logoUrl={content.logoUrl} />
+      <SiteHeader brand={content.get("brand.name")} logoUrl={content.logoUrl} user={session?.user ?? null} />
       {/* Live calendar: refresh when reservations change (no-op if unconfigured). */}
       <RealtimeRefresher table="reservation" />
       <main>
@@ -129,13 +129,15 @@ export default async function BookingPage({
               </span>
             </div>
 
-            <p className="mt-8 text-sm text-muted-foreground">
-              Platbu a doručení vstupního kódu (e-mail + WhatsApp) dokončíte po přihlášení. Nemáte účet?{" "}
-              <Link href="/login" className="font-medium text-foreground underline">
-                Zaregistrujte se
-              </Link>
-              .
-            </p>
+            {!isAuthed && (
+              <p className="mt-8 text-sm text-muted-foreground">
+                Platbu a doručení vstupního kódu (e-mail + WhatsApp) dokončíte po přihlášení. Nemáte účet?{" "}
+                <Link href="/login" className="font-medium text-foreground underline">
+                  Zaregistrujte se
+                </Link>
+                .
+              </p>
+            )}
           </Container>
         </Section>
       </main>

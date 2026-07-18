@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { publicEnv } from "@/lib/env";
+import { PreviewRibbon } from "@/components/preview-ribbon";
 import "./globals.css";
 
 const inter = Inter({
@@ -31,7 +32,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="cs" className={inter.variable}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <PreviewRibbon />
+      </body>
     </html>
   );
 }
