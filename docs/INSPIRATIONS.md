@@ -172,3 +172,54 @@ test: **GYMPODS London** (explicitly staffed/supervised), generic rental
 marketplaces (Peerspace, Giggster), and access-control *software* vendors (Kisi,
 Gymflow, GymMaster, Wodify), which enable the model but are not themselves
 unmanned gyms.
+
+---
+
+# Round 2 — more examples (design focus)
+
+A second sweep for additional unmanned/lock-access gyms plus design-forward
+fitness sites worth copying visually. The structured versions are in the admin
+under **Inspirace** (`src/lib/data/inspirations.ts`).
+
+## More unmanned / lock-access gyms
+
+- **Elysium Gyms — London, UK** — https://elysiumgyms.com/ — private boutique
+  micro-gyms, hourly, app-unlock. Homepage: hero → five-icon "why us" row →
+  space carousel → app CTAs. *Borrow:* the six-step "how it works" strip; the
+  five-icon differentiator row above the fold.
+- **EVO Fitness — CH/DE/AT/Nordics** — https://evofitness.ch/en/ — staff-free
+  premium chain via "Credlock", ~5am–midnight. *Borrow:* side-by-side pricing
+  tiers (committed vs no-commitment); floating dismissible promo banner over a
+  calm hero.
+- **NEXT DOOR (Just Fit) — Cologne/Düsseldorf, DE** — https://www.nextdoorgyms.de/en
+  — fully digital, staffless, app/transponder access. *Borrow:* make the
+  staff-free nature the literal hero headline; an FAQ accordion that pre-empts
+  "how do I get in?".
+- **Barerooms — Wirral, UK** — https://barerooms.com/ — unmanned app-access
+  private rooms, slots staggered on the hour/half-hour so occupants never
+  overlap (mirrors our model). *Borrow:* state the staggered-slot mechanic in
+  the picker copy; tiers as "X private sessions/week".
+
+## Design-forward benchmarks (staffed, for visual ideas)
+
+- **Barry's** — https://www.barrys.com/ — dark, high-contrast, one hot accent +
+  warm photography; "Book your first class" as the single dominant CTA, ≤3 steps.
+- **Gymbox** — https://gymbox.com/ — nightclub aesthetic, live countdown on a
+  bold offer, UGC "Spotted in the Box" gallery.
+- **Third Space** — https://www.thirdspace.london/ — restrained luxury,
+  light/dark-aware branding, short "enquire → choose option" modal instead of a
+  long form.
+- **Alchemy 365 — Denver, USA** — https://alchemy365.com/ — single bold accent
+  (blue) over black/white (avoids the all-dark cliché); concrete cheap trial in
+  the hero ("3 for $30").
+- **1Rebel** — https://www.1rebel.com/ — consistent brand web↔app; intent-first
+  "I want to train: ___" filter before the calendar; visual spot/slot selection.
+
+## Design takeaways applied to our site
+
+- Lead with the self-access concept as the headline (done: hero + "jak to funguje").
+- Explicit book → pay → code → unlock strip (done: 3-step section).
+- Keep book-to-confirm ≤3 steps; sell single-occupancy ("celý gym jen pro vás").
+- Dark hero + one bold accent (lime) + room for real photos; light/dark-aware tokens.
+- Conversion levers to add later: a launch promo banner/countdown, a first-visit
+  offer, and a UGC/gallery once real photos arrive.

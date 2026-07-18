@@ -6,6 +6,8 @@ import { generateNumericCode, hashCode } from "@/lib/helpers/crypto";
 import { addMinutes } from "@/lib/helpers/datetime";
 import { logger } from "@/lib/helpers/logger";
 import { createKeypadCode, deleteAuth } from "@/lib/integrations/nuki";
+import { CODE_LEAD_MINUTES } from "@/lib/config/schedule";
+import { getShowerMinutes } from "./schedule";
 
 /**
  * Access-code service — generates a time-limited numeric code, provisions it on
@@ -13,8 +15,6 @@ import { createKeypadCode, deleteAuth } from "@/lib/integrations/nuki";
  * once (to hand to the notification dispatcher) and never persisted.
  */
 
-/** How long before the reservation start the code becomes valid. */
-const VALID_FROM_LEAD_MINUTES = 15;
 
 export interface IssueCodeResult {
   accessCode: AccessCode;
@@ -35,8 +35,11 @@ export async function issueAccessCode(params: {
   memberName?: string | null;
 }): Promise<IssueCodeResult> {
   const plaintext = generateNumericCode(6);
-  const validFrom = addMinutes(params.startsAt, -VALID_FROM_LEAD_MINUTES);
-  const validUntil = params.endsAt;
+  // Code valid from a lead time before the slot until the end of the slot plus
+  // the shower grace, so the member can shower after training.
+  const showerMinutes = await getShowerMinutes();
+  const validFrom = addMinutes(params.startsAt, -CODE_LEAD_MINUTES);
+  const validUntil = addMinutes(params.endsAt, showerMinutes);
 
   const [record] = await db
     .insert(accessCode)

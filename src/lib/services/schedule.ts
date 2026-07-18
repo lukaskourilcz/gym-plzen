@@ -1,8 +1,12 @@
-import { and, asc, eq, gte, lte } from "drizzle-orm";
+import { and, asc, eq, gte, lte, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { blockedSlot, openingHours } from "@/lib/db/schema";
-import type { BlockedSlot, OpeningHours } from "@/lib/db/types";
+import { blockedSlot, openingHours, reservation, siteSetting } from "@/lib/db/schema";
+import type { BlockedSlot, OpeningHours, Reservation } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
+import {
+  DEFAULT_SHOWER_MINUTES,
+  SHOWER_MINUTES_SETTING_KEY,
+} from "@/lib/config/schedule";
 
 /**
  * Schedule service — opening hours and blocked slots, both managed from the
@@ -94,4 +98,85 @@ export async function createBlockedSlot(input: {
 
 export async function deleteBlockedSlot(id: string): Promise<void> {
   await db.delete(blockedSlot).where(eq(blockedSlot.id, id));
+}
+
+// ── Closing time that already has bookings ───────────────────────────────────
+
+/** Active (pending/confirmed) reservations overlapping a time range. */
+export async function findOverlappingReservations(
+  start: Date,
+  end: Date,
+): Promise<Reservation[]> {
+  return db
+    .select()
+    .from(reservation)
+    .where(
+      and(
+        sql`${reservation.startsAt} < ${end} AND ${reservation.endsAt} > ${start}`,
+        or(eq(reservation.status, "pending"), eq(reservation.status, "confirmed")),
+      ),
+    );
+}
+
+/**
+ * Cancel every active reservation overlapping a range (used when the admin
+ * closes a day/time that already has bookings) and return the cancelled rows so
+ * the caller can notify each affected member.
+ */
+export async function cancelOverlappingReservations(
+  start: Date,
+  end: Date,
+  reason: string,
+): Promise<Reservation[]> {
+  const affected = await findOverlappingReservations(start, end);
+  if (affected.length === 0) return [];
+  const now = new Date();
+  for (const r of affected) {
+    await db
+      .update(reservation)
+      .set({ status: "cancelled", cancelledAt: now, cancelReason: reason, updatedAt: now })
+      .where(eq(reservation.id, r.id));
+  }
+  return affected;
+}
+
+// ── Shower grace (admin-configurable) ────────────────────────────────────────
+
+/**
+ * Minutes the access code stays valid after a training slot so the member can
+ * shower. Read from the `schedule.shower_minutes` setting, falling back to the
+ * default. This grace does NOT affect slot overlap — only code validity.
+ */
+export async function getShowerMinutes(): Promise<number> {
+  try {
+    const [row] = await db
+      .select({ value: siteSetting.value })
+      .from(siteSetting)
+      .where(eq(siteSetting.key, SHOWER_MINUTES_SETTING_KEY))
+      .limit(1);
+    if (typeof row?.value === "number" && row.value >= 0) return row.value;
+  } catch {
+    // fall through to default
+  }
+  return DEFAULT_SHOWER_MINUTES;
+}
+
+/** Persist the shower grace (minutes). */
+export async function setShowerMinutes(
+  minutes: number,
+  updatedByAdminId?: string | null,
+): Promise<void> {
+  const now = new Date();
+  await db
+    .insert(siteSetting)
+    .values({
+      key: SHOWER_MINUTES_SETTING_KEY,
+      value: minutes,
+      updatedByAdminId: updatedByAdminId ?? null,
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: siteSetting.key,
+      set: { value: minutes, updatedByAdminId: updatedByAdminId ?? null, updatedAt: now },
+    });
 }

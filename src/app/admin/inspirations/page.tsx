@@ -2,6 +2,9 @@ import { INSPIRATIONS, INSPIRATION_TAKEAWAYS } from "@/lib/data/inspirations";
 
 export const metadata = { title: "Inspirace" };
 
+const lockCount = INSPIRATIONS.filter((g) => !g.designBenchmark).length;
+const designCount = INSPIRATIONS.filter((g) => g.designBenchmark).length;
+
 /**
  * "Inspirace" — a browsable preview of real gyms worldwide that run our exact
  * concept (unmanned, smart-lock/PIN access, book & pay online). Data lives in
@@ -13,10 +16,12 @@ export default function InspirationsPage() {
     <div>
       <h1>Inspirace — gymy bez obsluhy se zámkem</h1>
       <p style={{ color: "var(--muted)", maxWidth: 720 }}>
-        Skutečné, ověřené provozy po celém světě (důraz na trh USA) postavené na
-        stejném konceptu jako my: <strong>bez recepce, vstup přes chytrý zámek /
-        PIN</strong>, rezervace a platba online. U každého je náhled, co používají
-        za funkce a jak vypadají jejich formuláře a frontend.
+        Skutečné, ověřené provozy po celém světě (důraz na trh USA). {lockCount}{" "}
+        z nich běží na <strong>stejném konceptu jako my</strong> — bez recepce,
+        vstup přes chytrý zámek / PIN, rezervace a platba online. Dalších{" "}
+        {designCount} je zařazeno hlavně jako <strong>designová inspirace</strong>{" "}
+        (i když mají obsluhu). U každého je náhled funkcí a jak vypadají jejich
+        formuláře a frontend.
       </p>
 
       <section
@@ -62,17 +67,13 @@ export default function InspirationsPage() {
                   {g.location}
                 </span>
                 {g.closest && (
-                  <span
-                    style={{
-                      marginLeft: 8,
-                      fontSize: "0.7rem",
-                      background: "var(--accent)",
-                      color: "white",
-                      padding: "2px 6px",
-                      borderRadius: 4,
-                    }}
-                  >
+                  <span style={{ marginLeft: 8, fontSize: "0.7rem", background: "var(--accent)", color: "white", padding: "2px 6px", borderRadius: 4 }}>
                     nejblíž našemu konceptu
+                  </span>
+                )}
+                {g.designBenchmark && (
+                  <span style={{ marginLeft: 8, fontSize: "0.7rem", background: "var(--muted)", color: "white", padding: "2px 6px", borderRadius: 4 }}>
+                    designová inspirace
                   </span>
                 )}
               </h2>

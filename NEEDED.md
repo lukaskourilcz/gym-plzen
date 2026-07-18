@@ -229,6 +229,50 @@ Watchdog opakuje selhané kroky a synchronizuje knihu vstupů.
 
 ---
 
+## 13. Google Analytics + SEO
+
+- ⬜ Založ **GA4** property (<https://analytics.google.com>), zkopíruj
+  Measurement ID (`G-XXXXXXX`) a přidej ho na Vercel jako
+  `NEXT_PUBLIC_GA_ID`. (Skript GA lze přidat do `src/app/layout.tsx` přes
+  `next/script` — připraveno k doplnění.)
+- ✅ SEO metadata (title/description/OpenGraph) jsou nastavená v
+  `src/app/layout.tsx`; doplň finální doménu do `NEXT_PUBLIC_APP_URL`.
+- ⬜ Po nasazení přidej web do **Google Search Console** a odešli sitemapu.
+
+---
+
+## 🚀 Runbook: nasazení na Vercel (dnešní demo)
+
+Web běží i **bez** databáze (veřejné stránky mají fallback obsah a ukázkový
+rozvrh), takže ho můžeš nasadit hned a služby dopojit postupně.
+
+1. **Import repa do Vercelu** (New Project → vyber `gym-plzen`). Framework se
+   detekuje automaticky (Next.js).
+2. **Env proměnné (minimum pro build a běh):**
+   - `BETTER_AUTH_SECRET` = `openssl rand -base64 32`
+   - `BETTER_AUTH_URL` = `https://<tvuj-projekt>.vercel.app`
+   - `NEXT_PUBLIC_APP_URL` = totéž
+   - `DATABASE_URL` = může být zatím placeholder; veřejný web poběží, admin a
+     rezervace se rozjedou po připojení Supabase (krok 1 nahoře).
+3. **Deploy.** Veřejná stránka, `/rezervace` (ukázkový rozvrh) a `/login` fungují.
+4. **Připoj Supabase** (sekce 1): doplň `DATABASE_URL`/`DIRECT_URL` +
+   `NEXT_PUBLIC_SUPABASE_*`, spusť `npm run db:migrate` a `npm run db:seed`,
+   pak `npm run set-admin -- tvuj@email.cz`. Rezervace i administrace naživo.
+5. **Postupně** dopojuj Stripe → Resend → WhatsApp → Nuki (sekce 3–6). Každá
+   služba je izolovaná; dokud chybí klíče, daná část je jen vypnutá.
+6. **Cron** (`CRON_SECRET`) a **Sentry/GA** dolaď před ostrým provozem.
+
+Stav rozpracovanosti sleduješ v administraci pod **Plán spuštění** (progress bar).
+
+### Kalendářní knihovna
+
+Používáme **FullCalendar** (licence MIT) pro administrační kalendář
+(`/admin/kalendář`) — týdenní pohled, hodinové sloty 05:00–21:00, bloky pro
+úklid tažením myší. Veřejná rezervace používá lehký serverový výběr slotů
+(rychlé, SEO-friendly). Nic k nastavení — je součástí buildu.
+
+---
+
 ## Rychlý kontrolní seznam „minimum pro spuštění"
 
 1. ✅ Kód (hotovo)

@@ -1,100 +1,173 @@
+@import "tailwindcss";
+
 /*
- * Minimal, unopinionated base styles. The visual design is intentionally
- * deferred (see the task brief) — this only provides sane defaults so the
- * administration is legible while it is being built.
+ * Design tokens (shadcn/ui-compatible, tweakcn-style CSS variables). Swap these
+ * values to rebrand the whole site — buttons, cards, and sections all read from
+ * here. A modern athletic palette: near-black ink, off-white paper, an electric
+ * lime accent for calls to action.
  */
+@custom-variant dark (&:is(.dark *));
+
 :root {
-  --border: #d4d4d8;
-  --muted: #71717a;
-  --bg: #ffffff;
-  --fg: #18181b;
-  --accent: #2563eb;
-  --danger: #dc2626;
-  --ok: #16a34a;
+  --radius: 0.75rem;
+
+  --background: oklch(0.99 0.002 100);
+  --foreground: oklch(0.2 0.01 260);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.01 260);
+
+  --primary: oklch(0.78 0.19 138);
+  --primary-foreground: oklch(0.18 0.02 150);
+
+  --secondary: oklch(0.96 0.01 260);
+  --secondary-foreground: oklch(0.24 0.01 260);
+
+  --muted: oklch(0.96 0.005 260);
+  --muted-foreground: oklch(0.52 0.01 260);
+
+  --accent: oklch(0.95 0.02 138);
+  --accent-foreground: oklch(0.22 0.02 150);
+
+  --destructive: oklch(0.58 0.22 27);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  --border: oklch(0.9 0.005 260);
+  --input: oklch(0.9 0.005 260);
+  --ring: oklch(0.78 0.19 138);
+
+  /* Dark surfaces used by the hero and footer regardless of theme. */
+  --ink: oklch(0.19 0.015 260);
+  --ink-foreground: oklch(0.97 0.005 260);
+}
+
+.dark {
+  --background: oklch(0.17 0.012 260);
+  --foreground: oklch(0.96 0.005 260);
+  --card: oklch(0.21 0.014 260);
+  --card-foreground: oklch(0.96 0.005 260);
+  --primary: oklch(0.8 0.19 138);
+  --primary-foreground: oklch(0.18 0.02 150);
+  --secondary: oklch(0.26 0.014 260);
+  --secondary-foreground: oklch(0.96 0.005 260);
+  --muted: oklch(0.26 0.014 260);
+  --muted-foreground: oklch(0.7 0.01 260);
+  --accent: oklch(0.3 0.03 138);
+  --accent-foreground: oklch(0.96 0.005 260);
+  --border: oklch(0.3 0.01 260);
+  --input: oklch(0.3 0.01 260);
+  --ring: oklch(0.8 0.19 138);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ink: var(--ink);
+  --color-ink-foreground: var(--ink-foreground);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
 }
 
 * {
-  box-sizing: border-box;
+  border-color: var(--color-border);
 }
 
-html,
 body {
-  margin: 0;
-  padding: 0;
-  font-family:
-    system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  color: var(--fg);
-  background: var(--bg);
-  line-height: 1.5;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }
 
-a {
-  color: var(--accent);
+/*
+ * Back-compat aliases for the admin, which uses inline styles with the older
+ * variable names. Scoped to `.admin-legacy` so they don't affect the public
+ * site's design tokens.
+ */
+.admin-legacy {
+  --muted: oklch(0.52 0.01 260); /* muted TEXT color (not the Tailwind bg) */
+  --accent: oklch(0.55 0.16 250); /* link/accent blue */
+  --danger: var(--destructive);
+  --ok: oklch(0.6 0.17 150);
 }
 
-table {
+/* Subtle utility for the admin tables that still use raw HTML. */
+.admin-legacy table {
   border-collapse: collapse;
   width: 100%;
 }
-
-th,
-td {
-  border: 1px solid var(--border);
+.admin-legacy th,
+.admin-legacy td {
+  border: 1px solid var(--color-border);
   padding: 0.4rem 0.6rem;
   text-align: left;
   font-size: 0.9rem;
 }
-
-th {
-  background: #f4f4f5;
+.admin-legacy th {
+  background: var(--color-muted);
 }
-
-label {
+.admin-legacy .field {
+  margin-bottom: 0.9rem;
+}
+.admin-legacy label {
   display: block;
   font-size: 0.85rem;
   font-weight: 600;
   margin-bottom: 0.25rem;
 }
-
-input,
-select,
-textarea {
+.admin-legacy input,
+.admin-legacy select,
+.admin-legacy textarea {
   width: 100%;
   padding: 0.45rem 0.55rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-input);
   border-radius: 6px;
   font: inherit;
+  background: var(--color-card);
+  color: var(--color-foreground);
 }
-
-button {
+.admin-legacy button {
   padding: 0.5rem 0.9rem;
-  border: 1px solid var(--border);
   border-radius: 6px;
-  background: var(--accent);
-  color: white;
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
   font: inherit;
+  font-weight: 600;
   cursor: pointer;
+  border: none;
 }
-
-button[disabled] {
+.admin-legacy button[disabled] {
   opacity: 0.6;
   cursor: not-allowed;
 }
-
-.field {
-  margin-bottom: 0.9rem;
-}
-
-.field-error {
-  color: var(--danger);
+.admin-legacy .field-error {
+  color: var(--color-destructive);
   font-size: 0.8rem;
   margin-top: 0.2rem;
 }
-
-.form-error {
-  color: var(--danger);
+.admin-legacy .form-error {
+  color: var(--color-destructive);
 }
-
-.form-ok {
-  color: var(--ok);
+.admin-legacy .form-ok {
+  color: oklch(0.6 0.17 150);
 }

@@ -7,12 +7,14 @@ import {
   createBlockedSlotSchema,
   deleteBlockedSlotSchema,
   openingHoursSchema,
+  showerMinutesSchema,
 } from "@/lib/validations/schedule";
 import type { OpeningHours } from "@/lib/db/types";
 import {
   createBlockedSlotAction,
   deleteBlockedSlotAction,
   saveOpeningHoursAction,
+  saveShowerMinutesAction,
 } from "./actions";
 
 const DAY_NAMES = [
@@ -39,8 +41,8 @@ export function OpeningHoursRow({
     successMessage: "Uloženo.",
     defaultValues: {
       dayOfWeek,
-      open: hours ? minutesToHHmm(hours.openMinute) : "08:00",
-      close: hours ? minutesToHHmm(hours.closeMinute) : "20:00",
+      open: hours ? minutesToHHmm(hours.openMinute) : "05:00",
+      close: hours ? minutesToHHmm(hours.closeMinute) : "21:00",
       slotMinutes: hours?.slotMinutes ?? 60,
       isClosed: hours?.isClosed === 1,
     },
@@ -118,6 +120,35 @@ export function BlockedSlotForm() {
       </Field>
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={isSubmitting}>Přidat blok</SubmitButton>
+    </form>
+  );
+}
+
+/** Shower-grace setting (minutes the code stays valid after a slot). */
+export function ShowerMinutesForm({ current }: { current: number }) {
+  const { form, submit, serverError, success } = useActionForm({
+    schema: showerMinutesSchema,
+    action: saveShowerMinutesAction,
+    successMessage: "Uloženo.",
+    defaultValues: { showerMinutes: current },
+  });
+  return (
+    <form onSubmit={submit} style={{ maxWidth: 320 }}>
+      <Field
+        name="showerMinutes"
+        label="Doba na sprchu po tréninku (min)"
+        error={form.formState.errors.showerMinutes}
+      >
+        <input
+          id="showerMinutes"
+          type="number"
+          min={0}
+          max={120}
+          {...form.register("showerMinutes", { valueAsNumber: true })}
+        />
+      </Field>
+      <FormFeedback error={serverError} success={success} />
+      <SubmitButton isSubmitting={form.formState.isSubmitting}>Uložit</SubmitButton>
     </form>
   );
 }

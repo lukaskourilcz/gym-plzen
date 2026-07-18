@@ -15,7 +15,7 @@ export default async function AdminLayout({
   const admin = await requireAdmin();
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
+    <div className="admin-legacy" style={{ display: "flex", minHeight: "100vh" }}>
       <aside
         style={{
           width: 220,
@@ -44,13 +44,17 @@ export default async function AdminLayout({
 
 const NAV = [
   { href: "/admin", label: "Přehled" },
+  { href: "/admin/calendar", label: "Kalendář" },
   { href: "/admin/reservations", label: "Rezervace" },
   { href: "/admin/schedule", label: "Otevírací doba a bloky" },
   { href: "/admin/members", label: "Členové" },
   { href: "/admin/memberships", label: "Vstupné a věrnost" },
+  { href: "/admin/statistics", label: "Statistiky" },
   { href: "/admin/content", label: "Obsah webu" },
+  { href: "/admin/settings", label: "Nastavení a branding" },
   { href: "/admin/messages", label: "Doručené zprávy" },
   { href: "/admin/entry-log", label: "Kniha vstupů" },
   { href: "/admin/alerts", label: "Upozornění" },
   { href: "/admin/inspirations", label: "Inspirace" },
+  { href: "/admin/plan", label: "Plán spuštění" },
 ];

@@ -1,0 +1,85 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { assertAdmin } from "@/lib/auth/guards";
+import { defineAction } from "@/lib/helpers/action";
+import { ActionError } from "@/lib/helpers/action";
+import type { Result } from "@/lib/helpers/result";
+import { brandingSchema, smsTemplateSchema, type BrandingValues, type SmsTemplateValues } from "@/lib/validations/settings";
+import { LOGO_URL_KEY, SMS_ACCESS_TEMPLATE_KEY, TERMS_URL_KEY } from "@/lib/config/branding";
+import { cms, media } from "@/lib/services";
+import { publicMediaUrl } from "@/lib/integrations/supabase";
+import { logger } from "@/lib/helpers/logger";
+
+/** Save branding URLs (logo, terms PDF). */
+const saveBrandingImpl = defineAction({
+  schema: brandingSchema,
+  authorize: assertAdmin,
+  handler: async (input, admin) => {
+    await cms.setSetting(LOGO_URL_KEY, input.logoUrl ?? "", admin.id);
+    await cms.setSetting(TERMS_URL_KEY, input.termsUrl ?? "", admin.id);
+    revalidatePath("/admin/settings");
+    revalidatePath("/");
+  },
+});
+
+/** Save the SMS access-code template. */
+const saveSmsTemplateImpl = defineAction({
+  schema: smsTemplateSchema,
+  authorize: assertAdmin,
+  handler: async (input, admin) => {
+    await cms.setSetting(SMS_ACCESS_TEMPLATE_KEY, input.template ?? "", admin.id);
+    revalidatePath("/admin/settings");
+  },
+});
+
+export async function saveBrandingAction(input: BrandingValues): Promise<Result<unknown>> {
+  return saveBrandingImpl(input);
+}
+
+export async function saveSmsTemplateAction(input: SmsTemplateValues): Promise<Result<unknown>> {
+  return saveSmsTemplateImpl(input);
+}
+
+/**
+ * Upload a file (logo, terms PDF, gallery image) to Supabase Storage and return
+ * its public URL. Takes FormData (a File under `file`). Requires Supabase to be
+ * configured (see NEEDED.md); returns a clear error otherwise.
+ */
+export async function uploadFileAction(formData: FormData): Promise<Result<{ url: string; fileName: string }>> {
+  try {
+    await assertAdmin();
+  } catch {
+    return { ok: false, error: "Nemáte oprávnění." };
+  }
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: "Vyberte prosím soubor." };
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    return { ok: false, error: "Soubor je příliš velký (max 10 MB)." };
+  }
+
+  try {
+    const admin = await assertAdmin();
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const asset = await media.uploadAsset({
+      fileName: file.name,
+      mimeType: file.type || "application/octet-stream",
+      bytes,
+      sizeBytes: file.size,
+      uploadedByAdminId: admin.id,
+    });
+    const url = publicMediaUrl(asset.storagePath);
+    revalidatePath("/admin/settings");
+    return { ok: true, data: { url, fileName: file.name } };
+  } catch (e) {
+    logger.error(e, { where: "uploadFileAction" });
+    const message =
+      e instanceof ActionError
+        ? e.message
+        : "Nahrání selhalo. Zkontrolujte, že je nastaveno úložiště Supabase (viz NEEDED.md).";
+    return { ok: false, error: message };
+  }
+}

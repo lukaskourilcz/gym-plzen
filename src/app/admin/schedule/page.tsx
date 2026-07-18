@@ -5,6 +5,7 @@ import {
   BlockedSlotForm,
   DeleteBlockButton,
   OpeningHoursRow,
+  ShowerMinutesForm,
 } from "./schedule-forms";
 
 export const metadata = { title: "Otevírací doba a bloky" };
@@ -15,9 +16,10 @@ export const metadata = { title: "Otevírací doba a bloky" };
  */
 export default async function SchedulePage() {
   const now = new Date();
-  const [hours, blocks] = await Promise.all([
+  const [hours, blocks, showerMinutes] = await Promise.all([
     schedule.listOpeningHours(),
     schedule.listBlockedSlots(now, addMinutes(now, 60 * 24 * 90)), // next ~90 days
+    schedule.getShowerMinutes(),
   ]);
   const byDay = new Map(hours.map((h) => [h.dayOfWeek, h]));
 
@@ -27,9 +29,23 @@ export default async function SchedulePage() {
 
       <section>
         <h2>Týdenní otevírací doba</h2>
+        <p style={{ color: "var(--muted-foreground)", fontSize: "0.9rem" }}>
+          Sloty jsou vždy celé hodiny (např. 13:00–14:00). Výchozí provoz je
+          denně 05:00–21:00.
+        </p>
         {Array.from({ length: 7 }, (_, day) => (
           <OpeningHoursRow key={day} dayOfWeek={day} hours={byDay.get(day)} />
         ))}
+      </section>
+
+      <section style={{ marginTop: "2rem" }}>
+        <h2>Doba na sprchu</h2>
+        <p style={{ color: "var(--muted-foreground)", fontSize: "0.9rem" }}>
+          O kolik minut po skončení tréninku ještě platí vstupní kód, aby se
+          člen mohl osprchovat. Neblokuje další slot — další člen může začít
+          trénovat, zatímco se předchozí sprchuje.
+        </p>
+        <ShowerMinutesForm current={showerMinutes} />
       </section>
 
       <section style={{ marginTop: "2rem" }}>

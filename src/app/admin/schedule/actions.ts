@@ -9,10 +9,11 @@ import {
   createBlockedSlotSchema,
   deleteBlockedSlotSchema,
   openingHoursSchema,
+  showerMinutesSchema,
   type CreateBlockedSlotValues,
   type OpeningHoursValues,
 } from "@/lib/validations/schedule";
-import { schedule } from "@/lib/services";
+import { schedule, notifications, members } from "@/lib/services";
 
 /** Save opening hours for one weekday (converts "HH:mm" → minutes). */
 const saveOpeningHoursImpl = defineAction({
@@ -35,14 +36,37 @@ const createBlockedSlotImpl = defineAction({
   schema: createBlockedSlotSchema,
   authorize: assertAdmin,
   handler: async (input, admin) => {
+    const start = new Date(input.startsAt);
+    const end = new Date(input.endsAt);
     await schedule.createBlockedSlot({
-      startsAt: new Date(input.startsAt),
-      endsAt: new Date(input.endsAt),
+      startsAt: start,
+      endsAt: end,
       reason: input.reason,
       note: input.note || null,
       createdByAdminId: admin.id,
     });
+
+    // Closing a slot that already has bookings: cancel them and notify members.
+    const affected = await schedule.cancelOverlappingReservations(
+      start,
+      end,
+      input.note || "Termín byl uzavřen provozovatelem.",
+    );
+    for (const r of affected) {
+      const channels = r.userId ? await members.getMember(r.userId) : null;
+      await notifications.sendReservationClosure({
+        userId: r.userId ?? null,
+        reservationId: r.id,
+        startsAt: r.startsAt,
+        email: r.contactEmail ?? channels?.user.email ?? null,
+        phone: r.contactPhone ?? channels?.profile?.phone ?? null,
+        notifyByWhatsapp: channels?.profile?.notifyByWhatsapp ?? true,
+        reason: input.note || undefined,
+      });
+    }
+
     revalidatePath("/admin/schedule");
+    revalidatePath("/admin/calendar");
   },
 });
 
@@ -55,10 +79,26 @@ const deleteBlockedSlotImpl = defineAction({
   },
 });
 
+/** Save the shower grace (minutes the code stays valid after a slot). */
+const saveShowerMinutesImpl = defineAction({
+  schema: showerMinutesSchema,
+  authorize: assertAdmin,
+  handler: async (input, admin) => {
+    await schedule.setShowerMinutes(input.showerMinutes, admin.id);
+    revalidatePath("/admin/schedule");
+  },
+});
+
 export async function saveOpeningHoursAction(
   input: OpeningHoursValues,
 ): Promise<Result<unknown>> {
   return saveOpeningHoursImpl(input);
+}
+
+export async function saveShowerMinutesAction(
+  input: { showerMinutes: number },
+): Promise<Result<unknown>> {
+  return saveShowerMinutesImpl(input);
 }
 
 export async function createBlockedSlotAction(
