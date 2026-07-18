@@ -9,7 +9,7 @@ export function SignOutButton() {
   return (
     <button
       type="button"
-      style={{ marginTop: "0.5rem", background: "none", color: "var(--accent)", border: "none", padding: 0, cursor: "pointer" }}
+      className="mt-1 text-primary hover:underline"
       onClick={async () => {
         await authClient.signOut();
         router.push("/login");

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionForm } from "@/components/admin/use-action-form";
+import { Button } from "@/components/ui/button";
 import { cancelReservationSchema } from "@/lib/validations/reservations";
 import { cancelReservationAction } from "./actions";
 
@@ -13,16 +14,12 @@ export function CancelButton({ reservationId }: { reservationId: string }) {
   });
 
   return (
-    <form onSubmit={submit}>
+    <form onSubmit={submit} className="flex items-center gap-2">
       <input type="hidden" {...form.register("id")} />
-      <button
-        type="submit"
-        disabled={form.formState.isSubmitting}
-        style={{ background: "var(--danger)" }}
-      >
+      <Button type="submit" variant="destructive" size="sm" disabled={form.formState.isSubmitting}>
         Zrušit
-      </button>
-      {serverError && <span className="field-error"> {serverError}</span>}
+      </Button>
+      {serverError && <span className="text-xs text-destructive">{serverError}</span>}
     </form>
   );
 }

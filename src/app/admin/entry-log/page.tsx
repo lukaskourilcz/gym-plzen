@@ -1,53 +1,51 @@
 import { entryLog } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
-import { loadDemoData } from "@/lib/demo/dummy";
+import { withDemoFallback } from "@/lib/demo/dummy";
 import { DemoBanner } from "@/components/admin/demo-banner";
+import { PageHeader } from "@/components/admin/page-header";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export const metadata = { title: "Kniha vstupů" };
 export const dynamic = "force-dynamic";
 
-/**
- * "Kniha vstupů" — actual unlocks read from the Nuki lock (synced by webhook +
- * cron). Independent of our own code bookkeeping, so it shows what physically
- * happened at the door.
- */
+/** Actual unlocks read from the Nuki lock (synced by webhook + cron). */
 export default async function EntryLogPage() {
-  let rows = await entryLog.listRecentEntries(200);
-  const demo = rows.length === 0;
-  if (demo) rows = (await loadDemoData()).entries;
+  const { rows, demo } = await withDemoFallback(await entryLog.listRecentEntries(200), (d) => d.entries);
 
   return (
     <div>
-      <h1>Kniha vstupů</h1>
-      <p style={{ color: "var(--muted)" }}>
-        Načítá se ze zámku Nuki — kdo a kdy skutečně odemkl.
-      </p>
+      <PageHeader
+        title="Kniha vstupů"
+        description="Načítá se ze zámku Nuki — kdo a kdy skutečně odemkl."
+      />
       {demo && <DemoBanner />}
-      <table>
-        <thead>
-          <tr>
-            <th>Čas</th>
-            <th>Jméno / autorizace</th>
-            <th>Akce</th>
-            <th>Spouštěč</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Čas</TableHead>
+            <TableHead>Jméno / autorizace</TableHead>
+            <TableHead>Akce</TableHead>
+            <TableHead>Spouštěč</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {rows.map((e) => (
-            <tr key={e.id}>
-              <td>{formatDateTime(e.occurredAt)}</td>
-              <td>{e.nukiName ?? "—"}</td>
-              <td>{e.action ?? "—"}</td>
-              <td>{e.trigger ?? "—"}</td>
-            </tr>
+            <TableRow key={e.id}>
+              <TableCell>{formatDateTime(e.occurredAt)}</TableCell>
+              <TableCell>{e.nukiName ?? "—"}</TableCell>
+              <TableCell>{e.action ?? "—"}</TableCell>
+              <TableCell>{e.trigger ?? "—"}</TableCell>
+            </TableRow>
           ))}
           {rows.length === 0 && (
-            <tr>
-              <td colSpan={4}>Zatím žádné záznamy.</td>
-            </tr>
+            <TableRow>
+              <TableCell colSpan={4} className="text-muted-foreground">
+                Zatím žádné záznamy.
+              </TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

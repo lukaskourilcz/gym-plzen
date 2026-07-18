@@ -3,6 +3,10 @@
 import { useRef, useState } from "react";
 import { useActionForm } from "@/components/admin/use-action-form";
 import { Field, FormFeedback, SubmitButton } from "@/components/admin/form-controls";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { brandingSchema, smsTemplateSchema } from "@/lib/validations/settings";
 import { saveBrandingAction, saveSmsTemplateAction, uploadFileAction } from "./actions";
 
@@ -18,16 +22,16 @@ export function BrandingForm({ logoUrl, termsUrl }: { logoUrl: string; termsUrl:
   const currentLogo = watch("logoUrl");
 
   return (
-    <form onSubmit={submit} style={{ maxWidth: 520 }}>
+    <form onSubmit={submit} className="max-w-xl">
       <Field name="logoUrl" label="URL loga" error={formState.errors.logoUrl}>
-        <input id="logoUrl" placeholder="https://…/logo.png" {...register("logoUrl")} />
+        <Input id="logoUrl" placeholder="https://…/logo.png" {...register("logoUrl")} />
       </Field>
       {currentLogo ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={currentLogo} alt="Náhled loga" style={{ maxHeight: 56, marginBottom: "0.75rem" }} />
+        <img src={currentLogo} alt="Náhled loga" className="mb-3 max-h-14" />
       ) : null}
       <Field name="termsUrl" label="URL obchodních podmínek (PDF)" error={formState.errors.termsUrl}>
-        <input id="termsUrl" placeholder="https://…/podminky.pdf" {...register("termsUrl")} />
+        <Input id="termsUrl" placeholder="https://…/podminky.pdf" {...register("termsUrl")} />
       </Field>
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={formState.isSubmitting}>Uložit branding</SubmitButton>
@@ -44,11 +48,11 @@ export function SmsTemplateForm({ template }: { template: string }) {
     defaultValues: { template },
   });
   return (
-    <form onSubmit={submit} style={{ maxWidth: 520 }}>
+    <form onSubmit={submit} className="max-w-xl">
       <Field name="template" label="Text SMS s kódem" error={form.formState.errors.template}>
-        <textarea id="template" rows={2} {...form.register("template")} />
+        <Textarea id="template" rows={2} {...form.register("template")} />
       </Field>
-      <p style={{ fontSize: "0.8rem", color: "var(--muted)" }}>
+      <p className="mb-2 text-xs text-muted-foreground">
         Zástupné symboly: <code>{"{code}"}</code> = kód, <code>{"{time}"}</code> = čas rezervace.
         WhatsApp používá šablonu schválenou v Meta (název <code>access_code</code>).
       </p>
@@ -84,18 +88,21 @@ export function FileUploader() {
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ maxWidth: 520 }}>
-      <div className="field">
-        <label htmlFor="file">Soubor (logo, PDF podmínek, obrázek galerie)</label>
-        <input id="file" type="file" ref={ref} accept="image/*,application/pdf" />
+    <form onSubmit={onSubmit} className="max-w-xl">
+      <div className="mb-4">
+        <Label htmlFor="file">Soubor (logo, PDF podmínek, obrázek galerie)</Label>
+        <Input id="file" type="file" ref={ref} accept="image/*,application/pdf" />
       </div>
-      <button type="submit" disabled={pending}>
+      <Button type="submit" disabled={pending}>
         {pending ? "Nahrávám…" : "Nahrát soubor"}
-      </button>
-      {error && <p className="field-error">{error}</p>}
+      </Button>
+      {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
       {url && (
-        <p className="form-ok" style={{ marginTop: "0.5rem", wordBreak: "break-all" }}>
-          Nahráno. URL: <a href={url} target="_blank" rel="noopener noreferrer">{url}</a>
+        <p className="mt-2 break-all text-sm font-medium text-primary">
+          Nahráno. URL:{" "}
+          <a href={url} target="_blank" rel="noopener noreferrer" className="underline">
+            {url}
+          </a>
           <br />
           Zkopírujte URL do pole výše (logo / podmínky).
         </p>

@@ -2,6 +2,7 @@
 
 import { useActionForm } from "@/components/admin/use-action-form";
 import { Field, FormFeedback, SubmitButton } from "@/components/admin/form-controls";
+import { Input } from "@/components/ui/input";
 import { createReservationSchema } from "@/lib/validations/reservations";
 import { createReservationAction } from "./actions";
 
@@ -22,19 +23,19 @@ export function ReservationForm() {
   return (
     <form onSubmit={submit}>
       <Field name="startsAt" label="Začátek" error={errors.startsAt}>
-        <input id="startsAt" type="datetime-local" {...register("startsAt")} />
+        <Input id="startsAt" type="datetime-local" {...register("startsAt")} />
       </Field>
       <Field name="endsAt" label="Konec" error={errors.endsAt}>
-        <input id="endsAt" type="datetime-local" {...register("endsAt")} />
+        <Input id="endsAt" type="datetime-local" {...register("endsAt")} />
       </Field>
       <Field name="contactName" label="Jméno zákazníka" error={errors.contactName}>
-        <input id="contactName" {...register("contactName")} />
+        <Input id="contactName" {...register("contactName")} />
       </Field>
       <Field name="contactEmail" label="E-mail" error={errors.contactEmail}>
-        <input id="contactEmail" type="email" {...register("contactEmail")} />
+        <Input id="contactEmail" type="email" {...register("contactEmail")} />
       </Field>
       <Field name="contactPhone" label="Telefon" error={errors.contactPhone}>
-        <input id="contactPhone" placeholder="+420…" {...register("contactPhone")} />
+        <Input id="contactPhone" placeholder="+420…" {...register("contactPhone")} />
       </Field>
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={isSubmitting}>Vytvořit rezervaci</SubmitButton>

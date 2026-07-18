@@ -1,6 +1,8 @@
 import type { EventInput } from "@fullcalendar/core";
 import { availability } from "@/lib/services";
 import { addMinutes } from "@/lib/helpers/datetime";
+import { PageHeader } from "@/components/admin/page-header";
+import { Card, CardContent } from "@/components/ui/card";
 import { BookingCalendar } from "@/components/admin/booking-calendar";
 
 export const metadata = { title: "Kalendář" };
@@ -40,14 +42,15 @@ export default async function CalendarPage() {
 
   return (
     <div>
-      <h1>Kalendář</h1>
-      <p style={{ color: "var(--muted-foreground)", marginBottom: "1rem" }}>
-        Přehled rezervací a bloků. Tažením přes prázdný čas přidáte blok (např.
-        úklid). Sloty jsou hodinové, provoz 05:00–21:00.
-      </p>
-      <div style={{ background: "var(--color-card)", padding: "0.5rem", borderRadius: 8 }}>
-        <BookingCalendar events={events} />
-      </div>
+      <PageHeader
+        title="Kalendář"
+        description="Přehled rezervací a bloků. Tažením přes prázdný čas přidáte blok (např. úklid). Sloty jsou hodinové, provoz 05:00–21:00."
+      />
+      <Card>
+        <CardContent className="p-3">
+          <BookingCalendar events={events} />
+        </CardContent>
+      </Card>
     </div>
   );
 }

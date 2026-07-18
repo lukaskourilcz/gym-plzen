@@ -2,6 +2,10 @@
 
 import { useActionForm } from "@/components/admin/use-action-form";
 import { Field, FormFeedback, SubmitButton } from "@/components/admin/form-controls";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { minutesToHHmm } from "@/lib/helpers/format";
 import {
   createBlockedSlotSchema,
@@ -17,15 +21,7 @@ import {
   saveShowerMinutesAction,
 } from "./actions";
 
-const DAY_NAMES = [
-  "Neděle",
-  "Pondělí",
-  "Úterý",
-  "Středa",
-  "Čtvrtek",
-  "Pátek",
-  "Sobota",
-];
+const DAY_NAMES = ["Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"];
 
 /** One row of the opening-hours editor for a given weekday. */
 export function OpeningHoursRow({
@@ -50,38 +46,35 @@ export function OpeningHoursRow({
   const { register, formState } = form;
 
   return (
-    <form
-      onSubmit={submit}
-      style={{ display: "flex", alignItems: "end", gap: "0.5rem", marginBottom: "0.5rem", flexWrap: "wrap" }}
-    >
+    <form onSubmit={submit} className="mb-2 flex flex-wrap items-end gap-3">
       <input type="hidden" {...register("dayOfWeek", { valueAsNumber: true })} />
-      <div style={{ width: 90 }}>
-        <strong>{DAY_NAMES[dayOfWeek]}</strong>
+      <div className="w-20 pb-2 font-medium">{DAY_NAMES[dayOfWeek]}</div>
+      <div>
+        <Label htmlFor={`open-${dayOfWeek}`}>Otevřeno</Label>
+        <Input id={`open-${dayOfWeek}`} type="time" className="w-32" {...register("open")} />
       </div>
       <div>
-        <label htmlFor={`open-${dayOfWeek}`}>Otevřeno</label>
-        <input id={`open-${dayOfWeek}`} type="time" {...register("open")} />
+        <Label htmlFor={`close-${dayOfWeek}`}>Zavřeno</Label>
+        <Input id={`close-${dayOfWeek}`} type="time" className="w-32" {...register("close")} />
       </div>
       <div>
-        <label htmlFor={`close-${dayOfWeek}`}>Zavřeno</label>
-        <input id={`close-${dayOfWeek}`} type="time" {...register("close")} />
-      </div>
-      <div>
-        <label htmlFor={`slot-${dayOfWeek}`}>Slot (min)</label>
-        <input
+        <Label htmlFor={`slot-${dayOfWeek}`}>Slot (min)</Label>
+        <Input
           id={`slot-${dayOfWeek}`}
           type="number"
           min={15}
           step={15}
-          style={{ width: 90 }}
+          className="w-24"
           {...register("slotMinutes", { valueAsNumber: true })}
         />
       </div>
-      <label style={{ display: "flex", gap: "0.3rem", alignItems: "center" }}>
-        <input type="checkbox" style={{ width: "auto" }} {...register("isClosed")} />
+      <label className="flex items-center gap-2 pb-2 text-sm">
+        <input type="checkbox" className="size-4 accent-[var(--color-primary)]" {...register("isClosed")} />
         Zavřeno
       </label>
-      <SubmitButton isSubmitting={formState.isSubmitting}>Uložit</SubmitButton>
+      <div className="pb-0.5">
+        <SubmitButton isSubmitting={formState.isSubmitting}>Uložit</SubmitButton>
+      </div>
       <FormFeedback error={serverError} success={success} />
     </form>
   );
@@ -100,23 +93,23 @@ export function BlockedSlotForm() {
   const { errors, isSubmitting } = formState;
 
   return (
-    <form onSubmit={submit} style={{ maxWidth: 420 }}>
+    <form onSubmit={submit} className="max-w-md">
       <Field name="startsAt" label="Začátek" error={errors.startsAt}>
-        <input id="startsAt" type="datetime-local" {...register("startsAt")} />
+        <Input id="startsAt" type="datetime-local" {...register("startsAt")} />
       </Field>
       <Field name="endsAt" label="Konec" error={errors.endsAt}>
-        <input id="endsAt" type="datetime-local" {...register("endsAt")} />
+        <Input id="endsAt" type="datetime-local" {...register("endsAt")} />
       </Field>
       <Field name="reason" label="Důvod" error={errors.reason}>
-        <select id="reason" {...register("reason")}>
+        <Select id="reason" {...register("reason")}>
           <option value="maintenance">Údržba</option>
           <option value="holiday">Svátek</option>
           <option value="private_event">Soukromá akce</option>
           <option value="other">Jiné</option>
-        </select>
+        </Select>
       </Field>
       <Field name="note" label="Poznámka" error={errors.note}>
-        <input id="note" {...register("note")} />
+        <Input id="note" {...register("note")} />
       </Field>
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={isSubmitting}>Přidat blok</SubmitButton>
@@ -133,19 +126,9 @@ export function ShowerMinutesForm({ current }: { current: number }) {
     defaultValues: { showerMinutes: current },
   });
   return (
-    <form onSubmit={submit} style={{ maxWidth: 320 }}>
-      <Field
-        name="showerMinutes"
-        label="Doba na sprchu po tréninku (min)"
-        error={form.formState.errors.showerMinutes}
-      >
-        <input
-          id="showerMinutes"
-          type="number"
-          min={0}
-          max={120}
-          {...form.register("showerMinutes", { valueAsNumber: true })}
-        />
+    <form onSubmit={submit} className="max-w-xs">
+      <Field name="showerMinutes" label="Doba na sprchu po tréninku (min)" error={form.formState.errors.showerMinutes}>
+        <Input id="showerMinutes" type="number" min={0} max={120} {...form.register("showerMinutes", { valueAsNumber: true })} />
       </Field>
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={form.formState.isSubmitting}>Uložit</SubmitButton>
@@ -163,13 +146,9 @@ export function DeleteBlockButton({ id }: { id: string }) {
   return (
     <form onSubmit={submit}>
       <input type="hidden" {...form.register("id")} />
-      <button
-        type="submit"
-        disabled={form.formState.isSubmitting}
-        style={{ background: "var(--danger)" }}
-      >
+      <Button type="submit" variant="destructive" size="sm" disabled={form.formState.isSubmitting}>
         Odstranit
-      </button>
+      </Button>
     </form>
   );
 }

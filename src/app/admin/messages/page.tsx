@@ -1,56 +1,58 @@
 import { messages } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
-import { loadDemoData } from "@/lib/demo/dummy";
+import { withDemoFallback } from "@/lib/demo/dummy";
 import { DemoBanner } from "@/components/admin/demo-banner";
+import { PageHeader } from "@/components/admin/page-header";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export const metadata = { title: "Doručené zprávy" };
 export const dynamic = "force-dynamic";
 
-/**
- * "Přehled doručených zpráv" — per-channel delivery status for every outbound
- * message (access codes, confirmations). Status is updated by provider webhooks.
- */
+/** Per-channel delivery status for every outbound message. */
 export default async function MessagesPage() {
-  let rows = await messages.listRecent(200);
-  const demo = rows.length === 0;
-  if (demo) rows = (await loadDemoData()).messages;
+  const { rows, demo } = await withDemoFallback(await messages.listRecent(200), (d) => d.messages);
 
   return (
     <div>
-      <h1>Doručené zprávy</h1>
+      <PageHeader
+        title="Doručené zprávy"
+        description="U každé rezervace vidíte, zda kód dorazil (e-mail / WhatsApp / SMS). Stav aktualizují webhooky providerů."
+      />
       {demo && <DemoBanner />}
-      <table>
-        <thead>
-          <tr>
-            <th>Vytvořeno</th>
-            <th>Kanál</th>
-            <th>Typ</th>
-            <th>Příjemce</th>
-            <th>Stav</th>
-            <th>Doručeno</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Vytvořeno</TableHead>
+            <TableHead>Kanál</TableHead>
+            <TableHead>Typ</TableHead>
+            <TableHead>Příjemce</TableHead>
+            <TableHead>Stav</TableHead>
+            <TableHead>Doručeno</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {rows.map((m) => (
-            <tr key={m.id}>
-              <td>{formatDateTime(m.createdAt)}</td>
-              <td>{m.channel}</td>
-              <td>{m.kind}</td>
-              <td>{m.recipient}</td>
-              <td style={{ color: m.status === "failed" ? "var(--danger)" : undefined }}>
+            <TableRow key={m.id}>
+              <TableCell>{formatDateTime(m.createdAt)}</TableCell>
+              <TableCell>{m.channel}</TableCell>
+              <TableCell>{m.kind}</TableCell>
+              <TableCell>{m.recipient}</TableCell>
+              <TableCell className={m.status === "failed" ? "text-destructive" : undefined}>
                 {m.status}
                 {m.failureReason ? ` (${m.failureReason})` : ""}
-              </td>
-              <td>{m.deliveredAt ? formatDateTime(m.deliveredAt) : "—"}</td>
-            </tr>
+              </TableCell>
+              <TableCell>{m.deliveredAt ? formatDateTime(m.deliveredAt) : "—"}</TableCell>
+            </TableRow>
           ))}
           {rows.length === 0 && (
-            <tr>
-              <td colSpan={6}>Zatím žádné zprávy.</td>
-            </tr>
+            <TableRow>
+              <TableCell colSpan={6} className="text-muted-foreground">
+                Zatím žádné zprávy.
+              </TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

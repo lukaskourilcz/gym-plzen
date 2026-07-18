@@ -2,6 +2,7 @@
 
 import { useActionForm } from "@/components/admin/use-action-form";
 import { Field, FormFeedback, SubmitButton } from "@/components/admin/form-controls";
+import { Input } from "@/components/ui/input";
 import { entryPriceSchema } from "@/lib/validations/memberships";
 import { setEntryPriceAction } from "./actions";
 
@@ -16,19 +17,9 @@ export function EntryPriceForm({ currentCzk }: { currentCzk: number }) {
   const { register, formState } = form;
 
   return (
-    <form onSubmit={submit} style={{ maxWidth: 320 }}>
-      <Field
-        name="priceCzk"
-        label="Cena jednorázového vstupu (Kč)"
-        error={formState.errors.priceCzk}
-      >
-        <input
-          id="priceCzk"
-          type="number"
-          min={0}
-          step={1}
-          {...register("priceCzk", { valueAsNumber: true })}
-        />
+    <form onSubmit={submit} className="max-w-xs">
+      <Field name="priceCzk" label="Cena jednorázového vstupu (Kč)" error={formState.errors.priceCzk}>
+        <Input id="priceCzk" type="number" min={0} step={1} {...register("priceCzk", { valueAsNumber: true })} />
       </Field>
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={formState.isSubmitting}>Uložit cenu</SubmitButton>

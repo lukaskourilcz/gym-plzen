@@ -5,15 +5,14 @@ import {
   SMS_ACCESS_TEMPLATE_KEY,
   TERMS_URL_KEY,
 } from "@/lib/config/branding";
+import { PageHeader } from "@/components/admin/page-header";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { BrandingForm, FileUploader, SmsTemplateForm } from "./settings-forms";
 
 export const metadata = { title: "Nastavení a branding" };
+export const dynamic = "force-dynamic";
 
-/**
- * Settings & branding admin — configure the front-end form assets (logo, terms
- * PDF) and the message templates. Assets are uploaded to Supabase Storage via
- * the uploader; the returned URL is saved on the branding form.
- */
+/** Configure the front-end assets (logo, terms PDF) and message templates. */
 export default async function SettingsPage() {
   const [logoUrl, termsUrl, smsTemplate] = await Promise.all([
     cms.getSetting<string>(LOGO_URL_KEY),
@@ -23,30 +22,43 @@ export default async function SettingsPage() {
 
   return (
     <div>
-      <h1>Nastavení a branding</h1>
-      <p style={{ color: "var(--muted)" }}>
-        Zde nastavíte logo, obchodní podmínky (PDF) a texty zpráv, které se
-        zobrazují ve frontendu a posílají zákazníkům.
-      </p>
+      <PageHeader
+        title="Nastavení a branding"
+        description="Logo, obchodní podmínky (PDF) a texty zpráv, které se zobrazují ve frontendu a posílají zákazníkům."
+      />
 
-      <section style={{ marginTop: "1.5rem", maxWidth: 560 }}>
-        <h2>Logo a obchodní podmínky</h2>
-        <BrandingForm logoUrl={logoUrl ?? ""} termsUrl={termsUrl ?? ""} />
-      </section>
+      <div className="grid gap-6">
+        <Card className="max-w-2xl">
+          <CardHeader>
+            <CardTitle>Logo a obchodní podmínky</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BrandingForm logoUrl={logoUrl ?? ""} termsUrl={termsUrl ?? ""} />
+          </CardContent>
+        </Card>
 
-      <section style={{ marginTop: "2rem", maxWidth: 560 }}>
-        <h2>Nahrát soubor</h2>
-        <p style={{ color: "var(--muted)", fontSize: "0.9rem" }}>
-          Nahrajte logo, PDF podmínek nebo fotku. Po nahrání dostanete URL, kterou
-          vložíte výše (logo / podmínky) nebo do obsahu webu.
-        </p>
-        <FileUploader />
-      </section>
+        <Card className="max-w-2xl">
+          <CardHeader>
+            <CardTitle>Nahrát soubor</CardTitle>
+            <CardDescription>
+              Nahrajte logo, PDF podmínek nebo fotku. Po nahrání dostanete URL, kterou vložíte výše
+              nebo do obsahu webu.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FileUploader />
+          </CardContent>
+        </Card>
 
-      <section style={{ marginTop: "2rem", maxWidth: 560 }}>
-        <h2>Šablony zpráv</h2>
-        <SmsTemplateForm template={smsTemplate ?? DEFAULT_SMS_ACCESS_TEMPLATE} />
-      </section>
+        <Card className="max-w-2xl">
+          <CardHeader>
+            <CardTitle>Šablony zpráv</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <SmsTemplateForm template={smsTemplate ?? DEFAULT_SMS_ACCESS_TEMPLATE} />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

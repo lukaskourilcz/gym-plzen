@@ -4,8 +4,7 @@ import { SignOutButton } from "@/components/admin/sign-out-button";
 
 /**
  * Admin shell. `requireAdmin()` guards every route under /admin at the layout
- * level, so individual pages can assume an authenticated admin. Layout is
- * intentionally plain — visual design comes later.
+ * level, so individual pages can assume an authenticated admin.
  */
 export default async function AdminLayout({
   children,
@@ -15,29 +14,29 @@ export default async function AdminLayout({
   const admin = await requireAdmin();
 
   return (
-    <div className="admin-legacy" style={{ display: "flex", minHeight: "100vh" }}>
-      <aside
-        style={{
-          width: 220,
-          borderRight: "1px solid var(--border)",
-          padding: "1rem",
-          flexShrink: 0,
-        }}
-      >
-        <strong>Gym Plzeň — administrace</strong>
-        <nav style={{ display: "grid", gap: "0.35rem", marginTop: "1rem" }}>
+    <div className="flex min-h-screen">
+      <aside className="w-56 shrink-0 border-r border-border bg-card p-4">
+        <Link href="/admin" className="font-bold tracking-tight">
+          Gym Plzeň
+          <span className="block text-xs font-normal text-muted-foreground">administrace</span>
+        </Link>
+        <nav className="mt-6 grid gap-0.5 text-sm">
           {NAV.map((item) => (
-            <Link key={item.href} href={item.href}>
+            <Link
+              key={item.href}
+              href={item.href}
+              className="rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
               {item.label}
             </Link>
           ))}
         </nav>
-        <div style={{ marginTop: "2rem", fontSize: "0.8rem", color: "var(--muted)" }}>
-          {admin.email}
+        <div className="mt-8 border-t border-border pt-4 text-xs text-muted-foreground">
+          <div className="truncate">{admin.email}</div>
           <SignOutButton />
         </div>
       </aside>
-      <main style={{ flex: 1, padding: "1.5rem", maxWidth: 1100 }}>{children}</main>
+      <main className="max-w-6xl flex-1 p-6">{children}</main>
     </div>
   );
 }
