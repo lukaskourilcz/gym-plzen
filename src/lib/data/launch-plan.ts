@@ -97,6 +97,7 @@ export const LAUNCH_PLAN: PlanPhase[] = [
       { title: "Vercel projekt + env proměnné", status: "blocked", note: "Import repa, doplnit env" },
       { title: "Bezpečnostní hlavičky (HSTS, X-Frame-Options…)", status: "done" },
       { title: "SEO (metadata, OG) + Google Analytics", status: "in_progress", note: "Metadata hotová, GA doplnit ID" },
+      { title: "E2E testy workflow a formulářů (Playwright)", status: "done", note: "28/28 prochází" },
       { title: "Ostrý provoz + zaškolení", status: "todo" },
     ],
   },

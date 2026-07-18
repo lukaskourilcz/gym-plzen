@@ -56,7 +56,9 @@ export async function listBlocks(locale = DEFAULT_LOCALE): Promise<ContentBlock[
     .select()
     .from(contentBlock)
     .where(eq(contentBlock.locale, locale))
-    .orderBy(asc(contentBlock.groupName), asc(contentBlock.sortOrder));
+    // `key` is the final tiebreaker so ordering is deterministic when several
+    // blocks share a group and sortOrder.
+    .orderBy(asc(contentBlock.groupName), asc(contentBlock.sortOrder), asc(contentBlock.key));
 }
 
 /**
