@@ -1,330 +1,184 @@
-# NEEDED — manual setup tasks
+# NEEDED — manuální nastavení
 
-Tohle je seznam všeho, co **musíš nastavit ty** (nebo klient) mimo kód —
-účty, API klíče, webhooky a konfigurace externích služeb. Kód je připravený a
-každou službu si sám lazy-inicializuje: dokud klíče nedoplníš, aplikace běží,
-jen daná funkce je vypnutá (viz `is<Service>Configured()`).
+Seznam všeho, co **musíš nastavit ty** (nebo klient) mimo kód — účty, API klíče,
+webhooky a konfigurace externích služeb. Kód je připravený a každou službu si
+lazy-inicializuje: dokud klíče nedoplníš, aplikace běží, jen daná funkce je
+vypnutá (viz `is<Service>Configured()`).
 
-Postupuj shora dolů. Vše, co je označené **[blokující]**, je potřeba, aby
-základní systém (přihlášení, rezervace, admin) fungoval. Ostatní jsou
-integrace, které lze zapínat postupně.
+**Každý řádek níže je jeden úkol = souhrn všech kroků pro danou službu.**
+Postupuj podle priority (5 = nejdůležitější, blokuje spuštění; 1 = doladění).
 
-Legenda: ⬜ = udělat, ✅ = hotovo.
-
----
-
-## 0. Lokální prostředí
-
-- ⬜ Zkopíruj `.env.example` → `.env.local` a doplňuj do něj hodnoty níže.
-- ⬜ `npm install`
-- ⬜ Po nastavení databáze: `npm run db:migrate` a `npm run db:seed`.
-- ⬜ Zaregistruj si účet přes web (`/login`) a povyš se na admina:
-  `npm run set-admin -- tvuj@email.cz`
+Legenda: ⬜ = udělat, ✅ = hotovo, ⚠️ = pozor.
 
 ---
 
-## 1. Databáze — Supabase **[blokující]**
+## Priorita 5 — bez tohoto systém nespustíš
 
-Supabase = Postgres databáze + úložiště souborů (media) + realtime kalendář.
+### ⬜ [P5] Supabase — databáze, Auth a realtime
+Projekt už je založený (`rkmunagymohxtclymacm`, region eu-west-3 / Paříž, EU),
+veřejné klíče jsou předvyplněné v `.env.local`. Zbývá:
 
-✅ **Projekt je založený**: `rkmunagymohxtclymacm`, region **eu-west-3 (Paříž, EU)**.
-Veřejné hodnoty (URL + publishable key) jsou už předvyplněné v `.env.local`.
-
-Zbývá doplnit **dvě tajné hodnoty** (do `.env.local` lokálně a na **Vercelu**):
-
-- ⬜ **Heslo k databázi** → do `DATABASE_URL` i `DIRECT_URL` místo
-  `[YOUR-PASSWORD]`. Najdeš/resetuješ v **Project Settings → Database →
-  Database password**. Přesné stringy (region eu-west-3) jsou v `.env.local`:
-  - `DATABASE_URL` = transaction pooler, port **6543**
-  - `DIRECT_URL` = session pooler, port **5432** (migrace)
-  - Má-li heslo speciální znaky, **percent-enkóduj** je.
-- ⬜ **Secret key** (`sb_secret_…`) → `SUPABASE_SECRET_KEY` (jen server, obchází
-  RLS, používá se pro nahrávání do Storage). Vytvoříš v **Project Settings →
-  API Keys**. V dashboardu ti ho ukázalo zamaskovaně — zkopíruj celý.
-- ✅ `NEXT_PUBLIC_SUPABASE_URL` a `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` už máš
-  (veřejné, bezpečné do prohlížeče).
-- ⬜ **Storage → New bucket**: vytvoř bucket `cms-media` (public, pokud chceš
-  obrázky servírovat přímo). Název musí sedět s `SUPABASE_STORAGE_BUCKET`.
-- ⬜ Spusť migrace + seed (po doplnění hesla):
-  `npm run db:migrate && npm run db:seed`
-  (vytvoří tabulky + exclusion constraint proti překrývání rezervací; vyžaduje
-  rozšíření `btree_gist`, které migrace zapne sama).
-- ⬜ Založ si účet přes `/login` a povyš se na admina:
-  `npm run set-admin -- tvuj@email.cz`
-
-### Realtime „živý kalendář" (aby zabraný slot zmizel všem hned)
-
-Kód už je hotový (`RealtimeRefresher` na stránce `/rezervace`) — chybí jen
-zapnout Realtime v Supabase:
-
-- ⬜ **Database → Replication → `supabase_realtime`**: přidej tabulku
-  `reservation`.
-- ⚠️ **GDPR — důležité:** Realtime posílá změny řádků. Tabulka `reservation`
-  obsahuje osobní údaje (jméno, e-mail, telefon). Náš klient payload ignoruje a
-  jen znovu načte dostupnost ze serveru, **ale** aby data neputovala do
-  prohlížeče vůbec, zapni **RLS** na `reservation` a přidej politiku, která
-  `anon`/publishable roli **nedovolí** číst osobní sloupce (nebo zveřejni jen
-  `starts_at`/`ends_at`/`status` přes pohled). Bez RLS by publishable klíč viděl
-  celé řádky.
-
-### MCP pro Supabase (volitelné, pro práci s Claude Code)
-
-- ⬜ Chceš-li, aby Claude Code viděl do DB, přidej Supabase MCP server (spusť ve
-  **svém** terminálu, ne v IDE — kvůli OAuth přihlášení):
-  ```
-  claude mcp add --scope project --transport http supabase \
-    "https://mcp.supabase.com/mcp?project_ref=rkmunagymohxtclymacm"
-  ```
-  Pak `claude` → `/mcp` → vyber `supabase` → **Authenticate**.
-
----
-
-## 2. Autentizace — Supabase Auth **[blokující]**
-
-Přihlašování teď řeší **Supabase Auth** (uživatelé v `auth.users`, náš profil v
-`public.profiles`, role `admin`/`member`). Vše se nastavuje **v Supabase
-dashboardu**, žádné auth secrety v kódu nejsou.
-
-- ✅ Kód hotový: SSR klient + middleware (obnova session), `/auth/callback`
-  (OAuth), guardy (`requireAdmin` atd.), trigger `on_auth_user_created` zakládá
-  profil při registraci (běží v migraci `0002`).
-- ⬜ **Supabase → Authentication → Sign In / Providers → Email**: zapni
-  **Email + Password**. Pro okamžité přihlášení po registraci vypni
-  *"Confirm email"* (nebo ho nech zapnuté a počítej s potvrzovacím e-mailem —
-  náš formulář to zvládne).
-- ⬜ **Authentication → URL Configuration**:
-  - **Site URL** = produkční doména (např. `https://tvujgym.cz`).
-  - **Redirect URLs** = přidej `http://localhost:3000/auth/callback` a
-    `https://<doména>/auth/callback` (a Vercel preview URL, pokud chceš).
-- ⬜ **OAuth (volitelné)** — zapni v **Authentication → Providers**:
-  - **Google** — client ID/secret z Google Cloud; do Google přidej redirect
+- **Tajné hodnoty** (do `.env.local` i na Vercel):
+  - Heslo k DB → doplň místo `[YOUR-PASSWORD]` do `DATABASE_URL` (pooler, port
+    6543) i `DIRECT_URL` (session, port 5432). Reset v *Project Settings →
+    Database*. Speciální znaky **percent-enkóduj**.
+  - `SUPABASE_SECRET_KEY` (`sb_secret_…`) z *Project Settings → API Keys* —
+    server-only, obchází RLS, používá se pro Storage i `set-admin`.
+- **Storage**: vytvoř bucket `cms-media` (public), název musí sedět se
+  `SUPABASE_STORAGE_BUCKET`.
+- **Auth** (*Authentication*):
+  - *Providers → Email*: zapni **Email + Password** (pro okamžité přihlášení
+    vypni „Confirm email").
+  - *URL Configuration*: **Site URL** = produkční doména; **Redirect URLs** =
+    `http://localhost:3000/auth/callback` + `https://<doména>/auth/callback`
+    (+ Vercel preview, pokud chceš).
+  - (volitelné) OAuth Google / Microsoft (`azure`) / Apple — klíče se zadávají
+    v Supabase; do Google přidej redirect
     `https://rkmunagymohxtclymacm.supabase.co/auth/v1/callback`.
-  - **Microsoft (Azure)** — v našem UI je tlačítko „přes Microsoft" = provider
-    `azure`. Nastav v Azure + Supabase.
-  - **Apple** — Sign in with Apple (placený Apple Developer účet).
-  - Klíče se zadávají **v Supabase**, ne u nás.
-- ⬜ Po registraci svého účtu na `/login` se povyš na admina:
-  `npm run set-admin -- tvuj@email.cz` (potřebuje `SUPABASE_SECRET_KEY`).
-- ⚠️ **Ověření E2E:** admin/auth Playwright testy jsem lokálně nemohl spustit
-  (chybí lokální Supabase/GoTrue). Rozběhnou se proti živému Supabase — viz
-  `tests/e2e/README.md` (nastav `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SECRET_KEY`
-  a spusť `npm run test:e2e`). Veřejné testy prošly.
+- **Realtime** (živý kalendář): *Database → Replication → supabase_realtime* →
+  přidej tabulku `reservation`.
+  - ⚠️ **GDPR:** zapni **RLS** na `reservation` a zakaž `anon`/publishable roli
+    číst osobní sloupce (jméno/e-mail/telefon), nebo zveřejni jen
+    `starts_at`/`ends_at`/`status` přes pohled. Bez RLS by publishable klíč
+    viděl celé řádky.
+- **Spuštění**: `npm run db:migrate && npm run db:seed` (vytvoří tabulky +
+  exclusion constraint proti překrývání, zapne `btree_gist`), pak se zaregistruj
+  na `/login` a povyš se: `npm run set-admin -- tvuj@email.cz`.
+
+✅ Kód hotový: SSR klient + middleware, `/auth/callback`, guardy (`requireAdmin`),
+trigger `on_auth_user_created` (migrace `0002`), `RealtimeRefresher` na `/rezervace`.
+⚠️ Admin/auth E2E testy neběžely lokálně (chybí lokální GoTrue) — spusť je proti
+živému Supabase, viz `tests/e2e/README.md`.
+
+### ⬜ [P5] Vercel — hosting, env proměnné a cron
+- Propoj GitHub repo s Vercelem (New Project → `gym-plzen`, Next.js se detekuje).
+- *Project Settings → Environment Variables*: nahraj **všechny** proměnné z
+  `.env.local` (kromě čistě lokálních) — nezapomeň na `CRON_SECRET`
+  (`openssl rand -hex 32`) a `SENTRY_AUTH_TOKEN`.
+- Po prvním deployi: nastav produkční doménu, aktualizuj `NEXT_PUBLIC_APP_URL`
+  a **rozšiř webhooky/redirecty** o produkční doménu (Supabase Auth URL Config,
+  Stripe, Meta, Nuki).
+
+✅ Cron rozvrh je ve `vercel.json` (`/api/cron/watchdog` á 5 min,
+`/api/cron/sync-entry-log` á 15 min) — Vercel spustí automaticky, stačí
+`CRON_SECRET` (viz výše). Watchdog opakuje selhané kroky a synchronizuje knihu vstupů.
 
 ---
 
-## 3. Platby — Stripe **[blokující pro placené rezervace]**
+## Priorita 4 — potřeba pro placené rezervace a včasný start
 
-Model: **jednorázový vstup 290 Kč**, žádná měsíční předplatná. Každý 10. vstup
-zdarma (řeší kód, ne Stripe).
+### ⬜ [P4] Stripe — platby
+Model: **jednorázový vstup 290 Kč** (žádná předplatná). Každý 10. vstup zdarma
+řeší kód.
 
-- ⬜ Založ účet na <https://stripe.com> (na klienta / firmu).
-- ⬜ **Developers → API keys**: `STRIPE_SECRET_KEY`
-  (`sk_test_…` pro test, `sk_live_…` ostře),
+- Založ účet (na klienta/firmu).
+- *Developers → API keys*: `STRIPE_SECRET_KEY` (`sk_test_…`/`sk_live_…`) +
   `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (`pk_…`).
-- ⬜ **Developers → Webhooks → Add endpoint**:
-  - URL: `<NEXT_PUBLIC_APP_URL>/api/webhooks/stripe`
-  - Události: `checkout.session.completed`, `invoice.payment_failed`
-    (a `customer.subscription.*`, pokud bys v budoucnu chtěl předplatná).
-  - Zkopíruj *Signing secret* → `STRIPE_WEBHOOK_SECRET`.
-- ⬜ **Apple Pay / Google Pay**: v *Settings → Payment methods* je zapni; při
-  hostování na vlastní doméně přidej doménu do *Apple Pay domain association*.
-- ⬜ **Payouts**: v *Settings → Payouts* nastav frekvenci výplat na český účet.
-- ⬜ Lokální testování webhooku: `stripe listen --forward-to
-  localhost:3000/api/webhooks/stripe` (Stripe CLI).
+- *Developers → Webhooks → Add endpoint*: URL
+  `<NEXT_PUBLIC_APP_URL>/api/webhooks/stripe`, události
+  `checkout.session.completed` + `invoice.payment_failed` → zkopíruj signing
+  secret do `STRIPE_WEBHOOK_SECRET`.
+- *Settings → Payment methods*: zapni Apple Pay / Google Pay (na vlastní doméně
+  přidej doménu do Apple Pay association).
+- *Settings → Payouts*: nastav výplaty na český účet.
+- Lokální test: `stripe listen --forward-to localhost:3000/api/webhooks/stripe`.
 
-> Cenu vstupu měníš v administraci (**Vstupné a věrnost**), kadenci „každý N-tý
+> Cenu vstupu měníš v administraci (*Vstupné a věrnost*), kadenci „každý N-tý
 > zdarma" v `src/lib/config/pricing.ts`.
 
----
+### ⬜ [P4] WhatsApp Business Cloud API — Meta
+⚠️ **Začni nejdřív ze všech** — schválení firemního účtu Meta trvá i týdny.
 
-## 4. E-maily — Resend
-
-- ⬜ Založ účet na <https://resend.com>.
-- ⬜ **Domains**: přidej a ověř doménu (DNS TXT/MX záznamy). Bez ověřené domény
-  lze posílat jen z testovací adresy.
-- ⬜ **API Keys**: `RESEND_API_KEY`.
-- ⬜ `RESEND_FROM_EMAIL` = odesílatel, např. `Gym Plzeň <noreply@tvujgym.cz>`.
-- ⬜ (volitelné) Webhook pro stav doručení:
-  `<NEXT_PUBLIC_APP_URL>/api/webhooks/whatsapp` je pro WhatsApp; pro Resend
-  delivery-status by se přidal analogický route handler — zatím není potřeba.
-
----
-
-## 5. WhatsApp Business Cloud API — Meta
-
-⚠️ **Začni brzy** — schválení firemního účtu Meta může trvat týdny.
-
-- ⬜ Firemní účet **Meta Business** (<https://business.facebook.com>) na klienta.
-- ⬜ V **Meta for Developers** (<https://developers.facebook.com>) vytvoř app
-  typu *Business* a přidej produkt **WhatsApp**.
-- ⬜ `WHATSAPP_PHONE_NUMBER_ID` a `WHATSAPP_BUSINESS_ACCOUNT_ID` z WhatsApp →
-  API Setup.
-- ⬜ `WHATSAPP_ACCESS_TOKEN` — vygeneruj **trvalý** token (System User token),
-  ne dočasný.
-- ⬜ `WHATSAPP_APP_SECRET` = App secret (Settings → Basic) — ověřuje podpis
-  webhooku.
-- ⬜ `WHATSAPP_VERIFY_TOKEN` = libovolný řetězec, který si vymyslíš a zadáš
-  stejný na obou místech (kód i Meta).
-- ⬜ **Webhook** (WhatsApp → Configuration):
-  - Callback URL: `<NEXT_PUBLIC_APP_URL>/api/webhooks/whatsapp`
-  - Verify token: hodnota `WHATSAPP_VERIFY_TOKEN`
-  - Odebírej pole: `messages`.
-- ⬜ **Message template** pro vstupní kód: v *WhatsApp Manager → Message
-  templates* vytvoř a nech schválit šablonu jménem **`access_code`** (jazyk
-  `cs`) se dvěma parametry v těle: `{{1}}` = kód, `{{2}}` = čas rezervace.
-  (Jméno šablony musí sedět s `sendTemplateMessage` v
-  `src/lib/services/notifications.ts`.)
+- Firemní účet **Meta Business** + app typu *Business* v *Meta for Developers*
+  s produktem **WhatsApp**.
+- Env: `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_BUSINESS_ACCOUNT_ID` (API Setup),
+  `WHATSAPP_ACCESS_TOKEN` (**trvalý** System User token, ne dočasný),
+  `WHATSAPP_APP_SECRET` (Settings → Basic), `WHATSAPP_VERIFY_TOKEN` (vymyslíš,
+  zadáš stejný v kódu i Meta).
+- Webhook (*WhatsApp → Configuration*): callback
+  `<NEXT_PUBLIC_APP_URL>/api/webhooks/whatsapp`, verify token = `WHATSAPP_VERIFY_TOKEN`,
+  odebírej pole `messages`.
+- **Message template** `access_code` (jazyk `cs`, dva parametry: `{{1}}` = kód,
+  `{{2}}` = čas) nech schválit ve *WhatsApp Manager*. Jméno musí sedět s
+  `sendTemplateMessage` v `src/lib/services/notifications.ts`.
 
 ---
 
-## 6. Chytrý zámek — Nuki Web API
+## Priorita 3 — spustit brzy, ale ne blokující
 
-- ⬜ Fyzicky: **Nuki Smart Lock Pro + Nuki Keypad**, připojené na stabilní
-  Wi-Fi v gymu.
-- ⬜ Ve **Nuki Web** (<https://web.nuki.io>) → *API* → *Web API* vygeneruj token
-  s právy na správu oprávnění (auths) a čtení logu → `NUKI_API_TOKEN`.
-- ⬜ `NUKI_SMARTLOCK_ID` = ID zámku (z Nuki Web, u zařízení).
-- ⬜ `NUKI_WEBHOOK_SECRET` = libovolný tajný řetězec; nastav ho jako `?secret=…`
-  parametr, resp. `x-nuki-secret` hlavičku, ve Nuki webhooku.
-- ⬜ **Webhook** (Nuki Web → Notifications/Webhook): směřuj na
-  `<NEXT_PUBLIC_APP_URL>/api/webhooks/nuki?secret=<NUKI_WEBHOOK_SECRET>`, aby se
-  „kniha vstupů" plnila hned po odemčení. (Cron ji navíc synchronizuje periodicky.)
-- ⬜ Nastav si fyzicky i **záložní servisní kód** na klávesnici pro nouzové situace.
+### ⬜ [P3] Resend — e-maily
+- Založ účet, přidej a ověř doménu (DNS TXT/MX — bez ověření lze posílat jen
+  z testovací adresy).
+- Env: `RESEND_API_KEY` + `RESEND_FROM_EMAIL` (např. `Gym Plzeň <noreply@tvujgym.cz>`).
 
----
-
-## 7. SMS — GoSMS (volitelné, defaultně vypnuté)
-
-Dle plánu obvykle stačí WhatsApp + e-mail. SMS lze kdykoli zapnout.
-
-- ⬜ Účet na <https://www.gosms.cz>, OAuth2 client → `GOSMS_CLIENT_ID`,
-  `GOSMS_CLIENT_SECRET`.
-- ⬜ `GOSMS_CHANNEL` = ID kanálu, ze kterého se posílá.
-- ℹ️ SMS se posílá jen členům, kteří si to zapnou v profilu (`notifyBySms`).
+### ⬜ [P3] Nuki — chytrý zámek
+- Fyzicky: **Nuki Smart Lock Pro + Keypad** na stabilní Wi-Fi v gymu +
+  záložní servisní kód na klávesnici.
+- *Nuki Web → API → Web API*: token s právy na auths + čtení logu →
+  `NUKI_API_TOKEN`; `NUKI_SMARTLOCK_ID` = ID zámku; `NUKI_WEBHOOK_SECRET` =
+  libovolný tajný řetězec.
+- Webhook (*Nuki Web → Notifications*): `<NEXT_PUBLIC_APP_URL>/api/webhooks/nuki?secret=<NUKI_WEBHOOK_SECRET>`
+  — kniha vstupů se plní hned po odemčení (cron ji navíc synchronizuje).
 
 ---
 
-## 8. Monitoring — Sentry (+ UptimeRobot)
+## Priorita 2 — před ostrým provozem
 
-- ⬜ Projekt na <https://sentry.io> (Next.js). → `SENTRY_DSN`,
-  `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`.
-- ⬜ Pro nahrávání source-map při buildu na Vercelu: **auth token**
-  (Settings → Auth Tokens) → env var `SENTRY_AUTH_TOKEN` na Vercelu.
-- ⬜ **UptimeRobot** (<https://uptimerobot.com>, zdarma): monitor na hlavní URL
-  a klidně na zdraví Nuki. Kritické výpadky řeší i vlastní alerting (viz níže).
+### ⬜ [P2] Doména
+Zaregistruj doménu (~500 Kč/rok), nasměruj na Vercel (A/CNAME dle Vercelu),
+přidej do Resend (SPF/DKIM) a Stripe (Apple Pay).
 
----
-
-## 9. Provozní upozornění (WhatsApp skupina)
-
-- ⬜ `ALERT_WHATSAPP_RECIPIENTS` = telefonní čísla (E.164, oddělená čárkou),
-  která dostanou upozornění při selhání (platba/kód/doručení). Např.
-  `+420777123456,+420777654321`. Posílá se přes WhatsApp (bod 5).
+### ⬜ [P2] Provozní upozornění (WhatsApp)
+`ALERT_WHATSAPP_RECIPIENTS` = telefonní čísla v E.164 oddělená čárkou (např.
+`+420777123456,+420777654321`) — dostanou alert při selhání platby/kódu/doručení.
+Posílá se přes WhatsApp (viz P4).
 
 ---
 
-## 10. Cron / plánované úlohy **[blokující pro spolehlivost]**
+## Priorita 1 — volitelné / doladění
 
-Watchdog opakuje selhané kroky a synchronizuje knihu vstupů.
+### ⬜ [P1] SMS — GoSMS (defaultně vypnuté)
+Obvykle stačí WhatsApp + e-mail. Když chceš: účet na gosms.cz, OAuth2 client →
+`GOSMS_CLIENT_ID`, `GOSMS_CLIENT_SECRET`, `GOSMS_CHANNEL`. SMS chodí jen členům,
+kteří si to zapnou v profilu (`notifyBySms`).
 
-- ⬜ `CRON_SECRET` = `openssl rand -hex 32`. Na Vercelu nastav stejnou hodnotu
-  jako env var — Vercel Cron ji posílá v `Authorization: Bearer …`.
-- ✅ Rozvrh je v `vercel.json` (`/api/cron/watchdog` každých 5 min,
-  `/api/cron/sync-entry-log` každých 15 min). Vercel je spustí automaticky po
-  nasazení.
+### ⬜ [P1] Monitoring — Sentry + UptimeRobot
+- Sentry (Next.js): `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`,
+  `SENTRY_PROJECT` + `SENTRY_AUTH_TOKEN` na Vercelu (source-mapy při buildu).
+- UptimeRobot (zdarma): monitor na hlavní URL + klidně na zdraví Nuki.
 
----
+### ⬜ [P1] Google Analytics + SEO
+- GA4 property → `NEXT_PUBLIC_GA_ID` (`G-XXXXXXX`) na Vercel (skript se doplní do
+  `src/app/layout.tsx` přes `next/script`).
+- Po nasazení přidej web do **Google Search Console** a odešli sitemapu.
 
-## 11. Hosting — Vercel
-
-- ⬜ Propoj GitHub repo s <https://vercel.com>.
-- ⬜ **Project Settings → Environment Variables**: nahraj VŠECHNY proměnné
-  z `.env.local` (kromě čistě lokálních). Nezapomeň na `CRON_SECRET` a
-  `SENTRY_AUTH_TOKEN`.
-- ⬜ Po prvním nasazení nastav produkční doménu, aktualizuj `NEXT_PUBLIC_APP_URL`
-  a doplň doménu do **Supabase → Authentication → URL Configuration** (Site URL +
-  Redirect URLs `.../auth/callback`) a do Stripe/Meta/Nuki webhooků.
-
-### MCP pro Vercel (aby Claude mohl dělat Vercel úkoly)
-
-Přidal jsem konfiguraci Vercel MCP do `.mcp.json`. Aby fungovala, je potřeba se
-**přihlásit** (OAuth) — to musíš udělat ty ve svém terminálu:
-
-```
-claude   # v projektu
-/mcp     # vyber "vercel" → Authenticate
-```
-
-Alternativně příkazem, který jsi poslal:
-`npx add-mcp https://mcp.vercel.com`. Po přihlášení pak zvládnu nastavovat env
-proměnné, sledovat deploye a logy z Vercelu. (V této remote session se MCP
-nepřihlásí — proto to spusť u sebe.)
+✅ SEO metadata (title/description/OpenGraph) jsou v `src/app/layout.tsx` — jen
+doplň finální doménu do `NEXT_PUBLIC_APP_URL`.
 
 ---
 
-## 12. Doména
+## Pořadí nasazení (dnešní demo)
 
-- ⬜ Zaregistruj doménu (cca 500 Kč/rok) a nasměruj na Vercel (A/CNAME dle
-  instrukcí Vercelu). Přidej ji do Resend (SPF/DKIM) a Stripe (Apple Pay).
+Web běží i **bez** databáze (veřejné stránky mají fallback + ukázkový rozvrh),
+takže nasaď hned a služby dopojuj postupně:
 
----
+1. **Deploy na Vercel** s minimem env (`NEXT_PUBLIC_APP_URL`, veřejné Supabase
+   klíče; `DATABASE_URL` klidně placeholder). Veřejná stránka, `/rezervace` a
+   `/login` fungují.
+2. **Připoj Supabase** (P5): heslo + secret key, Auth, migrace + seed, set-admin.
+   → přihlášení, rezervace a admin naživo.
+3. **Dopojuj** Stripe → Resend → WhatsApp → Nuki (každá služba izolovaná).
+4. **Dolaď** Cron, Sentry, GA před ostrým provozem.
 
-## 13. Google Analytics + SEO
+Stav rozpracovanosti vidíš v administraci pod **Plán spuštění** (progress bar).
 
-- ⬜ Založ **GA4** property (<https://analytics.google.com>), zkopíruj
-  Measurement ID (`G-XXXXXXX`) a přidej ho na Vercel jako
-  `NEXT_PUBLIC_GA_ID`. (Skript GA lze přidat do `src/app/layout.tsx` přes
-  `next/script` — připraveno k doplnění.)
-- ✅ SEO metadata (title/description/OpenGraph) jsou nastavená v
-  `src/app/layout.tsx`; doplň finální doménu do `NEXT_PUBLIC_APP_URL`.
-- ⬜ Po nasazení přidej web do **Google Search Console** a odešli sitemapu.
+**Kalendář:** používáme **FullCalendar** (MIT) pro admin kalendář
+(`/admin/kalendář`); veřejná rezervace používá lehký serverový výběr slotů. Nic
+k nastavení — součást buildu.
 
----
-
-## 🚀 Runbook: nasazení na Vercel (dnešní demo)
-
-Web běží i **bez** databáze (veřejné stránky mají fallback obsah a ukázkový
-rozvrh), takže ho můžeš nasadit hned a služby dopojit postupně.
-
-1. **Import repa do Vercelu** (New Project → vyber `gym-plzen`). Framework se
-   detekuje automaticky (Next.js).
-2. **Env proměnné (minimum pro build a běh):**
-   - `NEXT_PUBLIC_APP_URL` = `https://<tvuj-projekt>.vercel.app`
-   - `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (už máš)
-   - `DATABASE_URL` = může být zatím placeholder; veřejný web poběží, admin a
-     rezervace/přihlášení se rozjedou po připojení Supabase (krok 1 nahoře).
-3. **Deploy.** Veřejná stránka, `/rezervace` (ukázkový rozvrh) a `/login` fungují.
-4. **Připoj Supabase** (sekce 1 + 2): doplň heslo do `DATABASE_URL`/`DIRECT_URL`,
-   `SUPABASE_SECRET_KEY`, zapni **Supabase Auth** (Email + redirect URLs), spusť
-   `npm run db:migrate` a `npm run db:seed`, pak `npm run set-admin -- tvuj@email.cz`.
-   Přihlášení, rezervace i administrace naživo.
-5. **Postupně** dopojuj Stripe → Resend → WhatsApp → Nuki (sekce 3–6). Každá
-   služba je izolovaná; dokud chybí klíče, daná část je jen vypnutá.
-6. **Cron** (`CRON_SECRET`) a **Sentry/GA** dolaď před ostrým provozem.
-
-Stav rozpracovanosti sleduješ v administraci pod **Plán spuštění** (progress bar).
-
-### Kalendářní knihovna
-
-Používáme **FullCalendar** (licence MIT) pro administrační kalendář
-(`/admin/kalendář`) — týdenní pohled, hodinové sloty 05:00–21:00, bloky pro
-úklid tažením myší. Veřejná rezervace používá lehký serverový výběr slotů
-(rychlé, SEO-friendly). Nic k nastavení — je součástí buildu.
-
----
-
-## Rychlý kontrolní seznam „minimum pro spuštění"
-
-1. ✅ Kód (hotovo)
-2. ⬜ Supabase: **heslo DB** → `DATABASE_URL`/`DIRECT_URL`, **secret key** →
-   `SUPABASE_SECRET_KEY`, pak `npm run db:migrate` + `npm run db:seed`
-3. ⬜ Supabase Auth: zapni **Email + Password** a **Redirect URLs** (`/auth/callback`)
-4. ⬜ `set-admin` pro tvůj účet (`npm run set-admin -- tvuj@email.cz`)
-5. ⬜ (volitelně) OAuth Google/Apple/Microsoft v Supabase dashboardu
-6. ⬜ Realtime: přidej tabulku `reservation` + RLS (sekce 1)
-7. ⬜ Stripe (klíče + webhook)
-8. ⬜ Resend (klíč + odesílatel)
-9. ⬜ Nuki (token + zámek + webhook)
-10. ⬜ WhatsApp (účet + token + šablona `access_code`) — *začni nejdřív*
-11. ⬜ `CRON_SECRET` na Vercelu + env proměnné
-12. ⬜ Vercel MCP: `/mcp` → Authenticate (abych mohl dělat Vercel úkoly)
+### MCP servery pro Claude Code (volitelné)
+Aby Claude viděl do Supabase / mohl dělat Vercel úkoly, přihlas se **ve svém**
+terminálu (OAuth, ne v remote session): `claude` → `/mcp` → vyber
+`supabase` / `vercel` → **Authenticate**. Konfigurace je v `.mcp.json`; pro
+Supabase případně `claude mcp add --scope project --transport http supabase
+"https://mcp.supabase.com/mcp?project_ref=rkmunagymohxtclymacm"`.
