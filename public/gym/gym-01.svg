@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1500" role="img" aria-label="Silová zóna – rack a osa">
+  <!-- Placeholder visual (dark studio look) — replace with a real photo later. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#121924"/><stop offset="1" stop-color="#0a0e14"/>
+    </linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#141b25"/><stop offset="1" stop-color="#0b0f15"/>
+    </linearGradient>
+    <radialGradient id="spot" cx=".5" cy=".16" r=".8">
+      <stop offset="0" stop-color="#dfeeff" stop-opacity=".16"/>
+      <stop offset=".45" stop-color="#dfeeff" stop-opacity=".05"/>
+      <stop offset="1" stop-color="#dfeeff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vig" cx=".5" cy=".5" r=".75">
+      <stop offset=".55" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity=".55"/>
+    </radialGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="9" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="soft"><feGaussianBlur stdDeviation="18"/></filter>
+    <filter id="noise">
+      <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .05 0"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="1500" fill="url(#bg)"/>
+  <rect y="1100" width="1200" height="400" fill="url(#floor)"/>
+  <polygon points="430,0 770,0 1040,1100 160,1100" fill="url(#spot)"/>
+
+  <!-- Neon sign -->
+  <ellipse cx="600" cy="300" rx="360" ry="90" fill="#b7ee54" opacity=".07" filter="url(#soft)"/>
+  <text x="600" y="330" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="86" font-weight="800" letter-spacing="16" fill="none" stroke="#b7ee54" stroke-width="3.5" filter="url(#glow)" opacity=".92">GYM PLZEŇ</text>
+
+  <!-- Power rack -->
+  <g fill="#1d2530">
+    <rect x="332" y="470" width="40" height="640" rx="6"/>
+    <rect x="828" y="470" width="40" height="640" rx="6"/>
+    <rect x="322" y="452" width="556" height="34" rx="8"/>
+    <rect x="322" y="1096" width="60" height="18" rx="6"/>
+    <rect x="818" y="1096" width="60" height="18" rx="6"/>
+  </g>
+  <!-- subtle edge light on posts -->
+  <rect x="368" y="470" width="5" height="640" fill="#39465a" opacity=".8"/>
+  <rect x="864" y="470" width="5" height="640" fill="#39465a" opacity=".8"/>
+  <!-- J-hooks -->
+  <rect x="366" y="762" width="34" height="16" rx="4" fill="#2b3543"/>
+  <rect x="800" y="762" width="34" height="16" rx="4" fill="#2b3543"/>
+
+  <!-- Barbell resting on hooks -->
+  <rect x="150" y="752" width="900" height="14" rx="7" fill="#333f50"/>
+  <rect x="150" y="752" width="900" height="5" rx="2.5" fill="#4a596e" opacity=".9"/>
+  <!-- plates left -->
+  <rect x="176" y="640" width="58" height="238" rx="14" fill="#171e27"/>
+  <rect x="182" y="646" width="8" height="226" rx="4" fill="#2c3644"/>
+  <rect x="238" y="688" width="34" height="142" rx="10" fill="#1b232e"/>
+  <rect x="276" y="728" width="20" height="62" rx="7" fill="#242e3b"/>
+  <!-- plates right -->
+  <rect x="966" y="640" width="58" height="238" rx="14" fill="#171e27"/>
+  <rect x="1010" y="646" width="8" height="226" rx="4" fill="#2c3644"/>
+  <rect x="928" y="688" width="34" height="142" rx="10" fill="#1b232e"/>
+  <rect x="904" y="728" width="20" height="62" rx="7" fill="#242e3b"/>
+  <!-- lime rim on the big plates -->
+  <rect x="176" y="640" width="58" height="238" rx="14" fill="none" stroke="#b7ee54" stroke-opacity=".28" stroke-width="2"/>
+  <rect x="966" y="640" width="58" height="238" rx="14" fill="none" stroke="#b7ee54" stroke-opacity=".28" stroke-width="2"/>
+
+  <!-- floor shadows + reflection -->
+  <ellipse cx="600" cy="1122" rx="430" ry="26" fill="#000" opacity=".45" filter="url(#soft)"/>
+  <rect x="332" y="1114" width="40" height="150" fill="#1d2530" opacity=".14"/>
+  <rect x="828" y="1114" width="40" height="150" fill="#1d2530" opacity=".14"/>
+
+  <rect width="1200" height="1500" fill="url(#vig)"/>
+  <rect width="1200" height="1500" filter="url(#noise)" opacity=".6"/>
+</svg>

@@ -133,6 +133,14 @@ Model: **jednorázový vstup 290 Kč** (žádná předplatná). Každý 10. vstu
 
 ## Priorita 2 — před ostrým provozem
 
+### ⬜ [P2] Fotografie gymu
+Rezervační stránka má vlevo foto-carousel a homepage sekci „Prostor“ — obojí
+zatím běží na ilustračních vizualizacích (`public/gym/gym-0*.svg`). Až budou
+skutečné fotky: nahraj je do `public/gym/` a uprav položky v
+`src/lib/data/gym-photos.ts` (cesta, alt, popisek); u komponenty
+`photo-carousel.tsx` pak odstraň `unoptimized` (SVG placeholder ho vyžaduje,
+JPG/WebP ne).
+
 ### ⬜ [P2] Doména
 Zaregistruj doménu (~500 Kč/rok), nasměruj na Vercel (A/CNAME dle Vercelu),
 přidej do Resend (SPF/DKIM) a Stripe (Apple Pay).

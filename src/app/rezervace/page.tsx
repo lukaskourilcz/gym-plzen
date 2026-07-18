@@ -1,14 +1,26 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Info, Moon, Sun, Sunrise } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Dumbbell,
+  Info,
+  KeyRound,
+  Moon,
+  ShowerHead,
+  Sun,
+  Sunrise,
+} from "lucide-react";
 import { getDaySlots, BOOKING_DAYS_AHEAD, type Slot } from "@/lib/services/slots";
 import { loadSiteContent } from "@/lib/content/site";
 import { getSession } from "@/lib/auth/guards";
+import { GYM_PHOTOS } from "@/lib/data/gym-photos";
 import { formatMoney, formatTime } from "@/lib/helpers/format";
 import { addMinutes, minuteOfDay, startOfDayTz } from "@/lib/helpers/datetime";
 import { cn } from "@/lib/utils";
 import { Container, Section } from "@/components/ui/container";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
+import { PhotoCarousel } from "@/components/site/photo-carousel";
 import { RealtimeRefresher } from "@/components/realtime-refresher";
 import { SlotButton, slotCardClass } from "./slot-button";
 
@@ -86,18 +98,46 @@ export default async function BookingPage({
       {/* Live calendar: refresh when reservations change (no-op if unconfigured). */}
       <RealtimeRefresher table="reservation" />
       <main>
-        <Section className="py-12 sm:py-16">
-          <Container className="max-w-4xl">
-            <div className="text-center">
+        <Section className="py-10 sm:py-14">
+          <Container>
+            <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] lg:gap-12">
+              {/* Photos — the space sells itself (booking stays first on mobile) */}
+              <div className="order-2 lg:order-1">
+                <div className="lg:sticky lg:top-24">
+                  <PhotoCarousel photos={GYM_PHOTOS} className="aspect-[16/10] lg:aspect-[4/5]" />
+                  <div className="mt-4 grid grid-cols-3 gap-2">
+                    {[
+                      { icon: Dumbbell, label: "Celý gym jen pro vás" },
+                      { icon: KeyRound, label: "Vstup kódem, bez recepce" },
+                      { icon: ShowerHead, label: "Sprcha po tréninku" },
+                    ].map((f) => (
+                      <div
+                        key={f.label}
+                        className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-card p-3 text-center"
+                      >
+                        <f.icon className="size-4 text-primary" />
+                        <span className="text-xs font-medium leading-snug">{f.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="mt-3 text-center text-xs text-muted-foreground/80">
+                    Ilustrační vizualizace — skutečné fotografie doplníme před spuštěním.
+                  </p>
+                </div>
+              </div>
+
+              {/* Booking — compact column on the right */}
+              <div className="order-1 lg:order-2">
+            <div className="text-center lg:text-left">
               <div className="text-sm font-semibold text-primary">Rezervace</div>
               <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Vyberte si termín</h1>
-              <p className="mx-auto mt-2 max-w-md text-muted-foreground">
+              <p className="mx-auto mt-2 max-w-md text-muted-foreground lg:mx-0">
                 Celý gym jen pro vás. Jeden trénink za {price}.
               </p>
             </div>
 
             {/* Day navigation: ← Dnes — pátek 18. července → */}
-            <div className="mt-8 flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm">
+            <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-2.5 shadow-sm">
               <DayArrow
                 href={`/rezervace?d=${dayOffset - 1}`}
                 disabled={prevDisabled}
@@ -106,7 +146,7 @@ export default async function BookingPage({
                 <ChevronLeft className="size-5" />
               </DayArrow>
               <div className="text-center">
-                <div className="text-lg font-bold sm:text-xl">
+                <div className="text-base font-bold sm:text-lg">
                   {dayLabel(dayOffset, dayStart)}{" "}
                   <span className="font-medium text-muted-foreground">
                     · {WEEKDAY_LONG.format(dayStart)} {DATE_LONG.format(dayStart)}
@@ -188,7 +228,7 @@ export default async function BookingPage({
                       <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                         <GroupIcon className="size-4" /> {group.label}
                       </h2>
-                      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4">
+                      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3">
                         {group.slots.map((slot) => {
                           const label = `${formatTime(slot.start)} – ${formatTime(slot.end)}`;
                           if (!slot.available) {
@@ -230,7 +270,7 @@ export default async function BookingPage({
             )}
 
             {!isAuthed && (
-              <p className="mt-10 text-center text-sm text-muted-foreground">
+              <p className="mt-10 text-center text-sm text-muted-foreground lg:text-left">
                 Platbu a doručení vstupního kódu (e-mail + WhatsApp) dokončíte po přihlášení. Nemáte účet?{" "}
                 <Link href="/login" className="font-medium text-foreground underline">
                   Zaregistrujte se
@@ -238,6 +278,8 @@ export default async function BookingPage({
                 .
               </p>
             )}
+              </div>
+            </div>
           </Container>
         </Section>
       </main>

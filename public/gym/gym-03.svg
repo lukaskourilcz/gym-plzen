@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1500" role="img" aria-label="Řada kettlebellů">
+  <!-- Placeholder visual (dark studio look) — replace with a real photo later. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#101724"/><stop offset="1" stop-color="#0a0e14"/>
+    </linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#161d28"/><stop offset="1" stop-color="#0b0f15"/>
+    </linearGradient>
+    <linearGradient id="window" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d7ecff" stop-opacity=".18"/>
+      <stop offset=".6" stop-color="#d7ecff" stop-opacity=".03"/>
+      <stop offset="1" stop-color="#d7ecff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="vig" cx=".5" cy=".5" r=".75">
+      <stop offset=".55" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity=".55"/>
+    </radialGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="18"/></filter>
+    <filter id="noise">
+      <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .05 0"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="1500" fill="url(#bg)"/>
+  <rect y="1010" width="1200" height="490" fill="url(#floor)"/>
+  <polygon points="1200,0 640,0 1200,760" fill="url(#window)"/>
+
+  <!-- kettlebell row, growing sizes, light from the right -->
+  <!-- kb template: body circle flattened at bottom + thick handle arc + right lime rim -->
+  <g stroke-linecap="round" transform="translate(600,1010) scale(1.32) translate(-600,-1010)">
+    <!-- kb 1 -->
+    <path d="M150 1010 a62 62 0 1 1 124 0 z" fill="#161d27"/>
+    <path d="M176 956 a36 30 0 0 1 72 0" fill="none" stroke="#1f2833" stroke-width="24"/>
+    <path d="M258 970 a62 62 0 0 1 14 40" fill="none" stroke="#b7ee54" stroke-opacity=".4" stroke-width="4"/>
+    <!-- kb 2 -->
+    <path d="M320 1010 a74 74 0 1 1 148 0 z" fill="#171e28"/>
+    <path d="M350 946 a44 36 0 0 1 88 0" fill="none" stroke="#202a36" stroke-width="27"/>
+    <path d="M448 958 a74 74 0 0 1 18 50" fill="none" stroke="#b7ee54" stroke-opacity=".42" stroke-width="4.5"/>
+    <!-- kb 3 -->
+    <path d="M520 1010 a88 88 0 1 1 176 0 z" fill="#181f2a"/>
+    <path d="M556 936 a52 42 0 0 1 104 0" fill="none" stroke="#212b38" stroke-width="30"/>
+    <path d="M672 944 a88 88 0 0 1 22 64" fill="none" stroke="#b7ee54" stroke-opacity=".45" stroke-width="5"/>
+    <!-- kb 4 -->
+    <path d="M752 1010 a104 104 0 1 1 208 0 z" fill="#19212c"/>
+    <path d="M794 922 a62 50 0 0 1 124 0" fill="none" stroke="#232d3b" stroke-width="34"/>
+    <path d="M930 928 a104 104 0 0 1 28 80" fill="none" stroke="#b7ee54" stroke-opacity=".5" stroke-width="5.5"/>
+  </g>
+
+  <!-- shadows -->
+  <ellipse cx="212" cy="1018" rx="80" ry="14" fill="#000" opacity=".5" filter="url(#soft)"/>
+  <ellipse cx="394" cy="1020" rx="96" ry="16" fill="#000" opacity=".5" filter="url(#soft)"/>
+  <ellipse cx="608" cy="1022" rx="112" ry="18" fill="#000" opacity=".5" filter="url(#soft)"/>
+  <ellipse cx="856" cy="1024" rx="132" ry="20" fill="#000" opacity=".5" filter="url(#soft)"/>
+
+  <!-- floor line accent -->
+  <rect x="90" y="1188" width="1020" height="4" rx="2" fill="#b7ee54" opacity=".12"/>
+
+  <rect width="1200" height="1500" fill="url(#vig)"/>
+  <rect width="1200" height="1500" filter="url(#noise)" opacity=".6"/>
+</svg>
