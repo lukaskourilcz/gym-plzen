@@ -1,20 +1,26 @@
 import { reservations } from "@/lib/services";
 import { formatDateTime, formatMoney } from "@/lib/helpers/format";
+import { loadDemoData } from "@/lib/demo/dummy";
+import { DemoBanner } from "@/components/admin/demo-banner";
 import { ReservationForm } from "./reservation-form";
 import { CancelButton } from "./cancel-button";
 
 export const metadata = { title: "Rezervace" };
+export const dynamic = "force-dynamic";
 
 /**
  * Reservations admin: manual booking form + a list of recent reservations with
  * an inline cancel control.
  */
 export default async function ReservationsPage() {
-  const rows = await reservations.listRecent(100);
+  let rows = await reservations.listRecent(100);
+  const demo = rows.length === 0;
+  if (demo) rows = (await loadDemoData()).reservations;
 
   return (
     <div>
       <h1>Rezervace</h1>
+      {demo && <DemoBanner />}
 
       <section
         style={{
@@ -50,7 +56,7 @@ export default async function ReservationsPage() {
               <td>{r.priceCents != null ? formatMoney(r.priceCents, r.currency) : "členství"}</td>
               <td>{r.status}</td>
               <td>
-                {r.status !== "cancelled" && <CancelButton reservationId={r.id} />}
+                {!demo && r.status !== "cancelled" && <CancelButton reservationId={r.id} />}
               </td>
             </tr>
           ))}

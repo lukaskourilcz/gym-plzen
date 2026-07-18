@@ -4,8 +4,14 @@ import { memberProfile, messageDelivery } from "@/lib/db/schema";
 import type { MessageDelivery } from "@/lib/db/types";
 import { formatDateTime } from "@/lib/helpers/format";
 import { sendEmail } from "@/lib/integrations/resend";
-import { sendTemplateMessage } from "@/lib/integrations/whatsapp";
+import { sendTemplateMessage, sendTextMessage } from "@/lib/integrations/whatsapp";
 import { sendSms } from "@/lib/integrations/gosms";
+import { getSetting } from "./cms";
+import {
+  DEFAULT_SMS_ACCESS_TEMPLATE,
+  SMS_ACCESS_TEMPLATE_KEY,
+  renderTemplate,
+} from "@/lib/config/branding";
 
 /**
  * Multi-channel notification dispatch. The access code is sent over every
@@ -104,12 +110,14 @@ export async function dispatchAccessCode(
     );
   }
 
-  // SMS — strictly opt-in fallback.
+  // SMS — strictly opt-in fallback. Body is admin-configurable.
   if (ctx.notifyBySms && ctx.phone) {
-    const result = await sendSms({
-      to: ctx.phone,
-      message: `Vstupni kod: ${ctx.code} (${when}). Gym Plzen`,
+    const template = await getSetting<string>(SMS_ACCESS_TEMPLATE_KEY);
+    const message = renderTemplate(template ?? DEFAULT_SMS_ACCESS_TEMPLATE, {
+      code: ctx.code,
+      time: when,
     });
+    const result = await sendSms({ to: ctx.phone, message });
     deliveries.push(
       await record(
         { ...channelBase(ctx), channel: "sms", recipient: ctx.phone },
@@ -130,6 +138,60 @@ function channelBase(ctx: AccessCodeMessageContext) {
     reservationId: ctx.reservationId,
     kind: "access_code" as const,
   };
+}
+
+/**
+ * Notify a member that their reservation was cancelled because the gym is
+ * closing that slot (maintenance, holiday, admin decision). Sends email and,
+ * when the member opted in, a WhatsApp text; records each attempt.
+ */
+export async function sendReservationClosure(params: {
+  userId: string | null;
+  reservationId: string;
+  startsAt: Date;
+  email?: string | null;
+  phone?: string | null;
+  notifyByWhatsapp?: boolean;
+  reason?: string;
+}): Promise<void> {
+  const when = formatDateTime(params.startsAt);
+  const base = {
+    userId: params.userId,
+    reservationId: params.reservationId,
+    kind: "reservation_cancellation" as const,
+  };
+
+  if (params.email) {
+    const result = await sendEmail({
+      to: params.email,
+      subject: `Zrušení rezervace – ${when}`,
+      html: closureEmailHtml(when, params.reason),
+      text: `Vaše rezervace na ${when} byla bohužel zrušena${
+        params.reason ? ` (${params.reason})` : ""
+      }. Omlouváme se za komplikace. Vyberte si prosím jiný termín.`,
+    });
+    await record({ ...base, channel: "email", recipient: params.email }, result);
+  }
+
+  if (params.notifyByWhatsapp !== false && params.phone) {
+    const result = await sendTextMessage({
+      to: params.phone,
+      body: `Vaše rezervace na ${when} byla zrušena${
+        params.reason ? ` (${params.reason})` : ""
+      }. Omlouváme se, vyberte si prosím jiný termín.`,
+    });
+    await record({ ...base, channel: "whatsapp", recipient: params.phone }, result);
+  }
+}
+
+function closureEmailHtml(when: string, reason?: string): string {
+  return `<div style="font-family:sans-serif">
+    <h2>Rezervace byla zrušena</h2>
+    <p>Vaše rezervace na <strong>${when}</strong> byla bohužel zrušena${
+      reason ? ` (${reason})` : ""
+    }.</p>
+    <p>Omlouváme se za komplikace. Vyberte si prosím jiný volný termín na webu.</p>
+  </div>`;
 }
 
 /** Load member contact + channel prefs for building an AccessCodeMessageContext. */

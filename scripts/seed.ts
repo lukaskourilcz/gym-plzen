@@ -11,17 +11,18 @@ import {
   DEFAULT_ENTRY_PRICE_CENTS,
   ENTRY_PRICE_SETTING_KEY,
 } from "../src/lib/config/pricing";
+import {
+  DEFAULT_SHOWER_MINUTES,
+  SHOWER_MINUTES_SETTING_KEY,
+} from "../src/lib/config/schedule";
 
-// Mon–Fri 06:00–22:00, Sat–Sun 08:00–20:00, 60-minute slots.
-const OPENING_HOURS = [
-  { dayOfWeek: 0, openMinute: 8 * 60, closeMinute: 20 * 60, isClosed: 0 },
-  { dayOfWeek: 1, openMinute: 6 * 60, closeMinute: 22 * 60, isClosed: 0 },
-  { dayOfWeek: 2, openMinute: 6 * 60, closeMinute: 22 * 60, isClosed: 0 },
-  { dayOfWeek: 3, openMinute: 6 * 60, closeMinute: 22 * 60, isClosed: 0 },
-  { dayOfWeek: 4, openMinute: 6 * 60, closeMinute: 22 * 60, isClosed: 0 },
-  { dayOfWeek: 5, openMinute: 6 * 60, closeMinute: 22 * 60, isClosed: 0 },
-  { dayOfWeek: 6, openMinute: 8 * 60, closeMinute: 20 * 60, isClosed: 0 },
-];
+// Open every day 05:00–21:00 with 1-hour slots (see src/lib/config/schedule.ts).
+const OPENING_HOURS = Array.from({ length: 7 }, (_, dayOfWeek) => ({
+  dayOfWeek,
+  openMinute: 5 * 60,
+  closeMinute: 21 * 60,
+  isClosed: 0,
+}));
 
 const CONTENT_BLOCKS = [
   { key: "home.hero.title", label: "Nadpis úvodní sekce", groupName: "home", valueText: "Vítejte v našem gymu" },
@@ -51,9 +52,12 @@ async function main() {
 
   await db
     .insert(siteSetting)
-    .values({ key: ENTRY_PRICE_SETTING_KEY, value: DEFAULT_ENTRY_PRICE_CENTS })
+    .values([
+      { key: ENTRY_PRICE_SETTING_KEY, value: DEFAULT_ENTRY_PRICE_CENTS },
+      { key: SHOWER_MINUTES_SETTING_KEY, value: DEFAULT_SHOWER_MINUTES },
+    ])
     .onConflictDoNothing({ target: siteSetting.key });
-  console.log("✅ Default entry price seeded.");
+  console.log("✅ Default settings seeded (entry price, shower grace).");
 
   process.exit(0);
 }
