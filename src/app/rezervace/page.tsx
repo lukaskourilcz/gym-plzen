@@ -127,9 +127,9 @@ export default async function BookingPage({
               </DayArrow>
             </div>
 
-            {/* Quick day strip (14 days ahead) */}
-            <div className="mt-4 overflow-x-auto pb-1 [scrollbar-width:thin]">
-              <div className="flex w-max gap-1.5">
+            {/* Quick day strip — today + the next few days (BOOKING_DAYS_AHEAD) */}
+            <div className="mt-4">
+              <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
                 {Array.from({ length: BOOKING_DAYS_AHEAD }, (_, i) => {
                   const date = addMinutes(today, i * 24 * 60 + 12 * 60);
                   const active = i === dayOffset;

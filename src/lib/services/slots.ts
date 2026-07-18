@@ -34,8 +34,12 @@ export interface DaySlots {
   source: "live" | "demo";
 }
 
-/** How many days ahead a member can browse/book (0 = today). */
-export const BOOKING_DAYS_AHEAD = 14;
+/**
+ * How many days a member can browse/book, counting today (0 = today). Kept
+ * short on purpose: virtually all bookings are for today, tomorrow or the day
+ * after, so the picker offers today + 3 next days.
+ */
+export const BOOKING_DAYS_AHEAD = 4;
 
 interface DayHours {
   openMinute: number;
