@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, lte, or, sql } from "drizzle-orm";
+import { and, asc, eq, gt, gte, lt, lte, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { blockedSlot, openingHours, reservation, siteSetting } from "@/lib/db/schema";
 import type { BlockedSlot, OpeningHours, Reservation } from "@/lib/db/types";
@@ -112,7 +112,9 @@ export async function findOverlappingReservations(
     .from(reservation)
     .where(
       and(
-        sql`${reservation.startsAt} < ${end} AND ${reservation.endsAt} > ${start}`,
+        // start < otherEnd AND end > otherStart, using operators so Dates bind.
+        lt(reservation.startsAt, end),
+        gt(reservation.endsAt, start),
         or(eq(reservation.status, "pending"), eq(reservation.status, "confirmed")),
       ),
     );

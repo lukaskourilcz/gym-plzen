@@ -1,4 +1,4 @@
-import { and, gte, lte, ne, or, eq, sql, type SQL } from "drizzle-orm";
+import { and, eq, gt, gte, lt, lte, ne, or, type SQL } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
 import { db } from "@/lib/db";
 import { blockedSlot, openingHours, reservation } from "@/lib/db/schema";
@@ -26,6 +26,10 @@ export interface AvailabilityResult {
 /**
  * Interval-intersection predicate for any table with start/end columns:
  * two [start, end) windows overlap iff start < otherEnd AND end > otherStart.
+ *
+ * Uses drizzle's `lt`/`gt` operators (not a raw `sql` template) so `Date` values
+ * are bound through each column's timestamp mapper — raw interpolation of a Date
+ * fails at the driver with "Received an instance of Date".
  */
 function overlaps(
   startCol: PgColumn,
@@ -33,7 +37,7 @@ function overlaps(
   startsAt: Date,
   endsAt: Date,
 ): SQL {
-  return sql`${startCol} < ${endsAt} AND ${endCol} > ${startsAt}`;
+  return and(lt(startCol, endsAt), gt(endCol, startsAt))!;
 }
 
 /** Check whether a requested window is within opening hours. */

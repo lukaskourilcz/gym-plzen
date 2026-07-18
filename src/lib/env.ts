@@ -1,14 +1,15 @@
 import { z } from "zod";
 
 /**
- * Centralised, type-safe access to environment variables.
+ * Centralised, type-safe access to SERVER environment variables.
  *
- * Rather than reading `process.env.X` (which is `string | undefined`) all over
- * the codebase, every module imports `env` / `publicEnv` from here. Required
- * variables are validated once at startup; integration-specific variables are
- * validated lazily inside their own modules so the app can boot even when an
- * optional integration is not yet configured (see `requireEnv`).
+ * IMPORTANT: this module validates server-only secrets at import time, so it
+ * must never be imported from a client component (it would throw in the browser
+ * where those vars are absent). Client code imports `publicEnv` from
+ * `@/lib/public-env` instead; it is re-exported here only for server convenience.
  */
+
+export { publicEnv } from "./public-env";
 
 const serverSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -59,15 +60,6 @@ const serverSchema = z.object({
   CRON_SECRET: z.string().optional(),
 });
 
-const publicSchema = z.object({
-  NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
-  NEXT_PUBLIC_DEFAULT_LOCALE: z.string().default("cs"),
-  NEXT_PUBLIC_SUPABASE_URL: z.string().optional(),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
-  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
-  NEXT_PUBLIC_SENTRY_DSN: z.string().optional(),
-});
-
 function parse<T extends z.ZodTypeAny>(schema: T, source: unknown): z.infer<T> {
   const result = schema.safeParse(source);
   if (!result.success) {
@@ -79,21 +71,8 @@ function parse<T extends z.ZodTypeAny>(schema: T, source: unknown): z.infer<T> {
   return result.data;
 }
 
-/** Server-only environment. Importing this in client code will throw at build. */
+/** Server-only environment. Never import this from a client component. */
 export const env = parse(serverSchema, process.env);
-
-/**
- * Public environment. `NEXT_PUBLIC_*` vars are inlined by Next.js, so they must
- * be referenced statically — hence the explicit object rather than a loop.
- */
-export const publicEnv = parse(publicSchema, {
-  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-  NEXT_PUBLIC_DEFAULT_LOCALE: process.env.NEXT_PUBLIC_DEFAULT_LOCALE,
-  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-  NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
-});
 
 type ServerEnv = typeof env;
 

@@ -2,7 +2,7 @@
 
 import { createAuthClient } from "better-auth/react";
 import { adminClient } from "better-auth/client/plugins";
-import { publicEnv } from "@/lib/env";
+import { publicEnv } from "@/lib/public-env";
 
 /**
  * Browser auth client. Use its hooks/methods in client components:

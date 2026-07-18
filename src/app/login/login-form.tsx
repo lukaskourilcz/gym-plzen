@@ -6,7 +6,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
 import { authClient } from "@/lib/auth/client";
-import { signUpSchema } from "@/lib/validations/auth";
 import { Field, FormFeedback, SubmitButton } from "@/components/admin/form-controls";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,15 +16,19 @@ const PROVIDER_LABELS: Record<string, string> = {
   microsoft: "Pokračovat přes Microsoft",
 };
 
-// The form always carries name/email/password; `name` is only required in
-// sign-up mode, enforced by superRefine so one form serves both modes.
+// One flat schema serves both modes; `name` is only required in sign-up.
+// A flat object + refine (rather than an intersection of ZodEffects) keeps
+// `zodResolver` well-behaved — the intersection form silently blocked submits.
 const schema = z
-  .object({ __mode: z.enum(["signin", "signup"]) })
-  .and(signUpSchema.partial({ name: true }))
-  .superRefine((val, ctx) => {
-    if (val.__mode === "signup" && !val.name?.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["name"], message: "Zadejte jméno." });
-    }
+  .object({
+    __mode: z.enum(["signin", "signup"]),
+    name: z.string().max(120).optional(),
+    email: z.string().email("Neplatný e-mail."),
+    password: z.string().min(8, "Heslo musí mít alespoň 8 znaků."),
+  })
+  .refine((val) => val.__mode === "signin" || Boolean(val.name?.trim()), {
+    path: ["name"],
+    message: "Zadejte jméno.",
   });
 
 type FormValues = z.infer<typeof schema>;

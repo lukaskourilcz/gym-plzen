@@ -37,6 +37,13 @@ yarn-error.log*
 # vercel
 .vercel
 
+# playwright
+/test-results
+/playwright-report
+/blob-report
+/tests/e2e/.auth
+.last-run.json
+
 # editor
 .idea
 .vscode/*
