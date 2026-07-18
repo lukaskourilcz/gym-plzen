@@ -1,8 +1,11 @@
 import { members } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
+import { loadDemoData } from "@/lib/demo/dummy";
+import { DemoBanner } from "@/components/admin/demo-banner";
 import { MemberForm } from "./member-form";
 
 export const metadata = { title: "Členové" };
+export const dynamic = "force-dynamic";
 
 /**
  * Members admin — every registered user with their profile. Expanding a row
@@ -10,11 +13,14 @@ export const metadata = { title: "Členové" };
  * internal note). Payment/visit history links in as those views are built.
  */
 export default async function MembersPage() {
-  const rows = await members.listMembers(200);
+  let rows = await members.listMembers(200);
+  const demo = rows.length === 0;
+  if (demo) rows = (await loadDemoData()).members;
 
   return (
     <div>
       <h1>Členové</h1>
+      {demo && <DemoBanner />}
       <table>
         <thead>
           <tr>
@@ -43,19 +49,21 @@ export default async function MembersPage() {
         </tbody>
       </table>
 
-      <section style={{ marginTop: "2rem", maxWidth: 520 }}>
-        <h2>Úprava člena</h2>
-        {rows.map((member) => (
-          <details key={member.user.id} style={{ marginBottom: "0.75rem" }}>
-            <summary>
-              {member.user.name} — {member.user.email}
-            </summary>
-            <div style={{ marginTop: "0.75rem" }}>
-              <MemberForm member={member} />
-            </div>
-          </details>
-        ))}
-      </section>
+      {!demo && (
+        <section style={{ marginTop: "2rem", maxWidth: 520 }}>
+          <h2>Úprava člena</h2>
+          {rows.map((member) => (
+            <details key={member.user.id} style={{ marginBottom: "0.75rem" }}>
+              <summary>
+                {member.user.name} — {member.user.email}
+              </summary>
+              <div style={{ marginTop: "0.75rem" }}>
+                <MemberForm member={member} />
+              </div>
+            </details>
+          ))}
+        </section>
+      )}
     </div>
   );
 }

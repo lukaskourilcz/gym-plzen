@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { reservations, alerts, messages } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
+import { loadDemoData } from "@/lib/demo/dummy";
+import { DemoBanner } from "@/components/admin/demo-banner";
 
 export const metadata = { title: "Přehled" };
+export const dynamic = "force-dynamic";
 
 /**
  * Admin dashboard — a quick operational snapshot: upcoming reservations,
@@ -10,17 +13,23 @@ export const metadata = { title: "Přehled" };
  * own sections.
  */
 export default async function AdminDashboard() {
-  const [recentReservations, recentAlerts, recentMessages] = await Promise.all([
+  const [liveReservations, recentAlerts, liveMessages] = await Promise.all([
     reservations.listRecent(8),
     alerts.listRecentAlerts(8),
     messages.listRecent(8),
   ]);
+
+  const demo = liveReservations.length === 0;
+  const d = demo ? await loadDemoData() : null;
+  const recentReservations = d ? d.reservations.slice(0, 8) : liveReservations;
+  const recentMessages = d ? d.messages.slice(0, 8) : liveMessages;
 
   const upcoming = recentReservations.filter((r) => r.startsAt > new Date());
 
   return (
     <div>
       <h1>Přehled</h1>
+      {demo && <DemoBanner />}
 
       <section style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
         <Stat label="Nadcházející rezervace" value={upcoming.length} />

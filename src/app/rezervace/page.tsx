@@ -2,12 +2,14 @@ import Link from "next/link";
 import { Info } from "lucide-react";
 import { getWeekSlots, mondayOf } from "@/lib/services/slots";
 import { loadSiteContent } from "@/lib/content/site";
+import { getSession } from "@/lib/auth/guards";
 import { formatMoney, formatTime } from "@/lib/helpers/format";
 import { addMinutes } from "@/lib/helpers/datetime";
 import { Container, Section } from "@/components/ui/container";
 import { Badge } from "@/components/ui/badge";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
+import { SlotButton } from "./slot-button";
 
 export const metadata = { title: "Rezervace" };
 // Availability must be fresh on every request.
@@ -26,11 +28,13 @@ export default async function BookingPage({
   const weekOffset = Number.isFinite(Number(w)) ? Number(w) : 0;
   const weekStart = addMinutes(baseMonday, weekOffset * 7 * 24 * 60);
 
-  const [{ days, source }, content] = await Promise.all([
+  const [{ days, source }, content, session] = await Promise.all([
     getWeekSlots(weekStart, now),
     loadSiteContent(),
+    getSession(),
   ]);
   const price = formatMoney(content.entryPriceCents);
+  const isAuthed = Boolean(session);
 
   return (
     <>
@@ -84,13 +88,21 @@ export default async function BookingPage({
                     )}
                     {day.slots.map((slot, j) =>
                       slot.available ? (
-                        <Link
-                          key={j}
-                          href={`/login?next=${encodeURIComponent(`/rezervace?w=${weekOffset}`)}`}
-                          className="rounded-md border border-primary/30 bg-primary/10 py-1.5 text-center text-sm font-medium transition-colors hover:bg-primary hover:text-primary-foreground"
-                        >
-                          {formatTime(slot.start)}
-                        </Link>
+                        isAuthed ? (
+                          <SlotButton
+                            key={j}
+                            startsAtISO={slot.start.toISOString()}
+                            label={formatTime(slot.start)}
+                          />
+                        ) : (
+                          <Link
+                            key={j}
+                            href={`/login?next=${encodeURIComponent(`/rezervace?w=${weekOffset}`)}`}
+                            className="rounded-md border border-primary/30 bg-primary/10 py-1.5 text-center text-sm font-medium transition-colors hover:bg-primary hover:text-primary-foreground"
+                          >
+                            {formatTime(slot.start)}
+                          </Link>
+                        )
                       ) : (
                         <div
                           key={j}

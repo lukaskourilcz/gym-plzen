@@ -1,4 +1,6 @@
 import { getStats, type Bucket } from "@/lib/services/stats";
+import { loadDemoData } from "@/lib/demo/dummy";
+import { DemoBanner } from "@/components/admin/demo-banner";
 
 export const metadata = { title: "Statistiky" };
 export const dynamic = "force-dynamic";
@@ -9,11 +11,14 @@ export const dynamic = "force-dynamic";
  * (swap for Tremor components later if richer charts are wanted).
  */
 export default async function StatisticsPage() {
-  const stats = await getStats();
+  let stats = await getStats();
+  const demo = stats.total === 0;
+  if (demo) stats = (await loadDemoData()).stats;
 
   return (
     <div>
       <h1>Statistiky</h1>
+      {demo && <DemoBanner />}
 
       <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", margin: "1rem 0 2rem" }}>
         <Kpi label="Rezervací celkem" value={stats.total} />

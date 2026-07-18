@@ -46,6 +46,7 @@ export const LAUNCH_PLAN: PlanPhase[] = [
       { title: "Nahrávání souborů do úložiště (logo, PDF, fotky)", status: "done", note: "Potřebuje Supabase Storage" },
       { title: "Zavření dne s rezervacemi → e-mail/WhatsApp členům", status: "done" },
       { title: "Nastavitelné zavřené dny + doba na sprchu", status: "done" },
+      { title: "Ukázková data (DummyJSON) pro prázdné obrazovky", status: "done" },
     ],
   },
   {
@@ -64,7 +65,7 @@ export const LAUNCH_PLAN: PlanPhase[] = [
     items: [
       { title: "Generování hodinových slotů 05–21", status: "done" },
       { title: "Živý kalendář v reálném čase (Supabase Realtime)", status: "todo" },
-      { title: "Checkout přes Stripe (jednorázový vstup 290 Kč)", status: "in_progress", note: "Backend hotov, napojit tlačítko rezervace na Stripe" },
+      { title: "Checkout přes Stripe (jednorázový vstup 290 Kč)", status: "done", note: "Tlačítko slotu → Stripe / vstup zdarma; potvrdí webhook. Potřebuje klíče." },
       { title: "Věrnost — každý 10. vstup zdarma (počítadlo)", status: "done" },
       { title: "Vydání a doručení kódu (e-mail + WhatsApp)", status: "done", note: "Kód se pošle po platbě; potřebuje klíče" },
     ],

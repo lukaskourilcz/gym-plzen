@@ -46,6 +46,14 @@ export async function getStats(now: Date = new Date()): Promise<Stats> {
     logger.warn("getStats: empty (DB unavailable)", { error: String(e) });
   }
 
+  return aggregateStats(rows, now);
+}
+
+/** Pure aggregation of reservation rows into stats — reused by the demo layer. */
+export function aggregateStats(
+  rows: { startsAt: Date; status: string }[],
+  now: Date = new Date(),
+): Stats {
   const counted = rows.filter((r) => r.status !== "cancelled");
   const weekday = new Array(7).fill(0) as number[]; // index 0=Mon .. 6=Sun
   const hour = new Map<number, number>();

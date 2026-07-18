@@ -130,7 +130,7 @@ Dev workflow — **N/A for member data** (only queries/public docs), *unless* yo
 | --- | --- | --- | --- |
 | **Mockaroo** | Active | Free 1,000 rows/download; paid from $60/yr | **USE** — seed synthetic members/bookings (keep it synthetic; never derive schemas from real member data). |
 | **free-for.dev** | Active | Free | **USE (reference)** — spot free-tier ancillary services. |
-| **DummyJSON** | Active | Free | **MAYBE** — early UI prototyping only; Supabase + Mockaroo supersede it. |
+| **DummyJSON** | Active | Free | **USE (adopted)** — wired as the demo-data fallback (`src/lib/demo/dummy.ts`): empty admin screens show fake members/bookings/messages so we can review every section before real data exists. |
 
 ---
 

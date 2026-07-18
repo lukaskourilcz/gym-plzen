@@ -1,9 +1,13 @@
 import { loyalty, members } from "@/lib/services";
+import { deriveLoyaltyStatus } from "@/lib/services/loyalty";
 import { FREE_ENTRY_EVERY } from "@/lib/config/pricing";
 import { formatMoney } from "@/lib/helpers/format";
+import { loadDemoData } from "@/lib/demo/dummy";
+import { DemoBanner } from "@/components/admin/demo-banner";
 import { EntryPriceForm } from "./entry-price-form";
 
 export const metadata = { title: "Vstupné a věrnost" };
+export const dynamic = "force-dynamic";
 
 /**
  * Pricing & loyalty admin. The gym sells one product — a one-time entry — with
@@ -11,22 +15,40 @@ export const metadata = { title: "Vstupné a věrnost" };
  * price and shows each member's loyalty progress.
  */
 export default async function PricingPage() {
-  const [entryPriceCents, memberList] = await Promise.all([
+  const [entryPriceCents, liveMembers] = await Promise.all([
     loyalty.getEntryPriceCents(),
     members.listMembers(200),
   ]);
 
-  // Compute loyalty for each member (small counts — fine to do per member).
-  const withLoyalty = await Promise.all(
-    memberList.map(async (m) => ({
+  const demo = liveMembers.length === 0;
+  let withLoyalty: { member: (typeof liveMembers)[number]; status: ReturnType<typeof deriveLoyaltyStatus> }[];
+
+  if (demo) {
+    // Derive loyalty from demo reservation counts (demo ids aren't in the DB).
+    const d = await loadDemoData();
+    const counts = new Map<string, number>();
+    for (const r of d.reservations) {
+      if ((r.status === "confirmed" || r.status === "completed") && r.userId) {
+        counts.set(r.userId, (counts.get(r.userId) ?? 0) + 1);
+      }
+    }
+    withLoyalty = d.members.map((m) => ({
       member: m,
-      status: await loyalty.getLoyaltyStatus(m.user.id),
-    })),
-  );
+      status: deriveLoyaltyStatus(counts.get(m.user.id) ?? 0),
+    }));
+  } else {
+    withLoyalty = await Promise.all(
+      liveMembers.map(async (m) => ({
+        member: m,
+        status: await loyalty.getLoyaltyStatus(m.user.id),
+      })),
+    );
+  }
 
   return (
     <div>
       <h1>Vstupné a věrnost</h1>
+      {demo && <DemoBanner />}
 
       <section
         style={{

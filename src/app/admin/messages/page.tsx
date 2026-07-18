@@ -1,18 +1,24 @@
 import { messages } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
+import { loadDemoData } from "@/lib/demo/dummy";
+import { DemoBanner } from "@/components/admin/demo-banner";
 
 export const metadata = { title: "Doručené zprávy" };
+export const dynamic = "force-dynamic";
 
 /**
  * "Přehled doručených zpráv" — per-channel delivery status for every outbound
  * message (access codes, confirmations). Status is updated by provider webhooks.
  */
 export default async function MessagesPage() {
-  const rows = await messages.listRecent(200);
+  let rows = await messages.listRecent(200);
+  const demo = rows.length === 0;
+  if (demo) rows = (await loadDemoData()).messages;
 
   return (
     <div>
       <h1>Doručené zprávy</h1>
+      {demo && <DemoBanner />}
       <table>
         <thead>
           <tr>

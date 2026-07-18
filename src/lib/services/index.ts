@@ -11,6 +11,9 @@
  */
 export * as availability from "./availability";
 export * as reservations from "./reservations";
+export * as booking from "./booking";
+export * as slots from "./slots";
+export * as stats from "./stats";
 export * as accessCodes from "./access-codes";
 export * as notifications from "./notifications";
 export * as fulfillment from "./fulfillment";
