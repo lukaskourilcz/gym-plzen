@@ -22,6 +22,9 @@ const serverSchema = z.object({
   // Everything below is optional at boot; the relevant integration validates
   // its own keys via `requireEnv()` the first time it is used.
   DIRECT_URL: z.string().url().optional(),
+  // New Supabase key model: `sb_secret_…` (replaces the legacy service_role key).
+  // Either is accepted; the secret key wins when present.
+  SUPABASE_SECRET_KEY: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   SUPABASE_STORAGE_BUCKET: z.string().default("cms-media"),
 

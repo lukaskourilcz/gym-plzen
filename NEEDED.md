@@ -27,33 +27,64 @@ Legenda: ⬜ = udělat, ✅ = hotovo.
 
 Supabase = Postgres databáze + úložiště souborů (media) + realtime kalendář.
 
-- ⬜ Založ projekt na <https://supabase.com> (region **EU**, např. Frankfurt —
-  kvůli GDPR).
-- ⬜ **Project Settings → Database → Connection string**:
-  - `DATABASE_URL` = **Transaction pooler** (port `6543`, obsahuje
-    `pooler.supabase.com`). Přidej `?pgbouncer=true` pokud ho string nemá.
-  - `DIRECT_URL` = **Session/Direct** připojení (port `5432`). Používá se jen
-    pro migrace.
-- ⬜ **Project Settings → API**:
-  - `NEXT_PUBLIC_SUPABASE_URL` = Project URL.
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = anon public key.
-  - `SUPABASE_SERVICE_ROLE_KEY` = service_role key (**tajné**, jen server).
-- ⬜ **Storage → New bucket**: vytvoř bucket `cms-media` (nastav jako *public*,
-  pokud chceš obrázky přímo servírovat). Název musí sedět s
-  `SUPABASE_STORAGE_BUCKET`.
-- ⬜ Spusť migrace: `npm run db:migrate` (vytvoří tabulky + exclusion constraint
-  proti překrývání rezervací; ten vyžaduje rozšíření `btree_gist`, které migrace
-  zapne sama).
-- ⬜ (volitelně) **Realtime**: v Database → Replication zapni realtime pro
-  tabulku `reservation`, aby se kalendář na webu aktualizoval okamžitě.
+✅ **Projekt je založený**: `rkmunagymohxtclymacm`, region **eu-west-3 (Paříž, EU)**.
+Veřejné hodnoty (URL + publishable key) jsou už předvyplněné v `.env.local`.
+
+Zbývá doplnit **dvě tajné hodnoty** (do `.env.local` lokálně a na **Vercelu**):
+
+- ⬜ **Heslo k databázi** → do `DATABASE_URL` i `DIRECT_URL` místo
+  `[YOUR-PASSWORD]`. Najdeš/resetuješ v **Project Settings → Database →
+  Database password**. Přesné stringy (region eu-west-3) jsou v `.env.local`:
+  - `DATABASE_URL` = transaction pooler, port **6543**
+  - `DIRECT_URL` = session pooler, port **5432** (migrace)
+  - Má-li heslo speciální znaky, **percent-enkóduj** je.
+- ⬜ **Secret key** (`sb_secret_…`) → `SUPABASE_SECRET_KEY` (jen server, obchází
+  RLS, používá se pro nahrávání do Storage). Vytvoříš v **Project Settings →
+  API Keys**. V dashboardu ti ho ukázalo zamaskovaně — zkopíruj celý.
+- ✅ `NEXT_PUBLIC_SUPABASE_URL` a `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` už máš
+  (veřejné, bezpečné do prohlížeče).
+- ⬜ **Storage → New bucket**: vytvoř bucket `cms-media` (public, pokud chceš
+  obrázky servírovat přímo). Název musí sedět s `SUPABASE_STORAGE_BUCKET`.
+- ⬜ Spusť migrace + seed (po doplnění hesla):
+  `npm run db:migrate && npm run db:seed`
+  (vytvoří tabulky + exclusion constraint proti překrývání rezervací; vyžaduje
+  rozšíření `btree_gist`, které migrace zapne sama).
+- ⬜ Založ si účet přes `/login` a povyš se na admina:
+  `npm run set-admin -- tvuj@email.cz`
+
+### Realtime „živý kalendář" (aby zabraný slot zmizel všem hned)
+
+Kód už je hotový (`RealtimeRefresher` na stránce `/rezervace`) — chybí jen
+zapnout Realtime v Supabase:
+
+- ⬜ **Database → Replication → `supabase_realtime`**: přidej tabulku
+  `reservation`.
+- ⚠️ **GDPR — důležité:** Realtime posílá změny řádků. Tabulka `reservation`
+  obsahuje osobní údaje (jméno, e-mail, telefon). Náš klient payload ignoruje a
+  jen znovu načte dostupnost ze serveru, **ale** aby data neputovala do
+  prohlížeče vůbec, zapni **RLS** na `reservation` a přidej politiku, která
+  `anon`/publishable roli **nedovolí** číst osobní sloupce (nebo zveřejni jen
+  `starts_at`/`ends_at`/`status` přes pohled). Bez RLS by publishable klíč viděl
+  celé řádky.
 
 ### MCP pro Supabase (volitelné, pro práci s Claude Code)
 
-- ⬜ Chceš-li, aby Claude Code viděl do DB, nastav Supabase MCP server:
-  vygeneruj **Personal access token** (Account → Access Tokens) a přidej MCP
-  server do své Claude Code konfigurace podle
-  <https://supabase.com/docs/guides/getting-started/mcp>. Do repa nic tajného
-  nedávej.
+- ⬜ Chceš-li, aby Claude Code viděl do DB, přidej Supabase MCP server (spusť ve
+  **svém** terminálu, ne v IDE — kvůli OAuth přihlášení):
+  ```
+  claude mcp add --scope project --transport http supabase \
+    "https://mcp.supabase.com/mcp?project_ref=rkmunagymohxtclymacm"
+  ```
+  Pak `claude` → `/mcp` → vyber `supabase` → **Authenticate**.
+
+### Co jsem záměrně NEudělal (a proč)
+
+- **`@supabase/server` + `SUPABASE_JWKS_URL`** — slouží k ověřování
+  **Supabase Auth** JWT. My používáme **Better Auth**, takže to nepotřebujeme.
+- **`npx shadcn add @supabase/supabase-client-nextjs`** — scaffolduje
+  Supabase-Auth login/klienty, které by kolidovaly s Better Auth. Místo toho
+  máme čisté účelové klienty (`supabase.ts` pro Storage, `supabase-browser.ts`
+  pro Realtime).
 
 ---
 

@@ -13,6 +13,9 @@ const publicSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
   NEXT_PUBLIC_DEFAULT_LOCALE: z.string().default("cs"),
   NEXT_PUBLIC_SUPABASE_URL: z.string().optional(),
+  // New Supabase key model: `sb_publishable_…` (replaces the legacy anon key).
+  // Both are accepted; the publishable key wins when present.
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().optional(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
   NEXT_PUBLIC_SENTRY_DSN: z.string().optional(),
@@ -23,6 +26,7 @@ function parsePublic() {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_DEFAULT_LOCALE: process.env.NEXT_PUBLIC_DEFAULT_LOCALE,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
     NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -34,3 +38,9 @@ function parsePublic() {
 }
 
 export const publicEnv = parsePublic();
+
+/** The browser-safe Supabase key (new publishable key, falling back to anon). */
+export const supabasePublicKey =
+  publicEnv.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+  publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+  null;
