@@ -1,7 +1,10 @@
 import { test, expect } from "@playwright/test";
+import { supabaseConfigured } from "./global-setup";
 
-/** Authentication flows via the UI. */
+/** Authentication flows via the UI (Supabase Auth). */
 test.describe("Auth", () => {
+  test.skip(!supabaseConfigured(), "requires a configured Supabase (auth) instance");
+
   test("member can sign in and reach their account", async ({ page }) => {
     await page.goto("/login?next=/account");
     await page.getByLabel(/E-mail/i).fill("member@test.cz");

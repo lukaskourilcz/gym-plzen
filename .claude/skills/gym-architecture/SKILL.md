@@ -2,7 +2,7 @@
 name: gym-architecture
 description: >-
   Architecture, conventions, and integration wiring for the gym-plzen booking &
-  CMS system (Next.js + Drizzle + Better Auth + Stripe/Nuki/WhatsApp/Resend).
+  CMS system (Next.js + Drizzle + Supabase Auth + Stripe/Nuki/WhatsApp/Resend).
   Use when implementing features, wiring integrations, editing the schema, or
   adding admin modules in this repo.
 ---
@@ -71,10 +71,17 @@ Every form — admin and login — is built on **React Hook Form + Zod**:
 
 ## Auth
 
-Better Auth (`src/lib/auth/index.ts`) with the Drizzle adapter + `admin` plugin.
-Guards in `src/lib/auth/guards.ts`: `requireUser`, `requireAdmin` (Server
-Components), `assertAdmin` (actions). Admin = user with `role === "admin"`; set
-the first one with `npm run set-admin -- you@example.com`.
+**Supabase Auth**. Users live in `auth.users` (Supabase-managed); each has a
+`public.profiles` row (id = auth uid, mirrors email/name, holds `role`). A
+trigger (`on_auth_user_created`, migration `0002`) creates the profile on
+sign-up; `ensureProfileForUser` is the app-side fallback.
+
+- Clients: `src/lib/supabase/{server,client}.ts` (SSR + browser), `middleware.ts`
+  refreshes the session, `app/auth/callback` exchanges the OAuth code.
+- Guards: `src/lib/auth/guards.ts` — `getSessionUser`/`getSession`, `requireUser`,
+  `requireAdmin` (Server Components), `assertAdmin` (actions). Admin =
+  `role === "admin"`; set the first one with `npm run set-admin -- you@example.com`.
+- OAuth providers (google/apple/azure) are configured in the Supabase dashboard.
 
 ## Adding things
 

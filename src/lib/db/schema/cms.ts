@@ -8,7 +8,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import { user } from "./auth";
+import { profiles } from "./members";
 import { cmsBlockType } from "./enums";
 
 /**
@@ -40,7 +40,7 @@ export const contentBlock = pgTable(
     groupName: text("group_name"),
     sortOrder: integer("sort_order").default(0).notNull(),
 
-    updatedByAdminId: text("updated_by_admin_id").references(() => user.id, {
+    updatedByAdminId: uuid("updated_by_admin_id").references(() => profiles.id, {
       onDelete: "set null",
     }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -66,7 +66,7 @@ export const mediaAsset = pgTable("media_asset", {
   width: integer("width"),
   height: integer("height"),
   alt: text("alt"), // accessibility / SEO
-  uploadedByAdminId: text("uploaded_by_admin_id").references(() => user.id, {
+  uploadedByAdminId: uuid("uploaded_by_admin_id").references(() => profiles.id, {
     onDelete: "set null",
   }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -85,7 +85,7 @@ export const page = pgTable("page", {
   metaDescription: text("meta_description"),
   isPublished: boolean("is_published").default(false).notNull(),
   sortOrder: integer("sort_order").default(0).notNull(),
-  updatedByAdminId: text("updated_by_admin_id").references(() => user.id, {
+  updatedByAdminId: uuid("updated_by_admin_id").references(() => profiles.id, {
     onDelete: "set null",
   }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -96,7 +96,7 @@ export const page = pgTable("page", {
 export const siteSetting = pgTable("site_setting", {
   key: text("key").primaryKey(),
   value: jsonb("value"),
-  updatedByAdminId: text("updated_by_admin_id").references(() => user.id, {
+  updatedByAdminId: uuid("updated_by_admin_id").references(() => profiles.id, {
     onDelete: "set null",
   }),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

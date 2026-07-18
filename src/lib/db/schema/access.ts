@@ -5,7 +5,7 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import { user } from "./auth";
+import { profiles } from "./members";
 import { reservation } from "./reservations";
 import { accessCodeStatus } from "./enums";
 
@@ -57,7 +57,7 @@ export const entryLog = pgTable(
     reservationId: uuid("reservation_id").references(() => reservation.id, {
       onDelete: "set null",
     }),
-    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+    userId: uuid("user_id").references(() => profiles.id, { onDelete: "set null" }),
     accessCodeId: uuid("access_code_id").references(() => accessCode.id, {
       onDelete: "set null",
     }),

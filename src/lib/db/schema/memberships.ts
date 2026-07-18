@@ -7,7 +7,7 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import { user } from "./auth";
+import { profiles } from "./members";
 import { reservation } from "./reservations";
 import { membershipStatus, paymentStatus, paymentType } from "./enums";
 
@@ -38,9 +38,9 @@ export const membership = pgTable(
   "membership",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    userId: text("user_id")
+    userId: uuid("user_id")
       .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+      .references(() => profiles.id, { onDelete: "cascade" }),
     planId: uuid("plan_id").references(() => membershipPlan.id, {
       onDelete: "set null",
     }),
@@ -64,7 +64,7 @@ export const payment = pgTable(
   "payment",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+    userId: uuid("user_id").references(() => profiles.id, { onDelete: "set null" }),
     reservationId: uuid("reservation_id").references(() => reservation.id, {
       onDelete: "set null",
     }),

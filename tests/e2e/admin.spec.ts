@@ -1,5 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { join } from "node:path";
+import { supabaseConfigured } from "./global-setup";
+
+// Admin flows need a real Supabase session; skip when Supabase isn't configured.
+test.skip(!supabaseConfigured(), "requires a configured Supabase (auth) instance");
 
 // All tests in this file run as the admin.
 test.use({ storageState: join(process.cwd(), "tests", "e2e", ".auth", "admin.json") });

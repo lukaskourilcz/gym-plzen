@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getSupabaseBrowserClient } from "@/lib/integrations/supabase-browser";
+import { createClient } from "@/lib/supabase/client";
 
 /**
  * Live-calendar realtime: subscribes to Postgres changes on a table via Supabase
@@ -20,7 +20,7 @@ export function RealtimeRefresher({ table = "reservation" }: { table?: string })
   const router = useRouter();
 
   useEffect(() => {
-    const supabase = getSupabaseBrowserClient();
+    const supabase = createClient();
     if (!supabase) return;
 
     const channel = supabase

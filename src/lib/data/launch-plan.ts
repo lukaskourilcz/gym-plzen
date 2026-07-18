@@ -27,7 +27,7 @@ export const LAUNCH_PLAN: PlanPhase[] = [
       { title: "Vrstvená architektura (routes → services → db/integrace)", status: "done" },
       { title: "Databázové schéma (Drizzle) + migrace", status: "done" },
       { title: "Ochrana proti překrytí rezervací (DB constraint)", status: "done" },
-      { title: "Přihlášení Better Auth (e-mail + Google/Apple/Microsoft)", status: "done" },
+      { title: "Přihlášení Supabase Auth (e-mail + Google/Apple/Microsoft)", status: "done" },
       { title: "Znovupoužitelné helpery (http retry, akce, formuláře…)", status: "done" },
     ],
   },

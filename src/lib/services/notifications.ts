@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { memberProfile, messageDelivery } from "@/lib/db/schema";
+import { profiles, messageDelivery } from "@/lib/db/schema";
 import type { MessageDelivery } from "@/lib/db/types";
 import { formatDateTime } from "@/lib/helpers/format";
 import { sendEmail } from "@/lib/integrations/resend";
@@ -202,8 +202,8 @@ export async function loadMemberChannels(userId: string): Promise<{
 } | null> {
   const [profile] = await db
     .select()
-    .from(memberProfile)
-    .where(eq(memberProfile.userId, userId))
+    .from(profiles)
+    .where(eq(profiles.id, userId))
     .limit(1);
   if (!profile) return null;
   return {

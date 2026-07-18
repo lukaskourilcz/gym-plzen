@@ -14,7 +14,7 @@ import { z } from "zod";
 /** UUID — used for our own domain rows (reservations, plans, …). */
 export const uuidSchema = z.string().uuid("Neplatné ID.");
 
-/** Opaque id — used for Better Auth user ids, which are not UUIDs. */
+/** Opaque id string (accepts uuids and other id formats). */
 export const idSchema = z.string().min(1, "Neplatné ID.").max(255);
 
 export const emailSchema = z.string().email("Neplatný e-mail.");

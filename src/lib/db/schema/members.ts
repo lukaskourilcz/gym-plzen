@@ -1,20 +1,27 @@
 import { boolean, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
-import { user } from "./auth";
 
 /**
- * Extended member profile — everything about a customer that Better Auth's
- * `user` table does not hold. One row per user, keyed by `user.id`.
+ * `profiles` — the app's user table under **Supabase Auth**.
  *
- * Kept separate from the auth `user` table so the auth schema stays a clean
- * mirror of the library and so GDPR-relevant fields (consents, phone) live in
- * one auditable place.
+ * Supabase owns the `auth.users` table (identity, credentials, OAuth). We keep
+ * one `profiles` row per user, whose `id` equals the `auth.users` id (a uuid).
+ * A trigger on `auth.users` inserts the profile on sign-up (see the profiles
+ * migration), and the app also creates it lazily as a fallback. `email` and
+ * `fullName` are mirrored here so member lists don't need to query the `auth`
+ * schema.
+ *
+ * There is intentionally no cross-schema foreign key to `auth.users` (Supabase
+ * manages that lifecycle); `id` is a logical link.
  */
-export const memberProfile = pgTable("member_profile", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: text("user_id")
-    .notNull()
-    .unique()
-    .references(() => user.id, { onDelete: "cascade" }),
+export const profiles = pgTable("profiles", {
+  id: uuid("id").primaryKey(),
+
+  // Mirrored from auth.users for convenient listing/joins.
+  email: text("email"),
+  fullName: text("full_name"),
+
+  // Authorization: "admin" unlocks the administration.
+  role: text("role").default("member").notNull(),
 
   // Contact — phone is E.164, required for WhatsApp/SMS code delivery.
   phone: text("phone"),

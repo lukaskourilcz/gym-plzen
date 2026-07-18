@@ -60,38 +60,32 @@ function fullName(u: DummyUser): string {
 const STATUSES: Reservation["status"][] = ["confirmed", "completed", "confirmed", "cancelled", "no_show", "completed"];
 const HOURS = [6, 7, 9, 12, 13, 16, 17, 18, 19, 20];
 
-/** Build demo members (list view shape). */
+/** Build demo members (list view shape) over the Supabase `profiles` model. */
 export function buildDemoMembers(users: DummyUser[], now = new Date()): MemberWithProfile[] {
-  return users.map((u, i) => ({
-    user: {
-      id: userId(u),
-      name: fullName(u),
-      email: u.email,
-      emailVerified: true,
-      image: u.image ?? null,
-      role: i === 0 ? "admin" : "member",
-      banned: false,
-      banReason: null,
-      banExpires: null,
-      createdAt: addMinutes(now, -((i + 1) * 60 * 24 * 3)),
-      updatedAt: now,
-    },
-    profile: {
-      id: `demo-p-${u.id}`,
-      userId: userId(u),
-      phone: u.phone,
-      phoneVerified: i % 3 !== 0,
-      stripeCustomerId: null,
-      notifyByWhatsapp: true,
-      notifyBySms: i % 4 === 0,
-      marketingConsent: i % 2 === 0,
-      marketingConsentAt: null,
-      termsAcceptedAt: now,
-      note: null,
-      createdAt: now,
-      updatedAt: now,
-    },
-  }));
+  return users.map((u, i) => {
+    const createdAt = addMinutes(now, -((i + 1) * 60 * 24 * 3));
+    const role = i === 0 ? "admin" : "member";
+    return {
+      user: { id: userId(u), name: fullName(u), email: u.email, role, createdAt },
+      profile: {
+        id: userId(u),
+        email: u.email,
+        fullName: fullName(u),
+        role,
+        phone: u.phone,
+        phoneVerified: i % 3 !== 0,
+        stripeCustomerId: null,
+        notifyByWhatsapp: true,
+        notifyBySms: i % 4 === 0,
+        marketingConsent: i % 2 === 0,
+        marketingConsentAt: null,
+        termsAcceptedAt: now,
+        note: null,
+        createdAt,
+        updatedAt: now,
+      },
+    };
+  });
 }
 
 /** Build demo reservations spread across the recent past and near future. */
