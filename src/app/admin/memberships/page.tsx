@@ -4,15 +4,17 @@ import { FREE_ENTRY_EVERY } from "@/lib/config/pricing";
 import { formatMoney } from "@/lib/helpers/format";
 import { loadDemoData } from "@/lib/demo/dummy";
 import { DemoBanner } from "@/components/admin/demo-banner";
+import { PageHeader } from "@/components/admin/page-header";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EntryPriceForm } from "./entry-price-form";
 
 export const metadata = { title: "Vstupné a věrnost" };
 export const dynamic = "force-dynamic";
 
 /**
- * Pricing & loyalty admin. The gym sells one product — a one-time entry — with
- * no monthly subscriptions. Every Nth entry is free; this page sets the entry
- * price and shows each member's loyalty progress.
+ * Pricing & loyalty admin. One product — a one-time entry, no subscriptions.
+ * Every Nth entry is free; this page sets the price and shows loyalty progress.
  */
 export default async function PricingPage() {
   const [entryPriceCents, liveMembers] = await Promise.all([
@@ -32,75 +34,65 @@ export default async function PricingPage() {
         counts.set(r.userId, (counts.get(r.userId) ?? 0) + 1);
       }
     }
-    withLoyalty = d.members.map((m) => ({
-      member: m,
-      status: deriveLoyaltyStatus(counts.get(m.user.id) ?? 0),
-    }));
+    withLoyalty = d.members.map((m) => ({ member: m, status: deriveLoyaltyStatus(counts.get(m.user.id) ?? 0) }));
   } else {
     withLoyalty = await Promise.all(
-      liveMembers.map(async (m) => ({
-        member: m,
-        status: await loyalty.getLoyaltyStatus(m.user.id),
-      })),
+      liveMembers.map(async (m) => ({ member: m, status: await loyalty.getLoyaltyStatus(m.user.id) })),
     );
   }
 
   return (
     <div>
-      <h1>Vstupné a věrnost</h1>
+      <PageHeader title="Vstupné a věrnost" />
       {demo && <DemoBanner />}
 
-      <section
-        style={{
-          border: "1px solid var(--border)",
-          borderRadius: 8,
-          padding: "1rem",
-          maxWidth: 520,
-          marginBottom: "2rem",
-        }}
-      >
-        <h2 style={{ marginTop: 0 }}>Cena vstupného</h2>
-        <p style={{ color: "var(--muted)" }}>
-          Jednorázový vstup. Žádná měsíční předplatná. Aktuální cena:{" "}
-          <strong>{formatMoney(entryPriceCents)}</strong>.
-        </p>
-        <EntryPriceForm currentCzk={Math.round(entryPriceCents / 100)} />
-        <p style={{ color: "var(--muted)", marginTop: "1rem" }}>
-          Věrnostní program: každý <strong>{FREE_ENTRY_EVERY}.</strong> vstup je
-          zdarma. (Nastavení kadence: <code>src/lib/config/pricing.ts</code>.)
-        </p>
-      </section>
+      <Card className="mb-8 max-w-xl">
+        <CardHeader>
+          <CardTitle>Cena vstupného</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="mb-4 text-sm text-muted-foreground">
+            Jednorázový vstup. Žádná měsíční předplatná. Aktuální cena:{" "}
+            <strong className="text-foreground">{formatMoney(entryPriceCents)}</strong>.
+          </p>
+          <EntryPriceForm currentCzk={Math.round(entryPriceCents / 100)} />
+          <p className="mt-4 text-sm text-muted-foreground">
+            Věrnostní program: každý <strong className="text-foreground">{FREE_ENTRY_EVERY}.</strong> vstup je zdarma.
+            (Kadence: <code>src/lib/config/pricing.ts</code>.)
+          </p>
+        </CardContent>
+      </Card>
 
-      <h2>Věrnostní přehled členů</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Člen</th>
-            <th>Návštěv celkem</th>
-            <th>V aktuálním cyklu</th>
-            <th>Do vstupu zdarma</th>
-            <th>Vstupů zdarma získáno</th>
-          </tr>
-        </thead>
-        <tbody>
+      <h2 className="mb-3 text-lg font-semibold">Věrnostní přehled členů</h2>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Člen</TableHead>
+            <TableHead>Návštěv celkem</TableHead>
+            <TableHead>V aktuálním cyklu</TableHead>
+            <TableHead>Do vstupu zdarma</TableHead>
+            <TableHead>Vstupů zdarma získáno</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {withLoyalty.map(({ member, status }) => (
-            <tr key={member.user.id}>
-              <td>{member.user.name || member.user.email}</td>
-              <td>{status.totalEntries}</td>
-              <td>
-                {status.positionInCycle} / {status.cadence}
-              </td>
-              <td>{status.nextEntryIsFree ? "🎉 další zdarma" : status.entriesUntilFree}</td>
-              <td>{status.freeEntriesEarned}</td>
-            </tr>
+            <TableRow key={member.user.id}>
+              <TableCell>{member.user.name || member.user.email}</TableCell>
+              <TableCell>{status.totalEntries}</TableCell>
+              <TableCell>{status.positionInCycle} / {status.cadence}</TableCell>
+              <TableCell>{status.nextEntryIsFree ? "🎉 další zdarma" : status.entriesUntilFree}</TableCell>
+              <TableCell>{status.freeEntriesEarned}</TableCell>
+            </TableRow>
           ))}
           {withLoyalty.length === 0 && (
-            <tr>
-              <td colSpan={5}>Zatím žádní členové.</td>
-            </tr>
+            <TableRow>
+              <TableCell colSpan={5} className="text-muted-foreground">
+                Zatím žádní členové.
+              </TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

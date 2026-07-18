@@ -1,48 +1,50 @@
 import { alerts } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
+import { PageHeader } from "@/components/admin/page-header";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export const metadata = { title: "Upozornění" };
+export const dynamic = "force-dynamic";
 
-/**
- * Operational alerts history — every failure the watchdog raised and pushed to
- * the WhatsApp group. Unresolved alerts are highlighted.
- */
+/** Operational alerts history — failures pushed to the WhatsApp group. */
 export default async function AlertsPage() {
   const rows = await alerts.listRecentAlerts(100);
 
   return (
     <div>
-      <h1>Upozornění</h1>
-      <table>
-        <thead>
-          <tr>
-            <th>Čas</th>
-            <th>Závažnost</th>
-            <th>Titulek</th>
-            <th>Odesláno na WhatsApp</th>
-            <th>Vyřešeno</th>
-          </tr>
-        </thead>
-        <tbody>
+      <PageHeader title="Upozornění" />
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Čas</TableHead>
+            <TableHead>Závažnost</TableHead>
+            <TableHead>Titulek</TableHead>
+            <TableHead>Odesláno na WhatsApp</TableHead>
+            <TableHead>Vyřešeno</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {rows.map((a) => (
-            <tr key={a.id} style={{ background: a.resolvedAt ? undefined : "#fef2f2" }}>
-              <td>{formatDateTime(a.createdAt)}</td>
-              <td>{a.severity}</td>
-              <td>
+            <TableRow key={a.id} className={a.resolvedAt ? undefined : "bg-destructive/5"}>
+              <TableCell>{formatDateTime(a.createdAt)}</TableCell>
+              <TableCell>{a.severity}</TableCell>
+              <TableCell>
                 {a.title}
-                {a.body ? <div style={{ color: "var(--muted)", fontSize: "0.8rem" }}>{a.body}</div> : null}
-              </td>
-              <td>{a.notifiedAt ? formatDateTime(a.notifiedAt) : "—"}</td>
-              <td>{a.resolvedAt ? formatDateTime(a.resolvedAt) : "otevřené"}</td>
-            </tr>
+                {a.body && <div className="text-xs text-muted-foreground">{a.body}</div>}
+              </TableCell>
+              <TableCell>{a.notifiedAt ? formatDateTime(a.notifiedAt) : "—"}</TableCell>
+              <TableCell>{a.resolvedAt ? formatDateTime(a.resolvedAt) : "otevřené"}</TableCell>
+            </TableRow>
           ))}
           {rows.length === 0 && (
-            <tr>
-              <td colSpan={5}>Žádná upozornění.</td>
-            </tr>
+            <TableRow>
+              <TableCell colSpan={5} className="text-muted-foreground">
+                Žádná upozornění.
+              </TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

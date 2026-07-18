@@ -1,7 +1,14 @@
 "use client";
 
 import { useActionForm } from "@/components/admin/use-action-form";
-import { Field, FormFeedback, SubmitButton } from "@/components/admin/form-controls";
+import {
+  CheckboxField,
+  Field,
+  FormFeedback,
+  SubmitButton,
+} from "@/components/admin/form-controls";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { updateMemberSchema } from "@/lib/validations/members";
 import type { MemberWithProfile } from "@/lib/services/members";
 import { updateMemberAction } from "./actions";
@@ -27,32 +34,16 @@ export function MemberForm({ member }: { member: MemberWithProfile }) {
     <form onSubmit={submit}>
       <input type="hidden" {...register("userId")} />
       <Field name="phone" label="Telefon (E.164)" error={formState.errors.phone}>
-        <input id="phone" placeholder="+420…" {...register("phone")} />
+        <Input id="phone" placeholder="+420…" {...register("phone")} />
       </Field>
-      <label style={checkboxRow}>
-        <input type="checkbox" style={{ width: "auto" }} {...register("notifyByWhatsapp")} />
-        Posílat kódy přes WhatsApp
-      </label>
-      <label style={checkboxRow}>
-        <input type="checkbox" style={{ width: "auto" }} {...register("notifyBySms")} />
-        Posílat kódy přes SMS
-      </label>
-      <label style={checkboxRow}>
-        <input type="checkbox" style={{ width: "auto" }} {...register("marketingConsent")} />
-        Souhlas s marketingem
-      </label>
+      <CheckboxField name="notifyByWhatsapp" label="Posílat kódy přes WhatsApp" register={register("notifyByWhatsapp")} />
+      <CheckboxField name="notifyBySms" label="Posílat kódy přes SMS" register={register("notifyBySms")} />
+      <CheckboxField name="marketingConsent" label="Souhlas s marketingem" register={register("marketingConsent")} />
       <Field name="note" label="Interní poznámka" error={formState.errors.note}>
-        <textarea id="note" rows={2} {...register("note")} />
+        <Textarea id="note" rows={2} {...register("note")} />
       </Field>
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={formState.isSubmitting}>Uložit</SubmitButton>
     </form>
   );
 }
-
-const checkboxRow: React.CSSProperties = {
-  display: "flex",
-  gap: "0.3rem",
-  alignItems: "center",
-  marginBottom: "0.6rem",
-};

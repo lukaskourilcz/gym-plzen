@@ -1,30 +1,21 @@
+import { cn } from "@/lib/utils";
 import type { LoyaltyStatus } from "@/lib/services/loyalty";
 
 /**
  * Customer-facing loyalty widget. Shows how many entries the member has and how
  * many remain until their next free entry. Presentational only — pass a
- * `LoyaltyStatus` (from `loyalty.getLoyaltyStatus`). Styling is intentionally
- * minimal; the final visual design comes later.
+ * `LoyaltyStatus` (from `loyalty.getLoyaltyStatus`).
  */
 export function LoyaltyWidget({ status }: { status: LoyaltyStatus }) {
   const { positionInCycle, entriesUntilFree, cadence, nextEntryIsFree } = status;
   const filled = nextEntryIsFree ? cadence : positionInCycle;
 
   return (
-    <div
-      style={{
-        border: "1px solid var(--border)",
-        borderRadius: 12,
-        padding: "1rem",
-        maxWidth: 340,
-      }}
-    >
-      <div style={{ fontWeight: 700, marginBottom: "0.25rem" }}>Věrnostní program</div>
+    <div className="max-w-sm rounded-xl border border-border bg-card p-5">
+      <div className="mb-1 font-bold">Věrnostní program</div>
 
       {nextEntryIsFree ? (
-        <p style={{ color: "var(--ok)", fontWeight: 600 }}>
-          🎉 Váš další vstup je zdarma!
-        </p>
+        <p className="font-semibold text-primary">🎉 Váš další vstup je zdarma!</p>
       ) : (
         <p>
           Do vstupu zdarma zbývá{" "}
@@ -35,26 +26,18 @@ export function LoyaltyWidget({ status }: { status: LoyaltyStatus }) {
         </p>
       )}
 
-      {/* Progress dots — one per entry in the current cycle. */}
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: "0.5rem" }}>
+      <div className="mt-2 flex flex-wrap gap-1.5">
         {Array.from({ length: cadence }, (_, i) => (
           <span
             key={i}
             aria-hidden
-            style={{
-              width: 18,
-              height: 18,
-              borderRadius: "50%",
-              border: "1px solid var(--border)",
-              background: i < filled ? "var(--accent)" : "transparent",
-            }}
+            className={cn("size-4 rounded-full border border-border", i < filled && "bg-primary")}
           />
         ))}
       </div>
 
-      <div style={{ fontSize: "0.8rem", color: "var(--muted)", marginTop: "0.5rem" }}>
-        Celkem návštěv: {status.totalEntries} · vstupů zdarma získáno:{" "}
-        {status.freeEntriesEarned}
+      <div className="mt-2 text-xs text-muted-foreground">
+        Celkem návštěv: {status.totalEntries} · vstupů zdarma získáno: {status.freeEntriesEarned}
       </div>
     </div>
   );

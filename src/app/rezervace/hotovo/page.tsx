@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import { loadSiteContent } from "@/lib/content/site";
 import { Container, Section } from "@/components/ui/container";

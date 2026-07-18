@@ -1,63 +1,62 @@
 import { members } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
-import { loadDemoData } from "@/lib/demo/dummy";
+import { withDemoFallback } from "@/lib/demo/dummy";
 import { DemoBanner } from "@/components/admin/demo-banner";
+import { PageHeader } from "@/components/admin/page-header";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MemberForm } from "./member-form";
 
 export const metadata = { title: "Členové" };
 export const dynamic = "force-dynamic";
 
-/**
- * Members admin — every registered user with their profile. Expanding a row
- * reveals the editable profile (contact, notification channels, GDPR consent,
- * internal note). Payment/visit history links in as those views are built.
- */
+/** Members admin — every registered user with their editable profile. */
 export default async function MembersPage() {
-  let rows = await members.listMembers(200);
-  const demo = rows.length === 0;
-  if (demo) rows = (await loadDemoData()).members;
+  const { rows, demo } = await withDemoFallback(await members.listMembers(200), (d) => d.members);
 
   return (
     <div>
-      <h1>Členové</h1>
+      <PageHeader title="Členové" />
       {demo && <DemoBanner />}
-      <table>
-        <thead>
-          <tr>
-            <th>Jméno</th>
-            <th>E-mail</th>
-            <th>Telefon</th>
-            <th>Registrace</th>
-            <th>Role</th>
-          </tr>
-        </thead>
-        <tbody>
+
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Jméno</TableHead>
+            <TableHead>E-mail</TableHead>
+            <TableHead>Telefon</TableHead>
+            <TableHead>Registrace</TableHead>
+            <TableHead>Role</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {rows.map(({ user, profile }) => (
-            <tr key={user.id}>
-              <td>{user.name}</td>
-              <td>{user.email}</td>
-              <td>{profile?.phone ?? "—"}</td>
-              <td>{formatDateTime(user.createdAt)}</td>
-              <td>{user.role ?? "member"}</td>
-            </tr>
+            <TableRow key={user.id}>
+              <TableCell>{user.name}</TableCell>
+              <TableCell>{user.email}</TableCell>
+              <TableCell>{profile?.phone ?? "—"}</TableCell>
+              <TableCell>{formatDateTime(user.createdAt)}</TableCell>
+              <TableCell>{user.role ?? "member"}</TableCell>
+            </TableRow>
           ))}
           {rows.length === 0 && (
-            <tr>
-              <td colSpan={5}>Zatím žádní členové.</td>
-            </tr>
+            <TableRow>
+              <TableCell colSpan={5} className="text-muted-foreground">
+                Zatím žádní členové.
+              </TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
 
       {!demo && (
-        <section style={{ marginTop: "2rem", maxWidth: 520 }}>
-          <h2>Úprava člena</h2>
+        <section className="mt-8 max-w-xl">
+          <h2 className="mb-3 text-lg font-semibold">Úprava člena</h2>
           {rows.map((member) => (
-            <details key={member.user.id} style={{ marginBottom: "0.75rem" }}>
-              <summary>
+            <details key={member.user.id} className="mb-3 rounded-lg border border-border p-3">
+              <summary className="cursor-pointer">
                 {member.user.name} — {member.user.email}
               </summary>
-              <div style={{ marginTop: "0.75rem" }}>
+              <div className="mt-3">
                 <MemberForm member={member} />
               </div>
             </details>

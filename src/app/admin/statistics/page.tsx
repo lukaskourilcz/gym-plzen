@@ -1,14 +1,16 @@
 import { getStats, type Bucket } from "@/lib/services/stats";
 import { loadDemoData } from "@/lib/demo/dummy";
 import { DemoBanner } from "@/components/admin/demo-banner";
+import { PageHeader } from "@/components/admin/page-header";
+import { StatCard } from "@/components/admin/stat-card";
+import { Card, CardContent } from "@/components/ui/card";
 
 export const metadata = { title: "Statistiky" };
 export const dynamic = "force-dynamic";
 
 /**
  * Statistics admin — actionable insights from reservations: volume, busiest
- * weekdays and hours, and the monthly trend. Charts are lightweight inline bars
- * (swap for Tremor components later if richer charts are wanted).
+ * weekdays and hours, and the monthly trend. Lightweight inline bar charts.
  */
 export default async function StatisticsPage() {
   let stats = await getStats();
@@ -17,24 +19,18 @@ export default async function StatisticsPage() {
 
   return (
     <div>
-      <h1>Statistiky</h1>
+      <PageHeader title="Statistiky" />
       {demo && <DemoBanner />}
 
-      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", margin: "1rem 0 2rem" }}>
-        <Kpi label="Rezervací celkem" value={stats.total} />
-        <Kpi label="Za posledních 30 dní" value={stats.last30} />
-        <Kpi label="Potvrzené" value={stats.confirmed} />
-        <Kpi label="Zrušené" value={stats.cancelled} />
-        <Kpi label="Nedostavení" value={stats.noShow} />
+      <div className="mb-8 flex flex-wrap gap-4">
+        <StatCard label="Rezervací celkem" value={stats.total} />
+        <StatCard label="Za posledních 30 dní" value={stats.last30} />
+        <StatCard label="Potvrzené" value={stats.confirmed} />
+        <StatCard label="Zrušené" value={stats.cancelled} />
+        <StatCard label="Nedostavení" value={stats.noShow} />
       </div>
 
-      {stats.total === 0 && (
-        <p style={{ color: "var(--muted)" }}>
-          Zatím nejsou žádná data. Grafy se naplní, jakmile přibudou rezervace.
-        </p>
-      )}
-
-      <div style={{ display: "grid", gap: "2rem", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         <ChartCard
           title="Rezervace podle dne v týdnu"
           subtitle={stats.busiestWeekday ? `Nejvytíženější: ${stats.busiestWeekday}` : undefined}
@@ -51,40 +47,26 @@ export default async function StatisticsPage() {
   );
 }
 
-function Kpi({ label, value }: { label: string; value: number }) {
-  return (
-    <div style={{ border: "1px solid var(--border)", borderRadius: 8, padding: "1rem", minWidth: 150 }}>
-      <div style={{ fontSize: "1.8rem", fontWeight: 700 }}>{value}</div>
-      <div style={{ color: "var(--muted)", fontSize: "0.85rem" }}>{label}</div>
-    </div>
-  );
-}
-
 function ChartCard({ title, subtitle, data }: { title: string; subtitle?: string; data: Bucket[] }) {
   const max = Math.max(1, ...data.map((d) => d.count));
   return (
-    <div style={{ border: "1px solid var(--border)", borderRadius: 10, padding: "1rem" }}>
-      <h2 style={{ margin: 0, fontSize: "1.05rem" }}>{title}</h2>
-      {subtitle && <div style={{ color: "var(--muted)", fontSize: "0.8rem", marginBottom: "0.5rem" }}>{subtitle}</div>}
-      <div style={{ display: "grid", gap: "0.35rem", marginTop: "0.75rem" }}>
-        {data.length === 0 && <div style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Žádná data.</div>}
-        {data.map((d) => (
-          <div key={d.label} style={{ display: "grid", gridTemplateColumns: "48px 1fr 32px", alignItems: "center", gap: "0.5rem" }}>
-            <span style={{ fontSize: "0.8rem", color: "var(--muted)" }}>{d.label}</span>
-            <span style={{ background: "var(--color-muted)", borderRadius: 999, overflow: "hidden", height: 14 }}>
-              <span
-                style={{
-                  display: "block",
-                  height: "100%",
-                  width: `${(d.count / max) * 100}%`,
-                  background: "var(--color-primary)",
-                }}
-              />
-            </span>
-            <span style={{ fontSize: "0.8rem", textAlign: "right" }}>{d.count}</span>
-          </div>
-        ))}
-      </div>
-    </div>
+    <Card>
+      <CardContent className="p-4">
+        <h2 className="text-base font-semibold">{title}</h2>
+        {subtitle && <p className="mb-2 text-xs text-muted-foreground">{subtitle}</p>}
+        <div className="mt-3 grid gap-1.5">
+          {data.length === 0 && <p className="text-sm text-muted-foreground">Žádná data.</p>}
+          {data.map((d) => (
+            <div key={d.label} className="grid grid-cols-[3rem_1fr_2rem] items-center gap-2">
+              <span className="text-xs text-muted-foreground">{d.label}</span>
+              <span className="h-3.5 overflow-hidden rounded-full bg-muted">
+                <span className="block h-full rounded-full bg-primary" style={{ width: `${(d.count / max) * 100}%` }} />
+              </span>
+              <span className="text-right text-xs">{d.count}</span>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

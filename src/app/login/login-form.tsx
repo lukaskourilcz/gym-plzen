@@ -8,6 +8,8 @@ import { z } from "zod";
 import { authClient } from "@/lib/auth/client";
 import { signUpSchema } from "@/lib/validations/auth";
 import { Field, FormFeedback, SubmitButton } from "@/components/admin/form-controls";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 const PROVIDER_LABELS: Record<string, string> = {
   google: "Pokračovat přes Google",
@@ -79,11 +81,11 @@ export function LoginForm({ socialProviders }: { socialProviders: string[] }) {
   return (
     <div>
       {socialProviders.length > 0 && (
-        <div style={{ display: "grid", gap: "0.5rem", marginBottom: "1rem" }}>
+        <div className="mb-4 grid gap-2">
           {socialProviders.map((p) => (
-            <button key={p} type="button" onClick={() => onSocial(p)}>
+            <Button key={p} type="button" variant="outline" onClick={() => onSocial(p)}>
               {PROVIDER_LABELS[p] ?? p}
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -92,41 +94,31 @@ export function LoginForm({ socialProviders }: { socialProviders: string[] }) {
         <input type="hidden" {...register("__mode")} />
         {mode === "signup" && (
           <Field name="name" label="Jméno" error={formState.errors.name}>
-            <input id="name" {...register("name")} />
+            <Input id="name" {...register("name")} />
           </Field>
         )}
         <Field name="email" label="E-mail" error={formState.errors.email}>
-          <input id="email" type="email" {...register("email")} />
+          <Input id="email" type="email" {...register("email")} />
         </Field>
         <Field name="password" label="Heslo" error={formState.errors.password}>
-          <input id="password" type="password" {...register("password")} />
+          <Input id="password" type="password" {...register("password")} />
         </Field>
 
         <FormFeedback error={serverError} />
-        <SubmitButton isSubmitting={formState.isSubmitting}>
+        <SubmitButton isSubmitting={formState.isSubmitting} className="w-full">
           {mode === "signin" ? "Přihlásit se" : "Zaregistrovat se"}
         </SubmitButton>
       </form>
 
-      <p style={{ marginTop: "1rem" }}>
-        {mode === "signin" ? (
-          <button type="button" onClick={() => switchMode("signup")} style={linkBtn}>
-            Nemáte účet? Zaregistrujte se
-          </button>
-        ) : (
-          <button type="button" onClick={() => switchMode("signin")} style={linkBtn}>
-            Máte účet? Přihlaste se
-          </button>
-        )}
+      <p className="mt-4 text-sm">
+        <button
+          type="button"
+          onClick={() => switchMode(mode === "signin" ? "signup" : "signin")}
+          className="text-primary hover:underline"
+        >
+          {mode === "signin" ? "Nemáte účet? Zaregistrujte se" : "Máte účet? Přihlaste se"}
+        </button>
       </p>
     </div>
   );
 }
-
-const linkBtn: React.CSSProperties = {
-  background: "none",
-  border: "none",
-  color: "var(--accent)",
-  cursor: "pointer",
-  padding: 0,
-};

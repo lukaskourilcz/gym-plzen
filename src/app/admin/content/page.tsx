@@ -1,12 +1,14 @@
 import { cms } from "@/lib/services";
+import { groupBy } from "@/lib/helpers/collection";
+import { PageHeader } from "@/components/admin/page-header";
 import { BlockForm } from "./block-form";
 
 export const metadata = { title: "Obsah webu" };
+export const dynamic = "force-dynamic";
 
 /**
- * CMS admin — the "redakční systém". Lists every content block grouped by
- * section with an inline editor, plus a form to add new blocks. Media/file
- * management and pages get their own sub-sections as the public site is built.
+ * CMS admin — the "redakční systém". Lists content blocks grouped by section
+ * with an inline editor, plus a form to add new blocks.
  */
 export default async function ContentPage() {
   const blocks = await cms.listBlocks();
@@ -14,24 +16,21 @@ export default async function ContentPage() {
 
   return (
     <div>
-      <h1>Obsah webu</h1>
-      <p style={{ color: "var(--muted)" }}>
-        Upravte jakýkoli text na webu. Změny se projeví okamžitě po uložení.
-      </p>
+      <PageHeader
+        title="Obsah webu"
+        description="Upravte jakýkoli text na webu. Změny se projeví okamžitě po uložení."
+      />
 
       {Object.entries(groups).map(([group, items]) => (
-        <section key={group} style={{ marginTop: "1.5rem" }}>
-          <h2>{group}</h2>
+        <section key={group} className="mt-6">
+          <h2 className="mb-2 text-lg font-semibold">{group}</h2>
           {items.map((block) => (
-            <details
-              key={`${block.key}:${block.locale}`}
-              style={{ border: "1px solid var(--border)", borderRadius: 8, padding: "0.75rem", marginBottom: "0.75rem" }}
-            >
-              <summary>
+            <details key={`${block.key}:${block.locale}`} className="mb-3 rounded-lg border border-border p-3">
+              <summary className="cursor-pointer">
                 <strong>{block.label ?? block.key}</strong>{" "}
-                <code style={{ color: "var(--muted)" }}>{block.key}</code>
+                <code className="text-muted-foreground">{block.key}</code>
               </summary>
-              <div style={{ marginTop: "0.75rem" }}>
+              <div className="mt-3 max-w-xl">
                 <BlockForm block={block} />
               </div>
             </details>
@@ -39,19 +38,10 @@ export default async function ContentPage() {
         </section>
       ))}
 
-      <section style={{ marginTop: "2rem", maxWidth: 520 }}>
-        <h2>Přidat nový blok obsahu</h2>
+      <section className="mt-8 max-w-xl">
+        <h2 className="mb-3 text-lg font-semibold">Přidat nový blok obsahu</h2>
         <BlockForm />
       </section>
     </div>
   );
-}
-
-/** Small local group-by helper (kept inline; the shared helpers are for cross-cutting use). */
-function groupBy<T>(items: T[], key: (item: T) => string): Record<string, T[]> {
-  return items.reduce<Record<string, T[]>>((acc, item) => {
-    const k = key(item);
-    (acc[k] ??= []).push(item);
-    return acc;
-  }, {});
 }

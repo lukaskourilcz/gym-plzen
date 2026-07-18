@@ -189,6 +189,21 @@ export function buildDemoStats(reservations: Reservation[], now = new Date()): S
 }
 
 /**
+ * Show demo data when a real query comes back empty. Returns the live rows plus
+ * `demo: false` when there is real data, or the demo rows plus `demo: true`
+ * otherwise — so a page reads `const { rows, demo } = await withDemoFallback(...)`
+ * instead of repeating the empty-check everywhere.
+ */
+export async function withDemoFallback<T>(
+  live: T[],
+  pick: (demo: Awaited<ReturnType<typeof loadDemoData>>) => T[],
+): Promise<{ rows: T[]; demo: boolean }> {
+  if (live.length > 0) return { rows: live, demo: false };
+  const data = await loadDemoData();
+  return { rows: pick(data), demo: true };
+}
+
+/**
  * One-shot demo dataset. Call from a page when the real query is empty, then
  * render the returned collections with a demo banner.
  */
