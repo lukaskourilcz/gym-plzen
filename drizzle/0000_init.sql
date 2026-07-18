@@ -11,62 +11,11 @@ CREATE TYPE "public"."payment_type" AS ENUM('subscription', 'one_off');--> state
 CREATE TYPE "public"."pipeline_step" AS ENUM('payment', 'code_created', 'code_delivered');--> statement-breakpoint
 CREATE TYPE "public"."pipeline_step_status" AS ENUM('pending', 'in_progress', 'succeeded', 'failed', 'retrying');--> statement-breakpoint
 CREATE TYPE "public"."reservation_status" AS ENUM('pending', 'confirmed', 'cancelled', 'completed', 'no_show');--> statement-breakpoint
-CREATE TABLE "account" (
-	"id" text PRIMARY KEY NOT NULL,
-	"account_id" text NOT NULL,
-	"provider_id" text NOT NULL,
-	"user_id" text NOT NULL,
-	"access_token" text,
-	"refresh_token" text,
-	"id_token" text,
-	"access_token_expires_at" timestamp,
-	"refresh_token_expires_at" timestamp,
-	"scope" text,
-	"password" text,
-	"created_at" timestamp NOT NULL,
-	"updated_at" timestamp NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "session" (
-	"id" text PRIMARY KEY NOT NULL,
-	"expires_at" timestamp NOT NULL,
-	"token" text NOT NULL,
-	"created_at" timestamp NOT NULL,
-	"updated_at" timestamp NOT NULL,
-	"ip_address" text,
-	"user_agent" text,
-	"user_id" text NOT NULL,
-	"impersonated_by" text,
-	CONSTRAINT "session_token_unique" UNIQUE("token")
-);
---> statement-breakpoint
-CREATE TABLE "user" (
-	"id" text PRIMARY KEY NOT NULL,
-	"name" text NOT NULL,
-	"email" text NOT NULL,
-	"email_verified" boolean NOT NULL,
-	"image" text,
-	"role" text DEFAULT 'member',
-	"banned" boolean DEFAULT false,
-	"ban_reason" text,
-	"ban_expires" timestamp,
-	"created_at" timestamp NOT NULL,
-	"updated_at" timestamp NOT NULL,
-	CONSTRAINT "user_email_unique" UNIQUE("email")
-);
---> statement-breakpoint
-CREATE TABLE "verification" (
-	"id" text PRIMARY KEY NOT NULL,
-	"identifier" text NOT NULL,
-	"value" text NOT NULL,
-	"expires_at" timestamp NOT NULL,
-	"created_at" timestamp,
-	"updated_at" timestamp
-);
---> statement-breakpoint
-CREATE TABLE "member_profile" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" text NOT NULL,
+CREATE TABLE "profiles" (
+	"id" uuid PRIMARY KEY NOT NULL,
+	"email" text,
+	"full_name" text,
+	"role" text DEFAULT 'member' NOT NULL,
 	"phone" text,
 	"phone_verified" boolean DEFAULT false NOT NULL,
 	"stripe_customer_id" text,
@@ -78,8 +27,7 @@ CREATE TABLE "member_profile" (
 	"note" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	CONSTRAINT "member_profile_user_id_unique" UNIQUE("user_id"),
-	CONSTRAINT "member_profile_stripe_customer_id_unique" UNIQUE("stripe_customer_id")
+	CONSTRAINT "profiles_stripe_customer_id_unique" UNIQUE("stripe_customer_id")
 );
 --> statement-breakpoint
 CREATE TABLE "blocked_slot" (
@@ -88,7 +36,7 @@ CREATE TABLE "blocked_slot" (
 	"ends_at" timestamp with time zone NOT NULL,
 	"reason" "block_reason" DEFAULT 'other' NOT NULL,
 	"note" text,
-	"created_by_admin_id" text,
+	"created_by_admin_id" uuid,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -105,7 +53,7 @@ CREATE TABLE "opening_hours" (
 --> statement-breakpoint
 CREATE TABLE "reservation" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" text,
+	"user_id" uuid,
 	"starts_at" timestamp with time zone NOT NULL,
 	"ends_at" timestamp with time zone NOT NULL,
 	"status" "reservation_status" DEFAULT 'pending' NOT NULL,
@@ -114,7 +62,7 @@ CREATE TABLE "reservation" (
 	"contact_phone" text,
 	"price_cents" integer,
 	"currency" text DEFAULT 'czk' NOT NULL,
-	"created_by_admin_id" text,
+	"created_by_admin_id" uuid,
 	"cancelled_at" timestamp,
 	"cancel_reason" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
@@ -123,7 +71,7 @@ CREATE TABLE "reservation" (
 --> statement-breakpoint
 CREATE TABLE "membership" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" text NOT NULL,
+	"user_id" uuid NOT NULL,
 	"plan_id" uuid,
 	"status" "membership_status" DEFAULT 'incomplete' NOT NULL,
 	"stripe_subscription_id" text,
@@ -155,7 +103,7 @@ CREATE TABLE "membership_plan" (
 --> statement-breakpoint
 CREATE TABLE "payment" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" text,
+	"user_id" uuid,
 	"reservation_id" uuid,
 	"membership_id" uuid,
 	"type" "payment_type" NOT NULL,
@@ -189,7 +137,7 @@ CREATE TABLE "access_code" (
 CREATE TABLE "entry_log" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"reservation_id" uuid,
-	"user_id" text,
+	"user_id" uuid,
 	"access_code_id" uuid,
 	"nuki_log_id" text,
 	"nuki_name" text,
@@ -207,14 +155,14 @@ CREATE TABLE "marketing_campaign" (
 	"status" text DEFAULT 'draft' NOT NULL,
 	"scheduled_for" timestamp,
 	"sent_at" timestamp,
-	"created_by_admin_id" text,
+	"created_by_admin_id" uuid,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "message_delivery" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" text,
+	"user_id" uuid,
 	"reservation_id" uuid,
 	"channel" "message_channel" NOT NULL,
 	"kind" "message_kind" NOT NULL,
@@ -241,7 +189,7 @@ CREATE TABLE "content_block" (
 	"label" text,
 	"group_name" text,
 	"sort_order" integer DEFAULT 0 NOT NULL,
-	"updated_by_admin_id" text,
+	"updated_by_admin_id" uuid,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -255,7 +203,7 @@ CREATE TABLE "media_asset" (
 	"width" integer,
 	"height" integer,
 	"alt" text,
-	"uploaded_by_admin_id" text,
+	"uploaded_by_admin_id" uuid,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -267,7 +215,7 @@ CREATE TABLE "page" (
 	"meta_description" text,
 	"is_published" boolean DEFAULT false NOT NULL,
 	"sort_order" integer DEFAULT 0 NOT NULL,
-	"updated_by_admin_id" text,
+	"updated_by_admin_id" uuid,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "page_slug_unique" UNIQUE("slug")
@@ -276,7 +224,7 @@ CREATE TABLE "page" (
 CREATE TABLE "site_setting" (
 	"key" text PRIMARY KEY NOT NULL,
 	"value" jsonb,
-	"updated_by_admin_id" text,
+	"updated_by_admin_id" uuid,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -314,29 +262,26 @@ CREATE TABLE "webhook_event" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "member_profile" ADD CONSTRAINT "member_profile_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "blocked_slot" ADD CONSTRAINT "blocked_slot_created_by_admin_id_user_id_fk" FOREIGN KEY ("created_by_admin_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "reservation" ADD CONSTRAINT "reservation_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "reservation" ADD CONSTRAINT "reservation_created_by_admin_id_user_id_fk" FOREIGN KEY ("created_by_admin_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "membership" ADD CONSTRAINT "membership_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "blocked_slot" ADD CONSTRAINT "blocked_slot_created_by_admin_id_profiles_id_fk" FOREIGN KEY ("created_by_admin_id") REFERENCES "public"."profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "reservation" ADD CONSTRAINT "reservation_user_id_profiles_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "reservation" ADD CONSTRAINT "reservation_created_by_admin_id_profiles_id_fk" FOREIGN KEY ("created_by_admin_id") REFERENCES "public"."profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "membership" ADD CONSTRAINT "membership_user_id_profiles_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "membership" ADD CONSTRAINT "membership_plan_id_membership_plan_id_fk" FOREIGN KEY ("plan_id") REFERENCES "public"."membership_plan"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "payment" ADD CONSTRAINT "payment_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "payment" ADD CONSTRAINT "payment_user_id_profiles_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "payment" ADD CONSTRAINT "payment_reservation_id_reservation_id_fk" FOREIGN KEY ("reservation_id") REFERENCES "public"."reservation"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "payment" ADD CONSTRAINT "payment_membership_id_membership_id_fk" FOREIGN KEY ("membership_id") REFERENCES "public"."membership"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "access_code" ADD CONSTRAINT "access_code_reservation_id_reservation_id_fk" FOREIGN KEY ("reservation_id") REFERENCES "public"."reservation"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "entry_log" ADD CONSTRAINT "entry_log_reservation_id_reservation_id_fk" FOREIGN KEY ("reservation_id") REFERENCES "public"."reservation"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "entry_log" ADD CONSTRAINT "entry_log_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "entry_log" ADD CONSTRAINT "entry_log_user_id_profiles_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "entry_log" ADD CONSTRAINT "entry_log_access_code_id_access_code_id_fk" FOREIGN KEY ("access_code_id") REFERENCES "public"."access_code"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "marketing_campaign" ADD CONSTRAINT "marketing_campaign_created_by_admin_id_user_id_fk" FOREIGN KEY ("created_by_admin_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "message_delivery" ADD CONSTRAINT "message_delivery_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "marketing_campaign" ADD CONSTRAINT "marketing_campaign_created_by_admin_id_profiles_id_fk" FOREIGN KEY ("created_by_admin_id") REFERENCES "public"."profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "message_delivery" ADD CONSTRAINT "message_delivery_user_id_profiles_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "message_delivery" ADD CONSTRAINT "message_delivery_reservation_id_reservation_id_fk" FOREIGN KEY ("reservation_id") REFERENCES "public"."reservation"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "content_block" ADD CONSTRAINT "content_block_media_id_media_asset_id_fk" FOREIGN KEY ("media_id") REFERENCES "public"."media_asset"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "content_block" ADD CONSTRAINT "content_block_updated_by_admin_id_user_id_fk" FOREIGN KEY ("updated_by_admin_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "media_asset" ADD CONSTRAINT "media_asset_uploaded_by_admin_id_user_id_fk" FOREIGN KEY ("uploaded_by_admin_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "page" ADD CONSTRAINT "page_updated_by_admin_id_user_id_fk" FOREIGN KEY ("updated_by_admin_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "site_setting" ADD CONSTRAINT "site_setting_updated_by_admin_id_user_id_fk" FOREIGN KEY ("updated_by_admin_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "content_block" ADD CONSTRAINT "content_block_updated_by_admin_id_profiles_id_fk" FOREIGN KEY ("updated_by_admin_id") REFERENCES "public"."profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "media_asset" ADD CONSTRAINT "media_asset_uploaded_by_admin_id_profiles_id_fk" FOREIGN KEY ("uploaded_by_admin_id") REFERENCES "public"."profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "page" ADD CONSTRAINT "page_updated_by_admin_id_profiles_id_fk" FOREIGN KEY ("updated_by_admin_id") REFERENCES "public"."profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "site_setting" ADD CONSTRAINT "site_setting_updated_by_admin_id_profiles_id_fk" FOREIGN KEY ("updated_by_admin_id") REFERENCES "public"."profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "reservation_pipeline" ADD CONSTRAINT "reservation_pipeline_reservation_id_reservation_id_fk" FOREIGN KEY ("reservation_id") REFERENCES "public"."reservation"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "blocked_slot_starts_at_idx" ON "blocked_slot" USING btree ("starts_at");--> statement-breakpoint
 CREATE INDEX "reservation_starts_at_idx" ON "reservation" USING btree ("starts_at");--> statement-breakpoint

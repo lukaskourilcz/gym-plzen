@@ -27,59 +27,88 @@ Legenda: ⬜ = udělat, ✅ = hotovo.
 
 Supabase = Postgres databáze + úložiště souborů (media) + realtime kalendář.
 
-- ⬜ Založ projekt na <https://supabase.com> (region **EU**, např. Frankfurt —
-  kvůli GDPR).
-- ⬜ **Project Settings → Database → Connection string**:
-  - `DATABASE_URL` = **Transaction pooler** (port `6543`, obsahuje
-    `pooler.supabase.com`). Přidej `?pgbouncer=true` pokud ho string nemá.
-  - `DIRECT_URL` = **Session/Direct** připojení (port `5432`). Používá se jen
-    pro migrace.
-- ⬜ **Project Settings → API**:
-  - `NEXT_PUBLIC_SUPABASE_URL` = Project URL.
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = anon public key.
-  - `SUPABASE_SERVICE_ROLE_KEY` = service_role key (**tajné**, jen server).
-- ⬜ **Storage → New bucket**: vytvoř bucket `cms-media` (nastav jako *public*,
-  pokud chceš obrázky přímo servírovat). Název musí sedět s
-  `SUPABASE_STORAGE_BUCKET`.
-- ⬜ Spusť migrace: `npm run db:migrate` (vytvoří tabulky + exclusion constraint
-  proti překrývání rezervací; ten vyžaduje rozšíření `btree_gist`, které migrace
-  zapne sama).
-- ⬜ (volitelně) **Realtime**: v Database → Replication zapni realtime pro
-  tabulku `reservation`, aby se kalendář na webu aktualizoval okamžitě.
+✅ **Projekt je založený**: `rkmunagymohxtclymacm`, region **eu-west-3 (Paříž, EU)**.
+Veřejné hodnoty (URL + publishable key) jsou už předvyplněné v `.env.local`.
+
+Zbývá doplnit **dvě tajné hodnoty** (do `.env.local` lokálně a na **Vercelu**):
+
+- ⬜ **Heslo k databázi** → do `DATABASE_URL` i `DIRECT_URL` místo
+  `[YOUR-PASSWORD]`. Najdeš/resetuješ v **Project Settings → Database →
+  Database password**. Přesné stringy (region eu-west-3) jsou v `.env.local`:
+  - `DATABASE_URL` = transaction pooler, port **6543**
+  - `DIRECT_URL` = session pooler, port **5432** (migrace)
+  - Má-li heslo speciální znaky, **percent-enkóduj** je.
+- ⬜ **Secret key** (`sb_secret_…`) → `SUPABASE_SECRET_KEY` (jen server, obchází
+  RLS, používá se pro nahrávání do Storage). Vytvoříš v **Project Settings →
+  API Keys**. V dashboardu ti ho ukázalo zamaskovaně — zkopíruj celý.
+- ✅ `NEXT_PUBLIC_SUPABASE_URL` a `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` už máš
+  (veřejné, bezpečné do prohlížeče).
+- ⬜ **Storage → New bucket**: vytvoř bucket `cms-media` (public, pokud chceš
+  obrázky servírovat přímo). Název musí sedět s `SUPABASE_STORAGE_BUCKET`.
+- ⬜ Spusť migrace + seed (po doplnění hesla):
+  `npm run db:migrate && npm run db:seed`
+  (vytvoří tabulky + exclusion constraint proti překrývání rezervací; vyžaduje
+  rozšíření `btree_gist`, které migrace zapne sama).
+- ⬜ Založ si účet přes `/login` a povyš se na admina:
+  `npm run set-admin -- tvuj@email.cz`
+
+### Realtime „živý kalendář" (aby zabraný slot zmizel všem hned)
+
+Kód už je hotový (`RealtimeRefresher` na stránce `/rezervace`) — chybí jen
+zapnout Realtime v Supabase:
+
+- ⬜ **Database → Replication → `supabase_realtime`**: přidej tabulku
+  `reservation`.
+- ⚠️ **GDPR — důležité:** Realtime posílá změny řádků. Tabulka `reservation`
+  obsahuje osobní údaje (jméno, e-mail, telefon). Náš klient payload ignoruje a
+  jen znovu načte dostupnost ze serveru, **ale** aby data neputovala do
+  prohlížeče vůbec, zapni **RLS** na `reservation` a přidej politiku, která
+  `anon`/publishable roli **nedovolí** číst osobní sloupce (nebo zveřejni jen
+  `starts_at`/`ends_at`/`status` přes pohled). Bez RLS by publishable klíč viděl
+  celé řádky.
 
 ### MCP pro Supabase (volitelné, pro práci s Claude Code)
 
-- ⬜ Chceš-li, aby Claude Code viděl do DB, nastav Supabase MCP server:
-  vygeneruj **Personal access token** (Account → Access Tokens) a přidej MCP
-  server do své Claude Code konfigurace podle
-  <https://supabase.com/docs/guides/getting-started/mcp>. Do repa nic tajného
-  nedávej.
+- ⬜ Chceš-li, aby Claude Code viděl do DB, přidej Supabase MCP server (spusť ve
+  **svém** terminálu, ne v IDE — kvůli OAuth přihlášení):
+  ```
+  claude mcp add --scope project --transport http supabase \
+    "https://mcp.supabase.com/mcp?project_ref=rkmunagymohxtclymacm"
+  ```
+  Pak `claude` → `/mcp` → vyber `supabase` → **Authenticate**.
 
 ---
 
-## 2. Autentizace — Better Auth **[blokující]**
+## 2. Autentizace — Supabase Auth **[blokující]**
 
-- ⬜ Vygeneruj tajný klíč: `openssl rand -base64 32` → `BETTER_AUTH_SECRET`.
-- ⬜ `BETTER_AUTH_URL` a `NEXT_PUBLIC_APP_URL` = URL aplikace
-  (`http://localhost:3000` lokálně; produkční doména na Vercelu).
-- ✅ Email + heslo funguje rovnou po nasazení DB. OAuth níže je volitelný.
+Přihlašování teď řeší **Supabase Auth** (uživatelé v `auth.users`, náš profil v
+`public.profiles`, role `admin`/`member`). Vše se nastavuje **v Supabase
+dashboardu**, žádné auth secrety v kódu nejsou.
 
-### OAuth přihlášení (Google / Apple / Microsoft) — volitelné
-
-Doplň jen ty, které chceš; tlačítka se zobrazí automaticky podle vyplněných
-klíčů. Callback URL pro všechny:
-`<NEXT_PUBLIC_APP_URL>/api/auth/callback/<provider>`
-(např. `https://tvujgym.cz/api/auth/callback/google`).
-
-- ⬜ **Google** — <https://console.cloud.google.com>: vytvoř projekt →
-  *APIs & Services → Credentials → OAuth client ID* (typ *Web application*).
-  Přidej redirect URI výše. → `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
-  (Nezapomeň nastavit *OAuth consent screen*.)
-- ⬜ **Microsoft** — <https://portal.azure.com> → *App registrations* → redirect
-  URI výše. → `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`.
-- ⬜ **Apple** — <https://developer.apple.com> (placený účet, 99 USD/rok) →
-  *Sign in with Apple*, Services ID + klíč. → `APPLE_CLIENT_ID`,
-  `APPLE_CLIENT_SECRET`. (Apple je nejpracnější; klidně nech na později.)
+- ✅ Kód hotový: SSR klient + middleware (obnova session), `/auth/callback`
+  (OAuth), guardy (`requireAdmin` atd.), trigger `on_auth_user_created` zakládá
+  profil při registraci (běží v migraci `0002`).
+- ⬜ **Supabase → Authentication → Sign In / Providers → Email**: zapni
+  **Email + Password**. Pro okamžité přihlášení po registraci vypni
+  *"Confirm email"* (nebo ho nech zapnuté a počítej s potvrzovacím e-mailem —
+  náš formulář to zvládne).
+- ⬜ **Authentication → URL Configuration**:
+  - **Site URL** = produkční doména (např. `https://tvujgym.cz`).
+  - **Redirect URLs** = přidej `http://localhost:3000/auth/callback` a
+    `https://<doména>/auth/callback` (a Vercel preview URL, pokud chceš).
+- ⬜ **OAuth (volitelné)** — zapni v **Authentication → Providers**:
+  - **Google** — client ID/secret z Google Cloud; do Google přidej redirect
+    `https://rkmunagymohxtclymacm.supabase.co/auth/v1/callback`.
+  - **Microsoft (Azure)** — v našem UI je tlačítko „přes Microsoft" = provider
+    `azure`. Nastav v Azure + Supabase.
+  - **Apple** — Sign in with Apple (placený Apple Developer účet).
+  - Klíče se zadávají **v Supabase**, ne u nás.
+- ⬜ Po registraci svého účtu na `/login` se povyš na admina:
+  `npm run set-admin -- tvuj@email.cz` (potřebuje `SUPABASE_SECRET_KEY`).
+- ⚠️ **Ověření E2E:** admin/auth Playwright testy jsem lokálně nemohl spustit
+  (chybí lokální Supabase/GoTrue). Rozběhnou se proti živému Supabase — viz
+  `tests/e2e/README.md` (nastav `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SECRET_KEY`
+  a spusť `npm run test:e2e`). Veřejné testy prošly.
 
 ---
 
@@ -212,13 +241,24 @@ Watchdog opakuje selhané kroky a synchronizuje knihu vstupů.
 - ⬜ **Project Settings → Environment Variables**: nahraj VŠECHNY proměnné
   z `.env.local` (kromě čistě lokálních). Nezapomeň na `CRON_SECRET` a
   `SENTRY_AUTH_TOKEN`.
-- ⬜ Po prvním nasazení nastav produkční doménu a aktualizuj `NEXT_PUBLIC_APP_URL`
-  / `BETTER_AUTH_URL` + callback URL v Google/Meta/Stripe/Nuki.
+- ⬜ Po prvním nasazení nastav produkční doménu, aktualizuj `NEXT_PUBLIC_APP_URL`
+  a doplň doménu do **Supabase → Authentication → URL Configuration** (Site URL +
+  Redirect URLs `.../auth/callback`) a do Stripe/Meta/Nuki webhooků.
 
-### MCP pro Vercel (volitelné)
+### MCP pro Vercel (aby Claude mohl dělat Vercel úkoly)
 
-- ⬜ Pokud chceš Vercel ovládat z Claude Code, nastav Vercel MCP dle
-  <https://vercel.com/docs> (token v Account Settings → Tokens).
+Přidal jsem konfiguraci Vercel MCP do `.mcp.json`. Aby fungovala, je potřeba se
+**přihlásit** (OAuth) — to musíš udělat ty ve svém terminálu:
+
+```
+claude   # v projektu
+/mcp     # vyber "vercel" → Authenticate
+```
+
+Alternativně příkazem, který jsi poslal:
+`npx add-mcp https://mcp.vercel.com`. Po přihlášení pak zvládnu nastavovat env
+proměnné, sledovat deploye a logy z Vercelu. (V této remote session se MCP
+nepřihlásí — proto to spusť u sebe.)
 
 ---
 
@@ -249,15 +289,15 @@ rozvrh), takže ho můžeš nasadit hned a služby dopojit postupně.
 1. **Import repa do Vercelu** (New Project → vyber `gym-plzen`). Framework se
    detekuje automaticky (Next.js).
 2. **Env proměnné (minimum pro build a běh):**
-   - `BETTER_AUTH_SECRET` = `openssl rand -base64 32`
-   - `BETTER_AUTH_URL` = `https://<tvuj-projekt>.vercel.app`
-   - `NEXT_PUBLIC_APP_URL` = totéž
+   - `NEXT_PUBLIC_APP_URL` = `https://<tvuj-projekt>.vercel.app`
+   - `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (už máš)
    - `DATABASE_URL` = může být zatím placeholder; veřejný web poběží, admin a
-     rezervace se rozjedou po připojení Supabase (krok 1 nahoře).
+     rezervace/přihlášení se rozjedou po připojení Supabase (krok 1 nahoře).
 3. **Deploy.** Veřejná stránka, `/rezervace` (ukázkový rozvrh) a `/login` fungují.
-4. **Připoj Supabase** (sekce 1): doplň `DATABASE_URL`/`DIRECT_URL` +
-   `NEXT_PUBLIC_SUPABASE_*`, spusť `npm run db:migrate` a `npm run db:seed`,
-   pak `npm run set-admin -- tvuj@email.cz`. Rezervace i administrace naživo.
+4. **Připoj Supabase** (sekce 1 + 2): doplň heslo do `DATABASE_URL`/`DIRECT_URL`,
+   `SUPABASE_SECRET_KEY`, zapni **Supabase Auth** (Email + redirect URLs), spusť
+   `npm run db:migrate` a `npm run db:seed`, pak `npm run set-admin -- tvuj@email.cz`.
+   Přihlášení, rezervace i administrace naživo.
 5. **Postupně** dopojuj Stripe → Resend → WhatsApp → Nuki (sekce 3–6). Každá
    služba je izolovaná; dokud chybí klíče, daná část je jen vypnutá.
 6. **Cron** (`CRON_SECRET`) a **Sentry/GA** dolaď před ostrým provozem.
@@ -276,11 +316,15 @@ Používáme **FullCalendar** (licence MIT) pro administrační kalendář
 ## Rychlý kontrolní seznam „minimum pro spuštění"
 
 1. ✅ Kód (hotovo)
-2. ⬜ Supabase + `npm run db:migrate` + `npm run db:seed`
-3. ⬜ `BETTER_AUTH_SECRET`, `NEXT_PUBLIC_APP_URL`
-4. ⬜ Stripe (klíče + webhook)
-5. ⬜ Resend (klíč + odesílatel)
-6. ⬜ Nuki (token + zámek + webhook)
-7. ⬜ WhatsApp (účet + token + šablona `access_code`) — *začni nejdřív*
-8. ⬜ `CRON_SECRET` na Vercelu
-9. ⬜ `set-admin` pro tvůj účet
+2. ⬜ Supabase: **heslo DB** → `DATABASE_URL`/`DIRECT_URL`, **secret key** →
+   `SUPABASE_SECRET_KEY`, pak `npm run db:migrate` + `npm run db:seed`
+3. ⬜ Supabase Auth: zapni **Email + Password** a **Redirect URLs** (`/auth/callback`)
+4. ⬜ `set-admin` pro tvůj účet (`npm run set-admin -- tvuj@email.cz`)
+5. ⬜ (volitelně) OAuth Google/Apple/Microsoft v Supabase dashboardu
+6. ⬜ Realtime: přidej tabulku `reservation` + RLS (sekce 1)
+7. ⬜ Stripe (klíče + webhook)
+8. ⬜ Resend (klíč + odesílatel)
+9. ⬜ Nuki (token + zámek + webhook)
+10. ⬜ WhatsApp (účet + token + šablona `access_code`) — *začni nejdřív*
+11. ⬜ `CRON_SECRET` na Vercelu + env proměnné
+12. ⬜ Vercel MCP: `/mcp` → Authenticate (abych mohl dělat Vercel úkoly)

@@ -27,7 +27,7 @@ export const LAUNCH_PLAN: PlanPhase[] = [
       { title: "Vrstvená architektura (routes → services → db/integrace)", status: "done" },
       { title: "Databázové schéma (Drizzle) + migrace", status: "done" },
       { title: "Ochrana proti překrytí rezervací (DB constraint)", status: "done" },
-      { title: "Přihlášení Better Auth (e-mail + Google/Apple/Microsoft)", status: "done" },
+      { title: "Přihlášení Supabase Auth (e-mail + Google/Apple/Microsoft)", status: "done" },
       { title: "Znovupoužitelné helpery (http retry, akce, formuláře…)", status: "done" },
     ],
   },
@@ -64,7 +64,7 @@ export const LAUNCH_PLAN: PlanPhase[] = [
     title: "Rezervace, platby a kódy",
     items: [
       { title: "Generování hodinových slotů 05–21", status: "done" },
-      { title: "Živý kalendář v reálném čase (Supabase Realtime)", status: "todo" },
+      { title: "Živý kalendář v reálném čase (Supabase Realtime)", status: "in_progress", note: "Kód hotov (RealtimeRefresher); zapnout Realtime + RLS v Supabase" },
       { title: "Checkout přes Stripe (jednorázový vstup 290 Kč)", status: "done", note: "Tlačítko slotu → Stripe / vstup zdarma; potvrdí webhook. Potřebuje klíče." },
       { title: "Věrnost — každý 10. vstup zdarma (počítadlo)", status: "done" },
       { title: "Vydání a doručení kódu (e-mail + WhatsApp)", status: "done", note: "Kód se pošle po platbě; potřebuje klíče" },
@@ -83,7 +83,7 @@ export const LAUNCH_PLAN: PlanPhase[] = [
   {
     title: "Napojení služeb (potřebuje tebe — viz NEEDED.md)",
     items: [
-      { title: "Supabase — databáze + migrace + seed", status: "blocked" },
+      { title: "Supabase — databáze + migrace + seed", status: "in_progress", note: "Projekt založen (eu-west-3); doplnit heslo DB + secret key, spustit migrace" },
       { title: "Stripe — klíče + webhook", status: "blocked" },
       { title: "Resend — doména + API klíč", status: "blocked" },
       { title: "WhatsApp Business — účet + šablona access_code", status: "blocked" },

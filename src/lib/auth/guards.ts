@@ -1,57 +1,78 @@
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { auth, type Session } from "./index";
-
-/** The admin role name (mirrors the `admin` plugin config in ./index.ts). */
-export const ADMIN_ROLE = "admin";
-
-/** Read the current session on the server, or `null` if signed out. */
-export async function getSession(): Promise<Session | null> {
-  return auth.api.getSession({ headers: await headers() });
-}
-
-type SessionUser = Session["user"];
+import { createClient } from "@/lib/supabase/server";
+import { ensureProfileForUser } from "@/lib/services/members";
 
 /**
- * Require an authenticated user in a Server Component / route. Redirects to the
- * login page (with a `next` param) when signed out. Returns the user.
+ * Authentication guards over **Supabase Auth**. `getSessionUser()` reads the
+ * verified Supabase user, ensures a `profiles` row exists, and resolves the
+ * app role. Server Components use `requireUser`/`requireAdmin`; server actions
+ * use `assertAdmin` (throws instead of redirecting).
  */
-export async function requireUser(nextPath = "/"): Promise<SessionUser> {
-  const session = await getSession();
-  if (!session) {
-    redirect(`/login?next=${encodeURIComponent(nextPath)}`);
-  }
-  return session.user;
+
+export const ADMIN_ROLE = "admin";
+
+export interface SessionUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
 }
 
-/** True when the given user carries the admin role. */
+/** The current user (verified via Supabase), or null when signed out. */
+export async function getSessionUser(): Promise<SessionUser | null> {
+  const supabase = await createClient();
+  if (!supabase) return null;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const fullName = (user.user_metadata?.full_name as string | undefined) ?? null;
+  const profile = await ensureProfileForUser({
+    id: user.id,
+    email: user.email ?? null,
+    fullName,
+  });
+
+  return {
+    id: user.id,
+    email: user.email ?? "",
+    name: profile.fullName ?? fullName ?? user.email ?? "",
+    role: profile.role,
+  };
+}
+
+/** Session wrapper: `{ user }` or null (kept for action `authorize` callbacks). */
+export async function getSession(): Promise<{ user: SessionUser } | null> {
+  const user = await getSessionUser();
+  return user ? { user } : null;
+}
+
 export function isAdmin(user: Pick<SessionUser, "role"> | null | undefined): boolean {
   return user?.role === ADMIN_ROLE;
 }
 
-/**
- * Require an admin user. Redirects non-admins to the login page. Use at the top
- * of every admin Server Component / layout and admin server action.
- */
-export async function requireAdmin(): Promise<SessionUser> {
-  const session = await getSession();
-  if (!session) {
-    redirect(`/login?next=${encodeURIComponent("/admin")}`);
-  }
-  if (!isAdmin(session.user)) {
-    redirect("/login?error=forbidden");
-  }
-  return session.user;
+/** Require an authenticated user; redirect to login otherwise. */
+export async function requireUser(nextPath = "/"): Promise<SessionUser> {
+  const user = await getSessionUser();
+  if (!user) redirect(`/login?next=${encodeURIComponent(nextPath)}`);
+  return user;
 }
 
-/**
- * Assert admin access inside a server action, throwing instead of redirecting.
- * Returns the admin user so the action can attribute changes to them.
- */
+/** Require an admin user; redirect non-admins to login. */
+export async function requireAdmin(): Promise<SessionUser> {
+  const user = await getSessionUser();
+  if (!user) redirect(`/login?next=${encodeURIComponent("/admin")}`);
+  if (!isAdmin(user)) redirect("/login?error=forbidden");
+  return user;
+}
+
+/** Assert admin access inside a server action (throws instead of redirecting). */
 export async function assertAdmin(): Promise<SessionUser> {
-  const session = await getSession();
-  if (!session || !isAdmin(session.user)) {
+  const user = await getSessionUser();
+  if (!user || !isAdmin(user)) {
     throw new Error("Unauthorized: administrator access required.");
   }
-  return session.user;
+  return user;
 }

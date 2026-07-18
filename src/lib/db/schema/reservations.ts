@@ -7,7 +7,7 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import { user } from "./auth";
+import { profiles } from "./members";
 import { blockReason, reservationStatus } from "./enums";
 
 /**
@@ -22,7 +22,7 @@ export const reservation = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
 
     // Null for admin-created walk-in bookings without an account.
-    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+    userId: uuid("user_id").references(() => profiles.id, { onDelete: "set null" }),
 
     startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
     endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
@@ -39,7 +39,7 @@ export const reservation = pgTable(
     currency: text("currency").default("czk").notNull(),
 
     // Who created it, for the audit trail ("member" | admin user id).
-    createdByAdminId: text("created_by_admin_id").references(() => user.id, {
+    createdByAdminId: uuid("created_by_admin_id").references(() => profiles.id, {
       onDelete: "set null",
     }),
     cancelledAt: timestamp("cancelled_at"),
@@ -67,7 +67,7 @@ export const blockedSlot = pgTable(
     endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
     reason: blockReason("reason").notNull().default("other"),
     note: text("note"),
-    createdByAdminId: text("created_by_admin_id").references(() => user.id, {
+    createdByAdminId: uuid("created_by_admin_id").references(() => profiles.id, {
       onDelete: "set null",
     }),
     createdAt: timestamp("created_at").defaultNow().notNull(),

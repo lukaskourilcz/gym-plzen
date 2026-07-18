@@ -7,9 +7,8 @@ import type * as s from "./schema";
  * `New*` = the object accepted by `.insert()`.
  */
 
-export type User = InferSelectModel<typeof s.user>;
-export type MemberProfile = InferSelectModel<typeof s.memberProfile>;
-export type NewMemberProfile = InferInsertModel<typeof s.memberProfile>;
+export type Profile = InferSelectModel<typeof s.profiles>;
+export type NewProfile = InferInsertModel<typeof s.profiles>;
 
 export type Reservation = InferSelectModel<typeof s.reservation>;
 export type NewReservation = InferInsertModel<typeof s.reservation>;

@@ -5,20 +5,19 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
-import { authClient } from "@/lib/auth/client";
+import { createClient } from "@/lib/supabase/client";
 import { Field, FormFeedback, SubmitButton } from "@/components/admin/form-controls";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-const PROVIDER_LABELS: Record<string, string> = {
-  google: "Pokračovat přes Google",
-  apple: "Pokračovat přes Apple",
-  microsoft: "Pokračovat přes Microsoft",
-};
+/** OAuth providers shown as buttons (enable each in the Supabase dashboard). */
+const OAUTH_PROVIDERS: { id: "google" | "apple" | "azure"; label: string }[] = [
+  { id: "google", label: "Pokračovat přes Google" },
+  { id: "apple", label: "Pokračovat přes Apple" },
+  { id: "azure", label: "Pokračovat přes Microsoft" },
+];
 
 // One flat schema serves both modes; `name` is only required in sign-up.
-// A flat object + refine (rather than an intersection of ZodEffects) keeps
-// `zodResolver` well-behaved — the intersection form silently blocked submits.
 const schema = z
   .object({
     __mode: z.enum(["signin", "signup"]),
@@ -34,17 +33,17 @@ const schema = z
 type FormValues = z.infer<typeof schema>;
 
 /**
- * Login / registration form (React Hook Form + Zod). Toggles between sign-in and
- * sign-up, supports OAuth providers, and redirects to the `next` param (or
- * /admin) on success.
+ * Login / registration form (React Hook Form + Zod) backed by Supabase Auth.
+ * Toggles between sign-in and sign-up and supports OAuth providers.
  */
-export function LoginForm({ socialProviders }: { socialProviders: string[] }) {
+export function LoginForm({ providers = OAUTH_PROVIDERS }: { providers?: typeof OAUTH_PROVIDERS }) {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") ?? "/admin";
+  const next = params.get("next") ?? "/account";
 
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [serverError, setServerError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const { register, handleSubmit, setValue, formState } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -55,39 +54,72 @@ export function LoginForm({ socialProviders }: { socialProviders: string[] }) {
     setMode(newMode);
     setValue("__mode", newMode);
     setServerError(null);
+    setNotice(null);
   }
 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
-    const result =
-      mode === "signin"
-        ? await authClient.signIn.email({
-            email: values.email,
-            password: values.password,
-          })
-        : await authClient.signUp.email({
-            email: values.email,
-            password: values.password,
-            name: values.name ?? "",
-          });
-    if (result.error) {
-      setServerError(result.error.message ?? "Přihlášení se nezdařilo.");
-    } else {
+    setNotice(null);
+    const supabase = createClient();
+    if (!supabase) {
+      setServerError("Přihlášení zatím není nastavené (chybí Supabase).");
+      return;
+    }
+
+    if (mode === "signin") {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      });
+      if (error) {
+        setServerError(error.message);
+        return;
+      }
       router.push(next);
+      router.refresh();
+      return;
+    }
+
+    // sign-up
+    const { data, error } = await supabase.auth.signUp({
+      email: values.email,
+      password: values.password,
+      options: {
+        data: { full_name: values.name ?? "" },
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      },
+    });
+    if (error) {
+      setServerError(error.message);
+      return;
+    }
+    if (data.session) {
+      router.push(next);
+      router.refresh();
+    } else {
+      // Email confirmation is enabled in Supabase — no session yet.
+      setNotice("Účet vytvořen. Zkontrolujte e-mail a potvrďte registraci.");
     }
   });
 
-  async function onSocial(provider: string) {
-    await authClient.signIn.social({ provider, callbackURL: next });
+  async function onOAuth(provider: (typeof OAUTH_PROVIDERS)[number]["id"]) {
+    const supabase = createClient();
+    if (!supabase) return;
+    await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      },
+    });
   }
 
   return (
     <div>
-      {socialProviders.length > 0 && (
+      {providers.length > 0 && (
         <div className="mb-4 grid gap-2">
-          {socialProviders.map((p) => (
-            <Button key={p} type="button" variant="outline" onClick={() => onSocial(p)}>
-              {PROVIDER_LABELS[p] ?? p}
+          {providers.map((p) => (
+            <Button key={p.id} type="button" variant="outline" onClick={() => onOAuth(p.id)}>
+              {p.label}
             </Button>
           ))}
         </div>
@@ -107,7 +139,7 @@ export function LoginForm({ socialProviders }: { socialProviders: string[] }) {
           <Input id="password" type="password" {...register("password")} />
         </Field>
 
-        <FormFeedback error={serverError} />
+        <FormFeedback error={serverError} success={notice} />
         <SubmitButton isSubmitting={formState.isSubmitting} className="w-full">
           {mode === "signin" ? "Přihlásit se" : "Zaregistrovat se"}
         </SubmitButton>

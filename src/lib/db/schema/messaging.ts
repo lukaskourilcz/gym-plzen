@@ -6,7 +6,7 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import { user } from "./auth";
+import { profiles } from "./members";
 import { reservation } from "./reservations";
 import { messageChannel, messageKind, messageStatus } from "./enums";
 
@@ -19,7 +19,7 @@ export const messageDelivery = pgTable(
   "message_delivery",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+    userId: uuid("user_id").references(() => profiles.id, { onDelete: "set null" }),
     reservationId: uuid("reservation_id").references(() => reservation.id, {
       onDelete: "set null",
     }),
@@ -63,7 +63,7 @@ export const marketingCampaign = pgTable("marketing_campaign", {
   status: text("status").notNull().default("draft"),
   scheduledFor: timestamp("scheduled_for"),
   sentAt: timestamp("sent_at"),
-  createdByAdminId: text("created_by_admin_id").references(() => user.id, {
+  createdByAdminId: uuid("created_by_admin_id").references(() => profiles.id, {
     onDelete: "set null",
   }),
   createdAt: timestamp("created_at").defaultNow().notNull(),

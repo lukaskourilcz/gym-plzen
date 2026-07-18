@@ -1,14 +1,12 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { enabledSocialProviderIds } from "@/lib/auth/social-providers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoginForm } from "./login-form";
 
 export const metadata = { title: "Přihlášení" };
 
-/** Login / registration page — email/password plus any configured OAuth providers. */
+/** Login / registration page — Supabase Auth (email/password + OAuth). */
 export default function LoginPage() {
-  const providers = enabledSocialProviderIds();
   return (
     <main className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-12">
       <div className="w-full max-w-sm">
@@ -21,7 +19,7 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent>
             <Suspense>
-              <LoginForm socialProviders={providers} />
+              <LoginForm />
             </Suspense>
           </CardContent>
         </Card>

@@ -14,23 +14,19 @@ export { publicEnv } from "./public-env";
 const serverSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 
-  // Core — the app cannot run without these.
+  // Core — the app cannot run without a database. Authentication is handled by
+  // Supabase Auth (public URL + publishable key, see public-env); OAuth
+  // providers are configured in the Supabase dashboard, not here.
   DATABASE_URL: z.string().url(),
-  BETTER_AUTH_SECRET: z.string().min(1),
-  BETTER_AUTH_URL: z.string().url(),
 
   // Everything below is optional at boot; the relevant integration validates
   // its own keys via `requireEnv()` the first time it is used.
   DIRECT_URL: z.string().url().optional(),
+  // New Supabase key model: `sb_secret_…` (replaces the legacy service_role key).
+  // Either is accepted; the secret key wins when present.
+  SUPABASE_SECRET_KEY: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   SUPABASE_STORAGE_BUCKET: z.string().default("cms-media"),
-
-  GOOGLE_CLIENT_ID: z.string().optional(),
-  GOOGLE_CLIENT_SECRET: z.string().optional(),
-  APPLE_CLIENT_ID: z.string().optional(),
-  APPLE_CLIENT_SECRET: z.string().optional(),
-  MICROSOFT_CLIENT_ID: z.string().optional(),
-  MICROSOFT_CLIENT_SECRET: z.string().optional(),
 
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),

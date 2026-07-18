@@ -1,41 +1,55 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { memberProfile, user } from "@/lib/db/schema";
-import type { MemberProfile, User } from "@/lib/db/types";
+import { profiles } from "@/lib/db/schema";
+import type { Profile } from "@/lib/db/types";
 import { toE164 } from "@/lib/helpers/phone";
 
 /**
- * Member service — the profile that sits alongside Better Auth's `user`. A
- * profile row is created lazily the first time it is needed.
+ * Member service over the Supabase-Auth `profiles` table. Supabase owns
+ * `auth.users`; each user has one `profiles` row (id = auth uid) mirroring
+ * email/name plus app-specific fields (role, phone, prefs, GDPR consents).
  */
 
+/**
+ * The list/detail shape the admin UI consumes. Keeps a `user` (identity) /
+ * `profile` (app fields) split so the admin pages read `member.user.email` etc.
+ */
 export interface MemberWithProfile {
-  user: User;
-  profile: MemberProfile | null;
+  user: { id: string; name: string; email: string; role: string; createdAt: Date };
+  profile: Profile | null;
 }
 
-/** Ensure a profile row exists for a user and return it. */
-export async function ensureProfile(userId: string): Promise<MemberProfile> {
-  const [existing] = await db
-    .select()
-    .from(memberProfile)
-    .where(eq(memberProfile.userId, userId))
-    .limit(1);
-  if (existing) return existing;
+function toMember(p: Profile): MemberWithProfile {
+  return {
+    user: {
+      id: p.id,
+      name: p.fullName ?? p.email ?? "",
+      email: p.email ?? "",
+      role: p.role,
+      createdAt: p.createdAt,
+    },
+    profile: p,
+  };
+}
 
-  const [created] = await db
-    .insert(memberProfile)
-    .values({ userId })
-    .onConflictDoNothing()
-    .returning();
-  if (created) return created;
-
-  // Lost the insert race — re-read.
+/**
+ * Ensure a profile row exists for a signed-in Supabase user (fallback to the
+ * DB trigger) and keep the mirrored email/name fresh. Returns the profile.
+ */
+export async function ensureProfileForUser(user: {
+  id: string;
+  email: string | null;
+  fullName: string | null;
+}): Promise<Profile> {
   const [row] = await db
-    .select()
-    .from(memberProfile)
-    .where(eq(memberProfile.userId, userId))
-    .limit(1);
+    .insert(profiles)
+    .values({ id: user.id, email: user.email, fullName: user.fullName })
+    .onConflictDoUpdate({
+      target: profiles.id,
+      // Refresh the mirrored identity fields; never overwrite role/prefs.
+      set: { email: user.email, updatedAt: new Date() },
+    })
+    .returning();
   return row!;
 }
 
@@ -49,55 +63,39 @@ export async function updateProfile(
     marketingConsent: boolean;
     note: string | null;
   }>,
-): Promise<MemberProfile> {
-  await ensureProfile(userId);
-
+): Promise<Profile> {
   const normalizedPhone =
-    patch.phone !== undefined && patch.phone !== null
-      ? toE164(patch.phone)
-      : patch.phone;
+    patch.phone !== undefined && patch.phone !== null ? toE164(patch.phone) : patch.phone;
 
   const [updated] = await db
-    .update(memberProfile)
+    .update(profiles)
     .set({
       ...patch,
       phone: normalizedPhone,
-      marketingConsentAt:
-        patch.marketingConsent === true ? new Date() : undefined,
+      marketingConsentAt: patch.marketingConsent === true ? new Date() : undefined,
       updatedAt: new Date(),
     })
-    .where(eq(memberProfile.userId, userId))
+    .where(eq(profiles.id, userId))
     .returning();
   return updated!;
 }
 
 /** Persist the member's Stripe customer id after first checkout. */
 export async function setStripeCustomerId(userId: string, stripeCustomerId: string): Promise<void> {
-  await ensureProfile(userId);
   await db
-    .update(memberProfile)
+    .update(profiles)
     .set({ stripeCustomerId, updatedAt: new Date() })
-    .where(eq(memberProfile.userId, userId));
+    .where(eq(profiles.id, userId));
 }
 
-/** List all members with their profile (admin members view). */
+/** List all members (admin members view). */
 export async function listMembers(limit = 200): Promise<MemberWithProfile[]> {
-  const rows = await db
-    .select({ user, profile: memberProfile })
-    .from(user)
-    .leftJoin(memberProfile, eq(memberProfile.userId, user.id))
-    .orderBy(desc(user.createdAt))
-    .limit(limit);
-  return rows.map((r) => ({ user: r.user, profile: r.profile }));
+  const rows = await db.select().from(profiles).orderBy(desc(profiles.createdAt)).limit(limit);
+  return rows.map(toMember);
 }
 
-/** One member by id, with profile. */
+/** One member by id. */
 export async function getMember(userId: string): Promise<MemberWithProfile | null> {
-  const [row] = await db
-    .select({ user, profile: memberProfile })
-    .from(user)
-    .leftJoin(memberProfile, eq(memberProfile.userId, user.id))
-    .where(eq(user.id, userId))
-    .limit(1);
-  return row ? { user: row.user, profile: row.profile } : null;
+  const [row] = await db.select().from(profiles).where(eq(profiles.id, userId)).limit(1);
+  return row ? toMember(row) : null;
 }

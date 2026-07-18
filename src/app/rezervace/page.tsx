@@ -9,6 +9,7 @@ import { Container, Section } from "@/components/ui/container";
 import { Badge } from "@/components/ui/badge";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
+import { RealtimeRefresher } from "@/components/realtime-refresher";
 import { SlotButton } from "./slot-button";
 
 export const metadata = { title: "Rezervace" };
@@ -39,6 +40,8 @@ export default async function BookingPage({
   return (
     <>
       <SiteHeader brand={content.get("brand.name")} logoUrl={content.logoUrl} />
+      {/* Live calendar: refresh when reservations change (no-op if unconfigured). */}
+      <RealtimeRefresher table="reservation" />
       <main>
         <Section className="py-12 sm:py-16">
           <Container>

@@ -1,9 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { authClient } from "@/lib/auth/client";
+import { createClient } from "@/lib/supabase/client";
 
-/** Sign out and return to the login page. */
+/** Sign out (Supabase Auth) and return to the login page. */
 export function SignOutButton() {
   const router = useRouter();
   return (
@@ -11,7 +11,7 @@ export function SignOutButton() {
       type="button"
       className="mt-1 text-primary hover:underline"
       onClick={async () => {
-        await authClient.signOut();
+        await createClient()?.auth.signOut();
         router.push("/login");
       }}
     >

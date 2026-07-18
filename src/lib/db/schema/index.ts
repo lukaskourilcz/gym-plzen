@@ -4,7 +4,6 @@
  *
  *   import { reservation, user } from "@/lib/db/schema";
  */
-export * from "./auth";
 export * from "./enums";
 export * from "./members";
 export * from "./reservations";

@@ -14,7 +14,7 @@ obsah webu, rezervace, členy, ceny a sledovat spolehlivost systému.
 | ----------------- | ------------------------------------------------------ |
 | Web / API         | Next.js (App Router, Server Actions), TypeScript       |
 | Databáze          | Supabase Postgres přes Drizzle ORM                     |
-| Autentizace       | Better Auth (email/heslo + Google/Apple/Microsoft)     |
+| Autentizace       | Supabase Auth (email/heslo + Google/Apple/Microsoft)   |
 | Platby            | Stripe (jednorázový vstup, Apple/Google Pay)           |
 | Zámek             | Nuki Web API                                           |
 | E-maily           | Resend                                                 |
@@ -56,12 +56,13 @@ src/
 │   ├── (public)        úvod, přihlášení, účet člena (skeleton)
 │   ├── admin/          administrace — rezervace, obsah, členové, ceny, …
 │   └── api/
-│       ├── auth/       Better Auth
+│       ├── auth/callback Supabase OAuth callback
 │       ├── webhooks/   stripe · nuki · whatsapp
 │       └── cron/       watchdog · sync-entry-log
 ├── components/         sdílené UI (admin form-controls, loyalty-widget)
 └── lib/
-    ├── auth/           Better Auth config + guards
+    ├── auth/guards.ts  Supabase Auth guards
+    ├── supabase/       Supabase server/client/middleware
     ├── config/         laditelné konstanty (pricing)
     ├── db/             Drizzle schéma, klient, typy
     ├── env.ts          typově bezpečné env proměnné (Zod)
