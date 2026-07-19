@@ -27,21 +27,24 @@ export const SITE_DEFAULTS = {
   "home.hero.cta": "Zobrazit volné termíny",
   "home.about.title": "Jak to funguje",
   "home.about.step1.title": "Vyberte termín",
-  "home.about.step1.body": "V rezervačním systému si vyberete termín a časové okno, které vám vyhovuje.",
+  "home.about.step1.body":
+    "V rezervačním systému si vyberete termín a časové okno, které vám vyhovuje.",
   "home.about.step2.title": "Zaplaťte online",
   "home.about.step2.body": "Rezervaci potvrdíte platbou kartou přímo na webu.",
   "home.about.step3.title": "Odemkněte a trénujte",
-  "home.about.step3.body": "Před začátkem rezervace obdržíte osobní kód, kterým si odemknete vstupní dveře.",
+  "home.about.step3.body":
+    "Před začátkem rezervace obdržíte osobní kód, kterým si odemknete vstupní dveře.",
   "home.pricing.title": "Cena vstupu",
-  "home.pricing.note": "Bez závazků a měsíčních plateb. Platíte jen za to, co si odtrénujete.",
+  "home.pricing.note":
+    "Bez závazků a měsíčních plateb. Platíte jen za to, co si odtrénujete.",
   "home.rules.title": "Provozní řád",
   "home.rules.body":
     "Do fitness vstupujte pouze v čase rezervace. Po tréninku vraťte vybavení i dětský koutek do původního stavu a otřete použité nářadí. Vstupní kód je osobní a platí pouze ve vašem časovém okně.",
   "home.gallery.title": "Prostor",
   "home.contact.title": "Kontakt",
   "contact.address": "Křížkova 424/23, 301 00 Plzeň 1",
-  "contact.phone": "",
-  "contact.email": "",
+  "contact.phone": "+420 777 000 000",
+  "contact.email": "info@gymplzen.cz",
 } as const;
 
 export type SiteContentKey = keyof typeof SITE_DEFAULTS;
@@ -67,21 +70,27 @@ export async function loadSiteContent(locale = "cs"): Promise<SiteContent> {
       .from(contentBlock)
       .where(eq(contentBlock.locale, locale));
     for (const row of rows) {
-      if (row.valueText != null && row.valueText !== "") values[row.key] = row.valueText;
+      if (row.valueText != null && row.valueText !== "")
+        values[row.key] = row.valueText;
     }
 
     const settings = await db
       .select({ key: siteSetting.key, value: siteSetting.value })
       .from(siteSetting);
     for (const s of settings) {
-      if (s.key === ENTRY_PRICE_SETTING_KEY && typeof s.value === "number") entryPriceCents = s.value;
-      if (s.key === LOGO_URL_KEY && typeof s.value === "string") logoUrl = s.value || null;
-      if (s.key === TERMS_URL_KEY && typeof s.value === "string") termsUrl = s.value || null;
+      if (s.key === ENTRY_PRICE_SETTING_KEY && typeof s.value === "number")
+        entryPriceCents = s.value;
+      if (s.key === LOGO_URL_KEY && typeof s.value === "string")
+        logoUrl = s.value || null;
+      if (s.key === TERMS_URL_KEY && typeof s.value === "string")
+        termsUrl = s.value || null;
     }
   } catch (e) {
     // DB not provisioned/reachable yet — fall back to defaults so the public
     // site still renders on a fresh deploy.
-    logger.warn("loadSiteContent: using defaults (DB unavailable)", { error: String(e) });
+    logger.warn("loadSiteContent: using defaults (DB unavailable)", {
+      error: String(e),
+    });
   }
 
   return {
