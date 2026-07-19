@@ -7,7 +7,6 @@ import {
   MapPin,
   Mail,
   Phone,
-  Clock,
   Lock,
   ArrowRight,
   Check,
@@ -15,6 +14,7 @@ import {
   DoorOpen,
   Baby,
   Refrigerator,
+  Wifi,
 } from "lucide-react";
 import { loadSiteContent } from "@/lib/content/site";
 import { formatMoney, formatTime } from "@/lib/helpers/format";
@@ -181,23 +181,25 @@ export default async function HomePage() {
         </Section>
 
         {/* Rules */}
-        <Section id="pravidla" className="bg-ink text-ink-foreground">
-          <Container className="grid gap-10 lg:grid-cols-[1fr_1.4fr] lg:items-start">
-            <SectionHeading eyebrow="Provoz" title={t("home.rules.title")} align="left" dark />
-            <div className="space-y-4 text-ink-foreground/80">
-              <p>{t("home.rules.body")}</p>
-              <div className="grid gap-3 sm:grid-cols-3">
-                {[
-                  { icon: Clock, label: "Vstup v čase rezervace" },
-                  { icon: Lock, label: "Osobní vstupní kód" },
-                  { icon: ShieldCheck, label: "Prostor po sobě ukliďte" },
-                ].map((f) => (
-                  <div key={f.label} className="rounded-lg border border-white/10 bg-white/5 p-4">
-                    <f.icon className="size-5 text-primary" />
-                    <div className="mt-2 text-sm text-ink-foreground/80">{f.label}</div>
-                  </div>
-                ))}
-              </div>
+        <Section id="pravidla" className="bg-ink py-20 text-ink-foreground sm:py-24">
+          <Container className="grid gap-12 lg:grid-cols-[.9fr_1.35fr] lg:items-center">
+            <div>
+              <div className="text-xs font-extrabold uppercase tracking-[.16em] text-primary">Provoz</div>
+              <h2 className="mt-4 text-4xl font-black tracking-[-.035em] sm:text-5xl">Férová pravidla</h2>
+              <p className="mt-6 max-w-xl text-base leading-relaxed text-white/60">{t("home.rules.body")}</p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {[
+                { icon: Wifi, label: "Nonstop hlídaný zámek", body: "Chytrý vstupní systém je pod stálým dohledem." },
+                { icon: Lock, label: "Jednorázový vstupní kód", body: "Platí pouze pro vás a v čase vaší rezervace." },
+                { icon: ShieldCheck, label: "Každé odemčení zaznamenáno", body: "Kniha vstupů pomáhá chránit soukromí i bezpečnost." },
+              ].map((f) => (
+                <div key={f.label} className="rounded-[16px] border border-white/15 bg-white/[.035] p-7 sm:min-h-[250px]">
+                  <f.icon className="size-7 text-primary" />
+                  <h3 className="mt-8 text-lg font-extrabold leading-snug">{f.label}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-white/50">{f.body}</p>
+                </div>
+              ))}
             </div>
           </Container>
         </Section>
@@ -205,7 +207,7 @@ export default async function HomePage() {
         {/* Contact */}
         <Section id="kontakt">
           <Container>
-            <SectionHeading eyebrow="Kontakt" title={t("home.contact.title")} />
+            <SectionHeading eyebrow="Kde nás najdete" title="Kontakt a adresa" />
             <div className="mx-auto mt-10 grid max-w-5xl overflow-hidden rounded-[18px] border border-border bg-card shadow-sm lg:grid-cols-[.8fr_1.2fr]">
               <div className="flex flex-col justify-center gap-3 p-6 sm:p-8">
                 <ContactCard icon={MapPin} label="Adresa" value={address} href={mapsUrl} />
