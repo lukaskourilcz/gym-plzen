@@ -42,6 +42,10 @@ export default async function HomePage() {
   const price = formatMoney(content.entryPriceCents);
   const email = t("contact.email");
   const phone = t("contact.phone");
+  const configuredAddress = t("contact.address");
+  const address = configuredAddress === "Plzeň" ? "Křížkova 424/23, 301 00 Plzeň 1" : configuredAddress;
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+  const mapsEmbedUrl = `https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`;
   const combinedDays = [...currentWeek.days, ...nextWeek.days];
   const todayIndex = Math.max(0, combinedDays.findIndex((day) => day.date.toDateString() === now.toDateString()));
   const previewDays: HeroAvailabilityDay[] = combinedDays.slice(todayIndex, todayIndex + 4).map((day, index) => {
@@ -187,10 +191,23 @@ export default async function HomePage() {
         <Section id="kontakt">
           <Container>
             <SectionHeading eyebrow="Kontakt" title={t("home.contact.title")} />
-            <div className="mx-auto mt-10 flex max-w-3xl flex-wrap justify-center gap-4 [&>*]:min-w-56 [&>*]:flex-1">
-              <ContactCard icon={MapPin} label="Adresa" value={t("contact.address")} />
-              {email && <ContactCard icon={Mail} label="E-mail" value={email} href={`mailto:${email}`} />}
-              {phone && <ContactCard icon={Phone} label="Telefon" value={phone} href={`tel:${phone}`} />}
+            <div className="mx-auto mt-10 grid max-w-5xl overflow-hidden rounded-[18px] border border-border bg-card shadow-sm lg:grid-cols-[.8fr_1.2fr]">
+              <div className="flex flex-col justify-center gap-3 p-6 sm:p-8">
+                <ContactCard icon={MapPin} label="Adresa" value={address} href={mapsUrl} />
+                {email && <ContactCard icon={Mail} label="E-mail" value={email} href={`mailto:${email}`} />}
+                {phone && <ContactCard icon={Phone} label="Telefon" value={phone} href={`tel:${phone}`} />}
+                <p className="px-2 text-xs leading-relaxed text-muted-foreground">Kliknutím na adresu otevřete trasu v Google Maps.</p>
+              </div>
+              <div className="min-h-[320px] overflow-hidden border-t border-border bg-muted lg:border-l lg:border-t-0">
+                <iframe
+                  title={`Mapa: ${address}`}
+                  src={mapsEmbedUrl}
+                  className="h-full min-h-[320px] w-full border-0"
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
             </div>
           </Container>
         </Section>

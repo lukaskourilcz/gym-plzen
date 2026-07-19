@@ -39,7 +39,7 @@ export const SITE_DEFAULTS = {
     "Do gymu vstupujte pouze v čase rezervace. Po tréninku vraťte vybavení na místo a otřete použité nářadí. Vstupní kód je osobní a nepřenosný.",
   "home.gallery.title": "Prostor",
   "home.contact.title": "Kontakt",
-  "contact.address": "Plzeň",
+  "contact.address": "Křížkova 424/23, 301 00 Plzeň 1",
   "contact.phone": "",
   "contact.email": "",
 } as const;
