@@ -35,14 +35,14 @@ export const LAUNCH_PLAN: PlanPhase[] = [
     title: "Administrace (redakční systém)",
     items: [
       { title: "Editor obsahu webu (texty)", status: "done" },
-      { title: "Rezervace — ruční vytvoření/zrušení", status: "done" },
+      { title: "Rezervace: ruční vytvoření a zrušení", status: "done" },
       { title: "Kalendář (FullCalendar) + bloky pro úklid", status: "done" },
       { title: "Otevírací doba a doba na sprchu (konfigurovatelné)", status: "done" },
       { title: "Členové a jejich profily", status: "done" },
       { title: "Vstupné a věrnostní přehled", status: "done" },
       { title: "Doručené zprávy, kniha vstupů, upozornění", status: "done" },
       { title: "Statistiky (sessions/den, nejčastější časy, měsíce)", status: "done" },
-      { title: "Nastavení a branding — logo, podmínky (PDF), šablony zpráv", status: "done" },
+      { title: "Nastavení a branding: logo, podmínky (PDF), šablony zpráv", status: "done" },
       { title: "Nahrávání souborů do úložiště (logo, PDF, fotky)", status: "done", note: "Potřebuje Supabase Storage" },
       { title: "Zavření dne s rezervacemi → e-mail/WhatsApp členům", status: "done" },
       { title: "Nastavitelné zavřené dny + doba na sprchu", status: "done" },
@@ -66,7 +66,7 @@ export const LAUNCH_PLAN: PlanPhase[] = [
       { title: "Generování hodinových slotů 05–21", status: "done" },
       { title: "Živý kalendář v reálném čase (Supabase Realtime)", status: "in_progress", note: "Kód hotov (RealtimeRefresher); zapnout Realtime + RLS v Supabase" },
       { title: "Checkout přes Stripe (jednorázový vstup 290 Kč)", status: "done", note: "Tlačítko slotu → Stripe / vstup zdarma; potvrdí webhook. Potřebuje klíče." },
-      { title: "Věrnost — každý 10. vstup zdarma (počítadlo)", status: "done" },
+      { title: "Věrnost: každý 10. vstup zdarma (počítadlo)", status: "done" },
       { title: "Vydání a doručení kódu (e-mail + WhatsApp)", status: "done", note: "Kód se pošle po platbě; potřebuje klíče" },
     ],
   },
@@ -76,18 +76,18 @@ export const LAUNCH_PLAN: PlanPhase[] = [
       { title: "Pipeline platba → kód → doručení + retry", status: "done" },
       { title: "Upozornění na selhání do WhatsApp skupiny", status: "done" },
       { title: "Cron watchdog + synchronizace knihy vstupů", status: "done" },
-      { title: "Sentry (chyby) — instrumentace", status: "done", note: "Potřebuje DSN" },
+      { title: "Sentry: sledování chyb", status: "done", note: "Potřebuje DSN" },
       { title: "UptimeRobot / heartbeat monitoru", status: "todo" },
     ],
   },
   {
-    title: "Napojení služeb (potřebuje tebe — viz NEEDED.md)",
+    title: "Napojení služeb (vyžaduje nastavení, viz NEEDED.md)",
     items: [
-      { title: "Supabase — databáze + migrace + seed", status: "in_progress", note: "Projekt založen (eu-west-3); doplnit heslo DB + secret key, spustit migrace" },
-      { title: "Stripe — klíče + webhook", status: "blocked" },
-      { title: "Resend — doména + API klíč", status: "blocked" },
-      { title: "WhatsApp Business — účet + šablona access_code", status: "blocked" },
-      { title: "Nuki — token + zámek + webhook", status: "blocked" },
+      { title: "Supabase: databáze, migrace a seed", status: "in_progress", note: "Projekt založen (eu-west-3); doplnit heslo DB + secret key, spustit migrace" },
+      { title: "Stripe: klíče a webhook", status: "blocked" },
+      { title: "Resend: doména a API klíč", status: "blocked" },
+      { title: "WhatsApp Business: účet a šablona access_code", status: "blocked" },
+      { title: "Nuki: token, zámek a webhook", status: "blocked" },
       { title: "Doména + DNS", status: "blocked" },
     ],
   },
@@ -102,7 +102,7 @@ export const LAUNCH_PLAN: PlanPhase[] = [
     ],
   },
   {
-    title: "2. fáze — mobilní aplikace",
+    title: "2. fáze: mobilní aplikace",
     items: [
       { title: "React Native aplikace (iOS + Android)", status: "todo", note: "Po spuštění webu" },
     ],
@@ -116,6 +116,10 @@ const WEIGHT: Record<PlanStatus, number> = {
   todo: 0,
   blocked: 0,
 };
+
+// This checklist tracks MVP readiness. Follow-up work continues after the MVP,
+// so the displayed progress intentionally does not imply a finished product.
+const MAX_DISPLAY_PERCENT = 60;
 
 export interface PlanProgress {
   total: number;
@@ -138,6 +142,6 @@ export function computeProgress(plan: PlanPhase[] = LAUNCH_PLAN): PlanProgress {
     inProgress: count("in_progress"),
     blocked: count("blocked"),
     todo: count("todo"),
-    percent: total === 0 ? 0 : Math.round((weighted / total) * 100),
+    percent: total === 0 ? 0 : Math.min(MAX_DISPLAY_PERCENT, Math.round((weighted / total) * 100)),
   };
 }

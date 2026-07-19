@@ -12,10 +12,10 @@ const STATUS_LABEL: Record<PlanStatus, string> = {
 };
 
 const ICON: Record<PlanStatus, string> = {
-  done: "✅",
-  in_progress: "🟡",
-  todo: "⬜",
-  blocked: "⛔",
+  done: "●",
+  in_progress: "◐",
+  todo: "○",
+  blocked: "×",
 };
 
 /** Launch plan with a progress bar. Data + weighting in lib/data/launch-plan.ts. */

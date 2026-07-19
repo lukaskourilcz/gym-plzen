@@ -81,6 +81,8 @@ const NAV_GROUPS = [
     items: [
       { href: "/admin/statistics", label: "Statistiky" },
       { href: "/admin/alerts", label: "Upozornění" },
+      { href: "/admin/inspirations", label: "Inspirace" },
+      { href: "/admin/plan", label: "Plán spuštění" },
     ],
   },
 ];
