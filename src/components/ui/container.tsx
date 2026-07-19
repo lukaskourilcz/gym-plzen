@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 /** Centered max-width content wrapper used across the public site. */
 export function Container({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("mx-auto w-full max-w-6xl px-4 sm:px-6", className)} {...props} />;
+  return <div className={cn("mx-auto w-full max-w-[1200px] px-5 sm:px-6", className)} {...props} />;
 }
 
 /** A vertical page section with consistent spacing and an optional id anchor. */
@@ -11,5 +11,5 @@ export function Section({
   className,
   ...props
 }: React.HTMLAttributes<HTMLElement>) {
-  return <section className={cn("py-16 sm:py-24", className)} {...props} />;
+  return <section className={cn("py-20 sm:py-24", className)} {...props} />;
 }

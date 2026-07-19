@@ -36,7 +36,7 @@ export function SlotButton({ startsAtISO, label }: { startsAtISO: string; label:
       onClick={onClick}
       disabled={pending}
       title={error ?? undefined}
-      className="rounded-md border border-primary/30 bg-primary/10 py-1.5 text-center text-sm font-medium transition-colors hover:bg-primary hover:text-primary-foreground disabled:opacity-60"
+      className="rounded-lg border-[1.5px] border-primary/40 bg-primary/10 py-2 text-center text-sm font-bold transition-colors hover:bg-primary disabled:opacity-60"
     >
       {pending ? "…" : label}
     </button>

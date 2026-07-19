@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Info } from "lucide-react";
+import { ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { getWeekSlots, mondayOf } from "@/lib/services/slots";
 import { loadSiteContent } from "@/lib/content/site";
 import { getSession } from "@/lib/auth/guards";
@@ -36,6 +36,8 @@ export default async function BookingPage({
   ]);
   const price = formatMoney(content.entryPriceCents);
   const isAuthed = Boolean(session);
+  const weekEnd = addMinutes(weekStart, 6 * 24 * 60);
+  const weekLabel = `${weekStart.getDate()}. ${weekStart.getMonth() + 1}. – ${weekEnd.getDate()}. ${weekEnd.getMonth() + 1}. ${weekEnd.getFullYear()}`;
 
   return (
     <>
@@ -43,51 +45,58 @@ export default async function BookingPage({
       {/* Live calendar: refresh when reservations change (no-op if unconfigured). */}
       <RealtimeRefresher table="reservation" />
       <main>
-        <Section className="py-12 sm:py-16">
+        <Section className="pb-28 pt-14">
           <Container>
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
-                <div className="text-sm font-semibold text-primary">Rezervace</div>
-                <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Vyberte si termín</h1>
-                <p className="mt-2 text-muted-foreground">
-                  Celý gym jen pro vás. Jeden trénink za {price}. Kliknutím na volný čas pokračujete k platbě.
+                <div className="text-xs font-extrabold uppercase tracking-[.14em] text-primary">Rezervace</div>
+                <h1 className="mt-2 text-4xl font-black tracking-[-.03em] sm:text-[44px]">Vyberte si termín</h1>
+                <p className="mt-2 max-w-xl text-muted-foreground">
+                  Celý gym hodinu jen pro vás za {price}. Vyberte volný čas a pokračujte k platbě.
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <Link
                   href={`/rezervace?w=${weekOffset - 1}`}
                   aria-disabled={weekOffset <= 0}
-                  className={`rounded-md border border-border px-3 py-1.5 text-sm ${weekOffset <= 0 ? "pointer-events-none opacity-40" : "hover:bg-secondary"}`}
+                  aria-label="Předchozí týden"
+                  className={`grid size-10 place-items-center rounded-[10px] border border-border bg-card ${weekOffset <= 0 ? "pointer-events-none opacity-35" : "hover:bg-secondary"}`}
                 >
-                  ← Předchozí
+                  <ChevronLeft className="size-4" />
                 </Link>
+                <div className="min-w-40 text-center text-sm font-extrabold">{weekLabel}</div>
                 <Link
                   href={`/rezervace?w=${weekOffset + 1}`}
-                  className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+                  aria-label="Další týden"
+                  className="grid size-10 place-items-center rounded-[10px] border border-border bg-card hover:bg-secondary"
                 >
-                  Další →
+                  <ChevronRight className="size-4" />
                 </Link>
+                {weekOffset !== 0 && <Link href="/rezervace" className="ml-1 rounded-[10px] border border-border bg-card px-4 py-2.5 text-sm font-bold hover:bg-secondary">Dnes</Link>}
               </div>
             </div>
 
             {source === "demo" && (
               <div className="mt-6 flex items-center gap-2 rounded-lg border border-border bg-accent/50 p-3 text-sm text-accent-foreground">
                 <Info className="size-4 shrink-0" />
-                Ukázkový rozvrh. Po připojení databáze se zobrazí skutečná dostupnost v reálném čase.
+                Režim ukázky — zobrazené termíny slouží pro prezentaci rezervačního procesu.
               </div>
             )}
 
-            {/* Week grid */}
-            <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-              {days.map((day, i) => (
-                <div key={i} className="rounded-xl border border-border bg-card p-3">
-                  <div className="mb-3 text-center">
-                    <div className="text-xs font-semibold uppercase text-muted-foreground">{DAY_LABELS[i]}</div>
-                    <div className="text-lg font-bold">{day.date.getDate()}.</div>
+            <div className="mt-9 overflow-x-auto rounded-[18px] border border-border bg-card shadow-sm">
+              <div className="grid min-w-[760px] grid-cols-7 border-b border-border">
+                {days.map((day, i) => (
+                  <div key={i} className="border-l border-border/70 px-2 py-3.5 text-center first:border-l-0">
+                    <div className="text-[11px] font-extrabold uppercase tracking-[.1em] text-muted-foreground">{DAY_LABELS[i]}</div>
+                    <div className="mt-0.5 text-xl font-extrabold">{day.date.getDate()}.</div>
                   </div>
-                  <div className="flex flex-col gap-1.5">
+                ))}
+              </div>
+              <div className="grid min-w-[760px] grid-cols-7">
+                {days.map((day, i) => (
+                  <div key={i} className="flex flex-col gap-1.5 border-l border-border/70 px-2 py-3 first:border-l-0">
                     {day.slots.length === 0 && (
-                      <div className="rounded-md bg-muted py-2 text-center text-xs text-muted-foreground">Zavřeno</div>
+                      <div className="rounded-lg bg-muted py-4 text-center text-xs font-semibold text-muted-foreground">Zavřeno</div>
                     )}
                     {day.slots.map((slot, j) =>
                       slot.available ? (
@@ -101,7 +110,7 @@ export default async function BookingPage({
                           <Link
                             key={j}
                             href={`/login?next=${encodeURIComponent(`/rezervace?w=${weekOffset}`)}`}
-                            className="rounded-md border border-primary/30 bg-primary/10 py-1.5 text-center text-sm font-medium transition-colors hover:bg-primary hover:text-primary-foreground"
+                            className="rounded-lg border-[1.5px] border-primary/40 bg-primary/10 py-2 text-center text-sm font-bold transition-colors hover:bg-primary"
                           >
                             {formatTime(slot.start)}
                           </Link>
@@ -109,18 +118,18 @@ export default async function BookingPage({
                       ) : (
                         <div
                           key={j}
-                          className="cursor-not-allowed rounded-md border border-border bg-muted py-1.5 text-center text-sm text-muted-foreground line-through"
+                          className="cursor-not-allowed rounded-lg bg-muted/70 py-2 text-center text-sm font-medium text-muted-foreground/60"
                         >
                           {formatTime(slot.start)}
                         </div>
                       ),
                     )}
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+            <div className="mt-5 flex flex-wrap items-center gap-6 text-sm font-semibold text-muted-foreground">
               <span className="inline-flex items-center gap-1.5">
                 <Badge className="bg-primary/10">volno</Badge> lze rezervovat
               </span>
@@ -130,7 +139,7 @@ export default async function BookingPage({
             </div>
 
             <p className="mt-8 text-sm text-muted-foreground">
-              Platbu a doručení vstupního kódu (e-mail + WhatsApp) dokončíte po přihlášení. Nemáte účet?{" "}
+              Pro dokončení rezervace se přihlaste nebo si vytvořte účet.{" "}
               <Link href="/login" className="font-medium text-foreground underline">
                 Zaregistrujte se
               </Link>

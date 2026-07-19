@@ -4,6 +4,7 @@ import { loadSiteContent } from "@/lib/content/site";
 import { formatDateTime, formatMoney } from "@/lib/helpers/format";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
+import { CalendarDays } from "lucide-react";
 import { LoyaltyWidget } from "@/components/loyalty-widget";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
@@ -27,25 +28,28 @@ export default async function AccountPage() {
       <SiteHeader brand={content.get("brand.name")} logoUrl={content.logoUrl} />
       <main>
         <Section className="py-12">
-          <Container className="max-w-2xl">
-            <h1 className="text-3xl font-bold tracking-tight">Můj účet</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Přihlášen jako {user.email}. Cena vstupu: {formatMoney(content.entryPriceCents)}.
+          <Container className="max-w-4xl">
+            <div className="text-xs font-extrabold uppercase tracking-[.14em] text-primary">Můj účet</div>
+            <h1 className="mt-2 text-[38px] font-black tracking-[-.03em]">Dobrý den, {user.name.split(" ")[0]}</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {user.email} · cena vstupu {formatMoney(content.entryPriceCents)}
             </p>
 
-            <div className="mt-6">
+            <div className="mt-8 grid gap-5 md:grid-cols-2">
               <LoyaltyWidget status={status} />
+              <div className="rounded-[18px] border border-border bg-card p-7">
+                <div className="text-[11px] font-extrabold uppercase tracking-[.13em] text-muted-foreground">Nejbližší trénink</div>
+                {upcoming[0] ? <><div className="mt-3 text-xl font-black">{formatDateTime(upcoming[0].startsAt)}</div><div className="mt-4 rounded-xl bg-accent px-4 py-3 text-sm font-bold text-accent-foreground">Vstupní údaje obdržíte před začátkem rezervace.</div></> : <p className="mt-4 text-sm text-muted-foreground">Nemáte žádnou naplánovanou rezervaci.</p>}
+              </div>
             </div>
 
-            <h2 className="mt-8 mb-2 text-lg font-semibold">Nadcházející rezervace</h2>
-            <ul className="list-disc pl-5 text-sm">
+            <h2 className="mb-3 mt-10 text-lg font-extrabold">Nadcházející rezervace</h2>
+            <div className="grid gap-2.5">
               {upcoming.map((r) => (
-                <li key={r.id}>
-                  {formatDateTime(r.startsAt)} — {r.status}
-                </li>
+                <div key={r.id} className="flex items-center gap-4 rounded-[14px] border border-border bg-card px-5 py-4"><span className="grid size-11 place-items-center rounded-xl bg-accent text-accent-foreground"><CalendarDays className="size-5" /></span><div className="flex-1"><div className="font-extrabold">Trénink · celý gym</div><div className="mt-0.5 text-sm text-muted-foreground">{formatDateTime(r.startsAt)}</div></div><span className="rounded-full bg-accent px-3 py-1 text-xs font-bold text-accent-foreground">{r.status}</span></div>
               ))}
-              {upcoming.length === 0 && <li className="list-none text-muted-foreground">Žádné nadcházející rezervace.</li>}
-            </ul>
+              {upcoming.length === 0 && <div className="rounded-[14px] border border-dashed border-border p-6 text-sm text-muted-foreground">Žádné nadcházející rezervace.</div>}
+            </div>
 
             <div className="mt-8">
               <Button href="/rezervace">Rezervovat trénink</Button>

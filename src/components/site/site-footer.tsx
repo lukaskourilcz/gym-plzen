@@ -20,7 +20,7 @@ export function SiteFooter({
         <div>
           <div className="text-lg font-bold">{brand}</div>
           <p className="mt-1 max-w-xs text-sm text-ink-foreground/70">
-            Soukromý gym jen pro vás. Rezervace a vstup online.
+            Soukromé fitness v Plzni. Rezervace online, vstup vlastním kódem.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-8 text-sm">
@@ -64,7 +64,7 @@ export function SiteFooter({
           <span>
             © {year} {brand}. Všechna práva vyhrazena.
           </span>
-          <span>Data v EU · GDPR · Platby přes Stripe</span>
+          <span>Rezervace a platba online</span>
         </Container>
       </div>
     </footer>

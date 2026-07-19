@@ -14,46 +14,75 @@ export default async function AdminLayout({
   const admin = await requireAdmin();
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="w-56 shrink-0 border-r border-border bg-card p-4">
-        <Link href="/admin" className="font-bold tracking-tight">
-          Gym Plzeň
-          <span className="block text-xs font-normal text-muted-foreground">administrace</span>
+    <div className="min-h-screen bg-background lg:flex">
+      <aside className="border-b border-white/10 bg-ink px-4 py-3 text-white lg:fixed lg:inset-y-0 lg:w-64 lg:border-r lg:border-b-0 lg:p-5">
+        <Link href="/admin" className="font-extrabold tracking-[-.02em]">
+          GYM PLZEŇ
+          <span className="block text-[11px] font-medium uppercase tracking-[.14em] text-white/40">Administrace</span>
         </Link>
-        <nav className="mt-6 grid gap-0.5 text-sm">
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              {item.label}
-            </Link>
+        <nav className="mt-4 flex gap-1 overflow-x-auto pb-1 text-sm lg:mt-8 lg:grid lg:gap-6 lg:overflow-visible">
+          {NAV_GROUPS.map((group) => (
+            <div key={group.label} className="contents lg:block">
+              <div className="mb-1 hidden px-2.5 text-[10px] font-bold uppercase tracking-[.14em] text-white/35 lg:block">
+                {group.label}
+              </div>
+              <div className="flex gap-1 lg:grid lg:gap-0.5">
+                {group.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="whitespace-nowrap rounded-lg px-2.5 py-2 text-white/65 transition-colors hover:bg-white/10 hover:text-white"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
-        <div className="mt-8 border-t border-border pt-4 text-xs text-muted-foreground">
+        <div className="mt-8 hidden border-t border-white/10 pt-4 text-xs text-white/45 lg:block">
           <div className="truncate">{admin.email}</div>
           <SignOutButton />
         </div>
       </aside>
-      <main className="max-w-6xl flex-1 p-6">{children}</main>
+      <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:ml-64 lg:p-8">{children}</main>
     </div>
   );
 }
 
-const NAV = [
-  { href: "/admin", label: "Přehled" },
-  { href: "/admin/calendar", label: "Kalendář" },
-  { href: "/admin/reservations", label: "Rezervace" },
-  { href: "/admin/schedule", label: "Otevírací doba a bloky" },
-  { href: "/admin/members", label: "Členové" },
-  { href: "/admin/memberships", label: "Vstupné a věrnost" },
-  { href: "/admin/statistics", label: "Statistiky" },
-  { href: "/admin/content", label: "Obsah webu" },
-  { href: "/admin/settings", label: "Nastavení a branding" },
-  { href: "/admin/messages", label: "Doručené zprávy" },
-  { href: "/admin/entry-log", label: "Kniha vstupů" },
-  { href: "/admin/alerts", label: "Upozornění" },
-  { href: "/admin/inspirations", label: "Inspirace" },
-  { href: "/admin/plan", label: "Plán spuštění" },
+const NAV_GROUPS = [
+  {
+    label: "Provoz",
+    items: [
+      { href: "/admin", label: "Přehled" },
+      { href: "/admin/calendar", label: "Kalendář" },
+      { href: "/admin/reservations", label: "Rezervace" },
+      { href: "/admin/schedule", label: "Otevírací doba a bloky" },
+      { href: "/admin/entry-log", label: "Kniha vstupů" },
+    ],
+  },
+  {
+    label: "Lidé",
+    items: [
+      { href: "/admin/members", label: "Členové" },
+      { href: "/admin/memberships", label: "Ceny a věrnost" },
+      { href: "/admin/messages", label: "Doručené zprávy" },
+    ],
+  },
+  {
+    label: "Obsah",
+    items: [
+      { href: "/admin/content", label: "Obsah webu" },
+      { href: "/admin/settings", label: "Nastavení a branding" },
+    ],
+  },
+  {
+    label: "Systém",
+    items: [
+      { href: "/admin/statistics", label: "Statistiky" },
+      { href: "/admin/alerts", label: "Upozornění" },
+      { href: "/admin/inspirations", label: "Inspirace" },
+      { href: "/admin/plan", label: "Plán spuštění" },
+    ],
+  },
 ];

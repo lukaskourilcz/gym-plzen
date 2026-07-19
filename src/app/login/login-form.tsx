@@ -116,40 +116,42 @@ export function LoginForm({ providers = OAUTH_PROVIDERS }: { providers?: typeof 
   return (
     <div>
       {providers.length > 0 && (
-        <div className="mb-4 grid gap-2">
+        <div className="grid gap-2.5">
           {providers.map((p) => (
-            <Button key={p.id} type="button" variant="outline" onClick={() => onOAuth(p.id)}>
+            <Button key={p.id} type="button" variant="outline" className="h-[46px] bg-card" onClick={() => onOAuth(p.id)}>
               {p.label}
             </Button>
           ))}
         </div>
       )}
 
+      {providers.length > 0 && <div className="my-6 flex items-center gap-3 text-[11px] font-bold uppercase tracking-[.1em] text-muted-foreground"><span className="h-px flex-1 bg-border" />nebo e-mailem<span className="h-px flex-1 bg-border" /></div>}
+
       <form onSubmit={onSubmit}>
         <input type="hidden" {...register("__mode")} />
         {mode === "signup" && (
           <Field name="name" label="Jméno" error={formState.errors.name}>
-            <Input id="name" {...register("name")} />
+          <Input id="name" className="h-[46px] rounded-[11px]" {...register("name")} />
           </Field>
         )}
         <Field name="email" label="E-mail" error={formState.errors.email}>
-          <Input id="email" type="email" {...register("email")} />
+          <Input id="email" type="email" placeholder="vas@email.cz" className="h-[46px] rounded-[11px]" {...register("email")} />
         </Field>
         <Field name="password" label="Heslo" error={formState.errors.password}>
-          <Input id="password" type="password" {...register("password")} />
+          <Input id="password" type="password" placeholder="••••••••" className="h-[46px] rounded-[11px]" {...register("password")} />
         </Field>
 
         <FormFeedback error={serverError} success={notice} />
-        <SubmitButton isSubmitting={formState.isSubmitting} className="w-full">
+        <SubmitButton isSubmitting={formState.isSubmitting} className="h-[50px] w-full">
           {mode === "signin" ? "Přihlásit se" : "Zaregistrovat se"}
         </SubmitButton>
       </form>
 
-      <p className="mt-4 text-sm">
+      <p className="mt-5 text-center text-sm text-muted-foreground">
         <button
           type="button"
           onClick={() => switchMode(mode === "signin" ? "signup" : "signin")}
-          className="text-primary hover:underline"
+          className="font-bold text-foreground hover:underline"
         >
           {mode === "signin" ? "Nemáte účet? Zaregistrujte se" : "Máte účet? Přihlaste se"}
         </button>

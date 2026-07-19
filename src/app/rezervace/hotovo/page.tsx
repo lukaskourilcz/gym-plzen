@@ -34,8 +34,7 @@ export default async function BookingDonePage({
               {free
                 ? "Váš vstup zdarma je zarezervovaný."
                 : "Vaše platba byla přijata a rezervace potvrzena."}{" "}
-              Vstupní kód vám pošleme e-mailem a na WhatsApp — bude platit v čase
-              vaší rezervace.
+              Vstupní kód obdržíte před návštěvou. Platit bude pouze v čase vaší rezervace.
             </p>
             <div className="mt-8 flex justify-center gap-3">
               <Button href="/account">Můj účet</Button>

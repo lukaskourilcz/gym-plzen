@@ -4,20 +4,19 @@ import {
   CreditCard,
   KeyRound,
   ShieldCheck,
-  Sparkles,
   MapPin,
   Mail,
   Phone,
   Clock,
-  Wifi,
   Lock,
+  ArrowRight,
+  Check,
 } from "lucide-react";
 import { loadSiteContent } from "@/lib/content/site";
 import { formatMoney } from "@/lib/helpers/format";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 
@@ -38,63 +37,58 @@ export default async function HomePage() {
       <main>
         {/* Hero */}
         <section className="relative overflow-hidden bg-ink text-ink-foreground">
-          <div className="pointer-events-none absolute inset-0 opacity-30 [background:radial-gradient(60%_60%_at_70%_0%,var(--color-primary)_0%,transparent_60%)]" />
-          <Container className="relative grid gap-10 py-20 sm:py-28 lg:grid-cols-2 lg:items-center">
+          <div className="pointer-events-none absolute inset-0 opacity-40 [background-image:linear-gradient(oklch(0.97_0.005_260/.035)_1px,transparent_1px),linear-gradient(90deg,oklch(0.97_0.005_260/.035)_1px,transparent_1px)] [background-size:56px_56px]" />
+          <div className="pointer-events-none absolute inset-0 opacity-25 [background:radial-gradient(50%_60%_at_75%_10%,var(--color-primary)_0%,transparent_60%)]" />
+          <Container className="relative grid gap-14 py-20 sm:py-24 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
             <div>
-              <Badge variant="accent" className="mb-5 bg-white/10 text-ink-foreground">
-                <Sparkles className="mr-1 size-3.5" /> {t("home.hero.badge")}
-              </Badge>
-              <h1 className="text-balance text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
-                {t("home.hero.title")}
+              <h1 className="text-5xl font-black leading-[.98] tracking-[-0.035em] sm:text-6xl lg:text-[76px]">
+                Celý gym.<br />Jen <em className="text-primary">pro vás</em>.
               </h1>
-              <p className="mt-5 max-w-lg text-lg text-ink-foreground/75">
-                {t("home.hero.subtitle")}
+              <p className="mt-6 max-w-[460px] text-lg leading-relaxed text-ink-foreground/70">
+                Zarezervujte si hodinu, zaplaťte online a dveře si odemknete kódem. Bez recepce, čekání a davů.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
+              <div className="mt-8">
                 <Button href="/rezervace" size="lg">
-                  {t("home.hero.cta")}
+                  Rezervovat trénink <ArrowRight />
                 </Button>
-                <Button href="/#jak-to-funguje" size="lg" variant="outline" className="border-white/25 text-ink-foreground hover:bg-white/10">
-                  Jak to funguje
-                </Button>
-              </div>
-              <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-ink-foreground/60">
-                <span className="inline-flex items-center gap-1.5"><Clock className="size-4" /> Otevřeno dle rezervací</span>
-                <span className="inline-flex items-center gap-1.5"><Lock className="size-4" /> Vstup na kód</span>
-                <span className="inline-flex items-center gap-1.5"><ShieldCheck className="size-4" /> Data v EU</span>
               </div>
             </div>
 
-            {/* Price / loyalty teaser card */}
             <div className="lg:justify-self-end">
-              <Card className="w-full max-w-sm bg-card/95 text-card-foreground shadow-xl">
-                <CardContent className="p-6">
-                  <div className="text-sm font-medium text-muted-foreground">Jednorázový vstup</div>
-                  <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-4xl font-extrabold tracking-tight">{price}</span>
-                    <span className="text-muted-foreground">/ trénink</span>
+              <Card className="w-full max-w-md overflow-hidden border-0 bg-background text-card-foreground shadow-2xl">
+                <CardContent className="p-0">
+                  <div className="flex items-center justify-between border-b border-border px-6 py-5">
+                    <div className="flex items-center gap-2 text-sm font-extrabold">
+                      <span className="size-2 rounded-full bg-emerald-500" /> Rezervace online
+                    </div>
+                    <span className="text-xs font-bold text-muted-foreground">bez čekání</span>
                   </div>
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    Bez závazků a měsíčních plateb. A každý{" "}
-                    <strong className="text-foreground">{content.freeEntryEvery}. vstup zdarma</strong>.
-                  </p>
-                  <div className="mt-5 flex items-center gap-2 rounded-lg bg-accent p-3 text-sm text-accent-foreground">
-                    <Sparkles className="size-4 shrink-0" />
-                    Věrnostní počítadlo vidíte ve svém účtu.
+                  <div className="grid grid-cols-3 gap-2 px-6 py-5">
+                    {["06:00", "12:00", "17:00", "18:00", "19:00", "20:00"].map((slot) => (
+                      <Link key={slot} href="/rezervace" className="rounded-lg border border-primary/40 bg-primary/10 py-2 text-center text-sm font-bold hover:bg-primary">
+                        {slot}
+                      </Link>
+                    ))}
                   </div>
-                  <Button href="/rezervace" className="mt-5 w-full">
-                    Vybrat termín
-                  </Button>
+                  <div className="flex items-end justify-between border-t border-border px-6 py-5">
+                    <div><strong className="text-2xl font-black">{price}</strong><span className="text-sm text-muted-foreground"> / hodina</span></div>
+                    <Link href="/rezervace" className="inline-flex items-center gap-1 text-sm font-extrabold hover:underline">Celý kalendář <ArrowRight className="size-4" /></Link>
+                  </div>
                 </CardContent>
               </Card>
             </div>
+          </Container>
+          <Container className="relative grid grid-cols-2 border-t border-white/10 sm:grid-cols-4">
+            {[["60 min", "soukromý vstup"], [price, "za celý gym"], [`Každý ${content.freeEntryEvery}.`, "vstup zdarma"], ["Online", "rezervace i platba"]].map(([value, label]) => (
+              <div key={label} className="border-l border-white/10 px-5 py-5"><div className="font-extrabold">{value}</div><div className="mt-0.5 text-xs text-white/50">{label}</div></div>
+            ))}
           </Container>
         </section>
 
         {/* How it works */}
         <Section id="jak-to-funguje">
           <Container>
-            <SectionHeading eyebrow="Jednoduše" title={t("home.about.title")} />
+            <SectionHeading eyebrow="Jak to funguje" title="Tři kroky. Dvě minuty." />
             <div className="mt-12 grid gap-6 md:grid-cols-3">
               {[
                 { icon: CalendarClock, title: t("home.about.step1.title"), body: t("home.about.step1.body") },
@@ -103,10 +97,10 @@ export default async function HomePage() {
               ].map((step, i) => (
                 <Card key={step.title} className="relative">
                   <CardContent className="p-6">
-                    <div className="mb-4 grid size-11 place-items-center rounded-lg bg-primary/15 text-foreground">
+                    <div className="mb-5 grid size-12 place-items-center rounded-xl bg-ink text-primary">
                       <step.icon className="size-5" />
                     </div>
-                    <div className="text-xs font-semibold text-muted-foreground">Krok {i + 1}</div>
+                    <div className="absolute right-5 top-3 text-6xl font-black text-primary/20">{i + 1}</div>
                     <h3 className="mt-1 text-lg font-semibold">{step.title}</h3>
                     <p className="mt-2 text-sm text-muted-foreground">{step.body}</p>
                   </CardContent>
@@ -120,52 +114,26 @@ export default async function HomePage() {
         <Section id="cenik" className="bg-secondary/50">
           <Container className="grid gap-10 lg:grid-cols-2 lg:items-center">
             <div>
-              <SectionHeading eyebrow="Ceník" title={t("home.pricing.title")} align="left" />
+              <SectionHeading eyebrow="Ceník" title="Jedna cena. Žádné hvězdičky." align="left" />
               <p className="mt-4 max-w-md text-muted-foreground">{t("home.pricing.note")}</p>
               <ul className="mt-6 space-y-3 text-sm">
                 {[
                   "Celý gym jen pro vás během rezervace",
                   "Platba kartou, Apple Pay i Google Pay",
-                  "Vstupní kód e-mailem i na WhatsApp",
+                  "Vstupní údaje obdržíte před návštěvou",
                   `Každý ${content.freeEntryEvery}. vstup zdarma`,
                 ].map((li) => (
                   <li key={li} className="flex items-start gap-2">
-                    <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+                    <span className="grid size-6 shrink-0 place-items-center rounded-md bg-primary"><Check className="size-3.5" /></span>
                     {li}
                   </li>
                 ))}
               </ul>
             </div>
-            <Card className="lg:justify-self-end lg:w-96">
-              <CardContent className="p-8 text-center">
-                <div className="text-sm font-medium text-muted-foreground">Vstupné</div>
-                <div className="mt-2 text-5xl font-extrabold tracking-tight">{price}</div>
-                <div className="mt-1 text-sm text-muted-foreground">za jeden trénink</div>
-                <Button href="/rezervace" size="lg" className="mt-6 w-full">
-                  Rezervovat trénink
-                </Button>
-                <p className="mt-3 text-xs text-muted-foreground">Bez registračních poplatků a bez závazku.</p>
-              </CardContent>
-            </Card>
-          </Container>
-        </Section>
-
-        {/* Gallery (placeholders until real photos are added via the CMS) */}
-        <Section id="galerie">
-          <Container>
-            <SectionHeading eyebrow="Prostor" title={t("home.gallery.title")} />
-            <div className="mt-12 grid grid-cols-2 gap-4 md:grid-cols-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="aspect-square rounded-xl border border-border bg-gradient-to-br from-secondary to-muted"
-                  aria-hidden
-                />
-              ))}
+            <div className="relative overflow-hidden rounded-[20px] bg-ink p-9 text-center text-white lg:justify-self-end lg:w-[420px]">
+              <div className="absolute inset-0 opacity-20 [background:radial-gradient(70%_50%_at_50%_0%,var(--color-primary),transparent_65%)]" />
+              <div className="relative"><div className="text-xs font-bold uppercase tracking-[.14em] text-white/55">Vstupné</div><div className="mt-3 text-6xl font-black tracking-[-.04em] text-primary">{price}</div><p className="mt-2 text-sm text-white/65">za hodinu · celý gym jen pro vás</p><Button href="/rezervace" size="lg" className="mt-7 w-full">Rezervovat trénink</Button></div>
             </div>
-            <p className="mt-4 text-center text-sm text-muted-foreground">
-              Fotografie prostoru doplníte v administraci (Obsah webu).
-            </p>
           </Container>
         </Section>
 
@@ -177,9 +145,9 @@ export default async function HomePage() {
               <p>{t("home.rules.body")}</p>
               <div className="grid gap-3 sm:grid-cols-3">
                 {[
-                  { icon: Wifi, label: "Nonstop hlídaný zámek" },
-                  { icon: Lock, label: "Jednorázový vstupní kód" },
-                  { icon: ShieldCheck, label: "Každé odemčení zaznamenáno" },
+                  { icon: Clock, label: "Vstup v čase rezervace" },
+                  { icon: Lock, label: "Osobní vstupní kód" },
+                  { icon: ShieldCheck, label: "Bezpečný soukromý prostor" },
                 ].map((f) => (
                   <div key={f.label} className="rounded-lg border border-white/10 bg-white/5 p-4">
                     <f.icon className="size-5 text-primary" />
@@ -195,15 +163,10 @@ export default async function HomePage() {
         <Section id="kontakt">
           <Container>
             <SectionHeading eyebrow="Kontakt" title={t("home.contact.title")} />
-            <div className="mx-auto mt-10 grid max-w-3xl gap-4 sm:grid-cols-3">
+            <div className="mx-auto mt-10 flex max-w-3xl flex-wrap justify-center gap-4 [&>*]:min-w-56 [&>*]:flex-1">
               <ContactCard icon={MapPin} label="Adresa" value={t("contact.address")} />
-              <ContactCard icon={Mail} label="E-mail" value={email || "doplňte v administraci"} href={email ? `mailto:${email}` : undefined} />
-              <ContactCard icon={Phone} label="Telefon" value={phone || "doplňte v administraci"} href={phone ? `tel:${phone}` : undefined} />
-            </div>
-            <div className="mt-10 text-center">
-              <Button href="/rezervace" size="lg">
-                Rezervovat trénink
-              </Button>
+              {email && <ContactCard icon={Mail} label="E-mail" value={email} href={`mailto:${email}`} />}
+              {phone && <ContactCard icon={Phone} label="Telefon" value={phone} href={`tel:${phone}`} />}
             </div>
           </Container>
         </Section>
