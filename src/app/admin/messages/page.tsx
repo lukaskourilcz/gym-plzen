@@ -41,7 +41,7 @@ export default async function MessagesPage() {
                 {m.status}
                 {m.failureReason ? ` (${m.failureReason})` : ""}
               </TableCell>
-              <TableCell>{m.deliveredAt ? formatDateTime(m.deliveredAt) : "—"}</TableCell>
+              <TableCell>{m.deliveredAt ? formatDateTime(m.deliveredAt) : "Nedoručeno"}</TableCell>
             </TableRow>
           ))}
           {rows.length === 0 && (

@@ -51,7 +51,7 @@ export default async function AdminDashboard() {
           {recentReservations.map((r) => (
             <TableRow key={r.id}>
               <TableCell>{formatDateTime(r.startsAt)}</TableCell>
-              <TableCell>{r.contactName ?? r.contactEmail ?? "—"}</TableCell>
+              <TableCell>{r.contactName ?? r.contactEmail ?? "Neuvedeno"}</TableCell>
               <TableCell>{r.status}</TableCell>
             </TableRow>
           ))}

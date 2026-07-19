@@ -49,7 +49,7 @@ export default async function ReservationsPage() {
             <TableRow key={r.id}>
               <TableCell>{formatDateTime(r.startsAt)}</TableCell>
               <TableCell>{formatDateTime(r.endsAt)}</TableCell>
-              <TableCell>{r.contactName ?? r.contactEmail ?? "—"}</TableCell>
+              <TableCell>{r.contactName ?? r.contactEmail ?? "Neuvedeno"}</TableCell>
               <TableCell>{r.priceCents != null ? formatMoney(r.priceCents, r.currency) : "členství"}</TableCell>
               <TableCell>{r.status}</TableCell>
               <TableCell>

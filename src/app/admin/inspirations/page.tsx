@@ -12,18 +12,18 @@ const designCount = INSPIRATIONS.filter((g) => g.designBenchmark).length;
 export default function InspirationsPage() {
   return (
     <div>
-      <PageHeader title="Inspirace — gymy bez obsluhy se zámkem" />
+      <PageHeader title="Srovnání samoobslužných gymů" />
       <p className="mb-6 max-w-3xl text-sm text-muted-foreground">
         Skutečné, ověřené provozy po celém světě (důraz na trh USA). {lockCount} z nich běží na{" "}
-        <strong className="text-foreground">stejném konceptu jako my</strong> — bez recepce, vstup
-        přes chytrý zámek / PIN, rezervace a platba online. Dalších {designCount} je zařazeno hlavně
+        <strong className="text-foreground">srovnatelném provozním modelu</strong>: bez recepce, vstup
+        přes elektronický zámek nebo PIN, rezervace a platba online. Dalších {designCount} je zařazeno hlavně
         jako <strong className="text-foreground">designová inspirace</strong>. U každého je náhled
         funkcí a jak vypadají jejich formuláře a frontend.
       </p>
 
       <Card className="mb-6 bg-muted/40">
         <CardContent className="p-4">
-          <h2 className="mb-2 font-semibold">Co si vzít — souhrn</h2>
+          <h2 className="mb-2 font-semibold">Shrnutí poznatků</h2>
           <ul className="list-disc space-y-1 pl-5 text-sm">
             {INSPIRATION_TAKEAWAYS.map((t) => (
               <li key={t}>{t}</li>

@@ -33,7 +33,7 @@ export default async function MembersPage() {
             <TableRow key={user.id}>
               <TableCell>{user.name}</TableCell>
               <TableCell>{user.email}</TableCell>
-              <TableCell>{profile?.phone ?? "—"}</TableCell>
+              <TableCell>{profile?.phone ?? "Neuvedeno"}</TableCell>
               <TableCell>{formatDateTime(user.createdAt)}</TableCell>
               <TableCell>{user.role ?? "member"}</TableCell>
             </TableRow>
@@ -54,7 +54,7 @@ export default async function MembersPage() {
           {rows.map((member) => (
             <details key={member.user.id} className="mb-3 rounded-lg border border-border p-3">
               <summary className="cursor-pointer">
-                {member.user.name} — {member.user.email}
+                {member.user.name} ({member.user.email})
               </summary>
               <div className="mt-3">
                 <MemberForm member={member} />

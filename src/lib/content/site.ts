@@ -21,7 +21,7 @@ import { LOGO_URL_KEY, TERMS_URL_KEY } from "@/lib/config/branding";
 export const SITE_DEFAULTS = {
   "brand.name": "Gym Plzeň",
   "home.hero.badge": "Soukromé fitness v Plzni",
-  "home.hero.title": "Váš čas. Váš prostor. Váš trénink.",
+  "home.hero.title": "Soukromý gym v Plzni",
   "home.hero.subtitle":
     "Rezervujte si vybavený gym jen pro sebe. Termín vyberete online a na místě vstoupíte vlastním kódem.",
   "home.hero.cta": "Zobrazit volné termíny",
@@ -32,7 +32,7 @@ export const SITE_DEFAULTS = {
   "home.about.step2.body": "Rezervaci potvrdíte platbou kartou přímo na webu.",
   "home.about.step3.title": "Odemkněte a trénujte",
   "home.about.step3.body": "Před návštěvou obdržíte kód, kterým si gym odemknete.",
-  "home.pricing.title": "Jednoduché vstupné",
+  "home.pricing.title": "Cena vstupu",
   "home.pricing.note": "Bez závazků a měsíčních plateb. Platíte jen za to, co si odtrénujete.",
   "home.rules.title": "Provozní řád",
   "home.rules.body":

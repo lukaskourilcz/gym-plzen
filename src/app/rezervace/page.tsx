@@ -52,7 +52,7 @@ export default async function BookingPage({
                 <div className="text-xs font-extrabold uppercase tracking-[.14em] text-primary">Rezervace</div>
                 <h1 className="mt-2 text-4xl font-black tracking-[-.03em] sm:text-[44px]">Vyberte si termín</h1>
                 <p className="mt-2 max-w-xl text-muted-foreground">
-                  Celý gym hodinu jen pro vás za {price}. Vyberte volný čas a pokračujte k platbě.
+                  Hodinová rezervace celého prostoru stojí {price}. Vyberte volný termín a pokračujte k platbě.
                 </p>
               </div>
               <div className="flex items-center gap-2.5">
@@ -79,7 +79,7 @@ export default async function BookingPage({
             {source === "demo" && (
               <div className="mt-6 flex items-center gap-2 rounded-lg border border-border bg-accent/50 p-3 text-sm text-accent-foreground">
                 <Info className="size-4 shrink-0" />
-                Režim ukázky — zobrazené termíny slouží pro prezentaci rezervačního procesu.
+                Zobrazené termíny jsou ilustrační. Po připojení databáze se načte aktuální dostupnost.
               </div>
             )}
 

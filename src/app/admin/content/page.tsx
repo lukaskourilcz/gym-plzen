@@ -18,7 +18,7 @@ export default async function ContentPage() {
     <div>
       <PageHeader
         title="Obsah webu"
-        description="Upravte jakýkoli text na webu. Změny se projeví okamžitě po uložení."
+        description="Správa textů veřejného webu. Uložené změny se následně zobrazí návštěvníkům."
       />
 
       {Object.entries(groups).map(([group, items]) => (

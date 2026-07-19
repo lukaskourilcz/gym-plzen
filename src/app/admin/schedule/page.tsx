@@ -36,7 +36,7 @@ export default async function SchedulePage() {
         <h2 className="mb-1 text-lg font-semibold">Doba na sprchu</h2>
         <p className="mb-3 max-w-2xl text-sm text-muted-foreground">
           O kolik minut po skončení tréninku ještě platí vstupní kód, aby se člen mohl osprchovat.
-          Neblokuje další slot — další člen může začít trénovat, zatímco se předchozí sprchuje.
+          Tato doba neblokuje další rezervaci. Následující člen může začít trénovat, zatímco předchozí využívá sprchu.
         </p>
         <ShowerMinutesForm current={showerMinutes} />
       </section>
@@ -62,7 +62,7 @@ export default async function SchedulePage() {
                   <TableCell>{formatDateTime(b.startsAt)}</TableCell>
                   <TableCell>{formatDateTime(b.endsAt)}</TableCell>
                   <TableCell>{b.reason}</TableCell>
-                  <TableCell>{b.note ?? "—"}</TableCell>
+                  <TableCell>{b.note ?? "Bez poznámky"}</TableCell>
                   <TableCell>
                     <DeleteBlockButton id={b.id} />
                   </TableCell>

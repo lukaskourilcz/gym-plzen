@@ -32,7 +32,7 @@ export default async function AlertsPage() {
                 {a.title}
                 {a.body && <div className="text-xs text-muted-foreground">{a.body}</div>}
               </TableCell>
-              <TableCell>{a.notifiedAt ? formatDateTime(a.notifiedAt) : "—"}</TableCell>
+              <TableCell>{a.notifiedAt ? formatDateTime(a.notifiedAt) : "Neodesláno"}</TableCell>
               <TableCell>{a.resolvedAt ? formatDateTime(a.resolvedAt) : "otevřené"}</TableCell>
             </TableRow>
           ))}

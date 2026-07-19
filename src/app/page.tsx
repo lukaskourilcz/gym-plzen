@@ -42,10 +42,10 @@ export default async function HomePage() {
           <Container className="relative grid gap-14 py-20 sm:py-24 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
             <div>
               <h1 className="text-5xl font-black leading-[.98] tracking-[-0.035em] sm:text-6xl lg:text-[76px]">
-                Celý gym.<br />Jen <em className="text-primary">pro vás</em>.
+                Soukromý gym<br /><em className="text-primary">v Plzni</em>
               </h1>
               <p className="mt-6 max-w-[460px] text-lg leading-relaxed text-ink-foreground/70">
-                Zarezervujte si hodinu, zaplaťte online a dveře si odemknete kódem. Bez recepce, čekání a davů.
+                Vybavený prostor pro samostatný trénink. Termín a platbu vyřídíte online, vstup funguje pomocí osobního kódu.
               </p>
               <div className="mt-8">
                 <Button href="/rezervace" size="lg">
@@ -61,7 +61,7 @@ export default async function HomePage() {
                     <div className="flex items-center gap-2 text-sm font-extrabold">
                       <span className="size-2 rounded-full bg-emerald-500" /> Rezervace online
                     </div>
-                    <span className="text-xs font-bold text-muted-foreground">bez čekání</span>
+                    <span className="text-xs font-bold text-muted-foreground">dostupné online</span>
                   </div>
                   <div className="grid grid-cols-3 gap-2 px-6 py-5">
                     {["06:00", "12:00", "17:00", "18:00", "19:00", "20:00"].map((slot) => (
@@ -88,7 +88,7 @@ export default async function HomePage() {
         {/* How it works */}
         <Section id="jak-to-funguje">
           <Container>
-            <SectionHeading eyebrow="Jak to funguje" title="Tři kroky. Dvě minuty." />
+            <SectionHeading eyebrow="Postup" title="Jak probíhá rezervace" />
             <div className="mt-12 grid gap-6 md:grid-cols-3">
               {[
                 { icon: CalendarClock, title: t("home.about.step1.title"), body: t("home.about.step1.body") },
@@ -114,11 +114,11 @@ export default async function HomePage() {
         <Section id="cenik" className="bg-secondary/50">
           <Container className="grid gap-10 lg:grid-cols-2 lg:items-center">
             <div>
-              <SectionHeading eyebrow="Ceník" title="Jedna cena. Žádné hvězdičky." align="left" />
+              <SectionHeading eyebrow="Ceník" title="Cena jednorázového vstupu" align="left" />
               <p className="mt-4 max-w-md text-muted-foreground">{t("home.pricing.note")}</p>
               <ul className="mt-6 space-y-3 text-sm">
                 {[
-                  "Celý gym jen pro vás během rezervace",
+                  "Soukromé využití gymu během rezervace",
                   "Platba kartou, Apple Pay i Google Pay",
                   "Vstupní údaje obdržíte před návštěvou",
                   `Každý ${content.freeEntryEvery}. vstup zdarma`,
@@ -132,7 +132,7 @@ export default async function HomePage() {
             </div>
             <div className="relative overflow-hidden rounded-[20px] bg-ink p-9 text-center text-white lg:justify-self-end lg:w-[420px]">
               <div className="absolute inset-0 opacity-20 [background:radial-gradient(70%_50%_at_50%_0%,var(--color-primary),transparent_65%)]" />
-              <div className="relative"><div className="text-xs font-bold uppercase tracking-[.14em] text-white/55">Vstupné</div><div className="mt-3 text-6xl font-black tracking-[-.04em] text-primary">{price}</div><p className="mt-2 text-sm text-white/65">za hodinu · celý gym jen pro vás</p><Button href="/rezervace" size="lg" className="mt-7 w-full">Rezervovat trénink</Button></div>
+              <div className="relative"><div className="text-xs font-bold uppercase tracking-[.14em] text-white/55">Vstupné</div><div className="mt-3 text-6xl font-black tracking-[-.04em] text-primary">{price}</div><p className="mt-2 text-sm text-white/65">za hodinovou rezervaci celého prostoru</p><Button href="/rezervace" size="lg" className="mt-7 w-full">Rezervovat trénink</Button></div>
             </div>
           </Container>
         </Section>

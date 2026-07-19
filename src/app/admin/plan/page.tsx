@@ -26,7 +26,7 @@ export default function PlanPage() {
     <div>
       <PageHeader
         title="Plán spuštění"
-        description="Co je hotové a co ještě zbývá do spuštění. Položky „Čeká na tebe“ vyžadují nastavení účtů/klíčů — detaily v souboru NEEDED.md."
+        description="Stav příprav před spuštěním. Položky označené „Čeká na tebe“ vyžadují nastavení účtů nebo přístupových klíčů. Podrobnosti jsou v souboru NEEDED.md."
       />
 
       <div className="mb-1 flex items-baseline justify-between">
@@ -55,7 +55,7 @@ export default function PlanPage() {
                       <span aria-hidden>{ICON[item.status]}</span>
                       <span className="flex-1">
                         {item.title}
-                        {item.note && <span className="text-sm text-muted-foreground"> — {item.note}</span>}
+                        {item.note && <span className="text-sm text-muted-foreground">: {item.note}</span>}
                       </span>
                       <span className="whitespace-nowrap text-xs text-muted-foreground">{STATUS_LABEL[item.status]}</span>
                     </li>

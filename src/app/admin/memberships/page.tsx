@@ -80,7 +80,7 @@ export default async function PricingPage() {
               <TableCell>{member.user.name || member.user.email}</TableCell>
               <TableCell>{status.totalEntries}</TableCell>
               <TableCell>{status.positionInCycle} / {status.cadence}</TableCell>
-              <TableCell>{status.nextEntryIsFree ? "🎉 další zdarma" : status.entriesUntilFree}</TableCell>
+              <TableCell>{status.nextEntryIsFree ? "Další vstup zdarma" : status.entriesUntilFree}</TableCell>
               <TableCell>{status.freeEntriesEarned}</TableCell>
             </TableRow>
           ))}

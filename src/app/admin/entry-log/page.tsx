@@ -16,7 +16,7 @@ export default async function EntryLogPage() {
     <div>
       <PageHeader
         title="Kniha vstupů"
-        description="Načítá se ze zámku Nuki — kdo a kdy skutečně odemkl."
+        description="Přehled skutečných odemčení načtený ze zámku Nuki."
       />
       {demo && <DemoBanner />}
       <Table>
@@ -32,9 +32,9 @@ export default async function EntryLogPage() {
           {rows.map((e) => (
             <TableRow key={e.id}>
               <TableCell>{formatDateTime(e.occurredAt)}</TableCell>
-              <TableCell>{e.nukiName ?? "—"}</TableCell>
-              <TableCell>{e.action ?? "—"}</TableCell>
-              <TableCell>{e.trigger ?? "—"}</TableCell>
+              <TableCell>{e.nukiName ?? "Neuvedeno"}</TableCell>
+              <TableCell>{e.action ?? "Neuvedeno"}</TableCell>
+              <TableCell>{e.trigger ?? "Neuvedeno"}</TableCell>
             </TableRow>
           ))}
           {rows.length === 0 && (
