@@ -15,11 +15,18 @@ const globalForDb = globalThis as unknown as {
   __sql?: ReturnType<typeof postgres>;
 };
 
+// postgres.js connects lazily. This local fallback lets Next.js evaluate route
+// modules during builds without opening a connection. Public pages already
+// catch unavailable-database errors and show their demo/default state.
+const databaseUrl =
+  env.DATABASE_URL ??
+  "postgres://unconfigured:unconfigured@127.0.0.1:5432/unconfigured?connect_timeout=1";
+
 // `prepare: false` is required when connecting through the Supabase transaction
 // pooler (pgbouncer), which does not support prepared statements.
 const sql =
   globalForDb.__sql ??
-  postgres(env.DATABASE_URL, {
+  postgres(databaseUrl, {
     prepare: false,
     max: env.NODE_ENV === "production" ? 10 : 1,
   });

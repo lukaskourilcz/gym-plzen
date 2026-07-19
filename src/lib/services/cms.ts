@@ -2,7 +2,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { contentBlock, page, siteSetting } from "@/lib/db/schema";
 import type { ContentBlock, Page } from "@/lib/db/types";
-import { publicEnv } from "@/lib/env";
+import { publicEnv } from "@/lib/public-env";
 
 /**
  * CMS service — the read/write API behind the "redakční systém". The public

@@ -1,4 +1,4 @@
-import { publicEnv } from "@/lib/env";
+import { publicEnv } from "@/lib/public-env";
 import { ActionError } from "@/lib/helpers/action";
 import { addMinutes } from "@/lib/helpers/datetime";
 import { DEFAULT_SLOT_MINUTES } from "@/lib/config/schedule";

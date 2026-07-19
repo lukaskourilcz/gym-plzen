@@ -14,10 +14,9 @@ export { publicEnv } from "./public-env";
 const serverSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 
-  // Core — the app cannot run without a database. Authentication is handled by
-  // Supabase Auth (public URL + publishable key, see public-env); OAuth
-  // providers are configured in the Supabase dashboard, not here.
-  DATABASE_URL: z.string().url(),
+  // Optional during the build so the public site can deploy in demo mode.
+  // Database-backed operations still require a real URL at runtime.
+  DATABASE_URL: z.string().url().optional(),
 
   // Everything below is optional at boot; the relevant integration validates
   // its own keys via `requireEnv()` the first time it is used.
