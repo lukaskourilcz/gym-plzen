@@ -11,25 +11,48 @@ import {
   Lock,
   ArrowRight,
   Check,
+  Dumbbell,
+  Droplets,
+  DoorOpen,
 } from "lucide-react";
 import { loadSiteContent } from "@/lib/content/site";
-import { formatMoney } from "@/lib/helpers/format";
+import { formatMoney, formatTime } from "@/lib/helpers/format";
+import { addMinutes } from "@/lib/helpers/datetime";
+import { getWeekSlots, mondayOf } from "@/lib/services/slots";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
+import { HeroAvailability, type HeroAvailabilityDay } from "@/components/site/hero-availability";
 
 // Revalidate so CMS content edits appear without a redeploy.
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const content = await loadSiteContent();
+  const now = new Date();
+  const monday = mondayOf(now);
+  const [content, currentWeek, nextWeek] = await Promise.all([
+    loadSiteContent(),
+    getWeekSlots(monday, now),
+    getWeekSlots(addMinutes(monday, 7 * 24 * 60), now),
+  ]);
   const t = content.get;
   const brand = t("brand.name");
   const price = formatMoney(content.entryPriceCents);
   const email = t("contact.email");
   const phone = t("contact.phone");
+  const combinedDays = [...currentWeek.days, ...nextWeek.days];
+  const todayIndex = Math.max(0, combinedDays.findIndex((day) => day.date.toDateString() === now.toDateString()));
+  const previewDays: HeroAvailabilityDay[] = combinedDays.slice(todayIndex, todayIndex + 4).map((day, index) => {
+    const firstAvailable = day.slots.findIndex((slot) => slot.available);
+    const start = index === 0 && firstAvailable > 0 ? Math.min(firstAvailable, Math.max(0, day.slots.length - 8)) : 0;
+    return {
+      label: index === 0 ? "Dnes" : index === 1 ? "Zítra" : new Intl.DateTimeFormat("cs-CZ", { weekday: "short", day: "numeric" }).format(day.date),
+      dateLabel: day.date.toISOString(),
+      slots: day.slots.slice(start, start + 8).map((slot) => ({ label: formatTime(slot.start), available: slot.available })),
+    };
+  });
 
   return (
     <>
@@ -39,48 +62,31 @@ export default async function HomePage() {
         <section className="relative overflow-hidden bg-ink text-ink-foreground">
           <div className="pointer-events-none absolute inset-0 opacity-40 [background-image:linear-gradient(oklch(0.97_0.005_260/.035)_1px,transparent_1px),linear-gradient(90deg,oklch(0.97_0.005_260/.035)_1px,transparent_1px)] [background-size:56px_56px]" />
           <div className="pointer-events-none absolute inset-0 opacity-25 [background:radial-gradient(50%_60%_at_75%_10%,var(--color-primary)_0%,transparent_60%)]" />
-          <Container className="relative grid gap-14 py-20 sm:py-24 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
+          <Container className="relative grid min-h-[640px] gap-14 py-20 sm:py-24 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
             <div>
-              <h1 className="text-5xl font-black leading-[.98] tracking-[-0.035em] sm:text-6xl lg:text-[76px]">
-                Soukromý gym<br /><em className="text-primary">v Plzni</em>
+              <h1 className="text-5xl font-black leading-[.98] tracking-[-0.04em] sm:text-6xl lg:text-[78px] xl:text-[86px]">
+                Celý gym.<br />Jen <em className="text-primary">pro vás</em>.
               </h1>
-              <p className="mt-6 max-w-[460px] text-lg leading-relaxed text-ink-foreground/70">
-                Vybavený prostor pro samostatný trénink. Termín a platbu vyřídíte online, vstup funguje pomocí osobního kódu.
+              <p className="mt-7 max-w-[520px] text-lg leading-relaxed text-ink-foreground/65 sm:text-xl">
+                Zarezervujte si hodinu, zaplaťte online a dveře si odemknete osobním kódem. Prostor máte po celou dobu rezervace k dispozici sami.
               </p>
-              <div className="mt-8">
+              <div className="mt-9 flex flex-wrap gap-3">
                 <Button href="/rezervace" size="lg">
                   Rezervovat trénink <ArrowRight />
+                </Button>
+                <Button href="/#jak-to-funguje" size="lg" variant="outline" className="border-white/25 text-white hover:bg-white/10 hover:text-white">
+                  Jak to funguje
                 </Button>
               </div>
             </div>
 
-            <div className="lg:justify-self-end">
-              <Card className="w-full max-w-md overflow-hidden border-0 bg-background text-card-foreground shadow-2xl">
-                <CardContent className="p-0">
-                  <div className="flex items-center justify-between border-b border-border px-6 py-5">
-                    <div className="flex items-center gap-2 text-sm font-extrabold">
-                      <span className="size-2 rounded-full bg-emerald-500" /> Rezervace online
-                    </div>
-                    <span className="text-xs font-bold text-muted-foreground">dostupné online</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 px-6 py-5">
-                    {["06:00", "12:00", "17:00", "18:00", "19:00", "20:00"].map((slot) => (
-                      <Link key={slot} href="/rezervace" className="rounded-lg border border-primary/40 bg-primary/10 py-2 text-center text-sm font-bold hover:bg-primary">
-                        {slot}
-                      </Link>
-                    ))}
-                  </div>
-                  <div className="flex items-end justify-between border-t border-border px-6 py-5">
-                    <div><strong className="text-2xl font-black">{price}</strong><span className="text-sm text-muted-foreground"> / hodina</span></div>
-                    <Link href="/rezervace" className="inline-flex items-center gap-1 text-sm font-extrabold hover:underline">Celý kalendář <ArrowRight className="size-4" /></Link>
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="lg:w-full lg:max-w-[520px] lg:justify-self-end">
+              <HeroAvailability days={previewDays} price={price} freeEntryEvery={content.freeEntryEvery} live={currentWeek.source === "live"} />
             </div>
           </Container>
           <Container className="relative grid grid-cols-2 border-t border-white/10 sm:grid-cols-4">
-            {[["60 min", "soukromý vstup"], [price, "za celý gym"], [`Každý ${content.freeEntryEvery}.`, "vstup zdarma"], ["Online", "rezervace i platba"]].map(([value, label]) => (
-              <div key={label} className="border-l border-white/10 px-5 py-5"><div className="font-extrabold">{value}</div><div className="mt-0.5 text-xs text-white/50">{label}</div></div>
+            {[["05:00–21:00", "otevřeno každý den"], ["1 osoba", "na každý hodinový slot"], [price, "za hodinu, bez závazku"], [`${content.freeEntryEvery}. vstup`, "vždy zdarma"]].map(([value, label]) => (
+              <div key={label} className="border-l border-white/10 px-6 py-6"><div className="text-lg font-extrabold sm:text-xl">{value}</div><div className="mt-1 text-xs text-white/50 sm:text-sm">{label}</div></div>
             ))}
           </Container>
         </section>
@@ -133,6 +139,24 @@ export default async function HomePage() {
             <div className="relative overflow-hidden rounded-[20px] bg-ink p-9 text-center text-white lg:justify-self-end lg:w-[420px]">
               <div className="absolute inset-0 opacity-20 [background:radial-gradient(70%_50%_at_50%_0%,var(--color-primary),transparent_65%)]" />
               <div className="relative"><div className="text-xs font-bold uppercase tracking-[.14em] text-white/55">Vstupné</div><div className="mt-3 text-6xl font-black tracking-[-.04em] text-primary">{price}</div><p className="mt-2 text-sm text-white/65">za hodinovou rezervaci celého prostoru</p><Button href="/rezervace" size="lg" className="mt-7 w-full">Rezervovat trénink</Button></div>
+            </div>
+          </Container>
+        </Section>
+
+        <Section id="prostor">
+          <Container>
+            <SectionHeading eyebrow="Prostor" title="Vybavení pro samostatný trénink" />
+            <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">Gym je připravený pro individuální silový a kondiční trénink. Během rezervace prostor nesdílíte s dalšími návštěvníky.</p>
+            <div className="mt-10 grid gap-4 md:grid-cols-3">
+              {[
+                { icon: Dumbbell, title: "Tréninková zóna", body: "Prostor pro silový i kondiční trénink s vybavením na jednom místě." },
+                { icon: Droplets, title: "Šatna a sprcha", body: "Po skončení tréninku máte vyhrazený čas na převlečení a sprchu." },
+                { icon: DoorOpen, title: "Samostatný vstup", body: "Osobní kód platí pouze v čase vaší potvrzené rezervace." },
+              ].map((item) => (
+                <Card key={item.title} className="group transition-colors hover:border-primary/50">
+                  <CardContent className="p-7"><div className="grid size-12 place-items-center rounded-xl bg-accent text-accent-foreground"><item.icon className="size-5" /></div><h3 className="mt-5 text-lg font-extrabold">{item.title}</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.body}</p></CardContent>
+                </Card>
+              ))}
             </div>
           </Container>
         </Section>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 const NAV = [
   { href: "/#jak-to-funguje", label: "Jak to funguje" },
   { href: "/#cenik", label: "Ceník" },
+  { href: "/#prostor", label: "Prostor" },
   { href: "/#pravidla", label: "Řád" },
   { href: "/#kontakt", label: "Kontakt" },
 ];
