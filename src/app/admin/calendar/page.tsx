@@ -17,7 +17,9 @@ export default async function CalendarPage() {
   const now = new Date();
   const rangeStart = addMinutes(now, -14 * 24 * 60);
   const rangeEnd = addMinutes(now, 60 * 24 * 60);
-  const { reservations, blocks } = await availability.listCalendarEntries(rangeStart, rangeEnd);
+  const { reservations, blocks } = await availability
+    .listCalendarEntries(rangeStart, rangeEnd)
+    .catch(() => ({ reservations: [], blocks: [] }));
 
   const events: EventInput[] = [
     ...reservations

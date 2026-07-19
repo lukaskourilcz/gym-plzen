@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 /** Actual unlocks read from the Nuki lock (synced by webhook + cron). */
 export default async function EntryLogPage() {
-  const { rows, demo } = await withDemoFallback(await entryLog.listRecentEntries(200), (d) => d.entries);
+  const { rows, demo } = await withDemoFallback(entryLog.listRecentEntries(200), (d) => d.entries);
 
   return (
     <div>

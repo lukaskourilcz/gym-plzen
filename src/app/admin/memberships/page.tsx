@@ -1,6 +1,6 @@
 import { loyalty, members } from "@/lib/services";
 import { deriveLoyaltyStatus } from "@/lib/services/loyalty";
-import { FREE_ENTRY_EVERY } from "@/lib/config/pricing";
+import { DEFAULT_ENTRY_PRICE_CENTS, FREE_ENTRY_EVERY } from "@/lib/config/pricing";
 import { formatMoney } from "@/lib/helpers/format";
 import { loadDemoData } from "@/lib/demo/dummy";
 import { DemoBanner } from "@/components/admin/demo-banner";
@@ -18,8 +18,8 @@ export const dynamic = "force-dynamic";
  */
 export default async function PricingPage() {
   const [entryPriceCents, liveMembers] = await Promise.all([
-    loyalty.getEntryPriceCents(),
-    members.listMembers(200),
+    loyalty.getEntryPriceCents().catch(() => DEFAULT_ENTRY_PRICE_CENTS),
+    members.listMembers(200).catch(() => []),
   ]);
 
   const demo = liveMembers.length === 0;

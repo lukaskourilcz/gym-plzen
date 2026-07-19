@@ -189,10 +189,16 @@ export function buildDemoStats(reservations: Reservation[], now = new Date()): S
  * instead of repeating the empty-check everywhere.
  */
 export async function withDemoFallback<T>(
-  live: T[],
+  live: T[] | Promise<T[]>,
   pick: (demo: Awaited<ReturnType<typeof loadDemoData>>) => T[],
 ): Promise<{ rows: T[]; demo: boolean }> {
-  if (live.length > 0) return { rows: live, demo: false };
+  let rows: T[] = [];
+  try {
+    rows = await live;
+  } catch {
+    // A showcase deployment intentionally runs without a database.
+  }
+  if (rows.length > 0) return { rows, demo: false };
   const data = await loadDemoData();
   return { rows: pick(data), demo: true };
 }

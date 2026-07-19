@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 /** Operational alerts history — failures pushed to the WhatsApp group. */
 export default async function AlertsPage() {
-  const rows = await alerts.listRecentAlerts(100);
+  const rows = await alerts.listRecentAlerts(100).catch(() => []);
 
   return (
     <div>

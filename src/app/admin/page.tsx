@@ -16,9 +16,9 @@ export const dynamic = "force-dynamic";
  */
 export default async function AdminDashboard() {
   const [liveReservations, recentAlerts, liveMessages] = await Promise.all([
-    reservations.listRecent(8),
-    alerts.listRecentAlerts(8),
-    messages.listRecent(8),
+    reservations.listRecent(8).catch(() => []),
+    alerts.listRecentAlerts(8).catch(() => []),
+    messages.listRecent(8).catch(() => []),
   ]);
 
   const demo = liveReservations.length === 0;

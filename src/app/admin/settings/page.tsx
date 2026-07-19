@@ -15,9 +15,9 @@ export const dynamic = "force-dynamic";
 /** Configure the front-end assets (logo, terms PDF) and message templates. */
 export default async function SettingsPage() {
   const [logoUrl, termsUrl, smsTemplate] = await Promise.all([
-    cms.getSetting<string>(LOGO_URL_KEY),
-    cms.getSetting<string>(TERMS_URL_KEY),
-    cms.getSetting<string>(SMS_ACCESS_TEMPLATE_KEY),
+    cms.getSetting<string>(LOGO_URL_KEY).catch(() => null),
+    cms.getSetting<string>(TERMS_URL_KEY).catch(() => null),
+    cms.getSetting<string>(SMS_ACCESS_TEMPLATE_KEY).catch(() => null),
   ]);
 
   return (

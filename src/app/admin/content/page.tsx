@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
  * with an inline editor, plus a form to add new blocks.
  */
 export default async function ContentPage() {
-  const blocks = await cms.listBlocks();
+  const blocks = await cms.listBlocks().catch(() => []);
   const groups = groupBy(blocks, (b) => b.groupName ?? "ostatní");
 
   return (

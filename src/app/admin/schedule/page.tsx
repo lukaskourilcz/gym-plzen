@@ -4,6 +4,7 @@ import { formatDateTime } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BlockedSlotForm, DeleteBlockButton, OpeningHoursRow, ShowerMinutesForm } from "./schedule-forms";
+import { DEFAULT_SHOWER_MINUTES } from "@/lib/config/schedule";
 
 export const metadata = { title: "Otevírací doba a bloky" };
 export const dynamic = "force-dynamic";
@@ -12,9 +13,9 @@ export const dynamic = "force-dynamic";
 export default async function SchedulePage() {
   const now = new Date();
   const [hours, blocks, showerMinutes] = await Promise.all([
-    schedule.listOpeningHours(),
-    schedule.listBlockedSlots(now, addMinutes(now, 60 * 24 * 90)),
-    schedule.getShowerMinutes(),
+    schedule.listOpeningHours().catch(() => []),
+    schedule.listBlockedSlots(now, addMinutes(now, 60 * 24 * 90)).catch(() => []),
+    schedule.getShowerMinutes().catch(() => DEFAULT_SHOWER_MINUTES),
   ]);
   const byDay = new Map(hours.map((h) => [h.dayOfWeek, h]));
 

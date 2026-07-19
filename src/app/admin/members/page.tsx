@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 /** Members admin — every registered user with their editable profile. */
 export default async function MembersPage() {
-  const { rows, demo } = await withDemoFallback(await members.listMembers(200), (d) => d.members);
+  const { rows, demo } = await withDemoFallback(members.listMembers(200), (d) => d.members);
 
   return (
     <div>

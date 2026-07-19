@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ensureProfileForUser } from "@/lib/services/members";
+import { DEMO_ADMIN_EMAIL, hasDemoAdminSession } from "@/lib/auth/demo";
 
 /**
  * Authentication guards over **Supabase Auth**. `getSessionUser()` reads the
@@ -20,6 +21,15 @@ export interface SessionUser {
 
 /** The current user (verified via Supabase), or null when signed out. */
 export async function getSessionUser(): Promise<SessionUser | null> {
+  if (await hasDemoAdminSession()) {
+    return {
+      id: "00000000-0000-0000-0000-000000000001",
+      email: DEMO_ADMIN_EMAIL,
+      name: "Demo administrátor",
+      role: ADMIN_ROLE,
+    };
+  }
+
   const supabase = await createClient();
   if (!supabase) return null;
 

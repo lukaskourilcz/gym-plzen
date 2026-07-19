@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Field, FormFeedback, SubmitButton } from "@/components/admin/form-controls";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { demoAdminLoginAction } from "./actions";
 
 /** OAuth providers shown as buttons (enable each in the Supabase dashboard). */
 const OAUTH_PROVIDERS: { id: "google" | "apple" | "azure"; label: string }[] = [
@@ -60,6 +61,18 @@ export function LoginForm({ providers = OAUTH_PROVIDERS }: { providers?: typeof 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
     setNotice(null);
+
+    if (mode === "signin" && values.email.trim().toLowerCase() === "admin@namaste.demo") {
+      const result = await demoAdminLoginAction({ email: values.email, password: values.password });
+      if (!result.ok) {
+        setServerError(result.error);
+        return;
+      }
+      router.push("/admin");
+      router.refresh();
+      return;
+    }
+
     const supabase = createClient();
     if (!supabase) {
       setServerError("Přihlášení zatím není nastavené (chybí Supabase).");
@@ -115,6 +128,13 @@ export function LoginForm({ providers = OAUTH_PROVIDERS }: { providers?: typeof 
 
   return (
     <div>
+      <div className="mb-6 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm">
+        <div className="font-extrabold">Demo administrace</div>
+        <div className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          E-mail: <strong className="text-foreground">admin@namaste.demo</strong><br />
+          Heslo: <strong className="text-foreground">namaste2026</strong>
+        </div>
+      </div>
       {providers.length > 0 && (
         <div className="grid gap-2.5">
           {providers.map((p) => (
