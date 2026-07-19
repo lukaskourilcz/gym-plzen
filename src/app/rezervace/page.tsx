@@ -86,9 +86,10 @@ export default async function BookingPage({
             <div className="mt-9 overflow-x-auto rounded-[18px] border border-border bg-card shadow-sm">
               <div className="grid min-w-[760px] grid-cols-7 border-b border-border">
                 {days.map((day, i) => (
-                  <div key={i} className="border-l border-border/70 px-2 py-3.5 text-center first:border-l-0">
-                    <div className="text-[11px] font-extrabold uppercase tracking-[.1em] text-muted-foreground">{DAY_LABELS[i]}</div>
+                  <div key={i} className={`border-l border-border/70 px-2 py-3.5 text-center first:border-l-0 ${day.date.toDateString() === now.toDateString() ? "bg-primary/10" : ""}`}>
+                    <div className={`text-[11px] font-extrabold uppercase tracking-[.1em] ${day.date.toDateString() === now.toDateString() ? "text-accent-foreground" : "text-muted-foreground"}`}>{DAY_LABELS[i]}</div>
                     <div className="mt-0.5 text-xl font-extrabold">{day.date.getDate()}.</div>
+                    {day.date.toDateString() === now.toDateString() && <div className="mx-auto mt-1 h-[3px] w-8 rounded-full bg-primary" />}
                   </div>
                 ))}
               </div>
@@ -131,10 +132,10 @@ export default async function BookingPage({
 
             <div className="mt-5 flex flex-wrap items-center gap-6 text-sm font-semibold text-muted-foreground">
               <span className="inline-flex items-center gap-1.5">
-                <Badge className="bg-primary/10">volno</Badge> lze rezervovat
+                <Badge className="bg-primary/10">Volno</Badge>
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <Badge variant="muted">obsazeno</Badge> už zabráno
+                <Badge variant="muted">Obsazeno</Badge>
               </span>
             </div>
 

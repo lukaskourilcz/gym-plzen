@@ -52,6 +52,12 @@ export function HeroAvailability({
         ))}
       </div>
 
+      {day && availableCount === 0 && (
+        <div className="mx-5 mt-4 rounded-xl bg-muted/70 px-4 py-5 text-center sm:mx-6">
+          <div className="text-sm font-extrabold">Tento den už není volný termín</div>
+          <div className="mt-1 text-xs font-semibold text-muted-foreground">Vyberte další den a zobrazíme dostupné hodiny.</div>
+        </div>
+      )}
       <div className="grid grid-cols-4 gap-2 px-5 py-5 sm:px-6">
         {(day?.slots ?? []).slice(0, 8).map((slot) =>
           slot.available ? (
