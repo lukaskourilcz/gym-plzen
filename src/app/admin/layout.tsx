@@ -20,7 +20,7 @@ export default async function AdminLayout({
       <aside className="border-b border-white/10 bg-ink px-4 py-3 text-white lg:fixed lg:inset-y-0 lg:flex lg:w-[248px] lg:flex-col lg:border-r lg:border-b-0 lg:px-3.5 lg:py-5">
         <Link href="/admin" className="flex items-center gap-2.5 px-2.5 py-1 tracking-[-.02em]">
           <span className="grid size-[34px] shrink-0 place-items-center rounded-[9px] bg-primary text-primary-foreground"><Dumbbell className="size-[18px]" /></span>
-          <span><strong className="block text-[15px] font-extrabold">GYM PLZEŇ</strong><span className="block text-[11px] font-medium text-white/45">Administrace</span></span>
+          <span><strong className="block text-[14px] font-extrabold">NAMASTÉ</strong><span className="block text-[11px] font-medium text-white/45">Private Gym · administrace</span></span>
         </Link>
         <AdminNav />
         <div className="mt-auto hidden items-center gap-2.5 border-t border-white/10 px-2.5 pb-1 pt-3.5 lg:flex">

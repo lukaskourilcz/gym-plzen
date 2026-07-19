@@ -105,7 +105,7 @@ export async function startBooking(params: {
     customerId,
     amountCents: priceCents,
     currency: "czk",
-    description: "Jednorázový vstup | Gym Plzeň",
+    description: "Jednorázový vstup | NAMASTÉ Private Gym",
     successUrl: `${appUrl}/rezervace/hotovo?session_id={CHECKOUT_SESSION_ID}`,
     cancelUrl: `${appUrl}/rezervace`,
     metadata: { reservationId: reservation.id, userId: params.userId },

@@ -19,24 +19,24 @@ import { LOGO_URL_KEY, TERMS_URL_KEY } from "@/lib/config/branding";
  */
 
 export const SITE_DEFAULTS = {
-  "brand.name": "Gym Plzeň",
-  "home.hero.badge": "Soukromé fitness v Plzni",
-  "home.hero.title": "Soukromý gym v Plzni",
+  "brand.name": "NAMASTÉ Private Gym",
+  "home.hero.badge": "Privátní fitness v Plzni",
+  "home.hero.title": "Celý gym jen pro vás",
   "home.hero.subtitle":
-    "Rezervujte si vybavený gym jen pro sebe. Termín vyberete online a na místě vstoupíte vlastním kódem.",
+    "Pronajměte si celý prostor pro sebe nebo vezměte přátele. Bez čekání na stroje a bez cizích pohledů.",
   "home.hero.cta": "Zobrazit volné termíny",
   "home.about.title": "Jak to funguje",
   "home.about.step1.title": "Vyberte termín",
-  "home.about.step1.body": "V kalendáři si zvolíte den a čas, který vám vyhovuje.",
+  "home.about.step1.body": "V rezervačním systému si vyberete termín a časové okno, které vám vyhovuje.",
   "home.about.step2.title": "Zaplaťte online",
   "home.about.step2.body": "Rezervaci potvrdíte platbou kartou přímo na webu.",
   "home.about.step3.title": "Odemkněte a trénujte",
-  "home.about.step3.body": "Před návštěvou obdržíte kód, kterým si gym odemknete.",
+  "home.about.step3.body": "Před začátkem rezervace obdržíte osobní kód, kterým si odemknete vstupní dveře.",
   "home.pricing.title": "Cena vstupu",
   "home.pricing.note": "Bez závazků a měsíčních plateb. Platíte jen za to, co si odtrénujete.",
   "home.rules.title": "Provozní řád",
   "home.rules.body":
-    "Do gymu vstupujte pouze v čase rezervace. Po tréninku vraťte vybavení na místo a otřete použité nářadí. Vstupní kód je osobní a nepřenosný.",
+    "Do fitness vstupujte pouze v čase rezervace. Po tréninku vraťte vybavení i dětský koutek do původního stavu a otřete použité nářadí. Vstupní kód je osobní a platí pouze ve vašem časovém okně.",
   "home.gallery.title": "Prostor",
   "home.contact.title": "Kontakt",
   "contact.address": "Křížkova 424/23, 301 00 Plzeň 1",

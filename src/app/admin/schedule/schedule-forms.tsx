@@ -37,8 +37,8 @@ export function OpeningHoursRow({
     successMessage: "Uloženo.",
     defaultValues: {
       dayOfWeek,
-      open: hours ? minutesToHHmm(hours.openMinute) : "05:00",
-      close: hours ? minutesToHHmm(hours.closeMinute) : "21:00",
+      open: hours ? minutesToHHmm(hours.openMinute) : "06:00",
+      close: hours ? minutesToHHmm(hours.closeMinute) : "22:00",
       slotMinutes: hours?.slotMinutes ?? 60,
       isClosed: hours?.isClosed === 1,
     },

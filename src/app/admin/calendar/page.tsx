@@ -44,7 +44,7 @@ export default async function CalendarPage() {
     <div>
       <PageHeader
         title="Kalendář"
-        description="Přehled rezervací a bloků. Tažením přes prázdný čas přidáte blok (např. úklid). Sloty jsou hodinové, provoz 05:00–21:00."
+        description="Přehled rezervací a bloků. Tažením přes prázdný čas přidáte blok (např. úklid). Sloty jsou hodinové, provoz 06:00–22:00."
       />
       <Card>
         <CardContent className="p-3">

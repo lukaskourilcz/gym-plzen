@@ -12,8 +12,9 @@ import {
   ArrowRight,
   Check,
   Dumbbell,
-  Droplets,
   DoorOpen,
+  Baby,
+  Refrigerator,
 } from "lucide-react";
 import { loadSiteContent } from "@/lib/content/site";
 import { formatMoney, formatTime } from "@/lib/helpers/format";
@@ -68,11 +69,12 @@ export default async function HomePage() {
           <div className="pointer-events-none absolute inset-0 opacity-25 [background:radial-gradient(50%_60%_at_75%_10%,var(--color-primary)_0%,transparent_60%)]" />
           <Container className="relative grid min-h-[640px] gap-14 py-20 sm:py-24 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
             <div>
+              <div className="mb-5 text-xs font-extrabold uppercase tracking-[.16em] text-primary">NAMASTÉ Private Gym</div>
               <h1 className="text-5xl font-black leading-[.98] tracking-[-0.04em] sm:text-6xl lg:text-[78px] xl:text-[86px]">
                 Celý gym.<br />Jen <em className="text-primary">pro vás</em>.
               </h1>
               <p className="mt-7 max-w-[520px] text-lg leading-relaxed text-ink-foreground/65 sm:text-xl">
-                Zarezervujte si hodinu, zaplaťte online a dveře si odemknete osobním kódem. Prostor máte po celou dobu rezervace k dispozici sami.
+                Pronajměte si celý prostor pro sebe nebo vezměte přátele. Žádné čekání na stroje, žádné cizí pohledy. Jen soustředění na váš trénink.
               </p>
               <div className="mt-9 flex flex-wrap gap-3">
                 <Button href="/rezervace" size="lg">
@@ -89,7 +91,7 @@ export default async function HomePage() {
             </div>
           </Container>
           <Container className="relative grid grid-cols-2 border-t border-white/10 sm:grid-cols-4">
-            {[["05:00–21:00", "otevřeno každý den"], ["1 osoba", "na každý hodinový slot"], [price, "za hodinu, bez závazku"], [`${content.freeEntryEvery}. vstup`, "vždy zdarma"]].map(([value, label]) => (
+            {[["06:00–22:00", "otevřeno každý den"], ["Privátní prostor", "pro vás i vaše přátele"], [price, "za rezervaci, bez závazku"], ["Dětský koutek", "bezpečné zázemí pro děti"]].map(([value, label]) => (
               <div key={label} className="border-l border-white/10 px-6 py-6"><div className="text-lg font-extrabold sm:text-xl">{value}</div><div className="mt-1 text-xs text-white/50 sm:text-sm">{label}</div></div>
             ))}
           </Container>
@@ -149,13 +151,26 @@ export default async function HomePage() {
 
         <Section id="prostor">
           <Container>
-            <SectionHeading eyebrow="Prostor" title="Vybavení pro samostatný trénink" />
-            <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">Gym je připravený pro individuální silový a kondiční trénink. Během rezervace prostor nesdílíte s dalšími návštěvníky.</p>
-            <div className="mt-10 grid gap-4 md:grid-cols-3">
+            <SectionHeading eyebrow="Prostor" title="Vše, co potřebujete k tréninku" />
+            <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">Silová, kardio a protahovací zóna na jednom místě. Zatímco trénujete, děti mohou využít vybavený dětský koutek.</p>
+            <div className="mt-10 overflow-hidden rounded-[20px] bg-ink lg:grid lg:grid-cols-[1.35fr_.65fr]">
+              <div className="min-h-[360px]">
+                {/* Genuine photo published by NAMASTÉ Private Gym on its original Wix site. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="https://static.wixstatic.com/media/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg/v1/fill/w_1600,h_900,al_c,q_90,enc_avif,quality_auto/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg" alt="Prostor NAMASTÉ Private Gym" className="h-full min-h-[360px] w-full object-cover" />
+              </div>
+              <div className="flex flex-col justify-center p-8 text-white sm:p-10">
+                <div className="text-xs font-extrabold uppercase tracking-[.15em] text-primary">NAMASTÉ Private Gym</div>
+                <h3 className="mt-3 text-2xl font-black tracking-[-.025em]">Klid na vše, na čem vám záleží</h3>
+                <p className="mt-4 text-sm leading-relaxed text-white/65">Plně samoobslužný prostor bez recepce. Během své rezervace využíváte fitness podle vlastního tempa.</p>
+              </div>
+            </div>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[
-                { icon: Dumbbell, title: "Tréninková zóna", body: "Prostor pro silový i kondiční trénink s vybavením na jednom místě." },
-                { icon: Droplets, title: "Šatna a sprcha", body: "Po skončení tréninku máte vyhrazený čas na převlečení a sprchu." },
-                { icon: DoorOpen, title: "Samostatný vstup", body: "Osobní kód platí pouze v čase vaší potvrzené rezervace." },
+                { icon: Dumbbell, title: "Silová zóna", body: "Stroje a pomůcky pro samostatný silový trénink." },
+                { icon: DoorOpen, title: "Kardio a protažení", body: "Samostatná zóna pro kardio, mobilitu a strečink." },
+                { icon: Baby, title: "Dětský koutek", body: "Vybavené bezpečné zázemí pro děti včetně pískoviště." },
+                { icon: Refrigerator, title: "Vybavená lednice", body: "Občerstvení a doplňky dostupné přímo ve fitness." },
               ].map((item) => (
                 <Card key={item.title} className="group transition-colors hover:border-primary/50">
                   <CardContent className="p-7"><div className="grid size-12 place-items-center rounded-xl bg-accent text-accent-foreground"><item.icon className="size-5" /></div><h3 className="mt-5 text-lg font-extrabold">{item.title}</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.body}</p></CardContent>
@@ -175,7 +190,7 @@ export default async function HomePage() {
                 {[
                   { icon: Clock, label: "Vstup v čase rezervace" },
                   { icon: Lock, label: "Osobní vstupní kód" },
-                  { icon: ShieldCheck, label: "Bezpečný soukromý prostor" },
+                  { icon: ShieldCheck, label: "Prostor po sobě ukliďte" },
                 ].map((f) => (
                   <div key={f.label} className="rounded-lg border border-white/10 bg-white/5 p-4">
                     <f.icon className="size-5 text-primary" />

@@ -12,7 +12,7 @@ import { createBlockedSlotAction } from "@/app/admin/schedule/actions";
 
 /**
  * Admin operational calendar (FullCalendar, MIT). Week view with 1-hour slots
- * from 05:00–21:00 — reservations as solid events, blocks (e.g. cleaning) as
+ * from 06:00–22:00 — reservations as solid events, blocks (e.g. cleaning) as
  * background events. Drag-select an empty range to create a block (used for the
  * cleaning window ~13:00). Correctness (overlap) is enforced server-side; this
  * is the visual operations view.

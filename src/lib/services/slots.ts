@@ -42,7 +42,7 @@ interface DayHours {
   isClosed: boolean;
 }
 
-// Fallback week: open every day 05:00–21:00 with 1-hour slots (mirrors the seed
+// Fallback week: open every day 06:00–22:00 with 1-hour slots (mirrors the seed
 // and src/lib/config/schedule.ts). Used only until the DB has opening hours.
 const DEFAULT_DAY: DayHours = {
   openMinute: DEFAULT_OPEN_MINUTE,

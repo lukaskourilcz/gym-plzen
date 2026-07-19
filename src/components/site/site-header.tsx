@@ -12,7 +12,7 @@ const NAV = [
 ];
 
 /** Public site header with brand, section nav, and the primary CTA. */
-export function SiteHeader({ brand = "Gym Plzeň", logoUrl }: { brand?: string; logoUrl?: string | null }) {
+export function SiteHeader({ brand = "NAMASTÉ Private Gym", logoUrl }: { brand?: string; logoUrl?: string | null }) {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
       <Container className="flex h-[68px] items-center justify-between">

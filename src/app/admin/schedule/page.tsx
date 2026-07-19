@@ -25,7 +25,7 @@ export default async function SchedulePage() {
       <section>
         <h2 className="mb-1 text-lg font-semibold">Týdenní otevírací doba</h2>
         <p className="mb-3 text-sm text-muted-foreground">
-          Sloty jsou vždy celé hodiny (např. 13:00–14:00). Výchozí provoz je denně 05:00–21:00.
+          Sloty jsou vždy celé hodiny (např. 13:00–14:00). Výchozí provoz je denně 06:00–22:00.
         </p>
         {Array.from({ length: 7 }, (_, day) => (
           <OpeningHoursRow key={day} dayOfWeek={day} hours={byDay.get(day)} />

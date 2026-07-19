@@ -1,7 +1,7 @@
 /**
  * Scheduling configuration & defaults.
  *
- * The gym is open every day 05:00–21:00 with 1-hour training slots aligned to
+ * The gym is open every day 06:00–22:00 with 1-hour training slots aligned to
  * the top of the hour (13:00–14:00, 14:00–15:00, …). Only one person trains at
  * a time, but a 15-minute shower grace after a slot is fine — one member may
  * shower while the next trains. Crucially that grace does NOT block the next
@@ -12,8 +12,8 @@
  * weekday in the admin, and the shower grace is an admin setting.
  */
 
-export const DEFAULT_OPEN_MINUTE = 5 * 60; // 05:00
-export const DEFAULT_CLOSE_MINUTE = 21 * 60; // 21:00
+export const DEFAULT_OPEN_MINUTE = 6 * 60; // 06:00
+export const DEFAULT_CLOSE_MINUTE = 22 * 60; // 22:00
 export const DEFAULT_SLOT_MINUTES = 60;
 
 /** Access code becomes valid this many minutes before the slot start. */

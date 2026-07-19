@@ -16,17 +16,18 @@ import {
   SHOWER_MINUTES_SETTING_KEY,
 } from "../src/lib/config/schedule";
 
-// Open every day 05:00–21:00 with 1-hour slots (see src/lib/config/schedule.ts).
+// Open every day 06:00–22:00 with 1-hour slots (see src/lib/config/schedule.ts).
 const OPENING_HOURS = Array.from({ length: 7 }, (_, dayOfWeek) => ({
   dayOfWeek,
-  openMinute: 5 * 60,
-  closeMinute: 21 * 60,
+  openMinute: 6 * 60,
+  closeMinute: 22 * 60,
   isClosed: 0,
 }));
 
 const CONTENT_BLOCKS = [
-  { key: "home.hero.title", label: "Nadpis úvodní sekce", groupName: "home", valueText: "Vítejte v našem gymu" },
-  { key: "home.hero.subtitle", label: "Podnadpis úvodní sekce", groupName: "home", valueText: "Rezervujte si trénink online." },
+  { key: "brand.name", label: "Název", groupName: "home", valueText: "NAMASTÉ Private Gym" },
+  { key: "home.hero.title", label: "Nadpis úvodní sekce", groupName: "home", valueText: "Celý gym jen pro vás" },
+  { key: "home.hero.subtitle", label: "Podnadpis úvodní sekce", groupName: "home", valueText: "Pronajměte si celý prostor pro sebe nebo vezměte přátele." },
   { key: "rules.body", label: "Provozní řád", groupName: "pravidla", valueText: "Sem doplňte provozní řád." },
   { key: "contact.address", label: "Adresa", groupName: "kontakt", valueText: "Křížkova 424/23, 301 00 Plzeň 1" },
   { key: "contact.phone", label: "Telefon", groupName: "kontakt", valueText: "" },

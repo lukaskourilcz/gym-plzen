@@ -12,15 +12,15 @@ const archivo = Archivo({
 export const metadata: Metadata = {
   metadataBase: new URL(publicEnv.NEXT_PUBLIC_APP_URL),
   title: {
-    default: "Gym Plzeň | Soukromé fitness",
-    template: "%s · Gym Plzeň",
+    default: "NAMASTÉ Private Gym | Privátní fitness v Plzni",
+    template: "%s · NAMASTÉ Private Gym",
   },
   description:
-    "Soukromé fitness v Plzni. Vyberte termín, zaplaťte online a vstupte pomocí osobního kódu.",
+    "Plně samoobslužné privátní fitness v Plzni. Rezervace online a vstup pomocí osobního kódu.",
   openGraph: {
-    title: "Gym Plzeň | Soukromé fitness",
+    title: "NAMASTÉ Private Gym | Privátní fitness v Plzni",
     description:
-      "Soukromé fitness v Plzni s online rezervací a vstupem pomocí osobního kódu.",
+      "Plně samoobslužné privátní fitness v Plzni s online rezervací a osobním vstupním kódem.",
     type: "website",
     locale: "cs_CZ",
   },
