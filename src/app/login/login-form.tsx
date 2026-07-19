@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Field, FormFeedback, SubmitButton } from "@/components/admin/form-controls";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { demoAdminLoginAction } from "./actions";
+import { demoAdminLoginAction, demoCustomerLoginAction } from "./actions";
 
 /** OAuth providers shown as buttons (enable each in the Supabase dashboard). */
 const OAUTH_PROVIDERS: { id: "google" | "apple" | "azure"; label: string }[] = [
@@ -69,6 +69,17 @@ export function LoginForm({ providers = OAUTH_PROVIDERS }: { providers?: typeof 
         return;
       }
       router.push("/admin");
+      router.refresh();
+      return;
+    }
+
+    if (mode === "signin" && values.email.trim().toLowerCase() === "klient@namaste.demo") {
+      const result = await demoCustomerLoginAction({ email: values.email, password: values.password });
+      if (!result.ok) {
+        setServerError(result.error);
+        return;
+      }
+      router.push("/account");
       router.refresh();
       return;
     }

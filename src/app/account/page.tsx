@@ -8,6 +8,8 @@ import { CalendarDays } from "lucide-react";
 import { LoyaltyWidget } from "@/components/loyalty-widget";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
+import { DEMO_CUSTOMER_ID } from "@/lib/auth/demo";
+import { deriveLoyaltyStatus } from "@/lib/services/loyalty";
 
 export const metadata = { title: "Můj účet" };
 
@@ -17,9 +19,10 @@ export const metadata = { title: "Můj účet" };
  */
 export default async function AccountPage() {
   const user = await requireUser("/account");
+  const isDemoCustomer = user.id === DEMO_CUSTOMER_ID;
   const [status, upcoming, content] = await Promise.all([
-    loyalty.getLoyaltyStatus(user.id),
-    reservations.listUpcomingForUser(user.id),
+    isDemoCustomer ? Promise.resolve(deriveLoyaltyStatus(6)) : loyalty.getLoyaltyStatus(user.id),
+    isDemoCustomer ? Promise.resolve(demoUpcomingReservations()) : reservations.listUpcomingForUser(user.id),
     loadSiteContent(),
   ]);
 
@@ -60,4 +63,19 @@ export default async function AccountPage() {
       <SiteFooter brand={content.get("brand.name")} termsUrl={content.termsUrl} />
     </>
   );
+}
+
+function demoUpcomingReservations() {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(17, 0, 0, 0);
+
+  const nextWeek = new Date(tomorrow);
+  nextWeek.setDate(nextWeek.getDate() + 4);
+  nextWeek.setHours(7, 0, 0, 0);
+
+  return [
+    { id: "demo-reservation-1", startsAt: tomorrow, status: "confirmed" },
+    { id: "demo-reservation-2", startsAt: nextWeek, status: "confirmed" },
+  ];
 }
