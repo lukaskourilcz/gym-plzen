@@ -21,6 +21,12 @@ import { loadSiteContent } from "@/lib/content/site";
 import { formatMoney, formatTime } from "@/lib/helpers/format";
 import { addMinutes } from "@/lib/helpers/datetime";
 import { getWeekSlots, mondayOf } from "@/lib/services/slots";
+import { cms } from "@/lib/services";
+import {
+  DEFAULT_HERO_PREVIEW_DAYS,
+  HERO_PREVIEW_DAYS_KEY,
+  clampHeroPreviewDays,
+} from "@/lib/config/hero";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,11 +43,20 @@ export const revalidate = 60;
 export default async function HomePage() {
   const now = new Date();
   const monday = mondayOf(now);
-  const [content, currentWeek, nextWeek] = await Promise.all([
+  const [content, heroDaysSetting] = await Promise.all([
     loadSiteContent(),
-    getWeekSlots(monday, now),
-    getWeekSlots(addMinutes(monday, 7 * 24 * 60), now),
+    cms.getSetting<number>(HERO_PREVIEW_DAYS_KEY).catch(() => null),
   ]);
+  const heroPreviewDays = clampHeroPreviewDays(
+    heroDaysSetting ?? DEFAULT_HERO_PREVIEW_DAYS,
+  );
+  // Fetch enough whole weeks to cover the configured look-ahead from any weekday.
+  const weeksNeeded = Math.ceil((6 + heroPreviewDays) / 7);
+  const weeks = await Promise.all(
+    Array.from({ length: weeksNeeded }, (_, i) =>
+      getWeekSlots(addMinutes(monday, i * 7 * 24 * 60), now),
+    ),
+  );
   const t = content.get;
   const brand = t("brand.name");
   const price = formatMoney(content.entryPriceCents);
@@ -54,40 +69,35 @@ export default async function HomePage() {
       : configuredAddress;
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   const mapsEmbedUrl = `https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`;
-  const combinedDays = [...currentWeek.days, ...nextWeek.days];
+  const combinedDays = weeks.flatMap((w) => w.days);
+  const liveSource = weeks[0]?.source === "live";
   const todayIndex = Math.max(
     0,
     combinedDays.findIndex(
       (day) => day.date.toDateString() === now.toDateString(),
     ),
   );
+  // Every day shows its full set of opening-hours slots so the grid layout stays
+  // identical between days — only each slot's state (free / booked / past) differs.
   const previewDays: HeroAvailabilityDay[] = combinedDays
-    .slice(todayIndex, todayIndex + 4)
-    .map((day, index) => {
-      const firstAvailable = day.slots.findIndex((slot) => slot.available);
-      const start =
-        index === 0 && firstAvailable > 0
-          ? Math.min(firstAvailable, Math.max(0, day.slots.length - 8))
-          : 0;
-      return {
-        label:
-          index === 0
-            ? "Dnes"
-            : index === 1
-              ? "Zítra"
-              : new Intl.DateTimeFormat("cs-CZ", {
-                  weekday: "short",
-                  day: "numeric",
-                }).format(day.date),
-        dateLabel: day.date.toISOString(),
-        slots: day.slots
-          .slice(start, start + 8)
-          .map((slot) => ({
-            label: formatTime(slot.start),
-            available: slot.available,
-          })),
-      };
-    });
+    .slice(todayIndex, todayIndex + heroPreviewDays)
+    .map((day, index) => ({
+      label:
+        index === 0
+          ? "Dnes"
+          : index === 1
+            ? "Zítra"
+            : new Intl.DateTimeFormat("cs-CZ", {
+                weekday: "long",
+                day: "numeric",
+              }).format(day.date),
+      dateLabel: day.date.toISOString(),
+      slots: day.slots.map((slot) => ({
+        label: formatTime(slot.start),
+        startMs: slot.start.getTime(),
+        booked: slot.booked,
+      })),
+    }));
 
   return (
     <>
@@ -132,7 +142,8 @@ export default async function HomePage() {
                 days={previewDays}
                 price={price}
                 freeEntryEvery={content.freeEntryEvery}
-                live={currentWeek.source === "live"}
+                live={liveSource}
+                nowMs={now.getTime()}
               />
             </div>
           </Container>

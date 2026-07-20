@@ -23,6 +23,8 @@ export interface Slot {
   start: Date;
   end: Date;
   available: boolean;
+  /** Taken by a reservation or an admin block (distinct from merely being in the past). */
+  booked: boolean;
 }
 
 export interface DaySlots {
@@ -81,7 +83,7 @@ function buildDaySlots(
     const end = addMinutes(start, hours.slotMinutes);
     const inPast = end.getTime() <= now.getTime();
     const clash = busy.some((b) => intervalsOverlap(start, end, b.start, b.end));
-    slots.push({ start, end, available: !inPast && !clash });
+    slots.push({ start, end, available: !inPast && !clash, booked: clash });
   }
   return slots;
 }
