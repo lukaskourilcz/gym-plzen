@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { brandingSchema, smsTemplateSchema } from "@/lib/validations/settings";
-import { saveBrandingAction, saveSmsTemplateAction, uploadFileAction } from "./actions";
+import { brandingSchema, heroPreviewSchema, smsTemplateSchema } from "@/lib/validations/settings";
+import { MAX_HERO_PREVIEW_DAYS, MIN_HERO_PREVIEW_DAYS } from "@/lib/config/hero";
+import { saveBrandingAction, saveHeroPreviewAction, saveSmsTemplateAction, uploadFileAction } from "./actions";
 
 /** Logo + terms PDF URLs. Paste a URL or use the uploader below to get one. */
 export function BrandingForm({ logoUrl, termsUrl }: { logoUrl: string; termsUrl: string }) {
@@ -35,6 +36,42 @@ export function BrandingForm({ logoUrl, termsUrl }: { logoUrl: string; termsUrl:
       </Field>
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={formState.isSubmitting}>Uložit branding</SubmitButton>
+    </form>
+  );
+}
+
+/** Hero calendar: how many days ahead visitors can browse with the arrow. */
+export function HeroCalendarForm({ previewDays }: { previewDays: number }) {
+  const { form, submit, serverError, success } = useActionForm({
+    schema: heroPreviewSchema,
+    action: saveHeroPreviewAction,
+    successMessage: "Nastavení kalendáře uloženo.",
+    defaultValues: { previewDays },
+  });
+  const { register, formState } = form;
+
+  return (
+    <form onSubmit={submit} className="max-w-xs">
+      <Field
+        name="previewDays"
+        label="Počet dní dopředu (včetně dneška)"
+        error={formState.errors.previewDays}
+      >
+        <Input
+          id="previewDays"
+          type="number"
+          min={MIN_HERO_PREVIEW_DAYS}
+          max={MAX_HERO_PREVIEW_DAYS}
+          step={1}
+          {...register("previewDays", { valueAsNumber: true })}
+        />
+      </Field>
+      <p className="mb-2 text-xs text-muted-foreground">
+        Kolik dní může návštěvník na hlavní stránce prolistovat šipkou v kalendáři volných termínů
+        ({MIN_HERO_PREVIEW_DAYS}–{MAX_HERO_PREVIEW_DAYS}).
+      </p>
+      <FormFeedback error={serverError} success={success} />
+      <SubmitButton isSubmitting={formState.isSubmitting}>Uložit kalendář</SubmitButton>
     </form>
   );
 }

@@ -5,19 +5,25 @@ import {
   SMS_ACCESS_TEMPLATE_KEY,
   TERMS_URL_KEY,
 } from "@/lib/config/branding";
+import {
+  DEFAULT_HERO_PREVIEW_DAYS,
+  HERO_PREVIEW_DAYS_KEY,
+  clampHeroPreviewDays,
+} from "@/lib/config/hero";
 import { PageHeader } from "@/components/admin/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { BrandingForm, FileUploader, SmsTemplateForm } from "./settings-forms";
+import { BrandingForm, FileUploader, HeroCalendarForm, SmsTemplateForm } from "./settings-forms";
 
 export const metadata = { title: "Nastavení a branding" };
 export const dynamic = "force-dynamic";
 
 /** Configure the front-end assets (logo, terms PDF) and message templates. */
 export default async function SettingsPage() {
-  const [logoUrl, termsUrl, smsTemplate] = await Promise.all([
+  const [logoUrl, termsUrl, smsTemplate, heroPreviewDays] = await Promise.all([
     cms.getSetting<string>(LOGO_URL_KEY).catch(() => null),
     cms.getSetting<string>(TERMS_URL_KEY).catch(() => null),
     cms.getSetting<string>(SMS_ACCESS_TEMPLATE_KEY).catch(() => null),
+    cms.getSetting<number>(HERO_PREVIEW_DAYS_KEY).catch(() => null),
   ]);
 
   return (
@@ -34,6 +40,21 @@ export default async function SettingsPage() {
           </CardHeader>
           <CardContent>
             <BrandingForm logoUrl={logoUrl ?? ""} termsUrl={termsUrl ?? ""} />
+          </CardContent>
+        </Card>
+
+        <Card className="max-w-2xl">
+          <CardHeader>
+            <CardTitle>Kalendář volných termínů</CardTitle>
+            <CardDescription>
+              Nastavte, kolik dní dopředu může návštěvník na hlavní stránce prolistovat v živém
+              kalendáři volných termínů.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <HeroCalendarForm
+              previewDays={clampHeroPreviewDays(heroPreviewDays ?? DEFAULT_HERO_PREVIEW_DAYS)}
+            />
           </CardContent>
         </Card>
 
