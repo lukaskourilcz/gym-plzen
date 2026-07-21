@@ -101,12 +101,6 @@ export const LAUNCH_PLAN: PlanPhase[] = [
       { title: "Ostrý provoz + zaškolení", status: "todo" },
     ],
   },
-  {
-    title: "2. fáze: mobilní aplikace",
-    items: [
-      { title: "React Native aplikace (iOS + Android)", status: "todo", note: "Po spuštění webu" },
-    ],
-  },
 ];
 
 /** Weight per status for the progress calculation. */

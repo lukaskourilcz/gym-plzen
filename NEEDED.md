@@ -9,7 +9,37 @@ Postupuj shora dolů. Vše, co je označené **[blokující]**, je potřeba, aby
 základní systém (přihlášení, rezervace, admin) fungoval. Ostatní jsou
 integrace, které lze zapínat postupně.
 
-Legenda: ⬜ = udělat, ✅ = hotovo.
+---
+
+## Úkoly
+
+Každý úkol má jednořádkové „proč", skóre důležitosti `[imp:N]` (5 = nejvyšší) a
+štítek `[owner:me]` (musíš ty — účty, klíče, dashboardy) nebo `[owner:ai]` (zvládne
+AI v kódu). Podrobný how-to je v číslovaných sekcích níže. Tento soubor se parsuje
+do sekce **Úkoly** v OwnDashboard, kde jde filtrovat podle priority i podle me/ai.
+
+- [ ] **Doplnit tajné Supabase hodnoty a rozjet DB** — heslo do `DATABASE_URL`/`DIRECT_URL`, `SUPABASE_SECRET_KEY`, pak `db:migrate` + `db:seed` + `set-admin`; bez toho neběží přihlášení/rezervace/admin. `[imp:5]` `[owner:me]`
+- [ ] **Zapnout Supabase Auth** — Email + Password a správné Site URL + Redirect URLs (`/auth/callback`); jinak se nikdo nepřihlásí. `[imp:5]` `[owner:me]`
+- [ ] **Nastavit Vercel hosting** — propojit repo, nahrát všechny env proměnné a po nasazení nastavit produkční doménu + aktualizovat ji ve webhoocích. `[imp:5]` `[owner:me]`
+- [ ] **Vytvořit Storage bucket `cms-media`** — sedí s `SUPABASE_STORAGE_BUCKET`, jinak nejde nahrávat média. `[imp:4]` `[owner:me]`
+- [ ] **Zapnout Realtime + RLS na `reservation`** — živý kalendář; RLS je nutné kvůli GDPR, aby publishable klíč neviděl osobní údaje. `[imp:4]` `[owner:me]`
+- [ ] **Stripe — účet, API klíče, webhook, payouts** — bez toho nejdou placené rezervace (jednorázový vstup 290 Kč). `[imp:4]` `[owner:me]`
+- [ ] **WhatsApp Business Cloud API (Meta)** — účet, app, tokeny, webhook a schválená šablona `access_code`; schválení Meta trvá týdny, začni nejdřív. `[imp:4]` `[owner:me]`
+- [ ] **Nastavit `CRON_SECRET` na Vercelu** — watchdog opakuje selhané kroky a synchronizuje knihu vstupů; bez něj cron neběží. `[imp:4]` `[owner:me]`
+- [ ] **Zaregistrovat doménu a nasměrovat na Vercel** — potřeba pro produkci, SPF/DKIM (Resend) i Apple Pay (Stripe). `[imp:4]` `[owner:me]`
+- [ ] **Resend — účet, ověřená doména, API klíč, odesílatel** — bez ověřené domény jdou e-maily jen z testovací adresy. `[imp:3]` `[owner:me]`
+- [ ] **Nuki — fyzický zámek + keypad, Web API token, smartlock ID, webhook** — otevírání dveří a kniha vstupů. `[imp:3]` `[owner:me]`
+- [ ] **Sentry + UptimeRobot** — DSN, auth token pro source-mapy a monitor dostupnosti. `[imp:3]` `[owner:me]`
+- [ ] **GA4 property + `NEXT_PUBLIC_GA_ID` + Search Console** — návštěvnost a indexace; založit property a odeslat sitemapu. `[imp:3]` `[owner:me]`
+- [ ] **(volitelně) OAuth Google/Apple/Microsoft** — sociální přihlášení; klíče se zadávají v Supabase. `[imp:2]` `[owner:me]`
+- [ ] **Ověřit admin/auth E2E testy proti živému Supabase** — lokálně je nešlo spustit (chybí GoTrue); veřejné testy prošly. `[imp:2]` `[owner:me]`
+- [ ] **Nastavit `ALERT_WHATSAPP_RECIPIENTS`** — čísla, která dostanou upozornění při selhání platby/kódu/doručení. `[imp:2]` `[owner:me]`
+- [ ] **Napojit GA skript do `src/app/layout.tsx` přes `next/script`** — kód je připravený k doplnění, jakmile bude `NEXT_PUBLIC_GA_ID`. `[imp:2]` `[owner:ai]`
+- [ ] **(volitelně) GoSMS** — SMS notifikace; defaultně vypnuté, obvykle stačí WhatsApp + e-mail. `[imp:1]` `[owner:me]`
+
+---
+
+Legenda podrobných sekcí níže: ⬜ = udělat, ✅ = hotovo.
 
 ---
 
