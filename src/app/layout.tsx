@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { Archivo } from "next/font/google";
+import { Manrope } from "next/font/google";
 import { publicEnv } from "@/lib/public-env";
 import "./globals.css";
 
-const archivo = Archivo({
+const manrope = Manrope({
   subsets: ["latin", "latin-ext"],
   variable: "--font-sans",
   display: "swap",
+  preload: true,
 });
 
 export const metadata: Metadata = {
@@ -30,7 +31,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="cs" className={archivo.variable}>
+    <html lang="cs" className={manrope.variable}>
       <body>{children}</body>
     </html>
   );

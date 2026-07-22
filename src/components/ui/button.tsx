@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
  * official shadcn variants drop in later. Renders an `<a>` when `href` is given.
  */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[0.7rem] text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-extrabold transition-[background-color,border-color,color,transform] focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 active:translate-y-px [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -16,7 +16,8 @@ const buttonVariants = cva(
         ink: "bg-ink text-ink-foreground hover:bg-ink/90",
         outline:
           "border border-border bg-transparent hover:bg-secondary hover:text-secondary-foreground",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        secondary:
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-secondary hover:text-secondary-foreground",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
@@ -24,9 +25,9 @@ const buttonVariants = cva(
       },
       size: {
         default: "h-10 px-5 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-12 rounded-lg px-8 text-base",
-        icon: "size-10",
+        sm: "min-h-11 px-4",
+        lg: "min-h-12 px-7 text-base",
+        icon: "size-11 min-h-11 px-0",
       },
     },
     defaultVariants: { variant: "default", size: "default" },
@@ -41,7 +42,9 @@ type ButtonAsButton = ButtonBaseProps &
   React.ButtonHTMLAttributes<HTMLButtonElement> & { href?: undefined };
 
 type ButtonAsLink = ButtonBaseProps &
-  Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "href"> & { href: string };
+  Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "href"> & {
+    href: string;
+  };
 
 export type ButtonProps = ButtonAsButton | ButtonAsLink;
 

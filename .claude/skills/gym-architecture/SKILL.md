@@ -28,7 +28,7 @@ app/ (routes, server actions)  ─calls→  lib/services/  ─calls→  lib/db +
   DB access.
 - **Services** (`src/lib/services/*`) — all business logic and the ONLY layer
   that touches `db` and integrations. Namespaced barrel: `import { reservations,
-  cms, loyalty } from "@/lib/services"`.
+cms, loyalty } from "@/lib/services"`.
 - **Integrations** (`src/lib/integrations/*`) — thin adapters over Stripe, Nuki,
   WhatsApp, Resend, GoSMS, Supabase. Lazy init, `is*Configured()`, typed results.
 - **Helpers** (`src/lib/helpers/*`) — reusable, cross-cutting: `result`, `action`
@@ -39,6 +39,7 @@ app/ (routes, server actions)  ─calls→  lib/services/  ─calls→  lib/db +
 ## Forms (React Hook Form + Zod)
 
 Every form — admin and login — is built on **React Hook Form + Zod**:
+
 - Zod schemas in `src/lib/validations/*` are **transform-free** and used on BOTH
   sides (client `zodResolver` and server re-validation). Type conversions
   (date-string → `Date`, "HH:mm" → minutes, "" → `null`) happen in the action.
@@ -89,6 +90,16 @@ sign-up; `ensureProfileForUser` is the app-side fallback.
 - New integration → `integration-builder` subagent or `/add-integration`.
 - Schema change → edit `schema/*`, export in `schema/index.ts`, type in
   `db/types.ts`, then `/db-migrate`.
+
+## UI and design-system governance
+
+`docs/DESIGN_SYSTEM.md` is the canonical design specification and
+`/admin/design-system` is its protected rendered reference. Before non-trivial
+UI work, read the document and `.claude/rules/design-system.md`. Reuse semantic
+tokens and shared components, keep controls minimally rounded, preserve 44px
+targets, and verify mobile, keyboard, focus, contrast, zoom, and reduced motion.
+Update the documentation and rendered kit together when adding a justified
+reusable pattern.
 
 ## Always before finishing
 
