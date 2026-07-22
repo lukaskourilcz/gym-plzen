@@ -8,7 +8,11 @@ export const metadata = { title: "Přihlášení" };
 /** Login and registration page using Supabase Auth (email/password + OAuth). */
 export default function LoginPage() {
   return (
-    <main className="grid min-h-screen lg:grid-cols-2">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="grid min-h-screen lg:grid-cols-2"
+    >
       <section className="relative hidden overflow-hidden bg-ink p-12 text-white lg:flex lg:flex-col lg:justify-between xl:p-14">
         <Link
           href="/"

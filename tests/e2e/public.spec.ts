@@ -115,9 +115,15 @@ test.describe("Public site", () => {
     await page.keyboard.press("Tab");
     const skip = page.getByRole("link", { name: "Přeskočit na obsah" });
     await expect(skip).toBeFocused();
+    await expect(skip).toHaveAttribute("data-ready", "true");
     await expect(page.locator("#main-content")).toHaveCount(1);
     await skip.press("Enter");
     await expect(page.locator("#main-content")).toBeFocused();
+    await page.keyboard.press("Tab");
+    const headerContainsFocus = await page
+      .locator("header")
+      .evaluate((header) => header.contains(document.activeElement));
+    expect(headerContainsFocus).toBe(false);
   });
 
   test("public routes reflow without horizontal overflow at representative widths", async ({

@@ -22,7 +22,7 @@ export default async function EquipmentPage() {
   return (
     <>
       <SiteHeader brand={content.get("brand.name")} />
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <Section className="pt-14 sm:pt-20">
           <Container>
             <div className="grid gap-8 lg:grid-cols-2 lg:items-end">

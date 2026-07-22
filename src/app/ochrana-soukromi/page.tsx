@@ -15,7 +15,7 @@ export default async function PrivacyPage() {
   return (
     <>
       <SiteHeader brand={content.get("brand.name")} />
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <Section>
           <Container className="max-w-3xl">
             <h1 className="text-4xl font-black tracking-[-.04em] sm:text-5xl">

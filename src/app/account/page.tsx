@@ -44,7 +44,7 @@ export default async function AccountPage() {
         accountHref="/account"
         accountLabel="Můj účet"
       />
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <Section className="py-12">
           <Container className="max-w-4xl">
             <div className="flex items-center justify-between gap-4">
