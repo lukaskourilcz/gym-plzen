@@ -9,7 +9,7 @@
 >
 > Verdict key: **USE** (adopt), **MAYBE** (situational), **SKIP** (not for us).
 
-> Project status 2026-07-22: the codebase uses its own semantic UI primitives,
+> Project status 2026-07-23: the codebase uses its own semantic UI primitives,
 > not shadcn generators at runtime. FullCalendar remains admin-only. Public
 > booking uses a lightweight custom monthly grid. This document is research,
 > not an instruction to add dependencies without a measured need.

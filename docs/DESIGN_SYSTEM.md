@@ -152,8 +152,9 @@ footer, and admin navigation shell.
   horizontally contained region on small screens. The page must not overflow.
 - Navigation exposes the current route with `aria-current`. Mobile navigation
   has a labelled toggle, closes with Escape and restores focus when closed.
-- The first focusable control is a skip link to the main content. Each page has
-  one focusable `main` target with the stable id `main-content`.
+- The first focusable control is a skip link to the main content. The root
+  layout owns one persistent focusable wrapper with the stable id
+  `main-content`; route-level `main` landmarks never duplicate that id.
 - Mobile administration uses one labelled grouped menu instead of a long
   horizontally scrolling list. Its active item stays visible and announced.
 

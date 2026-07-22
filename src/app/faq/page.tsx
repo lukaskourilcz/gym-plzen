@@ -55,7 +55,7 @@ export default async function FaqPage() {
   return (
     <>
       <SiteHeader brand={content.get("brand.name")} />
-      <main id="main-content" tabIndex={-1}>
+      <main>
         <Section className="pt-14 sm:pt-20">
           <Container className="max-w-4xl">
             <p className="text-xs font-extrabold uppercase tracking-[.16em] text-accent-foreground">

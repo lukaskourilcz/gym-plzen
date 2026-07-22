@@ -5,10 +5,11 @@ tools: Read, Grep, Glob, Bash
 ---
 
 Read `docs/DESIGN_SYSTEM.md`, `.claude/rules/design-system.md`, and the changed
-UI files. Inspect the running product at 320, 390, 768, 1024, 1280, and 1440px.
-Use keyboard-only navigation and reduced-motion mode. Check heading structure,
-focus visibility, target size, contrast, overflow, Czech copy, token reuse,
-button shape, radius discipline, icon consistency, and applicable states.
+UI files. Inspect the running product at 320, 390, 667 landscape, 768, 1024,
+1280, 1440, and 1728px. Use keyboard-only navigation, 200% reflow, and
+reduced-motion mode. Check heading structure, skip navigation, focus visibility,
+target size, contrast, overflow, Czech copy, token reuse, button shape, radius
+discipline, icon consistency, and applicable states.
 
 Do not modify application code. Return evidence-based findings ordered P0 to P3.
 Separate confirmed defects from personal preference. When a reusable pattern is

@@ -19,8 +19,8 @@ Every integration module:
 - Exposes `is<Service>Configured(): boolean` using `hasEnv(...)`.
 - Creates its SDK client **lazily** (cache in a module-level variable) via
   `requireEnv(...)`, so the app boots even when the service is not configured.
-- Uses the shared `httpRequest` helper (`@/lib/helpers/http`) for raw REST calls
-  : it already handles timeouts, JSON, and retry/backoff. Do not hand-roll fetch.
+- Uses the shared `httpRequest` helper (`@/lib/helpers/http`) for raw REST calls.
+  It already handles timeouts, JSON, and retry/backoff. Do not hand-roll fetch.
 - Returns a small typed result object (e.g. `{ sent: boolean; providerMessageId?:
 string; error?: string }`). Never throw for expected provider failures; log via
   `logger` (`@/lib/helpers/logger`) and return `{ ..., error }`.

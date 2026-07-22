@@ -108,7 +108,7 @@ export default async function HomePage() {
   return (
     <>
       <SiteHeader brand={brand} />
-      <main id="main-content" tabIndex={-1}>
+      <main>
         <section className="bg-ink text-ink-foreground">
           <Container className="grid min-h-[680px] gap-12 py-14 lg:grid-cols-[.92fr_1.08fr] lg:items-center lg:py-20">
             <div className="relative z-10">

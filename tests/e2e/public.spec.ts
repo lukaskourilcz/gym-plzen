@@ -115,6 +115,7 @@ test.describe("Public site", () => {
     await page.keyboard.press("Tab");
     const skip = page.getByRole("link", { name: "Přeskočit na obsah" });
     await expect(skip).toBeFocused();
+    await expect(page.locator("#main-content")).toHaveCount(1);
     await skip.press("Enter");
     await expect(page.locator("#main-content")).toBeFocused();
   });

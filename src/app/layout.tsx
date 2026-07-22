@@ -35,7 +35,9 @@ export default function RootLayout({
     <html lang="cs" className={manrope.variable}>
       <body>
         <SkipLink />
-        {children}
+        <div id="main-content" tabIndex={-1}>
+          {children}
+        </div>
       </body>
     </html>
   );

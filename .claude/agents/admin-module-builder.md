@@ -37,7 +37,7 @@ invent new conventions.
    number inputs with `{ valueAsNumber: true }`.
 6. **Page**: `src/app/admin/<domain>/page.tsx`. Server Component: fetch via the
    service, render a table + the form. Add a nav entry in
-   `src/app/admin/layout.tsx`.
+   `src/components/admin/admin-nav.tsx` and place it in the correct group.
 
 ## Rules
 

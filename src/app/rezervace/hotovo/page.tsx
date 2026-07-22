@@ -57,7 +57,7 @@ export default async function BookingDonePage({
         accountHref="/account"
         accountLabel="Můj účet"
       />
-      <main id="main-content" tabIndex={-1}>
+      <main>
         <Section>
           <Container className="max-w-xl text-center">
             <Icon
