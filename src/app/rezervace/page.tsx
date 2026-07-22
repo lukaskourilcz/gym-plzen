@@ -95,11 +95,11 @@ export default async function BookingPage({
         accountLabel={session ? "Můj účet" : "Přihlásit se"}
       />
       <RealtimeRefresher />
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <Section className="pb-28 pt-12 sm:pt-16">
           <Container>
             <div className="max-w-2xl">
-              <div className="text-xs font-extrabold uppercase tracking-[.14em] text-primary">
+              <div className="text-xs font-extrabold uppercase tracking-[.14em] text-accent-foreground">
                 Rezervace
               </div>
               <h1 className="mt-3 text-4xl font-black tracking-[-.04em] sm:text-5xl">

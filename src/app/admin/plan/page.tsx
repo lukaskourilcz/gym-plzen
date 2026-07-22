@@ -9,8 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 export const metadata = { title: "Plán spuštění" };
 
 const STATUS_LABEL: Record<PlanStatus, string> = {
-  done: "Hotovo",
-  in_progress: "Rozpracováno",
+  done: "Kód připraven",
+  in_progress: "Ověřuje se",
   todo: "Zbývá",
   blocked: "Čeká na tebe",
 };
@@ -30,14 +30,14 @@ export default function PlanPage() {
     <div>
       <PageHeader
         title="Plán spuštění"
-        description="Stav příprav před spuštěním. Položky označené „Čeká na tebe“ vyžadují nastavení účtů nebo přístupových klíčů. Podrobnosti jsou v souboru NEEDED.md."
+        description="Stav implementace MVP, nikoli potvrzení ostrého provozu. Položky „Čeká na tebe“ vyžadují účty, klíče nebo klientské podklady. Celkový ukazatel zůstává během vývoje zastropovaný na 60 %."
       />
 
       <div className="mb-1 flex items-baseline justify-between">
         <strong className="text-2xl">{p.percent} %</strong>
         <span className="text-sm text-muted-foreground">
-          {p.done}/{p.total} hotovo · {p.inProgress} rozpracováno · {p.blocked}{" "}
-          čeká na tebe · {p.todo} zbývá
+          {p.done}/{p.total} kód připraven · {p.inProgress} se ověřuje ·{" "}
+          {p.blocked} čeká na tebe · {p.todo} zbývá
         </span>
       </div>
       <div className="h-4 overflow-hidden rounded-full bg-muted">

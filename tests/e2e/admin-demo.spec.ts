@@ -13,4 +13,17 @@ test("demo credentials open the admin dashboard without Supabase", async ({
   await expect(
     page.getByRole("link", { name: "Rezervace", exact: true }),
   ).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const menu = page.getByRole("button", { name: /Menu administrace/i });
+  await menu.click();
+  await expect(menu).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByText("Systém", { exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(menu).toBeFocused();
+  await expect(menu).toHaveAttribute("aria-expanded", "false");
+
+  await menu.click();
+  await page.getByRole("link", { name: "Členové" }).click();
+  await expect(page.getByText("Jan Novák").first()).toBeVisible();
 });

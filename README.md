@@ -5,10 +5,11 @@ Křížkova 424/23, Plzeň. Aplikace používá Next.js, Supabase, Stripe a Nuki
 
 ## Aktuální stav
 
-Modernizovaný veřejný web, měsíční výběr rezervací, lokální ukázkové účty,
-členský účet, CMS a administrace jsou v repozitáři. Produkční build funguje i
-bez databáze, ale rezervace v takovém případě poctivě zobrazí nedostupnou službu.
-Fiktivní dostupnost ani lokální demo přihlášení se v produkci nezapnou.
+Modernizovaný veřejný web s fotografií a přehledem nejbližší dostupnosti v hero,
+měsíční výběr rezervací, lokální ukázkové účty, členský účet, CMS a administrace
+jsou v repozitáři. Produkční build funguje i bez databáze, ale rezervace v takovém
+případě poctivě zobrazí nedostupnou službu. Fiktivní dostupnost ani lokální demo
+přihlášení se v produkci nezapnou.
 
 Pro další práci začni v [SESSION_HANDOFF.md](./SESSION_HANDOFF.md). Externí
 nastavení a chybějící klientské podklady jsou v [NEEDED.md](./NEEDED.md).
@@ -62,6 +63,10 @@ BOOKING_PREVIEW_FIXTURE="true"
 Demo přihlášení je záměrně dostupné jen mimo produkci. Přihlašovací formulář
 neobsahuje banner s hesly.
 
+OAuth tlačítka se zobrazí jen pro poskytovatele uvedené v
+`NEXT_PUBLIC_OAUTH_PROVIDERS`, například `google,apple,azure`. Stejné
+poskytovatele je nutné nejprve povolit v Supabase a nastavit jim callback URL.
+
 ## Ověření
 
 ```bash
@@ -96,6 +101,7 @@ Podrobnosti jsou v [.claude/skills/gym-architecture/SKILL.md](./.claude/skills/g
 - [docs/DESIGN_SYSTEM.md](./docs/DESIGN_SYSTEM.md): závazný vizuální systém.
 - [docs/INSPIRATIONS.md](./docs/INSPIRATIONS.md): historická rešerše konkurence.
 - [docs/TOOLING.md](./docs/TOOLING.md): rozhodnutí o nástrojích a balíčcích.
+- [docs/UX_AUDIT.md](./docs/UX_AUDIT.md): nezávislý UX audit a stav nálezů.
 - [CLAUDE.md](./CLAUDE.md): pravidla pro další vývoj.
 
 ## Důležitá bezpečnostní pravidla

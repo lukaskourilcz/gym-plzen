@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Clock3 } from "lucide-react";
@@ -52,6 +52,7 @@ export function BookingCalendar({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isRefreshing, startRefresh] = useTransition();
   const gridRef = useRef<HTMLDivElement>(null);
   const grid = monthGrid(monthKey);
   const byDate = new Map(days.map((day) => [day.dateKey, day]));
@@ -138,7 +139,7 @@ export function BookingCalendar({
       <section aria-labelledby="calendar-heading">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <div className="text-xs font-extrabold uppercase tracking-[.14em] text-primary">
+            <div className="text-xs font-extrabold uppercase tracking-[.14em] text-accent-foreground">
               1. Datum
             </div>
             <h2 id="calendar-heading" className="mt-1 text-2xl font-extrabold">
@@ -185,8 +186,16 @@ export function BookingCalendar({
             className="mt-6"
             role="alert"
           >
-            Rezervační služba je dočasně nedostupná. Obnovte stránku nebo to
-            zkuste později.
+            <p>Termíny se nepodařilo načíst. Zkuste načtení zopakovat.</p>
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-3"
+              disabled={isRefreshing}
+              onClick={() => startRefresh(() => router.refresh())}
+            >
+              {isRefreshing ? "Načítám…" : "Zkusit znovu"}
+            </Button>
           </Notice>
         ) : (
           <>
@@ -263,7 +272,7 @@ export function BookingCalendar({
                               <span
                                 aria-hidden="true"
                                 className={cn(
-                                  "absolute bottom-1 size-1.5 rounded-full bg-primary",
+                                  "absolute bottom-1 size-1.5 rounded-full bg-accent-foreground",
                                   selected && "bg-primary-foreground",
                                 )}
                               />
@@ -330,7 +339,7 @@ export function BookingCalendar({
       </section>
 
       <section aria-labelledby="slots-heading" className="lg:pt-[4.75rem]">
-        <div className="text-xs font-extrabold uppercase tracking-[.14em] text-primary">
+        <div className="text-xs font-extrabold uppercase tracking-[.14em] text-accent-foreground">
           2. Čas
         </div>
         <h2 id="slots-heading" className="mt-1 text-2xl font-extrabold">
@@ -390,7 +399,7 @@ export function BookingCalendar({
                       {slot.durationMinutes} min · {price}
                     </span>
                   </span>
-                  <span className="text-xs font-extrabold text-primary">
+                  <span className="text-xs font-extrabold text-accent-foreground">
                     Vybrat
                   </span>
                 </Button>
@@ -403,7 +412,7 @@ export function BookingCalendar({
           <div className="mt-6 flex gap-3 border-t border-border pt-5 text-sm text-muted-foreground">
             <Clock3
               aria-hidden="true"
-              className="mt-0.5 size-5 shrink-0 text-primary"
+              className="mt-0.5 size-5 shrink-0 text-accent-foreground"
             />
             <p>
               Cena a délka jsou uvedené u každého termínu. Po přihlášení

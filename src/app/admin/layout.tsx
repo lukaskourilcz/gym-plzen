@@ -35,7 +35,7 @@ export default async function AdminLayout({
               </span>
             </span>
           </Link>
-          <SignOutButton className="m-0 min-h-11 px-2 text-xs lg:hidden" />
+          <SignOutButton className="m-0 min-h-11 px-2 text-xs text-primary lg:hidden" />
         </div>
         <AdminNav />
         <div className="mt-auto hidden items-center gap-2.5 border-t border-white/10 px-2.5 pb-1 pt-3.5 lg:flex">
@@ -46,11 +46,15 @@ export default async function AdminLayout({
             <div className="truncate font-bold text-white/80">
               {admin.email}
             </div>
-            <SignOutButton />
+            <SignOutButton className="text-primary" />
           </div>
         </div>
       </aside>
-      <main className="mx-auto w-full max-w-[1164px] p-4 sm:p-6 lg:ml-[248px] lg:w-[calc(100%_-_248px)] lg:px-8 lg:pb-12 lg:pt-7">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="mx-auto w-full max-w-[1164px] p-4 sm:p-6 lg:ml-[248px] lg:w-[calc(100%_-_248px)] lg:px-8 lg:pb-12 lg:pt-7"
+      >
         {children}
       </main>
     </div>

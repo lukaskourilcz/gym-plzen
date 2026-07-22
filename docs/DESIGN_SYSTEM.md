@@ -40,24 +40,26 @@ marketing language, or an unnecessary call to action in every section.
 
 All colours are semantic CSS variables in `src/app/globals.css`.
 
-| Token         | Purpose                                   |
-| ------------- | ----------------------------------------- |
-| `background`  | Warm page background                      |
-| `foreground`  | Primary copy                              |
-| `card`        | Raised light surface                      |
-| `primary`     | Main action and brand accent              |
-| `accent`      | Selected and supportive green surface     |
-| `secondary`   | Quiet section separation                  |
-| `muted`       | Disabled or secondary surface             |
-| `destructive` | Destructive action and blocking error     |
-| `success`     | Confirmed state                           |
-| `warning`     | Recoverable risk or attention state       |
-| `info`        | Neutral operational information           |
-| `ink`         | Hero, rules, footer, and admin navigation |
+| Token               | Purpose                                           |
+| ------------------- | ------------------------------------------------- |
+| `background`        | Warm page background                              |
+| `foreground`        | Primary copy                                      |
+| `card`              | Raised light surface                              |
+| `primary`           | Main action, dark-surface accent                  |
+| `accent`            | Selected and supportive green surface             |
+| `accent-foreground` | Accessible green copy and icons on light surfaces |
+| `secondary`         | Quiet section separation                          |
+| `muted`             | Disabled or secondary surface                     |
+| `destructive`       | Destructive action and blocking error             |
+| `success`           | Confirmed state                                   |
+| `warning`           | Recoverable risk or attention state               |
+| `info`              | Neutral operational information                   |
+| `ink`               | Hero, rules, footer, and admin navigation         |
 
 Never add a raw brand colour inside a component when a semantic token exists.
-Dark surfaces use `ink` rather than one-off near-black values. Text opacity on
-ink must preserve WCAG 2.2 AA contrast.
+Use `accent-foreground`, not the brighter `primary`, for green text and icons on
+light surfaces. Dark surfaces use `ink` rather than one-off near-black values.
+Text opacity on ink must preserve WCAG 2.2 AA contrast.
 
 ## Typography
 
@@ -149,7 +151,11 @@ footer, and admin navigation shell.
 - Tables keep headers visible and become readable stacked summaries or a
   horizontally contained region on small screens. The page must not overflow.
 - Navigation exposes the current route with `aria-current`. Mobile navigation
-  has a labelled toggle and restores focus when closed.
+  has a labelled toggle, closes with Escape and restores focus when closed.
+- The first focusable control is a skip link to the main content. Each page has
+  one focusable `main` target with the stable id `main-content`.
+- Mobile administration uses one labelled grouped menu instead of a long
+  horizontally scrolling list. Its active item stays visible and announced.
 
 ## Reservation calendar
 

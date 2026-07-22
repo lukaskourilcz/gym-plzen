@@ -12,15 +12,18 @@ import {
   ENTRY_PRICE_SETTING_KEY,
 } from "../src/lib/config/pricing";
 import {
+  DEFAULT_CLOSE_MINUTE,
+  DEFAULT_OPEN_MINUTE,
   DEFAULT_SHOWER_MINUTES,
+  DEFAULT_SLOT_MINUTES,
   SHOWER_MINUTES_SETTING_KEY,
 } from "../src/lib/config/schedule";
 
-// Open every day 06:00–22:00 with 1-hour slots (see src/lib/config/schedule.ts).
+// Seed the neutral defaults from the shared schedule configuration.
 const OPENING_HOURS = Array.from({ length: 7 }, (_, dayOfWeek) => ({
   dayOfWeek,
-  openMinute: 6 * 60,
-  closeMinute: 22 * 60,
+  openMinute: DEFAULT_OPEN_MINUTE,
+  closeMinute: DEFAULT_CLOSE_MINUTE,
   isClosed: 0,
 }));
 
@@ -73,7 +76,7 @@ async function main() {
   for (const row of OPENING_HOURS) {
     await db
       .insert(openingHours)
-      .values({ ...row, slotMinutes: 60 })
+      .values({ ...row, slotMinutes: DEFAULT_SLOT_MINUTES })
       .onConflictDoNothing({ target: openingHours.dayOfWeek });
   }
   console.log(`✅ Opening hours seeded (${OPENING_HOURS.length} days).`);

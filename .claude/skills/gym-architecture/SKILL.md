@@ -88,9 +88,14 @@ sign-up; `ensureProfileForUser` is the app-side fallback.
 - Guards: `src/lib/auth/guards.ts`: `getSessionUser`/`getSession`, `requireUser`,
   `requireAdmin` (Server Components), `assertAdmin` (actions). Admin =
   `role === "admin"`; set the first one with `npm run set-admin -- you@example.com`.
-- OAuth providers (google/apple/azure) are configured in the Supabase dashboard.
+- OAuth providers (`google`, `apple`, `azure`) must be configured in the
+  Supabase dashboard and explicitly enabled in the public UI through the
+  comma-separated `NEXT_PUBLIC_OAUTH_PROVIDERS`. Unconfigured providers stay
+  hidden and OAuth failures produce Czech feedback.
 - Demo authentication is a local presentation aid only. `demo-policy.ts`
   disables it whenever `NODE_ENV` or `VERCEL_ENV` indicates production.
+- Demo admin data is deterministic, local and Czech in `lib/demo/dummy.ts`.
+  Never reintroduce a runtime dependency on a public fixture API.
 
 ## Adding things
 

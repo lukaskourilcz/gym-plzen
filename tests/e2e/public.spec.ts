@@ -38,6 +38,9 @@ test.describe("Public site", () => {
       }
     } else {
       await expect(unavailable).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Zkusit znovu" }),
+      ).toBeVisible();
     }
   });
 
@@ -83,6 +86,13 @@ test.describe("Public site", () => {
     await expect(
       page.getByRole("link", { name: "Časté dotazy" }),
     ).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(
+      page.getByRole("button", { name: /Otevřít menu/i }),
+    ).toBeFocused();
+    await expect(
+      page.getByRole("button", { name: /Otevřít menu/i }),
+    ).toHaveAttribute("aria-expanded", "false");
   });
 
   test("FAQ, equipment and login routes remain usable", async ({ page }) => {
@@ -92,11 +102,21 @@ test.describe("Public site", () => {
     ).toBeVisible();
     await page.goto("/vybaveni");
     await expect(
-      page.getByRole("heading", { name: /Vybavení bez dohadů/i }),
+      page.getByRole("heading", { name: /Vybavení a prostor/i }),
     ).toBeVisible();
     await page.goto("/login");
     await expect(page.getByLabel(/E-mail/i)).toBeVisible();
     await expect(page.getByLabel(/Heslo/i)).toBeVisible();
+    await expect(page.getByText(/Pokračovat přes/i)).toHaveCount(0);
+  });
+
+  test("skip link is the first keyboard destination", async ({ page }) => {
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.keyboard.press("Tab");
+    const skip = page.getByRole("link", { name: "Přeskočit na obsah" });
+    await expect(skip).toBeFocused();
+    await skip.press("Enter");
+    await expect(page.locator("#main-content")).toBeFocused();
   });
 
   test("public routes reflow without horizontal overflow at representative widths", async ({

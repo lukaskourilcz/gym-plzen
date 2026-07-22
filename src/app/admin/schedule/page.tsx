@@ -17,6 +17,11 @@ import {
   ShowerMinutesForm,
 } from "./schedule-forms";
 import { DEFAULT_SHOWER_MINUTES } from "@/lib/config/schedule";
+import {
+  DEFAULT_CLOSE_MINUTE,
+  DEFAULT_OPEN_MINUTE,
+} from "@/lib/config/schedule";
+import { minutesToHHmm } from "@/lib/helpers/format";
 
 export const metadata = { title: "Otevírací doba a bloky" };
 export const dynamic = "force-dynamic";
@@ -41,7 +46,9 @@ export default async function SchedulePage() {
         <h2 className="mb-1 text-lg font-semibold">Týdenní otevírací doba</h2>
         <p className="mb-3 text-sm text-muted-foreground">
           Sloty jsou vždy celé hodiny (např. 13:00–14:00). Výchozí provoz je
-          denně 06:00–22:00.
+          denně {minutesToHHmm(DEFAULT_OPEN_MINUTE)} až{" "}
+          {minutesToHHmm(DEFAULT_CLOSE_MINUTE)}. Před ostrým provozem musí časy
+          potvrdit provozovatel.
         </p>
         {Array.from({ length: 7 }, (_, day) => (
           <OpeningHoursRow key={day} dayOfWeek={day} hours={byDay.get(day)} />

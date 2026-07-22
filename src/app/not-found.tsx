@@ -2,9 +2,13 @@ import { Button } from "@/components/ui/button";
 
 export default function NotFound() {
   return (
-    <main className="grid min-h-screen place-items-center bg-background px-5">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="grid min-h-screen place-items-center bg-background px-5"
+    >
       <div className="max-w-lg text-center">
-        <p className="text-xs font-extrabold uppercase tracking-[.16em] text-primary">
+        <p className="text-xs font-extrabold uppercase tracking-[.16em] text-accent-foreground">
           404
         </p>
         <h1 className="mt-3 text-4xl font-black">Tato stránka neexistuje</h1>

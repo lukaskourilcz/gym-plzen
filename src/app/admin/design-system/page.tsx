@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   CalendarDays,
   Check,
+  ChevronDown,
   Clock3,
   Dumbbell,
   Info,
@@ -45,17 +46,43 @@ export default function DesignSystemPage() {
                 <BrandLogo />
               </div>
               <div>
-                <h1 className="text-4xl font-extrabold tracking-[-0.04em]">
+                <p className="text-4xl font-extrabold tracking-[-0.04em]">
                   Celý gym jen pro vás
-                </h1>
-                <h2 className="mt-4 text-2xl font-extrabold tracking-[-0.025em]">
+                </p>
+                <p className="mt-4 text-2xl font-extrabold tracking-[-0.025em]">
                   Klidný prostor pro soustředěný trénink
-                </h2>
+                </p>
                 <p className="mt-3 max-w-xl text-muted-foreground">
                   Manrope s českou a Latin Extended sadou je společný font pro
                   rozhraní i marketing.
                 </p>
               </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section aria-labelledby="kit-navigation">
+          <h2 id="kit-navigation" className="mb-4 text-xl font-extrabold">
+            Mobilní navigace administrace
+          </h2>
+          <Card>
+            <CardContent className="max-w-sm p-5">
+              <button
+                type="button"
+                className="flex min-h-11 w-full items-center justify-between rounded-md bg-ink px-3 text-left text-sm font-bold text-white"
+              >
+                <span>
+                  Menu administrace
+                  <span className="ml-2 font-medium text-white/60">
+                    Přehled
+                  </span>
+                </span>
+                <ChevronDown aria-hidden="true" className="size-4" />
+              </button>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Na mobilu nahrazuje horizontální pás. Otevřené menu seskupuje
+                moduly, označuje aktivní route a zavírá se klávesou Escape.
+              </p>
             </CardContent>
           </Card>
         </section>

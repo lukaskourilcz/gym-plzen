@@ -58,7 +58,7 @@ export default function InspirationsPage() {
                   href={g.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline"
+                  className="text-sm text-accent-foreground hover:underline"
                 >
                   otevřít web ↗
                 </a>

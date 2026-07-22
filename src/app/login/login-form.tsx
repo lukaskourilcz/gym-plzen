@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { safeInternalPath } from "@/lib/security/redirects";
+import { publicEnv } from "@/lib/public-env";
 import { authenticateAction } from "./actions";
 
 /** OAuth providers shown as buttons (enable each in the Supabase dashboard). */
@@ -22,6 +23,16 @@ const OAUTH_PROVIDERS: { id: "google" | "apple" | "azure"; label: string }[] = [
   { id: "apple", label: "Pokračovat přes Apple" },
   { id: "azure", label: "Pokračovat přes Microsoft" },
 ];
+
+const enabledOAuthProviders = new Set(
+  (publicEnv.NEXT_PUBLIC_OAUTH_PROVIDERS ?? "")
+    .split(",")
+    .map((provider) => provider.trim().toLowerCase())
+    .filter(Boolean),
+);
+const CONFIGURED_OAUTH_PROVIDERS = OAUTH_PROVIDERS.filter((provider) =>
+  enabledOAuthProviders.has(provider.id),
+);
 
 // One flat schema serves both modes; `name` is only required in sign-up.
 const schema = z
@@ -43,7 +54,7 @@ type FormValues = z.infer<typeof schema>;
  * Toggles between sign-in and sign-up and supports OAuth providers.
  */
 export function LoginForm({
-  providers = OAUTH_PROVIDERS,
+  providers = CONFIGURED_OAUTH_PROVIDERS,
 }: {
   providers?: typeof OAUTH_PROVIDERS;
 }) {
@@ -54,6 +65,7 @@ export function LoginForm({
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [serverError, setServerError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [oauthPending, setOauthPending] = useState<string | null>(null);
 
   const { register, handleSubmit, setValue, formState } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -93,16 +105,30 @@ export function LoginForm({
   });
 
   async function onOAuth(provider: (typeof OAUTH_PROVIDERS)[number]["id"]) {
+    if (oauthPending) return;
+    setServerError(null);
+    setNotice(null);
     const supabase = createClient();
-    if (!supabase) return;
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-      },
-    });
-    if (error)
+    if (!supabase) {
+      setServerError(
+        "Externí přihlášení teď není dostupné. Použijte prosím e-mail a heslo.",
+      );
+      return;
+    }
+    setOauthPending(provider);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        },
+      });
+      if (!error) return;
       setServerError("Přihlášení přes externí účet se nepodařilo spustit.");
+    } catch {
+      setServerError("Přihlášení přes externí účet se nepodařilo spustit.");
+    }
+    setOauthPending(null);
   }
 
   return (
@@ -116,8 +142,10 @@ export function LoginForm({
               variant="outline"
               className="h-[46px] bg-card"
               onClick={() => onOAuth(p.id)}
+              disabled={Boolean(oauthPending)}
+              aria-busy={oauthPending === p.id}
             >
-              {p.label}
+              {oauthPending === p.id ? "Přesměrovávám…" : p.label}
             </Button>
           ))}
         </div>
@@ -172,7 +200,7 @@ export function LoginForm({
         <button
           type="button"
           onClick={() => switchMode(mode === "signin" ? "signup" : "signin")}
-          className="font-bold text-foreground hover:underline"
+          className="inline-flex min-h-11 items-center font-bold text-foreground hover:underline"
         >
           {mode === "signin"
             ? "Nemáte účet? Zaregistrujte se"

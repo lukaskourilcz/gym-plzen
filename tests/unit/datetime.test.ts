@@ -7,7 +7,7 @@ import {
   minuteOfDay,
   monthGrid,
 } from "../../src/lib/helpers/datetime";
-import { formatTimeRange } from "../../src/lib/helpers/format";
+import { formatDate, formatTimeRange } from "../../src/lib/helpers/format";
 
 test("month grid is Monday-first and always has six complete weeks", () => {
   const grid = monthGrid("2026-07");
@@ -34,4 +34,9 @@ test("exact ranges render the authoritative end time", () => {
   const start = localDateTimeToDate("2026-07-22", 8 * 60);
   const end = localDateTimeToDate("2026-07-22", 9 * 60 + 15);
   assert.equal(formatTimeRange(start, end), "8:00–9:15");
+});
+
+test("account dates do not repeat the start time", () => {
+  const start = new Date("2026-07-24T15:00:00.000Z");
+  assert.equal(formatDate(start), "24. 7. 2026");
 });

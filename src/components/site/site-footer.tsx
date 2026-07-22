@@ -3,7 +3,7 @@ import { Container } from "@/components/ui/container";
 import { BrandLogo } from "@/components/site/brand";
 
 const footerLink =
-  "flex min-h-9 items-center text-sm text-ink-foreground/65 transition-colors hover:text-ink-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
+  "flex min-h-11 items-center text-sm text-ink-foreground/75 transition-colors hover:text-ink-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
 export function SiteFooter({
   brand = "NAMASTÉ Private Gym",
@@ -94,7 +94,7 @@ export function SiteFooter({
         </div>
       </Container>
       <div className="border-t border-white/10">
-        <Container className="flex flex-col gap-2 py-5 text-xs text-ink-foreground/45 sm:flex-row sm:justify-between">
+        <Container className="flex flex-col gap-2 py-5 text-xs text-ink-foreground/60 sm:flex-row sm:justify-between">
           <span>
             © {year} {brand}
           </span>

@@ -1,17 +1,13 @@
-import { httpRequest } from "@/lib/helpers/http";
 import { addMinutes } from "@/lib/helpers/datetime";
 import { aggregateStats, type Stats } from "@/lib/services/stats";
 import type { EntryLog, MessageDelivery, Reservation } from "@/lib/db/types";
 import type { MemberWithProfile } from "@/lib/services/members";
 
 /**
- * Demo data layer backed by DummyJSON (https://dummyjson.com). Used to populate
- * admin lists with realistic fake members/bookings BEFORE the real database is
- * connected, so we can review every screen and spot what to improve. Every
- * consuming page shows a "ukázková data" banner when this is active.
- *
- * Fetches real fake users from DummyJSON; if the network is unavailable it
- * falls back to a small built-in list so the UI always has something to show.
+ * Deterministic local demo data for administration without a database. Every
+ * consuming page labels it as illustrative. Keeping the fixtures local avoids
+ * network dependence and prevents unrelated third-party names from appearing
+ * during a Czech client presentation.
  */
 
 interface DummyUser {
@@ -23,7 +19,7 @@ interface DummyUser {
   image?: string;
 }
 
-const FALLBACK_USERS: DummyUser[] = [
+const DEMO_USERS: DummyUser[] = [
   {
     id: 1,
     firstName: "Jan",
@@ -66,19 +62,74 @@ const FALLBACK_USERS: DummyUser[] = [
     email: "eva.k@example.com",
     phone: "+420778111222",
   },
+  {
+    id: 7,
+    firstName: "Klára",
+    lastName: "Bílková",
+    email: "klara.b@example.com",
+    phone: "+420778333444",
+  },
+  {
+    id: 8,
+    firstName: "Pavel",
+    lastName: "Král",
+    email: "pavel.k@example.com",
+    phone: "+420778555666",
+  },
+  {
+    id: 9,
+    firstName: "Anna",
+    lastName: "Veselá",
+    email: "anna.v@example.com",
+    phone: "+420778777888",
+  },
+  {
+    id: 10,
+    firstName: "Michal",
+    lastName: "Horák",
+    email: "michal.h@example.com",
+    phone: "+420778999000",
+  },
+  {
+    id: 11,
+    firstName: "Tereza",
+    lastName: "Benešová",
+    email: "tereza.b@example.com",
+    phone: "+420779111222",
+  },
+  {
+    id: 12,
+    firstName: "David",
+    lastName: "Němec",
+    email: "david.n@example.com",
+    phone: "+420779333444",
+  },
+  {
+    id: 13,
+    firstName: "Barbora",
+    lastName: "Fialová",
+    email: "barbora.f@example.com",
+    phone: "+420779555666",
+  },
+  {
+    id: 14,
+    firstName: "Ondřej",
+    lastName: "Pokorný",
+    email: "ondrej.p@example.com",
+    phone: "+420779777888",
+  },
+  {
+    id: 15,
+    firstName: "Veronika",
+    lastName: "Křížová",
+    email: "veronika.k@example.com",
+    phone: "+420779999000",
+  },
 ];
 
-/** Fetch demo users from DummyJSON (cached per request via React fetch dedupe). */
+/** Return a stable local subset for predictable screenshots and tests. */
 export async function fetchDemoUsers(limit = 15): Promise<DummyUser[]> {
-  try {
-    const data = await httpRequest<{ users: DummyUser[] }>(
-      `https://dummyjson.com/users?limit=${limit}&select=firstName,lastName,email,phone,image`,
-      { timeoutMs: 6000 },
-    );
-    return data.users?.length ? data.users : FALLBACK_USERS;
-  } catch {
-    return FALLBACK_USERS;
-  }
+  return DEMO_USERS.slice(0, Math.max(0, limit));
 }
 
 function userId(u: DummyUser): string {

@@ -27,7 +27,7 @@ export default async function FaqPage() {
     ],
     [
       "Jak mohu zaplatit?",
-      "Platba probíhá online přes Stripe. Podporované jsou platební karty, Apple Pay a Google Pay podle dostupnosti ve vašem zařízení.",
+      "Platba probíhá online kartou přes zabezpečenou platební stránku Stripe.",
     ],
     [
       "Jak se dostanu dovnitř?",
@@ -55,10 +55,10 @@ export default async function FaqPage() {
   return (
     <>
       <SiteHeader brand={content.get("brand.name")} />
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <Section className="pt-14 sm:pt-20">
           <Container className="max-w-4xl">
-            <p className="text-xs font-extrabold uppercase tracking-[.16em] text-primary">
+            <p className="text-xs font-extrabold uppercase tracking-[.16em] text-accent-foreground">
               Informace před návštěvou
             </p>
             <h1 className="mt-4 text-4xl font-black tracking-[-.04em] sm:text-6xl">
@@ -71,7 +71,7 @@ export default async function FaqPage() {
                     {question}
                     <span
                       aria-hidden="true"
-                      className="text-primary transition-transform group-open:rotate-45"
+                      className="text-accent-foreground transition-transform group-open:rotate-45"
                     >
                       +
                     </span>
@@ -83,7 +83,7 @@ export default async function FaqPage() {
               ))}
             </div>
             <div className="mt-10 flex flex-wrap items-center justify-between gap-4 bg-secondary p-6">
-              <p className="font-bold">Jste připraveni vybrat si čas?</p>
+              <p className="font-bold">Vyberte datum a volný čas.</p>
               <Button href="/rezervace">Otevřít kalendář</Button>
             </div>
           </Container>

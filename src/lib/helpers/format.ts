@@ -32,6 +32,18 @@ export function formatDateTime(
   }).format(date);
 }
 
+/** Format only the calendar date, e.g. "18. 7. 2026". */
+export function formatDate(
+  date: Date,
+  locale = DEFAULT_LOCALE,
+  timeZone = DEFAULT_TZ,
+): string {
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium",
+    timeZone,
+  }).format(date);
+}
+
 /** Format only the time, e.g. "15:00". */
 export function formatTime(
   date: Date,

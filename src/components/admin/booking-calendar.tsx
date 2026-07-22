@@ -9,22 +9,27 @@ import interactionPlugin from "@fullcalendar/interaction";
 import csLocale from "@fullcalendar/core/locales/cs";
 import type { DateSelectArg, EventInput } from "@fullcalendar/core";
 import { createBlockedSlotAction } from "@/app/admin/schedule/actions";
+import { minutesToHHmm } from "@/lib/helpers/format";
+import {
+  DEFAULT_CLOSE_MINUTE,
+  DEFAULT_OPEN_MINUTE,
+} from "@/lib/config/schedule";
 
 /**
- * Admin operational calendar (FullCalendar, MIT). Week view with 1-hour slots
- * from 06:00–22:00 : reservations as solid events, blocks (e.g. cleaning) as
+ * Admin operational calendar (FullCalendar, MIT). Week view with reservations
+ * as solid events and blocks (e.g. cleaning) as
  * background events. Drag-select an empty range to create a block (used for the
  * cleaning window ~13:00). Correctness (overlap) is enforced server-side; this
  * is the visual operations view.
  */
 export function BookingCalendar({
   events,
-  openHour = 5,
-  closeHour = 21,
+  openMinute = DEFAULT_OPEN_MINUTE,
+  closeMinute = DEFAULT_CLOSE_MINUTE,
 }: {
   events: EventInput[];
-  openHour?: number;
-  closeHour?: number;
+  openMinute?: number;
+  closeMinute?: number;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -49,8 +54,6 @@ export function BookingCalendar({
     else window.alert(result.error ?? "Blok se nepodařilo vytvořit.");
   }
 
-  const pad = (n: number) => String(n).padStart(2, "0");
-
   return (
     <FullCalendar
       plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
@@ -62,8 +65,8 @@ export function BookingCalendar({
         center: "title",
         right: "timeGridWeek,timeGridDay,dayGridMonth",
       }}
-      slotMinTime={`${pad(openHour)}:00:00`}
-      slotMaxTime={`${pad(closeHour)}:00:00`}
+      slotMinTime={`${minutesToHHmm(openMinute)}:00`}
+      slotMaxTime={`${minutesToHHmm(closeMinute)}:00`}
       slotDuration="01:00:00"
       snapDuration="01:00:00"
       allDaySlot={false}
@@ -75,8 +78,8 @@ export function BookingCalendar({
       expandRows
       businessHours={{
         daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
-        startTime: `${pad(openHour)}:00`,
-        endTime: `${pad(closeHour)}:00`,
+        startTime: minutesToHHmm(openMinute),
+        endTime: minutesToHHmm(closeMinute),
       }}
       events={events}
     />

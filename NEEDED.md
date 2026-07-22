@@ -10,7 +10,7 @@ ověřovací příkazy jsou v [SESSION_HANDOFF.md](./SESSION_HANDOFF.md).
 lze dokončit v kódu po dodání potřebných podkladů.
 
 - [ ] **Potvrdit cílový Supabase projekt a připojit databázi**: bez správného schématu neběží ostré přihlášení, rezervace ani administrace. `[imp:5]` `[owner:me]`
-- [ ] **Nastavit Supabase Auth a callback URL**: produkční přihlášení vyžaduje povolený e-mail a správné URL. `[imp:5]` `[owner:me]`
+- [ ] **Nastavit Supabase Auth a callback URL**: produkční přihlášení vyžaduje povolený e-mail, správné URL a shodný seznam v `NEXT_PUBLIC_OAUTH_PROVIDERS`. `[imp:5]` `[owner:me]`
 - [ ] **Doplnit produkční Vercel proměnné a doménu**: build funguje bez DB, provozní funkce ale potřebují správná tajemství a callbacky. `[imp:5]` `[owner:me]`
 - [ ] **Aplikovat a ověřit migrace `0000` až `0003`**: migrace vytvářejí schéma, omezení překryvu rezervací a bezpečný Realtime signál. `[imp:5]` `[owner:me]`
 - [ ] **Nastavit Stripe a webhook**: bez produkčních klíčů a podpisu nelze přijímat platby. `[imp:4]` `[owner:me]`
@@ -41,7 +41,10 @@ Po potvrzení cíle:
    tabulky s osobními údaji. Veřejný Realtime smí číst jen
    `availability_signal`.
 7. Založte Storage bucket podle `SUPABASE_STORAGE_BUCKET` a nastavte policies.
-8. V Auth nastavte Site URL, callback URL a zvolené poskytovatele.
+8. V Auth nastavte Site URL, callback URL a zvolené poskytovatele. Jejich názvy
+   zapište také do `NEXT_PUBLIC_OAUTH_PROVIDERS` jako čárkou oddělený seznam
+   `google`, `apple` a/nebo `azure`. Neověřený poskytovatel se ve formuláři
+   záměrně nezobrazuje.
 
 Migrace `drizzle/0003_security_and_realtime.sql` vytváří signál dostupnosti bez
 osobních údajů, omezuje veřejná práva a přidává ochranu plateb. Před aplikací ji

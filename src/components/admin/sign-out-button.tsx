@@ -11,7 +11,7 @@ export function SignOutButton({ className }: { className?: string }) {
   return (
     <button
       type="button"
-      className={cn("mt-1 text-primary hover:underline", className)}
+      className={cn("mt-1 text-accent-foreground hover:underline", className)}
       onClick={async () => {
         await demoAdminLogoutAction();
         router.replace("/login");

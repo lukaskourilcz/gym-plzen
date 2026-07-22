@@ -14,4 +14,9 @@ test("demo customer credentials open the customer account without Supabase", asy
   ).toBeVisible();
   await expect(page.getByText("Věrnostní program")).toBeVisible();
   await expect(page.getByText("Nadcházející rezervace")).toBeVisible();
+  await expect(
+    page
+      .getByText(/\d{1,2}\. \d{1,2}\. \d{4} · \d{1,2}:00–\d{1,2}:\d{2}/)
+      .first(),
+  ).toBeVisible();
 });

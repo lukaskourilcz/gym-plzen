@@ -57,10 +57,13 @@ export default async function BookingDonePage({
         accountHref="/account"
         accountLabel="Můj účet"
       />
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <Section>
           <Container className="max-w-xl text-center">
-            <Icon aria-hidden="true" className="mx-auto size-14 text-primary" />
+            <Icon
+              aria-hidden="true"
+              className="mx-auto size-14 text-accent-foreground"
+            />
             <h1 className="mt-5 text-3xl font-black tracking-tight">
               {state.title}
             </h1>

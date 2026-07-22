@@ -1,9 +1,14 @@
 import type { EventInput } from "@fullcalendar/core";
-import { availability } from "@/lib/services";
+import { availability, schedule } from "@/lib/services";
 import { addMinutes } from "@/lib/helpers/datetime";
 import { PageHeader } from "@/components/admin/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookingCalendar } from "@/components/admin/booking-calendar";
+import {
+  DEFAULT_CLOSE_MINUTE,
+  DEFAULT_OPEN_MINUTE,
+} from "@/lib/config/schedule";
+import { minutesToHHmm } from "@/lib/helpers/format";
 
 export const metadata = { title: "Kalendář" };
 export const dynamic = "force-dynamic";
@@ -17,9 +22,21 @@ export default async function CalendarPage() {
   const now = new Date();
   const rangeStart = addMinutes(now, -14 * 24 * 60);
   const rangeEnd = addMinutes(now, 60 * 24 * 60);
-  const { reservations, blocks } = await availability
-    .listCalendarEntries(rangeStart, rangeEnd)
-    .catch(() => ({ reservations: [], blocks: [] }));
+  const [{ reservations, blocks }, openingHours] = await Promise.all([
+    availability
+      .listCalendarEntries(rangeStart, rangeEnd)
+      .catch(() => ({ reservations: [], blocks: [] })),
+    schedule.listOpeningHours().catch(() => []),
+  ]);
+  const activeDays = openingHours.filter((day) => day.isClosed !== 1);
+  const openMinute =
+    activeDays.length > 0
+      ? Math.min(...activeDays.map((day) => day.openMinute))
+      : DEFAULT_OPEN_MINUTE;
+  const closeMinute =
+    activeDays.length > 0
+      ? Math.max(...activeDays.map((day) => day.closeMinute))
+      : DEFAULT_CLOSE_MINUTE;
 
   const events: EventInput[] = [
     ...reservations
@@ -46,11 +63,15 @@ export default async function CalendarPage() {
     <div>
       <PageHeader
         title="Kalendář"
-        description="Přehled rezervací a bloků. Tažením přes prázdný čas přidáte blok (např. úklid). Sloty jsou hodinové, provoz 06:00–22:00."
+        description={`Přehled rezervací a bloků. Tažením přes prázdný čas přidáte blok. Zobrazený rozsah vychází z nastavení: ${minutesToHHmm(openMinute)} až ${minutesToHHmm(closeMinute)}.`}
       />
       <Card>
         <CardContent className="p-3">
-          <BookingCalendar events={events} />
+          <BookingCalendar
+            events={events}
+            openMinute={openMinute}
+            closeMinute={closeMinute}
+          />
         </CardContent>
       </Card>
     </div>

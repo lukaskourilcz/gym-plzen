@@ -12,6 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { minutesToHHmm } from "@/lib/helpers/format";
 import {
+  DEFAULT_CLOSE_MINUTE,
+  DEFAULT_OPEN_MINUTE,
+  DEFAULT_SLOT_MINUTES,
+} from "@/lib/config/schedule";
+import {
   createBlockedSlotSchema,
   deleteBlockedSlotSchema,
   openingHoursSchema,
@@ -49,9 +54,9 @@ export function OpeningHoursRow({
     successMessage: "Uloženo.",
     defaultValues: {
       dayOfWeek,
-      open: hours ? minutesToHHmm(hours.openMinute) : "06:00",
-      close: hours ? minutesToHHmm(hours.closeMinute) : "22:00",
-      slotMinutes: hours?.slotMinutes ?? 60,
+      open: minutesToHHmm(hours?.openMinute ?? DEFAULT_OPEN_MINUTE),
+      close: minutesToHHmm(hours?.closeMinute ?? DEFAULT_CLOSE_MINUTE),
+      slotMinutes: hours?.slotMinutes ?? DEFAULT_SLOT_MINUTES,
       isClosed: hours?.isClosed === 1,
     },
   });

@@ -25,7 +25,7 @@
 | Monitoring          | UptimeRobot, PageSpeed Insights, Sentry (locked)                                        | Better Stack (heartbeats + status page)                |
 | Security            | Security Headers, MDN HTTP Observatory (both manual)                                    | :                                                      |
 | Dev workflow        | Context7, Stripe MCP (official), Supabase MCP (official), PulseMCP, awesome-claude-code | Smithery                                               |
-| Dev data            | Mockaroo (synthetic), free-for.dev                                                      | DummyJSON                                              |
+| Dev data            | Local deterministic TypeScript fixtures, Mockaroo (offline seed generation)             | free-for.dev (reference only)                          |
 | AI support (future) | Gemini via **Vertex AI** (EU region + DPA)                                              | OpenRouter (enterprise DPA only)                       |
 
 **Already aligned in this repo:** no-overlap is enforced by a **DB exclusion
@@ -131,11 +131,15 @@ Dev workflow: **N/A for member data** (only queries/public docs), _unless_ you r
 
 ## Dev data / reference
 
-| Tool             | Maintained | Free tier / price                          | Verdict: reason                                                                                                                                                                               |
-| ---------------- | ---------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Mockaroo**     | Active     | Free 1,000 rows/download; paid from $60/yr | **USE**: seed synthetic members/bookings (keep it synthetic; never derive schemas from real member data).                                                                                     |
-| **free-for.dev** | Active     | Free                                       | **USE (reference)**: spot free-tier ancillary services.                                                                                                                                       |
-| **DummyJSON**    | Active     | Free                                       | **USE (adopted)**: wired as the demo-data fallback (`src/lib/demo/dummy.ts`): empty admin screens show fake members/bookings/messages so we can review every section before real data exists. |
+| Tool             | Maintained | Free tier / price                          | Verdict: reason                                                                                                                                                                                     |
+| ---------------- | ---------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Mockaroo**     | Active     | Free 1,000 rows/download; paid from $60/yr | **USE**: seed synthetic members/bookings (keep it synthetic; never derive schemas from real member data).                                                                                           |
+| **free-for.dev** | Active     | Free                                       | **USE (reference)**: spot free-tier ancillary services.                                                                                                                                             |
+| **DummyJSON**    | Active     | Free                                       | **SKIP**: a remote English fixture made the Czech client demo look generic and introduced an avoidable network dependency. `src/lib/demo/dummy.ts` now contains deterministic local Czech fixtures. |
+
+The current demo fixtures are local, stable and synthetic. They make every admin
+section reviewable without a remote service, never derive from real member data
+and remain explicitly labelled as illustrative data in the interface.
 
 ---
 

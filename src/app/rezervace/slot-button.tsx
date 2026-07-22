@@ -63,7 +63,7 @@ export function SlotButton({
             {durationMinutes} min · {price}
           </span>
         </span>
-        <Clock3 aria-hidden="true" className="size-4 text-primary" />
+        <Clock3 aria-hidden="true" className="size-4 text-accent-foreground" />
       </button>
       {error ? (
         <p

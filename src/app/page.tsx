@@ -108,7 +108,7 @@ export default async function HomePage() {
   return (
     <>
       <SiteHeader brand={brand} />
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <section className="bg-ink text-ink-foreground">
           <Container className="grid min-h-[680px] gap-12 py-14 lg:grid-cols-[.92fr_1.08fr] lg:items-center lg:py-20">
             <div className="relative z-10">
@@ -218,7 +218,7 @@ export default async function HomePage() {
                 {
                   icon: CreditCard,
                   title: t("home.about.step2.title"),
-                  body: `${t("home.about.step2.body")} Podporované jsou karty, Apple Pay a Google Pay.`,
+                  body: `${t("home.about.step2.body")} Platba probíhá online kartou.`,
                 },
                 {
                   icon: KeyRound,
@@ -233,7 +233,7 @@ export default async function HomePage() {
                   <div className="flex items-center justify-between">
                     <step.icon
                       aria-hidden="true"
-                      className="size-7 text-primary"
+                      className="size-7 text-accent-foreground"
                     />
                     <span className="text-sm font-black text-muted-foreground">
                       0{index + 1}
@@ -263,14 +263,14 @@ export default async function HomePage() {
               <ul className="mt-7 grid gap-3 text-sm sm:grid-cols-2">
                 {[
                   "Soukromé využití prostoru během rezervace",
-                  "Platba kartou, Apple Pay nebo Google Pay",
+                  "Platba online kartou",
                   "Pokyny ke vstupu po potvrzení rezervace",
                   `Každý ${content.freeEntryEvery}. vstup zdarma`,
                 ].map((item) => (
                   <li key={item} className="flex gap-3">
                     <Check
                       aria-hidden="true"
-                      className="mt-0.5 size-5 shrink-0 text-primary"
+                      className="mt-0.5 size-5 shrink-0 text-accent-foreground"
                     />
                     <span>{item}</span>
                   </li>
@@ -465,7 +465,7 @@ function SectionHeading({
 }) {
   return (
     <div className={align === "center" ? "text-center" : ""}>
-      <p className="text-xs font-extrabold uppercase tracking-[.16em] text-primary">
+      <p className="text-xs font-extrabold uppercase tracking-[.16em] text-accent-foreground">
         {eyebrow}
       </p>
       <h2 className="mt-3 text-3xl font-black tracking-[-.035em] sm:text-5xl">
@@ -491,7 +491,7 @@ function ContactItem({
       href={href}
       className="flex min-h-40 items-center gap-5 rounded-md border border-border bg-card p-6 transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <span className="grid size-12 shrink-0 place-items-center rounded-sm bg-primary/12 text-primary">
+      <span className="grid size-12 shrink-0 place-items-center rounded-sm bg-primary/12 text-accent-foreground">
         <Icon aria-hidden="true" className="size-5" />
       </span>
       <span>

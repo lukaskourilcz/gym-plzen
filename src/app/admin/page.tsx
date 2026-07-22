@@ -82,7 +82,7 @@ export default async function AdminDashboard() {
       <p className="mt-2 text-sm">
         <Link
           href="/admin/reservations"
-          className="text-primary hover:underline"
+          className="text-accent-foreground hover:underline"
         >
           Všechny rezervace →
         </Link>

@@ -27,16 +27,6 @@ export async function authenticateAction(input: unknown): Promise<AuthResult> {
   const parsed = inputSchema.safeParse(input);
   if (!parsed.success)
     return { ok: false, error: "Zkontrolujte zadané údaje." };
-  const requestHeaders = await headers();
-  const clientId = `${requestHeaders.get("x-forwarded-for")?.split(",")[0] ?? "unknown"}:${parsed.data.email.toLowerCase()}`;
-  if (
-    !takeRateLimit("auth", clientId, { limit: 8, windowMs: 10 * 60 * 1000 })
-  ) {
-    return {
-      ok: false,
-      error: "Příliš mnoho pokusů. Zkuste to znovu později.",
-    };
-  }
 
   const destination = safeInternalPath(parsed.data.next);
   if (parsed.data.mode === "signin") {
@@ -48,6 +38,17 @@ export async function authenticateAction(input: unknown): Promise<AuthResult> {
     ) {
       return { ok: true, destination: "/account" };
     }
+  }
+
+  const requestHeaders = await headers();
+  const clientId = `${requestHeaders.get("x-forwarded-for")?.split(",")[0] ?? "unknown"}:${parsed.data.email.toLowerCase()}`;
+  if (
+    !takeRateLimit("auth", clientId, { limit: 8, windowMs: 10 * 60 * 1000 })
+  ) {
+    return {
+      ok: false,
+      error: "Příliš mnoho pokusů. Zkuste to znovu později.",
+    };
   }
 
   const supabase = await createClient();

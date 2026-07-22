@@ -2,7 +2,7 @@ import { requireUser } from "@/lib/auth/guards";
 import { loyalty, reservations } from "@/lib/services";
 import { loadSiteContent } from "@/lib/content/site";
 import {
-  formatDateTime,
+  formatDate,
   formatMoney,
   formatStatus,
   formatTimeRange,
@@ -44,14 +44,14 @@ export default async function AccountPage() {
         accountHref="/account"
         accountLabel="Můj účet"
       />
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <Section className="py-12">
           <Container className="max-w-4xl">
             <div className="flex items-center justify-between gap-4">
-              <div className="text-xs font-extrabold uppercase tracking-[.14em] text-primary">
+              <div className="text-xs font-extrabold uppercase tracking-[.14em] text-accent-foreground">
                 Můj účet
               </div>
-              <SignOutButton className="m-0 min-h-11 px-2 text-sm font-bold" />
+              <SignOutButton className="m-0 min-h-11 px-2 text-sm font-bold text-accent-foreground" />
             </div>
             <h1 className="mt-2 text-[38px] font-black tracking-[-.03em]">
               Dobrý den, {user.name.split(" ")[0]}
@@ -62,14 +62,14 @@ export default async function AccountPage() {
 
             <div className="mt-8 grid gap-5 md:grid-cols-2">
               <LoyaltyWidget status={status} />
-              <div className="rounded-[18px] border border-border bg-card p-7">
+              <div className="rounded-lg border border-border bg-card p-7">
                 <div className="text-[11px] font-extrabold uppercase tracking-[.13em] text-muted-foreground">
                   Nejbližší trénink
                 </div>
                 {upcoming[0] ? (
                   <>
                     <div className="mt-3 text-xl font-black">
-                      {formatDateTime(upcoming[0].startsAt)}
+                      {formatDate(upcoming[0].startsAt)}
                     </div>
                     <div className="mt-1 text-sm font-bold text-muted-foreground">
                       {formatTimeRange(
@@ -104,7 +104,7 @@ export default async function AccountPage() {
                   <div className="flex-1">
                     <div className="font-extrabold">Trénink · celý gym</div>
                     <div className="mt-0.5 text-sm text-muted-foreground">
-                      {formatDateTime(r.startsAt)} ·{" "}
+                      {formatDate(r.startsAt)} ·{" "}
                       {formatTimeRange(r.startsAt, r.endsAt)}
                     </div>
                   </div>
@@ -114,7 +114,7 @@ export default async function AccountPage() {
                 </div>
               ))}
               {upcoming.length === 0 && (
-                <div className="rounded-[14px] border border-dashed border-border p-6 text-sm text-muted-foreground">
+                <div className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
                   Žádné nadcházející rezervace.
                 </div>
               )}

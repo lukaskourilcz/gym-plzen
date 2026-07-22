@@ -57,7 +57,9 @@ export function BrandLogo({
         className,
       )}
     >
-      <LotusMark className="text-primary" />
+      <LotusMark
+        className={inverse ? "text-primary" : "text-accent-foreground"}
+      />
       <span className="leading-none">
         <strong className="block text-base font-extrabold tracking-[0.08em]">
           NAMASTÉ

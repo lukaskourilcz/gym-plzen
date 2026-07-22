@@ -42,9 +42,18 @@ export function FormFeedback({
   error?: string | null;
   success?: string | null;
 }) {
-  if (error) return <p className="mt-1 text-sm text-destructive">{error}</p>;
+  if (error)
+    return (
+      <p role="alert" className="mt-1 text-sm text-destructive">
+        {error}
+      </p>
+    );
   if (success)
-    return <p className="mt-1 text-sm font-medium text-primary">{success}</p>;
+    return (
+      <p role="status" className="mt-1 text-sm font-medium text-success">
+        {success}
+      </p>
+    );
   return null;
 }
 

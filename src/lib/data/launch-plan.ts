@@ -102,7 +102,11 @@ export const LAUNCH_PLAN: PlanPhase[] = [
   {
     title: "Rezervace, platby a kódy",
     items: [
-      { title: "Generování hodinových slotů 05–21", status: "done" },
+      {
+        title: "Generování slotů podle nastavení každého dne",
+        status: "done",
+        note: "Výchozí 06:00 až 22:00 musí před provozem potvrdit klient",
+      },
       {
         title: "Živý kalendář v reálném čase (Supabase Realtime)",
         status: "in_progress",

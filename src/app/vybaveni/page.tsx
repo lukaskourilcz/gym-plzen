@@ -22,16 +22,16 @@ export default async function EquipmentPage() {
   return (
     <>
       <SiteHeader brand={content.get("brand.name")} />
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <Section className="pt-14 sm:pt-20">
           <Container>
             <div className="grid gap-8 lg:grid-cols-2 lg:items-end">
               <div>
-                <p className="text-xs font-extrabold uppercase tracking-[.16em] text-primary">
+                <p className="text-xs font-extrabold uppercase tracking-[.16em] text-accent-foreground">
                   Prostor
                 </p>
                 <h1 className="mt-4 text-4xl font-black tracking-[-.04em] sm:text-6xl">
-                  Vybavení bez dohadů
+                  Vybavení a prostor
                 </h1>
               </div>
               <p className="max-w-xl leading-7 text-muted-foreground">
@@ -55,7 +55,7 @@ export default async function EquipmentPage() {
                 <span className="flex gap-3">
                   <Camera
                     aria-hidden="true"
-                    className="mt-0.5 size-5 shrink-0 text-primary"
+                    className="mt-0.5 size-5 shrink-0 text-accent-foreground"
                   />
                   Galerii může provozovatel rozšířit v administraci bez změny
                   kódu.

@@ -221,7 +221,7 @@ export function FileUploader() {
       </Button>
       {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
       {url && (
-        <p className="mt-2 break-all text-sm font-medium text-primary">
+        <p className="mt-2 break-all text-sm font-medium text-accent-foreground">
           Nahráno. URL:{" "}
           <a
             href={url}
