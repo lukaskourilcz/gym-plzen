@@ -59,9 +59,20 @@ ignorované Gitem.
 Pokud prostředí používá vlastní Chromium, nastav `PW_CHROMIUM_PATH`. Jinak použij
 `npx playwright install chromium`.
 
-## Stav checkpointu 2026-07-22
+## Stav checkpointu 2026-07-23
 
-- Veřejný date-first výběr a přesný rozsah času byly ověřené v lokálním preview.
-- Celý produkční build na Node 22 prošel.
-- Kompletní E2E proti správnému Supabase projektu zatím nebylo možné spustit.
-- Další kroky a známé limity jsou v kořenovém `SESSION_HANDOFF.md`.
+- Lokální demo a veřejný balík: **10 passed, 0 failed**.
+- Nezávislý finální full run: **10 passed, 0 failed, 24 Supabase-gated
+  skipped**.
+- Skip navigation stress test: **10/10** v implementačním běhu a **5/5** v
+  nezávislém review.
+- Mobilní 44px cíl zpětného odkazu na loginu: **3/3** v nezávislém review.
+- Produkční veřejný smoke test bez databáze: **7 passed, 1 expected skipped**.
+  Přeskočený scénář vyžaduje živou dostupnost a produkce ji správně
+  nenahrazuje fikcí.
+- Produkční Node 22 build prošel. Lighthouse na lokálním produkčním serveru:
+  performance 94, accessibility 100, best practices 100 a SEO 100.
+- Vzdálené mutační testy nebyly spuštěné, protože nakonfigurovaný Supabase
+  projekt nebyl potvrzený jako projekt této aplikace.
+- Aktuální blokátory a další kroky jsou v kořenovém `SESSION_HANDOFF.md` a
+  `NEEDED.md`.

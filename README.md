@@ -11,6 +11,11 @@ jsou v repozitáři. Produkční build funguje i bez databáze, ale rezervace v 
 případě poctivě zobrazí nedostupnou službu. Fiktivní dostupnost ani lokální demo
 přihlášení se v produkci nezapnou.
 
+Nezávislý finální UX audit dává **GO pro klientskou prezentaci** a **NO-GO pro
+produkci**, dokud nejsou připojené a ověřené externí služby a schválené právní
+texty. Podrobnosti a stav všech nálezů jsou v
+[docs/UX_AUDIT.md](./docs/UX_AUDIT.md).
+
 Pro další práci začni v [SESSION_HANDOFF.md](./SESSION_HANDOFF.md). Externí
 nastavení a chybějící klientské podklady jsou v [NEEDED.md](./NEEDED.md).
 
@@ -62,6 +67,9 @@ BOOKING_PREVIEW_FIXTURE="true"
 
 Demo přihlášení je záměrně dostupné jen mimo produkci. Přihlašovací formulář
 neobsahuje banner s hesly.
+
+- Administrace: `admin@namaste.demo`, heslo `namaste2026`
+- Klientský účet: `klient@namaste.demo`, heslo `namaste2026`
 
 OAuth tlačítka se zobrazí jen pro poskytovatele uvedené v
 `NEXT_PUBLIC_OAUTH_PROVIDERS`, například `google,apple,azure`. Stejné

@@ -1,125 +1,149 @@
 # Session handoff
 
-Poslední aktualizace: 2026-07-22
+Poslední aktualizace: 2026-07-23
 
-Tento checkpoint vznikl na výslovnou žádost uživatele před restartem CLI. Kód
-je zacommitovaný jako rozpracovaný, ale kompilovatelný první průchod. Původní
-zadání požaduje ještě nezávislý UX audit, opravy podle auditu, finální UX pass a
-kompletní závěrečné QA. Tyto fáze zatím neproběhly a další agent v nich má
-pokračovat.
+Tento checkpoint uzavírá redesign, UX hardening, nezávislý audit a finální QA.
+Je určený pro `main` po závěrečném fast-forward merge a pushi. Přesný Git stav
+vždy ověř příkazy `git status`, `git log -1` a `git ls-remote origin main`.
+
+## Výsledek
+
+**GO pro klientskou prezentaci. NO-GO pro ostrý provoz.**
+
+Veřejný web, ilustrační rezervace, lokální klientský účet a lokální administrace
+jsou připravené k prezentaci bez Supabase. Produkční provoz zůstává blokovaný
+externími službami, právními podklady, potvrzenými kontakty a potvrzenými
+provozními časy. Úplný nezávislý verdikt a stav 18 nálezů je v
+`docs/UX_AUDIT.md`.
 
 ## Co je hotové
 
-- Canonical design system v `docs/DESIGN_SYSTEM.md`, semantic CSS tokens,
-  sdílené UI primitives a chráněná galerie `/admin/design-system`.
-- Veřejný web NAMASTÉ s lotus symbolem v headeru, plným logem ve footeru,
-  upraveným hero, cenou, platbami, pravidly, galerií, kontaktem a full-width mapou.
-- Routes `/faq`, `/vybaveni`, `/obchodni-podminky`, `/ochrana-soukromi`, sitemap,
-  robots, loading a not-found.
-- CMS pole pro hero URL a alt text. Aktuální fallback používá fotografii z webu
-  klienta, ne generovaný obrázek.
-- `/rezervace` používá Monday-first měsíční date-first kalendář, URL stav
-  `month/date`, přesné rozsahy slotů, trvání a cenu.
-- Server znovu řeší autoritativní slot, cenu, trvání, horizont a overlap.
-- `Europe/Prague` helpers a DST testy.
-- Bezpečný preview fixture pouze mimo produkci. Produkce bez DB zobrazuje
-  nedostupnou službu.
-- Lokální demo admin a klientský účet používají podepsané HttpOnly cookies a v
-  produkci jsou vynuceně vypnuté.
-- Přesměrování po loginu a OAuth je omezené na interní cesty.
-- Stripe pending expirace, idempotentní webhook claim, serverové ověření success
-  stránky a bezpečnější fulfillment retry.
-- Veřejný Realtime je přesměrovaný na PII-free `availability_signal`.
-- CMS upload kontroluje skutečný typ, signaturu, rozměry, velikost a bezpečný název.
-- Security headers a CSP jsou v `next.config.ts`.
-- Závislosti byly aktualizované. Produkční dependency audit má 0 nálezů.
-- Node 22 produkční build prošel.
+- Modernizovaný veřejný web NAMASTÉ se skutečnou fotografií klienta, klidnou
+  hierarchií, omezeným počtem CTA, adresou a Google mapou.
+- Hero zobrazuje tři nejbližší dny a přesné rozsahy. Rozlišuje živou,
+  ilustrační a nedostupnou dostupnost.
+- `/rezervace` používá Monday-first date-first kalendář, přesné časy, délku,
+  cenu, klávesnicové ovládání a akci `Zkusit znovu`.
+- Produkce bez databáze nikdy nezobrazuje fiktivní dostupnost.
+- Lokální demo login funguje bez Supabase pro administrátora i klienta. Demo
+  cookies jsou podepsané, HttpOnly a v produkci vynuceně vypnuté.
+- OAuth tlačítka se zobrazí jen podle `NEXT_PUBLIC_OAUTH_PROVIDERS` a chyby mají
+  český feedback.
+- Klientský účet má přehledné rezervace bez duplicitního času a používá stejný
+  design systém jako veřejná část.
+- Mobilní administrace má skupinové menu, aktivní route, Escape a návrat focusu.
+- Admin demo používá stabilní lokální česká data bez DummyJSON nebo jiné síťové
+  fixture služby.
+- `Inspirace` a `Plán spuštění` zůstávají v administraci. Plán rozlišuje
+  `Kód připraven` a `Ověřuje se` a připravenost nepřekračuje 60 %.
+- Skip link obchází veřejnou navigaci i při streamingu. Každá hotová route má
+  jediný focusovatelný `main-content`; loading landmark jeho ID neduplikuje.
+- Veřejné i admin menu, focus, reduced motion, 44px cíle, kontrast a responsive
+  reflow mají regresní pokrytí.
+- Canonical design systém je v `docs/DESIGN_SYSTEM.md`; živý kit je na
+  `/admin/design-system`.
+- Security headers, CSP, PII-free Realtime signal, log redakce, serverové
+  přepočítání slotu a ceny, Stripe webhook idempotence a upload validace jsou
+  implementované.
 
-## Neaplikovaná databázová migrace
+## Lokální ukázka
 
-`drizzle/0003_security_and_realtime.sql` je připravená, ale není aplikovaná.
-Supabase MCP je aktuálně nastavený na `rkmunagymohxtclymacm`; při kontrole jeho
-schéma neodpovídalo gym aplikaci. Neprováděj remote SQL, dokud uživatel nepotvrdí
-správný projekt. Podrobnosti jsou v `NEEDED.md`.
+V `.env.local` nastav:
 
-## Poslední ověření
-
-Prošlo:
-
-```text
-npm run typecheck
-npm run lint
-npm test                         14/14 unit testů
-npx -y -p node@22 -c 'npm run build'
-npm audit --audit-level=high     exit 0, 4 moderate pouze v dev Drizzle toolchain
-npm audit --omit=dev             0 vulnerabilities
+```dotenv
+DEMO_AUTH_ENABLED="true"
+DEMO_AUTH_SECRET="nahodny-retezec-alespon-32-znaku"
+BOOKING_PREVIEW_FIXTURE="true"
 ```
 
-Playwright:
+Účty:
 
-- Lokální veřejný rezervační test jednou prošel včetně volby data a exact time
-  range.
-- Následný celý veřejný běh narazil na timeout vývojového serveru spuštěného pod
-  nepodporovaným Node 20. Server se při on-demand kompilaci zasekl a byl ukončen.
-- Produkční E2E na Node 22 ještě spusť znovu podle `tests/e2e/README.md`.
-- Plná auth/admin E2E čeká na potvrzený samostatný Supabase test projekt.
+- administrace: `admin@namaste.demo`, heslo `namaste2026`;
+- klient: `klient@namaste.demo`, heslo `namaste2026`.
 
-Vizuálně bylo ověřeno:
+Přihlašovací stránka tyto údaje záměrně nevypisuje. Produkční politika demo
+zakáže i při chybně nastavené proměnné.
 
-- homepage na 320, 390 a 1440 px bez horizontálního overflow;
-- rezervační kalendář na 320 px, exact time ranges a popsané preview;
-- admin demo na mobilu a desktopu;
-- klientský account, věrnost a logout;
-- semantic DOM kalendáře a přesun fokusu šipkami.
+## Finální ověření
 
-## Známé technické poznámky
+Prošlo na Node.js 22:
 
-1. `src/lib/helpers/logger.ts` rediguje PII. Telefonní regex je nyní příliš
-   široký a v build logu redigoval části ISO timestampů jako telefon. Oprav regex
-   tak, aby nezhoršil redakci skutečných čísel, a doplň unit testy.
-2. Vestavěný browser driver přesunul fokus v kalendáři, ale jeho syntetické
-   Enter/click neprovedlo Next navigaci. Samostatný Playwright kliknutí provedl.
-   Nově je v handleru explicitní Enter i Space. Ověř to znovu v produkčním E2E.
-3. `tests/e2e/public.spec.ts` byl rozšířen o keyboard, breakpoint a reduced-motion
-   testy po posledním plném běhu. Spusť celou specifikaci proti Node 22 serveru.
-4. `npm run format:check` spusť po tomto dokumentačním checkpointu.
-5. CSP používá `unsafe-inline`, protože současný Next hydration setup nemá nonce.
-   Je to residual risk, ne tvrzená nonce CSP.
-6. 4 moderate audit findings jsou pouze v Drizzle Kit přes legacy
-   `@esbuild-kit/esbuild`. `npm audit fix --force` by provedl breaking downgrade,
-   proto nebyl použit.
+```text
+npm run format:check              pass
+npm run lint                      pass
+npm run typecheck                 pass
+npm test                          17/17
+npm run build                     pass
+lokální demo/public Playwright    10 passed, 0 failed
+nezávislý finální Playwright      10 passed, 0 failed, 24 gated skipped
+produkční public Playwright       7 passed, 1 expected skipped
+skip navigation stress            10/10 implementace, 5/5 review
+mobilní login target              3/3 review, nejméně 44 px
+npm audit --audit-level=high      exit 0, 4 moderate pouze dev Drizzle chain
+npm audit --omit=dev              0 vulnerabilities
+```
 
-## Povinné pokračování podle původního zadání
+Produkční Lighthouse na `127.0.0.1:3131`:
 
-1. Spusť format check, lint, typecheck, unit testy a produkční veřejné E2E.
-2. Oprav logger regex a každý nový nález.
-3. Spusť aplikaci pod Node 22 a dokonči manuální QA na 320, 390, landscape, 768,
-   1024, 1280, 1440 a wide desktop, keyboard-only, reduced motion a 200% zoom.
-4. Ověř homepage, rezervace, login, klientský účet, FAQ, Vybavení, legal routes,
-   admin a design kit. Kontroluj konzoli, hydration a overflow.
-5. Commitni validovaný první pass, pokud tento checkpoint bude po další úpravě
-   rozdělený do menších logických commitů.
-6. Až potom spusť jednoho samostatného senior UX review agenta. Nesmí měnit
-   aplikační kód. Musí napsat česky `docs/UX_AUDIT.md` podle původního zadání.
-7. Ověř jeho findings, oprav všechny oprávněné P0/P1 a rozumné P2, přidej testy
-   a commitni remediation.
-8. Vrať stejnému reviewerovi aplikaci k finálnímu passu a nech aktualizovat
-   `docs/UX_AUDIT.md` o resolved, unresolved a externally blocked stav.
-9. Spusť závěrečný build, E2E, audit a vizuální QA.
-10. Nepushuj bez nového výslovného souhlasu uživatele.
+| Kategorie      | Skóre |
+| -------------- | ----: |
+| Performance    |    94 |
+| Accessibility  |   100 |
+| Best practices |   100 |
+| SEO            |   100 |
 
-## Obsah, který se nesmí domyslet
+Ověřené viewporty: 320, 390, 667 landscape, 768, 1024, 1280, 1440 a 1728 px.
+Zkontrolován byl také 640px reflow jako praktický ekvivalent 200% zoomu. Před
+produkcí ještě proveď doslovný 200% browser zoom a screen-reader poslech v
+cílových prohlížečích.
 
-- e-mail a telefon klienta;
-- skutečný seznam vybavení;
-- otevírací doba, storno, hosté, děti a kapacita;
-- právní identita provozovatele;
-- finální fotografie a schválené logo;
-- produkční dostupnost, recenze, certifikace nebo garance.
+## Co zůstává v kódu
 
-## Git
+- Nízkoprioritní P3: globální loading skeleton je obecný, ne route-specific.
+  Nefunguje špatně a neblokuje demo, ale route skeletony by snížily layout shift.
+- CSP stále potřebuje `unsafe-inline` kvůli současnému Next hydration setupu.
+  Nejde o nonce CSP.
+- `npm audit` hlásí čtyři moderate dev-only nálezy přes Drizzle Kit a legacy
+  esbuild loader. `npm audit fix --force` by provedl breaking downgrade.
+- Finální galerie, kontakty, vybavení a právní texty se nesmí domýšlet.
 
-- Výchozí commit před touto prací: `ec0f9ac`.
-- Design-system checkpoint: `ffdbabe docs(design): establish NAMASTE design system`.
-- Aktuální checkpoint má obsahovat všechny rozpracované změny a tuto dokumentaci.
-- V této session se nemá pushovat.
+## Databáze a externí blokátory
+
+Nakonfigurovaný Supabase projekt `rkmunagymohxtclymacm` při poslední kontrole
+neobsahoval schéma této aplikace. Do něj nic nemigruj, nemaž ani neseeduj, dokud
+vlastník výslovně nepotvrdí správný cíl. Migrace `0000` až `0003` jsou připravené
+lokálně, ale vzdáleně nebyly aplikované.
+
+Aktuální externí práce je vedena pouze v `NEEDED.md`:
+
+1. potvrdit správný Supabase projekt, env a migrace;
+2. ověřit Auth, RLS, overlap a vlastnictví dat;
+3. připojit a end-to-end otestovat Stripe, Nuki, Resend a WhatsApp;
+4. dodat schválené právní texty;
+5. dodat skutečný e-mail a telefon, nikoli Wix template údaje;
+6. potvrdit provozní časy, vybavení, pravidla a finální fotografie;
+7. nastavit Vercel, doménu, Sentry, cron a uptime monitoring.
+
+## Doporučený začátek další práce
+
+1. Ověř čistý `main` a úspěšný poslední Vercel deployment.
+2. Přečti `NEEDED.md`, `docs/UX_AUDIT.md`, `docs/DESIGN_SYSTEM.md` a
+   `.claude/skills/gym-architecture/SKILL.md`.
+3. Vyžádej si potvrzený cílový Supabase project ref. Bez něj neprováděj remote
+   SQL ani mutační E2E.
+4. Po připojení služeb spusť plnou gated suite podle `tests/e2e/README.md`.
+5. Před produkcí uzavři všechny `EXTERNALLY BLOCKED` položky z UX auditu a
+   `NEEDED.md`.
+
+## Důležité checkpointy
+
+- `ffdbabe`: canonical design systém.
+- `93b2c99`: hlavní modernizace aplikace.
+- `4c3fdf3`: merge live hero kalendáře z tehdejšího `main`.
+- `20bc6da`: první nezávislý UX audit.
+- `ea3e2e4`: remediation P1 a P2.
+- `d41507e`: stabilní skip navigace při streamingu.
+- `45aaa2f`: 44px mobilní login target.
+
+Další agent nemá opakovat hotový redesign. Má pokračovat externím setupem nebo
+novým explicitním zadáním a zachovat zdokumentované bezpečnostní a UX invarianty.
