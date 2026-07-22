@@ -30,6 +30,19 @@ BEGIN
 END;
 $$;
 
+-- The trigger runs as its owner. Browser roles never need to call this
+-- SECURITY DEFINER function directly.
+REVOKE ALL ON FUNCTION public.touch_availability_signal() FROM PUBLIC;
+
+-- New objects in the exposed public schema stay private until a later
+-- migration grants the minimum required access explicitly.
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+  REVOKE SELECT, INSERT, UPDATE, DELETE ON TABLES FROM anon, authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+  REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC, anon, authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+  REVOKE USAGE, SELECT ON SEQUENCES FROM anon, authenticated;
+
 DROP TRIGGER IF EXISTS reservation_availability_signal ON public.reservation;
 CREATE TRIGGER reservation_availability_signal AFTER INSERT OR UPDATE OR DELETE
 ON public.reservation FOR EACH STATEMENT EXECUTE FUNCTION public.touch_availability_signal();

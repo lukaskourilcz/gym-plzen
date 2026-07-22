@@ -4,6 +4,7 @@ import { isDemoAuthEnabled } from "../../src/lib/auth/demo-policy";
 import { PUBLIC_AVAILABILITY_TABLE } from "../../src/lib/config/realtime";
 import { safeInternalPath } from "../../src/lib/security/redirects";
 import { isBookingPreviewEnabled } from "../../src/lib/config/preview";
+import { redactForLogs } from "../../src/lib/helpers/logger";
 
 test("authentication return target accepts only same-origin paths", () => {
   assert.equal(
@@ -50,4 +51,13 @@ test("fictional availability cannot be enabled in production", () => {
 test("public realtime subscribes only to the PII-free signal", () => {
   assert.equal(PUBLIC_AVAILABILITY_TABLE, "availability_signal");
   assert.notEqual(PUBLIC_AVAILABILITY_TABLE, "reservation");
+});
+
+test("log redaction hides phone numbers without corrupting timestamps", () => {
+  const timestamp = "2026-07-22T20:38:57.588Z";
+  assert.equal(redactForLogs(timestamp), timestamp);
+  assert.equal(
+    redactForLogs("Kontakt +420 777 123 456 nebo 777123456"),
+    "Kontakt [redacted-phone] nebo [redacted-phone]",
+  );
 });

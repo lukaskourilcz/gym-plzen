@@ -7,7 +7,8 @@ const sensitiveKey =
 export function redactForLogs(value: string): string {
   return value
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[redacted-email]")
-    .replace(/(?:\+?\d[\s-]?){8,15}/g, "[redacted-phone]")
+    .replace(/\+\d(?:[\s().-]?\d){7,14}(?!\d)/g, "[redacted-phone]")
+    .replace(/(?<!\d)(?:\d{3}[ .]?){2}\d{3}(?!\d)/g, "[redacted-phone]")
     .replace(
       /\b(?:eyJ[a-zA-Z0-9_-]+\.){2}[a-zA-Z0-9_-]+\b/g,
       "[redacted-token]",
