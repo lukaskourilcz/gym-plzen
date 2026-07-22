@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
 import {
   ArrowRight,
   CalendarDays,
@@ -18,12 +17,21 @@ import { loadSiteContent } from "@/lib/content/site";
 import { formatMoney, formatTimeRange } from "@/lib/helpers/format";
 import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/helpers/datetime";
 import { getSlotsForRange } from "@/lib/services/slots";
+import { cms } from "@/lib/services";
+import {
+  DEFAULT_HERO_PREVIEW_DAYS,
+  HERO_PREVIEW_DAYS_KEY,
+  clampHeroPreviewDays,
+} from "@/lib/config/hero";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
-import { Notice } from "@/components/ui/notice";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { LotusMark } from "@/components/site/brand";
+import {
+  HeroAvailability,
+  type HeroAvailabilityDay,
+} from "@/components/site/hero-availability";
 
 const ADDRESS = "Křížkova 424/23, 301 00 Plzeň 1";
 const PUBLISHED_GYM_PHOTO =
@@ -40,10 +48,18 @@ export const revalidate = 60;
 export default async function HomePage() {
   const now = new Date();
   const today = dateKeyInTimeZone(now);
-  const [content, availability] = await Promise.all([
+  const [content, heroDaysSetting] = await Promise.all([
     loadSiteContent(),
-    getSlotsForRange(today, addDaysToDateKey(today, 7), now),
+    cms.getSetting<number>(HERO_PREVIEW_DAYS_KEY).catch(() => null),
   ]);
+  const heroPreviewDays = clampHeroPreviewDays(
+    heroDaysSetting ?? DEFAULT_HERO_PREVIEW_DAYS,
+  );
+  const availability = await getSlotsForRange(
+    today,
+    addDaysToDateKey(today, heroPreviewDays),
+    now,
+  );
   const t = content.get;
   const brand = t("brand.name");
   const price = formatMoney(content.entryPriceCents);
@@ -55,14 +71,6 @@ export default async function HomePage() {
   const heroImageUrl = content.heroImageUrl || PUBLISHED_GYM_PHOTO;
   const heroImageAlt =
     content.heroImageAlt || "Prostor NAMASTÉ Private Gym v Plzni";
-  const nextSlots = availability.days
-    .flatMap((day) =>
-      day.slots
-        .filter((slot) => slot.available)
-        .slice(0, 2)
-        .map((slot) => ({ ...slot, dateKey: day.dateKey })),
-    )
-    .slice(0, 4);
   const businessJson = {
     "@context": "https://schema.org",
     "@type": "HealthClub",
@@ -76,6 +84,26 @@ export default async function HomePage() {
       addressCountry: "CZ",
     },
   };
+  const previewDays: HeroAvailabilityDay[] = availability.days.map(
+    (day, index) => ({
+      label:
+        index === 0
+          ? "Dnes"
+          : index === 1
+            ? "Zítra"
+            : new Intl.DateTimeFormat("cs-CZ", {
+                weekday: "long",
+                day: "numeric",
+                timeZone: "UTC",
+              }).format(new Date(`${day.dateKey}T12:00:00Z`)),
+      dateLabel: day.dateKey,
+      slots: day.slots.map((slot) => ({
+        label: formatTimeRange(slot.start, slot.end),
+        startMs: slot.start.getTime(),
+        booked: slot.booked,
+      })),
+    }),
+  );
 
   return (
     <>
@@ -116,14 +144,14 @@ export default async function HomePage() {
             </div>
 
             <div className="relative">
-              <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-white/10 bg-ink-muted">
+              <div className="relative aspect-[16/10] overflow-hidden rounded-sm border border-white/10 bg-ink-muted">
                 {heroImageUrl ? (
                   <Image
                     src={heroImageUrl}
                     alt={heroImageAlt}
                     fill
                     priority
-                    sizes="(max-width: 1023px) 100vw, 54vw"
+                    sizes="(max-width: 1023px) 100vw, 50vw"
                     className="object-cover"
                   />
                 ) : (
@@ -138,59 +166,14 @@ export default async function HomePage() {
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
               </div>
-
-              <div className="relative -mt-14 ml-4 border border-border bg-background p-5 text-foreground shadow-xl sm:ml-auto sm:mr-5 sm:max-w-md">
-                <div className="flex items-center justify-between gap-4 border-b border-border pb-3">
-                  <strong className="text-sm">Nejbližší termíny</strong>
-                  {availability.source === "live" ? (
-                    <span className="text-xs font-bold text-success">
-                      Aktuální dostupnost
-                    </span>
-                  ) : availability.source === "preview" ? (
-                    <span className="text-xs font-bold text-warning">
-                      Ilustrační náhled
-                    </span>
-                  ) : null}
-                </div>
-                {availability.source === "unavailable" ? (
-                  <Notice tone="error" className="mt-4" role="status">
-                    Dostupnost teď nelze načíst. Celý kalendář můžete zkusit
-                    později.
-                  </Notice>
-                ) : nextSlots.length > 0 ? (
-                  <div className="mt-4 grid grid-cols-2 gap-2">
-                    {nextSlots.map((slot) => (
-                      <Link
-                        key={slot.start.toISOString()}
-                        href={`/rezervace?date=${slot.dateKey}`}
-                        className="min-h-14 rounded-sm border border-primary/35 bg-primary/10 px-3 py-2 text-sm font-extrabold transition-colors hover:border-primary hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      >
-                        <span className="block text-[11px] font-bold uppercase text-muted-foreground">
-                          {new Intl.DateTimeFormat("cs-CZ", {
-                            weekday: "short",
-                            day: "numeric",
-                            month: "numeric",
-                            timeZone: "UTC",
-                          }).format(new Date(`${slot.dateKey}T12:00:00Z`))}
-                        </span>
-                        {formatTimeRange(slot.start, slot.end)}
-                      </Link>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-4 text-sm text-muted-foreground">
-                    V příštích dnech není volný termín.
-                  </p>
-                )}
-                <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-4">
-                  <strong className="text-lg">{price}</strong>
-                  <Link
-                    href="/rezervace"
-                    className="text-sm font-extrabold text-primary hover:underline"
-                  >
-                    Otevřít kalendář
-                  </Link>
-                </div>
+              <div className="relative -mt-8 ml-3 sm:ml-10">
+                <HeroAvailability
+                  days={previewDays}
+                  price={price}
+                  freeEntryEvery={content.freeEntryEvery}
+                  source={availability.source}
+                  nowMs={now.getTime()}
+                />
               </div>
             </div>
           </Container>

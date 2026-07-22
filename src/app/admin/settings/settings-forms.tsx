@@ -11,9 +11,18 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { brandingSchema, smsTemplateSchema } from "@/lib/validations/settings";
+import {
+  brandingSchema,
+  heroPreviewSchema,
+  smsTemplateSchema,
+} from "@/lib/validations/settings";
+import {
+  MAX_HERO_PREVIEW_DAYS,
+  MIN_HERO_PREVIEW_DAYS,
+} from "@/lib/config/hero";
 import {
   saveBrandingAction,
+  saveHeroPreviewAction,
   saveSmsTemplateAction,
   uploadFileAction,
 } from "./actions";
@@ -97,6 +106,43 @@ export function BrandingForm({
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={formState.isSubmitting}>
         Uložit branding
+      </SubmitButton>
+    </form>
+  );
+}
+
+/** Number of upcoming days shown in the homepage availability preview. */
+export function HeroCalendarForm({ previewDays }: { previewDays: number }) {
+  const { form, submit, serverError, success } = useActionForm({
+    schema: heroPreviewSchema,
+    action: saveHeroPreviewAction,
+    successMessage: "Nastavení náhledu uloženo.",
+    defaultValues: { previewDays },
+  });
+
+  return (
+    <form onSubmit={submit} className="max-w-xs">
+      <Field
+        name="previewDays"
+        label="Počet dní včetně dneška"
+        error={form.formState.errors.previewDays}
+      >
+        <Input
+          id="previewDays"
+          type="number"
+          min={MIN_HERO_PREVIEW_DAYS}
+          max={MAX_HERO_PREVIEW_DAYS}
+          step={1}
+          {...form.register("previewDays", { valueAsNumber: true })}
+        />
+      </Field>
+      <p className="mb-2 text-xs text-muted-foreground">
+        Povolený rozsah je {MIN_HERO_PREVIEW_DAYS} až {MAX_HERO_PREVIEW_DAYS}
+        dní. Celý měsíční kalendář zůstává na stránce Rezervace.
+      </p>
+      <FormFeedback error={serverError} success={success} />
+      <SubmitButton isSubmitting={form.formState.isSubmitting}>
+        Uložit náhled
       </SubmitButton>
     </form>
   );

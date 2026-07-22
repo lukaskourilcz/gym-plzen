@@ -7,8 +7,10 @@ import { ActionError } from "@/lib/helpers/action";
 import type { Result } from "@/lib/helpers/result";
 import {
   brandingSchema,
+  heroPreviewSchema,
   smsTemplateSchema,
   type BrandingValues,
+  type HeroPreviewValues,
   type SmsTemplateValues,
 } from "@/lib/validations/settings";
 import {
@@ -18,6 +20,7 @@ import {
   SMS_ACCESS_TEMPLATE_KEY,
   TERMS_URL_KEY,
 } from "@/lib/config/branding";
+import { HERO_PREVIEW_DAYS_KEY, clampHeroPreviewDays } from "@/lib/config/hero";
 import { cms, media } from "@/lib/services";
 import { publicMediaUrl } from "@/lib/integrations/supabase";
 import { logger } from "@/lib/helpers/logger";
@@ -58,10 +61,31 @@ const saveSmsTemplateImpl = defineAction({
   },
 });
 
+/** Save the number of days shown in the homepage availability preview. */
+const saveHeroPreviewImpl = defineAction({
+  schema: heroPreviewSchema,
+  authorize: assertAdmin,
+  handler: async ({ previewDays }, admin) => {
+    await cms.setSetting(
+      HERO_PREVIEW_DAYS_KEY,
+      clampHeroPreviewDays(previewDays),
+      admin.id,
+    );
+    revalidatePath("/admin/settings");
+    revalidatePath("/");
+  },
+});
+
 export async function saveBrandingAction(
   input: BrandingValues,
 ): Promise<Result<unknown>> {
   return saveBrandingImpl(input);
+}
+
+export async function saveHeroPreviewAction(
+  input: HeroPreviewValues,
+): Promise<Result<unknown>> {
+  return saveHeroPreviewImpl(input);
 }
 
 export async function saveSmsTemplateAction(
