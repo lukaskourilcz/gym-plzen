@@ -45,17 +45,22 @@ test.describe("Public site", () => {
     page,
   }) => {
     await page.goto("/rezervace", { waitUntil: "domcontentloaded" });
-    const available = page.getByRole("gridcell", { name: /dostupné termíny/i });
+    const available = page.locator(
+      'a[role="gridcell"][aria-label*="dostupné termíny"]',
+    );
+    const availableCount = await available.count();
 
     test.skip(
-      (await available.count()) < 2,
+      availableCount < 2,
       "Live availability is not configured in this environment",
     );
 
-    const firstDate = available.first();
-    await firstDate.focus();
-    await expect(firstDate).toBeFocused();
-    await firstDate.press("ArrowRight");
+    const calendarEntry = page.locator('a[role="gridcell"][tabindex="0"]');
+    await expect(calendarEntry).toHaveCount(1);
+    await expect(calendarEntry).toBeVisible();
+    await calendarEntry.focus();
+    await expect(calendarEntry).toBeFocused();
+    await calendarEntry.press("ArrowRight");
     const focusedDate = page.locator('[role="gridcell"]:focus');
     await expect(focusedDate).toBeFocused();
     await focusedDate.press("Enter");
@@ -120,6 +125,9 @@ test.describe("Public site", () => {
       .getByRole("link", { name: /Vybrat termín/i })
       .first()
       .evaluate((element) => getComputedStyle(element).transitionDuration);
-    expect(duration).toBe("0.01ms");
+    const durationSeconds = duration.endsWith("ms")
+      ? Number.parseFloat(duration) / 1000
+      : Number.parseFloat(duration);
+    expect(durationSeconds).toBeLessThanOrEqual(0.00001);
   });
 });
