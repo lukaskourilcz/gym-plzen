@@ -37,7 +37,7 @@ export default function LoginPage() {
         <div className="w-full max-w-[400px]">
           <Link
             href="/"
-            className="mb-10 inline-flex items-center gap-2 font-extrabold lg:hidden"
+            className="mb-10 inline-flex min-h-11 items-center gap-2 font-extrabold lg:hidden"
           >
             ← NAMASTÉ Private Gym
           </Link>

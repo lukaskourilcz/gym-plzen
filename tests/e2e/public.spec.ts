@@ -108,6 +108,11 @@ test.describe("Public site", () => {
     await expect(page.getByLabel(/E-mail/i)).toBeVisible();
     await expect(page.getByLabel(/Heslo/i)).toBeVisible();
     await expect(page.getByText(/Pokračovat přes/i)).toHaveCount(0);
+    await page.setViewportSize({ width: 390, height: 844 });
+    const backLink = page.getByRole("link", { name: /NAMASTÉ Private Gym/i });
+    await expect(backLink).toBeVisible();
+    const backLinkBox = await backLink.boundingBox();
+    expect(backLinkBox?.height).toBeGreaterThanOrEqual(44);
   });
 
   test("skip link is the first keyboard destination", async ({ page }) => {
