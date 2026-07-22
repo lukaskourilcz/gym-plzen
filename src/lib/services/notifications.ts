@@ -4,7 +4,10 @@ import { profiles, messageDelivery } from "@/lib/db/schema";
 import type { MessageDelivery } from "@/lib/db/types";
 import { formatDateTime } from "@/lib/helpers/format";
 import { sendEmail } from "@/lib/integrations/resend";
-import { sendTemplateMessage, sendTextMessage } from "@/lib/integrations/whatsapp";
+import {
+  sendTemplateMessage,
+  sendTextMessage,
+} from "@/lib/integrations/whatsapp";
 import { sendSms } from "@/lib/integrations/gosms";
 import { getSetting } from "./cms";
 import {
@@ -78,7 +81,7 @@ export async function dispatchAccessCode(
   const when = formatDateTime(ctx.startsAt);
   const deliveries: MessageDelivery[] = [];
 
-  // Email — always attempted when we have an address.
+  // Email : always attempted when we have an address.
   if (ctx.email) {
     const result = await sendEmail({
       to: ctx.email,
@@ -94,7 +97,7 @@ export async function dispatchAccessCode(
     );
   }
 
-  // WhatsApp — opt-in (default on) and requires a phone number.
+  // WhatsApp : opt-in (default on) and requires a phone number.
   if (ctx.notifyByWhatsapp !== false && ctx.phone) {
     const result = await sendTemplateMessage({
       to: ctx.phone,
@@ -110,7 +113,7 @@ export async function dispatchAccessCode(
     );
   }
 
-  // SMS — strictly opt-in fallback. Body is admin-configurable.
+  // SMS : strictly opt-in fallback. Body is admin-configurable.
   if (ctx.notifyBySms && ctx.phone) {
     const template = await getSetting<string>(SMS_ACCESS_TEMPLATE_KEY);
     const message = renderTemplate(template ?? DEFAULT_SMS_ACCESS_TEMPLATE, {
@@ -170,7 +173,10 @@ export async function sendReservationClosure(params: {
         params.reason ? ` (${params.reason})` : ""
       }. Omlouváme se za komplikace. Vyberte si prosím jiný termín.`,
     });
-    await record({ ...base, channel: "email", recipient: params.email }, result);
+    await record(
+      { ...base, channel: "email", recipient: params.email },
+      result,
+    );
   }
 
   if (params.notifyByWhatsapp !== false && params.phone) {
@@ -180,7 +186,10 @@ export async function sendReservationClosure(params: {
         params.reason ? ` (${params.reason})` : ""
       }. Omlouváme se, vyberte si prosím jiný termín.`,
     });
-    await record({ ...base, channel: "whatsapp", recipient: params.phone }, result);
+    await record(
+      { ...base, channel: "whatsapp", recipient: params.phone },
+      result,
+    );
   }
 }
 
@@ -213,7 +222,7 @@ export async function loadMemberChannels(userId: string): Promise<{
   };
 }
 
-/** Minimal inline email template (design comes later — see the task brief). */
+/** Minimal inline email template (design comes later : see the task brief). */
 function accessCodeEmailHtml(code: string, when: string): string {
   return `<div style="font-family:sans-serif">
     <h2>Váš vstupní kód</h2>

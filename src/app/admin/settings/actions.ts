@@ -5,8 +5,19 @@ import { assertAdmin } from "@/lib/auth/guards";
 import { defineAction } from "@/lib/helpers/action";
 import { ActionError } from "@/lib/helpers/action";
 import type { Result } from "@/lib/helpers/result";
-import { brandingSchema, smsTemplateSchema, type BrandingValues, type SmsTemplateValues } from "@/lib/validations/settings";
-import { LOGO_URL_KEY, SMS_ACCESS_TEMPLATE_KEY, TERMS_URL_KEY } from "@/lib/config/branding";
+import {
+  brandingSchema,
+  smsTemplateSchema,
+  type BrandingValues,
+  type SmsTemplateValues,
+} from "@/lib/validations/settings";
+import {
+  HERO_IMAGE_ALT_KEY,
+  HERO_IMAGE_URL_KEY,
+  LOGO_URL_KEY,
+  SMS_ACCESS_TEMPLATE_KEY,
+  TERMS_URL_KEY,
+} from "@/lib/config/branding";
 import { cms, media } from "@/lib/services";
 import { publicMediaUrl } from "@/lib/integrations/supabase";
 import { logger } from "@/lib/helpers/logger";
@@ -18,6 +29,16 @@ const saveBrandingImpl = defineAction({
   handler: async (input, admin) => {
     await cms.setSetting(LOGO_URL_KEY, input.logoUrl ?? "", admin.id);
     await cms.setSetting(TERMS_URL_KEY, input.termsUrl ?? "", admin.id);
+    await cms.setSetting(
+      HERO_IMAGE_URL_KEY,
+      input.heroImageUrl ?? "",
+      admin.id,
+    );
+    await cms.setSetting(
+      HERO_IMAGE_ALT_KEY,
+      input.heroImageAlt ?? "",
+      admin.id,
+    );
     revalidatePath("/admin/settings");
     revalidatePath("/");
   },
@@ -28,16 +49,24 @@ const saveSmsTemplateImpl = defineAction({
   schema: smsTemplateSchema,
   authorize: assertAdmin,
   handler: async (input, admin) => {
-    await cms.setSetting(SMS_ACCESS_TEMPLATE_KEY, input.template ?? "", admin.id);
+    await cms.setSetting(
+      SMS_ACCESS_TEMPLATE_KEY,
+      input.template ?? "",
+      admin.id,
+    );
     revalidatePath("/admin/settings");
   },
 });
 
-export async function saveBrandingAction(input: BrandingValues): Promise<Result<unknown>> {
+export async function saveBrandingAction(
+  input: BrandingValues,
+): Promise<Result<unknown>> {
   return saveBrandingImpl(input);
 }
 
-export async function saveSmsTemplateAction(input: SmsTemplateValues): Promise<Result<unknown>> {
+export async function saveSmsTemplateAction(
+  input: SmsTemplateValues,
+): Promise<Result<unknown>> {
   return saveSmsTemplateImpl(input);
 }
 
@@ -46,7 +75,9 @@ export async function saveSmsTemplateAction(input: SmsTemplateValues): Promise<R
  * its public URL. Takes FormData (a File under `file`). Requires Supabase to be
  * configured (see NEEDED.md); returns a clear error otherwise.
  */
-export async function uploadFileAction(formData: FormData): Promise<Result<{ url: string; fileName: string }>> {
+export async function uploadFileAction(
+  formData: FormData,
+): Promise<Result<{ url: string; fileName: string }>> {
   try {
     await assertAdmin();
   } catch {
@@ -57,8 +88,8 @@ export async function uploadFileAction(formData: FormData): Promise<Result<{ url
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, error: "Vyberte prosím soubor." };
   }
-  if (file.size > 10 * 1024 * 1024) {
-    return { ok: false, error: "Soubor je příliš velký (max 10 MB)." };
+  if (file.size > 8 * 1024 * 1024) {
+    return { ok: false, error: "Soubor je příliš velký (max. 8 MB)." };
   }
 
   try {

@@ -3,10 +3,15 @@ import { join } from "node:path";
 import { supabaseConfigured } from "./global-setup";
 
 // Admin flows need a real Supabase session; skip when Supabase isn't configured.
-test.skip(!supabaseConfigured(), "requires a configured Supabase (auth) instance");
+test.skip(
+  !supabaseConfigured(),
+  "requires a configured Supabase (auth) instance",
+);
 
 // All tests in this file run as the admin.
-test.use({ storageState: join(process.cwd(), "tests", "e2e", ".auth", "admin.json") });
+test.use({
+  storageState: join(process.cwd(), "tests", "e2e", ".auth", "admin.json"),
+});
 
 /** Future datetime-local value (next week at a fixed hour). */
 function futureSlot(hour: number): { start: string; end: string; date: Date } {
@@ -37,13 +42,15 @@ const ADMIN_PAGES: { path: string; heading: RegExp }[] = [
   { path: "/admin/plan", heading: /Plán spuštění/i },
 ];
 
-test.describe("Admin — pages load", () => {
+test.describe("Admin : pages load", () => {
   for (const p of ADMIN_PAGES) {
     test(`loads ${p.path}`, async ({ page }) => {
       const errors: string[] = [];
       page.on("pageerror", (e) => errors.push(String(e)));
       await page.goto(p.path);
-      await expect(page.getByRole("heading", { name: p.heading }).first()).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: p.heading }).first(),
+      ).toBeVisible();
       expect(errors, `console page errors on ${p.path}`).toEqual([]);
     });
   }
@@ -59,7 +66,7 @@ test.describe("Admin — pages load", () => {
   });
 });
 
-test.describe("Admin — forms", () => {
+test.describe("Admin : forms", () => {
   test("content editor saves a block", async ({ page }) => {
     await page.goto("/admin/content");
     // Target a specific, known block by its exact <code> key (the key-field
@@ -102,7 +109,7 @@ test.describe("Admin — forms", () => {
     await expect(page.getByText(/Blok vytvořen|Úklid/i).first()).toBeVisible();
   });
 
-  test("reservations — admin creates a manual booking", async ({ page }) => {
+  test("reservations : admin creates a manual booking", async ({ page }) => {
     await page.goto("/admin/reservations");
     const { start, end } = futureSlot(9);
     const form = page.locator("form").filter({ hasText: "Vytvořit rezervaci" });

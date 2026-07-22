@@ -5,7 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { publicEnv, supabasePublicKey } from "@/lib/public-env";
 
 /**
- * Browser Supabase client — used for Supabase Auth (login/signup/OAuth) and
+ * Browser Supabase client : used for Supabase Auth (login/signup/OAuth) and
  * Realtime (the live calendar). Cached per tab. Returns null when Supabase isn't
  * configured so callers can no-op.
  */

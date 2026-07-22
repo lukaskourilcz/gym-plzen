@@ -19,7 +19,9 @@ export const messageDelivery = pgTable(
   "message_delivery",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    userId: uuid("user_id").references(() => profiles.id, { onDelete: "set null" }),
+    userId: uuid("user_id").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
     reservationId: uuid("reservation_id").references(() => reservation.id, {
       onDelete: "set null",
     }),

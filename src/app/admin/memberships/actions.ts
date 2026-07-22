@@ -4,7 +4,10 @@ import { revalidatePath } from "next/cache";
 import { assertAdmin } from "@/lib/auth/guards";
 import { defineAction } from "@/lib/helpers/action";
 import type { Result } from "@/lib/helpers/result";
-import { entryPriceSchema, type EntryPriceValues } from "@/lib/validations/memberships";
+import {
+  entryPriceSchema,
+  type EntryPriceValues,
+} from "@/lib/validations/memberships";
 import { ENTRY_PRICE_SETTING_KEY } from "@/lib/config/pricing";
 import { cms } from "@/lib/services";
 
@@ -17,7 +20,11 @@ const setEntryPriceImpl = defineAction({
   schema: entryPriceSchema,
   authorize: assertAdmin,
   handler: async ({ priceCzk }, admin) => {
-    await cms.setSetting(ENTRY_PRICE_SETTING_KEY, Math.round(priceCzk * 100), admin.id);
+    await cms.setSetting(
+      ENTRY_PRICE_SETTING_KEY,
+      Math.round(priceCzk * 100),
+      admin.id,
+    );
     revalidatePath("/admin/memberships");
   },
 });

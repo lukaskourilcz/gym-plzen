@@ -30,12 +30,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "invalid_signature" }, { status: 403 });
   }
 
+  let body: WhatsAppWebhookBody;
   try {
-    const body = JSON.parse(rawBody) as WhatsAppWebhookBody;
+    body = JSON.parse(rawBody) as WhatsAppWebhookBody;
+  } catch (e) {
+    logger.warn("Invalid WhatsApp webhook JSON", { error: String(e) });
+    return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+  }
+
+  try {
     await handleWhatsAppEvent(body);
   } catch (e) {
     logger.error(e, { where: "whatsapp.webhook" });
-    // Ack anyway so Meta doesn't hammer retries on a parse error.
+    return NextResponse.json({ error: "handler_failed" }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });
@@ -51,15 +58,16 @@ async function handleWhatsAppEvent(body: WhatsAppWebhookBody): Promise<void> {
         await messages.updateStatusByProviderId({
           providerMessageId: status.id,
           status: mapStatus(status.status),
-          at: status.timestamp ? new Date(Number(status.timestamp) * 1000) : undefined,
+          at: status.timestamp
+            ? new Date(Number(status.timestamp) * 1000)
+            : undefined,
         });
       }
 
-      // Inbound support messages — logged for now; the shared inbox UI is a
+      // Inbound support messages : logged for now; the shared inbox UI is a
       // later phase. This is where an auto-reply / routing would hook in.
       for (const message of value.messages ?? []) {
         logger.info("Inbound WhatsApp message", {
-          from: message.from,
           type: message.type,
         });
       }

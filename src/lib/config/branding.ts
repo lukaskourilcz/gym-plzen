@@ -5,10 +5,13 @@
 
 export const LOGO_URL_KEY = "branding.logo_url";
 export const TERMS_URL_KEY = "branding.terms_pdf_url";
+export const HERO_IMAGE_URL_KEY = "branding.hero_image_url";
+export const HERO_IMAGE_ALT_KEY = "branding.hero_image_alt";
 
 /** SMS access-code template. Placeholders: {code}, {time}. */
 export const SMS_ACCESS_TEMPLATE_KEY = "messages.sms_access_code";
-export const DEFAULT_SMS_ACCESS_TEMPLATE = "Vstupni kod: {code} ({time}). Gym Plzen";
+export const DEFAULT_SMS_ACCESS_TEMPLATE =
+  "Vstupni kod: {code} ({time}). Gym Plzen";
 
 /** Substitute {code}/{time} placeholders in a message template. */
 export function renderTemplate(

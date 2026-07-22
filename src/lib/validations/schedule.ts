@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { dateTimeStringSchema, hhmmSchema, optionalText, uuidSchema } from "./common";
+import {
+  dateTimeStringSchema,
+  hhmmSchema,
+  optionalText,
+  uuidSchema,
+} from "./common";
 
 /**
  * Opening hours for one weekday. Times are validated as "HH:mm" strings; the

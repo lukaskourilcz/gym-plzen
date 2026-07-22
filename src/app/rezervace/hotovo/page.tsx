@@ -1,42 +1,76 @@
-import { CheckCircle2 } from "lucide-react";
+import type { Metadata } from "next";
+import { CheckCircle2, Clock3, TriangleAlert } from "lucide-react";
+import { requireUser } from "@/lib/auth/guards";
+import { booking } from "@/lib/services";
 import { loadSiteContent } from "@/lib/content/site";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/notice";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 
-export const metadata = { title: "Rezervace potvrzena" };
+export const metadata: Metadata = {
+  title: "Stav rezervace",
+  robots: { index: false, follow: false },
+};
+export const dynamic = "force-dynamic";
 
-/**
- * Post-checkout confirmation. Reached from Stripe success_url or a free loyalty
- * booking. The actual confirmation + code delivery happen via the Stripe webhook
- * and fulfillment pipeline; this page just reassures the member.
- */
 export default async function BookingDonePage({
   searchParams,
 }: {
-  searchParams: Promise<{ free?: string }>;
+  searchParams: Promise<{ session_id?: string; reservation_id?: string }>;
 }) {
-  const { free } = await searchParams;
-  const content = await loadSiteContent();
+  const user = await requireUser("/rezervace/hotovo");
+  const params = await searchParams;
+  const [content, confirmation] = await Promise.all([
+    loadSiteContent(),
+    booking.getBookingConfirmation({
+      userId: user.id,
+      stripeSessionId: params.session_id,
+      reservationId: params.reservation_id,
+    }),
+  ]);
+
+  const state = {
+    confirmed: {
+      icon: CheckCircle2,
+      title: "Rezervace je potvrzená",
+      body: "Termín najdete ve svém účtu. Pokyny ke vstupu obdržíte před návštěvou.",
+    },
+    processing: {
+      icon: Clock3,
+      title: "Platbu ještě ověřujeme",
+      body: "Potvrzení může krátce trvat. Stav zkontrolujte ve svém účtu a platbu neopakujte.",
+    },
+    invalid: {
+      icon: TriangleAlert,
+      title: "Potvrzení se nepodařilo ověřit",
+      body: "Adresa stránky sama o sobě nepotvrzuje platbu. Zkontrolujte své rezervace v účtu.",
+    },
+  }[confirmation.state];
+  const Icon = state.icon;
 
   return (
     <>
-      <SiteHeader brand={content.get("brand.name")} logoUrl={content.logoUrl} />
+      <SiteHeader
+        brand={content.get("brand.name")}
+        accountHref="/account"
+        accountLabel="Můj účet"
+      />
       <main>
         <Section>
           <Container className="max-w-xl text-center">
-            <CheckCircle2 className="mx-auto size-14 text-primary" />
-            <h1 className="mt-4 text-3xl font-bold tracking-tight">
-              {free ? "Rezervace potvrzena" : "Děkujeme za platbu"}
+            <Icon aria-hidden="true" className="mx-auto size-14 text-primary" />
+            <h1 className="mt-5 text-3xl font-black tracking-tight">
+              {state.title}
             </h1>
-            <p className="mt-3 text-muted-foreground">
-              {free
-                ? "Váš vstup zdarma je zarezervovaný."
-                : "Vaše platba byla přijata a rezervace potvrzena."}{" "}
-              Vstupní kód obdržíte před návštěvou. Platit bude pouze v čase vaší rezervace.
-            </p>
-            <div className="mt-8 flex justify-center gap-3">
+            <p className="mt-4 leading-7 text-muted-foreground">{state.body}</p>
+            {confirmation.state === "processing" ? (
+              <Notice className="mt-7 text-left" role="status">
+                Stripe odešle konečný stav zabezpečeným webhookem.
+              </Notice>
+            ) : null}
+            <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Button href="/account">Můj účet</Button>
               <Button href="/rezervace" variant="outline">
                 Další rezervace
@@ -45,7 +79,10 @@ export default async function BookingDonePage({
           </Container>
         </Section>
       </main>
-      <SiteFooter brand={content.get("brand.name")} termsUrl={content.termsUrl} />
+      <SiteFooter
+        brand={content.get("brand.name")}
+        termsUrl={content.termsUrl}
+      />
     </>
   );
 }

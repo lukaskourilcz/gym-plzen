@@ -1,9 +1,9 @@
-import { and, eq, lte, or } from "drizzle-orm";
+import { and, eq, isNull, lte, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { reservationPipeline } from "@/lib/db/schema";
 import type { ReservationPipeline } from "@/lib/db/types";
 import { addMinutes } from "@/lib/helpers/datetime";
-import { logger } from "@/lib/helpers/logger";
+import { logger, redactForLogs } from "@/lib/helpers/logger";
 import { raiseAlert, resolveAlert } from "./alerts";
 
 /**
@@ -21,7 +21,9 @@ const MAX_ATTEMPTS = 5;
 export async function initPipeline(reservationId: string): Promise<void> {
   await db
     .insert(reservationPipeline)
-    .values(STEPS.map((step) => ({ reservationId, step })))
+    .values(
+      STEPS.map((step) => ({ reservationId, step, nextRetryAt: new Date() })),
+    )
     .onConflictDoNothing();
 }
 
@@ -32,7 +34,12 @@ export async function markStepSucceeded(
 ): Promise<void> {
   await db
     .update(reservationPipeline)
-    .set({ status: "succeeded", completedAt: new Date(), updatedAt: new Date() })
+    .set({
+      status: "succeeded",
+      completedAt: new Date(),
+      nextRetryAt: null,
+      updatedAt: new Date(),
+    })
     .where(
       and(
         eq(reservationPipeline.reservationId, reservationId),
@@ -51,6 +58,7 @@ export async function markStepFailed(
   step: PipelineStep,
   error: string,
 ): Promise<void> {
+  error = redactForLogs(error);
   const [row] = await db
     .select()
     .from(reservationPipeline)
@@ -71,7 +79,9 @@ export async function markStepFailed(
       status: exhausted ? "failed" : "retrying",
       attempts,
       lastError: error,
-      nextRetryAt: exhausted ? null : addMinutes(new Date(), retryDelayMinutes(attempts)),
+      nextRetryAt: exhausted
+        ? null
+        : addMinutes(new Date(), retryDelayMinutes(attempts)),
       updatedAt: new Date(),
     })
     .where(
@@ -105,14 +115,19 @@ export async function dueForRetry(limit = 50): Promise<ReservationPipeline[]> {
           eq(reservationPipeline.status, "retrying"),
           eq(reservationPipeline.status, "pending"),
         ),
-        lte(reservationPipeline.nextRetryAt, new Date()),
+        or(
+          isNull(reservationPipeline.nextRetryAt),
+          lte(reservationPipeline.nextRetryAt, new Date()),
+        ),
       ),
     )
     .limit(limit);
 }
 
 /** Full pipeline state for one reservation (admin drill-down). */
-export async function getPipeline(reservationId: string): Promise<ReservationPipeline[]> {
+export async function getPipeline(
+  reservationId: string,
+): Promise<ReservationPipeline[]> {
   return db
     .select()
     .from(reservationPipeline)

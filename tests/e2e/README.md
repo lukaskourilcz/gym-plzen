@@ -1,35 +1,67 @@
-# End-to-end tests (Playwright)
+# End-to-end testy
 
-Covers the public site, auth, and every admin page + form.
+Playwright pokrývá veřejný web, měsíční rezervace, lokální demo účty, Supabase
+Auth a administrační formuláře. Testy mají tři odlišné režimy.
 
-These tests need a **running app backed by a real Postgres** (auth and the
-forms write to the database). They are not part of `next build` and do not run
-on Vercel.
+## 1. Veřejný produkční smoke test
 
-## Run locally
+Produkční build bez databáze musí zobrazit transparentní nedostupný stav a nikdy
+fiktivní dostupnost.
 
-1. Start Postgres and point the app at it (`DATABASE_URL` / `DIRECT_URL`).
-2. Apply schema + seed:
-   ```bash
-   npm run db:migrate && npm run db:seed
-   ```
-3. Create the test accounts the specs expect and promote the admin:
-   ```bash
-   # with the app running:
-   curl -X POST "$APP/api/auth/sign-up/email" -H 'content-type: application/json' \
-     -d '{"email":"admin@test.cz","password":"password123","name":"Admin Test"}'
-   curl -X POST "$APP/api/auth/sign-up/email" -H 'content-type: application/json' \
-     -d '{"email":"member@test.cz","password":"password123","name":"Member Test"}'
-   npm run set-admin -- admin@test.cz
-   ```
-4. Build + start the app, then run the suite against it:
-   ```bash
-   npm run build && npm start &
-   E2E_PORT=3000 npm run test:e2e
-   ```
+```bash
+npm run build
+PORT=3131 npm start
+E2E_PORT=3131 npx playwright test tests/e2e/public.spec.ts
+```
 
-`global-setup.ts` signs the two accounts in and saves their storage states under
-`tests/e2e/.auth/` (git-ignored) so admin/member specs start authenticated.
+## 2. Lokální demo bez Supabase
 
-In environments with a pre-provisioned Chromium, set `PW_CHROMIUM_PATH` to its
-binary so Playwright uses it instead of downloading one.
+V `.env.local` zapni `DEMO_AUTH_ENABLED`, bezpečný `DEMO_AUTH_SECRET` a volitelně
+`BOOKING_PREVIEW_FIXTURE`. Potom spusť dev server a jen demo specifikace:
+
+```bash
+npm run dev
+E2E_PORT=3000 npx playwright test \
+  tests/e2e/admin-demo.spec.ts \
+  tests/e2e/customer-demo.spec.ts \
+  tests/e2e/public.spec.ts
+```
+
+Demo auth je v produkci vždy vypnutý, proto demo specifikace nepatří proti
+`npm start` s `NODE_ENV=production`.
+
+## 3. Plná Supabase Auth a admin suite
+
+`global-setup.ts` smí založit testovací účty a zapisovat do vzdáleného projektu
+jen při explicitním splnění všech podmínek:
+
+```dotenv
+E2E_ALLOW_REMOTE_MUTATIONS="true"
+E2E_SUPABASE_PROJECT_REF="potvrzeny-testovaci-ref"
+NEXT_PUBLIC_SUPABASE_URL="https://potvrzeny-testovaci-ref.supabase.co"
+SUPABASE_SECRET_KEY="serverovy-testovaci-klic"
+```
+
+Project ref musí být obsažený v URL. Bez tohoto souhlasu se auth/admin testy
+přeskočí a žádný vzdálený účet se nevytvoří.
+
+```bash
+PORT=3131 npm start
+E2E_PORT=3131 npm run test:e2e
+```
+
+Používej samostatný testovací projekt. Nikdy nepovoluj mutační E2E proti
+produkční databázi. Auth storage states jsou v `tests/e2e/.auth` a jsou
+ignorované Gitem.
+
+## Chromium
+
+Pokud prostředí používá vlastní Chromium, nastav `PW_CHROMIUM_PATH`. Jinak použij
+`npx playwright install chromium`.
+
+## Stav checkpointu 2026-07-22
+
+- Veřejný date-first výběr a přesný rozsah času byly ověřené v lokálním preview.
+- Celý produkční build na Node 22 prošel.
+- Kompletní E2E proti správnému Supabase projektu zatím nebylo možné spustit.
+- Další kroky a známé limity jsou v kořenovém `SESSION_HANDOFF.md`.

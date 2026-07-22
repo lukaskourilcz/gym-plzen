@@ -1,4 +1,9 @@
-import { createHash, createHmac, randomInt, timingSafeEqual } from "node:crypto";
+import {
+  createHash,
+  createHmac,
+  randomInt,
+  timingSafeEqual,
+} from "node:crypto";
 
 /**
  * Cryptographic helpers used across access codes and webhook verification.

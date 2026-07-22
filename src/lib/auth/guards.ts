@@ -53,7 +53,8 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const fullName = (user.user_metadata?.full_name as string | undefined) ?? null;
+  const fullName =
+    (user.user_metadata?.full_name as string | undefined) ?? null;
   const profile = await ensureProfileForUser({
     id: user.id,
     email: user.email ?? null,
@@ -74,7 +75,9 @@ export async function getSession(): Promise<{ user: SessionUser } | null> {
   return user ? { user } : null;
 }
 
-export function isAdmin(user: Pick<SessionUser, "role"> | null | undefined): boolean {
+export function isAdmin(
+  user: Pick<SessionUser, "role"> | null | undefined,
+): boolean {
   return user?.role === ADMIN_ROLE;
 }
 

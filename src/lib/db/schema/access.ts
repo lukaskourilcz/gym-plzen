@@ -1,10 +1,4 @@
-import {
-  index,
-  pgTable,
-  text,
-  timestamp,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { profiles } from "./members";
 import { reservation } from "./reservations";
 import { accessCodeStatus } from "./enums";
@@ -46,7 +40,7 @@ export const accessCode = pgTable(
 );
 
 /**
- * Entry log — synced from the Nuki lock activity feed. Records who actually
+ * Entry log : synced from the Nuki lock activity feed. Records who actually
  * unlocked and when, independent of our own code bookkeeping.
  */
 export const entryLog = pgTable(
@@ -57,7 +51,9 @@ export const entryLog = pgTable(
     reservationId: uuid("reservation_id").references(() => reservation.id, {
       onDelete: "set null",
     }),
-    userId: uuid("user_id").references(() => profiles.id, { onDelete: "set null" }),
+    userId: uuid("user_id").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
     accessCodeId: uuid("access_code_id").references(() => accessCode.id, {
       onDelete: "set null",
     }),

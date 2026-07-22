@@ -5,6 +5,8 @@
  */
 
 export const MINUTE_MS = 60_000;
+export const PRAGUE_TIME_ZONE = "Europe/Prague";
+export const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Two [start, end) intervals overlap iff aStart < bEnd && bStart < aEnd. */
 export function intervalsOverlap(
@@ -55,6 +57,127 @@ export function dayOfWeek(date: Date, timeZone = "Europe/Prague"): number {
     Sat: 6,
   };
   return map[wd] ?? 0;
+}
+
+/** Calendar date (`YYYY-MM-DD`) as observed in an IANA timezone. */
+export function dateKeyInTimeZone(
+  date: Date,
+  timeZone = PRAGUE_TIME_ZONE,
+): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+/** Strictly validate that a date key represents a real Gregorian date. */
+export function isDateKey(value: string): boolean {
+  if (!DATE_KEY_PATTERN.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const check = new Date(Date.UTC(year!, month! - 1, day!));
+  return (
+    check.getUTCFullYear() === year &&
+    check.getUTCMonth() === month! - 1 &&
+    check.getUTCDate() === day
+  );
+}
+
+/** Date-key arithmetic without depending on the machine timezone. */
+export function addDaysToDateKey(dateKey: string, days: number): string {
+  if (!isDateKey(dateKey)) throw new Error("Invalid date key.");
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const value = new Date(Date.UTC(year!, month! - 1, day! + days, 12));
+  return value.toISOString().slice(0, 10);
+}
+
+/** Difference in whole calendar days between date keys. */
+export function daysBetweenDateKeys(start: string, end: string): number {
+  if (!isDateKey(start) || !isDateKey(end))
+    throw new Error("Invalid date key.");
+  const toUtc = (key: string) => {
+    const [year, month, day] = key.split("-").map(Number);
+    return Date.UTC(year!, month! - 1, day!);
+  };
+  return Math.round((toUtc(end) - toUtc(start)) / (24 * 60 * MINUTE_MS));
+}
+
+/** Convert a Prague wall-clock date and minute-of-day to an absolute instant. */
+export function localDateTimeToDate(
+  dateKey: string,
+  minute: number,
+  timeZone = PRAGUE_TIME_ZONE,
+): Date {
+  if (
+    !isDateKey(dateKey) ||
+    !Number.isInteger(minute) ||
+    minute < 0 ||
+    minute >= 1440
+  ) {
+    throw new Error("Invalid local date or time.");
+  }
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const hour = Math.floor(minute / 60);
+  const minutePart = minute % 60;
+  const wantedUtc = Date.UTC(year!, month! - 1, day!, hour, minutePart);
+  let instant = new Date(wantedUtc);
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const rendered = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      hourCycle: "h23",
+    }).formatToParts(instant);
+    const part = (type: Intl.DateTimeFormatPartTypes) =>
+      Number(rendered.find((item) => item.type === type)?.value ?? 0);
+    const renderedUtc = Date.UTC(
+      part("year"),
+      part("month") - 1,
+      part("day"),
+      part("hour") % 24,
+      part("minute"),
+    );
+    const delta = wantedUtc - renderedUtc;
+    if (delta === 0) return instant;
+    instant = new Date(instant.getTime() + delta);
+  }
+
+  if (
+    dateKeyInTimeZone(instant, timeZone) !== dateKey ||
+    minuteOfDay(instant, timeZone) !== minute
+  ) {
+    throw new Error("Local time does not exist in the selected timezone.");
+  }
+  return instant;
+}
+
+export interface MonthGridDay {
+  dateKey: string;
+  inMonth: boolean;
+}
+
+/** Monday-first six-week grid for an ISO month (`YYYY-MM`). */
+export function monthGrid(monthKey: string): MonthGridDay[] {
+  if (!/^\d{4}-\d{2}$/.test(monthKey) || !isDateKey(`${monthKey}-01`)) {
+    throw new Error("Invalid month key.");
+  }
+  const [year, month] = monthKey.split("-").map(Number);
+  const weekday = new Date(Date.UTC(year!, month! - 1, 1)).getUTCDay();
+  const mondayOffset = weekday === 0 ? -6 : 1 - weekday;
+  const gridStart = addDaysToDateKey(`${monthKey}-01`, mondayOffset);
+  return Array.from({ length: 42 }, (_, index) => {
+    const dateKey = addDaysToDateKey(gridStart, index);
+    return { dateKey, inMonth: dateKey.startsWith(monthKey) };
+  });
 }
 
 /** True when `date` is strictly in the future relative to now. */

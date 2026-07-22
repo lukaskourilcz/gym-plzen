@@ -3,7 +3,7 @@
  *
  * The gym is open every day 06:00–22:00 with 1-hour training slots aligned to
  * the top of the hour (13:00–14:00, 14:00–15:00, …). Only one person trains at
- * a time, but a 15-minute shower grace after a slot is fine — one member may
+ * a time, but a 15-minute shower grace after a slot is fine : one member may
  * shower while the next trains. Crucially that grace does NOT block the next
  * slot: overlap is checked on the training hour only, so back-to-back bookings
  * are allowed and two bookings can never land in the same hour.

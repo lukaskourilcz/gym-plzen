@@ -1,120 +1,108 @@
+import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import {
-  CalendarClock,
-  CreditCard,
-  KeyRound,
-  ShieldCheck,
-  MapPin,
-  Mail,
-  Phone,
-  Lock,
   ArrowRight,
+  CalendarDays,
   Check,
-  Dumbbell,
-  DoorOpen,
-  Baby,
-  Refrigerator,
-  Wifi,
+  CreditCard,
   ImageIcon,
+  KeyRound,
+  Mail,
+  MapPin,
+  Phone,
+  RotateCcw,
+  ShieldCheck,
 } from "lucide-react";
 import { loadSiteContent } from "@/lib/content/site";
-import { formatMoney, formatTime } from "@/lib/helpers/format";
-import { addMinutes } from "@/lib/helpers/datetime";
-import { getWeekSlots, mondayOf } from "@/lib/services/slots";
+import { formatMoney, formatTimeRange } from "@/lib/helpers/format";
+import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/helpers/datetime";
+import { getSlotsForRange } from "@/lib/services/slots";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Notice } from "@/components/ui/notice";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
-import {
-  HeroAvailability,
-  type HeroAvailabilityDay,
-} from "@/components/site/hero-availability";
+import { LotusMark } from "@/components/site/brand";
 
-// Revalidate so CMS content edits appear without a redeploy.
+const ADDRESS = "Křížkova 424/23, 301 00 Plzeň 1";
+const PUBLISHED_GYM_PHOTO =
+  "https://static.wixstatic.com/media/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg/v1/fill/w_1600,h_900,al_c,q_90,enc_avif,quality_auto/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg";
+
+export const metadata: Metadata = {
+  title: "Soukromý gym v Plzni",
+  description:
+    "NAMASTÉ Private Gym je soukromý prostor v Plzni. Vyberte termín online, zaplaťte bezpečně a obdržíte pokyny ke vstupu.",
+  alternates: { canonical: "/" },
+};
 export const revalidate = 60;
 
 export default async function HomePage() {
   const now = new Date();
-  const monday = mondayOf(now);
-  const [content, currentWeek, nextWeek] = await Promise.all([
+  const today = dateKeyInTimeZone(now);
+  const [content, availability] = await Promise.all([
     loadSiteContent(),
-    getWeekSlots(monday, now),
-    getWeekSlots(addMinutes(monday, 7 * 24 * 60), now),
+    getSlotsForRange(today, addDaysToDateKey(today, 7), now),
   ]);
   const t = content.get;
   const brand = t("brand.name");
   const price = formatMoney(content.entryPriceCents);
-  const email = t("contact.email");
-  const phone = t("contact.phone");
-  const configuredAddress = t("contact.address");
-  const address =
-    configuredAddress === "Plzeň"
-      ? "Křížkova 424/23, 301 00 Plzeň 1"
-      : configuredAddress;
+  const email = t("contact.email").trim();
+  const phone = t("contact.phone").trim();
+  const address = t("contact.address").trim() || ADDRESS;
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   const mapsEmbedUrl = `https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`;
-  const combinedDays = [...currentWeek.days, ...nextWeek.days];
-  const todayIndex = Math.max(
-    0,
-    combinedDays.findIndex(
-      (day) => day.date.toDateString() === now.toDateString(),
-    ),
-  );
-  const previewDays: HeroAvailabilityDay[] = combinedDays
-    .slice(todayIndex, todayIndex + 4)
-    .map((day, index) => {
-      const firstAvailable = day.slots.findIndex((slot) => slot.available);
-      const start =
-        index === 0 && firstAvailable > 0
-          ? Math.min(firstAvailable, Math.max(0, day.slots.length - 8))
-          : 0;
-      return {
-        label:
-          index === 0
-            ? "Dnes"
-            : index === 1
-              ? "Zítra"
-              : new Intl.DateTimeFormat("cs-CZ", {
-                  weekday: "short",
-                  day: "numeric",
-                }).format(day.date),
-        dateLabel: day.date.toISOString(),
-        slots: day.slots
-          .slice(start, start + 8)
-          .map((slot) => ({
-            label: formatTime(slot.start),
-            available: slot.available,
-          })),
-      };
-    });
+  const heroImageUrl = content.heroImageUrl || PUBLISHED_GYM_PHOTO;
+  const heroImageAlt =
+    content.heroImageAlt || "Prostor NAMASTÉ Private Gym v Plzni";
+  const nextSlots = availability.days
+    .flatMap((day) =>
+      day.slots
+        .filter((slot) => slot.available)
+        .slice(0, 2)
+        .map((slot) => ({ ...slot, dateKey: day.dateKey })),
+    )
+    .slice(0, 4);
+  const businessJson = {
+    "@context": "https://schema.org",
+    "@type": "HealthClub",
+    name: brand,
+    url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "Křížkova 424/23",
+      postalCode: "301 00",
+      addressLocality: "Plzeň",
+      addressCountry: "CZ",
+    },
+  };
 
   return (
     <>
-      <SiteHeader brand={brand} logoUrl={content.logoUrl} />
+      <SiteHeader brand={brand} />
       <main>
-        {/* Hero */}
-        <section className="relative overflow-hidden bg-ink text-ink-foreground">
-          <div className="pointer-events-none absolute inset-0 opacity-40 [background-image:linear-gradient(oklch(0.97_0.005_260/.035)_1px,transparent_1px),linear-gradient(90deg,oklch(0.97_0.005_260/.035)_1px,transparent_1px)] [background-size:56px_56px]" />
-          <div className="pointer-events-none absolute inset-0 opacity-25 [background:radial-gradient(50%_60%_at_75%_10%,var(--color-primary)_0%,transparent_60%)]" />
-          <Container className="relative grid min-h-[640px] gap-14 py-20 sm:py-24 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
-            <div>
-              <div className="mb-5 text-xs font-extrabold uppercase tracking-[.16em] text-primary">
-                NAMASTÉ Private Gym
-              </div>
-              <h1 className="text-5xl font-black leading-[.98] tracking-[-0.04em] sm:text-6xl lg:text-[78px] xl:text-[86px]">
+        <section className="bg-ink text-ink-foreground">
+          <Container className="grid min-h-[680px] gap-12 py-14 lg:grid-cols-[.92fr_1.08fr] lg:items-center lg:py-20">
+            <div className="relative z-10">
+              <p className="text-xs font-extrabold uppercase tracking-[.18em] text-primary">
+                Soukromý gym · Plzeň
+              </p>
+              <h1 className="mt-5 max-w-2xl text-5xl font-black leading-[.98] tracking-[-.05em] sm:text-6xl lg:text-7xl">
                 Celý gym.
                 <br />
-                Jen <em className="text-primary">pro vás</em>.
+                Jen pro vás.
               </h1>
-              <p className="mt-7 max-w-[520px] text-lg leading-relaxed text-ink-foreground/65 sm:text-xl">
-                Pronajměte si celý prostor pro sebe nebo vezměte přátele. Žádné
-                čekání na stroje, žádné cizí pohledy. Jen soustředění na váš
-                trénink.
+              <p className="mt-7 max-w-xl text-lg leading-8 text-ink-foreground/68">
+                Rezervujte si soukromý prostor na konkrétní čas. Online
+                zaplatíte a po potvrzení dostanete pokyny ke vstupu.
+              </p>
+              <p className="mt-5 flex items-center gap-2 text-sm font-bold text-ink-foreground/85">
+                <MapPin aria-hidden="true" className="size-4 text-primary" />
+                {address}
               </p>
               <div className="mt-9 flex flex-wrap gap-3">
                 <Button href="/rezervace" size="lg">
-                  Rezervovat trénink <ArrowRight />
+                  Vybrat termín <ArrowRight aria-hidden="true" />
                 </Button>
                 <Button
                   href="/#jak-to-funguje"
@@ -122,249 +110,294 @@ export default async function HomePage() {
                   variant="outline"
                   className="border-white/25 text-white hover:bg-white/10 hover:text-white"
                 >
-                  Jak to funguje
+                  Jak rezervace funguje
                 </Button>
               </div>
             </div>
 
-            <div className="lg:w-full lg:max-w-[520px] lg:justify-self-end">
-              <HeroAvailability
-                days={previewDays}
-                price={price}
-                freeEntryEvery={content.freeEntryEvery}
-                live={currentWeek.source === "live"}
-              />
+            <div className="relative">
+              <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-white/10 bg-ink-muted">
+                {heroImageUrl ? (
+                  <Image
+                    src={heroImageUrl}
+                    alt={heroImageAlt}
+                    fill
+                    priority
+                    sizes="(max-width: 1023px) 100vw, 54vw"
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="grid h-full place-items-center text-center text-white/60">
+                    <div>
+                      <LotusMark className="mx-auto size-20 text-primary" />
+                      <p className="mt-4 text-sm">
+                        Fotografie prostoru bude doplněna v administraci.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+              </div>
+
+              <div className="relative -mt-14 ml-4 border border-border bg-background p-5 text-foreground shadow-xl sm:ml-auto sm:mr-5 sm:max-w-md">
+                <div className="flex items-center justify-between gap-4 border-b border-border pb-3">
+                  <strong className="text-sm">Nejbližší termíny</strong>
+                  {availability.source === "live" ? (
+                    <span className="text-xs font-bold text-success">
+                      Aktuální dostupnost
+                    </span>
+                  ) : availability.source === "preview" ? (
+                    <span className="text-xs font-bold text-warning">
+                      Ilustrační náhled
+                    </span>
+                  ) : null}
+                </div>
+                {availability.source === "unavailable" ? (
+                  <Notice tone="error" className="mt-4" role="status">
+                    Dostupnost teď nelze načíst. Celý kalendář můžete zkusit
+                    později.
+                  </Notice>
+                ) : nextSlots.length > 0 ? (
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    {nextSlots.map((slot) => (
+                      <Link
+                        key={slot.start.toISOString()}
+                        href={`/rezervace?date=${slot.dateKey}`}
+                        className="min-h-14 rounded-sm border border-primary/35 bg-primary/10 px-3 py-2 text-sm font-extrabold transition-colors hover:border-primary hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <span className="block text-[11px] font-bold uppercase text-muted-foreground">
+                          {new Intl.DateTimeFormat("cs-CZ", {
+                            weekday: "short",
+                            day: "numeric",
+                            month: "numeric",
+                            timeZone: "UTC",
+                          }).format(new Date(`${slot.dateKey}T12:00:00Z`))}
+                        </span>
+                        {formatTimeRange(slot.start, slot.end)}
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-muted-foreground">
+                    V příštích dnech není volný termín.
+                  </p>
+                )}
+                <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-4">
+                  <strong className="text-lg">{price}</strong>
+                  <Link
+                    href="/rezervace"
+                    className="text-sm font-extrabold text-primary hover:underline"
+                  >
+                    Otevřít kalendář
+                  </Link>
+                </div>
+              </div>
             </div>
           </Container>
-          <Container className="relative grid grid-cols-2 border-t border-white/10 sm:grid-cols-4">
+        </section>
+
+        <div className="border-b border-border bg-background">
+          <Container className="grid sm:grid-cols-3">
             {[
-              ["06:00–22:00", "otevřeno každý den"],
-              ["Privátní prostor", "pro vás i vaše přátele"],
-              [price, "za rezervaci, bez závazku"],
-              ["Dětský koutek", "bezpečné zázemí pro děti"],
+              ["Soukromí", "prostor je po dobu rezervace váš"],
+              [price, "cena jednorázového vstupu"],
+              [
+                `${content.freeEntryEvery}. vstup`,
+                "zdarma v rámci věrnostního programu",
+              ],
             ].map(([value, label]) => (
-              <div key={label} className="border-l border-white/10 px-6 py-6">
-                <div className="text-lg font-extrabold sm:text-xl">{value}</div>
-                <div className="mt-1 text-xs text-white/50 sm:text-sm">
+              <div
+                key={label}
+                className="border-b border-border px-1 py-6 last:border-0 sm:border-b-0 sm:border-l sm:px-6 sm:first:border-l-0"
+              >
+                <div className="text-xl font-black">{value}</div>
+                <div className="mt-1 text-sm text-muted-foreground">
                   {label}
                 </div>
               </div>
             ))}
           </Container>
-        </section>
+        </div>
 
-        {/* How it works */}
         <Section id="jak-to-funguje">
           <Container>
-            <SectionHeading eyebrow="Postup" title="Jak probíhá rezervace" />
-            <div className="mt-12 grid gap-6 md:grid-cols-3">
+            <SectionHeading
+              eyebrow="Tři kroky"
+              title="Od výběru času ke vstupu"
+            />
+            <ol className="mt-12 grid border-y border-border md:grid-cols-3">
               {[
                 {
-                  icon: CalendarClock,
+                  icon: CalendarDays,
                   title: t("home.about.step1.title"),
                   body: t("home.about.step1.body"),
                 },
                 {
                   icon: CreditCard,
                   title: t("home.about.step2.title"),
-                  body: t("home.about.step2.body"),
+                  body: `${t("home.about.step2.body")} Podporované jsou karty, Apple Pay a Google Pay.`,
                 },
                 {
                   icon: KeyRound,
                   title: t("home.about.step3.title"),
                   body: t("home.about.step3.body"),
                 },
-              ].map((step, i) => (
-                <Card key={step.title} className="relative">
-                  <CardContent className="p-6">
-                    <div className="mb-5 grid size-12 place-items-center rounded-xl bg-ink text-primary">
-                      <step.icon className="size-5" />
-                    </div>
-                    <div className="absolute right-5 top-3 text-6xl font-black text-primary/20">
-                      {i + 1}
-                    </div>
-                    <h3 className="mt-1 text-lg font-semibold">{step.title}</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {step.body}
-                    </p>
-                  </CardContent>
-                </Card>
+              ].map((step, index) => (
+                <li
+                  key={step.title}
+                  className="relative border-b border-border py-8 last:border-0 md:border-b-0 md:border-l md:px-8 md:first:border-l-0"
+                >
+                  <div className="flex items-center justify-between">
+                    <step.icon
+                      aria-hidden="true"
+                      className="size-7 text-primary"
+                    />
+                    <span className="text-sm font-black text-muted-foreground">
+                      0{index + 1}
+                    </span>
+                  </div>
+                  <h3 className="mt-8 text-xl font-extrabold">{step.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                    {step.body}
+                  </p>
+                </li>
               ))}
-            </div>
+            </ol>
           </Container>
         </Section>
 
-        {/* Pricing */}
-        <Section id="cenik" className="bg-secondary/50">
-          <Container className="grid gap-10 lg:grid-cols-2 lg:items-center">
+        <Section id="cenik" className="bg-secondary/55">
+          <Container className="grid gap-10 lg:grid-cols-[1fr_420px] lg:items-center">
             <div>
               <SectionHeading
                 eyebrow="Ceník"
-                title="Cena jednorázového vstupu"
+                title="Jednorázový vstup bez předplatného"
                 align="left"
               />
-              <p className="mt-4 max-w-md text-muted-foreground">
+              <p className="mt-5 max-w-xl leading-7 text-muted-foreground">
                 {t("home.pricing.note")}
               </p>
-              <ul className="mt-6 space-y-3 text-sm">
+              <ul className="mt-7 grid gap-3 text-sm sm:grid-cols-2">
                 {[
-                  "Soukromé využití gymu během rezervace",
-                  "Platba kartou, Apple Pay i Google Pay",
-                  "Vstupní údaje obdržíte před návštěvou",
+                  "Soukromé využití prostoru během rezervace",
+                  "Platba kartou, Apple Pay nebo Google Pay",
+                  "Pokyny ke vstupu po potvrzení rezervace",
                   `Každý ${content.freeEntryEvery}. vstup zdarma`,
-                ].map((li) => (
-                  <li key={li} className="flex items-start gap-2">
-                    <span className="grid size-6 shrink-0 place-items-center rounded-md bg-primary">
-                      <Check className="size-3.5" />
-                    </span>
-                    {li}
+                ].map((item) => (
+                  <li key={item} className="flex gap-3">
+                    <Check
+                      aria-hidden="true"
+                      className="mt-0.5 size-5 shrink-0 text-primary"
+                    />
+                    <span>{item}</span>
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="relative overflow-hidden rounded-[20px] bg-ink p-9 text-center text-white lg:justify-self-end lg:w-[420px]">
-              <div className="absolute inset-0 opacity-20 [background:radial-gradient(70%_50%_at_50%_0%,var(--color-primary),transparent_65%)]" />
-              <div className="relative">
-                <div className="text-xs font-bold uppercase tracking-[.14em] text-white/55">
-                  Vstupné
-                </div>
-                <div className="mt-3 text-6xl font-black tracking-[-.04em] text-primary">
-                  {price}
-                </div>
-                <p className="mt-2 text-sm text-white/65">
-                  za hodinovou rezervaci celého prostoru
-                </p>
-                <Button href="/rezervace" size="lg" className="mt-7 w-full">
-                  Rezervovat trénink
-                </Button>
+            <div className="bg-ink p-8 text-white shadow-lg">
+              <p className="text-xs font-bold uppercase tracking-[.14em] text-white/55">
+                Jednorázový vstup
+              </p>
+              <div className="mt-3 text-6xl font-black tracking-[-.05em] text-primary">
+                {price}
               </div>
+              <p className="mt-3 text-sm leading-6 text-white/60">
+                Přesnou délku uvidíte u každého termínu v kalendáři.
+              </p>
+              <Button href="/rezervace" size="lg" className="mt-7 w-full">
+                Vybrat termín
+              </Button>
             </div>
           </Container>
         </Section>
 
         <Section id="prostor">
           <Container>
-            <div className="grid gap-6 lg:grid-cols-[1.1fr_.9fr] lg:items-end">
+            <div className="grid gap-6 lg:grid-cols-2 lg:items-end">
               <SectionHeading
                 eyebrow="Prostor"
                 title="Podívejte se dovnitř"
                 align="left"
               />
-              <p className="max-w-xl text-base leading-relaxed text-muted-foreground lg:justify-self-end">
-                Soukromé fitness se silovou i kardio zónou, šatnou a chytrým
-                vstupem. Další fotografie prostoru postupně doplníme.
+              <p className="max-w-xl leading-7 text-muted-foreground lg:justify-self-end">
+                Ukázka skutečného prostoru NAMASTÉ. Další fotografie může
+                provozovatel doplnit přímo v administraci.
               </p>
             </div>
-            <div className="mt-10 grid gap-4 lg:grid-cols-2">
-              <div className="min-h-[380px] overflow-hidden rounded-[20px] bg-muted lg:min-h-[580px]">
-                {/* Genuine photo published by NAMASTÉ Private Gym on its original Wix site. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="https://static.wixstatic.com/media/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg/v1/fill/w_1600,h_900,al_c,q_90,enc_avif,quality_auto/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg"
-                  alt="Hlavní prostor NAMASTÉ Private Gym"
-                  className="h-full min-h-[380px] w-full object-cover lg:min-h-[580px]"
+            <div className="mt-10 grid gap-4 lg:grid-cols-[1.35fr_.65fr]">
+              <div className="relative min-h-[420px] overflow-hidden rounded-lg bg-muted lg:min-h-[600px]">
+                <Image
+                  src={PUBLISHED_GYM_PHOTO}
+                  alt="Interiér NAMASTÉ Private Gym"
+                  fill
+                  sizes="(max-width: 1023px) 100vw, 66vw"
+                  className="object-cover"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
                 {[
-                  "Kardio zóna",
-                  "Činky a vybavení",
-                  "Šatna a sprcha",
-                  "Vstup s chytrým zámkem",
+                  "Další pohled na prostor",
+                  "Detail tréninkové zóny",
+                  "Zázemí a vstup",
                 ].map((label) => (
                   <GalleryPlaceholder key={label} label={label} />
                 ))}
               </div>
             </div>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                {
-                  icon: Dumbbell,
-                  title: "Silová zóna",
-                  body: "Stroje a pomůcky pro samostatný silový trénink.",
-                },
-                {
-                  icon: DoorOpen,
-                  title: "Kardio a protažení",
-                  body: "Samostatná zóna pro kardio, mobilitu a strečink.",
-                },
-                {
-                  icon: Baby,
-                  title: "Dětský koutek",
-                  body: "Vybavené bezpečné zázemí pro děti včetně pískoviště.",
-                },
-                {
-                  icon: Refrigerator,
-                  title: "Vybavená lednice",
-                  body: "Občerstvení a doplňky dostupné přímo ve fitness.",
-                },
-              ].map((item) => (
-                <Card
-                  key={item.title}
-                  className="group transition-colors hover:border-primary/50"
-                >
-                  <CardContent className="p-7">
-                    <div className="grid size-12 place-items-center rounded-xl bg-accent text-accent-foreground">
-                      <item.icon className="size-5" />
-                    </div>
-                    <h3 className="mt-5 text-lg font-extrabold">
-                      {item.title}
-                    </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                      {item.body}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="mt-7 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-7">
+              <p className="max-w-2xl text-sm text-muted-foreground">
+                Konkrétní přehled vybavení zveřejní provozovatel po potvrzení
+                finálního seznamu.
+              </p>
+              <Button href="/vybaveni" variant="outline">
+                Informace o vybavení
+              </Button>
             </div>
           </Container>
         </Section>
 
-        {/* Rules */}
-        <Section
-          id="pravidla"
-          className="bg-ink py-20 text-ink-foreground sm:py-24"
-        >
-          <Container className="grid gap-12 lg:grid-cols-[.9fr_1.35fr] lg:items-center">
+        <Section id="pravidla" className="bg-ink text-ink-foreground">
+          <Container className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-center">
             <div>
-              <div className="text-xs font-extrabold uppercase tracking-[.16em] text-primary">
+              <p className="text-xs font-extrabold uppercase tracking-[.18em] text-primary">
                 Provoz
-              </div>
-              <h2 className="mt-4 text-4xl font-black tracking-[-.035em] sm:text-5xl">
+              </p>
+              <h2 className="mt-4 text-4xl font-black tracking-[-.04em] sm:text-5xl">
                 Férová pravidla
               </h2>
-              <p className="mt-6 max-w-xl text-base leading-relaxed text-white/60">
+              <p className="mt-6 max-w-xl leading-7 text-white/60">
                 {t("home.rules.body")}
               </p>
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid border border-white/15 sm:grid-cols-3">
               {[
                 {
-                  icon: Wifi,
-                  label: "Nonstop hlídaný zámek",
-                  body: "Chytrý vstupní systém je pod stálým dohledem.",
-                },
-                {
-                  icon: Lock,
-                  label: "Jednorázový vstupní kód",
-                  body: "Platí pouze pro vás a v čase vaší rezervace.",
+                  icon: CalendarDays,
+                  title: "Vstup v rezervovaný čas",
+                  body: "Přijďte pouze v čase uvedeném u vaší rezervace.",
                 },
                 {
                   icon: ShieldCheck,
-                  label: "Každé odemčení zaznamenáno",
-                  body: "Kniha vstupů pomáhá chránit soukromí i bezpečnost.",
+                  title: "Osobní vstupní kód",
+                  body: "Kód nesdílejte a použijte ho podle pokynů k rezervaci.",
                 },
-              ].map((f) => (
+                {
+                  icon: RotateCcw,
+                  title: "Prostor po sobě ukliďte",
+                  body: "Vraťte vybavení na místo a otřete použité nářadí.",
+                },
+              ].map((item) => (
                 <div
-                  key={f.label}
-                  className="rounded-[16px] border border-white/15 bg-white/[.035] p-7 sm:min-h-[250px]"
+                  key={item.title}
+                  className="border-b border-white/15 p-7 last:border-0 sm:border-b-0 sm:border-l sm:first:border-l-0"
                 >
-                  <f.icon className="size-7 text-primary" />
-                  <h3 className="mt-8 text-lg font-extrabold leading-snug">
-                    {f.label}
-                  </h3>
-                  <p className="mt-3 text-sm leading-relaxed text-white/50">
-                    {f.body}
+                  <item.icon
+                    aria-hidden="true"
+                    className="size-7 text-primary"
+                  />
+                  <h3 className="mt-8 text-lg font-extrabold">{item.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-white/55">
+                    {item.body}
                   </p>
                 </div>
               ))}
@@ -372,50 +405,62 @@ export default async function HomePage() {
           </Container>
         </Section>
 
-        {/* Contact */}
-        <Section id="kontakt">
+        <Section id="kontakt" className="pb-10">
           <Container>
-            <SectionHeading
-              eyebrow="Kde nás najdete"
-              title="Kontakt a adresa"
-            />
+            <SectionHeading eyebrow="Plzeň" title="Kde nás najdete" />
             <div className="mt-10 grid gap-4 md:grid-cols-3">
-              <ContactCard
+              <ContactItem
                 icon={MapPin}
                 label="Adresa"
                 value={address}
                 href={mapsUrl}
               />
-              {email && (
-                <ContactCard
+              {email ? (
+                <ContactItem
                   icon={Mail}
                   label="E-mail"
                   value={email}
                   href={`mailto:${email}`}
                 />
-              )}
-              {phone && (
-                <ContactCard
+              ) : null}
+              {phone ? (
+                <ContactItem
                   icon={Phone}
                   label="Telefon"
                   value={phone}
                   href={`tel:${phone.replace(/\s/g, "")}`}
                 />
-              )}
-            </div>
-            <div className="mt-4 min-h-[360px] overflow-hidden rounded-[20px] border border-border bg-muted">
-              <iframe
-                title={`Mapa: ${address}`}
-                src={mapsEmbedUrl}
-                className="h-full min-h-[360px] w-full border-0"
-                loading="lazy"
-                allowFullScreen
-                referrerPolicy="no-referrer-when-downgrade"
-              />
+              ) : null}
             </div>
           </Container>
         </Section>
+
+        <div className="relative h-[420px] w-full bg-muted sm:h-[520px]">
+          <iframe
+            title={`Mapa, ${address}`}
+            src={mapsEmbedUrl}
+            className="absolute inset-0 h-full w-full border-0"
+            loading="lazy"
+            allowFullScreen
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+          <Button
+            href={mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            variant="ink"
+            className="absolute bottom-5 left-5 text-primary sm:left-8"
+          >
+            Otevřít v Mapách Google
+          </Button>
+        </div>
       </main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(businessJson).replace(/</g, "\\u003c"),
+        }}
+      />
       <SiteFooter
         brand={brand}
         email={email || undefined}
@@ -430,28 +475,24 @@ function SectionHeading({
   eyebrow,
   title,
   align = "center",
-  dark = false,
 }: {
   eyebrow: string;
   title: string;
   align?: "center" | "left";
-  dark?: boolean;
 }) {
   return (
     <div className={align === "center" ? "text-center" : ""}>
-      <div
-        className={`text-sm font-semibold ${dark ? "text-primary" : "text-primary"}`}
-      >
+      <p className="text-xs font-extrabold uppercase tracking-[.16em] text-primary">
         {eyebrow}
-      </div>
-      <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+      </p>
+      <h2 className="mt-3 text-3xl font-black tracking-[-.035em] sm:text-5xl">
         {title}
       </h2>
     </div>
   );
 }
 
-function ContactCard({
+function ContactItem({
   icon: Icon,
   label,
   value,
@@ -460,36 +501,34 @@ function ContactCard({
   icon: typeof MapPin;
   label: string;
   value: string;
-  href?: string;
+  href: string;
 }) {
-  const inner = (
-    <Card className="h-full transition-colors hover:border-primary/50">
-      <CardContent className="flex min-h-[220px] flex-col items-center justify-center gap-3 p-7 text-center">
-        <span className="grid size-14 place-items-center rounded-2xl bg-accent text-accent-foreground">
-          <Icon className="size-6" />
-        </span>
-        <div className="text-xs font-extrabold uppercase tracking-[.16em] text-muted-foreground">
+  return (
+    <a
+      href={href}
+      className="flex min-h-40 items-center gap-5 rounded-md border border-border bg-card p-6 transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <span className="grid size-12 shrink-0 place-items-center rounded-sm bg-primary/12 text-primary">
+        <Icon aria-hidden="true" className="size-5" />
+      </span>
+      <span>
+        <span className="block text-xs font-extrabold uppercase tracking-[.14em] text-muted-foreground">
           {label}
-        </div>
-        <div className="text-base font-extrabold sm:text-lg">{value}</div>
-      </CardContent>
-    </Card>
+        </span>
+        <span className="mt-2 block font-extrabold">{value}</span>
+      </span>
+    </a>
   );
-  return href ? <Link href={href}>{inner}</Link> : inner;
 }
 
 function GalleryPlaceholder({ label }: { label: string }) {
   return (
-    <div className="flex min-h-[180px] flex-col items-center justify-center rounded-[20px] border border-dashed border-border bg-muted/70 p-5 text-center lg:min-h-0">
-      <span className="grid size-11 place-items-center rounded-xl bg-card text-muted-foreground shadow-sm">
-        <ImageIcon className="size-5" />
-      </span>
-      <div className="mt-3 text-sm font-bold text-muted-foreground">
-        {label}
-      </div>
-      <div className="mt-1 text-xs text-muted-foreground/70">
-        Fotografie připravujeme
-      </div>
+    <div className="flex min-h-44 flex-col items-center justify-center rounded-md border border-dashed border-border bg-muted/60 p-5 text-center">
+      <ImageIcon aria-hidden="true" className="size-6 text-muted-foreground" />
+      <p className="mt-3 text-sm font-bold text-muted-foreground">{label}</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Fotografii doplní provozovatel
+      </p>
     </div>
   );
 }

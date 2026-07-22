@@ -10,15 +10,14 @@ import { CODE_LEAD_MINUTES } from "@/lib/config/schedule";
 import { getShowerMinutes } from "./schedule";
 
 /**
- * Access-code service — generates a time-limited numeric code, provisions it on
+ * Access-code service : generates a time-limited numeric code, provisions it on
  * the Nuki lock, and stores only its hash. The plaintext is returned exactly
  * once (to hand to the notification dispatcher) and never persisted.
  */
 
-
 export interface IssueCodeResult {
   accessCode: AccessCode;
-  /** Plaintext code — use immediately for delivery, then discard. */
+  /** Plaintext code : use immediately for delivery, then discard. */
   plaintext: string;
   provisionedOnLock: boolean;
 }
@@ -76,7 +75,11 @@ export async function issueAccessCode(params: {
     });
     await db
       .update(accessCode)
-      .set({ status: "failed", failureReason: lock.error, updatedAt: new Date() })
+      .set({
+        status: "failed",
+        failureReason: lock.error,
+        updatedAt: new Date(),
+      })
       .where(eq(accessCode.id, record.id));
   }
 

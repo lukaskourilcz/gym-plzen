@@ -1,10 +1,10 @@
 /**
- * Launch plan — the checklist toward going live, rendered with a progress bar
+ * Launch plan : the checklist toward going live, rendered with a progress bar
  * in the admin under "Plán". Update `status` as items are completed; the bar
  * recomputes automatically.
  *
  * status: "done" (counts 100%), "in_progress" (counts 50%), "todo" (0%),
- *         "blocked" (0%, waiting on the operator — see NEEDED.md).
+ *         "blocked" (0%, waiting on the operator : see NEEDED.md).
  */
 
 export type PlanStatus = "done" | "in_progress" | "todo" | "blocked";
@@ -24,11 +24,23 @@ export const LAUNCH_PLAN: PlanPhase[] = [
   {
     title: "Architektura a backend",
     items: [
-      { title: "Vrstvená architektura (routes → services → db/integrace)", status: "done" },
+      {
+        title: "Vrstvená architektura (routes → services → db/integrace)",
+        status: "done",
+      },
       { title: "Databázové schéma (Drizzle) + migrace", status: "done" },
-      { title: "Ochrana proti překrytí rezervací (DB constraint)", status: "done" },
-      { title: "Přihlášení Supabase Auth (e-mail + Google/Apple/Microsoft)", status: "done" },
-      { title: "Znovupoužitelné helpery (http retry, akce, formuláře…)", status: "done" },
+      {
+        title: "Ochrana proti překrytí rezervací (DB constraint)",
+        status: "done",
+      },
+      {
+        title: "Přihlášení Supabase Auth (e-mail + Google/Apple/Microsoft)",
+        status: "done",
+      },
+      {
+        title: "Znovupoužitelné helpery (http retry, akce, formuláře…)",
+        status: "done",
+      },
     ],
   },
   {
@@ -37,26 +49,53 @@ export const LAUNCH_PLAN: PlanPhase[] = [
       { title: "Editor obsahu webu (texty)", status: "done" },
       { title: "Rezervace: ruční vytvoření a zrušení", status: "done" },
       { title: "Kalendář (FullCalendar) + bloky pro úklid", status: "done" },
-      { title: "Otevírací doba a doba na sprchu (konfigurovatelné)", status: "done" },
+      {
+        title: "Otevírací doba a doba na sprchu (konfigurovatelné)",
+        status: "done",
+      },
       { title: "Členové a jejich profily", status: "done" },
       { title: "Vstupné a věrnostní přehled", status: "done" },
       { title: "Doručené zprávy, kniha vstupů, upozornění", status: "done" },
-      { title: "Statistiky (sessions/den, nejčastější časy, měsíce)", status: "done" },
-      { title: "Nastavení a branding: logo, podmínky (PDF), šablony zpráv", status: "done" },
-      { title: "Nahrávání souborů do úložiště (logo, PDF, fotky)", status: "done", note: "Potřebuje Supabase Storage" },
-      { title: "Zavření dne s rezervacemi → e-mail/WhatsApp členům", status: "done" },
+      {
+        title: "Statistiky (sessions/den, nejčastější časy, měsíce)",
+        status: "done",
+      },
+      {
+        title: "Nastavení a branding: logo, podmínky (PDF), šablony zpráv",
+        status: "done",
+      },
+      {
+        title: "Nahrávání souborů do úložiště (logo, PDF, fotky)",
+        status: "done",
+        note: "Potřebuje Supabase Storage",
+      },
+      {
+        title: "Zavření dne s rezervacemi → e-mail/WhatsApp členům",
+        status: "done",
+      },
       { title: "Nastavitelné zavřené dny + doba na sprchu", status: "done" },
-      { title: "Ukázková data (DummyJSON) pro prázdné obrazovky", status: "done" },
+      {
+        title: "Ukázková data (DummyJSON) pro prázdné obrazovky",
+        status: "done",
+      },
     ],
   },
   {
     title: "Veřejný web",
     items: [
       { title: "Design systém (Tailwind + shadcn styl, téma)", status: "done" },
-      { title: "Úvodní stránka (hero, jak to funguje, ceník, galerie, řád, kontakt)", status: "done" },
+      {
+        title:
+          "Úvodní stránka (hero, jak to funguje, ceník, galerie, řád, kontakt)",
+        status: "done",
+      },
       { title: "Stránka rezervací s výběrem hodinových slotů", status: "done" },
       { title: "Kalendář (FullCalendar) v administraci", status: "done" },
-      { title: "Skutečné fotky a finální texty", status: "blocked", note: "Dodá klient; vkládá se v administraci" },
+      {
+        title: "Skutečné fotky a finální texty",
+        status: "blocked",
+        note: "Dodá klient; vkládá se v administraci",
+      },
       { title: "Logo a branding", status: "blocked", note: "Dodá klient" },
     ],
   },
@@ -64,10 +103,22 @@ export const LAUNCH_PLAN: PlanPhase[] = [
     title: "Rezervace, platby a kódy",
     items: [
       { title: "Generování hodinových slotů 05–21", status: "done" },
-      { title: "Živý kalendář v reálném čase (Supabase Realtime)", status: "in_progress", note: "Kód hotov (RealtimeRefresher); zapnout Realtime + RLS v Supabase" },
-      { title: "Checkout přes Stripe (jednorázový vstup 290 Kč)", status: "done", note: "Tlačítko slotu → Stripe / vstup zdarma; potvrdí webhook. Potřebuje klíče." },
+      {
+        title: "Živý kalendář v reálném čase (Supabase Realtime)",
+        status: "in_progress",
+        note: "Kód hotov (RealtimeRefresher); zapnout Realtime + RLS v Supabase",
+      },
+      {
+        title: "Checkout přes Stripe (jednorázový vstup 290 Kč)",
+        status: "done",
+        note: "Tlačítko slotu → Stripe / vstup zdarma; potvrdí webhook. Potřebuje klíče.",
+      },
       { title: "Věrnost: každý 10. vstup zdarma (počítadlo)", status: "done" },
-      { title: "Vydání a doručení kódu (e-mail + WhatsApp)", status: "done", note: "Kód se pošle po platbě; potřebuje klíče" },
+      {
+        title: "Vydání a doručení kódu (e-mail + WhatsApp)",
+        status: "done",
+        note: "Kód se pošle po platbě; potřebuje klíče",
+      },
     ],
   },
   {
@@ -76,17 +127,28 @@ export const LAUNCH_PLAN: PlanPhase[] = [
       { title: "Pipeline platba → kód → doručení + retry", status: "done" },
       { title: "Upozornění na selhání do WhatsApp skupiny", status: "done" },
       { title: "Cron watchdog + synchronizace knihy vstupů", status: "done" },
-      { title: "Sentry: sledování chyb", status: "done", note: "Potřebuje DSN" },
+      {
+        title: "Sentry: sledování chyb",
+        status: "done",
+        note: "Potřebuje DSN",
+      },
       { title: "UptimeRobot / heartbeat monitoru", status: "todo" },
     ],
   },
   {
     title: "Napojení služeb (vyžaduje nastavení, viz NEEDED.md)",
     items: [
-      { title: "Supabase: databáze, migrace a seed", status: "in_progress", note: "Projekt založen (eu-west-3); doplnit heslo DB + secret key, spustit migrace" },
+      {
+        title: "Supabase: databáze, migrace a seed",
+        status: "blocked",
+        note: "Potvrdit samostatný projekt pro gym; aktuální MCP projekt má jiné schéma",
+      },
       { title: "Stripe: klíče a webhook", status: "blocked" },
       { title: "Resend: doména a API klíč", status: "blocked" },
-      { title: "WhatsApp Business: účet a šablona access_code", status: "blocked" },
+      {
+        title: "WhatsApp Business: účet a šablona access_code",
+        status: "blocked",
+      },
       { title: "Nuki: token, zámek a webhook", status: "blocked" },
       { title: "Doména + DNS", status: "blocked" },
     ],
@@ -94,17 +156,36 @@ export const LAUNCH_PLAN: PlanPhase[] = [
   {
     title: "Nasazení",
     items: [
-      { title: "Vercel projekt + env proměnné", status: "blocked", note: "Import repa, doplnit env" },
-      { title: "Bezpečnostní hlavičky (HSTS, X-Frame-Options…)", status: "done" },
-      { title: "SEO (metadata, OG) + Google Analytics", status: "in_progress", note: "Metadata hotová, GA doplnit ID" },
-      { title: "E2E testy workflow a formulářů (Playwright)", status: "done", note: "28/28 prochází" },
+      {
+        title: "Vercel projekt + env proměnné",
+        status: "blocked",
+        note: "Import repa, doplnit env",
+      },
+      {
+        title: "Bezpečnostní hlavičky (HSTS, X-Frame-Options…)",
+        status: "done",
+      },
+      {
+        title: "SEO (metadata, OG) + Google Analytics",
+        status: "in_progress",
+        note: "Metadata hotová, GA doplnit ID",
+      },
+      {
+        title: "E2E testy workflow a formulářů (Playwright)",
+        status: "in_progress",
+        note: "Veřejný flow částečně ověřen; plný auth/admin běh čeká na testovací Supabase",
+      },
       { title: "Ostrý provoz + zaškolení", status: "todo" },
     ],
   },
   {
     title: "2. fáze: mobilní aplikace",
     items: [
-      { title: "React Native aplikace (iOS + Android)", status: "todo", note: "Po spuštění webu" },
+      {
+        title: "React Native aplikace (iOS + Android)",
+        status: "todo",
+        note: "Po spuštění webu",
+      },
     ],
   },
 ];
@@ -142,6 +223,9 @@ export function computeProgress(plan: PlanPhase[] = LAUNCH_PLAN): PlanProgress {
     inProgress: count("in_progress"),
     blocked: count("blocked"),
     todo: count("todo"),
-    percent: total === 0 ? 0 : Math.min(MAX_DISPLAY_PERCENT, Math.round((weighted / total) * 100)),
+    percent:
+      total === 0
+        ? 0
+        : Math.min(MAX_DISPLAY_PERCENT, Math.round((weighted / total) * 100)),
   };
 }

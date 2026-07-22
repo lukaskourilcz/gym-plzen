@@ -2,12 +2,12 @@ import { z } from "zod";
 
 /**
  * Client-safe public environment. Only `NEXT_PUBLIC_*` variables live here, and
- * this module NEVER touches server-only variables — so it is safe to import from
+ * this module NEVER touches server-only variables : so it is safe to import from
  * client components. (The server env in `./env.ts` validates secrets at import
  * time, which must not run in the browser.)
  *
  * `NEXT_PUBLIC_*` vars are inlined by Next.js, so they must be referenced
- * statically — hence the explicit object rather than a loop over `process.env`.
+ * statically : hence the explicit object rather than a loop over `process.env`.
  */
 const publicSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
@@ -26,15 +26,20 @@ function parsePublic() {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_DEFAULT_LOCALE: process.env.NEXT_PUBLIC_DEFAULT_LOCALE,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:
+      process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
     NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
   });
   // Public env is non-secret and has defaults; never hard-fail the client on it.
   return result.success
     ? result.data
-    : publicSchema.parse({ NEXT_PUBLIC_APP_URL: undefined, NEXT_PUBLIC_DEFAULT_LOCALE: undefined });
+    : publicSchema.parse({
+        NEXT_PUBLIC_APP_URL: undefined,
+        NEXT_PUBLIC_DEFAULT_LOCALE: undefined,
+      });
 }
 
 export const publicEnv = parsePublic();

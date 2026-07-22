@@ -6,7 +6,7 @@
  * members see a counter of their progress toward the next free entry.
  *
  * These are defaults; the entry price can be overridden at runtime from the
- * admin (stored under the `pricing.entry` site setting — see cms.getSetting).
+ * admin (stored under the `pricing.entry` site setting : see cms.getSetting).
  */
 
 /** Default price of a single entry, in the smallest currency unit (haléř). */

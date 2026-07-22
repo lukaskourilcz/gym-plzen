@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Clock3 } from "lucide-react";
 import { startCheckoutAction } from "./actions";
 
 /**
@@ -9,7 +10,19 @@ import { startCheckoutAction } from "./actions";
  * entry it redirects to Stripe; for a free loyalty entry it goes straight to the
  * confirmation page.
  */
-export function SlotButton({ startsAtISO, label }: { startsAtISO: string; label: string }) {
+export function SlotButton({
+  startsAtISO,
+  dateKey,
+  label,
+  durationMinutes,
+  price,
+}: {
+  startsAtISO: string;
+  dateKey: string;
+  label: string;
+  durationMinutes: number;
+  price: string;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -20,25 +33,47 @@ export function SlotButton({ startsAtISO, label }: { startsAtISO: string; label:
       const result = await startCheckoutAction({ startsAt: startsAtISO });
       if (!result.ok) {
         setError(result.error);
+        router.refresh();
         return;
       }
       if (result.data.kind === "checkout") {
         window.location.href = result.data.url;
       } else {
-        router.push(`/rezervace/hotovo?free=1`);
+        router.push(
+          `/rezervace/hotovo?reservation_id=${result.data.reservationId}`,
+        );
       }
     });
   }
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={pending}
-      title={error ?? undefined}
-      className="rounded-lg border-[1.5px] border-primary/40 bg-primary/10 py-2 text-center text-sm font-bold transition-colors hover:bg-primary disabled:opacity-60"
-    >
-      {pending ? "…" : label}
-    </button>
+    <div>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={pending}
+        aria-describedby={error ? `slot-error-${startsAtISO}` : undefined}
+        className="flex min-h-16 w-full items-center justify-between rounded-md border border-primary/35 bg-primary/10 px-4 py-3 text-left transition-colors hover:border-primary hover:bg-primary/20 disabled:cursor-wait disabled:opacity-60"
+      >
+        <span>
+          <span className="block text-sm font-extrabold">
+            {pending ? "Připravuji platbu…" : label}
+          </span>
+          <span className="mt-0.5 block text-xs font-medium text-muted-foreground">
+            {durationMinutes} min · {price}
+          </span>
+        </span>
+        <Clock3 aria-hidden="true" className="size-4 text-primary" />
+      </button>
+      {error ? (
+        <p
+          id={`slot-error-${startsAtISO}`}
+          role="alert"
+          className="mt-2 text-sm font-semibold text-destructive"
+        >
+          {error} Vybraný den {dateKey} zůstává otevřený.
+        </p>
+      ) : null}
+    </div>
   );
 }

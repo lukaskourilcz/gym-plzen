@@ -1,7 +1,7 @@
 /**
  * Small, dependency-free HTTP helper shared by every external integration
  * (Nuki, WhatsApp, GoSMS, …). Centralises: JSON encoding, timeouts, retries
- * with exponential backoff, and consistent error shaping — so integration
+ * with exponential backoff, and consistent error shaping : so integration
  * modules stay tiny and consistent.
  */
 
@@ -17,7 +17,7 @@ export class HttpError extends Error {
 }
 
 export interface RequestOptions extends Omit<RequestInit, "body"> {
-  /** JSON body — serialised automatically and given a JSON content-type. */
+  /** JSON body : serialised automatically and given a JSON content-type. */
   json?: unknown;
   /** Raw body (takes precedence over `json`). */
   body?: BodyInit;

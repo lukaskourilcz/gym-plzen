@@ -1,7 +1,11 @@
 "use client";
 
 import { useActionForm } from "@/components/admin/use-action-form";
-import { Field, FormFeedback, SubmitButton } from "@/components/admin/form-controls";
+import {
+  Field,
+  FormFeedback,
+  SubmitButton,
+} from "@/components/admin/form-controls";
 import { Input } from "@/components/ui/input";
 import { createReservationSchema } from "@/lib/validations/reservations";
 import { createReservationAction } from "./actions";
@@ -28,17 +32,27 @@ export function ReservationForm() {
       <Field name="endsAt" label="Konec" error={errors.endsAt}>
         <Input id="endsAt" type="datetime-local" {...register("endsAt")} />
       </Field>
-      <Field name="contactName" label="Jméno zákazníka" error={errors.contactName}>
+      <Field
+        name="contactName"
+        label="Jméno zákazníka"
+        error={errors.contactName}
+      >
         <Input id="contactName" {...register("contactName")} />
       </Field>
       <Field name="contactEmail" label="E-mail" error={errors.contactEmail}>
         <Input id="contactEmail" type="email" {...register("contactEmail")} />
       </Field>
       <Field name="contactPhone" label="Telefon" error={errors.contactPhone}>
-        <Input id="contactPhone" placeholder="+420…" {...register("contactPhone")} />
+        <Input
+          id="contactPhone"
+          placeholder="+420…"
+          {...register("contactPhone")}
+        />
       </Field>
       <FormFeedback error={serverError} success={success} />
-      <SubmitButton isSubmitting={isSubmitting}>Vytvořit rezervaci</SubmitButton>
+      <SubmitButton isSubmitting={isSubmitting}>
+        Vytvořit rezervaci
+      </SubmitButton>
     </form>
   );
 }

@@ -5,7 +5,7 @@ import { dayOfWeek, minuteOfDay } from "@/lib/helpers/datetime";
 import { logger } from "@/lib/helpers/logger";
 
 /**
- * Statistics service — aggregates reservations into insights for the admin
+ * Statistics service : aggregates reservations into insights for the admin
  * (sessions per weekday, most frequent hours, monthly trend, status mix).
  * Aggregation is done in JS over a bounded fetch so weekday/hour buckets are
  * computed in the gym's local timezone without SQL timezone pitfalls. Resilient:
@@ -49,7 +49,7 @@ export async function getStats(now: Date = new Date()): Promise<Stats> {
   return aggregateStats(rows, now);
 }
 
-/** Pure aggregation of reservation rows into stats — reused by the demo layer. */
+/** Pure aggregation of reservation rows into stats : reused by the demo layer. */
 export function aggregateStats(
   rows: { startsAt: Date; status: string }[],
   now: Date = new Date(),
@@ -58,7 +58,11 @@ export function aggregateStats(
   const weekday = new Array(7).fill(0) as number[]; // index 0=Mon .. 6=Sun
   const hour = new Map<number, number>();
   const month = new Map<string, number>();
-  const monthFmt = new Intl.DateTimeFormat("cs-CZ", { month: "short", year: "numeric", timeZone: TZ });
+  const monthFmt = new Intl.DateTimeFormat("cs-CZ", {
+    month: "short",
+    year: "numeric",
+    timeZone: TZ,
+  });
   const thirtyAgo = now.getTime() - 30 * 24 * 60 * 60 * 1000;
   let last30 = 0;
 
@@ -74,14 +78,26 @@ export function aggregateStats(
     const mKey = monthFmt.format(r.startsAt);
     month.set(mKey, (month.get(mKey) ?? 0) + 1);
 
-    if (r.startsAt.getTime() >= thirtyAgo && r.startsAt.getTime() <= now.getTime()) last30++;
+    if (
+      r.startsAt.getTime() >= thirtyAgo &&
+      r.startsAt.getTime() <= now.getTime()
+    )
+      last30++;
   }
 
-  const byWeekday: Bucket[] = WEEKDAY_LABELS.map((label, i) => ({ label, count: weekday[i]! }));
+  const byWeekday: Bucket[] = WEEKDAY_LABELS.map((label, i) => ({
+    label,
+    count: weekday[i]!,
+  }));
   const byHour: Bucket[] = [...hour.entries()]
     .sort((a, b) => a[0] - b[0])
-    .map(([h, count]) => ({ label: `${String(h).padStart(2, "0")}:00`, count }));
-  const byMonth: Bucket[] = [...month.entries()].map(([label, count]) => ({ label, count })).slice(-12);
+    .map(([h, count]) => ({
+      label: `${String(h).padStart(2, "0")}:00`,
+      count,
+    }));
+  const byMonth: Bucket[] = [...month.entries()]
+    .map(([label, count]) => ({ label, count }))
+    .slice(-12);
 
   const busiestWeekday = [...byWeekday].sort((a, b) => b.count - a.count)[0];
   const busiestHour = [...byHour].sort((a, b) => b.count - a.count)[0];
@@ -96,7 +112,11 @@ export function aggregateStats(
     byWeekday,
     byHour,
     byMonth,
-    busiestWeekday: busiestWeekday && busiestWeekday.count > 0 ? busiestWeekday.label : undefined,
-    busiestHour: busiestHour && busiestHour.count > 0 ? busiestHour.label : undefined,
+    busiestWeekday:
+      busiestWeekday && busiestWeekday.count > 0
+        ? busiestWeekday.label
+        : undefined,
+    busiestHour:
+      busiestHour && busiestHour.count > 0 ? busiestHour.label : undefined,
   };
 }

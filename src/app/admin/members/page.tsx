@@ -3,15 +3,25 @@ import { formatDateTime } from "@/lib/helpers/format";
 import { withDemoFallback } from "@/lib/demo/dummy";
 import { DemoBanner } from "@/components/admin/demo-banner";
 import { PageHeader } from "@/components/admin/page-header";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { MemberForm } from "./member-form";
 
 export const metadata = { title: "Členové" };
 export const dynamic = "force-dynamic";
 
-/** Members admin — every registered user with their editable profile. */
+/** Members admin : every registered user with their editable profile. */
 export default async function MembersPage() {
-  const { rows, demo } = await withDemoFallback(members.listMembers(200), (d) => d.members);
+  const { rows, demo } = await withDemoFallback(
+    members.listMembers(200),
+    (d) => d.members,
+  );
 
   return (
     <div>
@@ -52,7 +62,10 @@ export default async function MembersPage() {
         <section className="mt-8 max-w-xl">
           <h2 className="mb-3 text-lg font-semibold">Úprava člena</h2>
           {rows.map((member) => (
-            <details key={member.user.id} className="mb-3 rounded-lg border border-border p-3">
+            <details
+              key={member.user.id}
+              className="mb-3 rounded-lg border border-border p-3"
+            >
               <summary className="cursor-pointer">
                 {member.user.name} ({member.user.email})
               </summary>

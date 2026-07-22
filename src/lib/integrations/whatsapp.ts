@@ -40,7 +40,7 @@ interface GraphMessageResponse {
 }
 
 /**
- * Send an approved template message (used for the access code — a
+ * Send an approved template message (used for the access code : a
  * business-initiated notification). `bodyParams` fill the template's {{n}}
  * placeholders in order.
  */
@@ -51,7 +51,9 @@ export async function sendTemplateMessage(params: {
   bodyParams?: string[];
 }): Promise<WhatsAppSendResult> {
   if (!isWhatsAppConfigured()) {
-    logger.warn("WhatsApp not configured — template not sent", { to: params.to });
+    logger.warn("WhatsApp not configured : template not sent", {
+      to: params.to,
+    });
     return { sent: false, error: "whatsapp_not_configured" };
   }
   try {

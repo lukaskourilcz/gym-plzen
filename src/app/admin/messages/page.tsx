@@ -1,16 +1,26 @@
 import { messages } from "@/lib/services";
-import { formatDateTime } from "@/lib/helpers/format";
+import { formatDateTime, formatStatus } from "@/lib/helpers/format";
 import { withDemoFallback } from "@/lib/demo/dummy";
 import { DemoBanner } from "@/components/admin/demo-banner";
 import { PageHeader } from "@/components/admin/page-header";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export const metadata = { title: "Doručené zprávy" };
 export const dynamic = "force-dynamic";
 
 /** Per-channel delivery status for every outbound message. */
 export default async function MessagesPage() {
-  const { rows, demo } = await withDemoFallback(messages.listRecent(200), (d) => d.messages);
+  const { rows, demo } = await withDemoFallback(
+    messages.listRecent(200),
+    (d) => d.messages,
+  );
 
   return (
     <div>
@@ -37,11 +47,17 @@ export default async function MessagesPage() {
               <TableCell>{m.channel}</TableCell>
               <TableCell>{m.kind}</TableCell>
               <TableCell>{m.recipient}</TableCell>
-              <TableCell className={m.status === "failed" ? "text-destructive" : undefined}>
-                {m.status}
+              <TableCell
+                className={
+                  m.status === "failed" ? "text-destructive" : undefined
+                }
+              >
+                {formatStatus(m.status)}
                 {m.failureReason ? ` (${m.failureReason})` : ""}
               </TableCell>
-              <TableCell>{m.deliveredAt ? formatDateTime(m.deliveredAt) : "Nedoručeno"}</TableCell>
+              <TableCell>
+                {m.deliveredAt ? formatDateTime(m.deliveredAt) : "Nedoručeno"}
+              </TableCell>
             </TableRow>
           ))}
           {rows.length === 0 && (

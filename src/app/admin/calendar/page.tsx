@@ -9,7 +9,7 @@ export const metadata = { title: "Kalendář" };
 export const dynamic = "force-dynamic";
 
 /**
- * Admin calendar — the operational week view (FullCalendar). Reservations show
+ * Admin calendar : the operational week view (FullCalendar). Reservations show
  * as solid events, blocks as background events. Drag-select an empty range to
  * add a block (e.g. the daily cleaning window).
  */

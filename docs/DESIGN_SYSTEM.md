@@ -159,8 +159,8 @@ The public booking flow is date first.
   seven-column Monday-first calendar.
 - Dates outside the month are quiet and not bookable.
 - Past and out-of-horizon dates are disabled with a screen-reader reason.
-- Today has a visible `Dnes` cue. The selected date uses both a two-pixel border
-  and text or an icon.
+- Today has a distinct border and surface plus `aria-current="date"`. The
+  selected date uses a high-contrast surface, border, and `aria-selected`.
 - Availability uses text or a dot plus an accessible label. Colour alone is
   insufficient.
 - Arrow keys move by day or week, Home and End move within the week, Page Up and

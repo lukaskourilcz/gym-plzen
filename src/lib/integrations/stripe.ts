@@ -2,7 +2,7 @@ import Stripe from "stripe";
 import { hasEnv, requireEnv } from "@/lib/env";
 
 /**
- * Stripe adapter. Payment card data never touches our servers — Stripe hosts
+ * Stripe adapter. Payment card data never touches our servers : Stripe hosts
  * checkout and we mirror state via webhooks (see app/api/webhooks/stripe).
  *
  * The client is created lazily so the app boots without Stripe configured.
@@ -17,7 +17,7 @@ export function isStripeConfigured(): boolean {
 export function stripe(): Stripe {
   if (cached) return cached;
   const { STRIPE_SECRET_KEY } = requireEnv("STRIPE_SECRET_KEY");
-  // Pin to the SDK's default API version by omitting `apiVersion` — Stripe
+  // Pin to the SDK's default API version by omitting `apiVersion` : Stripe
   // then uses the version bundled with this library, avoiding drift.
   cached = new Stripe(STRIPE_SECRET_KEY, {
     appInfo: { name: "gym-plzen" },
@@ -83,6 +83,7 @@ export async function createOneOffCheckout(params: {
   successUrl: string;
   cancelUrl: string;
   metadata?: Record<string, string>;
+  expiresAt?: Date;
 }): Promise<Stripe.Checkout.Session> {
   return stripe().checkout.sessions.create({
     mode: "payment",
@@ -100,6 +101,9 @@ export async function createOneOffCheckout(params: {
     success_url: params.successUrl,
     cancel_url: params.cancelUrl,
     metadata: params.metadata,
+    expires_at: params.expiresAt
+      ? Math.floor(params.expiresAt.getTime() / 1000)
+      : undefined,
   });
 }
 

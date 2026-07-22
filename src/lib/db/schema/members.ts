@@ -1,7 +1,7 @@
 import { boolean, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 /**
- * `profiles` — the app's user table under **Supabase Auth**.
+ * `profiles` : the app's user table under **Supabase Auth**.
  *
  * Supabase owns the `auth.users` table (identity, credentials, OAuth). We keep
  * one `profiles` row per user, whose `id` equals the `auth.users` id (a uuid).
@@ -23,7 +23,7 @@ export const profiles = pgTable("profiles", {
   // Authorization: "admin" unlocks the administration.
   role: text("role").default("member").notNull(),
 
-  // Contact — phone is E.164, required for WhatsApp/SMS code delivery.
+  // Contact : phone is E.164, required for WhatsApp/SMS code delivery.
   phone: text("phone"),
   phoneVerified: boolean("phone_verified").default(false).notNull(),
 
@@ -34,7 +34,7 @@ export const profiles = pgTable("profiles", {
   notifyByWhatsapp: boolean("notify_by_whatsapp").default(true).notNull(),
   notifyBySms: boolean("notify_by_sms").default(false).notNull(),
 
-  // GDPR — explicit, timestamped consents.
+  // GDPR : explicit, timestamped consents.
   marketingConsent: boolean("marketing_consent").default(false).notNull(),
   marketingConsentAt: timestamp("marketing_consent_at"),
   termsAcceptedAt: timestamp("terms_accepted_at"),

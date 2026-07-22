@@ -6,12 +6,12 @@ import { z } from "zod";
  * These schemas are intentionally **transform-free**: they validate the raw
  * shape of form input (as produced by React Hook Form) and are used *both*
  * client-side (via `zodResolver`) and server-side (in the action). Any type
- * conversion — "HH:mm" → minutes, date-string → `Date`, "" → `null` — happens
+ * conversion : "HH:mm" → minutes, date-string → `Date`, "" → `null` : happens
  * explicitly inside the action handler, so the schema's input and output types
  * match and one schema serves both sides.
  */
 
-/** UUID — used for our own domain rows (reservations, plans, …). */
+/** UUID : used for our own domain rows (reservations, plans, …). */
 export const uuidSchema = z.string().uuid("Neplatné ID.");
 
 /** Opaque id string (accepts uuids and other id formats). */
@@ -19,7 +19,10 @@ export const idSchema = z.string().min(1, "Neplatné ID.").max(255);
 
 export const emailSchema = z.string().email("Neplatný e-mail.");
 
-export const phoneSchema = z.string().min(9, "Neplatné telefonní číslo.").max(20);
+export const phoneSchema = z
+  .string()
+  .min(9, "Neplatné telefonní číslo.")
+  .max(20);
 
 /**
  * A datetime as produced by an `<input type="datetime-local">` or an ISO

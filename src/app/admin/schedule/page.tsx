@@ -2,8 +2,20 @@ import { schedule } from "@/lib/services";
 import { addMinutes } from "@/lib/helpers/datetime";
 import { formatDateTime } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BlockedSlotForm, DeleteBlockButton, OpeningHoursRow, ShowerMinutesForm } from "./schedule-forms";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  BlockedSlotForm,
+  DeleteBlockButton,
+  OpeningHoursRow,
+  ShowerMinutesForm,
+} from "./schedule-forms";
 import { DEFAULT_SHOWER_MINUTES } from "@/lib/config/schedule";
 
 export const metadata = { title: "Otevírací doba a bloky" };
@@ -14,7 +26,9 @@ export default async function SchedulePage() {
   const now = new Date();
   const [hours, blocks, showerMinutes] = await Promise.all([
     schedule.listOpeningHours().catch(() => []),
-    schedule.listBlockedSlots(now, addMinutes(now, 60 * 24 * 90)).catch(() => []),
+    schedule
+      .listBlockedSlots(now, addMinutes(now, 60 * 24 * 90))
+      .catch(() => []),
     schedule.getShowerMinutes().catch(() => DEFAULT_SHOWER_MINUTES),
   ]);
   const byDay = new Map(hours.map((h) => [h.dayOfWeek, h]));
@@ -26,7 +40,8 @@ export default async function SchedulePage() {
       <section>
         <h2 className="mb-1 text-lg font-semibold">Týdenní otevírací doba</h2>
         <p className="mb-3 text-sm text-muted-foreground">
-          Sloty jsou vždy celé hodiny (např. 13:00–14:00). Výchozí provoz je denně 06:00–22:00.
+          Sloty jsou vždy celé hodiny (např. 13:00–14:00). Výchozí provoz je
+          denně 06:00–22:00.
         </p>
         {Array.from({ length: 7 }, (_, day) => (
           <OpeningHoursRow key={day} dayOfWeek={day} hours={byDay.get(day)} />
@@ -36,8 +51,9 @@ export default async function SchedulePage() {
       <section className="mt-8">
         <h2 className="mb-1 text-lg font-semibold">Doba na sprchu</h2>
         <p className="mb-3 max-w-2xl text-sm text-muted-foreground">
-          O kolik minut po skončení tréninku ještě platí vstupní kód, aby se člen mohl osprchovat.
-          Tato doba neblokuje další rezervaci. Následující člen může začít trénovat, zatímco předchozí využívá sprchu.
+          O kolik minut po skončení tréninku ještě platí vstupní kód, aby se
+          člen mohl osprchovat. Tato doba neblokuje další rezervaci. Následující
+          člen může začít trénovat, zatímco předchozí využívá sprchu.
         </p>
         <ShowerMinutesForm current={showerMinutes} />
       </section>

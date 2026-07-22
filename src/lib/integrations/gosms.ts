@@ -3,7 +3,7 @@ import { httpRequest } from "@/lib/helpers/http";
 import { logger } from "@/lib/helpers/logger";
 
 /**
- * GoSMS adapter — OPTIONAL SMS fallback channel. Disabled by default (see the
+ * GoSMS adapter : OPTIONAL SMS fallback channel. Disabled by default (see the
  * plan: WhatsApp + email are usually enough). Enabled per-member via the
  * `notifyBySms` profile flag, and only functional when GoSMS keys are set.
  *
@@ -29,9 +29,9 @@ async function getAccessToken(): Promise<string> {
     "GOSMS_CLIENT_ID",
     "GOSMS_CLIENT_SECRET",
   );
-  const basic = Buffer.from(`${GOSMS_CLIENT_ID}:${GOSMS_CLIENT_SECRET}`).toString(
-    "base64",
-  );
+  const basic = Buffer.from(
+    `${GOSMS_CLIENT_ID}:${GOSMS_CLIENT_SECRET}`,
+  ).toString("base64");
   const res = await httpRequest<{ access_token: string; expires_in: number }>(
     TOKEN_URL,
     {
@@ -77,7 +77,10 @@ export async function sendSms(params: {
         channel: Number(env.GOSMS_CHANNEL),
       },
     });
-    return { sent: true, providerMessageId: res.id ? String(res.id) : undefined };
+    return {
+      sent: true,
+      providerMessageId: res.id ? String(res.id) : undefined,
+    };
   } catch (e) {
     logger.error(e, { where: "gosms.sendSms" });
     return { sent: false, error: e instanceof Error ? e.message : "unknown" };

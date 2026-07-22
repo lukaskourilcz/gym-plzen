@@ -1,14 +1,15 @@
 import { logger } from "@/lib/helpers/logger";
 import { getReservation } from "./reservations";
-import { issueAccessCode, listCodesForReservation } from "./access-codes";
 import {
-  dispatchAccessCode,
-  loadMemberChannels,
-} from "./notifications";
-import { markStepFailed, markStepSucceeded } from "./pipeline";
+  issueAccessCode,
+  listCodesForReservation,
+  revokeAccessCode,
+} from "./access-codes";
+import { dispatchAccessCode, loadMemberChannels } from "./notifications";
+import { getPipeline, markStepFailed, markStepSucceeded } from "./pipeline";
 
 /**
- * Fulfillment orchestrator — runs a confirmed reservation through the reliability
+ * Fulfillment orchestrator : runs a confirmed reservation through the reliability
  * pipeline: (payment ✓) → code_created → code_delivered. Called after payment
  * confirmation (Stripe webhook / membership booking) and by the watchdog cron
  * to retry stuck reservations. Idempotent: it inspects existing state and only
@@ -22,15 +23,30 @@ export async function fulfillReservation(reservationId: string): Promise<void> {
     return;
   }
 
-  // Step: payment — reaching here means it's confirmed/paid.
+  // Step: payment : reaching here means it's confirmed/paid.
   await markStepSucceeded(reservationId, "payment");
 
-  // Step: code_created — issue a code + provision it on the lock (once).
+  // Step: code_created : issue a code + provision it on the lock (once).
   const existing = await listCodesForReservation(reservationId);
+  const pipeline = await getPipeline(reservationId);
+  const deliveryDone = pipeline.some(
+    (step) => step.step === "code_delivered" && step.status === "succeeded",
+  );
   let plaintext: string | null = null;
   let codeReady = existing.some((c) => c.status !== "failed" && c.nukiAuthId);
 
-  if (existing.length === 0) {
+  const needsFreshCode =
+    existing.length === 0 || !codeReady || (codeReady && !deliveryDone);
+
+  if (needsFreshCode && !deliveryDone) {
+    if (codeReady) {
+      await Promise.allSettled(
+        existing
+          .filter((code) => code.nukiAuthId)
+          .map((code) => revokeAccessCode(code.id)),
+      );
+      codeReady = false;
+    }
     try {
       const issued = await issueAccessCode({
         reservationId,
@@ -48,6 +64,7 @@ export async function fulfillReservation(reservationId: string): Promise<void> {
           "code_created",
           "Nuki provisioning failed",
         );
+        return;
       }
     } catch (e) {
       await markStepFailed(
@@ -61,7 +78,7 @@ export async function fulfillReservation(reservationId: string): Promise<void> {
     await markStepSucceeded(reservationId, "code_created");
   }
 
-  // Step: code_delivered — dispatch across channels. We can only deliver a
+  // Step: code_delivered : dispatch across channels. We can only deliver a
   // freshly-generated plaintext (we never store it); on retries without a new
   // code we treat delivery as already handled by the original run.
   if (plaintext) {

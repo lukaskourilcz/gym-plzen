@@ -5,7 +5,7 @@ import type { ContentBlock, Page } from "@/lib/db/types";
 import { publicEnv } from "@/lib/public-env";
 
 /**
- * CMS service — the read/write API behind the "redakční systém". The public
+ * CMS service : the read/write API behind the "redakční systém". The public
  * site reads content by key; the administration edits it. Content is keyed by
  * (`key`, `locale`) so the same block can carry per-language values.
  */
@@ -45,20 +45,31 @@ export async function getBlocksByGroup(
     .select()
     .from(contentBlock)
     .where(
-      and(eq(contentBlock.groupName, groupName), eq(contentBlock.locale, locale)),
+      and(
+        eq(contentBlock.groupName, groupName),
+        eq(contentBlock.locale, locale),
+      ),
     )
     .orderBy(asc(contentBlock.sortOrder));
 }
 
 /** All blocks (admin index), ordered by group then sort order. */
-export async function listBlocks(locale = DEFAULT_LOCALE): Promise<ContentBlock[]> {
-  return db
-    .select()
-    .from(contentBlock)
-    .where(eq(contentBlock.locale, locale))
-    // `key` is the final tiebreaker so ordering is deterministic when several
-    // blocks share a group and sortOrder.
-    .orderBy(asc(contentBlock.groupName), asc(contentBlock.sortOrder), asc(contentBlock.key));
+export async function listBlocks(
+  locale = DEFAULT_LOCALE,
+): Promise<ContentBlock[]> {
+  return (
+    db
+      .select()
+      .from(contentBlock)
+      .where(eq(contentBlock.locale, locale))
+      // `key` is the final tiebreaker so ordering is deterministic when several
+      // blocks share a group and sortOrder.
+      .orderBy(
+        asc(contentBlock.groupName),
+        asc(contentBlock.sortOrder),
+        asc(contentBlock.key),
+      )
+  );
 }
 
 /**
@@ -115,7 +126,11 @@ export async function upsertBlock(input: {
 // ── Pages ───────────────────────────────────────────────────────────────────
 
 export async function getPage(slug: string): Promise<Page | null> {
-  const [row] = await db.select().from(page).where(eq(page.slug, slug)).limit(1);
+  const [row] = await db
+    .select()
+    .from(page)
+    .where(eq(page.slug, slug))
+    .limit(1);
   return row ?? null;
 }
 
@@ -142,9 +157,18 @@ export async function setSetting(
   const now = new Date();
   await db
     .insert(siteSetting)
-    .values({ key, value, updatedByAdminId: updatedByAdminId ?? null, updatedAt: now })
+    .values({
+      key,
+      value,
+      updatedByAdminId: updatedByAdminId ?? null,
+      updatedAt: now,
+    })
     .onConflictDoUpdate({
       target: siteSetting.key,
-      set: { value, updatedByAdminId: updatedByAdminId ?? null, updatedAt: now },
+      set: {
+        value,
+        updatedByAdminId: updatedByAdminId ?? null,
+        updatedAt: now,
+      },
     });
 }

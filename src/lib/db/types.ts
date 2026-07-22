@@ -36,6 +36,8 @@ export type MediaAsset = InferSelectModel<typeof s.mediaAsset>;
 export type Page = InferSelectModel<typeof s.page>;
 export type SiteSetting = InferSelectModel<typeof s.siteSetting>;
 
-export type ReservationPipeline = InferSelectModel<typeof s.reservationPipeline>;
+export type ReservationPipeline = InferSelectModel<
+  typeof s.reservationPipeline
+>;
 export type SystemAlert = InferSelectModel<typeof s.systemAlert>;
 export type WebhookEvent = InferSelectModel<typeof s.webhookEvent>;

@@ -1,5 +1,5 @@
 /**
- * Presentation helpers — currency, dates, phone. Formatting is Czech-locale by
+ * Presentation helpers : currency, dates, phone. Formatting is Czech-locale by
  * default to match the site's primary audience.
  */
 
@@ -42,6 +42,27 @@ export function formatTime(
     timeStyle: "short",
     timeZone,
   }).format(date);
+}
+
+/** Exact customer-facing range in the gym timezone. */
+export function formatTimeRange(start: Date, end: Date): string {
+  return `${formatTime(start)}–${formatTime(end)}`;
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Čeká na potvrzení",
+  confirmed: "Potvrzená",
+  completed: "Dokončená",
+  cancelled: "Zrušená",
+  failed: "Nedoručená",
+  sent: "Odeslaná",
+  delivered: "Doručená",
+  read: "Přečtená",
+};
+
+/** Translate persisted machine statuses at the presentation boundary. */
+export function formatStatus(status: string): string {
+  return STATUS_LABELS[status] ?? status;
 }
 
 /** Convert minute-of-day (e.g. 900) to "HH:mm" (e.g. "15:00"). */

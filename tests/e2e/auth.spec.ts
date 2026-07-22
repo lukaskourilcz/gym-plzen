@@ -3,7 +3,10 @@ import { supabaseConfigured } from "./global-setup";
 
 /** Authentication flows via the UI (Supabase Auth). */
 test.describe("Auth", () => {
-  test.skip(!supabaseConfigured(), "requires a configured Supabase (auth) instance");
+  test.skip(
+    !supabaseConfigured(),
+    "requires a configured Supabase (auth) instance",
+  );
 
   test("member can sign in and reach their account", async ({ page }) => {
     await page.goto("/login?next=/account");
@@ -12,12 +15,16 @@ test.describe("Auth", () => {
     await page.getByRole("button", { name: /Přihlásit se/i }).click();
 
     await expect(page).toHaveURL(/\/account/);
-    await expect(page.getByRole("heading", { name: /Můj účet/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /Můj účet/i }),
+    ).toBeVisible();
     // Loyalty widget renders.
     await expect(page.getByText(/Věrnostní program/i)).toBeVisible();
   });
 
-  test("sign-in form shows a validation error for a bad password", async ({ page }) => {
+  test("sign-in form shows a validation error for a bad password", async ({
+    page,
+  }) => {
     await page.goto("/login");
     // Switch to sign-up so the 8-char rule applies, then submit a short password.
     await page.getByRole("button", { name: /Zaregistrujte se/i }).click();

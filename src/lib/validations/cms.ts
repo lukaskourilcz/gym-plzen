@@ -6,7 +6,10 @@ export const upsertBlockSchema = z.object({
     .string()
     .min(1, "Zadejte klíč obsahu.")
     .max(200)
-    .regex(/^[a-zA-Z0-9._-]+$/, "Klíč smí obsahovat jen písmena, číslice, . _ -"),
+    .regex(
+      /^[a-zA-Z0-9._-]+$/,
+      "Klíč smí obsahovat jen písmena, číslice, . _ -",
+    ),
   locale: z.string().min(2).max(10).default("cs"),
   type: z.enum(["text", "richtext", "image", "file", "json"]).default("text"),
   valueText: optionalText(10_000),

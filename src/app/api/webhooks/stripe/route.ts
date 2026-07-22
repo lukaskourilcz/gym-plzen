@@ -2,8 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { Stripe } from "@/lib/integrations/stripe";
 import { constructStripeEvent } from "@/lib/integrations/stripe";
 import { logger } from "@/lib/helpers/logger";
-import { recordWebhookEvent } from "@/lib/services/webhooks";
-import { memberships, reservations, fulfillment } from "@/lib/services";
+import {
+  markWebhookProcessed,
+  recordWebhookEvent,
+  releaseWebhookClaim,
+} from "@/lib/services/webhooks";
+import { memberships, reservations, fulfillment, alerts } from "@/lib/services";
 
 /**
  * Stripe webhook. Verifies the signature, dedupes by event id, and mirrors
@@ -31,14 +35,16 @@ export async function POST(request: NextRequest) {
   const { isNew } = await recordWebhookEvent({
     provider: "stripe",
     eventId: event.id,
-    payload: event,
+    payload: { type: event.type },
   });
   if (!isNew) return NextResponse.json({ received: true, duplicate: true });
 
   try {
     await handleStripeEvent(event);
+    await markWebhookProcessed("stripe", event.id);
   } catch (e) {
     logger.error(e, { where: "stripe.webhook", type: event.type });
+    await releaseWebhookClaim("stripe", event.id);
     // 500 so Stripe retries.
     return NextResponse.json({ error: "handler_failed" }, { status: 500 });
   }
@@ -48,21 +54,64 @@ export async function POST(request: NextRequest) {
 
 async function handleStripeEvent(event: Stripe.Event): Promise<void> {
   switch (event.type) {
-    case "checkout.session.completed": {
+    case "checkout.session.completed":
+    case "checkout.session.async_payment_succeeded": {
       const session = event.data.object as Stripe.Checkout.Session;
+      if (session.payment_status !== "paid") break;
       const reservationId = session.metadata?.reservationId;
+      const userId = session.metadata?.userId ?? null;
+      if (reservationId) {
+        const reservation = await reservations.getReservation(reservationId);
+        if (!reservation || !userId || reservation.userId !== userId) {
+          throw new Error("Checkout ownership mismatch.");
+        }
+      }
       await memberships.recordPayment({
-        userId: session.metadata?.userId ?? null,
+        userId,
         reservationId: reservationId ?? null,
         type: session.mode === "subscription" ? "subscription" : "one_off",
         status: "succeeded",
         amountCents: session.amount_total ?? 0,
         currency: session.currency ?? "czk",
+        stripePaymentIntentId:
+          typeof session.payment_intent === "string"
+            ? session.payment_intent
+            : session.payment_intent?.id,
         stripeCheckoutSessionId: session.id,
       });
       if (reservationId) {
-        await reservations.confirmReservation(reservationId);
+        const confirmed = await reservations.confirmReservation(reservationId);
+        if (!confirmed) {
+          await alerts.raiseAlert({
+            severity: "critical",
+            title: "Zaplacenou rezervaci nelze potvrdit",
+            body: "Zkontrolujte rezervaci a případně vraťte platbu zákazníkovi.",
+            dedupeKey: `paid-reservation-conflict:${reservationId}`,
+            context: { reservationId, stripeCheckoutSessionId: session.id },
+          });
+          break;
+        }
         await fulfillment.fulfillReservation(reservationId);
+      }
+      break;
+    }
+
+    case "checkout.session.expired":
+    case "checkout.session.async_payment_failed": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      await memberships.markCheckoutPaymentFailed(session.id, event.type);
+      const reservationId = session.metadata?.reservationId;
+      if (reservationId) {
+        const reservation = await reservations.getReservation(reservationId);
+        if (
+          reservation?.status === "pending" &&
+          reservation.userId === session.metadata?.userId
+        ) {
+          await reservations.cancelReservation({
+            id: reservationId,
+            reason: event.type,
+          });
+        }
       }
       break;
     }

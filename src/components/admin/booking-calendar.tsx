@@ -12,7 +12,7 @@ import { createBlockedSlotAction } from "@/app/admin/schedule/actions";
 
 /**
  * Admin operational calendar (FullCalendar, MIT). Week view with 1-hour slots
- * from 06:00–22:00 — reservations as solid events, blocks (e.g. cleaning) as
+ * from 06:00–22:00 : reservations as solid events, blocks (e.g. cleaning) as
  * background events. Drag-select an empty range to create a block (used for the
  * cleaning window ~13:00). Correctness (overlap) is enforced server-side; this
  * is the visual operations view.
@@ -73,7 +73,11 @@ export function BookingCalendar({
       select={onSelect}
       height="auto"
       expandRows
-      businessHours={{ daysOfWeek: [0, 1, 2, 3, 4, 5, 6], startTime: `${pad(openHour)}:00`, endTime: `${pad(closeHour)}:00` }}
+      businessHours={{
+        daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+        startTime: `${pad(openHour)}:00`,
+        endTime: `${pad(closeHour)}:00`,
+      }}
       events={events}
     />
   );

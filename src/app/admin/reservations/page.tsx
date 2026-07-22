@@ -1,10 +1,21 @@
 import { reservations } from "@/lib/services";
-import { formatDateTime, formatMoney } from "@/lib/helpers/format";
+import {
+  formatDateTime,
+  formatMoney,
+  formatStatus,
+} from "@/lib/helpers/format";
 import { withDemoFallback } from "@/lib/demo/dummy";
 import { DemoBanner } from "@/components/admin/demo-banner";
 import { PageHeader } from "@/components/admin/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { ReservationForm } from "./reservation-form";
 import { CancelButton } from "./cancel-button";
 
@@ -49,11 +60,19 @@ export default async function ReservationsPage() {
             <TableRow key={r.id}>
               <TableCell>{formatDateTime(r.startsAt)}</TableCell>
               <TableCell>{formatDateTime(r.endsAt)}</TableCell>
-              <TableCell>{r.contactName ?? r.contactEmail ?? "Neuvedeno"}</TableCell>
-              <TableCell>{r.priceCents != null ? formatMoney(r.priceCents, r.currency) : "členství"}</TableCell>
-              <TableCell>{r.status}</TableCell>
               <TableCell>
-                {!demo && r.status !== "cancelled" && <CancelButton reservationId={r.id} />}
+                {r.contactName ?? r.contactEmail ?? "Neuvedeno"}
+              </TableCell>
+              <TableCell>
+                {r.priceCents != null
+                  ? formatMoney(r.priceCents, r.currency)
+                  : "členství"}
+              </TableCell>
+              <TableCell>{formatStatus(r.status)}</TableCell>
+              <TableCell>
+                {!demo && r.status !== "cancelled" && (
+                  <CancelButton reservationId={r.id} />
+                )}
               </TableCell>
             </TableRow>
           ))}

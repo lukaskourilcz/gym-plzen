@@ -1,6 +1,11 @@
 import { and, asc, eq, gt, gte, lt, lte, or } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { blockedSlot, openingHours, reservation, siteSetting } from "@/lib/db/schema";
+import {
+  blockedSlot,
+  openingHours,
+  reservation,
+  siteSetting,
+} from "@/lib/db/schema";
 import type { BlockedSlot, OpeningHours, Reservation } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
 import {
@@ -9,7 +14,7 @@ import {
 } from "@/lib/config/schedule";
 
 /**
- * Schedule service — opening hours and blocked slots, both managed from the
+ * Schedule service : opening hours and blocked slots, both managed from the
  * administration.
  */
 
@@ -115,7 +120,10 @@ export async function findOverlappingReservations(
         // start < otherEnd AND end > otherStart, using operators so Dates bind.
         lt(reservation.startsAt, end),
         gt(reservation.endsAt, start),
-        or(eq(reservation.status, "pending"), eq(reservation.status, "confirmed")),
+        or(
+          eq(reservation.status, "pending"),
+          eq(reservation.status, "confirmed"),
+        ),
       ),
     );
 }
@@ -136,7 +144,12 @@ export async function cancelOverlappingReservations(
   for (const r of affected) {
     await db
       .update(reservation)
-      .set({ status: "cancelled", cancelledAt: now, cancelReason: reason, updatedAt: now })
+      .set({
+        status: "cancelled",
+        cancelledAt: now,
+        cancelReason: reason,
+        updatedAt: now,
+      })
       .where(eq(reservation.id, r.id));
   }
   return affected;
@@ -147,7 +160,7 @@ export async function cancelOverlappingReservations(
 /**
  * Minutes the access code stays valid after a training slot so the member can
  * shower. Read from the `schedule.shower_minutes` setting, falling back to the
- * default. This grace does NOT affect slot overlap — only code validity.
+ * default. This grace does NOT affect slot overlap : only code validity.
  */
 export async function getShowerMinutes(): Promise<number> {
   try {
@@ -179,6 +192,10 @@ export async function setShowerMinutes(
     })
     .onConflictDoUpdate({
       target: siteSetting.key,
-      set: { value: minutes, updatedByAdminId: updatedByAdminId ?? null, updatedAt: now },
+      set: {
+        value: minutes,
+        updatedByAdminId: updatedByAdminId ?? null,
+        updatedAt: now,
+      },
     });
 }

@@ -1,5 +1,5 @@
 /**
- * Curated inspiration set — real, verified gyms that run our exact concept:
+ * Curated inspiration set : real, verified gyms that run our exact concept:
  * unmanned, smart-lock / PIN access, book-and-pay-online. Compiled 2026-07-18.
  * The long-form writeup with per-claim sources lives in docs/INSPIRATIONS.md;
  * this is the structured version rendered in the admin "Inspirace" section.
@@ -56,7 +56,8 @@ export const INSPIRATIONS: Inspiration[] = [
       "Bez obsluhy; rezervace i vstup přes appku s kalendářem. 24/7. Během rezervace nemá přístup nikdo jiný.",
     booking:
       "Jednomístný privátní gym, rezervace po 30 min až 2 h denně. Onboarding startuje 30min trialem zdarma.",
-    payment: "Kreditový systém v appce + členské plány (ceny až po registraci).",
+    payment:
+      "Kreditový systém v appce + členské plány (ceny až po registraci).",
     features: [
       "Kalendář dostupnosti v appce",
       "Zůstatek kreditů",
@@ -85,7 +86,7 @@ export const INSPIRATIONS: Inspiration[] = [
       "Portál „FitPro“ pro trenéry",
     ],
     frontend:
-      "App-first „four-tap“ rezervace; absenci prodejního trychtýře prezentují jako feature. Styl moderní, tech-forward. Postaveno na coworking (desk-booking) softwaru — model je hot-desking pro gymy.",
+      "App-first „four-tap“ rezervace; absenci prodejního trychtýře prezentují jako feature. Styl moderní, tech-forward. Postaveno na coworking (desk-booking) softwaru : model je hot-desking pro gymy.",
     ideas: [
       "Plochá, transparentní hodinová cena bez členství jako headline",
       "Samostatný typ účtu „trenér“ pro B2B pronájem prostoru",
@@ -98,7 +99,7 @@ export const INSPIRATIONS: Inspiration[] = [
     access:
       "Bez obsluhy. Rezervace a platba v appce, vstup přes PIN a smart lock. Rezervace až 14 dní dopředu.",
     booking:
-      "Jednomístné, po hodinách — privátní gym nebo terapeutická místnost jen pro tebe; 1 host zdarma. 14 poboček.",
+      "Jednomístné, po hodinách : privátní gym nebo terapeutická místnost jen pro tebe; 1 host zdarma. 14 poboček.",
     payment:
       "Kredity od ~£2 s dynamickou cenou dle dne/času; zvýhodněné balíčky kreditů; měsíční členství „coming soon“.",
     features: [
@@ -124,7 +125,7 @@ export const INSPIRATIONS: Inspiration[] = [
     booking:
       "Plně privátní jednomístné pody i semi-privátní prostory. Sloty po 30 min, lze řetězit za sebou.",
     payment:
-      "Pay-per-use, bez smluv — „only pay when you train“; i předplatné balíčky. 50 % sleva na první rezervaci.",
+      "Pay-per-use, bez smluv : „only pay when you train“; i předplatné balíčky. 50 % sleva na první rezervaci.",
     features: [
       "Okamžitá rezervace a přeplánování v appce",
       "Ovládání světla/hudby v podu",
@@ -142,7 +143,7 @@ export const INSPIRATIONS: Inspiration[] = [
     location: "UK (7 měst)",
     url: "https://myfitpod.co.uk/",
     access:
-      "Bez obsluhy, 24 h. Přístup přes scanner v appce — přiložíš telefon a dveře se otevřou; nebo záložka „access“ v profilu.",
+      "Bez obsluhy, 24 h. Přístup přes scanner v appce : přiložíš telefon a dveře se otevřou; nebo záložka „access“ v profilu.",
     booking: "Plně privátní pod, rezervace přes appku. Franšízový rollout.",
     payment:
       "Pay-as-you-go nebo kreditové balíčky; měsíční balíčky dávají slevu na vstup a předrezervace.",
@@ -165,7 +166,7 @@ export const INSPIRATIONS: Inspiration[] = [
     location: "San Francisco & Mill Valley, USA",
     url: "https://goyard.fit/",
     access:
-      "Keyless self-entry přes appku Kisi — zadáš e-mail, dostaneš magic-link, přiložíš telefon ke čtečce. Pozn.: hybrid, má i část obsluhovaných hodin.",
+      "Keyless self-entry přes appku Kisi : zadáš e-mail, dostaneš magic-link, přiložíš telefon ke čtečce. Pozn.: hybrid, má i část obsluhovaných hodin.",
     booking:
       "Rezervace vlastního privátního/semi-privátního podu na 60 min + sdílený venkovní prostor. Rezervace vždy nutná.",
     payment: "$265/měsíc neomezeně, nebo drop-in ~$40–42 (peak/off-peak).",
@@ -175,7 +176,7 @@ export const INSPIRATIONS: Inspiration[] = [
       "Peak/off-peak ceny",
     ],
     frontend:
-      "Účty a rezervace na Mindbody, dveře na Kisi — ukázka spojení hotových stacků místo vlastního vývoje. Passwordless „e-mail → magic link“ pro přístup.",
+      "Účty a rezervace na Mindbody, dveře na Kisi : ukázka spojení hotových stacků místo vlastního vývoje. Passwordless „e-mail → magic link“ pro přístup.",
     ideas: [
       "Passwordless e-mail magic-link jako identita pro přístup",
       "Peak/off-peak ceny jako jednoduchý nástroj řízení poptávky",
@@ -188,8 +189,9 @@ export const INSPIRATIONS: Inspiration[] = [
     access:
       "Bez obsluhy z principu i pravidlem. „Keyless entry“ u všech gymů, „nikdy nemusíš potkat majitele“. Hosté musí mít i bezpečnostní kamery.",
     booking:
-      "Marketplace (Airbnb pro domácí gymy) — rezervuješ privátní domácí gym jen pro sebe. Pozn.: dvoustranná platforma, ne jeden provozovatel.",
-    payment: "Členství pro rezervace + platba za rezervaci; bez smluv, „no hidden fees“.",
+      "Marketplace (Airbnb pro domácí gymy) : rezervuješ privátní domácí gym jen pro sebe. Pozn.: dvoustranná platforma, ne jeden provozovatel.",
+    payment:
+      "Členství pro rezervace + platba za rezervaci; bez smluv, „no hidden fees“.",
     features: [
       "Nativní appka",
       "Stav vybavení / dostupnost od hostitele",
@@ -197,7 +199,7 @@ export const INSPIRATIONS: Inspiration[] = [
       "Onboarding hostitelů",
     ],
     frontend:
-      "App-driven, důraz na „free and fast“ registraci; homepage minimalistická, tyrkysová paleta, profesionální fotky prostor. Dva trychtýře — „Gymer“ a „Home Gym Owner“.",
+      "App-driven, důraz na „free and fast“ registraci; homepage minimalistická, tyrkysová paleta, profesionální fotky prostor. Dva trychtýře : „Gymer“ a „Home Gym Owner“.",
     ideas: [
       "Keyless vstup + kamera jako pravidlo platformy (trust/safety feature)",
       "Positioning „soukromí jako produkt“ (žádné davy, čekání, cizí lidé)",
@@ -208,12 +210,19 @@ export const INSPIRATIONS: Inspiration[] = [
     location: "Londýn, UK",
     url: "https://elysiumgyms.com/",
     closest: true,
-    access: "Bez obsluhy. Dveře odemkne appka na váš slot. Rezervace po hodinách.",
-    booking: "Privátní boutique micro-gymy po hodinách; trénink sám, s přáteli nebo s trenérem.",
+    access:
+      "Bez obsluhy. Dveře odemkne appka na váš slot. Rezervace po hodinách.",
+    booking:
+      "Privátní boutique micro-gymy po hodinách; trénink sám, s přáteli nebo s trenérem.",
     payment: "Platba za session nebo kreditové balíčky v appce.",
-    features: ["App-first booking", "Keyless entry", "Připomínky", "Více poboček"],
+    features: [
+      "App-first booking",
+      "Keyless entry",
+      "Připomínky",
+      "Více poboček",
+    ],
     frontend:
-      "Minimalistický, hodně bílého prostoru, barvu nese fotografie. Hero „Private Boutique Training Spaces“ → řada pěti ikon (pobočky / hodinové sloty / keyless / soukromí / komunita) → carousel prostor → newsletter. Bez kalendáře v prohlížeči — web vysvětluje koncept a tlačí do appky.",
+      "Minimalistický, hodně bílého prostoru, barvu nese fotografie. Hero „Private Boutique Training Spaces“ → řada pěti ikon (pobočky / hodinové sloty / keyless / soukromí / komunita) → carousel prostor → newsletter. Bez kalendáře v prohlížeči : web vysvětluje koncept a tlačí do appky.",
     ideas: [
       "Šestikrokový „jak to funguje“ pruh (book → pay → PIN → train)",
       "Řada pěti ikon s odlišujícími vlastnostmi nad ohybem",
@@ -224,10 +233,15 @@ export const INSPIRATIONS: Inspiration[] = [
     location: "Švýcarsko / DE / AT / Nordics",
     url: "https://evofitness.ch/en/",
     closest: true,
-    access: "Bez obsluhy přes vlastní systém „Credlock“. Otevřeno ~5–24 h bez recepce.",
+    access:
+      "Bez obsluhy přes vlastní systém „Credlock“. Otevřeno ~5–24 h bez recepce.",
     booking: "Prémiové boutique kluby; členství i „no commitment“.",
     payment: "Členství (committed vs no-commitment) + 1 den zdarma.",
-    features: ["Signup na samostatné doméně", "Sezónní promo banner", "MyEvo aplikace"],
+    features: [
+      "Signup na samostatné doméně",
+      "Sezónní promo banner",
+      "MyEvo aplikace",
+    ],
     frontend:
       "High-contrast boutique: tmavá pozadí, neonové EVO nápisy ve fotkách, čistý sans-serif. Hero se třemi chipy hodnot + plovoucí promo („50% off summer“). Vedle sebe dvě cenové úrovně s cenou i podmínkami. Silná sociální proof.",
     ideas: [
@@ -241,11 +255,17 @@ export const INSPIRATIONS: Inspiration[] = [
     url: "https://www.nextdoorgyms.de/en",
     closest: true,
     access: "Plně digitální, bez personálu. Vstup app/transpondér, 6–24 h.",
-    booking: "„Neighbourhood“ gym řízený chytrými stroji EGYM; bez trenérů a recepce.",
+    booking:
+      "„Neighbourhood“ gym řízený chytrými stroji EGYM; bez trenérů a recepce.",
     payment: "Od 29,90 €/měs, flexibilní délka 1 týden–24 měs.",
-    features: ["Účet za 5 minut", "Bez objednání", "FAQ akordeon", "EGYM Genius AI"],
+    features: [
+      "Účet za 5 minut",
+      "Bez objednání",
+      "FAQ akordeon",
+      "EGYM Genius AI",
+    ],
     frontend:
-      "Moderní minimalismus, tmavé UI s bílým prostorem. Hero přímo říká „staffless gym“ — koncept JE headline. Ikonové karty kategorií → benefit list → testimonials → loga partnerů → FAQ akordeon. Signup prodává rychlost a samostatnost.",
+      "Moderní minimalismus, tmavé UI s bílým prostorem. Hero přímo říká „staffless gym“ : koncept JE headline. Ikonové karty kategorií → benefit list → testimonials → loga partnerů → FAQ akordeon. Signup prodává rychlost a samostatnost.",
     ideas: [
       "Udělat z bez-obsluhy hlavní headline (buduje důvěru)",
       "FAQ akordeon předjímající „jak se dostanu dovnitř“",
@@ -257,9 +277,14 @@ export const INSPIRATIONS: Inspiration[] = [
     url: "https://barerooms.com/",
     closest: true,
     access: "Bez obsluhy + app-access. Check-in i vstup přes appku (Wellyx).",
-    booking: "Privátní vybavené místnosti po hodinách/půlhodinách; sloty se stagerují tak, aby se lidé nepotkali.",
+    booking:
+      "Privátní vybavené místnosti po hodinách/půlhodinách; sloty se stagerují tak, aby se lidé nepotkali.",
     payment: "Pay-as-you-go nebo členské úrovně (Silver/Gold/Platinum).",
-    features: ["Sloty na hodinu/půlhodinu", "Bez walk-ins", "Golf sim, VR, projektor"],
+    features: [
+      "Sloty na hodinu/půlhodinu",
+      "Bez walk-ins",
+      "Golf sim, VR, projektor",
+    ],
     frontend:
       "Tmavá pozadí, bílý text, průhledné logo. Copy cílí na soukromí („no wandering eyes, no waiting“). Booking, platby i check-in v appce; web = koncept + úrovně členství.",
     ideas: [
@@ -273,11 +298,12 @@ export const INSPIRATIONS: Inspiration[] = [
     url: "https://www.barrys.com/",
     designBenchmark: true,
     access: "Obsluhovaný boutique HIIT řetězec („Red Room“). Design benchmark.",
-    booking: "Rezervace lekcí; location-first vícekrokový flow (studio → datum → lekce → potvrzení).",
+    booking:
+      "Rezervace lekcí; location-first vícekrokový flow (studio → datum → lekce → potvrzení).",
     payment: "Balíčky lekcí / členství.",
     features: ["Zapamatování polohy", "≤3 kroky k potvrzení", "Silné CTA"],
     frontend:
-      "Tmavé, high-contrast, near-black pozadí s bílým písmem — nightclub nálada. Full-width hero (zvlášť desktop/mobil) + promo banner. Silný narativní scroll: hero → Red Room video → Run vs Lift → benefit karty → instruktoři → amenity → testimonials.",
+      "Tmavé, high-contrast, near-black pozadí s bílým písmem : nightclub nálada. Full-width hero (zvlášť desktop/mobil) + promo banner. Silný narativní scroll: hero → Red Room video → Run vs Lift → benefit karty → instruktoři → amenity → testimonials.",
     ideas: [
       "Tmavé UI + jeden horký akcent + teplá kontrastní fotografie",
       "„Book your first class“ jako jediné dominantní CTA, ≤3 kroky",
@@ -288,10 +314,15 @@ export const INSPIRATIONS: Inspiration[] = [
     location: "Londýn, UK",
     url: "https://gymbox.com/",
     designBenchmark: true,
-    access: "Obsluhovaný, záměrně divoký boutique (DJ, světla). Bold design benchmark.",
+    access:
+      "Obsluhovaný, záměrně divoký boutique (DJ, světla). Bold design benchmark.",
     booking: "Trial / rozvrh / join na samostatných subdoménách.",
     payment: "Členství s tvrdou nabídkou (např. „£10 do října“).",
-    features: ["Live countdown timer", "UGC galerie „Spotted in the Box“", "70+ lekcí"],
+    features: [
+      "Live countdown timer",
+      "UGC galerie „Spotted in the Box“",
+      "70+ lekcí",
+    ],
     frontend:
       "Tmavá nightclub estetika, dramatické světlo, high-contrast sans-serif. Hero „ANYTHING GOES“ + tvrdá nabídka + odpočítávání. Divadelní fotografie (lazy-load). Sekce: vybavení → 70+ lekcí → recovery tech → UGC galerie → FAQ.",
     ideas: [
@@ -304,12 +335,18 @@ export const INSPIRATIONS: Inspiration[] = [
     location: "Londýn, UK",
     url: "https://www.thirdspace.london/",
     designBenchmark: true,
-    access: "Obsluhovaný luxusní health-club. Prémiový/minimalistický benchmark.",
-    booking: "Minimalistický modal „Enquire → vyber možnost“ místo dlouhého formuláře.",
+    access:
+      "Obsluhovaný luxusní health-club. Prémiový/minimalistický benchmark.",
+    booking:
+      "Minimalistický modal „Enquire → vyber možnost“ místo dlouhého formuláře.",
     payment: "Členství (poptávka přes modal).",
-    features: ["Light/dark branding", "Modulární karty", "Nízko-frikční lead capture"],
+    features: [
+      "Light/dark branding",
+      "Modulární karty",
+      "Nízko-frikční lead capture",
+    ],
     frontend:
-      "Čisté, zdrženlivé, prémiové — světlá i tmavá varianta loga/módu, moderní sans-serif. Hero full-bleed s „Training for life“ a dvěma CTA. Modulární karty (lekce, vybavení, PT, výživa).",
+      "Čisté, zdrženlivé, prémiové : světlá i tmavá varianta loga/módu, moderní sans-serif. Hero full-bleed s „Training for life“ a dvěma CTA. Modulární karty (lekce, vybavení, PT, výživa).",
     ideas: [
       "Light/dark-aware branding od začátku (působí prémiově)",
       "Krátký modal „enquire / vyber možnost“ místo dlouhého formuláře",
@@ -320,10 +357,15 @@ export const INSPIRATIONS: Inspiration[] = [
     location: "Denver, USA",
     url: "https://alchemy365.com/",
     designBenchmark: true,
-    access: "Obsluhované strength boutique studio. Čistý, motion-forward design.",
+    access:
+      "Obsluhované strength boutique studio. Čistý, motion-forward design.",
     booking: "Rozvrhy na stránkách poboček s kotvami.",
     payment: "Trial „3 za $30“, dále členství.",
-    features: ["Jeden akcent (modrá)", "Instagram feed komunity", "Motion + foto"],
+    features: [
+      "Jeden akcent (modrá)",
+      "Instagram feed komunity",
+      "Motion + foto",
+    ],
     frontend:
       "Sebevědomé jednoakcentové (modré) schéma kolem kruhového loga; moderní sans-serif; mix pohybu a statické fotografie. Hero „Pursue Your Legend“ + konkrétní trial hook. Sekce pozicují strength a tři módy (group / open gym / private).",
     ideas: [
@@ -337,9 +379,14 @@ export const INSPIRATIONS: Inspiration[] = [
     url: "https://www.1rebel.com/",
     designBenchmark: true,
     access: "Obsluhovaný immersive boutique. Bold digital-brand benchmark.",
-    booking: "Intent-first: „I WANT TO TRAIN: ___“ → najdi session; appka řeší nákup a výběr místa.",
+    booking:
+      "Intent-first: „I WANT TO TRAIN: ___“ → najdi session; appka řeší nákup a výběr místa.",
     payment: "Balíčky / drop-in; výběr konkrétního místa/kola.",
-    features: ["Intent-first filtr", "Výběr konkrétního místa", "Konzistentní brand web↔app"],
+    features: [
+      "Intent-first filtr",
+      "Výběr konkrétního místa",
+      "Konzistentní brand web↔app",
+    ],
     frontend:
       "Bold, high-energy, konzistentní identita web→app→sociální sítě; optimalizované obrázky. Vstup přes přepínač země/pobočky. Booking začíná filtrem podle záměru, teprve pak rozvrh.",
     ideas: [
@@ -351,13 +398,13 @@ export const INSPIRATIONS: Inspiration[] = [
 
 /** Cross-cutting patterns worth copying, shown as a summary on the page. */
 export const INSPIRATION_TAKEAWAYS: string[] = [
-  "Bez smluv, plochá a transparentní cena za vstup — přesně náš model 290 Kč (FlexWerk).",
-  "Prepaid balíčky / kredity místo měsíčního předplatného — doplní naši věrnost „každý 10. zdarma“.",
+  "Bez smluv, plochá a transparentní cena za vstup : přesně náš model 290 Kč (FlexWerk).",
+  "Prepaid balíčky / kredity místo měsíčního předplatného : doplní naši věrnost „každý 10. zdarma“.",
   "Silná nabídka na první návštěvu (trial zdarma nebo −50 %) jako hlavní CTA.",
   "Zpřístupnit PIN ~24 h před slotem přímo v účtu člena (Solospace).",
   "PIN klávesnice s časově omezeným kódem = přesně náš Nuki model.",
   "Samostatná obrazovka „Přístup“ + záložní kanál, aby se člen nikdy nezamkl venku.",
   "Denní strop rezervací pro férové sdílení jedné místnosti (The Gym Pods).",
   "Samostatný typ účtu „trenér“ pro B2B pronájem prostoru.",
-  "„Soukromí jako produkt“ — emoční jádro celé kategorie.",
+  "„Soukromí jako produkt“ : emoční jádro celé kategorie.",
 ];

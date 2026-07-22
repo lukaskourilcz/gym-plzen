@@ -14,7 +14,7 @@ import type { Result } from "@/lib/helpers/result";
 /**
  * Bridges React Hook Form + Zod with our server actions.
  *
- * - Client-side validation uses `zodResolver(schema)` — the SAME schema the
+ * - Client-side validation uses `zodResolver(schema)` : the SAME schema the
  *   server action re-validates with, so rules live in one place
  *   (`@/lib/validations/*`).
  * - On submit it calls the action (which returns a `Result`) and maps any
@@ -53,7 +53,9 @@ export function useActionForm<S extends z.ZodTypeAny>(config: {
       config.onSuccess?.();
     } else {
       setServerError(result.error);
-      for (const [field, messages] of Object.entries(result.fieldErrors ?? {})) {
+      for (const [field, messages] of Object.entries(
+        result.fieldErrors ?? {},
+      )) {
         if (messages?.[0]) {
           form.setError(field as Path<Values>, { message: messages[0] });
         }

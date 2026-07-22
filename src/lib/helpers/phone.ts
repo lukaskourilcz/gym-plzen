@@ -11,7 +11,10 @@ const CZ_COUNTRY_CODE = "420";
  *
  * Accepts: "+420 777 123 456", "777123456", "00420777123456".
  */
-export function toE164(input: string, defaultCountryCode = CZ_COUNTRY_CODE): string | null {
+export function toE164(
+  input: string,
+  defaultCountryCode = CZ_COUNTRY_CODE,
+): string | null {
   const trimmed = input.trim();
   if (!trimmed) return null;
 

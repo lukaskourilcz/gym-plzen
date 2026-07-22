@@ -3,14 +3,24 @@ import { formatDateTime } from "@/lib/helpers/format";
 import { withDemoFallback } from "@/lib/demo/dummy";
 import { DemoBanner } from "@/components/admin/demo-banner";
 import { PageHeader } from "@/components/admin/page-header";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export const metadata = { title: "Kniha vstupů" };
 export const dynamic = "force-dynamic";
 
 /** Actual unlocks read from the Nuki lock (synced by webhook + cron). */
 export default async function EntryLogPage() {
-  const { rows, demo } = await withDemoFallback(entryLog.listRecentEntries(200), (d) => d.entries);
+  const { rows, demo } = await withDemoFallback(
+    entryLog.listRecentEntries(200),
+    (d) => d.entries,
+  );
 
   return (
     <div>

@@ -33,12 +33,28 @@ export function MemberForm({ member }: { member: MemberWithProfile }) {
   return (
     <form onSubmit={submit}>
       <input type="hidden" {...register("userId")} />
-      <Field name="phone" label="Telefon (E.164)" error={formState.errors.phone}>
+      <Field
+        name="phone"
+        label="Telefon (E.164)"
+        error={formState.errors.phone}
+      >
         <Input id="phone" placeholder="+420…" {...register("phone")} />
       </Field>
-      <CheckboxField name="notifyByWhatsapp" label="Posílat kódy přes WhatsApp" register={register("notifyByWhatsapp")} />
-      <CheckboxField name="notifyBySms" label="Posílat kódy přes SMS" register={register("notifyBySms")} />
-      <CheckboxField name="marketingConsent" label="Souhlas s marketingem" register={register("marketingConsent")} />
+      <CheckboxField
+        name="notifyByWhatsapp"
+        label="Posílat kódy přes WhatsApp"
+        register={register("notifyByWhatsapp")}
+      />
+      <CheckboxField
+        name="notifyBySms"
+        label="Posílat kódy přes SMS"
+        register={register("notifyBySms")}
+      />
+      <CheckboxField
+        name="marketingConsent"
+        label="Souhlas s marketingem"
+        register={register("marketingConsent")}
+      />
       <Field name="note" label="Interní poznámka" error={formState.errors.note}>
         <Textarea id="note" rows={2} {...register("note")} />
       </Field>

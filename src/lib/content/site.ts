@@ -7,12 +7,17 @@ import {
   ENTRY_PRICE_SETTING_KEY,
   FREE_ENTRY_EVERY,
 } from "@/lib/config/pricing";
-import { LOGO_URL_KEY, TERMS_URL_KEY } from "@/lib/config/branding";
+import {
+  HERO_IMAGE_ALT_KEY,
+  HERO_IMAGE_URL_KEY,
+  LOGO_URL_KEY,
+  TERMS_URL_KEY,
+} from "@/lib/config/branding";
 
 /**
  * Public-site content, resilient by design. The marketing site reads copy from
  * the CMS (`content_block`), but must still render before the database is
- * provisioned or seeded — so this loader overlays any CMS values on top of
+ * provisioned or seeded : so this loader overlays any CMS values on top of
  * sensible Czech defaults and NEVER throws (a DB error falls back to defaults).
  *
  * Every key here is editable in the admin under "Obsah webu".
@@ -39,12 +44,12 @@ export const SITE_DEFAULTS = {
     "Bez závazků a měsíčních plateb. Platíte jen za to, co si odtrénujete.",
   "home.rules.title": "Provozní řád",
   "home.rules.body":
-    "Do fitness vstupujte pouze v čase rezervace. Po tréninku vraťte vybavení i dětský koutek do původního stavu a otřete použité nářadí. Vstupní kód je osobní a platí pouze ve vašem časovém okně.",
+    "Do fitness vstupujte pouze v čase rezervace. Po tréninku vraťte vybavení do původního stavu a otřete použité nářadí. Vstupní kód je osobní a platí pouze podle pokynů k vaší rezervaci.",
   "home.gallery.title": "Prostor",
   "home.contact.title": "Kontakt",
   "contact.address": "Křížkova 424/23, 301 00 Plzeň 1",
-  "contact.phone": "+420 777 000 000",
-  "contact.email": "info@gymplzen.cz",
+  "contact.phone": "",
+  "contact.email": "",
 } as const;
 
 export type SiteContentKey = keyof typeof SITE_DEFAULTS;
@@ -55,6 +60,8 @@ export interface SiteContent {
   freeEntryEvery: number;
   logoUrl: string | null;
   termsUrl: string | null;
+  heroImageUrl: string | null;
+  heroImageAlt: string;
 }
 
 /** Load all public content once (overlay CMS values on defaults). Never throws. */
@@ -63,6 +70,8 @@ export async function loadSiteContent(locale = "cs"): Promise<SiteContent> {
   let entryPriceCents = DEFAULT_ENTRY_PRICE_CENTS;
   let logoUrl: string | null = null;
   let termsUrl: string | null = null;
+  let heroImageUrl: string | null = null;
+  let heroImageAlt = "";
 
   try {
     const rows = await db
@@ -84,9 +93,13 @@ export async function loadSiteContent(locale = "cs"): Promise<SiteContent> {
         logoUrl = s.value || null;
       if (s.key === TERMS_URL_KEY && typeof s.value === "string")
         termsUrl = s.value || null;
+      if (s.key === HERO_IMAGE_URL_KEY && typeof s.value === "string")
+        heroImageUrl = s.value || null;
+      if (s.key === HERO_IMAGE_ALT_KEY && typeof s.value === "string")
+        heroImageAlt = s.value;
     }
   } catch (e) {
-    // DB not provisioned/reachable yet — fall back to defaults so the public
+    // DB not provisioned/reachable yet : fall back to defaults so the public
     // site still renders on a fresh deploy.
     logger.warn("loadSiteContent: using defaults (DB unavailable)", {
       error: String(e),
@@ -99,5 +112,7 @@ export async function loadSiteContent(locale = "cs"): Promise<SiteContent> {
     freeEntryEvery: FREE_ENTRY_EVERY,
     logoUrl,
     termsUrl,
+    heroImageUrl,
+    heroImageAlt,
   };
 }

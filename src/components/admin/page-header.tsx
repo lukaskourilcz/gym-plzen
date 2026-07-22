@@ -12,7 +12,11 @@ export function PageHeader({
     <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
       <div>
         <h1 className="text-[28px] font-black tracking-[-.025em]">{title}</h1>
-        {description && <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>}
+        {description && (
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+            {description}
+          </p>
+        )}
       </div>
       {children && <div className="flex items-center gap-2">{children}</div>}
     </div>

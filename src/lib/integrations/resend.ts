@@ -39,7 +39,7 @@ export async function sendEmail(
   params: SendEmailParams,
 ): Promise<SendEmailResult> {
   if (!isResendConfigured()) {
-    logger.warn("Resend not configured — email not sent", {
+    logger.warn("Resend not configured : email not sent", {
       to: params.to,
       subject: params.subject,
     });

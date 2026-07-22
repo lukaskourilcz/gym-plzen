@@ -1,7 +1,11 @@
 "use client";
 
 import { useActionForm } from "@/components/admin/use-action-form";
-import { Field, FormFeedback, SubmitButton } from "@/components/admin/form-controls";
+import {
+  Field,
+  FormFeedback,
+  SubmitButton,
+} from "@/components/admin/form-controls";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -21,7 +25,15 @@ import {
   saveShowerMinutesAction,
 } from "./actions";
 
-const DAY_NAMES = ["Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"];
+const DAY_NAMES = [
+  "Neděle",
+  "Pondělí",
+  "Úterý",
+  "Středa",
+  "Čtvrtek",
+  "Pátek",
+  "Sobota",
+];
 
 /** One row of the opening-hours editor for a given weekday. */
 export function OpeningHoursRow({
@@ -47,15 +59,28 @@ export function OpeningHoursRow({
 
   return (
     <form onSubmit={submit} className="mb-2 flex flex-wrap items-end gap-3">
-      <input type="hidden" {...register("dayOfWeek", { valueAsNumber: true })} />
+      <input
+        type="hidden"
+        {...register("dayOfWeek", { valueAsNumber: true })}
+      />
       <div className="w-20 pb-2 font-medium">{DAY_NAMES[dayOfWeek]}</div>
       <div>
         <Label htmlFor={`open-${dayOfWeek}`}>Otevřeno</Label>
-        <Input id={`open-${dayOfWeek}`} type="time" className="w-32" {...register("open")} />
+        <Input
+          id={`open-${dayOfWeek}`}
+          type="time"
+          className="w-32"
+          {...register("open")}
+        />
       </div>
       <div>
         <Label htmlFor={`close-${dayOfWeek}`}>Zavřeno</Label>
-        <Input id={`close-${dayOfWeek}`} type="time" className="w-32" {...register("close")} />
+        <Input
+          id={`close-${dayOfWeek}`}
+          type="time"
+          className="w-32"
+          {...register("close")}
+        />
       </div>
       <div>
         <Label htmlFor={`slot-${dayOfWeek}`}>Slot (min)</Label>
@@ -69,11 +94,17 @@ export function OpeningHoursRow({
         />
       </div>
       <label className="flex items-center gap-2 pb-2 text-sm">
-        <input type="checkbox" className="size-4 accent-[var(--color-primary)]" {...register("isClosed")} />
+        <input
+          type="checkbox"
+          className="size-4 accent-[var(--color-primary)]"
+          {...register("isClosed")}
+        />
         Zavřeno
       </label>
       <div className="pb-0.5">
-        <SubmitButton isSubmitting={formState.isSubmitting}>Uložit</SubmitButton>
+        <SubmitButton isSubmitting={formState.isSubmitting}>
+          Uložit
+        </SubmitButton>
       </div>
       <FormFeedback error={serverError} success={success} />
     </form>
@@ -127,11 +158,23 @@ export function ShowerMinutesForm({ current }: { current: number }) {
   });
   return (
     <form onSubmit={submit} className="max-w-xs">
-      <Field name="showerMinutes" label="Doba na sprchu po tréninku (min)" error={form.formState.errors.showerMinutes}>
-        <Input id="showerMinutes" type="number" min={0} max={120} {...form.register("showerMinutes", { valueAsNumber: true })} />
+      <Field
+        name="showerMinutes"
+        label="Doba na sprchu po tréninku (min)"
+        error={form.formState.errors.showerMinutes}
+      >
+        <Input
+          id="showerMinutes"
+          type="number"
+          min={0}
+          max={120}
+          {...form.register("showerMinutes", { valueAsNumber: true })}
+        />
       </Field>
       <FormFeedback error={serverError} success={success} />
-      <SubmitButton isSubmitting={form.formState.isSubmitting}>Uložit</SubmitButton>
+      <SubmitButton isSubmitting={form.formState.isSubmitting}>
+        Uložit
+      </SubmitButton>
     </form>
   );
 }
@@ -146,7 +189,12 @@ export function DeleteBlockButton({ id }: { id: string }) {
   return (
     <form onSubmit={submit}>
       <input type="hidden" {...form.register("id")} />
-      <Button type="submit" variant="destructive" size="sm" disabled={form.formState.isSubmitting}>
+      <Button
+        type="submit"
+        variant="destructive"
+        size="sm"
+        disabled={form.formState.isSubmitting}
+      >
         Odstranit
       </Button>
     </form>

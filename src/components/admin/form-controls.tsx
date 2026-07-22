@@ -27,7 +27,9 @@ export function Field({
     <div className="mb-4">
       <Label htmlFor={name}>{label}</Label>
       {children}
-      {error?.message && <p className="mt-1 text-xs text-destructive">{error.message}</p>}
+      {error?.message && (
+        <p className="mt-1 text-xs text-destructive">{error.message}</p>
+      )}
     </div>
   );
 }
@@ -41,7 +43,8 @@ export function FormFeedback({
   success?: string | null;
 }) {
   if (error) return <p className="mt-1 text-sm text-destructive">{error}</p>;
-  if (success) return <p className="mt-1 text-sm font-medium text-primary">{success}</p>;
+  if (success)
+    return <p className="mt-1 text-sm font-medium text-primary">{success}</p>;
   return null;
 }
 

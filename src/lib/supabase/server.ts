@@ -22,7 +22,7 @@ export async function createClient(): Promise<SupabaseClient | null> {
             cookieStore.set(name, value, options);
           }
         } catch {
-          // Called from a Server Component (read-only cookies) — the middleware
+          // Called from a Server Component (read-only cookies) : the middleware
           // refreshes the session cookie, so this is safe to ignore.
         }
       },

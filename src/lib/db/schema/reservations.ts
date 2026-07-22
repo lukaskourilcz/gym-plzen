@@ -12,7 +12,7 @@ import { blockReason, reservationStatus } from "./enums";
 
 /**
  * A reservation is a single training slot. The gym holds one person at a time,
- * so overlap prevention is the central invariant — enforced in the service
+ * so overlap prevention is the central invariant : enforced in the service
  * layer (see lib/services/reservations.ts) and backed by an exclusion
  * constraint added in a migration (see NEEDED.md / drizzle notes).
  */
@@ -22,7 +22,9 @@ export const reservation = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
 
     // Null for admin-created walk-in bookings without an account.
-    userId: uuid("user_id").references(() => profiles.id, { onDelete: "set null" }),
+    userId: uuid("user_id").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
 
     startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
     endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
@@ -39,9 +41,12 @@ export const reservation = pgTable(
     currency: text("currency").default("czk").notNull(),
 
     // Who created it, for the audit trail ("member" | admin user id).
-    createdByAdminId: uuid("created_by_admin_id").references(() => profiles.id, {
-      onDelete: "set null",
-    }),
+    createdByAdminId: uuid("created_by_admin_id").references(
+      () => profiles.id,
+      {
+        onDelete: "set null",
+      },
+    ),
     cancelledAt: timestamp("cancelled_at"),
     cancelReason: text("cancel_reason"),
 
@@ -57,7 +62,7 @@ export const reservation = pgTable(
 
 /**
  * A blocked slot removes a time range from availability without being a
- * booking — maintenance, holidays, private events.
+ * booking : maintenance, holidays, private events.
  */
 export const blockedSlot = pgTable(
   "blocked_slot",
@@ -67,9 +72,12 @@ export const blockedSlot = pgTable(
     endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
     reason: blockReason("reason").notNull().default("other"),
     note: text("note"),
-    createdByAdminId: uuid("created_by_admin_id").references(() => profiles.id, {
-      onDelete: "set null",
-    }),
+    createdByAdminId: uuid("created_by_admin_id").references(
+      () => profiles.id,
+      {
+        onDelete: "set null",
+      },
+    ),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => [index("blocked_slot_starts_at_idx").on(t.startsAt)],

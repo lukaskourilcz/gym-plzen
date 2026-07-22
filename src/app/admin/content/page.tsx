@@ -7,7 +7,7 @@ export const metadata = { title: "Obsah webu" };
 export const dynamic = "force-dynamic";
 
 /**
- * CMS admin — the "redakční systém". Lists content blocks grouped by section
+ * CMS admin : the "redakční systém". Lists content blocks grouped by section
  * with an inline editor, plus a form to add new blocks.
  */
 export default async function ContentPage() {
@@ -25,7 +25,10 @@ export default async function ContentPage() {
         <section key={group} className="mt-6">
           <h2 className="mb-2 text-lg font-semibold">{group}</h2>
           {items.map((block) => (
-            <details key={`${block.key}:${block.locale}`} className="mb-3 rounded-lg border border-border p-3">
+            <details
+              key={`${block.key}:${block.locale}`}
+              className="mb-3 rounded-lg border border-border p-3"
+            >
               <summary className="cursor-pointer">
                 <strong>{block.label ?? block.key}</strong>{" "}
                 <code className="text-muted-foreground">{block.key}</code>

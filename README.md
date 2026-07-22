@@ -1,99 +1,108 @@
-# Gym Plzeň — rezervační systém a administrace
+# NAMASTÉ Private Gym
 
-Web, rezervační systém a redakční systém (CMS) pro jednomístný gym v Plzni.
-Členové si rezervují a platí trénink online, dostanou časově omezený vstupní kód
-na chytrý zámek (Nuki) přes e-mail/WhatsApp, a administrace umožňuje spravovat
-obsah webu, rezervace, členy, ceny a sledovat spolehlivost systému.
+Web, rezervační systém, členský účet a administrace pro soukromý gym na adrese
+Křížkova 424/23, Plzeň. Aplikace používá Next.js, Supabase, Stripe a Nuki.
 
-> **Stav:** kompletní kostra a architektura + plná administrace (backend).
-> Vizuální design veřejného webu a live kalendář jsou další fází — viz plán.
+## Aktuální stav
 
-## Tech stack
+Modernizovaný veřejný web, měsíční výběr rezervací, lokální ukázkové účty,
+členský účet, CMS a administrace jsou v repozitáři. Produkční build funguje i
+bez databáze, ale rezervace v takovém případě poctivě zobrazí nedostupnou službu.
+Fiktivní dostupnost ani lokální demo přihlášení se v produkci nezapnou.
 
-| Vrstva            | Technologie                                            |
-| ----------------- | ------------------------------------------------------ |
-| Web / API         | Next.js (App Router, Server Actions), TypeScript       |
-| Databáze          | Supabase Postgres přes Drizzle ORM                     |
-| Autentizace       | Supabase Auth (email/heslo + Google/Apple/Microsoft)   |
-| Platby            | Stripe (jednorázový vstup, Apple/Google Pay)           |
-| Zámek             | Nuki Web API                                           |
-| E-maily           | Resend                                                 |
-| WhatsApp / SMS    | WhatsApp Business Cloud API / GoSMS (volitelně)        |
-| Monitoring        | Sentry + UptimeRobot                                   |
-| Hosting           | Vercel (+ Vercel Cron)                                 |
+Pro další práci začni v [SESSION_HANDOFF.md](./SESSION_HANDOFF.md). Externí
+nastavení a chybějící klientské podklady jsou v [NEEDED.md](./NEEDED.md).
 
-## Obchodní model
+## Hlavní části
 
-Jednorázový vstup **290 Kč** (cena editovatelná v administraci). **Žádná měsíční
-předplatná.** Každý **10.** vstup zdarma — člen vidí počítadlo návštěv a kolik
-zbývá do vstupu zdarma (`components/loyalty-widget.tsx`). Kadenci lze změnit v
-`src/lib/config/pricing.ts`.
+- `/`: veřejný web, cena, způsob rezervace, pravidla, galerie, kontakt a mapa.
+- `/rezervace`: měsíční date-first kalendář a přesné časové rozsahy slotů.
+- `/login`: Supabase přihlášení a registrace; v lokálním vývoji také demo účty.
+- `/account`: profil člena, věrnost a rezervace.
+- `/admin`: chráněná administrace, CMS, rozvrh, rezervace a provozní přehledy.
+- `/faq`, `/vybaveni`: potvrzené informace bez domyšleného vybavení nebo pravidel.
+- `/admin/design-system`: chráněná živá galerie design systému.
 
-## Rychlý start
+## Stack
+
+| Oblast    | Technologie                                              |
+| --------- | -------------------------------------------------------- |
+| Web a API | Next.js 15 App Router, React 19, TypeScript              |
+| Styl      | Tailwind CSS 4, vlastní semantic tokens, Manrope, Lucide |
+| Databáze  | Supabase Postgres, Drizzle ORM                           |
+| Auth      | Supabase Auth a `@supabase/ssr`                          |
+| Platby    | Stripe Checkout                                          |
+| Vstup     | Nuki Web API                                             |
+| Zprávy    | Resend, WhatsApp Business, volitelně GoSMS               |
+| Dohled    | Sentry a Vercel Cron                                     |
+| Testy     | Node test runner přes `tsx`, Playwright                  |
+
+## Požadavky
+
+- Node.js `>=22.13 <23`
+- npm 10 nebo novější
+- Pro živé rezervace samostatný Supabase projekt s aplikovanými migracemi
+
+## Lokální spuštění
 
 ```bash
 npm install
-cp .env.example .env.local     # vyplň podle NEEDED.md
-npm run db:migrate             # vytvoří schéma + constraint proti překrývání
-npm run db:seed                # otevírací doba, výchozí obsah, cena vstupu
-npm run dev                    # http://localhost:3000
+cp .env.example .env.local
+npm run dev
 ```
 
-Po registraci účtu se povyš na administrátora:
+Bez databáze lze lokálně zapnout pouze ukázkové rozhraní:
+
+```dotenv
+DEMO_AUTH_ENABLED="true"
+DEMO_AUTH_SECRET="nahodny-retezec-alespon-32-znaku"
+BOOKING_PREVIEW_FIXTURE="true"
+```
+
+Demo přihlášení je záměrně dostupné jen mimo produkci. Přihlašovací formulář
+neobsahuje banner s hesly.
+
+## Ověření
 
 ```bash
-npm run set-admin -- tvuj@email.cz
+npm run format:check
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm audit --audit-level=high
+npm audit --omit=dev
 ```
 
-**Než něco poběží, projdi [`NEEDED.md`](./NEEDED.md)** — seznam všech účtů,
-klíčů a webhooků, které je potřeba nastavit ručně.
+E2E režimy a ochrana proti nechtěným zápisům do vzdálené databáze jsou popsány
+v [tests/e2e/README.md](./tests/e2e/README.md).
 
-## Struktura projektu
+## Architektura
 
-```
-src/
-├── app/
-│   ├── (public)        úvod, přihlášení, účet člena (skeleton)
-│   ├── admin/          administrace — rezervace, obsah, členové, ceny, …
-│   └── api/
-│       ├── auth/callback Supabase OAuth callback
-│       ├── webhooks/   stripe · nuki · whatsapp
-│       └── cron/       watchdog · sync-entry-log
-├── components/         sdílené UI (admin form-controls, loyalty-widget)
-└── lib/
-    ├── auth/guards.ts  Supabase Auth guards
-    ├── supabase/       Supabase server/client/middleware
-    ├── config/         laditelné konstanty (pricing)
-    ├── db/             Drizzle schéma, klient, typy
-    ├── env.ts          typově bezpečné env proměnné (Zod)
-    ├── helpers/        znovupoužitelné helpery (http, form, crypto, …)
-    ├── integrations/   adaptéry externích služeb
-    ├── services/       business logika (jediná vrstva k DB + integracím)
-    └── validations/    Zod schémata formulářů
+```text
+routes a server actions -> services -> databáze a integrace
+                              |
+                              -> sdílené helpery
 ```
 
-Architektura a konvence detailně: `.claude/skills/gym-architecture/SKILL.md`.
+Routes validují, autorizují a volají služby. Business logika a přístup k DB jsou
+v `src/lib/services`. Adaptéry externích služeb jsou v `src/lib/integrations`.
+Podrobnosti jsou v [.claude/skills/gym-architecture/SKILL.md](./.claude/skills/gym-architecture/SKILL.md).
 
-**Formuláře** používají **React Hook Form + Zod** (stejné Zod schéma na klientu
-i serveru, viz `components/admin/use-action-form.ts`). Rešerše konkurence
-(gymy bez obsluhy se zámkem) je v [`docs/INSPIRATIONS.md`](./docs/INSPIRATIONS.md)
-a prohlížitelně v administraci pod **Inspirace**.
+## Dokumentace
 
-## Skripty
+- [SESSION_HANDOFF.md](./SESSION_HANDOFF.md): přesný checkpoint pro dalšího agenta.
+- [NEEDED.md](./NEEDED.md): externí závislosti a ruční setup.
+- [docs/DESIGN_SYSTEM.md](./docs/DESIGN_SYSTEM.md): závazný vizuální systém.
+- [docs/INSPIRATIONS.md](./docs/INSPIRATIONS.md): historická rešerše konkurence.
+- [docs/TOOLING.md](./docs/TOOLING.md): rozhodnutí o nástrojích a balíčcích.
+- [CLAUDE.md](./CLAUDE.md): pravidla pro další vývoj.
 
-| Příkaz                        | Popis                                        |
-| ----------------------------- | -------------------------------------------- |
-| `npm run dev`                 | Vývojový server                              |
-| `npm run build`               | Produkční build                              |
-| `npm run typecheck`           | `tsc --noEmit`                               |
-| `npm run db:generate`         | Vygeneruje migraci ze změn schématu          |
-| `npm run db:migrate`          | Aplikuje migrace                             |
-| `npm run db:seed`             | Naplní výchozí data                          |
-| `npm run db:studio`           | Drizzle Studio                               |
-| `npm run set-admin -- <email>`| Povýší uživatele na admina                   |
+## Důležitá bezpečnostní pravidla
 
-## Práce s Claude Code
-
-- Subagenti: `admin-module-builder`, `integration-builder` (`.claude/agents/`).
-- Commandy: `/new-admin-module`, `/add-integration`, `/db-migrate`.
-- Skill s architekturou se načte automaticky při práci v repu.
+- Do repozitáře nepatří `.env.local`, přístupové tokeny ani tajné klíče.
+- Prohlížeč nikdy nedostává Supabase secret key.
+- Veřejný Realtime poslouchá jen PII-free tabulku `availability_signal`.
+- Cena, trvání, člen, dostupnost a vlastnictví rezervace se ověřují na serveru.
+- Migraci `drizzle/0003_security_and_realtime.sql` neaplikuj do projektu,
+  dokud není ověřeno, že daný Supabase projekt skutečně patří této aplikaci.

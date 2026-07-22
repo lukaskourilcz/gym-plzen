@@ -14,11 +14,15 @@ export default function InspirationsPage() {
     <div>
       <PageHeader title="Srovnání samoobslužných gymů" />
       <p className="mb-6 max-w-3xl text-sm text-muted-foreground">
-        Skutečné, ověřené provozy po celém světě (důraz na trh USA). {lockCount} z nich běží na{" "}
-        <strong className="text-foreground">srovnatelném provozním modelu</strong>: bez recepce, vstup
-        přes elektronický zámek nebo PIN, rezervace a platba online. Dalších {designCount} je zařazeno hlavně
-        jako <strong className="text-foreground">designová inspirace</strong>. U každého je náhled
-        funkcí a jak vypadají jejich formuláře a frontend.
+        Skutečné, ověřené provozy po celém světě (důraz na trh USA). {lockCount}{" "}
+        z nich běží na{" "}
+        <strong className="text-foreground">
+          srovnatelném provozním modelu
+        </strong>
+        : bez recepce, vstup přes elektronický zámek nebo PIN, rezervace a
+        platba online. Dalších {designCount} je zařazeno hlavně jako{" "}
+        <strong className="text-foreground">designová inspirace</strong>. U
+        každého je náhled funkcí a jak vypadají jejich formuláře a frontend.
       </p>
 
       <Card className="mb-6 bg-muted/40">
@@ -34,16 +38,28 @@ export default function InspirationsPage() {
 
       <div className="grid gap-4">
         {INSPIRATIONS.map((g) => (
-          <Card key={g.url} className={g.closest ? "border-l-4 border-l-primary" : undefined}>
+          <Card
+            key={g.url}
+            className={g.closest ? "border-l-4 border-l-primary" : undefined}
+          >
             <CardContent className="p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-3">
                 <h2 className="flex flex-wrap items-baseline gap-2 text-lg font-semibold">
                   {g.name}
-                  <span className="text-sm font-normal text-muted-foreground">{g.location}</span>
+                  <span className="text-sm font-normal text-muted-foreground">
+                    {g.location}
+                  </span>
                   {g.closest && <Badge>nejblíž našemu konceptu</Badge>}
-                  {g.designBenchmark && <Badge variant="muted">designová inspirace</Badge>}
+                  {g.designBenchmark && (
+                    <Badge variant="muted">designová inspirace</Badge>
+                  )}
                 </h2>
-                <a href={g.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                <a
+                  href={g.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline"
+                >
                   otevřít web ↗
                 </a>
               </div>

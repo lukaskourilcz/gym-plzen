@@ -9,6 +9,7 @@ Delegate this to the `admin-module-builder` subagent, which knows the layered
 architecture (schema → service → validation → action → form → page → nav).
 
 Requirements:
+
 - Follow the existing patterns in `src/app/admin/reservations/` and
   `src/app/admin/content/` exactly.
 - Reuse helpers in `@/lib/helpers/*`; extract a new helper for any repeated logic.

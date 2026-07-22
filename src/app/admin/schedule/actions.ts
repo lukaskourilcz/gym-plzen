@@ -95,9 +95,9 @@ export async function saveOpeningHoursAction(
   return saveOpeningHoursImpl(input);
 }
 
-export async function saveShowerMinutesAction(
-  input: { showerMinutes: number },
-): Promise<Result<unknown>> {
+export async function saveShowerMinutesAction(input: {
+  showerMinutes: number;
+}): Promise<Result<unknown>> {
   return saveShowerMinutesImpl(input);
 }
 
@@ -107,8 +107,8 @@ export async function createBlockedSlotAction(
   return createBlockedSlotImpl(input);
 }
 
-export async function deleteBlockedSlotAction(
-  input: { id: string },
-): Promise<Result<unknown>> {
+export async function deleteBlockedSlotAction(input: {
+  id: string;
+}): Promise<Result<unknown>> {
   return deleteBlockedSlotImpl(input);
 }

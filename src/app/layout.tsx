@@ -17,11 +17,11 @@ export const metadata: Metadata = {
     template: "%s · NAMASTÉ Private Gym",
   },
   description:
-    "Plně samoobslužné privátní fitness v Plzni. Rezervace online a vstup pomocí osobního kódu.",
+    "Soukromý gym v Plzni s online rezervací, bezpečnou platbou a osobními pokyny ke vstupu.",
   openGraph: {
     title: "NAMASTÉ Private Gym | Privátní fitness v Plzni",
     description:
-      "Plně samoobslužné privátní fitness v Plzni s online rezervací a osobním vstupním kódem.",
+      "Soukromý gym v Plzni s online rezervací, bezpečnou platbou a osobními pokyny ke vstupu.",
     type: "website",
     locale: "cs_CZ",
   },

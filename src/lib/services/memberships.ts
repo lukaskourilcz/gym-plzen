@@ -10,8 +10,13 @@ import type { Membership, MembershipPlan, Payment } from "@/lib/db/types";
 
 // ── Plans ───────────────────────────────────────────────────────────────────
 
-export async function listPlans(includeInactive = false): Promise<MembershipPlan[]> {
-  const query = db.select().from(membershipPlan).orderBy(asc(membershipPlan.sortOrder));
+export async function listPlans(
+  includeInactive = false,
+): Promise<MembershipPlan[]> {
+  const query = db
+    .select()
+    .from(membershipPlan)
+    .orderBy(asc(membershipPlan.sortOrder));
   if (includeInactive) return query;
   return db
     .select()
@@ -71,7 +76,9 @@ export async function upsertPlan(input: {
 // ── Memberships (Stripe-synced) ──────────────────────────────────────────────
 
 /** The member's current active/trialing membership, if any. */
-export async function getActiveMembership(userId: string): Promise<Membership | null> {
+export async function getActiveMembership(
+  userId: string,
+): Promise<Membership | null> {
   const [row] = await db
     .select()
     .from(membership)
@@ -116,7 +123,10 @@ export async function upsertMembershipFromStripe(input: {
   };
 
   if (existing[0]) {
-    await db.update(membership).set(values).where(eq(membership.id, existing[0].id));
+    await db
+      .update(membership)
+      .set(values)
+      .where(eq(membership.id, existing[0].id));
   } else {
     await db.insert(membership).values(values);
   }
@@ -144,22 +154,39 @@ export async function recordPayment(input: {
   stripeInvoiceId?: string | null;
   stripeCheckoutSessionId?: string | null;
 }): Promise<Payment> {
-  const [row] = await db
-    .insert(payment)
-    .values({
-      userId: input.userId ?? null,
-      reservationId: input.reservationId ?? null,
-      membershipId: input.membershipId ?? null,
-      type: input.type,
-      status: input.status,
-      amountCents: input.amountCents,
-      currency: input.currency ?? "czk",
-      stripePaymentIntentId: input.stripePaymentIntentId ?? null,
-      stripeInvoiceId: input.stripeInvoiceId ?? null,
-      stripeCheckoutSessionId: input.stripeCheckoutSessionId ?? null,
-      paidAt: input.status === "succeeded" ? new Date() : null,
-    })
-    .onConflictDoNothing()
-    .returning();
-  return row!;
+  const values = {
+    userId: input.userId ?? null,
+    reservationId: input.reservationId ?? null,
+    membershipId: input.membershipId ?? null,
+    type: input.type,
+    status: input.status,
+    amountCents: input.amountCents,
+    currency: input.currency ?? "czk",
+    stripePaymentIntentId: input.stripePaymentIntentId ?? null,
+    stripeInvoiceId: input.stripeInvoiceId ?? null,
+    stripeCheckoutSessionId: input.stripeCheckoutSessionId ?? null,
+    paidAt: input.status === "succeeded" ? new Date() : null,
+    updatedAt: new Date(),
+  };
+  const query = db.insert(payment).values(values);
+  const [row] = input.stripeCheckoutSessionId
+    ? await query
+        .onConflictDoUpdate({
+          target: payment.stripeCheckoutSessionId,
+          set: values,
+        })
+        .returning()
+    : await query.onConflictDoNothing().returning();
+  if (!row) throw new Error("Payment record could not be persisted.");
+  return row;
+}
+
+export async function markCheckoutPaymentFailed(
+  checkoutSessionId: string,
+  failureReason: string,
+) {
+  await db
+    .update(payment)
+    .set({ status: "failed", failureReason, updatedAt: new Date() })
+    .where(eq(payment.stripeCheckoutSessionId, checkoutSessionId));
 }

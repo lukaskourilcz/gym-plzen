@@ -10,12 +10,12 @@ description: >-
 # gym-plzen architecture
 
 A single-occupancy gym booking system: members book one-at-a-time training
-slots, pay one-time entry (290 Kč, every 10th free — no subscriptions), and
+slots, pay one-time entry (290 Kč, every 10th free: no subscriptions), and
 receive a time-limited Nuki keypad code over email/WhatsApp. An admin CMS
 ("redakční systém") manages content, reservations, members, pricing, and
 monitors reliability.
 
-## Layered architecture — respect the boundaries
+## Layered architecture: respect the boundaries
 
 ```
 app/ (routes, server actions)  ─calls→  lib/services/  ─calls→  lib/db + lib/integrations
@@ -23,22 +23,22 @@ app/ (routes, server actions)  ─calls→  lib/services/  ─calls→  lib/db +
                                     lib/helpers (reused everywhere)
 ```
 
-- **Routes & server actions** (`src/app/**`) — HTTP/UI only. Actions validate
+- **Routes & server actions** (`src/app/**`): HTTP/UI only. Actions validate
   with Zod, authorize, call a service, revalidate. No business logic, no direct
   DB access.
-- **Services** (`src/lib/services/*`) — all business logic and the ONLY layer
+- **Services** (`src/lib/services/*`): all business logic and the ONLY layer
   that touches `db` and integrations. Namespaced barrel: `import { reservations,
 cms, loyalty } from "@/lib/services"`.
-- **Integrations** (`src/lib/integrations/*`) — thin adapters over Stripe, Nuki,
+- **Integrations** (`src/lib/integrations/*`): thin adapters over Stripe, Nuki,
   WhatsApp, Resend, GoSMS, Supabase. Lazy init, `is*Configured()`, typed results.
-- **Helpers** (`src/lib/helpers/*`) — reusable, cross-cutting: `result`, `action`
+- **Helpers** (`src/lib/helpers/*`): reusable, cross-cutting: `result`, `action`
   (`ActionError`, `defineAction`), `http` (`httpRequest` with retry/backoff),
   `crypto`, `datetime`, `format`, `phone`, `logger`, `cron`. **Reuse these;
   extract a new one before duplicating logic.**
 
 ## Forms (React Hook Form + Zod)
 
-Every form — admin and login — is built on **React Hook Form + Zod**:
+Every form: admin and login: is built on **React Hook Form + Zod**:
 
 - Zod schemas in `src/lib/validations/*` are **transform-free** and used on BOTH
   sides (client `zodResolver` and server re-validation). Type conversions
@@ -50,9 +50,9 @@ Every form — admin and login — is built on **React Hook Form + Zod**:
 - Server: actions are `defineAction({ schema, authorize: assertAdmin, handler })`
   returning a `Result`, exported wrapped in a plain `async function`.
 - Reference: `src/app/admin/reservations/{actions.ts,reservation-form.tsx}`.
-- **DB** (`src/lib/db`) — Drizzle schema (`schema/*`), client (`index.ts`),
+- **DB** (`src/lib/db`): Drizzle schema (`schema/*`), client (`index.ts`),
   derived types (`types.ts`).
-- **Config** (`src/lib/config/*`) — tunable constants (e.g. `pricing.ts`).
+- **Config** (`src/lib/config/*`): tunable constants (e.g. `pricing.ts`).
 
 ## Key domain rules
 
@@ -64,11 +64,17 @@ Every form — admin and login — is built on **React Hook Form + Zod**:
   `services/alerts.ts` which fans out to the WhatsApp group.
 - **Multi-channel codes**: `services/notifications.ts` sends the access code over
   every enabled channel at once and records a `messageDelivery` per channel.
-- **Loyalty**: `services/loyalty.ts` — every 10th entry free; `deriveLoyaltyStatus`
+- **Loyalty**: `services/loyalty.ts`: every 10th entry free; `deriveLoyaltyStatus`
   is a pure, testable function. Widget: `components/loyalty-widget.tsx`.
 - **CMS**: content is addressable blocks keyed by `(key, locale)` in
   `services/cms.ts`; `getText("home.hero.title")` on the site, `upsertBlock` in
   the admin.
+- **Booking availability**: `services/slots.ts` resolves configured weekday
+  duration and returns `live`, non-production `preview`, or `unavailable`.
+  Production never falls back to fictional slots.
+- **Public Realtime**: subscribe only to the PII-free `availability_signal`
+  table created by migration `0003`. Never publish `reservation` rows to public
+  clients.
 
 ## Auth
 
@@ -79,10 +85,12 @@ sign-up; `ensureProfileForUser` is the app-side fallback.
 
 - Clients: `src/lib/supabase/{server,client}.ts` (SSR + browser), `middleware.ts`
   refreshes the session, `app/auth/callback` exchanges the OAuth code.
-- Guards: `src/lib/auth/guards.ts` — `getSessionUser`/`getSession`, `requireUser`,
+- Guards: `src/lib/auth/guards.ts`: `getSessionUser`/`getSession`, `requireUser`,
   `requireAdmin` (Server Components), `assertAdmin` (actions). Admin =
   `role === "admin"`; set the first one with `npm run set-admin -- you@example.com`.
 - OAuth providers (google/apple/azure) are configured in the Supabase dashboard.
+- Demo authentication is a local presentation aid only. `demo-policy.ts`
+  disables it whenever `NODE_ENV` or `VERCEL_ENV` indicates production.
 
 ## Adding things
 
@@ -103,6 +111,7 @@ reusable pattern.
 
 ## Always before finishing
 
-Run `npx tsc --noEmit` and, for anything non-trivial, `npm run build`. All
+Use Node.js 22. Run `npm run format:check`, `npm run lint`, `npm run typecheck`,
+`npm test` and, for anything non-trivial, `npm run build`. All
 user-facing copy is Czech. Secrets are added to `env.ts` + `.env.example` +
 `NEEDED.md` together. Manual/operator setup goes in `NEEDED.md`.

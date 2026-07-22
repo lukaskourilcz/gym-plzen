@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isAuthorizedCron } from "@/lib/helpers/cron";
 import { logger } from "@/lib/helpers/logger";
-import { pipeline, fulfillment } from "@/lib/services";
+import { pipeline, fulfillment, reservations } from "@/lib/services";
 
 /**
- * Reliability watchdog. Runs on a schedule (Vercel Cron — see NEEDED.md), picks
+ * Reliability watchdog. Runs on a schedule (Vercel Cron : see NEEDED.md), picks
  * up pipeline steps that are due for retry, and re-runs fulfillment for their
  * reservations. Exhausted steps have already raised an alert in the pipeline
  * service, so this route just drives the retries.
@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  const released = await reservations.releaseExpiredPendingReservations();
   const due = await pipeline.dueForRetry(50);
   const reservationIds = [...new Set(due.map((d) => d.reservationId))];
 
@@ -27,5 +28,10 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, dueSteps: due.length, processed });
+  return NextResponse.json({
+    ok: true,
+    releasedPendingReservations: released,
+    dueSteps: due.length,
+    processed,
+  });
 }

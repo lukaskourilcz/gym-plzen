@@ -1,17 +1,24 @@
 import Link from "next/link";
 import { reservations, alerts, messages } from "@/lib/services";
-import { formatDateTime } from "@/lib/helpers/format";
+import { formatDateTime, formatStatus } from "@/lib/helpers/format";
 import { loadDemoData } from "@/lib/demo/dummy";
 import { DemoBanner } from "@/components/admin/demo-banner";
 import { PageHeader } from "@/components/admin/page-header";
 import { StatCard } from "@/components/admin/stat-card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export const metadata = { title: "Přehled" };
 export const dynamic = "force-dynamic";
 
 /**
- * Admin dashboard — a quick operational snapshot: upcoming reservations,
+ * Admin dashboard : a quick operational snapshot: upcoming reservations,
  * unresolved alerts, and recent message deliveries.
  */
 export default async function AdminDashboard() {
@@ -34,8 +41,14 @@ export default async function AdminDashboard() {
 
       <div className="mb-8 flex flex-wrap gap-4">
         <StatCard label="Nadcházející rezervace" value={upcoming.length} />
-        <StatCard label="Neuzavřená upozornění" value={recentAlerts.filter((a) => !a.resolvedAt).length} />
-        <StatCard label="Nedoručené zprávy (posl. 8)" value={recentMessages.filter((m) => m.status === "failed").length} />
+        <StatCard
+          label="Neuzavřená upozornění"
+          value={recentAlerts.filter((a) => !a.resolvedAt).length}
+        />
+        <StatCard
+          label="Nedoručené zprávy (posl. 8)"
+          value={recentMessages.filter((m) => m.status === "failed").length}
+        />
       </div>
 
       <h2 className="mb-3 text-lg font-semibold">Poslední rezervace</h2>
@@ -51,8 +64,10 @@ export default async function AdminDashboard() {
           {recentReservations.map((r) => (
             <TableRow key={r.id}>
               <TableCell>{formatDateTime(r.startsAt)}</TableCell>
-              <TableCell>{r.contactName ?? r.contactEmail ?? "Neuvedeno"}</TableCell>
-              <TableCell>{r.status}</TableCell>
+              <TableCell>
+                {r.contactName ?? r.contactEmail ?? "Neuvedeno"}
+              </TableCell>
+              <TableCell>{formatStatus(r.status)}</TableCell>
             </TableRow>
           ))}
           {recentReservations.length === 0 && (
@@ -65,7 +80,10 @@ export default async function AdminDashboard() {
         </TableBody>
       </Table>
       <p className="mt-2 text-sm">
-        <Link href="/admin/reservations" className="text-primary hover:underline">
+        <Link
+          href="/admin/reservations"
+          className="text-primary hover:underline"
+        >
           Všechny rezervace →
         </Link>
       </p>

@@ -5,6 +5,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { profiles } from "./members";
@@ -57,14 +58,16 @@ export const membership = pgTable(
 );
 
 /**
- * A payment record — either a one-off session payment or a subscription
+ * A payment record : either a one-off session payment or a subscription
  * invoice. Card data never touches our system; we only mirror Stripe state.
  */
 export const payment = pgTable(
   "payment",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    userId: uuid("user_id").references(() => profiles.id, { onDelete: "set null" }),
+    userId: uuid("user_id").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
     reservationId: uuid("reservation_id").references(() => reservation.id, {
       onDelete: "set null",
     }),
@@ -86,5 +89,6 @@ export const payment = pgTable(
   (t) => [
     index("payment_user_idx").on(t.userId),
     index("payment_reservation_idx").on(t.reservationId),
+    uniqueIndex("payment_checkout_session_uidx").on(t.stripeCheckoutSessionId),
   ],
 );

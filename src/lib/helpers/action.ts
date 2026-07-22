@@ -18,7 +18,11 @@ import { logger } from "./logger";
  *     handler: async (input, admin) => { ...; return plan; },
  *   });
  */
-export function defineAction<S extends z.ZodTypeAny, TOutput, TCtx = void>(config: {
+export function defineAction<
+  S extends z.ZodTypeAny,
+  TOutput,
+  TCtx = void,
+>(config: {
   schema: S;
   authorize?: () => Promise<TCtx>;
   handler: (input: z.infer<S>, ctx: TCtx) => Promise<TOutput>;

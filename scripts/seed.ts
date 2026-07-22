@@ -1,6 +1,6 @@
 /**
  * Seed baseline data: opening hours, starter CMS content blocks, and the
- * default entry price. Idempotent — safe to run repeatedly.
+ * default entry price. Idempotent : safe to run repeatedly.
  *
  *   npm run db:seed
  */
@@ -25,13 +25,48 @@ const OPENING_HOURS = Array.from({ length: 7 }, (_, dayOfWeek) => ({
 }));
 
 const CONTENT_BLOCKS = [
-  { key: "brand.name", label: "Název", groupName: "home", valueText: "NAMASTÉ Private Gym" },
-  { key: "home.hero.title", label: "Nadpis úvodní sekce", groupName: "home", valueText: "Celý gym jen pro vás" },
-  { key: "home.hero.subtitle", label: "Podnadpis úvodní sekce", groupName: "home", valueText: "Pronajměte si celý prostor pro sebe nebo vezměte přátele." },
-  { key: "rules.body", label: "Provozní řád", groupName: "pravidla", valueText: "Sem doplňte provozní řád." },
-  { key: "contact.address", label: "Adresa", groupName: "kontakt", valueText: "Křížkova 424/23, 301 00 Plzeň 1" },
-  { key: "contact.phone", label: "Telefon", groupName: "kontakt", valueText: "" },
-  { key: "contact.email", label: "E-mail", groupName: "kontakt", valueText: "" },
+  {
+    key: "brand.name",
+    label: "Název",
+    groupName: "home",
+    valueText: "NAMASTÉ Private Gym",
+  },
+  {
+    key: "home.hero.title",
+    label: "Nadpis úvodní sekce",
+    groupName: "home",
+    valueText: "Celý gym jen pro vás",
+  },
+  {
+    key: "home.hero.subtitle",
+    label: "Podnadpis úvodní sekce",
+    groupName: "home",
+    valueText: "Pronajměte si celý prostor pro sebe nebo vezměte přátele.",
+  },
+  {
+    key: "rules.body",
+    label: "Provozní řád",
+    groupName: "pravidla",
+    valueText: "Sem doplňte provozní řád.",
+  },
+  {
+    key: "contact.address",
+    label: "Adresa",
+    groupName: "kontakt",
+    valueText: "Křížkova 424/23, 301 00 Plzeň 1",
+  },
+  {
+    key: "contact.phone",
+    label: "Telefon",
+    groupName: "kontakt",
+    valueText: "",
+  },
+  {
+    key: "contact.email",
+    label: "E-mail",
+    groupName: "kontakt",
+    valueText: "",
+  },
 ];
 
 async function main() {

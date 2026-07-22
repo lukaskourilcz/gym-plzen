@@ -4,7 +4,13 @@ import { optionalText } from "./common";
 /** Branding assets: logo + terms PDF, provided as URLs (from the uploader or pasted). */
 export const brandingSchema = z.object({
   logoUrl: z.union([z.literal(""), z.string().url("Neplatná URL.")]).optional(),
-  termsUrl: z.union([z.literal(""), z.string().url("Neplatná URL.")]).optional(),
+  termsUrl: z
+    .union([z.literal(""), z.string().url("Neplatná URL.")])
+    .optional(),
+  heroImageUrl: z
+    .union([z.literal(""), z.string().url("Neplatná URL.")])
+    .optional(),
+  heroImageAlt: optionalText(180),
 });
 
 /** SMS access-code template (placeholders {code}, {time}). */

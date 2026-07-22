@@ -16,14 +16,29 @@ import { join } from "node:path";
  */
 const CRED = { password: "password123" };
 const USERS = [
-  { email: "admin@test.cz", role: "admin", name: "Admin Test", file: "admin.json" },
-  { email: "member@test.cz", role: "member", name: "Member Test", file: "member.json" },
+  {
+    email: "admin@test.cz",
+    role: "admin",
+    name: "Admin Test",
+    file: "admin.json",
+  },
+  {
+    email: "member@test.cz",
+    role: "member",
+    name: "Member Test",
+    file: "member.json",
+  },
 ];
 
 export function supabaseConfigured(): boolean {
   return Boolean(
+    process.env.E2E_ALLOW_REMOTE_MUTATIONS === "true" &&
+    process.env.E2E_SUPABASE_PROJECT_REF &&
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY),
+    process.env.NEXT_PUBLIC_SUPABASE_URL.includes(
+      process.env.E2E_SUPABASE_PROJECT_REF ?? "never-match",
+    ) &&
+    (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY),
   );
 }
 
@@ -36,9 +51,11 @@ export default async function globalSetup(config: FullConfig) {
   if (!supabaseConfigured()) return;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const secret = (process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY)!;
+  const secret = (process.env.SUPABASE_SECRET_KEY ??
+    process.env.SUPABASE_SERVICE_ROLE_KEY)!;
   const baseURL =
-    config.projects[0]?.use?.baseURL ?? `http://localhost:${process.env.E2E_PORT ?? "3131"}`;
+    config.projects[0]?.use?.baseURL ??
+    `http://localhost:${process.env.E2E_PORT ?? "3131"}`;
 
   const admin = createClient(url, secret, { auth: { persistSession: false } });
 
@@ -51,7 +68,9 @@ export default async function globalSetup(config: FullConfig) {
     });
     const id = data.user?.id;
     if (id) {
-      await admin.from("profiles").upsert({ id, email: u.email, full_name: u.name, role: u.role });
+      await admin
+        .from("profiles")
+        .upsert({ id, email: u.email, full_name: u.name, role: u.role });
     }
   }
 
@@ -64,7 +83,9 @@ export default async function globalSetup(config: FullConfig) {
     await page.getByLabel(/E-mail/i).fill(u.email);
     await page.getByLabel(/Heslo/i).fill(CRED.password);
     await page.getByRole("button", { name: /Přihlásit se/i }).click();
-    await page.waitForURL(/\/(account|admin)/, { timeout: 15_000 }).catch(() => {});
+    await page
+      .waitForURL(/\/(account|admin)/, { timeout: 15_000 })
+      .catch(() => {});
     await page.context().storageState({ path: join(dir, u.file) });
     await page.close();
   }

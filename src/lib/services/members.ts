@@ -15,7 +15,13 @@ import { toE164 } from "@/lib/helpers/phone";
  * `profile` (app fields) split so the admin pages read `member.user.email` etc.
  */
 export interface MemberWithProfile {
-  user: { id: string; name: string; email: string; role: string; createdAt: Date };
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    createdAt: Date;
+  };
   profile: Profile | null;
 }
 
@@ -65,14 +71,17 @@ export async function updateProfile(
   }>,
 ): Promise<Profile> {
   const normalizedPhone =
-    patch.phone !== undefined && patch.phone !== null ? toE164(patch.phone) : patch.phone;
+    patch.phone !== undefined && patch.phone !== null
+      ? toE164(patch.phone)
+      : patch.phone;
 
   const [updated] = await db
     .update(profiles)
     .set({
       ...patch,
       phone: normalizedPhone,
-      marketingConsentAt: patch.marketingConsent === true ? new Date() : undefined,
+      marketingConsentAt:
+        patch.marketingConsent === true ? new Date() : undefined,
       updatedAt: new Date(),
     })
     .where(eq(profiles.id, userId))
@@ -81,7 +90,10 @@ export async function updateProfile(
 }
 
 /** Persist the member's Stripe customer id after first checkout. */
-export async function setStripeCustomerId(userId: string, stripeCustomerId: string): Promise<void> {
+export async function setStripeCustomerId(
+  userId: string,
+  stripeCustomerId: string,
+): Promise<void> {
   await db
     .update(profiles)
     .set({ stripeCustomerId, updatedAt: new Date() })
@@ -90,12 +102,22 @@ export async function setStripeCustomerId(userId: string, stripeCustomerId: stri
 
 /** List all members (admin members view). */
 export async function listMembers(limit = 200): Promise<MemberWithProfile[]> {
-  const rows = await db.select().from(profiles).orderBy(desc(profiles.createdAt)).limit(limit);
+  const rows = await db
+    .select()
+    .from(profiles)
+    .orderBy(desc(profiles.createdAt))
+    .limit(limit);
   return rows.map(toMember);
 }
 
 /** One member by id. */
-export async function getMember(userId: string): Promise<MemberWithProfile | null> {
-  const [row] = await db.select().from(profiles).where(eq(profiles.id, userId)).limit(1);
+export async function getMember(
+  userId: string,
+): Promise<MemberWithProfile | null> {
+  const [row] = await db
+    .select()
+    .from(profiles)
+    .where(eq(profiles.id, userId))
+    .limit(1);
   return row ? toMember(row) : null;
 }

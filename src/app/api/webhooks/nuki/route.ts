@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
     await entryLogService.syncEntryLog(20);
   } catch (e) {
     logger.error(e, { where: "nuki.webhook" });
+    return NextResponse.json({ error: "handler_failed" }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });

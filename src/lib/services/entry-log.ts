@@ -6,7 +6,7 @@ import { fetchLog, type NukiLogEntry } from "@/lib/integrations/nuki";
 import { logger } from "@/lib/helpers/logger";
 
 /**
- * Entry-log service — mirrors the Nuki lock activity feed into `entry_log` so
+ * Entry-log service : mirrors the Nuki lock activity feed into `entry_log` so
  * the admin's "kniha vstupů" shows who actually unlocked and when. Nuki numeric
  * codes for action/trigger are mapped to readable labels.
  */
@@ -38,7 +38,10 @@ export async function syncEntryLog(limit = 50): Promise<{ inserted: number }> {
     .onConflictDoNothing({ target: entryLog.nukiLogId })
     .returning({ id: entryLog.id });
 
-  logger.info("Entry log synced", { fetched: entries.length, inserted: result.length });
+  logger.info("Entry log synced", {
+    fetched: entries.length,
+    inserted: result.length,
+  });
   return { inserted: result.length };
 }
 
@@ -46,8 +49,12 @@ function mapEntry(e: NukiLogEntry) {
   return {
     nukiLogId: e.id,
     nukiName: e.name ?? null,
-    action: e.action != null ? (ACTIONS[e.action] ?? `action_${e.action}`) : null,
-    trigger: e.trigger != null ? (TRIGGERS[e.trigger] ?? `trigger_${e.trigger}`) : null,
+    action:
+      e.action != null ? (ACTIONS[e.action] ?? `action_${e.action}`) : null,
+    trigger:
+      e.trigger != null
+        ? (TRIGGERS[e.trigger] ?? `trigger_${e.trigger}`)
+        : null,
     occurredAt: new Date(e.date),
   };
 }

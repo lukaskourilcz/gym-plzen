@@ -14,15 +14,15 @@ self-contained adapters in `src/lib/integrations/<service>.ts`.
 
 Every integration module:
 
-- Reads secrets only through `@/lib/env` — add new vars to BOTH the `serverSchema`
+- Reads secrets only through `@/lib/env`: add new vars to BOTH the `serverSchema`
   in `src/lib/env.ts` AND `.env.example` AND `NEEDED.md`.
 - Exposes `is<Service>Configured(): boolean` using `hasEnv(...)`.
 - Creates its SDK client **lazily** (cache in a module-level variable) via
   `requireEnv(...)`, so the app boots even when the service is not configured.
 - Uses the shared `httpRequest` helper (`@/lib/helpers/http`) for raw REST calls
-  — it already handles timeouts, JSON, and retry/backoff. Do not hand-roll fetch.
+  : it already handles timeouts, JSON, and retry/backoff. Do not hand-roll fetch.
 - Returns a small typed result object (e.g. `{ sent: boolean; providerMessageId?:
-  string; error?: string }`). Never throw for expected provider failures; log via
+string; error?: string }`). Never throw for expected provider failures; log via
   `logger` (`@/lib/helpers/logger`) and return `{ ..., error }`.
 - For inbound webhooks, verify signatures with `verifyHmacSignature` /
   `safeEqual` from `@/lib/helpers/crypto`, and dedupe via
@@ -37,7 +37,7 @@ Every integration module:
 
 ## After changes
 
-- Business logic that *uses* the integration belongs in a service under
+- Business logic that _uses_ the integration belongs in a service under
   `src/lib/services/`, not in the adapter or a route.
 - Run `npx tsc --noEmit` and fix all errors.
 - Update `NEEDED.md` with any new manual setup the operator must perform

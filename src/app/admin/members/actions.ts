@@ -4,7 +4,10 @@ import { revalidatePath } from "next/cache";
 import { assertAdmin } from "@/lib/auth/guards";
 import { defineAction } from "@/lib/helpers/action";
 import type { Result } from "@/lib/helpers/result";
-import { updateMemberSchema, type UpdateMemberValues } from "@/lib/validations/members";
+import {
+  updateMemberSchema,
+  type UpdateMemberValues,
+} from "@/lib/validations/members";
 import { members } from "@/lib/services";
 
 /** Update a member's profile (contact, notification prefs, admin note). */

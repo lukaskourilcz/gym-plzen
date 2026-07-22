@@ -16,10 +16,17 @@ export function CancelButton({ reservationId }: { reservationId: string }) {
   return (
     <form onSubmit={submit} className="flex items-center gap-2">
       <input type="hidden" {...form.register("id")} />
-      <Button type="submit" variant="destructive" size="sm" disabled={form.formState.isSubmitting}>
+      <Button
+        type="submit"
+        variant="destructive"
+        size="sm"
+        disabled={form.formState.isSubmitting}
+      >
         Zrušit
       </Button>
-      {serverError && <span className="text-xs text-destructive">{serverError}</span>}
+      {serverError && (
+        <span className="text-xs text-destructive">{serverError}</span>
+      )}
     </form>
   );
 }

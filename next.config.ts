@@ -1,6 +1,22 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'self'",
+  "form-action 'self' https://checkout.stripe.com",
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""} https://js.stripe.com`,
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self' data:",
+  "img-src 'self' data: blob: https://static.wixstatic.com https://*.supabase.co",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://*.ingest.sentry.io",
+  "frame-src https://www.google.com https://maps.google.com https://js.stripe.com https://hooks.stripe.com",
+  "worker-src 'self' blob:",
+  "upgrade-insecure-requests",
+].join("; ");
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   experimental: {
@@ -9,19 +25,34 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "10mb",
     },
   },
-  // Baseline security headers (verify with securityheaders.com / MDN Observatory).
-  // A strict CSP is deferred until asset origins (Supabase, Stripe) are final —
-  // see NEEDED.md.
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "static.wixstatic.com" },
+      {
+        protocol: "https",
+        hostname: "**.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+  },
   async headers() {
     return [
       {
         source: "/:path*",
         headers: [
-          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+          { key: "Content-Security-Policy", value: contentSecurityPolicy },
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
         ],
       },
     ];
@@ -34,5 +65,5 @@ export default withSentryConfig(nextConfig, {
   silent: !process.env.CI,
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
-  disableLogger: true,
+  webpack: { treeshake: { removeDebugLogging: true } },
 });

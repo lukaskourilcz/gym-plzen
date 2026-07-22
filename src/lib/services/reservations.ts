@@ -1,13 +1,14 @@
-import { and, desc, eq, gte } from "drizzle-orm";
+import { and, desc, eq, gte, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { reservation } from "@/lib/db/schema";
 import type { NewReservation, Reservation } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
 import { checkAvailability } from "./availability";
 import { initPipeline } from "./pipeline";
+import { listCodesForReservation, revokeAccessCode } from "./access-codes";
 
 /**
- * Reservation service — the write-side business logic for bookings. All
+ * Reservation service : the write-side business logic for bookings. All
  * mutations funnel through here so the single-occupancy invariant and the
  * reliability pipeline are always applied.
  */
@@ -61,7 +62,21 @@ export async function createReservation(
     createdByAdminId: input.createdByAdminId ?? null,
   };
 
-  const [created] = await db.insert(reservation).values(values).returning();
+  let created: Reservation | undefined;
+  try {
+    [created] = await db.insert(reservation).values(values).returning();
+  } catch (error) {
+    const code =
+      typeof error === "object" && error !== null && "code" in error
+        ? String(error.code)
+        : "";
+    if (code === "23P01") {
+      throw new ActionError(
+        "Tento termín právě rezervoval jiný zákazník. Vyberte prosím jiný čas.",
+      );
+    }
+    throw error;
+  }
   if (!created) throw new ActionError("Rezervaci se nepodařilo vytvořit.");
 
   if (created.status === "confirmed") {
@@ -72,13 +87,18 @@ export async function createReservation(
 }
 
 /** Mark a reservation as confirmed (e.g. after successful payment) and kick off the pipeline. */
-export async function confirmReservation(id: string): Promise<void> {
+export async function confirmReservation(id: string): Promise<boolean> {
   const [updated] = await db
     .update(reservation)
     .set({ status: "confirmed", updatedAt: new Date() })
-    .where(eq(reservation.id, id))
+    .where(and(eq(reservation.id, id), eq(reservation.status, "pending")))
     .returning();
-  if (updated) await initPipeline(id);
+  if (updated) {
+    await initPipeline(id);
+    return true;
+  }
+  const existing = await getReservation(id);
+  return existing?.status === "confirmed";
 }
 
 /** Cancel a reservation, recording who/why. */
@@ -96,7 +116,33 @@ export async function cancelReservation(params: {
       updatedAt: new Date(),
     })
     .where(eq(reservation.id, params.id));
-  // NOTE: access-code revocation on the lock is handled by the pipeline/watchdog.
+  const codes = await listCodesForReservation(params.id);
+  await Promise.allSettled(codes.map((code) => revokeAccessCode(code.id)));
+}
+
+/** Release stale Checkout holds so abandoned payments cannot block the gym. */
+export async function releaseExpiredPendingReservations(
+  now = new Date(),
+  holdMinutes = 32,
+): Promise<number> {
+  const cutoff = pendingHoldCutoff(now, holdMinutes);
+  const released = await db
+    .update(reservation)
+    .set({
+      status: "cancelled",
+      cancelledAt: now,
+      cancelReason: "checkout_expired",
+      updatedAt: now,
+    })
+    .where(
+      and(eq(reservation.status, "pending"), lt(reservation.createdAt, cutoff)),
+    )
+    .returning({ id: reservation.id });
+  return released.length;
+}
+
+export function pendingHoldCutoff(now: Date, holdMinutes = 32): Date {
+  return new Date(now.getTime() - holdMinutes * 60_000);
 }
 
 /** A single reservation by id, or null. */
@@ -110,11 +156,18 @@ export async function getReservation(id: string): Promise<Reservation | null> {
 }
 
 /** Upcoming reservations for one member. */
-export async function listUpcomingForUser(userId: string): Promise<Reservation[]> {
+export async function listUpcomingForUser(
+  userId: string,
+): Promise<Reservation[]> {
   return db
     .select()
     .from(reservation)
-    .where(and(eq(reservation.userId, userId), gte(reservation.startsAt, new Date())))
+    .where(
+      and(
+        eq(reservation.userId, userId),
+        gte(reservation.startsAt, new Date()),
+      ),
+    )
     .orderBy(reservation.startsAt);
 }
 

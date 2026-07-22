@@ -40,9 +40,12 @@ export const contentBlock = pgTable(
     groupName: text("group_name"),
     sortOrder: integer("sort_order").default(0).notNull(),
 
-    updatedByAdminId: uuid("updated_by_admin_id").references(() => profiles.id, {
-      onDelete: "set null",
-    }),
+    updatedByAdminId: uuid("updated_by_admin_id").references(
+      () => profiles.id,
+      {
+        onDelete: "set null",
+      },
+    ),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -66,9 +69,12 @@ export const mediaAsset = pgTable("media_asset", {
   width: integer("width"),
   height: integer("height"),
   alt: text("alt"), // accessibility / SEO
-  uploadedByAdminId: uuid("uploaded_by_admin_id").references(() => profiles.id, {
-    onDelete: "set null",
-  }),
+  uploadedByAdminId: uuid("uploaded_by_admin_id").references(
+    () => profiles.id,
+    {
+      onDelete: "set null",
+    },
+  ),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

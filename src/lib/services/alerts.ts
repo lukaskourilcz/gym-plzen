@@ -35,9 +35,11 @@ function alertRecipients(): string[] {
 
 /**
  * Record and dispatch an alert. Returns the persisted alert. Safe to call from
- * anywhere — it never throws (a failure to alert must not break the caller).
+ * anywhere : it never throws (a failure to alert must not break the caller).
  */
-export async function raiseAlert(params: RaiseAlertParams): Promise<SystemAlert | null> {
+export async function raiseAlert(
+  params: RaiseAlertParams,
+): Promise<SystemAlert | null> {
   try {
     if (params.dedupeKey) {
       const [existing] = await db
@@ -51,7 +53,9 @@ export async function raiseAlert(params: RaiseAlertParams): Promise<SystemAlert 
         )
         .limit(1);
       if (existing) {
-        logger.warn("Duplicate alert suppressed", { dedupeKey: params.dedupeKey });
+        logger.warn("Duplicate alert suppressed", {
+          dedupeKey: params.dedupeKey,
+        });
         return existing;
       }
     }
@@ -81,7 +85,9 @@ export async function resolveAlert(dedupeKey: string): Promise<void> {
   await db
     .update(systemAlert)
     .set({ resolvedAt: new Date() })
-    .where(and(eq(systemAlert.dedupeKey, dedupeKey), isNull(systemAlert.resolvedAt)));
+    .where(
+      and(eq(systemAlert.dedupeKey, dedupeKey), isNull(systemAlert.resolvedAt)),
+    );
 }
 
 async function dispatchToWhatsApp(alert: SystemAlert): Promise<void> {
@@ -89,12 +95,14 @@ async function dispatchToWhatsApp(alert: SystemAlert): Promise<void> {
   if (recipients.length === 0) return;
 
   const emoji =
-    alert.severity === "critical" ? "🔴" : alert.severity === "warning" ? "🟠" : "🔵";
+    alert.severity === "critical"
+      ? "🔴"
+      : alert.severity === "warning"
+        ? "🟠"
+        : "🔵";
   const body = `${emoji} ${alert.title}${alert.body ? `\n${alert.body}` : ""}`;
 
-  await Promise.all(
-    recipients.map((to) => sendTextMessage({ to, body })),
-  );
+  await Promise.all(recipients.map((to) => sendTextMessage({ to, body })));
 
   await db
     .update(systemAlert)

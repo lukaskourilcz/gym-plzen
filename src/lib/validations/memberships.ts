@@ -17,7 +17,9 @@ export const upsertPlanSchema = z.object({
 
 /** The single editable commercial setting: entry price in Kč. */
 export const entryPriceSchema = z.object({
-  priceCzk: z.number({ invalid_type_error: "Zadejte číslo." }).min(0, "Cena nesmí být záporná."),
+  priceCzk: z
+    .number({ invalid_type_error: "Zadejte číslo." })
+    .min(0, "Cena nesmí být záporná."),
 });
 
 export type UpsertPlanValues = z.infer<typeof upsertPlanSchema>;

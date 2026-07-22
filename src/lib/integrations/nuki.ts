@@ -3,7 +3,7 @@ import { httpRequest } from "@/lib/helpers/http";
 import { logger } from "@/lib/helpers/logger";
 
 /**
- * Nuki Web API adapter — creates/removes time-limited keypad codes and reads
+ * Nuki Web API adapter : creates/removes time-limited keypad codes and reads
  * the lock activity log.
  *
  * A keypad code is a "smartlock auth" of type keypad (typeId 13) with an
@@ -51,7 +51,7 @@ export async function createKeypadCode(
   params: CreateCodeParams,
 ): Promise<CreateCodeResult> {
   if (!isNukiConfigured()) {
-    logger.warn("Nuki not configured — keypad code not created");
+    logger.warn("Nuki not configured : keypad code not created");
     return { created: false, error: "nuki_not_configured" };
   }
   try {
@@ -79,7 +79,10 @@ export async function createKeypadCode(
     return { created: true, nukiAuthId: id };
   } catch (e) {
     logger.error(e, { where: "nuki.createKeypadCode" });
-    return { created: false, error: e instanceof Error ? e.message : "unknown" };
+    return {
+      created: false,
+      error: e instanceof Error ? e.message : "unknown",
+    };
   }
 }
 
@@ -87,11 +90,14 @@ export async function createKeypadCode(
 export async function deleteAuth(nukiAuthId: string): Promise<boolean> {
   if (!isNukiConfigured()) return false;
   try {
-    await httpRequest(`${API_BASE}/smartlock/${smartlockId()}/auth/${nukiAuthId}`, {
-      method: "DELETE",
-      headers: authHeader(),
-      retries: 2,
-    });
+    await httpRequest(
+      `${API_BASE}/smartlock/${smartlockId()}/auth/${nukiAuthId}`,
+      {
+        method: "DELETE",
+        headers: authHeader(),
+        retries: 2,
+      },
+    );
     return true;
   } catch (e) {
     logger.error(e, { where: "nuki.deleteAuth", nukiAuthId });

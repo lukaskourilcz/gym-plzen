@@ -20,9 +20,12 @@ async function main() {
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key =
+    process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {
-    console.error("Missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SECRET_KEY. See NEEDED.md.");
+    console.error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SECRET_KEY. See NEEDED.md.",
+    );
     process.exit(1);
   }
 
@@ -31,17 +34,23 @@ async function main() {
   // Find the auth user by e-mail (paginate through the admin list).
   let userId: string | null = null;
   for (let page = 1; page <= 50 && !userId; page++) {
-    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 200 });
+    const { data, error } = await supabase.auth.admin.listUsers({
+      page,
+      perPage: 200,
+    });
     if (error) {
       console.error("Supabase admin error:", error.message);
       process.exit(1);
     }
-    userId = data.users.find((u) => u.email?.toLowerCase() === email)?.id ?? null;
+    userId =
+      data.users.find((u) => u.email?.toLowerCase() === email)?.id ?? null;
     if (data.users.length < 200) break;
   }
 
   if (!userId) {
-    console.error(`No user found with e-mail ${email}. Register first, then re-run.`);
+    console.error(
+      `No user found with e-mail ${email}. Register first, then re-run.`,
+    );
     process.exit(1);
   }
 
@@ -49,7 +58,10 @@ async function main() {
   await db
     .insert(profiles)
     .values({ id: userId, email, role: "admin" })
-    .onConflictDoUpdate({ target: profiles.id, set: { role: "admin", updatedAt: new Date() } });
+    .onConflictDoUpdate({
+      target: profiles.id,
+      set: { role: "admin", updatedAt: new Date() },
+    });
 
   console.log(`✅ ${email} is now an administrator.`);
   process.exit(0);

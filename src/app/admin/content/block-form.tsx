@@ -1,7 +1,11 @@
 "use client";
 
 import { useActionForm } from "@/components/admin/use-action-form";
-import { Field, FormFeedback, SubmitButton } from "@/components/admin/form-controls";
+import {
+  Field,
+  FormFeedback,
+  SubmitButton,
+} from "@/components/admin/form-controls";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
@@ -40,7 +44,11 @@ export function BlockForm({ block }: { block?: ContentBlock }) {
       <Field name="label" label="Popisek pro editor" error={errors.label}>
         <Input id="label" {...register("label")} />
       </Field>
-      <Field name="groupName" label="Skupina (např. home)" error={errors.groupName}>
+      <Field
+        name="groupName"
+        label="Skupina (např. home)"
+        error={errors.groupName}
+      >
         <Input id="groupName" {...register("groupName")} />
       </Field>
       <Field name="type" label="Typ" error={errors.type}>
@@ -54,7 +62,10 @@ export function BlockForm({ block }: { block?: ContentBlock }) {
         <Textarea id="valueText" rows={4} {...register("valueText")} />
       </Field>
       <input type="hidden" {...register("locale")} />
-      <input type="hidden" {...register("sortOrder", { valueAsNumber: true })} />
+      <input
+        type="hidden"
+        {...register("sortOrder", { valueAsNumber: true })}
+      />
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={isSubmitting}>
         {block ? "Uložit změny" : "Vytvořit blok"}

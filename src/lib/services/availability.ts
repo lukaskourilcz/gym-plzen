@@ -11,8 +11,8 @@ import { dayOfWeek, minuteOfDay, minutesBetween } from "@/lib/helpers/datetime";
  *   2. it does not overlap any active reservation, and
  *   3. it does not overlap any blocked slot.
  *
- * The overlap check is expressed as an interval-intersection query so the DB —
- * not the app — is the arbiter of truth; combined with the exclusion constraint
+ * The overlap check is expressed as an interval-intersection query so the DB :
+ * not the app : is the arbiter of truth; combined with the exclusion constraint
  * (see NEEDED.md) this makes double-booking impossible even under a race.
  */
 
@@ -28,7 +28,7 @@ export interface AvailabilityResult {
  * two [start, end) windows overlap iff start < otherEnd AND end > otherStart.
  *
  * Uses drizzle's `lt`/`gt` operators (not a raw `sql` template) so `Date` values
- * are bound through each column's timestamp mapper — raw interpolation of a Date
+ * are bound through each column's timestamp mapper : raw interpolation of a Date
  * fails at the driver with "Received an instance of Date".
  */
 function overlaps(

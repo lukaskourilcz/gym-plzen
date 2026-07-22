@@ -1,7 +1,7 @@
 /**
  * Barrel for the service layer. Services hold business logic and are the only
  * layer that talks to the database and integrations. Server Actions and route
- * handlers call services — never the DB directly.
+ * handlers call services : never the DB directly.
  *
  * Namespaced re-exports avoid name collisions between services that each expose
  * a `listRecent` / `getX`:

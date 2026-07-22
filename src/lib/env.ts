@@ -12,7 +12,9 @@ import { z } from "zod";
 export { publicEnv } from "./public-env";
 
 const serverSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  NODE_ENV: z
+    .enum(["development", "test", "production"])
+    .default("development"),
 
   // Optional during the build so the public site can deploy in demo mode.
   // Database-backed operations still require a real URL at runtime.
@@ -57,6 +59,9 @@ const serverSchema = z.object({
 
   ALERT_WHATSAPP_RECIPIENTS: z.string().optional(),
   CRON_SECRET: z.string().optional(),
+  DEMO_AUTH_ENABLED: z.enum(["true", "false"]).optional(),
+  DEMO_AUTH_SECRET: z.string().min(32).optional(),
+  BOOKING_PREVIEW_FIXTURE: z.enum(["true", "false"]).optional(),
 });
 
 function parse<T extends z.ZodTypeAny>(schema: T, source: unknown): z.infer<T> {
@@ -78,7 +83,7 @@ type ServerEnv = typeof env;
 /**
  * Assert that one or more optional env vars are present before using an
  * integration, and return them narrowed to `string`. Throws a clear,
- * actionable error otherwise — pointing the operator at NEEDED.md.
+ * actionable error otherwise : pointing the operator at NEEDED.md.
  *
  * @example
  *   const { STRIPE_SECRET_KEY } = requireEnv("STRIPE_SECRET_KEY");

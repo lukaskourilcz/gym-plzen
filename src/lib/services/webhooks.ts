@@ -1,3 +1,4 @@
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { webhookEvent } from "@/lib/db/schema";
 
@@ -22,10 +23,34 @@ export async function recordWebhookEvent(params: {
       provider: params.provider,
       eventId: params.eventId,
       payload: params.payload,
-      processedAt: new Date(),
+      processedAt: null,
     })
     .onConflictDoNothing()
     .returning({ id: webhookEvent.id });
 
   return { isNew: inserted.length > 0 };
+}
+
+export async function markWebhookProcessed(provider: string, eventId: string) {
+  await db
+    .update(webhookEvent)
+    .set({ processedAt: new Date() })
+    .where(
+      and(
+        eq(webhookEvent.provider, provider),
+        eq(webhookEvent.eventId, eventId),
+      ),
+    );
+}
+
+/** Remove a failed claim so the provider retry can process the event again. */
+export async function releaseWebhookClaim(provider: string, eventId: string) {
+  await db
+    .delete(webhookEvent)
+    .where(
+      and(
+        eq(webhookEvent.provider, provider),
+        eq(webhookEvent.eventId, eventId),
+      ),
+    );
 }

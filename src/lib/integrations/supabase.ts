@@ -5,8 +5,8 @@ import { publicEnv, supabasePublicKey } from "@/lib/public-env";
 /**
  * Server-side Supabase client. We use Supabase for two things beyond the raw
  * Postgres (which Drizzle talks to directly):
- *   1. Storage — CMS media (images/files), via the secret/service-role client.
- *   2. Realtime — the live calendar subscribes from the browser (see
+ *   1. Storage : CMS media (images/files), via the secret/service-role client.
+ *   2. Realtime : the live calendar subscribes from the browser (see
  *      lib/integrations/supabase-browser.ts) with the publishable key.
  *
  * Supports the new Supabase key model (`sb_secret_…` / `sb_publishable_…`) and
@@ -25,7 +25,7 @@ export function isSupabaseConfigured(): boolean {
   return Boolean(publicEnv.NEXT_PUBLIC_SUPABASE_URL && serverSecretKey());
 }
 
-/** Server-only client with the secret key (full access — storage, admin). */
+/** Server-only client with the secret key (full access : storage, admin). */
 export function supabaseAdmin(): SupabaseClient {
   if (serviceClient) return serviceClient;
   const key = serverSecretKey();

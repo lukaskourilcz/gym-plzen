@@ -1,4 +1,8 @@
-import { LAUNCH_PLAN, computeProgress, type PlanStatus } from "@/lib/data/launch-plan";
+import {
+  LAUNCH_PLAN,
+  computeProgress,
+  type PlanStatus,
+} from "@/lib/data/launch-plan";
 import { PageHeader } from "@/components/admin/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -32,11 +36,15 @@ export default function PlanPage() {
       <div className="mb-1 flex items-baseline justify-between">
         <strong className="text-2xl">{p.percent} %</strong>
         <span className="text-sm text-muted-foreground">
-          {p.done}/{p.total} hotovo · {p.inProgress} rozpracováno · {p.blocked} čeká na tebe · {p.todo} zbývá
+          {p.done}/{p.total} hotovo · {p.inProgress} rozpracováno · {p.blocked}{" "}
+          čeká na tebe · {p.todo} zbývá
         </span>
       </div>
       <div className="h-4 overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full bg-primary transition-[width] duration-300" style={{ width: `${p.percent}%` }} />
+        <div
+          className="h-full rounded-full bg-primary transition-[width] duration-300"
+          style={{ width: `${p.percent}%` }}
+        />
       </div>
 
       <div className="mt-8 grid gap-5">
@@ -47,17 +55,28 @@ export default function PlanPage() {
               <CardContent className="p-4">
                 <div className="flex items-baseline justify-between">
                   <h2 className="text-base font-semibold">{phase.title}</h2>
-                  <span className="text-sm text-muted-foreground">{phaseProgress.percent} %</span>
+                  <span className="text-sm text-muted-foreground">
+                    {phaseProgress.percent} %
+                  </span>
                 </div>
                 <ul className="mt-3 grid gap-1">
                   {phase.items.map((item) => (
-                    <li key={item.title} className="flex items-baseline gap-2 py-0.5">
+                    <li
+                      key={item.title}
+                      className="flex items-baseline gap-2 py-0.5"
+                    >
                       <span aria-hidden>{ICON[item.status]}</span>
                       <span className="flex-1">
                         {item.title}
-                        {item.note && <span className="text-sm text-muted-foreground">: {item.note}</span>}
+                        {item.note && (
+                          <span className="text-sm text-muted-foreground">
+                            : {item.note}
+                          </span>
+                        )}
                       </span>
-                      <span className="whitespace-nowrap text-xs text-muted-foreground">{STATUS_LABEL[item.status]}</span>
+                      <span className="whitespace-nowrap text-xs text-muted-foreground">
+                        {STATUS_LABEL[item.status]}
+                      </span>
                     </li>
                   ))}
                 </ul>

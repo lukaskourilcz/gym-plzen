@@ -56,19 +56,20 @@ export async function getLoyaltyStatus(userId: string): Promise<LoyaltyStatus> {
 }
 
 /**
- * Pure derivation of loyalty status from an entry count — separated so it is
+ * Pure derivation of loyalty status from an entry count : separated so it is
  * trivially unit-testable and reusable (e.g. in the customer widget).
  */
 export function deriveLoyaltyStatus(totalEntries: number): LoyaltyStatus {
   const positionInCycle = totalEntries % FREE_ENTRY_EVERY;
-  const entriesUntilFree = (FREE_ENTRY_EVERY - positionInCycle) % FREE_ENTRY_EVERY;
+  const entriesUntilFree =
+    (FREE_ENTRY_EVERY - positionInCycle) % FREE_ENTRY_EVERY;
   return {
     totalEntries,
     positionInCycle,
     entriesUntilFree,
     freeEntriesEarned: Math.floor(totalEntries / FREE_ENTRY_EVERY),
     // The next booking is free when completing it lands on a multiple of the
-    // cadence — i.e. the member already has FREE_ENTRY_EVERY-1 in this cycle.
+    // cadence : i.e. the member already has FREE_ENTRY_EVERY-1 in this cycle.
     nextEntryIsFree: positionInCycle === FREE_ENTRY_EVERY - 1,
     cadence: FREE_ENTRY_EVERY,
   };
