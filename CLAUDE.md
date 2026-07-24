@@ -22,3 +22,19 @@ Use Node.js 22. Before finishing, run relevant format check, lint, typecheck,
 tests, dependency audit, and production build.
 Non-trivial UI work also requires responsive browser verification, keyboard
 verification, visible focus, contrast, reduced motion, and design-system review.
+
+
+## Session routine & markdown conventions
+
+This repo follows a shared markdown contract (see the `session-start`,
+`session-end`, and `markdown-checkup` skills under `.claude/skills/`):
+
+- **`NEEDED.md`** — owner/agent action items. Each task:
+  `- [ ] **Title** — desc. [imp:1-5] [owner:me|ai] [time:30m] [kind:K]`, where
+  `[kind:K]` is one of `setup` `deploy` `legal` `content` `decision`.
+- **`about-project.md`** — project summary + the tech stack.
+- **`scaling.md`** — cost & scaling only (renamed from `stack-and-scaling.md`).
+- **`monetization.md`** — how the project could earn (options table).
+
+At session start, check `NEEDED.md` for `[owner:ai]` tasks that can now be done;
+at session end, update `NEEDED.md` (finished + newly-needed owner items).

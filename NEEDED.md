@@ -9,19 +9,19 @@ ověřovací příkazy jsou v [SESSION_HANDOFF.md](./SESSION_HANDOFF.md).
 `[owner:me]` znamená externí krok vlastníka projektu. `[owner:ai]` je úkol, který
 lze dokončit v kódu po dodání potřebných podkladů.
 
-- [ ] **Potvrdit cílový Supabase projekt a připojit databázi**: bez správného schématu neběží ostré přihlášení, rezervace ani administrace. `[imp:5]` `[owner:me]`
-- [ ] **Nastavit Supabase Auth a callback URL**: produkční přihlášení vyžaduje povolený e-mail, správné URL a shodný seznam v `NEXT_PUBLIC_OAUTH_PROVIDERS`. `[imp:5]` `[owner:me]`
-- [ ] **Doplnit produkční Vercel proměnné a doménu**: build funguje bez DB, provozní funkce ale potřebují správná tajemství a callbacky. `[imp:5]` `[owner:me]`
-- [ ] **Aplikovat a ověřit migrace `0000` až `0003`**: migrace vytvářejí schéma, omezení překryvu rezervací a bezpečný Realtime signál. `[imp:5]` `[owner:me]`
-- [ ] **Nastavit Stripe a webhook**: bez produkčních klíčů a podpisu nelze přijímat platby. `[imp:4]` `[owner:me]`
-- [ ] **Připojit Nuki a fyzicky ověřit vstupní kód**: správnost nelze potvrdit bez skutečného zámku. `[imp:4]` `[owner:me]`
-- [ ] **Nastavit Resend a WhatsApp**: doručení pokynů vyžaduje ověřené účty, domény a schválenou šablonu. `[imp:4]` `[owner:me]`
-- [ ] **Vytvořit CMS Storage bucket a jeho policies**: nahrávání obrázků a dokumentů potřebuje cílové úložiště. `[imp:4]` `[owner:me]`
-- [ ] **Nastavit cron, Sentry a uptime monitoring**: automatické opravy a upozornění potřebují produkční tajemství. `[imp:3]` `[owner:me]`
-- [ ] **Dodat finální fotografie, kontakty, vybavení a provozní pravidla**: web záměrně nevymýšlí nepotvrzené údaje. `[imp:3]` `[owner:me]`
-- [ ] **Dodat a schválit právní texty**: obchodní podmínky a ochranu soukromí musí potvrdit provozovatel nebo právník. `[imp:3]` `[owner:me]`
-- [ ] **Spustit plné auth, admin a payment E2E proti testovacím službám**: lokální bezpečné demo nemůže ověřit cizí systémy. `[imp:2]` `[owner:ai]`
-- [ ] **Doplnit analytics po rozhodnutí o consentu**: měření se nemá spouštět bez privacy rozhodnutí. `[imp:1]` `[owner:ai]`
+- [ ] **Potvrdit cílový Supabase projekt a připojit databázi**: bez správného schématu neběží ostré přihlášení, rezervace ani administrace. `[imp:5]` `[owner:me]` `[time:2h]` `[kind:legal]`
+- [ ] **Nastavit Supabase Auth a callback URL**: produkční přihlášení vyžaduje povolený e-mail, správné URL a shodný seznam v `NEXT_PUBLIC_OAUTH_PROVIDERS`. `[imp:5]` `[owner:me]` `[time:2h]` `[kind:legal]`
+- [ ] **Doplnit produkční Vercel proměnné a doménu**: build funguje bez DB, provozní funkce ale potřebují správná tajemství a callbacky. `[imp:5]` `[owner:me]` `[time:2h]` `[kind:legal]`
+- [ ] **Aplikovat a ověřit migrace `0000` až `0003`**: migrace vytvářejí schéma, omezení překryvu rezervací a bezpečný Realtime signál. `[imp:5]` `[owner:me]` `[time:1h]` `[kind:deploy]`
+- [ ] **Nastavit Stripe a webhook**: bez produkčních klíčů a podpisu nelze přijímat platby. `[imp:4]` `[owner:me]` `[time:20m]` `[kind:setup]`
+- [ ] **Připojit Nuki a fyzicky ověřit vstupní kód**: správnost nelze potvrdit bez skutečného zámku. `[imp:4]` `[owner:me]` `[time:2h]` `[kind:legal]`
+- [ ] **Nastavit Resend a WhatsApp**: doručení pokynů vyžaduje ověřené účty, domény a schválenou šablonu. `[imp:4]` `[owner:me]` `[time:1h]` `[kind:deploy]`
+- [ ] **Vytvořit CMS Storage bucket a jeho policies**: nahrávání obrázků a dokumentů potřebuje cílové úložiště. `[imp:4]` `[owner:me]` `[time:1h]` `[kind:deploy]`
+- [ ] **Nastavit cron, Sentry a uptime monitoring**: automatické opravy a upozornění potřebují produkční tajemství. `[imp:3]` `[owner:me]` `[time:1h]` `[kind:deploy]`
+- [ ] **Dodat finální fotografie, kontakty, vybavení a provozní pravidla**: web záměrně nevymýšlí nepotvrzené údaje. `[imp:3]` `[owner:me]` `[time:1h]` `[kind:content]`
+- [ ] **Dodat a schválit právní texty**: obchodní podmínky a ochranu soukromí musí potvrdit provozovatel nebo právník. `[imp:3]` `[owner:me]` `[time:2h]` `[kind:legal]`
+- [ ] **Spustit plné auth, admin a payment E2E proti testovacím službám**: lokální bezpečné demo nemůže ověřit cizí systémy. `[imp:2]` `[owner:ai]` `[time:1h]` `[kind:deploy]`
+- [ ] **Doplnit analytics po rozhodnutí o consentu**: měření se nemá spouštět bez privacy rozhodnutí. `[imp:1]` `[owner:ai]` `[time:2h]` `[kind:legal]`
 
 ## P0: správný Supabase projekt
 
