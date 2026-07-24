@@ -22,6 +22,7 @@ lze dokončit v kódu po dodání potřebných podkladů.
 - [ ] **Dodat a schválit právní texty**: obchodní podmínky a ochranu soukromí musí potvrdit provozovatel nebo právník. `[imp:3]` `[owner:me]` `[time:2h]` `[kind:legal]`
 - [ ] **Spustit plné auth, admin a payment E2E proti testovacím službám**: lokální bezpečné demo nemůže ověřit cizí systémy. `[imp:2]` `[owner:ai]` `[time:1h]` `[kind:deploy]`
 - [ ] **Doplnit analytics po rozhodnutí o consentu**: měření se nemá spouštět bez privacy rozhodnutí. `[imp:1]` `[owner:ai]` `[time:2h]` `[kind:legal]`
+- [ ] **Zapnout Vercel Web Analytics pro tento projekt** — v projektu na Vercelu zapni Web Analytics, aby OwnDashboard v přehledu projektu ukazoval návštěvníky a zobrazení stránek (načítá je přes Vercel API podle tohoto repozitáře). `[imp:2]` `[owner:me]` `[time:15m]` `[kind:setup]`
 
 ## P0: správný Supabase projekt
 
