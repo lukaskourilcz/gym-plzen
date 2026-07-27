@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { publicEnv } from "@/lib/public-env";
 import { SkipLink } from "@/components/ui/skip-link";
 import "./globals.css";
@@ -36,6 +37,7 @@ export default function RootLayout({
       <body>
         <SkipLink />
         {children}
+        <Analytics />
       </body>
     </html>
   );

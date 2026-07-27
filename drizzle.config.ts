@@ -1,4 +1,7 @@
 import { defineConfig } from "drizzle-kit";
+import { config } from "dotenv";
+
+config({ path: ".env.local" });
 
 /**
  * drizzle-kit configuration. Migrations run against DIRECT_URL (the non-pooled

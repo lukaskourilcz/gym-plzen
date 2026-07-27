@@ -9,47 +9,42 @@ ověřovací příkazy jsou v [SESSION_HANDOFF.md](./SESSION_HANDOFF.md).
 `[owner:me]` znamená externí krok vlastníka projektu. `[owner:ai]` je úkol, který
 lze dokončit v kódu po dodání potřebných podkladů.
 
-- [ ] **Potvrdit cílový Supabase projekt a připojit databázi**: bez správného schématu neběží ostré přihlášení, rezervace ani administrace. `[imp:5]` `[owner:me]` `[time:2h]` `[kind:legal]`
-- [ ] **Nastavit Supabase Auth a callback URL**: produkční přihlášení vyžaduje povolený e-mail, správné URL a shodný seznam v `NEXT_PUBLIC_OAUTH_PROVIDERS`. `[imp:5]` `[owner:me]` `[time:2h]` `[kind:legal]`
-- [ ] **Doplnit produkční Vercel proměnné a doménu**: build funguje bez DB, provozní funkce ale potřebují správná tajemství a callbacky. `[imp:5]` `[owner:me]` `[time:2h]` `[kind:legal]`
-- [ ] **Aplikovat a ověřit migrace `0000` až `0003`**: migrace vytvářejí schéma, omezení překryvu rezervací a bezpečný Realtime signál. `[imp:5]` `[owner:me]` `[time:1h]` `[kind:deploy]`
+- [ ] **Připojit Supabase v aplikaci a Vercelu**: schéma `rkmunagymohxtclymacm` je aplikované a ověřené, zbývá vyplnit `DATABASE_URL`, `DIRECT_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` a `SUPABASE_SECRET_KEY` v `.env.local` a ve Vercelu. `[imp:5]` `[owner:me]` `[time:1h]` `[kind:deploy]`
+- [ ] **Nastavit Supabase Auth a callback URL**: produkční přihlášení vyžaduje povolený e-mail, správné URL a shodný seznam v `NEXT_PUBLIC_OAUTH_PROVIDERS`. `[imp:5]` `[owner:me]` `[time:1h]` `[kind:setup]`
+- [ ] **Doplnit produkční Vercel proměnné a doménu**: build funguje bez DB, provozní funkce ale potřebují správná tajemství a callbacky. `[imp:5]` `[owner:me]` `[time:2h]` `[kind:deploy]`
+- [x] **Aplikovat a ověřit migrace `0000` až `0003`**: schéma, `btree_gist`, exclusion constraint, `auth.users` trigger, PII-safe realtime signal a RLS na 18 tabulkách jsou aplikované a ověřené SQL testy. `[imp:5]` `[owner:me]` `[time:1h]` `[kind:deploy]`
 - [ ] **Nastavit Stripe a webhook**: bez produkčních klíčů a podpisu nelze přijímat platby. `[imp:4]` `[owner:me]` `[time:20m]` `[kind:setup]`
-- [ ] **Připojit Nuki a fyzicky ověřit vstupní kód**: správnost nelze potvrdit bez skutečného zámku. `[imp:4]` `[owner:me]` `[time:2h]` `[kind:legal]`
+- [ ] **Připojit Nuki a fyzicky ověřit vstupní kód**: správnost nelze potvrdit bez skutečného zámku. `[imp:4]` `[owner:me]` `[time:2h]` `[kind:setup]`
 - [ ] **Nastavit Resend a WhatsApp**: doručení pokynů vyžaduje ověřené účty, domény a schválenou šablonu. `[imp:4]` `[owner:me]` `[time:1h]` `[kind:deploy]`
-- [ ] **Vytvořit CMS Storage bucket a jeho policies**: nahrávání obrázků a dokumentů potřebuje cílové úložiště. `[imp:4]` `[owner:me]` `[time:1h]` `[kind:deploy]`
+- [x] **Vytvořit CMS Storage bucket a jeho policies**: bucket `cms-media` je založený (public read, admin CUD přes `profiles.role='admin'`), pokus o upload pod `anon` i non-admin `authenticated` je RLS zamítnutý. `[imp:4]` `[owner:me]` `[time:1h]` `[kind:deploy]`
 - [ ] **Nastavit cron, Sentry a uptime monitoring**: automatické opravy a upozornění potřebují produkční tajemství. `[imp:3]` `[owner:me]` `[time:1h]` `[kind:deploy]`
 - [ ] **Dodat finální fotografie, kontakty, vybavení a provozní pravidla**: web záměrně nevymýšlí nepotvrzené údaje. `[imp:3]` `[owner:me]` `[time:1h]` `[kind:content]`
 - [ ] **Dodat a schválit právní texty**: obchodní podmínky a ochranu soukromí musí potvrdit provozovatel nebo právník. `[imp:3]` `[owner:me]` `[time:2h]` `[kind:legal]`
 - [ ] **Spustit plné auth, admin a payment E2E proti testovacím službám**: lokální bezpečné demo nemůže ověřit cizí systémy. `[imp:2]` `[owner:ai]` `[time:1h]` `[kind:deploy]`
 - [ ] **Doplnit analytics po rozhodnutí o consentu**: měření se nemá spouštět bez privacy rozhodnutí. `[imp:1]` `[owner:ai]` `[time:2h]` `[kind:legal]`
-- [ ] **Zapnout Vercel Web Analytics pro tento projekt** — v projektu na Vercelu zapni Web Analytics, aby OwnDashboard v přehledu projektu ukazoval návštěvníky a zobrazení stránek (načítá je přes Vercel API podle tohoto repozitáře). `[imp:2]` `[owner:me]` `[time:15m]` `[kind:setup]`
+- [ ] **Zapnout Vercel Web Analytics pro tento projekt**: v projektu na Vercelu zapni Web Analytics, aby OwnDashboard v přehledu projektu ukazoval návštěvníky a zobrazení stránek (načítá je přes Vercel API podle tohoto repozitáře). `[imp:2]` `[owner:me]` `[time:15m]` `[kind:setup]`
 
 ## P0: správný Supabase projekt
 
-Aktuální `.mcp.json` odkazuje na projekt `rkmunagymohxtclymacm`. Při poslední
-kontrole jeho schéma neodpovídalo této aplikaci: chyběly tabulky NAMASTÉ a byly
-v něm jiné struktury. Do projektu proto nic nemigrujte ani nemažte, dokud vlastník
-výslovně nepotvrdí, že jde o správný cíl.
+Cíl `rkmunagymohxtclymacm` byl v seanci 2026-07-27 potvrzen jako prázdný, byly
+aplikovány migrace `0000`–`0003` plus oprava advisorů `0004_advisor_fixes`,
+proběhl seed a všechny hlavní bezpečnostní kontroly (overlap constraint, RLS,
+grants, storage). Pořízená záloha stavu před migrací:
+`~/Documents/gym-plzen-backups/pre-migrate-20260727T153620Z.txt`.
 
-Po potvrzení cíle:
+Otevřené kroky jsou v [MANUAL_STEPS.md](./MANUAL_STEPS.md):
 
-1. Nastavte `DATABASE_URL`, `DIRECT_URL`, veřejnou URL a publishable key.
-2. Nastavte `SUPABASE_SECRET_KEY` jen v bezpečném serverovém prostředí.
-3. Zkontrolujte a aplikujte migrace `0000` až `0003`.
-4. Spusťte seed a ověřte databázové omezení proti překryvu rezervací.
-5. Spusťte Supabase security a performance advisors.
-6. Ověřte RLS a grants. Role `anon` ani `authenticated` nesmí číst provozní
-   tabulky s osobními údaji. Veřejný Realtime smí číst jen
-   `availability_signal`.
-7. Založte Storage bucket podle `SUPABASE_STORAGE_BUCKET` a nastavte policies.
-8. V Auth nastavte Site URL, callback URL a zvolené poskytovatele. Jejich názvy
-   zapište také do `NEXT_PUBLIC_OAUTH_PROVIDERS` jako čárkou oddělený seznam
-   `google`, `apple` a/nebo `azure`. Neověřený poskytovatel se ve formuláři
-   záměrně nezobrazuje.
+1. Přejmenování projektu na `namasteplzen` v Supabase Dashboard.
+2. Přidání `DATABASE_URL`, `DIRECT_URL`, `NEXT_PUBLIC_SUPABASE_URL`,
+   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` a `SUPABASE_SECRET_KEY` do
+   `.env.local` a Vercel Environment Variables.
+3. V Auth nastavit Site URL, Redirect URLs a povolit e-mail + Google OAuth.
+   Vyplnit `NEXT_PUBLIC_OAUTH_PROVIDERS` až po ověření providera.
 
-Migrace `drizzle/0003_security_and_realtime.sql` vytváří signál dostupnosti bez
-osobních údajů, omezuje veřejná práva a přidává ochranu plateb. Před aplikací ji
-porovnejte se skutečným schématem cílového projektu.
+`availability_signal` (PII-safe) je publikován do `supabase_realtime`, RLS je
+zapnutý na 18 business tabulkách bez policies, `anon` a `authenticated` mají
+SELECT pouze na `availability_signal`. `btree_gist` je v `extensions` schématu.
+Exclusion constraint proti překryvu rezervací je aktivní.
 
 ## P0: produkční rezervace a platby
 
