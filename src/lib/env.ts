@@ -62,6 +62,7 @@ const serverSchema = z.object({
   DEMO_AUTH_ENABLED: z.enum(["true", "false"]).optional(),
   DEMO_AUTH_SECRET: z.string().min(32).optional(),
   BOOKING_PREVIEW_FIXTURE: z.enum(["true", "false"]).optional(),
+  UPTIMEROBOT_HEARTBEAT_URL: z.string().url().optional()
 });
 
 function parse<T extends z.ZodTypeAny>(schema: T, source: unknown): z.infer<T> {
