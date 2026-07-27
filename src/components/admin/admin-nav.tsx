@@ -88,7 +88,10 @@ export function AdminNav() {
   }, [open]);
 
   return (
-    <nav className="mt-4 text-sm lg:mt-6" aria-label="Administrace">
+    <nav
+      className="mt-4 text-sm lg:mt-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto"
+      aria-label="Administrace"
+    >
       <button
         ref={toggleRef}
         type="button"
