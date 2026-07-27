@@ -28,7 +28,10 @@ const sql =
   globalForDb.__sql ??
   postgres(databaseUrl, {
     prepare: false,
-    max: env.NODE_ENV === "production" ? 10 : 1,
+    max: env.NODE_ENV === "production" ? 10 : 5,
+    idle_timeout: 20,
+    max_lifetime: 60 * 30,
+    connect_timeout: 10,
   });
 
 if (env.NODE_ENV !== "production") globalForDb.__sql = sql;
