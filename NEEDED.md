@@ -7,7 +7,7 @@ Externí a klientské kroky. Manuální detaily viz [MANUAL_STEPS.md](./MANUAL_S
 `[imp:N]` = priorita 1–5, `[owner:me]` = externí krok, `[owner:ai]` = úkol pro
 AI po dodání podkladů. `[kind:K]` ∈ `setup` `deploy` `legal` `content` `decision`.
 
-- [ ] **Přepsat otevírací dobu v administraci na 05:00–23:45 / 75 min**: kód má nové výchozí hodnoty, ale tabulka `opening_hours` v ostré databázi je už naplněná starými (06:00–22:00, 60 min) a seed je nepřepisuje. V administraci → Otevírací doba a bloky nastavit u všech sedmi dnů začátek 05:00, konec 23:45 a délku okna 75 minut. Bez toho web slibuje okna 05:00–23:45, ale kalendář nabídne staré hodinové sloty. `[imp:5]` `[owner:me]` `[time:10m]` `[kind:setup]`
+- [ ] **Nahradit zástupné kontaktní údaje**: v patičce a na webu je zatím `777 666 555` a `info@namastegym.cz` (zástupné hodnoty pro layout). Přepsat na skutečné v administraci → Obsah webu (`contact.phone`, `contact.email`). `[imp:5]` `[owner:me]` `[time:5m]` `[kind:content]`
 - [ ] **Doseedovat nové bloky obsahu**: `npm run db:seed` nově zakládá bloky pro šest kroků „Jak to u nás funguje“, závěrečnou výzvu, provozní řád a sociální sítě. Bez něj se texty zobrazují z výchozích hodnot v kódu a nejdou editovat v administraci. `[imp:3]` `[owner:me]` `[time:5m]` `[kind:setup]`
 - [ ] **Text provozního řádu**: stránka `/provozni-rad` (odkazovaná z patičky) vykresluje blok `home.rules.body`. Dodat a schválit finální znění. `[imp:3]` `[owner:me]` `[time:30m]` `[kind:content]`
 - [ ] **Fotografie jednotlivých zón**: dodat snímky pro dlaždice na `/vybaveni` (silová, kardio, strečink, dětský koutek, lednice, zázemí). Zatím se zobrazuje značková výplň s lotosem. `[imp:3]` `[owner:me]` `[time:30m]` `[kind:content]`

@@ -59,8 +59,10 @@ export const SITE_DEFAULTS = {
   "home.gallery.title": "Prostor",
   "home.contact.title": "Kontakt",
   "contact.address": "Křížkova 424/23, 301 00 Plzeň 1",
-  "contact.phone": "",
-  "contact.email": "",
+  // PLACEHOLDERS supplied by the client for layout purposes. These are not the
+  // real contact details : replace them in the admin before launch.
+  "contact.phone": "777 666 555",
+  "contact.email": "info@namastegym.cz",
   // Social profiles render in the footer only once the operator fills them in.
   "contact.facebook": "",
   "contact.instagram": "",
