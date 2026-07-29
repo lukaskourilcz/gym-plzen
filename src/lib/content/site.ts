@@ -26,22 +26,33 @@ import {
 export const SITE_DEFAULTS = {
   "brand.name": "NAMASTÉ Private Gym",
   "home.hero.badge": "Privátní fitness v Plzni",
-  "home.hero.title": "Celý gym jen pro vás",
+  "home.hero.title": "Tvůj čas. Tvůj prostor. Tvoje Namasté.",
   "home.hero.subtitle":
-    "Pronajměte si celý prostor pro sebe nebo vezměte přátele. Bez čekání na stroje a bez cizích pohledů.",
+    "Rezervujte si prémiové soukromé samoobslužné fitness v Plzni.",
   "home.hero.cta": "Zobrazit volné termíny",
-  "home.about.title": "Jak to funguje",
-  "home.about.step1.title": "Vyberte termín",
+  "home.about.title": "Jak to u nás funguje",
+  "home.about.step1.title": "Vyber si termín",
   "home.about.step1.body":
-    "V rezervačním systému si vyberete termín a časové okno, které vám vyhovuje.",
-  "home.about.step2.title": "Zaplaťte online",
-  "home.about.step2.body": "Rezervaci potvrdíte platbou kartou přímo na webu.",
-  "home.about.step3.title": "Odemkněte a trénujte",
+    "V rezervačním systému si vyber termín a časové okno, ve kterém chceš přijít zacvičit si. Potvrď, že ses seznámil s naším provozním řádem a obchodními podmínkami, a vyplň rezervaci.",
+  "home.about.step2.title": "Po zaplacení",
+  "home.about.step2.body":
+    "Ti přijde společně s potvrzením tvojí rezervace veškeré potřebné info ke vstupu do našeho gymu do e-mailu, který jsi zadal při rezervaci.",
+  "home.about.step3.title": "Vstup do fitka",
   "home.about.step3.body":
-    "Před začátkem rezervace obdržíte osobní kód, kterým si odemknete vstupní dveře.",
+    "Před začátkem tvé rezervace ti přijde do e-mailu a SMS unikátní kód, který zadáš na klávesnici u vstupu do fitness a dveře se ti odemknou. Kód platí pouze v tvém vybraném časovém okně.",
+  "home.about.step4.title": "Zacvič si",
+  "home.about.step4.body":
+    "Po celou dobu tvého tréninku můžeš prostory využívat plně dle svého uvážení. Veškeré stroje a pomůcky jsou ti k dispozici. Pokud si nevíš rady, využij našeho videopomocníka nebo oslov třeba našeho trenéra.",
+  "home.about.step5.title": "Úklid",
+  "home.about.step5.body":
+    "Po tréninku nezapomeň vše po sobě vrátit na své místo a do původního stavu, aby mohl další klient využít vše stejně jako ty. Nezapomeň zkontrolovat i dětský koutek a zahrádku, pokud jsi je využíval. Moc ti za to děkujeme.",
+  "home.about.step6.title": "Před odchodem",
+  "home.about.step6.body":
+    "Můžeš využít koupelnu, kde najdeš sprchu včetně české přírodní kosmetiky. V automatu si můžeš zakoupit své oblíbené suplementy nebo svačinu. Nezapomeň se vyfotit a označit nás na sociálních sítích nebo nás ohodnotit. Budeme se těšit na příště.",
   "home.pricing.title": "Cena vstupu",
   "home.pricing.note":
     "Bez závazků a měsíčních plateb. Platíte jen za to, co si odtrénujete.",
+  "home.cta.title": "Připravený na změnu? Přidej se k nám!",
   "home.rules.title": "Provozní řád",
   "home.rules.body":
     "Do fitness vstupujte pouze v čase rezervace. Po tréninku vraťte vybavení do původního stavu a otřete použité nářadí. Vstupní kód je osobní a platí pouze podle pokynů k vaší rezervaci.",
@@ -50,6 +61,9 @@ export const SITE_DEFAULTS = {
   "contact.address": "Křížkova 424/23, 301 00 Plzeň 1",
   "contact.phone": "",
   "contact.email": "",
+  // Social profiles render in the footer only once the operator fills them in.
+  "contact.facebook": "",
+  "contact.instagram": "",
 } as const;
 
 export type SiteContentKey = keyof typeof SITE_DEFAULTS;
@@ -62,6 +76,19 @@ export interface SiteContent {
   termsUrl: string | null;
   heroImageUrl: string | null;
   heroImageAlt: string;
+}
+
+/** Props every public page hands to `SiteFooter`, derived from CMS content. */
+export function footerProps(content: SiteContent) {
+  return {
+    brand: content.get("brand.name"),
+    email: content.get("contact.email").trim() || undefined,
+    phone: content.get("contact.phone").trim() || undefined,
+    address: content.get("contact.address").trim() || undefined,
+    facebookUrl: content.get("contact.facebook").trim() || undefined,
+    instagramUrl: content.get("contact.instagram").trim() || undefined,
+    termsUrl: content.termsUrl,
+  };
 }
 
 /** Load all public content once (overlay CMS values on defaults). Never throws. */

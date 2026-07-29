@@ -45,10 +45,11 @@ export default async function SchedulePage() {
       <section>
         <h2 className="mb-1 text-lg font-semibold">Týdenní otevírací doba</h2>
         <p className="mb-3 text-sm text-muted-foreground">
-          Sloty jsou vždy celé hodiny (např. 13:00–14:00). Výchozí provoz je
-          denně {minutesToHHmm(DEFAULT_OPEN_MINUTE)} až{" "}
-          {minutesToHHmm(DEFAULT_CLOSE_MINUTE)}. Před ostrým provozem musí časy
-          potvrdit provozovatel.
+          Časová okna navazují na sebe od otevírací doby (např. 05:00–06:15,
+          06:15–07:30). Výchozí provoz je denně{" "}
+          {minutesToHHmm(DEFAULT_OPEN_MINUTE)} až{" "}
+          {minutesToHHmm(DEFAULT_CLOSE_MINUTE)} po 75 minutách. Před ostrým
+          provozem musí časy potvrdit provozovatel.
         </p>
         {Array.from({ length: 7 }, (_, day) => (
           <OpeningHoursRow key={day} dayOfWeek={day} hours={byDay.get(day)} />

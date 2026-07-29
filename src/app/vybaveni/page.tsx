@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { Camera, ListChecks } from "lucide-react";
-import { loadSiteContent } from "@/lib/content/site";
+import { footerProps, loadSiteContent } from "@/lib/content/site";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
@@ -81,10 +81,7 @@ export default async function EquipmentPage() {
           </Container>
         </Section>
       </main>
-      <SiteFooter
-        brand={content.get("brand.name")}
-        termsUrl={content.termsUrl}
-      />
+      <SiteFooter {...footerProps(content)} />
     </>
   );
 }

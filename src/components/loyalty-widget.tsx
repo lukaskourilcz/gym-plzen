@@ -18,13 +18,13 @@ export function LoyaltyWidget({ status }: { status: LoyaltyStatus }) {
       </div>
 
       {nextEntryIsFree ? (
-        <p className="mt-3 text-xl font-black text-primary">
+        <p className="mt-3 text-xl font-black text-gold">
           Váš další vstup je zdarma!
         </p>
       ) : (
         <p className="mt-3 text-xl font-black">
           Do vstupu zdarma zbývá{" "}
-          <strong className="text-primary">
+          <strong className="text-gold">
             {entriesUntilFree} {pluralEntries(entriesUntilFree)}
           </strong>
           .
@@ -38,7 +38,7 @@ export function LoyaltyWidget({ status }: { status: LoyaltyStatus }) {
             aria-hidden
             className={cn(
               "h-2.5 flex-1 rounded-sm border border-white/20",
-              i < filled && "border-primary bg-primary",
+              i < filled && "border-gold bg-gold",
             )}
           />
         ))}

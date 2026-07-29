@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
+import { Bitter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { publicEnv } from "@/lib/public-env";
 import { SkipLink } from "@/components/ui/skip-link";
 import "./globals.css";
 
-const manrope = Manrope({
+/** Bitter carries the whole brand; latin-ext keeps Czech diacritics correct. */
+const bitter = Bitter({
   subsets: ["latin", "latin-ext"],
-  variable: "--font-sans",
+  variable: "--font-brand",
   display: "swap",
   preload: true,
 });
@@ -33,7 +34,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="cs" className={manrope.variable}>
+    <html lang="cs" className={bitter.variable}>
       <body>
         <SkipLink />
         {children}

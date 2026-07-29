@@ -23,7 +23,7 @@ export default async function AdminLayout({
             href="/admin"
             className="flex items-center gap-2.5 px-2.5 py-1 tracking-[-.02em]"
           >
-            <span className="grid size-[34px] shrink-0 place-items-center rounded-[9px] bg-primary text-primary-foreground">
+            <span className="grid size-[34px] shrink-0 place-items-center rounded-[9px] bg-gold text-gold-foreground">
               <Dumbbell className="size-[18px]" />
             </span>
             <span>
@@ -35,18 +35,18 @@ export default async function AdminLayout({
               </span>
             </span>
           </Link>
-          <SignOutButton className="m-0 min-h-11 px-2 text-xs text-primary lg:hidden" />
+          <SignOutButton className="m-0 min-h-11 px-2 text-xs text-gold lg:hidden" />
         </div>
         <AdminNav />
         <div className="mt-auto hidden items-center gap-2.5 border-t border-white/10 px-2.5 pb-1 pt-3.5 lg:flex">
-          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/15 text-xs font-extrabold text-primary">
+          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white/12 text-xs font-extrabold text-gold">
             A
           </span>
           <div className="min-w-0 text-xs">
             <div className="truncate font-bold text-white/80">
               {admin.email}
             </div>
-            <SignOutButton className="text-primary" />
+            <SignOutButton className="text-gold" />
           </div>
         </div>
       </aside>

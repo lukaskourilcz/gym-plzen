@@ -12,6 +12,11 @@ import {
 } from "@/lib/helpers/datetime";
 import { logger } from "@/lib/helpers/logger";
 import { isBookingPreviewEnabled } from "@/lib/config/preview";
+import {
+  DEFAULT_CLOSE_MINUTE,
+  DEFAULT_OPEN_MINUTE,
+  DEFAULT_SLOT_MINUTES,
+} from "@/lib/config/schedule";
 import { releaseExpiredPendingReservations } from "./reservations";
 
 export interface Slot {
@@ -143,20 +148,17 @@ export async function getSlotsForRange(
         range: `${startDateKey}:${endDateKeyExclusive}`,
       });
       const days: DaySlots[] = [];
+      const hours: DayHours = {
+        openMinute: DEFAULT_OPEN_MINUTE,
+        closeMinute: DEFAULT_CLOSE_MINUTE,
+        slotMinutes: DEFAULT_SLOT_MINUTES,
+        isClosed: false,
+      };
       for (
         let dateKey = startDateKey;
         dateKey < endDateKeyExclusive;
         dateKey = addDaysToDateKey(dateKey, 1)
       ) {
-        const isWeekend = [0, 6].includes(
-          dayOfWeek(localDateTimeToDate(dateKey, 12 * 60)),
-        );
-        const hours: DayHours = {
-          openMinute: isWeekend ? 9 * 60 : 7 * 60,
-          closeMinute: isWeekend ? 15 * 60 : 20 * 60,
-          slotMinutes: 75,
-          isClosed: false,
-        };
         days.push({
           dateKey,
           isClosed: false,

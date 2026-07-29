@@ -6,52 +6,64 @@
 :root {
   --radius-control: 0.25rem;
   --radius-card: 0.625rem;
-  --background: oklch(0.985 0.004 95);
-  --foreground: oklch(0.18 0.014 255);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.014 255);
-  --primary: oklch(0.72 0.17 138);
-  --primary-foreground: oklch(0.16 0.035 145);
-  --secondary: oklch(0.95 0.008 105);
-  --secondary-foreground: oklch(0.22 0.014 255);
-  --muted: oklch(0.95 0.006 100);
-  --muted-foreground: oklch(0.46 0.014 255);
-  --accent: oklch(0.94 0.035 140);
-  --accent-foreground: oklch(0.28 0.075 145);
-  --destructive: oklch(0.56 0.2 27);
-  --destructive-foreground: oklch(0.98 0 0);
-  --success: oklch(0.51 0.13 145);
-  --success-foreground: oklch(0.98 0 0);
-  --warning: oklch(0.72 0.14 75);
-  --warning-foreground: oklch(0.22 0.05 60);
-  --info: oklch(0.55 0.12 245);
-  --info-foreground: oklch(0.98 0 0);
-  --border: oklch(0.88 0.008 100);
-  --input: oklch(0.84 0.009 100);
-  --ring: oklch(0.55 0.14 140);
-  --ink: oklch(0.145 0.016 255);
-  --ink-elevated: oklch(0.19 0.018 255);
-  --ink-foreground: oklch(0.97 0.004 95);
-  --shadow-sm: 0 1px 2px rgb(15 23 42 / 0.05);
-  --shadow-md: 0 16px 40px -24px rgb(15 23 42 / 0.35);
+
+  /* Brand palette: deep green, gold, charcoal, taupe. */
+  --background: #faf8f3;
+  --foreground: #2e2e2e;
+  --card: #ffffff;
+  --card-foreground: #2e2e2e;
+  --primary: #004534;
+  --primary-foreground: #ffffff;
+  --secondary: #efece4;
+  --secondary-foreground: #2e2e2e;
+  --muted: #eeebe4;
+  --muted-foreground: #5b6360;
+  --accent: #dde8e1;
+  --accent-foreground: #004534;
+  --gold: #ddb255;
+  --gold-foreground: #2e2408;
+  --taupe: #7c6650;
+  --taupe-foreground: #ffffff;
+  --sage: #7e9c8b;
+  --sage-soft: #b9cbbe;
+  --sage-foreground: #003527;
+  --destructive: #b3261e;
+  --destructive-foreground: #ffffff;
+  --success: #1f6b4a;
+  --success-foreground: #ffffff;
+  --warning: #9a6b12;
+  --warning-foreground: #ffffff;
+  --info: #2f5d8c;
+  --info-foreground: #ffffff;
+  --border: #dcd7cc;
+  --input: #c7c1b4;
+  --ring: #004534;
+  --ink: #003527;
+  --ink-elevated: #0a4230;
+  --ink-foreground: #f4f1e9;
+  --charcoal: #2e2e2e;
+  --charcoal-foreground: #f5f2ec;
+  --shadow-sm: 0 1px 2px rgb(0 53 39 / 0.08);
+  --shadow-md: 0 16px 40px -24px rgb(0 53 39 / 0.4);
 }
 
 .dark {
-  --background: oklch(0.17 0.012 260);
-  --foreground: oklch(0.96 0.005 260);
-  --card: oklch(0.21 0.014 260);
-  --card-foreground: oklch(0.96 0.005 260);
-  --primary: oklch(0.76 0.16 138);
-  --primary-foreground: oklch(0.18 0.02 150);
-  --secondary: oklch(0.26 0.014 260);
-  --secondary-foreground: oklch(0.96 0.005 260);
-  --muted: oklch(0.26 0.014 260);
-  --muted-foreground: oklch(0.7 0.01 260);
-  --accent: oklch(0.3 0.03 138);
-  --accent-foreground: oklch(0.96 0.005 260);
-  --border: oklch(0.3 0.01 260);
-  --input: oklch(0.3 0.01 260);
-  --ring: oklch(0.76 0.16 138);
+  --background: #1a201d;
+  --foreground: #f1efe8;
+  --card: #222926;
+  --card-foreground: #f1efe8;
+  --primary: #7fae97;
+  --primary-foreground: #04231a;
+  --secondary: #2a322e;
+  --secondary-foreground: #f1efe8;
+  --muted: #2a322e;
+  --muted-foreground: #b3bbb6;
+  --accent: #274036;
+  --accent-foreground: #dbe7df;
+  --sage-foreground: #dbe7df;
+  --border: #333c37;
+  --input: #333c37;
+  --ring: #7fae97;
 }
 
 @theme inline {
@@ -67,6 +79,13 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-taupe: var(--taupe);
+  --color-taupe-foreground: var(--taupe-foreground);
+  --color-sage: var(--sage);
+  --color-sage-soft: var(--sage-soft);
+  --color-sage-foreground: var(--sage-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);
@@ -81,13 +100,16 @@
   --color-ink: var(--ink);
   --color-ink-elevated: var(--ink-elevated);
   --color-ink-foreground: var(--ink-foreground);
+  --color-charcoal: var(--charcoal);
+  --color-charcoal-foreground: var(--charcoal-foreground);
 
   --radius-sm: 0.1875rem;
   --radius-md: var(--radius-control);
   --radius-lg: var(--radius-card);
   --radius-xl: 0.75rem;
 
-  --font-sans: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+  /* Bitter is the single brand family for interface and marketing alike. */
+  --font-sans: var(--font-brand, ui-serif, Georgia, "Times New Roman", serif);
 }
 
 *,

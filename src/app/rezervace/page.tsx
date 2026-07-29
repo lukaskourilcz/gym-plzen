@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { loadSiteContent } from "@/lib/content/site";
+import { footerProps, loadSiteContent } from "@/lib/content/site";
 import { getSession } from "@/lib/auth/guards";
 import { formatMoney, formatTimeRange } from "@/lib/helpers/format";
 import {
@@ -138,10 +138,7 @@ export default async function BookingPage({
           </Container>
         </Section>
       </main>
-      <SiteFooter
-        brand={content.get("brand.name")}
-        termsUrl={content.termsUrl}
-      />
+      <SiteFooter {...footerProps(content)} />
     </>
   );
 }

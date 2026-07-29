@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CheckCircle2, Clock3, TriangleAlert } from "lucide-react";
 import { requireUser } from "@/lib/auth/guards";
 import { booking } from "@/lib/services";
-import { loadSiteContent } from "@/lib/content/site";
+import { footerProps, loadSiteContent } from "@/lib/content/site";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
@@ -82,10 +82,7 @@ export default async function BookingDonePage({
           </Container>
         </Section>
       </main>
-      <SiteFooter
-        brand={content.get("brand.name")}
-        termsUrl={content.termsUrl}
-      />
+      <SiteFooter {...footerProps(content)} />
     </>
   );
 }

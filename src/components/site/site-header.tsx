@@ -6,18 +6,18 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
-import { LotusMark } from "@/components/site/brand";
+import { BrandLogo } from "@/components/site/brand";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/#jak-to-funguje", label: "Jak to funguje" },
-  { href: "/#cenik", label: "Ceník" },
   { href: "/vybaveni", label: "Vybavení" },
+  { href: "/#cenik", label: "Ceník" },
   { href: "/faq", label: "FAQ" },
   { href: "/#kontakt", label: "Kontakt" },
 ];
 
-/** Public navigation. The header intentionally uses the lotus symbol only. */
+/** Public navigation: lotus plus wordmark on the left, booking action first. */
 export function SiteHeader({
   brand = "NAMASTÉ Private Gym",
   accountHref = "/login",
@@ -48,9 +48,9 @@ export function SiteHeader({
         <Link
           href="/"
           aria-label={`${brand}, úvodní stránka`}
-          className="grid size-11 place-items-center rounded-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="flex min-h-11 items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
-          <LotusMark className="size-9" />
+          <BrandLogo brand={brand} />
         </Link>
 
         <nav
@@ -71,20 +71,19 @@ export function SiteHeader({
 
         <div className="ml-auto flex items-center gap-2">
           <Button
+            href="/rezervace"
+            size="sm"
+            className="hidden uppercase tracking-[.1em] sm:inline-flex"
+          >
+            Rezervovat
+          </Button>
+          <Button
             href={accountHref}
             variant="ghost"
             size="sm"
             className="hidden sm:inline-flex"
           >
             {accountLabel}
-          </Button>
-          <Button
-            href="/rezervace"
-            size="sm"
-            variant="ink"
-            className="hidden text-primary sm:inline-flex"
-          >
-            Rezervovat
           </Button>
           <Button
             id="public-menu-toggle"
@@ -121,11 +120,11 @@ export function SiteHeader({
             </Link>
           ))}
           <div className="mt-3 grid grid-cols-2 gap-2">
+            <Button href="/rezervace" className="uppercase tracking-[.08em]">
+              Rezervovat
+            </Button>
             <Button href={accountHref} variant="outline">
               {accountLabel}
-            </Button>
-            <Button href="/rezervace" variant="ink" className="text-primary">
-              Rezervovat
             </Button>
           </div>
         </Container>

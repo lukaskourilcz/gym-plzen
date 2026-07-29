@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth/guards";
 import { loyalty, reservations } from "@/lib/services";
-import { loadSiteContent } from "@/lib/content/site";
+import { footerProps, loadSiteContent } from "@/lib/content/site";
 import {
   formatDate,
   formatMoney,
@@ -126,10 +126,7 @@ export default async function AccountPage() {
           </Container>
         </Section>
       </main>
-      <SiteFooter
-        brand={content.get("brand.name")}
-        termsUrl={content.termsUrl}
-      />
+      <SiteFooter {...footerProps(content)} />
     </>
   );
 }

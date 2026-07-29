@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { loadSiteContent } from "@/lib/content/site";
+import { footerProps, loadSiteContent } from "@/lib/content/site";
 import { formatMoney } from "@/lib/helpers/format";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
@@ -95,10 +95,7 @@ export default async function FaqPage() {
           __html: JSON.stringify(faqJson).replace(/</g, "\\u003c"),
         }}
       />
-      <SiteFooter
-        brand={content.get("brand.name")}
-        termsUrl={content.termsUrl}
-      />
+      <SiteFooter {...footerProps(content)} />
     </>
   );
 }
