@@ -61,7 +61,10 @@ export function BrandLogo({
         className,
       )}
     >
-      <LotusMark className={inverse ? "text-gold" : "text-accent-foreground"} />
+      <LotusMark
+        decorative
+        className={inverse ? "text-gold" : "text-accent-foreground"}
+      />
       <span className="leading-none">
         <strong className="block text-base font-extrabold tracking-[0.06em]">
           NAMASTÉ
@@ -97,6 +100,7 @@ export function BrandLockup({
       )}
     >
       <LotusMark
+        decorative
         className={cn(
           "size-14",
           inverse ? "text-gold" : "text-accent-foreground",

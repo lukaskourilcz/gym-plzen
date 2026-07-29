@@ -113,7 +113,7 @@ export default async function EquipmentPage() {
                       index % 2 === 0 ? "bg-ink-elevated" : "bg-sage",
                     )}
                   >
-                    <LotusMark className="size-16 opacity-30" />
+                    <LotusMark decorative className="size-16 opacity-30" />
                   </div>
                 </li>
               ))}

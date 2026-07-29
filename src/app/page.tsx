@@ -359,7 +359,7 @@ export default async function HomePage() {
             className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[calc(100%+2px)]"
           >
             <span className="grid size-16 place-items-center rounded-full bg-ink shadow-md ring-4 ring-white/70">
-              <LotusMark className="size-9 text-gold" />
+              <LotusMark decorative className="size-9 text-gold" />
             </span>
             <span className="mx-auto block size-0 border-x-8 border-t-[12px] border-x-transparent border-t-ink" />
           </div>
