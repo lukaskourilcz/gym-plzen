@@ -24,12 +24,12 @@ function getSlotState(slot: HeroAvailabilitySlot, nowMs: number): SlotState {
   return "available";
 }
 
-function getVisibleSlots(slots: HeroAvailabilitySlot[], nowMs: number) {
-  const firstCurrent = slots.findIndex(
-    (slot) => getSlotState(slot, nowMs) !== "past",
-  );
-  const start = firstCurrent > 1 ? firstCurrent - 2 : 0;
-  return slots.slice(start, start + 8);
+/**
+ * Every window of the selected day, in order. Past and taken windows stay
+ * visible (struck through) so the day's full 05:00–23:45 grid is always shown.
+ */
+function getVisibleSlots(slots: HeroAvailabilitySlot[]) {
+  return slots;
 }
 
 export function HeroAvailability({
@@ -57,7 +57,7 @@ export function HeroAvailability({
   const dayCount = days.length;
   const activeIndex = Math.min(selectedDay, Math.max(0, dayCount - 1));
   const day = days[activeIndex];
-  const visibleSlots = getVisibleSlots(day?.slots ?? [], now);
+  const visibleSlots = getVisibleSlots(day?.slots ?? []);
   const reservationHref = day
     ? `/rezervace?date=${encodeURIComponent(day.dateLabel)}`
     : "/rezervace";
@@ -126,7 +126,7 @@ export function HeroAvailability({
           </div>
 
           {visibleSlots.length > 0 ? (
-            <div className="grid grid-cols-2 gap-2 px-4 py-4 sm:grid-cols-4 sm:px-5">
+            <div className="grid grid-cols-2 gap-1.5 px-4 py-4 sm:grid-cols-4 sm:px-5 lg:grid-cols-5">
               {visibleSlots.map((slot) => {
                 const state = getSlotState(slot, now);
                 if (state === "available") {

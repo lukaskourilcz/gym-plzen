@@ -41,8 +41,6 @@ const seeded = (key: SiteContentKey, label: string, groupName: string) => ({
 
 const CONTENT_BLOCKS = [
   seeded("brand.name", "Název", "home"),
-  seeded("home.hero.title", "Nadpis úvodní sekce", "home"),
-  seeded("home.hero.subtitle", "Podnadpis úvodní sekce", "home"),
   seeded("home.about.title", "Nadpis sekce Jak to u nás funguje", "home"),
   seeded("home.about.step1.title", "Krok 1 : nadpis", "home"),
   seeded("home.about.step1.body", "Krok 1 : text", "home"),

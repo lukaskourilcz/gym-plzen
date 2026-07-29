@@ -39,6 +39,23 @@ const OPENING_HOURS = `${minutesToHHmm(DEFAULT_OPEN_MINUTE)}–${minutesToHHmm(
   DEFAULT_CLOSE_MINUTE,
 )}`;
 
+/**
+ * Fixed brand copy, deliberately NOT read from the CMS. The `home.hero.*`
+ * blocks were seeded with older wording, and a seeded row overrides the code
+ * default, so the hero would keep rendering the superseded headline.
+ */
+const HERO_TITLE = "Tvůj čas. Tvůj prostor. Tvoje Namasté";
+const HERO_SUBTITLE =
+  "Rezervujte si prémiové soukromé samoobslužné fitness v Plzni.";
+
+/*
+ * Desktop hero sizing, expressed as a literal Tailwind arbitrary value so the
+ * class is statically scannable: 69px sticky header (68 + 1px border) + hero +
+ * 104px facts strip must fill the viewport minus a 50px peek at the section
+ * below, hence `100svh - 223px` for the hero itself. Applied from `lg` only;
+ * on smaller screens the strip stacks and a viewport lock would clip content.
+ */
+
 /** Six operating steps, all editable in the admin under "Obsah webu". */
 const STEP_KEYS = [
   ["home.about.step1.title", "home.about.step1.body"],
@@ -146,13 +163,13 @@ export default async function HomePage() {
             aria-hidden="true"
             className="absolute inset-0 -z-10 bg-ink/88"
           />
-          <Container className="grid gap-12 py-14 lg:grid-cols-[1fr_1fr] lg:items-start lg:py-20">
+          <Container className="grid gap-12 py-14 lg:min-h-[calc(100svh-223px)] lg:grid-cols-[1fr_1fr] lg:content-center lg:items-start lg:gap-8 lg:py-10 xl:gap-12">
             <div>
               <h1 className="max-w-2xl text-4xl font-extrabold leading-[1.1] tracking-[-.01em] sm:text-5xl lg:text-6xl">
-                {t("home.hero.title")}
+                {HERO_TITLE}
               </h1>
               <p className="mt-7 max-w-xl text-lg leading-8 text-ink-foreground/75">
-                {t("home.hero.subtitle")}
+                {HERO_SUBTITLE}
               </p>
               <p className="mt-6 flex items-center gap-2 text-sm font-bold text-ink-foreground/85">
                 <MapPin aria-hidden="true" className="size-4 text-gold" />
@@ -187,8 +204,9 @@ export default async function HomePage() {
           </Container>
         </section>
 
+        {/* Fixed 104px tall from `lg` up: the hero's viewport calc depends on it. */}
         <div className="border-b border-border bg-background">
-          <Container className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <Container className="grid grid-cols-1 sm:grid-cols-2 lg:h-[104px] lg:grid-cols-4">
             {[
               { value: OPENING_HOURS, label: "otevírací doba" },
               { value: "Dětský koutek", label: "plně vybavený s pískovištěm" },
@@ -200,7 +218,7 @@ export default async function HomePage() {
                 className={cn(
                   // The first cell keeps the container gutter so its value
                   // lines up with the hero heading above it.
-                  "border-border py-6 sm:px-6 sm:first:pl-0",
+                  "flex flex-col justify-center border-border py-6 sm:px-6 sm:first:pl-0 lg:py-0",
                   FACT_BORDERS[index],
                 )}
               >
