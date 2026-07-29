@@ -129,7 +129,10 @@ breakpoint when the default breakpoints cause a collision.
 
 - Buttons are square or minimally rounded.
 - Primary actions use `primary`; important dark-surface actions may use `ink`.
-- Minimum target size is 44 by 44 CSS pixels.
+- Minimum target size is 44 by 44 CSS pixels. The one exception is a stacked
+  footer link list, which drops to 36px from `lg` up where the pointer is
+  precise; that still clears the WCAG 2.2 AA 24px floor and keeps the footer
+  from dominating the page. Touch widths keep the full 44px.
 - Use one primary action per decision area. Secondary actions use outline or
   ghost variants. The persistent header booking button is the single documented
   exception: it is a global navigation action rather than part of any one
@@ -172,8 +175,11 @@ navigation shell.
 Two sanctioned grids exist, both because the content is genuinely a set of
 parallel items rather than prose:
 
-- **Operating steps** (homepage): a `sage` band holding `sage-soft` cards, one
-  per step, with an uppercase centred title.
+- **Operating steps** (homepage): a `sage` band holding one hairline-separated
+  slab of white `card` panels, one per step. Each panel leads with a two-digit
+  gold numeral badge beside an uppercase `accent-foreground` title, then body
+  copy in `muted-foreground`. The numerals carry the sequence, so the heading
+  block above the grid is left-aligned like every other section eyebrow.
 - **Zone tiles** (`/vybaveni`): a two-column grid alternating `ink` and
   `sage-soft`, each tile split into a copy half and a media half. The media half
   carries a decorative lotus until the operator supplies a zone photograph.
@@ -252,6 +258,10 @@ The public booking flow is date first.
 - Standard duration: 140ms for controls and 220ms for panels.
 - Easing: `cubic-bezier(.2,.8,.2,1)`, exposed as the `ease-brand` utility. Use
   the token rather than repeating the literal.
+- One exception: the FAQ lotus turns 90 degrees clockwise and rests on its side
+  when a question opens. It runs at 320ms on `ease-brand-spring`, a gentle
+  overshoot reserved for this single brand mark. Do not reuse that easing for
+  ordinary controls, and do not add a third easing token.
 - Motion explains state changes; it is not decoration.
 - Honour `prefers-reduced-motion`. Information must not depend on animation.
 

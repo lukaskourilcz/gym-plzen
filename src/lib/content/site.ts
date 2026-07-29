@@ -63,9 +63,10 @@ export const SITE_DEFAULTS = {
   // real contact details : replace them in the admin before launch.
   "contact.phone": "777 666 555",
   "contact.email": "info@namastegym.cz",
-  // Social profiles render in the footer only once the operator fills them in.
-  "contact.facebook": "",
-  "contact.instagram": "",
+  // PLACEHOLDER network home pages, not the gym's real profiles : replace with
+  // the actual page URLs in the admin before launch.
+  "contact.facebook": "https://facebook.com",
+  "contact.instagram": "https://instagram.com",
 } as const;
 
 export type SiteContentKey = keyof typeof SITE_DEFAULTS;

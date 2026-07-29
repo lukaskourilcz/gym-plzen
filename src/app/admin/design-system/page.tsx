@@ -103,27 +103,36 @@ export default function DesignSystemPage() {
           </h2>
           <div className="grid gap-5 xl:grid-cols-2">
             <div className="rounded-lg bg-sage p-6">
-              <h3 className="text-center text-lg font-extrabold uppercase tracking-[.06em] text-sage-foreground">
+              <p className="flex items-center gap-3 text-xs font-extrabold uppercase tracking-[.16em] text-sage-foreground">
+                <LotusMark decorative className="size-6 shrink-0" />
+                Šest kroků k tréninku
+              </p>
+              <h3 className="mt-3 text-lg font-extrabold uppercase tracking-[.04em] text-sage-foreground">
                 Jak to u nás funguje
               </h3>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                {["Vyber si termín", "Po zaplacení"].map((title) => (
-                  <div
-                    key={title}
-                    className="rounded-md border border-white/25 bg-sage-soft p-5 text-sage-foreground"
-                  >
-                    <h4 className="text-center text-base font-extrabold uppercase tracking-[.05em]">
-                      {title}
-                    </h4>
-                    <p className="mt-3 text-sm leading-6">
-                      Karta kroku. Pás je šalvějový, karty světle šalvějové.
+              <div className="mt-4 grid gap-px overflow-hidden rounded-lg bg-white/25 sm:grid-cols-2">
+                {["Vyber si termín", "Po zaplacení"].map((title, index) => (
+                  <div key={title} className="flex flex-col gap-4 bg-card p-5">
+                    <div className="flex items-center gap-3">
+                      <span
+                        aria-hidden="true"
+                        className="grid size-11 shrink-0 place-items-center rounded-sm bg-gold text-base font-extrabold text-gold-foreground"
+                      >
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <h4 className="text-base font-extrabold uppercase leading-tight tracking-[.04em] text-accent-foreground">
+                        {title}
+                      </h4>
+                    </div>
+                    <p className="text-sm leading-6 text-muted-foreground">
+                      Zlatá číslice nese pořadí kroku, text zůstává na bílé
+                      ploše kvůli čitelnosti.
                     </p>
                   </div>
                 ))}
               </div>
               <p className="mt-4 text-xs text-sage-foreground">
-                Na šalvějový pás patří jen velký nadpis, drobný text až na
-                karty.
+                Šalvějový pás nese jen nadpis. Drobný text patří na bílé karty.
               </p>
             </div>
 
@@ -151,7 +160,7 @@ export default function DesignSystemPage() {
                   <summary className="flex min-h-16 cursor-pointer list-none items-center gap-4 py-3 font-extrabold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                     <LotusMark
                       decorative
-                      className="size-7 shrink-0 text-muted-foreground transition-[transform,color] duration-[220ms] ease-brand group-open:rotate-180 group-open:text-accent-foreground"
+                      className="size-7 shrink-0 text-muted-foreground transition-[rotate,color] duration-[320ms] ease-brand-spring group-open:rotate-90 group-open:text-accent-foreground"
                     />
                     Jak si vyberu termín?
                   </summary>

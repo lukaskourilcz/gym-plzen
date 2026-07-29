@@ -2,19 +2,15 @@ import Link from "next/link";
 import { Container } from "@/components/ui/container";
 import { BrandLockup } from "@/components/site/brand";
 import { FacebookIcon, InstagramIcon } from "@/components/site/social-icons";
+import { PUBLIC_NAV } from "@/lib/config/navigation";
 
+/*
+ * 44px targets on touch, 36px from `lg` where the pointer is precise: a stacked
+ * link list at 44px made the footer needlessly tall. 36px still clears the WCAG
+ * 2.2 AA 24px target-size floor. Documented in docs/DESIGN_SYSTEM.md.
+ */
 const footerLink =
-  "flex min-h-11 items-center text-sm text-ink-foreground/75 transition-colors hover:text-ink-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold";
-
-const MENU = [
-  { href: "/rezervace", label: "Rezervace" },
-  { href: "/#jak-to-funguje", label: "Jak to funguje" },
-  { href: "/vybaveni", label: "Vybavení" },
-  { href: "/#cenik", label: "Ceník" },
-  { href: "/faq", label: "FAQ" },
-  { href: "/provozni-rad", label: "Provozní řád" },
-  { href: "/obchodni-podminky", label: "Obchodní podmínky" },
-];
+  "flex min-h-11 items-center text-sm text-ink-foreground/75 transition-colors hover:text-ink-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold lg:min-h-9";
 
 export function SiteFooter({
   brand = "NAMASTÉ Private Gym",
@@ -45,7 +41,7 @@ export function SiteFooter({
 
   return (
     <footer className="border-t border-white/10 bg-ink text-ink-foreground">
-      <Container className="grid gap-12 py-14 md:grid-cols-[1fr_2fr]">
+      <Container className="grid gap-10 py-12 md:grid-cols-[1fr_2fr] lg:py-10">
         <div>
           <BrandLockup inverse className="items-start text-left" />
           <p className="mt-6 text-xs leading-6 text-ink-foreground/75">
@@ -54,11 +50,11 @@ export function SiteFooter({
             Soukromý prostor pro nerušený trénink v Plzni.
           </p>
         </div>
-        <div className="grid gap-8 sm:grid-cols-3">
+        <div className="grid gap-8 sm:grid-cols-3 lg:gap-6">
           <div>
             <h2 className="text-sm font-extrabold">Menu</h2>
-            <div className="mt-3 grid">
-              {MENU.map((item) => (
+            <div className="mt-2 grid">
+              {PUBLIC_NAV.map((item) => (
                 <Link key={item.href} href={item.href} className={footerLink}>
                   {item.label}
                 </Link>
@@ -67,7 +63,7 @@ export function SiteFooter({
           </div>
           <div>
             <h2 className="text-sm font-extrabold">Kontakt</h2>
-            <div className="mt-3 grid">
+            <div className="mt-2 grid">
               {phone ? (
                 <a
                   href={`tel:${phone.replace(/\s/g, "")}`}
@@ -82,12 +78,12 @@ export function SiteFooter({
                 </a>
               ) : null}
               {address ? (
-                <p className="py-3 text-sm leading-6 text-ink-foreground/75">
+                <p className="py-2 text-sm leading-6 text-ink-foreground/75">
                   {address}
                 </p>
               ) : null}
               {!phone && !email ? (
-                <p className="py-3 text-sm leading-6 text-ink-foreground/75">
+                <p className="py-2 text-sm leading-6 text-ink-foreground/75">
                   Kontaktní údaje doplní provozovatel.
                 </p>
               ) : null}
@@ -95,7 +91,10 @@ export function SiteFooter({
           </div>
           <div>
             <h2 className="text-sm font-extrabold">Informace</h2>
-            <div className="mt-3 grid">
+            <div className="mt-2 grid">
+              <Link href="/provozni-rad" className={footerLink}>
+                Provozní řád
+              </Link>
               {termsUrl ? (
                 <a
                   href={termsUrl}

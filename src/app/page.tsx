@@ -177,7 +177,7 @@ export default async function HomePage() {
               </p>
               <p className="mt-2 flex items-center gap-2 text-sm font-bold uppercase tracking-[.12em] text-ink-foreground/85">
                 <Clock3 aria-hidden="true" className="size-4 text-gold" />
-                Otevírací doba {OPENING_HOURS}
+                Otevírací doba {OPENING_HOURS} · Sedm dní v týdnu
               </p>
               <div className="mt-9 flex flex-wrap gap-3">
                 <Button href="/rezervace" size="lg">
@@ -231,22 +231,38 @@ export default async function HomePage() {
           </Container>
         </div>
 
-        <Section id="jak-to-funguje" className="bg-sage">
+        <Section id="jak-to-funguje" className="scroll-mt-[69px] bg-sage">
           <Container>
-            <h2 className="text-center text-3xl font-extrabold uppercase tracking-[.06em] text-sage-foreground sm:text-4xl">
-              {t("home.about.title")}
-            </h2>
-            <ol className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            <div className="max-w-2xl">
+              <p className="flex items-center gap-3 text-xs font-extrabold uppercase tracking-[.16em] text-sage-foreground">
+                <LotusMark decorative className="size-6 shrink-0" />
+                Šest kroků k tréninku
+              </p>
+              <h2 className="mt-4 text-3xl font-extrabold uppercase tracking-[.04em] text-sage-foreground sm:text-4xl">
+                {t("home.about.title")}
+              </h2>
+            </div>
+            <ol className="mt-12 grid gap-px overflow-hidden rounded-lg bg-white/25 md:grid-cols-2 lg:grid-cols-3">
               {steps.map((step, index) => (
                 <li
                   key={step.title}
-                  className="rounded-md border border-white/25 bg-sage-soft p-7 text-sage-foreground"
+                  className="flex flex-col gap-5 bg-card p-7 sm:p-8"
                 >
-                  <h3 className="text-center text-xl font-extrabold uppercase tracking-[.05em]">
-                    {step.title}
-                  </h3>
-                  <p className="mt-5 text-sm leading-6">{step.body}</p>
-                  <span className="sr-only">Krok {index + 1}</span>
+                  <div className="flex items-center gap-4">
+                    <span
+                      aria-hidden="true"
+                      className="grid size-11 shrink-0 place-items-center rounded-sm bg-gold text-base font-extrabold text-gold-foreground"
+                    >
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <h3 className="text-lg font-extrabold uppercase leading-tight tracking-[.04em] text-accent-foreground">
+                      <span className="sr-only">Krok {index + 1}: </span>
+                      {step.title}
+                    </h3>
+                  </div>
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    {step.body}
+                  </p>
                 </li>
               ))}
             </ol>
@@ -256,26 +272,31 @@ export default async function HomePage() {
         <Section id="cenik" className="bg-ink text-ink-foreground">
           <Container className="grid gap-10 lg:grid-cols-[1fr_1.1fr] lg:items-center">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[.16em] text-gold">
+              <p className="flex items-center gap-3 text-xs font-extrabold uppercase tracking-[.16em] text-gold">
+                <LotusMark decorative className="size-6 shrink-0" />
                 Ceník
               </p>
-              <h2 className="mt-3 rounded-md bg-white/10 px-5 py-3 text-3xl font-extrabold tracking-[-.01em] text-white sm:text-4xl">
+              <h2 className="mt-4 max-w-xl text-3xl font-extrabold uppercase tracking-[.04em] sm:text-4xl">
                 Jednorázový vstup bez předplatného
               </h2>
               <p className="mt-6 max-w-xl leading-7 text-ink-foreground/75">
                 {t("home.pricing.note")}
               </p>
-              <ul className="mt-7 grid gap-3 text-sm sm:grid-cols-2">
+              {/* Hairline rows echo the divided facts strip and step grid. */}
+              <ul className="mt-8 grid border-t border-white/15">
                 {[
                   "Soukromé využití prostoru během rezervace",
                   "Platba online kartou",
                   "Pokyny ke vstupu po potvrzení rezervace",
                   `Každý ${content.freeEntryEvery}. vstup zdarma pro registrované`,
                 ].map((item) => (
-                  <li key={item} className="flex gap-3">
+                  <li
+                    key={item}
+                    className="flex items-center gap-4 border-b border-white/15 py-3.5 text-sm"
+                  >
                     <Check
                       aria-hidden="true"
-                      className="mt-0.5 size-5 shrink-0 text-gold"
+                      className="size-4 shrink-0 text-gold"
                     />
                     <span className="text-ink-foreground/85">{item}</span>
                   </li>
@@ -284,37 +305,57 @@ export default async function HomePage() {
             </div>
             {/* Gold hairline: charcoal and ink are near-identical in luminance,
                 so the card needs a non-hue cue to read as a separate surface. */}
-            <div className="border border-gold/40 bg-charcoal p-8 text-charcoal-foreground shadow-md sm:p-10">
-              <p className="text-xs font-bold uppercase tracking-[.14em] text-charcoal-foreground/60">
-                Jednorázový vstup
-              </p>
-              <div className="mt-3 text-6xl font-extrabold tracking-[-.01em] text-gold">
-                {price}
+            <div className="rounded-lg border border-gold/40 bg-charcoal text-charcoal-foreground shadow-md">
+              <div className="border-b border-white/10 px-8 py-6 sm:px-10">
+                <p className="text-xs font-bold uppercase tracking-[.14em] text-gold">
+                  Jednorázový vstup
+                </p>
               </div>
-              <p className="mt-4 text-sm leading-6 text-charcoal-foreground/75">
-                Rezervujete si {DEFAULT_SLOT_MINUTES}minutové časové okno.
-                Přesný začátek a konec uvidíte u každého termínu v kalendáři.
-              </p>
-              <Button href="/rezervace" size="lg" className="mt-7 w-full">
-                Vybrat termín
-              </Button>
+              <div className="px-8 py-8 sm:px-10">
+                <div className="flex flex-wrap items-baseline gap-x-3">
+                  <span className="text-6xl font-extrabold tracking-[-.01em] text-gold">
+                    {price}
+                  </span>
+                  <span className="text-sm font-bold text-charcoal-foreground/70">
+                    za vstup
+                  </span>
+                </div>
+                <dl className="mt-7 grid gap-px overflow-hidden rounded-sm bg-white/10 sm:grid-cols-2">
+                  {[
+                    ["Časové okno", `${DEFAULT_SLOT_MINUTES} minut`],
+                    ["Otevírací doba", OPENING_HOURS],
+                    ["Předplatné", "Žádné"],
+                    [
+                      `Každý ${content.freeEntryEvery}. vstup`,
+                      "Zdarma",
+                    ] as const,
+                  ].map(([label, value]) => (
+                    <div key={label} className="bg-charcoal px-4 py-3">
+                      <dt className="text-[11px] font-bold uppercase tracking-[.12em] text-charcoal-foreground/60">
+                        {label}
+                      </dt>
+                      <dd className="mt-1 text-sm font-extrabold">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <p className="mt-6 text-sm leading-6 text-charcoal-foreground/75">
+                  Přesný začátek a konec uvidíte u každého termínu v kalendáři.
+                </p>
+                <Button href="/rezervace" size="lg" className="mt-6 w-full">
+                  Vybrat termín <ArrowRight aria-hidden="true" />
+                </Button>
+              </div>
             </div>
           </Container>
         </Section>
 
         <Section id="prostor">
           <Container>
-            <div className="grid gap-6 lg:grid-cols-2 lg:items-end">
-              <SectionHeading
-                eyebrow="Prostor"
-                title="Podívejte se dovnitř"
-                align="left"
-              />
-              <p className="max-w-xl leading-7 text-muted-foreground lg:justify-self-end">
-                Ukázka skutečného prostoru NAMASTÉ. Další fotografie může
-                provozovatel doplnit přímo v administraci.
-              </p>
-            </div>
+            <SectionHeading
+              eyebrow="Prostor"
+              title="Podívejte se dovnitř"
+              align="left"
+            />
             <div className="mt-10 grid gap-4 lg:grid-cols-[1.35fr_.65fr]">
               <div className="relative min-h-[420px] overflow-hidden rounded-lg bg-muted lg:min-h-[600px]">
                 <Image
@@ -335,11 +376,7 @@ export default async function HomePage() {
                 ))}
               </div>
             </div>
-            <div className="mt-7 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-7">
-              <p className="max-w-2xl text-sm text-muted-foreground">
-                Konkrétní přehled vybavení zveřejní provozovatel po potvrzení
-                finálního seznamu.
-              </p>
+            <div className="mt-7 border-t border-border pt-7">
               <Button href="/vybaveni" variant="outline">
                 Informace o vybavení
               </Button>
@@ -358,15 +395,12 @@ export default async function HomePage() {
           </Container>
         </Section>
 
-        <Section id="kontakt" className="pb-10">
-          <Container>
-            <h2 className="text-center text-3xl font-extrabold tracking-[-.01em] sm:text-5xl">
-              Kde nás najdete
-            </h2>
-          </Container>
-        </Section>
-
-        <div className="relative h-[420px] w-full bg-muted sm:h-[520px]">
+        {/* The map is the location section: it follows the call to action
+            directly and owns the #kontakt anchor the header links to. */}
+        <div
+          id="kontakt"
+          className="relative h-[420px] w-full scroll-mt-[69px] bg-muted sm:h-[520px]"
+        >
           <iframe
             title={`Mapa, ${address}`}
             src={mapsEmbedUrl}
