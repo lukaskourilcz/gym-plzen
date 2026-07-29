@@ -103,11 +103,8 @@ export default function DesignSystemPage() {
           </h2>
           <div className="grid gap-5 xl:grid-cols-2">
             <div className="rounded-lg bg-sage p-6">
-              <p className="flex items-center gap-3 text-xs font-extrabold uppercase tracking-[.16em] text-sage-foreground">
-                <LotusMark decorative className="size-6 shrink-0" />
-                Šest kroků k tréninku
-              </p>
-              <h3 className="mt-3 text-lg font-extrabold uppercase tracking-[.04em] text-sage-foreground">
+              <h3 className="flex items-center gap-3 text-lg font-extrabold uppercase tracking-[.04em] text-sage-foreground">
+                <LotusMark decorative className="size-8 shrink-0" />
                 Jak to u nás funguje
               </h3>
               <div className="mt-4 grid gap-px overflow-hidden rounded-lg bg-white/25 sm:grid-cols-2">

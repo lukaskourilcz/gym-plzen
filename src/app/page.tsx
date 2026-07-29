@@ -14,7 +14,6 @@ import { cms } from "@/lib/services";
 import {
   DEFAULT_CLOSE_MINUTE,
   DEFAULT_OPEN_MINUTE,
-  DEFAULT_SLOT_MINUTES,
 } from "@/lib/config/schedule";
 import {
   DEFAULT_HERO_PREVIEW_DAYS,
@@ -177,7 +176,8 @@ export default async function HomePage() {
               </p>
               <p className="mt-2 flex items-center gap-2 text-sm font-bold uppercase tracking-[.12em] text-ink-foreground/85">
                 <Clock3 aria-hidden="true" className="size-4 text-gold" />
-                Otevírací doba {OPENING_HOURS} · Sedm dní v týdnu
+                Každý den · {minutesToHHmm(DEFAULT_OPEN_MINUTE)} –{" "}
+                {minutesToHHmm(DEFAULT_CLOSE_MINUTE)}
               </p>
               <div className="mt-9 flex flex-wrap gap-3">
                 <Button href="/rezervace" size="lg">
@@ -233,15 +233,10 @@ export default async function HomePage() {
 
         <Section id="jak-to-funguje" className="scroll-mt-[69px] bg-sage">
           <Container>
-            <div className="max-w-2xl">
-              <p className="flex items-center gap-3 text-xs font-extrabold uppercase tracking-[.16em] text-sage-foreground">
-                <LotusMark decorative className="size-6 shrink-0" />
-                Šest kroků k tréninku
-              </p>
-              <h2 className="mt-4 text-3xl font-extrabold uppercase tracking-[.04em] text-sage-foreground sm:text-4xl">
-                {t("home.about.title")}
-              </h2>
-            </div>
+            <h2 className="flex items-center gap-4 text-3xl font-extrabold uppercase tracking-[.04em] text-sage-foreground sm:text-4xl">
+              <LotusMark decorative className="size-10 shrink-0 sm:size-12" />
+              {t("home.about.title")}
+            </h2>
             <ol className="mt-12 grid gap-px overflow-hidden rounded-lg bg-white/25 md:grid-cols-2 lg:grid-cols-3">
               {steps.map((step, index) => (
                 <li
@@ -305,46 +300,13 @@ export default async function HomePage() {
             </div>
             {/* Gold hairline: charcoal and ink are near-identical in luminance,
                 so the card needs a non-hue cue to read as a separate surface. */}
-            <div className="rounded-lg border border-gold/40 bg-charcoal text-charcoal-foreground shadow-md">
-              <div className="border-b border-white/10 px-8 py-6 sm:px-10">
-                <p className="text-xs font-bold uppercase tracking-[.14em] text-gold">
-                  Jednorázový vstup
-                </p>
-              </div>
-              <div className="px-8 py-8 sm:px-10">
-                <div className="flex flex-wrap items-baseline gap-x-3">
-                  <span className="text-6xl font-extrabold tracking-[-.01em] text-gold">
-                    {price}
-                  </span>
-                  <span className="text-sm font-bold text-charcoal-foreground/70">
-                    za vstup
-                  </span>
-                </div>
-                <dl className="mt-7 grid gap-px overflow-hidden rounded-sm bg-white/10 sm:grid-cols-2">
-                  {[
-                    ["Časové okno", `${DEFAULT_SLOT_MINUTES} minut`],
-                    ["Otevírací doba", OPENING_HOURS],
-                    ["Předplatné", "Žádné"],
-                    [
-                      `Každý ${content.freeEntryEvery}. vstup`,
-                      "Zdarma",
-                    ] as const,
-                  ].map(([label, value]) => (
-                    <div key={label} className="bg-charcoal px-4 py-3">
-                      <dt className="text-[11px] font-bold uppercase tracking-[.12em] text-charcoal-foreground/60">
-                        {label}
-                      </dt>
-                      <dd className="mt-1 text-sm font-extrabold">{value}</dd>
-                    </div>
-                  ))}
-                </dl>
-                <p className="mt-6 text-sm leading-6 text-charcoal-foreground/75">
-                  Přesný začátek a konec uvidíte u každého termínu v kalendáři.
-                </p>
-                <Button href="/rezervace" size="lg" className="mt-6 w-full">
-                  Vybrat termín <ArrowRight aria-hidden="true" />
-                </Button>
-              </div>
+            <div className="flex flex-col items-center gap-8 rounded-lg border border-gold/40 bg-charcoal px-8 py-12 text-charcoal-foreground shadow-md sm:px-10 sm:py-14">
+              <p className="text-6xl font-extrabold tracking-[-.01em] text-gold sm:text-7xl">
+                {price}
+              </p>
+              <Button href="/rezervace" size="lg" className="w-full">
+                Vybrat termín <ArrowRight aria-hidden="true" />
+              </Button>
             </div>
           </Container>
         </Section>
