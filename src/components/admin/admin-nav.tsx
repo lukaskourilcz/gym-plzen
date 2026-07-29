@@ -147,7 +147,7 @@ export function AdminNav() {
                       aria-hidden="true"
                       className={cn(
                         "size-4 shrink-0",
-                        active ? "text-primary" : "text-white/50",
+                        active ? "text-gold" : "text-white/50",
                       )}
                     />
                     {label}

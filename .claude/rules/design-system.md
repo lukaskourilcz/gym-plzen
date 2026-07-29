@@ -9,7 +9,7 @@ For every non-trivial UI change:
 3. Do not introduce arbitrary colours, typography, icon packs, spacing, radii,
    shadows, gradients, or control variants.
 4. Keep buttons square or minimally rounded and targets at least 44px.
-5. Use Manrope with Czech and Latin Extended support and Lucide icons.
+5. Use Bitter with Czech and Latin Extended support and Lucide icons.
 6. Preserve the documented route to service to data or integration architecture.
 7. Verify 320, 390, 667 landscape, 768, 1024, 1280, 1440, and 1728px layouts.
 8. Verify keyboard navigation, focus visibility, WCAG 2.2 AA contrast, semantic

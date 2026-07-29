@@ -11,7 +11,9 @@ export default function NotFound() {
         <p className="text-xs font-extrabold uppercase tracking-[.16em] text-accent-foreground">
           404
         </p>
-        <h1 className="mt-3 text-4xl font-black">Tato stránka neexistuje</h1>
+        <h1 className="mt-3 text-4xl font-extrabold">
+          Tato stránka neexistuje
+        </h1>
         <p className="mt-4 text-muted-foreground">
           Zkontrolujte adresu nebo se vraťte na úvod.
         </p>

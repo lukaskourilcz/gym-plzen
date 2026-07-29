@@ -6,7 +6,7 @@ test.describe("Public site", () => {
   }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(
-      page.getByRole("heading", { level: 1, name: /Celý gym/i }),
+      page.getByRole("heading", { level: 1, name: /Tvůj čas/i }),
     ).toBeVisible();
     await expect(page.getByText(/Kč/).first()).toBeVisible();
     await expect(page.getByText(/Křížkova 424\/23/).first()).toBeVisible();
@@ -84,7 +84,7 @@ test.describe("Public site", () => {
     expect(overflow).toBeLessThanOrEqual(1);
     await page.getByRole("button", { name: /Otevřít menu/i }).click();
     await expect(
-      page.getByRole("link", { name: "Časté dotazy" }),
+      page.locator("#mobile-menu").getByRole("link", { name: "FAQ" }),
     ).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(
@@ -98,7 +98,7 @@ test.describe("Public site", () => {
   test("FAQ, equipment and login routes remain usable", async ({ page }) => {
     await page.goto("/faq", { waitUntil: "domcontentloaded" });
     await expect(
-      page.getByRole("heading", { name: "Časté dotazy" }),
+      page.getByRole("heading", { name: "Často kladené otázky" }),
     ).toBeVisible();
     await page.goto("/vybaveni");
     await expect(

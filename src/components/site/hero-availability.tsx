@@ -57,9 +57,6 @@ export function HeroAvailability({
   const dayCount = days.length;
   const activeIndex = Math.min(selectedDay, Math.max(0, dayCount - 1));
   const day = days[activeIndex];
-  const availableCount =
-    day?.slots.filter((slot) => getSlotState(slot, now) === "available")
-      .length ?? 0;
   const visibleSlots = getVisibleSlots(day?.slots ?? [], now);
   const reservationHref = day
     ? `/rezervace?date=${encodeURIComponent(day.dateLabel)}`
@@ -68,7 +65,7 @@ export function HeroAvailability({
   return (
     <section
       aria-labelledby="hero-availability-title"
-      className="w-full overflow-hidden rounded-sm border border-border bg-background text-foreground shadow-2xl"
+      className="w-full overflow-hidden rounded-sm border border-border bg-background text-foreground shadow-md"
     >
       <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-4 sm:px-5">
         <div
@@ -81,16 +78,16 @@ export function HeroAvailability({
           />
           Nejbližší termíny
         </div>
-        <span
-          className="text-right text-xs font-bold text-muted-foreground"
-          aria-live="polite"
-        >
-          {source === "live"
-            ? `${availableCount} volných termínů`
-            : source === "preview"
+        {source === "live" ? null : (
+          <span
+            className="text-right text-xs font-bold text-muted-foreground"
+            aria-live="polite"
+          >
+            {source === "preview"
               ? "Ukázková dostupnost"
               : "Dočasně nedostupné"}
-        </span>
+          </span>
+        )}
       </div>
 
       {day ? (
@@ -169,19 +166,17 @@ export function HeroAvailability({
         </p>
       )}
 
-      <div className="mx-4 flex flex-col gap-3 border-t border-border py-4 sm:mx-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <strong className="text-xl font-black tracking-[-.02em]">
-            {price}
-          </strong>
-          <span className="text-xs font-semibold text-muted-foreground">
+      <div className="mx-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-border py-4 sm:mx-5">
+        <p className="text-base font-extrabold text-accent-foreground">
+          {price} za vstup
+          <span className="font-bold text-foreground">
             {" "}
-            za vstup · každý {freeEntryEvery}. zdarma
+            · každý {freeEntryEvery}. zdarma
           </span>
-        </div>
+        </p>
         <Link
           href={reservationHref}
-          className="inline-flex min-h-11 items-center gap-1 self-start text-sm font-extrabold text-accent-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:self-auto"
+          className="inline-flex min-h-11 items-center gap-1 text-sm font-extrabold text-accent-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           Otevřít kalendář <ArrowRight aria-hidden="true" className="size-4" />
         </Link>

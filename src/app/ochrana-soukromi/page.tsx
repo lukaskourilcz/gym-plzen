@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { loadSiteContent } from "@/lib/content/site";
+import { footerProps, loadSiteContent } from "@/lib/content/site";
 import { Container, Section } from "@/components/ui/container";
 import { Notice } from "@/components/ui/notice";
 import { SiteHeader } from "@/components/site/site-header";
@@ -18,7 +18,7 @@ export default async function PrivacyPage() {
       <main id="main-content" tabIndex={-1}>
         <Section>
           <Container className="max-w-3xl">
-            <h1 className="text-4xl font-black tracking-[-.04em] sm:text-5xl">
+            <h1 className="text-4xl font-extrabold tracking-[-.01em] sm:text-5xl">
               Ochrana soukromí
             </h1>
             <Notice
@@ -33,10 +33,7 @@ export default async function PrivacyPage() {
           </Container>
         </Section>
       </main>
-      <SiteFooter
-        brand={content.get("brand.name")}
-        termsUrl={content.termsUrl}
-      />
+      <SiteFooter {...footerProps(content)} />
     </>
   );
 }

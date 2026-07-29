@@ -1,23 +1,21 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { ArrowRight, Check, Clock3, ImageIcon, MapPin } from "lucide-react";
+import { footerProps, loadSiteContent } from "@/lib/content/site";
+import { cn } from "@/lib/utils";
 import {
-  ArrowRight,
-  CalendarDays,
-  Check,
-  CreditCard,
-  ImageIcon,
-  KeyRound,
-  Mail,
-  MapPin,
-  Phone,
-  RotateCcw,
-  ShieldCheck,
-} from "lucide-react";
-import { loadSiteContent } from "@/lib/content/site";
-import { formatMoney, formatTimeRange } from "@/lib/helpers/format";
+  formatMoney,
+  formatTimeRange,
+  minutesToHHmm,
+} from "@/lib/helpers/format";
 import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/helpers/datetime";
 import { getSlotsForRange } from "@/lib/services/slots";
 import { cms } from "@/lib/services";
+import {
+  DEFAULT_CLOSE_MINUTE,
+  DEFAULT_OPEN_MINUTE,
+  DEFAULT_SLOT_MINUTES,
+} from "@/lib/config/schedule";
 import {
   DEFAULT_HERO_PREVIEW_DAYS,
   HERO_PREVIEW_DAYS_KEY,
@@ -36,6 +34,28 @@ import {
 const ADDRESS = "Křížkova 424/23, 301 00 Plzeň 1";
 const PUBLISHED_GYM_PHOTO =
   "https://static.wixstatic.com/media/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg/v1/fill/w_1600,h_900,al_c,q_90,enc_avif,quality_auto/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg";
+
+const OPENING_HOURS = `${minutesToHHmm(DEFAULT_OPEN_MINUTE)}–${minutesToHHmm(
+  DEFAULT_CLOSE_MINUTE,
+)}`;
+
+/** Six operating steps, all editable in the admin under "Obsah webu". */
+const STEP_KEYS = [
+  ["home.about.step1.title", "home.about.step1.body"],
+  ["home.about.step2.title", "home.about.step2.body"],
+  ["home.about.step3.title", "home.about.step3.body"],
+  ["home.about.step4.title", "home.about.step4.body"],
+  ["home.about.step5.title", "home.about.step5.body"],
+  ["home.about.step6.title", "home.about.step6.body"],
+] as const;
+
+/** Divider rules for the four facts: horizontal stacked, vertical in a row. */
+const FACT_BORDERS = [
+  "",
+  "border-t sm:border-t-0 sm:border-l",
+  "border-t lg:border-t-0 lg:border-l",
+  "border-t sm:border-l lg:border-t-0",
+] as const;
 
 export const metadata: Metadata = {
   title: "Soukromý gym v Plzni",
@@ -63,14 +83,16 @@ export default async function HomePage() {
   const t = content.get;
   const brand = t("brand.name");
   const price = formatMoney(content.entryPriceCents);
-  const email = t("contact.email").trim();
-  const phone = t("contact.phone").trim();
   const address = t("contact.address").trim() || ADDRESS;
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   const mapsEmbedUrl = `https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`;
   const heroImageUrl = content.heroImageUrl || PUBLISHED_GYM_PHOTO;
   const heroImageAlt =
     content.heroImageAlt || "Prostor NAMASTÉ Private Gym v Plzni";
+  const steps = STEP_KEYS.map(([titleKey, bodyKey]) => ({
+    title: t(titleKey),
+    body: t(bodyKey),
+  }));
   const businessJson = {
     "@context": "https://schema.org",
     "@type": "HealthClub",
@@ -83,6 +105,7 @@ export default async function HomePage() {
       addressLocality: "Plzeň",
       addressCountry: "CZ",
     },
+    openingHours: `Mo-Su ${minutesToHHmm(DEFAULT_OPEN_MINUTE)}-${minutesToHHmm(DEFAULT_CLOSE_MINUTE)}`,
   };
   const previewDays: HeroAvailabilityDay[] = availability.days.map(
     (day, index) => ({
@@ -109,24 +132,35 @@ export default async function HomePage() {
     <>
       <SiteHeader brand={brand} />
       <main id="main-content" tabIndex={-1}>
-        <section className="bg-ink text-ink-foreground">
-          <Container className="grid min-h-[680px] gap-12 py-14 lg:grid-cols-[.92fr_1.08fr] lg:items-center lg:py-20">
-            <div className="relative z-10">
-              <p className="text-xs font-extrabold uppercase tracking-[.18em] text-primary">
-                Soukromý gym · Plzeň
-              </p>
-              <h1 className="mt-5 max-w-2xl text-5xl font-black leading-[.98] tracking-[-.05em] sm:text-6xl lg:text-7xl">
-                Celý gym.
-                <br />
-                Jen pro vás.
+        <section className="relative isolate overflow-hidden bg-ink text-ink-foreground">
+          <Image
+            src={heroImageUrl}
+            alt={heroImageAlt}
+            fill
+            priority
+            sizes="100vw"
+            className="-z-10 object-cover"
+          />
+          {/* Solid brand veil: white hero copy must stay legible over any photo. */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 -z-10 bg-ink/88"
+          />
+          <Container className="grid gap-12 py-14 lg:grid-cols-[1fr_1fr] lg:items-start lg:py-20">
+            <div>
+              <h1 className="max-w-2xl text-4xl font-extrabold leading-[1.1] tracking-[-.01em] sm:text-5xl lg:text-6xl">
+                {t("home.hero.title")}
               </h1>
-              <p className="mt-7 max-w-xl text-lg leading-8 text-ink-foreground/68">
-                Rezervujte si soukromý prostor na konkrétní čas. Online
-                zaplatíte a po potvrzení dostanete pokyny ke vstupu.
+              <p className="mt-7 max-w-xl text-lg leading-8 text-ink-foreground/75">
+                {t("home.hero.subtitle")}
               </p>
-              <p className="mt-5 flex items-center gap-2 text-sm font-bold text-ink-foreground/85">
-                <MapPin aria-hidden="true" className="size-4 text-primary" />
+              <p className="mt-6 flex items-center gap-2 text-sm font-bold text-ink-foreground/85">
+                <MapPin aria-hidden="true" className="size-4 text-gold" />
                 {address}
+              </p>
+              <p className="mt-2 flex items-center gap-2 text-sm font-bold uppercase tracking-[.12em] text-ink-foreground/85">
+                <Clock3 aria-hidden="true" className="size-4 text-gold" />
+                Otevírací doba {OPENING_HOURS}
               </p>
               <div className="mt-9 flex flex-wrap gap-3">
                 <Button href="/rezervace" size="lg">
@@ -136,128 +170,81 @@ export default async function HomePage() {
                   href="/#jak-to-funguje"
                   size="lg"
                   variant="outline"
-                  className="border-white/25 text-white hover:bg-white/10 hover:text-white"
+                  className="border-white/45 text-white hover:bg-white/10 hover:text-white"
                 >
-                  Jak rezervace funguje
+                  Jak rezervovat
                 </Button>
               </div>
             </div>
 
-            <div className="relative">
-              <div className="relative aspect-[16/10] overflow-hidden rounded-sm border border-white/10 bg-ink-muted">
-                {heroImageUrl ? (
-                  <Image
-                    src={heroImageUrl}
-                    alt={heroImageAlt}
-                    fill
-                    priority
-                    sizes="(max-width: 1023px) 100vw, 50vw"
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="grid h-full place-items-center text-center text-white/60">
-                    <div>
-                      <LotusMark className="mx-auto size-20 text-primary" />
-                      <p className="mt-4 text-sm">
-                        Fotografie prostoru bude doplněna v administraci.
-                      </p>
-                    </div>
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
-              </div>
-              <div className="relative -mt-8 ml-3 sm:ml-10">
-                <HeroAvailability
-                  days={previewDays}
-                  price={price}
-                  freeEntryEvery={content.freeEntryEvery}
-                  source={availability.source}
-                  nowMs={now.getTime()}
-                />
-              </div>
-            </div>
+            <HeroAvailability
+              days={previewDays}
+              price={price}
+              freeEntryEvery={content.freeEntryEvery}
+              source={availability.source}
+              nowMs={now.getTime()}
+            />
           </Container>
         </section>
 
         <div className="border-b border-border bg-background">
-          <Container className="grid sm:grid-cols-3">
+          <Container className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              ["Soukromí", "prostor je po dobu rezervace váš"],
-              [price, "cena jednorázového vstupu"],
-              [
-                `${content.freeEntryEvery}. vstup`,
-                "zdarma v rámci věrnostního programu",
-              ],
-            ].map(([value, label]) => (
+              { value: OPENING_HOURS, label: "otevírací doba" },
+              { value: "Dětský koutek", label: "plně vybavený s pískovištěm" },
+              { value: "Kardio & strečink", label: "a silová zóna" },
+              { value: "Komfortní zázemí", label: "plná lednice, relax zóna" },
+            ].map((item, index) => (
               <div
-                key={label}
-                className="border-b border-border px-1 py-6 last:border-0 sm:border-b-0 sm:border-l sm:px-6 sm:first:border-l-0"
+                key={item.value}
+                className={cn(
+                  // The first cell keeps the container gutter so its value
+                  // lines up with the hero heading above it.
+                  "border-border py-6 sm:px-6 sm:first:pl-0",
+                  FACT_BORDERS[index],
+                )}
               >
-                <div className="text-xl font-black">{value}</div>
+                <div className="text-lg font-extrabold">{item.value}</div>
                 <div className="mt-1 text-sm text-muted-foreground">
-                  {label}
+                  {item.label}
                 </div>
               </div>
             ))}
           </Container>
         </div>
 
-        <Section id="jak-to-funguje">
+        <Section id="jak-to-funguje" className="bg-sage">
           <Container>
-            <SectionHeading
-              eyebrow="Tři kroky"
-              title="Od výběru času ke vstupu"
-            />
-            <ol className="mt-12 grid border-y border-border md:grid-cols-3">
-              {[
-                {
-                  icon: CalendarDays,
-                  title: t("home.about.step1.title"),
-                  body: t("home.about.step1.body"),
-                },
-                {
-                  icon: CreditCard,
-                  title: t("home.about.step2.title"),
-                  body: `${t("home.about.step2.body")} Platba probíhá online kartou.`,
-                },
-                {
-                  icon: KeyRound,
-                  title: t("home.about.step3.title"),
-                  body: t("home.about.step3.body"),
-                },
-              ].map((step, index) => (
+            <h2 className="text-center text-3xl font-extrabold uppercase tracking-[.06em] text-sage-foreground sm:text-4xl">
+              {t("home.about.title")}
+            </h2>
+            <ol className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {steps.map((step, index) => (
                 <li
                   key={step.title}
-                  className="relative border-b border-border py-8 last:border-0 md:border-b-0 md:border-l md:px-8 md:first:border-l-0"
+                  className="rounded-md border border-white/25 bg-sage-soft p-7 text-sage-foreground"
                 >
-                  <div className="flex items-center justify-between">
-                    <step.icon
-                      aria-hidden="true"
-                      className="size-7 text-accent-foreground"
-                    />
-                    <span className="text-sm font-black text-muted-foreground">
-                      0{index + 1}
-                    </span>
-                  </div>
-                  <h3 className="mt-8 text-xl font-extrabold">{step.title}</h3>
-                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                    {step.body}
-                  </p>
+                  <h3 className="text-center text-xl font-extrabold uppercase tracking-[.05em]">
+                    {step.title}
+                  </h3>
+                  <p className="mt-5 text-sm leading-6">{step.body}</p>
+                  <span className="sr-only">Krok {index + 1}</span>
                 </li>
               ))}
             </ol>
           </Container>
         </Section>
 
-        <Section id="cenik" className="bg-secondary/55">
-          <Container className="grid gap-10 lg:grid-cols-[1fr_420px] lg:items-center">
+        <Section id="cenik" className="bg-ink text-ink-foreground">
+          <Container className="grid gap-10 lg:grid-cols-[1fr_1.1fr] lg:items-center">
             <div>
-              <SectionHeading
-                eyebrow="Ceník"
-                title="Jednorázový vstup bez předplatného"
-                align="left"
-              />
-              <p className="mt-5 max-w-xl leading-7 text-muted-foreground">
+              <p className="text-xs font-extrabold uppercase tracking-[.16em] text-gold">
+                Ceník
+              </p>
+              <h2 className="mt-3 rounded-md bg-white/10 px-5 py-3 text-3xl font-extrabold tracking-[-.01em] text-white sm:text-4xl">
+                Jednorázový vstup bez předplatného
+              </h2>
+              <p className="mt-6 max-w-xl leading-7 text-ink-foreground/75">
                 {t("home.pricing.note")}
               </p>
               <ul className="mt-7 grid gap-3 text-sm sm:grid-cols-2">
@@ -265,27 +252,30 @@ export default async function HomePage() {
                   "Soukromé využití prostoru během rezervace",
                   "Platba online kartou",
                   "Pokyny ke vstupu po potvrzení rezervace",
-                  `Každý ${content.freeEntryEvery}. vstup zdarma`,
+                  `Každý ${content.freeEntryEvery}. vstup zdarma pro registrované`,
                 ].map((item) => (
                   <li key={item} className="flex gap-3">
                     <Check
                       aria-hidden="true"
-                      className="mt-0.5 size-5 shrink-0 text-accent-foreground"
+                      className="mt-0.5 size-5 shrink-0 text-gold"
                     />
-                    <span>{item}</span>
+                    <span className="text-ink-foreground/85">{item}</span>
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="bg-ink p-8 text-white shadow-lg">
-              <p className="text-xs font-bold uppercase tracking-[.14em] text-white/55">
+            {/* Gold hairline: charcoal and ink are near-identical in luminance,
+                so the card needs a non-hue cue to read as a separate surface. */}
+            <div className="border border-gold/40 bg-charcoal p-8 text-charcoal-foreground shadow-md sm:p-10">
+              <p className="text-xs font-bold uppercase tracking-[.14em] text-charcoal-foreground/60">
                 Jednorázový vstup
               </p>
-              <div className="mt-3 text-6xl font-black tracking-[-.05em] text-primary">
+              <div className="mt-3 text-6xl font-extrabold tracking-[-.01em] text-gold">
                 {price}
               </div>
-              <p className="mt-3 text-sm leading-6 text-white/60">
-                Přesnou délku uvidíte u každého termínu v kalendáři.
+              <p className="mt-4 text-sm leading-6 text-charcoal-foreground/75">
+                Rezervujete si {DEFAULT_SLOT_MINUTES}minutové časové okno.
+                Přesný začátek a konec uvidíte u každého termínu v kalendáři.
               </p>
               <Button href="/rezervace" size="lg" className="mt-7 w-full">
                 Vybrat termín
@@ -339,82 +329,22 @@ export default async function HomePage() {
           </Container>
         </Section>
 
-        <Section id="pravidla" className="bg-ink text-ink-foreground">
-          <Container className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-center">
-            <div>
-              <p className="text-xs font-extrabold uppercase tracking-[.18em] text-primary">
-                Provoz
-              </p>
-              <h2 className="mt-4 text-4xl font-black tracking-[-.04em] sm:text-5xl">
-                Férová pravidla
-              </h2>
-              <p className="mt-6 max-w-xl leading-7 text-white/60">
-                {t("home.rules.body")}
-              </p>
-            </div>
-            <div className="grid border border-white/15 sm:grid-cols-3">
-              {[
-                {
-                  icon: CalendarDays,
-                  title: "Vstup v rezervovaný čas",
-                  body: "Přijďte pouze v čase uvedeném u vaší rezervace.",
-                },
-                {
-                  icon: ShieldCheck,
-                  title: "Osobní vstupní kód",
-                  body: "Kód nesdílejte a použijte ho podle pokynů k rezervaci.",
-                },
-                {
-                  icon: RotateCcw,
-                  title: "Prostor po sobě ukliďte",
-                  body: "Vraťte vybavení na místo a otřete použité nářadí.",
-                },
-              ].map((item) => (
-                <div
-                  key={item.title}
-                  className="border-b border-white/15 p-7 last:border-0 sm:border-b-0 sm:border-l sm:first:border-l-0"
-                >
-                  <item.icon
-                    aria-hidden="true"
-                    className="size-7 text-primary"
-                  />
-                  <h3 className="mt-8 text-lg font-extrabold">{item.title}</h3>
-                  <p className="mt-3 text-sm leading-6 text-white/55">
-                    {item.body}
-                  </p>
-                </div>
-              ))}
-            </div>
+        <Section id="pridej-se" className="bg-ink text-ink-foreground">
+          <Container className="flex flex-col items-center gap-8 text-center">
+            <h2 className="max-w-3xl text-3xl font-extrabold tracking-[-.01em] sm:text-4xl">
+              {t("home.cta.title")}
+            </h2>
+            <Button href="/rezervace" size="lg">
+              Rezervace <ArrowRight aria-hidden="true" />
+            </Button>
           </Container>
         </Section>
 
         <Section id="kontakt" className="pb-10">
           <Container>
-            <SectionHeading eyebrow="Plzeň" title="Kde nás najdete" />
-            <div className="mt-10 grid gap-4 md:grid-cols-3">
-              <ContactItem
-                icon={MapPin}
-                label="Adresa"
-                value={address}
-                href={mapsUrl}
-              />
-              {email ? (
-                <ContactItem
-                  icon={Mail}
-                  label="E-mail"
-                  value={email}
-                  href={`mailto:${email}`}
-                />
-              ) : null}
-              {phone ? (
-                <ContactItem
-                  icon={Phone}
-                  label="Telefon"
-                  value={phone}
-                  href={`tel:${phone.replace(/\s/g, "")}`}
-                />
-              ) : null}
-            </div>
+            <h2 className="text-center text-3xl font-extrabold tracking-[-.01em] sm:text-5xl">
+              Kde nás najdete
+            </h2>
           </Container>
         </Section>
 
@@ -422,17 +352,27 @@ export default async function HomePage() {
           <iframe
             title={`Mapa, ${address}`}
             src={mapsEmbedUrl}
-            className="absolute inset-0 h-full w-full border-0"
+            className="absolute inset-0 h-full w-full border-0 grayscale"
             loading="lazy"
             allowFullScreen
             referrerPolicy="no-referrer-when-downgrade"
           />
+          {/* Brand marker: covers the generic map pin sitting at the centre. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[calc(100%+2px)]"
+          >
+            <span className="grid size-16 place-items-center rounded-full bg-ink shadow-md ring-4 ring-white/70">
+              <LotusMark decorative className="size-9 text-gold" />
+            </span>
+            <span className="mx-auto block size-0 border-x-8 border-t-[12px] border-x-transparent border-t-ink" />
+          </div>
           <Button
             href={mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
             variant="ink"
-            className="absolute bottom-5 left-5 text-primary sm:left-8"
+            className="absolute bottom-5 left-5 sm:left-8"
           >
             Otevřít v Mapách Google
           </Button>
@@ -444,12 +384,7 @@ export default async function HomePage() {
           __html: JSON.stringify(businessJson).replace(/</g, "\\u003c"),
         }}
       />
-      <SiteFooter
-        brand={brand}
-        email={email || undefined}
-        phone={phone || undefined}
-        termsUrl={content.termsUrl}
-      />
+      <SiteFooter {...footerProps(content)} />
     </>
   );
 }
@@ -468,39 +403,10 @@ function SectionHeading({
       <p className="text-xs font-extrabold uppercase tracking-[.16em] text-accent-foreground">
         {eyebrow}
       </p>
-      <h2 className="mt-3 text-3xl font-black tracking-[-.035em] sm:text-5xl">
+      <h2 className="mt-3 text-3xl font-extrabold tracking-[-.01em] sm:text-5xl">
         {title}
       </h2>
     </div>
-  );
-}
-
-function ContactItem({
-  icon: Icon,
-  label,
-  value,
-  href,
-}: {
-  icon: typeof MapPin;
-  label: string;
-  value: string;
-  href: string;
-}) {
-  return (
-    <a
-      href={href}
-      className="flex min-h-40 items-center gap-5 rounded-md border border-border bg-card p-6 transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      <span className="grid size-12 shrink-0 place-items-center rounded-sm bg-primary/12 text-accent-foreground">
-        <Icon aria-hidden="true" className="size-5" />
-      </span>
-      <span>
-        <span className="block text-xs font-extrabold uppercase tracking-[.14em] text-muted-foreground">
-          {label}
-        </span>
-        <span className="mt-2 block font-extrabold">{value}</span>
-      </span>
-    </a>
   );
 }
 

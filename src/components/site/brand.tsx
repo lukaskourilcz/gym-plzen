@@ -3,15 +3,19 @@ import { cn } from "@/lib/utils";
 export function LotusMark({
   className,
   title = "NAMASTÉ",
+  decorative = false,
 }: {
   className?: string;
   title?: string;
+  /** Hide from assistive tech when the surrounding text already names it. */
+  decorative?: boolean;
 }) {
   return (
     <svg
       viewBox="0 0 48 48"
-      role="img"
-      aria-label={title}
+      {...(decorative
+        ? { "aria-hidden": true, focusable: false }
+        : { role: "img", "aria-label": title })}
       className={cn("size-10", className)}
     >
       <path
@@ -41,11 +45,9 @@ export function LotusMark({
 }
 
 export function BrandLogo({
-  brand = "NAMASTÉ Private Gym",
   className,
   inverse = false,
 }: {
-  brand?: string;
   className?: string;
   inverse?: boolean;
 }) {
@@ -58,17 +60,53 @@ export function BrandLogo({
       )}
     >
       <LotusMark
-        className={inverse ? "text-primary" : "text-accent-foreground"}
+        decorative
+        className={inverse ? "text-gold" : "text-accent-foreground"}
       />
       <span className="leading-none">
-        <strong className="block text-base font-extrabold tracking-[0.08em]">
+        <strong className="block text-base font-extrabold tracking-[0.06em]">
           NAMASTÉ
         </strong>
-        <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.18em] opacity-65">
+        <span className="mt-1 block text-xs font-bold uppercase leading-none tracking-[0.16em] opacity-80">
           Private Gym
         </span>
       </span>
-      <span className="sr-only">{brand}</span>
+    </span>
+  );
+}
+
+/**
+ * Stacked lockup: lotus above the wordmark. Used where the brand is the primary
+ * element of the surface (footer, authentication) rather than a navigation item.
+ */
+export function BrandLockup({
+  className,
+  inverse = false,
+}: {
+  className?: string;
+  inverse?: boolean;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex flex-col items-center text-center",
+        inverse ? "text-white" : "text-foreground",
+        className,
+      )}
+    >
+      <LotusMark
+        decorative
+        className={cn(
+          "size-14",
+          inverse ? "text-gold" : "text-accent-foreground",
+        )}
+      />
+      <strong className="mt-3 block text-2xl font-extrabold leading-none tracking-[0.04em]">
+        NAMASTÉ
+      </strong>
+      <span className="mt-2 block text-xs font-bold uppercase leading-none tracking-[0.3em] opacity-85">
+        Private Gym
+      </span>
     </span>
   );
 }

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { loadSiteContent } from "@/lib/content/site";
+import { footerProps, loadSiteContent } from "@/lib/content/site";
 import { getSession } from "@/lib/auth/guards";
 import { formatMoney, formatTimeRange } from "@/lib/helpers/format";
 import {
@@ -102,7 +102,7 @@ export default async function BookingPage({
               <div className="text-xs font-extrabold uppercase tracking-[.14em] text-accent-foreground">
                 Rezervace
               </div>
-              <h1 className="mt-3 text-4xl font-black tracking-[-.04em] sm:text-5xl">
+              <h1 className="mt-3 text-4xl font-extrabold tracking-[-.01em] sm:text-5xl">
                 Vyberte datum a čas
               </h1>
               <p className="mt-4 text-base leading-7 text-muted-foreground sm:text-lg">
@@ -138,10 +138,7 @@ export default async function BookingPage({
           </Container>
         </Section>
       </main>
-      <SiteFooter
-        brand={content.get("brand.name")}
-        termsUrl={content.termsUrl}
-      />
+      <SiteFooter {...footerProps(content)} />
     </>
   );
 }

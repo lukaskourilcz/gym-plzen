@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth/guards";
 import { loyalty, reservations } from "@/lib/services";
-import { loadSiteContent } from "@/lib/content/site";
+import { footerProps, loadSiteContent } from "@/lib/content/site";
 import {
   formatDate,
   formatMoney,
@@ -53,14 +53,14 @@ export default async function AccountPage() {
               </div>
               <SignOutButton className="m-0 min-h-11 px-2 text-sm font-bold text-accent-foreground" />
             </div>
-            <h1 className="mt-2 text-[38px] font-black tracking-[-.03em]">
+            <h1 className="mt-2 text-[38px] font-extrabold tracking-[-.01em]">
               Dobrý den, {user.name.split(" ")[0]}
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
               {user.email} · cena vstupu {formatMoney(content.entryPriceCents)}
             </p>
 
-            <div className="mt-8 grid gap-5 md:grid-cols-2">
+            <div className="mt-8 grid gap-5 lg:grid-cols-[1.6fr_1fr] lg:items-start">
               <LoyaltyWidget status={status} />
               <div className="rounded-lg border border-border bg-card p-7">
                 <div className="text-[11px] font-extrabold uppercase tracking-[.13em] text-muted-foreground">
@@ -68,7 +68,7 @@ export default async function AccountPage() {
                 </div>
                 {upcoming[0] ? (
                   <>
-                    <div className="mt-3 text-xl font-black">
+                    <div className="mt-3 text-xl font-extrabold">
                       {formatDate(upcoming[0].startsAt)}
                     </div>
                     <div className="mt-1 text-sm font-bold text-muted-foreground">
@@ -126,10 +126,7 @@ export default async function AccountPage() {
           </Container>
         </Section>
       </main>
-      <SiteFooter
-        brand={content.get("brand.name")}
-        termsUrl={content.termsUrl}
-      />
+      <SiteFooter {...footerProps(content)} />
     </>
   );
 }

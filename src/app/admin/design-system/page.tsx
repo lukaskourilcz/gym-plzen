@@ -12,14 +12,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Notice } from "@/components/ui/notice";
-import { BrandLogo, LotusMark } from "@/components/site/brand";
+import { BrandLockup, BrandLogo, LotusMark } from "@/components/site/brand";
+import { FacebookIcon, InstagramIcon } from "@/components/site/social-icons";
 import { PageHeader } from "@/components/admin/page-header";
 
 export const metadata = { title: "Design systém" };
 
 const swatches = [
-  ["Ink", "bg-ink text-white"],
+  ["Ink", "bg-ink text-ink-foreground"],
   ["Primární", "bg-primary text-primary-foreground"],
+  ["Zlatá", "bg-gold text-gold-foreground"],
+  ["Uhlová", "bg-charcoal text-charcoal-foreground"],
+  ["Šalvějová", "bg-sage text-sage-foreground"],
+  ["Šalvějová světlá", "bg-sage-soft text-sage-foreground"],
+  ["Taupe", "bg-taupe text-taupe-foreground"],
   ["Plocha", "bg-card text-card-foreground"],
   ["Tlumená", "bg-muted text-muted-foreground"],
   ["Úspěch", "bg-success text-success-foreground"],
@@ -44,17 +50,21 @@ export default function DesignSystemPage() {
               <div className="flex flex-wrap items-center gap-8">
                 <LotusMark className="size-14 text-accent-foreground" />
                 <BrandLogo />
+                <span className="rounded-lg bg-ink p-6">
+                  <BrandLockup inverse />
+                </span>
               </div>
               <div>
-                <p className="text-4xl font-extrabold tracking-[-0.04em]">
-                  Celý gym jen pro vás
+                <p className="text-4xl font-extrabold tracking-[-0.01em]">
+                  Tvůj čas. Tvůj prostor.
                 </p>
-                <p className="mt-4 text-2xl font-extrabold tracking-[-0.025em]">
+                <p className="mt-4 text-2xl font-extrabold tracking-[-0.01em]">
                   Klidný prostor pro soustředěný trénink
                 </p>
                 <p className="mt-3 max-w-xl text-muted-foreground">
-                  Manrope s českou a Latin Extended sadou je společný font pro
-                  rozhraní i marketing.
+                  Bitter s českou a Latin Extended sadou je společný font pro
+                  rozhraní i marketing. U velkých nadpisů držte prostrkání
+                  blízko nule, patkové písmo už je samo o sobě široké.
                 </p>
               </div>
             </CardContent>
@@ -85,6 +95,74 @@ export default function DesignSystemPage() {
               </p>
             </CardContent>
           </Card>
+        </section>
+
+        <section aria-labelledby="kit-patterns">
+          <h2 id="kit-patterns" className="mb-4 text-xl font-extrabold">
+            Schválené vzory veřejného webu
+          </h2>
+          <div className="grid gap-5 xl:grid-cols-2">
+            <div className="rounded-lg bg-sage p-6">
+              <h3 className="text-center text-lg font-extrabold uppercase tracking-[.06em] text-sage-foreground">
+                Jak to u nás funguje
+              </h3>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {["Vyber si termín", "Po zaplacení"].map((title) => (
+                  <div
+                    key={title}
+                    className="rounded-md border border-white/25 bg-sage-soft p-5 text-sage-foreground"
+                  >
+                    <h4 className="text-center text-base font-extrabold uppercase tracking-[.05em]">
+                      {title}
+                    </h4>
+                    <p className="mt-3 text-sm leading-6">
+                      Karta kroku. Pás je šalvějový, karty světle šalvějové.
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-4 text-xs text-sage-foreground">
+                Na šalvějový pás patří jen velký nadpis, drobný text až na
+                karty.
+              </p>
+            </div>
+
+            <div className="grid gap-5">
+              <div className="grid overflow-hidden rounded-lg bg-ink text-ink-foreground sm:grid-cols-2">
+                <div className="p-6">
+                  <h3 className="text-lg font-extrabold uppercase tracking-[.05em]">
+                    Dlaždice zóny
+                  </h3>
+                  <p className="mt-3 text-sm leading-6 opacity-85">
+                    Střídá se tmavě zelená a světle šalvějová. Média drží lotos,
+                    dokud provozovatel nedodá fotografii.
+                  </p>
+                </div>
+                <div className="grid min-h-32 place-items-center bg-ink-elevated">
+                  <LotusMark decorative className="size-14 opacity-30" />
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-border bg-card p-6">
+                <h3 className="mb-2 text-sm font-extrabold">
+                  Rozbalovací dotaz
+                </h3>
+                <details className="group border-y border-border py-1">
+                  <summary className="flex min-h-16 cursor-pointer list-none items-center gap-4 py-3 font-extrabold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <LotusMark
+                      decorative
+                      className="size-7 shrink-0 text-muted-foreground transition-[transform,color] duration-[220ms] ease-brand group-open:rotate-180 group-open:text-accent-foreground"
+                    />
+                    Jak si vyberu termín?
+                  </summary>
+                  <p className="pb-4 pl-11 text-sm leading-6 text-muted-foreground">
+                    Otočení lotosu o 180 stupňů je jediný schválený pohyb značky
+                    a stav je vždy čitelný i bez animace.
+                  </p>
+                </details>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section aria-labelledby="kit-colors">
@@ -122,6 +200,17 @@ export default function DesignSystemPage() {
               <Badge>Volno</Badge>
               <Badge variant="muted">Obsazeno</Badge>
               <Badge variant="outline">Dnes</Badge>
+            </CardContent>
+            <CardContent className="flex flex-wrap items-center gap-4 rounded-b-lg bg-ink p-6 text-ink-foreground">
+              <span className="text-sm font-bold">
+                Na tmavé ploše akcentuje jen zlatá:
+              </span>
+              <LotusMark decorative className="size-8 text-gold" />
+              <span className="text-2xl font-extrabold text-gold">290 Kč</span>
+              <span className="flex items-center gap-2 text-gold">
+                <FacebookIcon />
+                <InstagramIcon />
+              </span>
             </CardContent>
           </Card>
           <Card>
@@ -229,13 +318,15 @@ export default function DesignSystemPage() {
               <h2 id="kit-dark" className="text-2xl font-extrabold">
                 Tmavá plocha
               </h2>
-              <p className="mt-1 text-white/65">
-                Pouze pro hero, pravidla, patičku a provozní navigaci.
+              <p className="mt-1 text-white/75">
+                Pouze pro hero, ceník, závěrečnou výzvu, dlaždice zón, patičku a
+                provozní navigaci. Akcentem je vždy zlatá, nikdy primární
+                zelená.
               </p>
             </div>
-            <div className="flex gap-3">
-              <Dumbbell className="text-primary" />
-              <AlertTriangle className="text-warning" />
+            <div className="flex gap-3 text-gold">
+              <Dumbbell aria-hidden="true" />
+              <AlertTriangle aria-hidden="true" />
             </div>
           </div>
         </section>

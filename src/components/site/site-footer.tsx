@@ -1,69 +1,73 @@
 import Link from "next/link";
 import { Container } from "@/components/ui/container";
-import { BrandLogo } from "@/components/site/brand";
+import { BrandLockup } from "@/components/site/brand";
+import { FacebookIcon, InstagramIcon } from "@/components/site/social-icons";
 
 const footerLink =
-  "flex min-h-11 items-center text-sm text-ink-foreground/75 transition-colors hover:text-ink-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
+  "flex min-h-11 items-center text-sm text-ink-foreground/75 transition-colors hover:text-ink-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold";
+
+const MENU = [
+  { href: "/rezervace", label: "Rezervace" },
+  { href: "/#jak-to-funguje", label: "Jak to funguje" },
+  { href: "/vybaveni", label: "Vybavení" },
+  { href: "/#cenik", label: "Ceník" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/provozni-rad", label: "Provozní řád" },
+  { href: "/obchodni-podminky", label: "Obchodní podmínky" },
+];
 
 export function SiteFooter({
   brand = "NAMASTÉ Private Gym",
   email,
   phone,
+  address,
+  facebookUrl,
+  instagramUrl,
   termsUrl,
 }: {
   brand?: string;
   email?: string;
   phone?: string;
+  address?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
   termsUrl?: string | null;
 }) {
   const year = new Date().getFullYear();
+  const socials = [
+    facebookUrl
+      ? { href: facebookUrl, label: "Facebook", Icon: FacebookIcon }
+      : null,
+    instagramUrl
+      ? { href: instagramUrl, label: "Instagram", Icon: InstagramIcon }
+      : null,
+  ].filter((item) => item !== null);
+
   return (
     <footer className="border-t border-white/10 bg-ink text-ink-foreground">
-      <Container className="grid gap-12 py-14 md:grid-cols-[1.2fr_2fr]">
+      <Container className="grid gap-12 py-14 md:grid-cols-[1fr_2fr]">
         <div>
-          <BrandLogo inverse className="min-h-12" />
-          <p className="mt-5 max-w-sm text-sm leading-6 text-ink-foreground/60">
-            Soukromý prostor pro nerušený trénink v Plzni. Termín vyberete
-            online a po potvrzení dostanete pokyny ke vstupu.
+          <BrandLockup inverse className="items-start text-left" />
+          <p className="mt-6 text-xs leading-6 text-ink-foreground/75">
+            © {year} {brand}
+            <br />
+            Soukromý prostor pro nerušený trénink v Plzni.
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+        <div className="grid gap-8 sm:grid-cols-3">
           <div>
-            <h2 className="text-sm font-extrabold">Návštěva</h2>
+            <h2 className="text-sm font-extrabold">Menu</h2>
             <div className="mt-3 grid">
-              <Link href="/rezervace" className={footerLink}>
-                Rezervace
-              </Link>
-              <Link href="/vybaveni" className={footerLink}>
-                Vybavení
-              </Link>
-              <Link href="/faq" className={footerLink}>
-                Časté dotazy
-              </Link>
-              <Link href="/#kontakt" className={footerLink}>
-                Kde nás najdete
-              </Link>
+              {MENU.map((item) => (
+                <Link key={item.href} href={item.href} className={footerLink}>
+                  {item.label}
+                </Link>
+              ))}
             </div>
           </div>
           <div>
-            <h2 className="text-sm font-extrabold">Účet</h2>
+            <h2 className="text-sm font-extrabold">Kontakt</h2>
             <div className="mt-3 grid">
-              <Link href="/login" className={footerLink}>
-                Přihlášení
-              </Link>
-              <Link href="/account" className={footerLink}>
-                Moje rezervace
-              </Link>
-            </div>
-          </div>
-          <div>
-            <h2 className="text-sm font-extrabold">Informace</h2>
-            <div className="mt-3 grid">
-              {email ? (
-                <a href={`mailto:${email}`} className={footerLink}>
-                  {email}
-                </a>
-              ) : null}
               {phone ? (
                 <a
                   href={`tel:${phone.replace(/\s/g, "")}`}
@@ -72,6 +76,26 @@ export function SiteFooter({
                   {phone}
                 </a>
               ) : null}
+              {email ? (
+                <a href={`mailto:${email}`} className={footerLink}>
+                  {email}
+                </a>
+              ) : null}
+              {address ? (
+                <p className="py-3 text-sm leading-6 text-ink-foreground/75">
+                  {address}
+                </p>
+              ) : null}
+              {!phone && !email ? (
+                <p className="py-3 text-sm leading-6 text-ink-foreground/75">
+                  Kontaktní údaje doplní provozovatel.
+                </p>
+              ) : null}
+            </div>
+          </div>
+          <div>
+            <h2 className="text-sm font-extrabold">Informace</h2>
+            <div className="mt-3 grid">
               {termsUrl ? (
                 <a
                   href={termsUrl}
@@ -90,17 +114,29 @@ export function SiteFooter({
                 Ochrana soukromí
               </Link>
             </div>
+            {socials.length > 0 ? (
+              <div className="mt-5">
+                <h3 className="text-sm font-extrabold">Sledujte nás</h3>
+                <ul className="mt-2 flex items-center gap-2">
+                  {socials.map(({ href, label, Icon }) => (
+                    <li key={label}>
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`${label}, ${brand}`}
+                        className="grid size-11 place-items-center rounded-sm text-ink-foreground/75 transition-colors hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                      >
+                        <Icon />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </div>
         </div>
       </Container>
-      <div className="border-t border-white/10">
-        <Container className="flex flex-col gap-2 py-5 text-xs text-ink-foreground/60 sm:flex-row sm:justify-between">
-          <span>
-            © {year} {brand}
-          </span>
-          <span>Online rezervace a bezpečná platba</span>
-        </Container>
-      </div>
     </footer>
   );
 }
