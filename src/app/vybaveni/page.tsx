@@ -55,20 +55,13 @@ export default async function EquipmentPage() {
       <main id="main-content" tabIndex={-1}>
         <Section className="pt-14 sm:pt-20">
           <Container>
-            <div className="grid gap-8 lg:grid-cols-2 lg:items-end">
-              <div>
-                <p className="text-xs font-extrabold uppercase tracking-[.16em] text-accent-foreground">
-                  Prostor
-                </p>
-                <h1 className="mt-4 text-4xl font-extrabold tracking-[-.01em] sm:text-6xl">
-                  Vybavení a prostor
-                </h1>
-              </div>
-              <p className="max-w-xl leading-7 text-muted-foreground">
-                Zveřejňujeme pouze informace potvrzené provozovatelem. Přesný
-                seznam strojů a pomůcek bude na této stránce doplněn po finální
-                kontrole.
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[.16em] text-accent-foreground">
+                Prostor
               </p>
+              <h1 className="mt-4 text-4xl font-extrabold tracking-[-.01em] sm:text-6xl">
+                Vybavení a prostor
+              </h1>
             </div>
             <div className="relative mt-12 aspect-[16/9] overflow-hidden rounded-lg bg-muted">
               <Image

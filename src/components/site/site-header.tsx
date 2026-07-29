@@ -7,14 +7,7 @@ import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/site/brand";
 import { cn } from "@/lib/utils";
-
-const NAV = [
-  { href: "/#jak-to-funguje", label: "Jak to funguje" },
-  { href: "/vybaveni", label: "Vybavení" },
-  { href: "/#cenik", label: "Ceník" },
-  { href: "/faq", label: "FAQ" },
-  { href: "/#kontakt", label: "Kontakt" },
-];
+import { PUBLIC_NAV } from "@/lib/config/navigation";
 
 /** Public navigation: lotus plus wordmark on the left, booking action first. */
 export function SiteHeader({
@@ -48,8 +41,16 @@ export function SiteHeader({
       {/* Three tracks from `lg`: brand hard left, links centred, actions hard
           right. Equal 1fr side tracks are what keeps the nav optically centred. */}
       <div className="flex min-h-[68px] items-center justify-between gap-3 px-4 sm:px-5 lg:grid lg:grid-cols-[1fr_auto_1fr]">
+        {/*
+         * `scroll={false}` plus an explicit jump to the document top: the router
+         * picks the first non-sticky element as its scroll target, skips this
+         * sticky header, and lands on `main` : leaving the page 68px short of
+         * the top on a same-page click.
+         */}
         <Link
           href="/"
+          scroll={false}
+          onClick={() => window.scrollTo({ top: 0 })}
           aria-label={`${brand}, úvodní stránka`}
           className="flex min-h-11 items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
@@ -60,7 +61,7 @@ export function SiteHeader({
           aria-label="Hlavní navigace"
           className="hidden items-center justify-center gap-1 lg:flex"
         >
-          {NAV.map((item) => (
+          {PUBLIC_NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -112,7 +113,7 @@ export function SiteHeader({
         )}
       >
         <div className="grid gap-1 px-4 py-3 sm:px-5">
-          {NAV.map((item) => (
+          {PUBLIC_NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
