@@ -30,7 +30,7 @@ export default function LoginPage() {
             své pokroky.
           </p>
         </div>
-        <div className="relative text-xs text-white/40">
+        <div className="relative text-xs text-white/70">
           Soukromý trénink · rezervace online
         </div>
       </section>

@@ -18,7 +18,7 @@ export default async function PrivacyPage() {
       <main id="main-content" tabIndex={-1}>
         <Section>
           <Container className="max-w-3xl">
-            <h1 className="text-4xl font-black tracking-[-.04em] sm:text-5xl">
+            <h1 className="text-4xl font-extrabold tracking-[-.01em] sm:text-5xl">
               Ochrana soukromí
             </h1>
             <Notice

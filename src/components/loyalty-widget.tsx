@@ -38,7 +38,7 @@ export function LoyaltyWidget({ status }: { status: LoyaltyStatus }) {
           </p>
         )}
 
-        <p className="mt-3 text-sm text-ink-foreground/70">
+        <p className="mt-3 text-sm text-ink-foreground/80">
           Každý {cadence}. vstup je zdarma. Počítáme je automaticky, nemusíte
           nic hlídat.
         </p>
@@ -49,7 +49,7 @@ export function LoyaltyWidget({ status }: { status: LoyaltyStatus }) {
               key={i}
               aria-hidden
               className={cn(
-                "h-3.5 flex-1 rounded-sm border border-white/25",
+                "h-3.5 flex-1 rounded-sm border border-white/45",
                 i < filled && "border-gold bg-gold",
               )}
             />
@@ -59,7 +59,7 @@ export function LoyaltyWidget({ status }: { status: LoyaltyStatus }) {
         <div className="mt-7 grid gap-4 border-t border-white/12 pt-6 sm:grid-cols-2">
           <div>
             <div className="text-3xl font-extrabold">{status.totalEntries}</div>
-            <div className="mt-1 text-xs text-ink-foreground/65">
+            <div className="mt-1 text-xs text-ink-foreground/80">
               celkem návštěv
             </div>
           </div>
@@ -67,7 +67,7 @@ export function LoyaltyWidget({ status }: { status: LoyaltyStatus }) {
             <div className="text-3xl font-extrabold">
               {status.freeEntriesEarned}
             </div>
-            <div className="mt-1 text-xs text-ink-foreground/65">
+            <div className="mt-1 text-xs text-ink-foreground/80">
               vstupů zdarma získáno
             </div>
           </div>

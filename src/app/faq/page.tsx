@@ -73,7 +73,7 @@ export default async function FaqPage() {
                   <summary className="flex min-h-16 cursor-pointer list-none items-center gap-4 py-4 text-lg font-extrabold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                     <LotusMark
                       decorative
-                      className="size-7 shrink-0 text-muted-foreground transition-[transform,color] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] group-open:rotate-180 group-open:text-accent-foreground"
+                      className="size-7 shrink-0 text-muted-foreground transition-[transform,color] duration-[220ms] ease-brand group-open:rotate-180 group-open:text-accent-foreground"
                     />
                     {question}
                   </summary>

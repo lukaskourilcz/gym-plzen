@@ -120,8 +120,10 @@ breakpoint when the default breakpoints cause a collision.
   use a small radius, not a capsule.
 - Standard borders are one pixel. Selected controls may use two pixels when it
   prevents a colour-only distinction.
-- Use `--shadow-sm` for light elevation and `--shadow-md` for one prominent
-  floating surface. Avoid stacked, glowing, or coloured shadows.
+- Use `shadow-sm` for light elevation and `shadow-md` for one prominent floating
+  surface. Those two utilities are remapped onto the `--elevation-*` tokens, so
+  they are the whole scale: `shadow-lg` and `shadow-2xl` are not part of the
+  system. Avoid stacked, glowing, or coloured shadows.
 
 ## Buttons and links
 
@@ -129,7 +131,18 @@ breakpoint when the default breakpoints cause a collision.
 - Primary actions use `primary`; important dark-surface actions may use `ink`.
 - Minimum target size is 44 by 44 CSS pixels.
 - Use one primary action per decision area. Secondary actions use outline or
-  ghost variants.
+  ghost variants. The persistent header booking button is the single documented
+  exception: it is a global navigation action rather than part of any one
+  decision area, so it may render as `primary` alongside a section's own primary
+  action.
+- An outline button on a dark surface needs its border at 3:1 or better against
+  that surface, because the border is the only thing identifying the control.
+  `border-white/45` is the floor on `ink`.
+- Focus is drawn once, globally, by the `:focus-visible` outline in
+  `globals.css`, tuned to clear 3:1 on both the cream background and `ink`. A
+  component may only add `focus-visible:outline-none` if it supplies its own
+  indicator, and that indicator must suit the surface: `ring-ring` on light,
+  `ring-gold` on `ink`.
 - Consistent Czech verbs are `Rezervovat`, `Pokračovat k platbě`, `Přihlásit
 se`, and `Uložit`.
 - Every control needs default, hover, focus-visible, active, pending, disabled,
@@ -153,11 +166,25 @@ se`, and `Uložit`.
 Cards group interactive or operationally related content. Do not turn every
 paragraph into a card. Marketing sections should prefer editorial grids,
 dividers, and media. Dark surfaces are limited to the hero, the pricing band,
-the closing call to action, the footer, and the admin navigation shell.
+the closing call to action, the equipment zone tiles, the footer, and the admin
+navigation shell.
 
-The operating steps are the one sanctioned card grid on the homepage: a `sage`
-band holding `sage-soft` cards, one per step, with an uppercase centred title.
-It exists because the sequence is genuinely six parallel items.
+Two sanctioned grids exist, both because the content is genuinely a set of
+parallel items rather than prose:
+
+- **Operating steps** (homepage): a `sage` band holding `sage-soft` cards, one
+  per step, with an uppercase centred title.
+- **Zone tiles** (`/vybaveni`): a two-column grid alternating `ink` and
+  `sage-soft`, each tile split into a copy half and a media half. The media half
+  carries a decorative lotus until the operator supplies a zone photograph.
+
+`sage` is a large-text-only surface. `sage-foreground` on it is 4.56:1, which
+clears AA for body copy by a hair; never put anything smaller than a section
+heading on it. Use `sage-soft` (8.03:1) for anything readable.
+
+`charcoal` and `ink` are close to identical in luminance and differ mainly in
+hue, so a charcoal panel on an ink band needs a non-hue cue: give it a
+`border-gold/40` hairline rather than relying on the colour change alone.
 
 ## Forms
 
@@ -223,7 +250,8 @@ The public booking flow is date first.
 ## Motion
 
 - Standard duration: 140ms for controls and 220ms for panels.
-- Easing: `cubic-bezier(.2,.8,.2,1)`.
+- Easing: `cubic-bezier(.2,.8,.2,1)`, exposed as the `ease-brand` utility. Use
+  the token rather than repeating the literal.
 - Motion explains state changes; it is not decoration.
 - Honour `prefers-reduced-motion`. Information must not depend on animation.
 

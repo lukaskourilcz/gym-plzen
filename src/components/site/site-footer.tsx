@@ -47,12 +47,8 @@ export function SiteFooter({
     <footer className="border-t border-white/10 bg-ink text-ink-foreground">
       <Container className="grid gap-12 py-14 md:grid-cols-[1fr_2fr]">
         <div>
-          <BrandLockup
-            brand={brand}
-            inverse
-            className="items-start text-left"
-          />
-          <p className="mt-6 text-xs leading-6 text-ink-foreground/55">
+          <BrandLockup inverse className="items-start text-left" />
+          <p className="mt-6 text-xs leading-6 text-ink-foreground/75">
             © {year} {brand}
             <br />
             Soukromý prostor pro nerušený trénink v Plzni.
@@ -91,7 +87,7 @@ export function SiteFooter({
                 </p>
               ) : null}
               {!phone && !email ? (
-                <p className="py-3 text-sm leading-6 text-ink-foreground/55">
+                <p className="py-3 text-sm leading-6 text-ink-foreground/75">
                   Kontaktní údaje doplní provozovatel.
                 </p>
               ) : null}

@@ -97,6 +97,74 @@ export default function DesignSystemPage() {
           </Card>
         </section>
 
+        <section aria-labelledby="kit-patterns">
+          <h2 id="kit-patterns" className="mb-4 text-xl font-extrabold">
+            Schválené vzory veřejného webu
+          </h2>
+          <div className="grid gap-5 xl:grid-cols-2">
+            <div className="rounded-lg bg-sage p-6">
+              <h3 className="text-center text-lg font-extrabold uppercase tracking-[.06em] text-sage-foreground">
+                Jak to u nás funguje
+              </h3>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {["Vyber si termín", "Po zaplacení"].map((title) => (
+                  <div
+                    key={title}
+                    className="rounded-md border border-white/25 bg-sage-soft p-5 text-sage-foreground"
+                  >
+                    <h4 className="text-center text-base font-extrabold uppercase tracking-[.05em]">
+                      {title}
+                    </h4>
+                    <p className="mt-3 text-sm leading-6">
+                      Karta kroku. Pás je šalvějový, karty světle šalvějové.
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-4 text-xs text-sage-foreground">
+                Na šalvějový pás patří jen velký nadpis, drobný text až na
+                karty.
+              </p>
+            </div>
+
+            <div className="grid gap-5">
+              <div className="grid overflow-hidden rounded-lg bg-ink text-ink-foreground sm:grid-cols-2">
+                <div className="p-6">
+                  <h3 className="text-lg font-extrabold uppercase tracking-[.05em]">
+                    Dlaždice zóny
+                  </h3>
+                  <p className="mt-3 text-sm leading-6 opacity-85">
+                    Střídá se tmavě zelená a světle šalvějová. Média drží lotos,
+                    dokud provozovatel nedodá fotografii.
+                  </p>
+                </div>
+                <div className="grid min-h-32 place-items-center bg-ink-elevated">
+                  <LotusMark decorative className="size-14 opacity-30" />
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-border bg-card p-6">
+                <h3 className="mb-2 text-sm font-extrabold">
+                  Rozbalovací dotaz
+                </h3>
+                <details className="group border-y border-border py-1">
+                  <summary className="flex min-h-16 cursor-pointer list-none items-center gap-4 py-3 font-extrabold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <LotusMark
+                      decorative
+                      className="size-7 shrink-0 text-muted-foreground transition-[transform,color] duration-[220ms] ease-brand group-open:rotate-180 group-open:text-accent-foreground"
+                    />
+                    Jak si vyberu termín?
+                  </summary>
+                  <p className="pb-4 pl-11 text-sm leading-6 text-muted-foreground">
+                    Otočení lotosu o 180 stupňů je jediný schválený pohyb značky
+                    a stav je vždy čitelný i bez animace.
+                  </p>
+                </details>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section aria-labelledby="kit-colors">
           <h2 id="kit-colors" className="mb-4 text-xl font-extrabold">
             Barvy a plochy
@@ -250,13 +318,15 @@ export default function DesignSystemPage() {
               <h2 id="kit-dark" className="text-2xl font-extrabold">
                 Tmavá plocha
               </h2>
-              <p className="mt-1 text-white/65">
-                Pouze pro hero, pravidla, patičku a provozní navigaci.
+              <p className="mt-1 text-white/75">
+                Pouze pro hero, ceník, závěrečnou výzvu, dlaždice zón, patičku a
+                provozní navigaci. Akcentem je vždy zlatá, nikdy primární
+                zelená.
               </p>
             </div>
-            <div className="flex gap-3">
-              <Dumbbell className="text-primary" />
-              <AlertTriangle className="text-warning" />
+            <div className="flex gap-3 text-gold">
+              <Dumbbell aria-hidden="true" />
+              <AlertTriangle aria-hidden="true" />
             </div>
           </div>
         </section>

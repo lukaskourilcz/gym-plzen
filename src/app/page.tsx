@@ -170,7 +170,7 @@ export default async function HomePage() {
                   href="/#jak-to-funguje"
                   size="lg"
                   variant="outline"
-                  className="border-white/30 text-white hover:bg-white/10 hover:text-white"
+                  className="border-white/45 text-white hover:bg-white/10 hover:text-white"
                 >
                   Jak rezervovat
                 </Button>
@@ -198,7 +198,9 @@ export default async function HomePage() {
               <div
                 key={item.value}
                 className={cn(
-                  "border-border px-1 py-6 sm:px-6",
+                  // The first cell keeps the container gutter so its value
+                  // lines up with the hero heading above it.
+                  "border-border py-6 sm:px-6 sm:first:pl-0",
                   FACT_BORDERS[index],
                 )}
               >
@@ -262,11 +264,13 @@ export default async function HomePage() {
                 ))}
               </ul>
             </div>
-            <div className="bg-charcoal p-8 text-charcoal-foreground shadow-lg sm:p-10">
+            {/* Gold hairline: charcoal and ink are near-identical in luminance,
+                so the card needs a non-hue cue to read as a separate surface. */}
+            <div className="border border-gold/40 bg-charcoal p-8 text-charcoal-foreground shadow-md sm:p-10">
               <p className="text-xs font-bold uppercase tracking-[.14em] text-charcoal-foreground/60">
                 Jednorázový vstup
               </p>
-              <div className="mt-3 text-6xl font-extrabold tracking-[-.02em] text-gold">
+              <div className="mt-3 text-6xl font-extrabold tracking-[-.01em] text-gold">
                 {price}
               </div>
               <p className="mt-4 text-sm leading-6 text-charcoal-foreground/75">

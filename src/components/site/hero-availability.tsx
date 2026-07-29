@@ -65,7 +65,7 @@ export function HeroAvailability({
   return (
     <section
       aria-labelledby="hero-availability-title"
-      className="w-full overflow-hidden rounded-sm border border-border bg-background text-foreground shadow-2xl"
+      className="w-full overflow-hidden rounded-sm border border-border bg-background text-foreground shadow-md"
     >
       <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-4 sm:px-5">
         <div

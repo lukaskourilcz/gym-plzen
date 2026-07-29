@@ -8,7 +8,9 @@ import { cn } from "@/lib/utils";
  * official shadcn variants drop in later. Renders an `<a>` when `href` is given.
  */
 const buttonVariants = cva(
-  "inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-extrabold transition-[background-color,border-color,color,transform] focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 active:translate-y-px [&_svg]:size-4 [&_svg]:shrink-0",
+  // No `focus-visible:outline-none` here: the global outline in globals.css is
+  // the single focus indicator and it is tuned to pass on light and ink alike.
+  "inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-extrabold transition-[background-color,border-color,color,transform] disabled:pointer-events-none disabled:opacity-50 active:translate-y-px [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {

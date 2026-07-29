@@ -68,7 +68,7 @@ export default async function AccountPage() {
                 </div>
                 {upcoming[0] ? (
                   <>
-                    <div className="mt-3 text-xl font-black">
+                    <div className="mt-3 text-xl font-extrabold">
                       {formatDate(upcoming[0].startsAt)}
                     </div>
                     <div className="mt-1 text-sm font-bold text-muted-foreground">

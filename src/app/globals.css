@@ -43,8 +43,8 @@
   --ink-foreground: #f4f1e9;
   --charcoal: #2e2e2e;
   --charcoal-foreground: #f5f2ec;
-  --shadow-sm: 0 1px 2px rgb(0 53 39 / 0.08);
-  --shadow-md: 0 16px 40px -24px rgb(0 53 39 / 0.4);
+  --elevation-sm: 0 1px 2px rgb(0 53 39 / 0.08);
+  --elevation-md: 0 16px 40px -24px rgb(0 53 39 / 0.4);
 }
 
 .dark {
@@ -108,15 +108,30 @@
   --radius-lg: var(--radius-card);
   --radius-xl: 0.75rem;
 
+  /* Map the elevation tokens onto `shadow-sm`/`shadow-md`, replacing
+     Tailwind's defaults so the documented scale is the only one available. */
+  --shadow-sm: var(--elevation-sm);
+  --shadow-md: var(--elevation-md);
+
+  /* Documented control/panel motion, so no component repeats the literal. */
+  --ease-brand: cubic-bezier(0.2, 0.8, 0.2, 1);
+
   /* Bitter is the single brand family for interface and marketing alike. */
   --font-sans: var(--font-brand, ui-serif, Georgia, "Times New Roman", serif);
 }
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  border-color: var(--color-border);
+/*
+ * Must live in @layer base. Unlayered rules beat every layered rule in the
+ * cascade, so declaring this at the top level would silently override every
+ * Tailwind `border-*` colour utility in the product.
+ */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    border-color: var(--color-border);
+  }
 }
 
 html {
@@ -150,8 +165,14 @@ summary {
   -webkit-tap-highlight-color: transparent;
 }
 
+/*
+ * Single focus indicator for the whole product. The 60/40 mix with white lands
+ * at a luminance that clears 3:1 against BOTH the cream page background and the
+ * ink dark surfaces, so one rule covers every context. Components must not add
+ * `focus-visible:outline-none` without supplying an equivalent indicator.
+ */
 :focus-visible {
-  outline: 3px solid color-mix(in oklch, var(--ring) 80%, white);
+  outline: 3px solid color-mix(in srgb, var(--ring) 60%, white);
   outline-offset: 3px;
 }
 

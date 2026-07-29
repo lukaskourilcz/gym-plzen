@@ -45,11 +45,9 @@ export function LotusMark({
 }
 
 export function BrandLogo({
-  brand = "NAMASTÉ Private Gym",
   className,
   inverse = false,
 }: {
-  brand?: string;
   className?: string;
   inverse?: boolean;
 }) {
@@ -69,11 +67,10 @@ export function BrandLogo({
         <strong className="block text-base font-extrabold tracking-[0.06em]">
           NAMASTÉ
         </strong>
-        <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.18em] opacity-65">
+        <span className="mt-1 block text-xs font-bold uppercase leading-none tracking-[0.16em] opacity-80">
           Private Gym
         </span>
       </span>
-      <span className="sr-only">{brand}</span>
     </span>
   );
 }
@@ -83,11 +80,9 @@ export function BrandLogo({
  * element of the surface (footer, authentication) rather than a navigation item.
  */
 export function BrandLockup({
-  brand = "NAMASTÉ Private Gym",
   className,
   inverse = false,
 }: {
-  brand?: string;
   className?: string;
   inverse?: boolean;
 }) {
@@ -109,10 +104,9 @@ export function BrandLockup({
       <strong className="mt-3 block text-2xl font-extrabold leading-none tracking-[0.04em]">
         NAMASTÉ
       </strong>
-      <span className="mt-2 block text-[11px] font-bold uppercase leading-none tracking-[0.34em] opacity-70">
+      <span className="mt-2 block text-xs font-bold uppercase leading-none tracking-[0.3em] opacity-85">
         Private Gym
       </span>
-      <span className="sr-only">{brand}</span>
     </span>
   );
 }
