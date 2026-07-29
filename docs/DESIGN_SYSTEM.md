@@ -130,7 +130,7 @@ breakpoint when the default breakpoints cause a collision.
 - Buttons are square or minimally rounded.
 - Primary actions use `primary`; important dark-surface actions may use `ink`.
 - Minimum target size is 44 by 44 CSS pixels. The one exception is a stacked
-  footer link list, which drops to 36px from `lg` up where the pointer is
+  footer link list, which drops to 28px from `lg` up where the pointer is
   precise; that still clears the WCAG 2.2 AA 24px floor and keeps the footer
   from dominating the page. Touch widths keep the full 44px.
 - Use one primary action per decision area. Secondary actions use outline or

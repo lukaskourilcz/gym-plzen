@@ -5,12 +5,12 @@ import { FacebookIcon, InstagramIcon } from "@/components/site/social-icons";
 import { PUBLIC_NAV } from "@/lib/config/navigation";
 
 /*
- * 44px targets on touch, 36px from `lg` where the pointer is precise: a stacked
- * link list at 44px made the footer needlessly tall. 36px still clears the WCAG
+ * 44px targets on touch, 28px from `lg` where the pointer is precise: a stacked
+ * link list at 44px made the footer needlessly tall. 28px still clears the WCAG
  * 2.2 AA 24px target-size floor. Documented in docs/DESIGN_SYSTEM.md.
  */
 const footerLink =
-  "flex min-h-11 items-center text-sm text-ink-foreground/75 transition-colors hover:text-ink-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold lg:min-h-9";
+  "flex min-h-11 items-center text-sm text-ink-foreground/75 transition-colors hover:text-ink-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold lg:min-h-7";
 
 export function SiteFooter({
   brand = "NAMASTÉ Private Gym",
