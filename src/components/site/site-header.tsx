@@ -45,7 +45,9 @@ export function SiteHeader({
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
       {/* Deliberately not inside `Container`: the brand sits in the very left
           corner and the actions in the very right one, at full viewport width. */}
-      <div className="flex min-h-[68px] items-center justify-between gap-3 px-4 sm:px-5">
+      {/* Three tracks from `lg`: brand hard left, links centred, actions hard
+          right. Equal 1fr side tracks are what keeps the nav optically centred. */}
+      <div className="flex min-h-[68px] items-center justify-between gap-3 px-4 sm:px-5 lg:grid lg:grid-cols-[1fr_auto_1fr]">
         <Link
           href="/"
           aria-label={`${brand}, úvodní stránka`}
@@ -56,7 +58,7 @@ export function SiteHeader({
 
         <nav
           aria-label="Hlavní navigace"
-          className="hidden items-center gap-1 lg:flex"
+          className="hidden items-center justify-center gap-1 lg:flex"
         >
           {NAV.map((item) => (
             <Link
@@ -70,7 +72,7 @@ export function SiteHeader({
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2 lg:ml-0 lg:justify-self-end">
           <Button
             href="/rezervace"
             size="sm"

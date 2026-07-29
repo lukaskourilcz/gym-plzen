@@ -50,10 +50,10 @@ const HERO_SUBTITLE =
 
 /*
  * Desktop hero sizing, expressed as a literal Tailwind arbitrary value so the
- * class is statically scannable: 69px sticky header (68 + 1px border) + hero +
- * 104px facts strip must fill the viewport minus a 50px peek at the section
- * below, hence `100svh - 223px` for the hero itself. Applied from `lg` only;
- * on smaller screens the strip stacks and a viewport lock would clip content.
+ * class is statically scannable. Header (68px + 1px border) plus hero fill the
+ * first viewport exactly, so nothing else shows above the fold and the facts
+ * strip is the first thing revealed on scroll. Applied from `lg` only; on
+ * smaller screens the hero content is taller than the viewport anyway.
  */
 
 /** Six operating steps, all editable in the admin under "Obsah webu". */
@@ -163,7 +163,7 @@ export default async function HomePage() {
             aria-hidden="true"
             className="absolute inset-0 -z-10 bg-ink/88"
           />
-          <Container className="grid gap-12 py-14 lg:min-h-[calc(100svh-223px)] lg:grid-cols-[1fr_1fr] lg:content-center lg:items-start lg:gap-8 lg:py-10 xl:gap-12">
+          <Container className="grid gap-12 py-14 lg:min-h-[calc(100svh-69px)] lg:grid-cols-[1fr_1fr] lg:content-center lg:items-start lg:gap-8 lg:py-10 xl:gap-12">
             <div>
               <h1 className="max-w-2xl text-4xl font-extrabold leading-[1.1] tracking-[-.01em] sm:text-5xl lg:text-6xl">
                 {HERO_TITLE}
@@ -204,9 +204,9 @@ export default async function HomePage() {
           </Container>
         </section>
 
-        {/* Fixed 104px tall from `lg` up: the hero's viewport calc depends on it. */}
+        {/* Sits directly below the fold: the first thing revealed on scroll. */}
         <div className="border-b border-border bg-background">
-          <Container className="grid grid-cols-1 sm:grid-cols-2 lg:h-[104px] lg:grid-cols-4">
+          <Container className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             {[
               { value: OPENING_HOURS, label: "otevírací doba" },
               { value: "Dětský koutek", label: "plně vybavený s pískovištěm" },
@@ -218,7 +218,7 @@ export default async function HomePage() {
                 className={cn(
                   // The first cell keeps the container gutter so its value
                   // lines up with the hero heading above it.
-                  "flex flex-col justify-center border-border py-6 sm:px-6 sm:first:pl-0 lg:py-0",
+                  "flex flex-col justify-center border-border py-7 sm:px-6 sm:first:pl-0",
                   FACT_BORDERS[index],
                 )}
               >
