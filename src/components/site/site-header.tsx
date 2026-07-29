@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
-import { Container } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/site/brand";
 import { cn } from "@/lib/utils";
@@ -44,7 +43,9 @@ export function SiteHeader({
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
-      <Container className="flex min-h-[68px] items-center justify-between gap-3">
+      {/* Deliberately not inside `Container`: the brand sits in the very left
+          corner and the actions in the very right one, at full viewport width. */}
+      <div className="flex min-h-[68px] items-center justify-between gap-3 px-4 sm:px-5">
         <Link
           href="/"
           aria-label={`${brand}, úvodní stránka`}
@@ -99,7 +100,7 @@ export function SiteHeader({
             {open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
           </Button>
         </div>
-      </Container>
+      </div>
 
       <div
         id="mobile-menu"
@@ -108,7 +109,7 @@ export function SiteHeader({
           open ? "block" : "hidden",
         )}
       >
-        <Container className="grid gap-1 py-3">
+        <div className="grid gap-1 px-4 py-3 sm:px-5">
           {NAV.map((item) => (
             <Link
               key={item.href}
@@ -127,7 +128,7 @@ export function SiteHeader({
               {accountLabel}
             </Button>
           </div>
-        </Container>
+        </div>
       </div>
     </header>
   );
