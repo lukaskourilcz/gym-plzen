@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { BrandLogo, LotusMark } from "@/components/site/brand";
+import { LotusMark } from "@/components/site/brand";
 import { LoginForm } from "./login-form";
 
 export const metadata = { title: "Přihlášení" };
@@ -16,17 +16,18 @@ export default function LoginPage() {
       <section className="relative hidden overflow-hidden bg-ink p-12 text-white lg:flex lg:flex-col lg:justify-between xl:p-14">
         <Link
           href="/"
-          className="relative inline-flex min-h-11 items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          aria-label="NAMASTÉ Private Gym, úvodní stránka"
+          className="relative inline-flex min-h-11 items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
         >
-          <BrandLogo inverse />
+          <LotusMark decorative className="size-24 text-gold" />
         </Link>
         <div className="relative">
-          <LotusMark className="mb-8 size-16 text-primary" />
-          <div className="text-[40px] font-black leading-[1.08] tracking-[-.03em]">
-            Rezervace a vstupní údaje na jednom místě.
+          <div className="text-[40px] font-extrabold leading-[1.1] tracking-[-.01em]">
+            Klientská zóna
           </div>
-          <p className="mt-5 max-w-sm text-[15px] leading-relaxed text-white/65">
-            Po přihlášení najdete své termíny a informace potřebné k návštěvě.
+          <p className="mt-5 max-w-sm text-[15px] leading-relaxed text-white/70">
+            Po přihlášení najdete své zarezervované termíny a můžete sledovat
+            své pokroky.
           </p>
         </div>
         <div className="relative text-xs text-white/40">
@@ -41,7 +42,7 @@ export default function LoginPage() {
           >
             ← NAMASTÉ Private Gym
           </Link>
-          <h1 className="text-[28px] font-black tracking-[-.025em]">
+          <h1 className="text-[28px] font-extrabold tracking-[-.01em]">
             Přihlášení
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">

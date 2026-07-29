@@ -7,6 +7,11 @@ Externí a klientské kroky. Manuální detaily viz [MANUAL_STEPS.md](./MANUAL_S
 `[imp:N]` = priorita 1–5, `[owner:me]` = externí krok, `[owner:ai]` = úkol pro
 AI po dodání podkladů. `[kind:K]` ∈ `setup` `deploy` `legal` `content` `decision`.
 
+- [ ] **Přepsat otevírací dobu v administraci na 05:00–23:45 / 75 min**: kód má nové výchozí hodnoty, ale tabulka `opening_hours` v ostré databázi je už naplněná starými (06:00–22:00, 60 min) a seed je nepřepisuje. V administraci → Otevírací doba a bloky nastavit u všech sedmi dnů začátek 05:00, konec 23:45 a délku okna 75 minut. Bez toho web slibuje okna 05:00–23:45, ale kalendář nabídne staré hodinové sloty. `[imp:5]` `[owner:me]` `[time:10m]` `[kind:setup]`
+- [ ] **Fotografie jednotlivých zón**: dodat snímky pro dlaždice na `/vybaveni` (silová, kardio, strečink, dětský koutek, lednice, zázemí). Zatím se zobrazuje značková výplň s lotosem. `[imp:3]` `[owner:me]` `[time:30m]` `[kind:content]`
+- [ ] **Značka české přírodní kosmetiky**: v textu kroku „Před odchodem" byla v podkladu vynechaná („od značky …"). Dokud ji nedodáte, web uvádí jen „česká přírodní kosmetika" bez názvu. `[imp:2]` `[owner:me]` `[time:5m]` `[kind:content]`
+- [ ] **Odkazy na Facebook a Instagram**: doplnit v administraci → Obsah webu do bloků `contact.facebook` a `contact.instagram`. Patička ikonky zobrazí až po vyplnění. `[imp:2]` `[owner:me]` `[time:10m]` `[kind:content]`
+- [ ] **Text provozního řádu**: stránka `/provozni-rad` (odkazovaná z patičky) vykresluje blok `home.rules.body` z administrace. Dodat a schválit finální znění. `[imp:3]` `[owner:me]` `[time:30m]` `[kind:content]`
 - [ ] **Přenést tajemství z `.env.local` do Vercelu**: Sentry (`SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`), GoSMS (`GOSMS_CLIENT_ID`, `GOSMS_CLIENT_SECRET`, `GOSMS_CHANNEL`), `STRIPE_WEBHOOK_SECRET`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_DEFAULT_LOCALE`, `NEXT_PUBLIC_OAUTH_PROVIDERS`, `ALERT_WHATSAPP_RECIPIENTS` do Production + Preview (Sensitive kde je to tajemství). `[imp:5]` `[owner:me]` `[time:1h]` `[kind:deploy]`
 - [ ] **Supabase Auth Site URL + Redirect URLs**: v Supabase Dashboard nastavit produkční Site URL a wildcard Redirect URLs. `[imp:5]` `[owner:me]` `[time:15m]` `[kind:setup]`
 - [ ] **Vercel Node.js 22**: Settings → General → Node.js Version = 22.x. `[imp:4]` `[owner:me]` `[time:5m]` `[kind:setup]`
@@ -16,7 +21,7 @@ AI po dodání podkladů. `[kind:K]` ∈ `setup` `deploy` `legal` `content` `dec
 - [ ] **Vlastní doména + HTTPS** (čeká na nákup): DNS, HTTPS, přepsat `NEXT_PUBLIC_APP_URL`, `Site URL` v Supabase, Stripe webhook URL, Nuki webhook URL. `[imp:4]` `[owner:me]` `[time:1h]` `[kind:setup]`
 - [ ] **Resend: vlastní doména** (čeká na doménu): přidat v Resend, SPF/DKIM/DMARC, přepsat `RESEND_FROM_EMAIL`. `[imp:3]` `[owner:me]` `[time:30m]` `[kind:setup]`
 - [ ] **Uptime a cron heartbeat monitoring**: UptimeRobot check na produkční URL + cron heartbeat monitor (`UPTIMEROBOT_HEARTBEAT_URL` už je v env). `[imp:3]` `[owner:me]` `[time:30m]` `[kind:deploy]`
-- [ ] **Finální obsah**: fotografie, kontakty (e-mail, telefon), seznam vybavení, otevírací doba, pravidla hostů/dětí/storna, hero + logo. `[imp:3]` `[owner:me]` `[time:1h]` `[kind:content]`
+- [ ] **Finální obsah**: fotografie, kontakty (e-mail, telefon), seznam vybavení, pravidla hostů/dětí/storna, hero + logo. `[imp:3]` `[owner:me]` `[time:1h]` `[kind:content]`
 - [ ] **Právní texty**: obchodní podmínky a ochrana soukromí — schvaluje provozovatel nebo právník. `[imp:3]` `[owner:me]` `[time:2h]` `[kind:legal]`
 - [ ] **Stripe test vs live rozdělení**: `.env.local` drží live klíče. Doporučeno: `.env.local` + Vercel Preview = `sk_test_...`, Vercel Production = `sk_live_...`. `[imp:3]` `[owner:me]` `[time:15m]` `[kind:decision]`
 - [ ] **Plné E2E proti testovacím službám**: po připojení Stripe test / Nuki / Resend / WhatsApp spustit Playwright suite s mutačním povolením. `[imp:2]` `[owner:ai]` `[time:1h]` `[kind:deploy]`

@@ -12,14 +12,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Notice } from "@/components/ui/notice";
-import { BrandLogo, LotusMark } from "@/components/site/brand";
+import { BrandLockup, BrandLogo, LotusMark } from "@/components/site/brand";
+import { FacebookIcon, InstagramIcon } from "@/components/site/social-icons";
 import { PageHeader } from "@/components/admin/page-header";
 
 export const metadata = { title: "Design systém" };
 
 const swatches = [
-  ["Ink", "bg-ink text-white"],
+  ["Ink", "bg-ink text-ink-foreground"],
   ["Primární", "bg-primary text-primary-foreground"],
+  ["Zlatá", "bg-gold text-gold-foreground"],
+  ["Uhlová", "bg-charcoal text-charcoal-foreground"],
+  ["Šalvějová", "bg-sage text-sage-foreground"],
+  ["Šalvějová světlá", "bg-sage-soft text-sage-foreground"],
+  ["Taupe", "bg-taupe text-taupe-foreground"],
   ["Plocha", "bg-card text-card-foreground"],
   ["Tlumená", "bg-muted text-muted-foreground"],
   ["Úspěch", "bg-success text-success-foreground"],
@@ -44,17 +50,21 @@ export default function DesignSystemPage() {
               <div className="flex flex-wrap items-center gap-8">
                 <LotusMark className="size-14 text-accent-foreground" />
                 <BrandLogo />
+                <span className="rounded-lg bg-ink p-6">
+                  <BrandLockup inverse />
+                </span>
               </div>
               <div>
-                <p className="text-4xl font-extrabold tracking-[-0.04em]">
-                  Celý gym jen pro vás
+                <p className="text-4xl font-extrabold tracking-[-0.01em]">
+                  Tvůj čas. Tvůj prostor.
                 </p>
-                <p className="mt-4 text-2xl font-extrabold tracking-[-0.025em]">
+                <p className="mt-4 text-2xl font-extrabold tracking-[-0.01em]">
                   Klidný prostor pro soustředěný trénink
                 </p>
                 <p className="mt-3 max-w-xl text-muted-foreground">
-                  Manrope s českou a Latin Extended sadou je společný font pro
-                  rozhraní i marketing.
+                  Bitter s českou a Latin Extended sadou je společný font pro
+                  rozhraní i marketing. U velkých nadpisů držte prostrkání
+                  blízko nule, patkové písmo už je samo o sobě široké.
                 </p>
               </div>
             </CardContent>
@@ -122,6 +132,17 @@ export default function DesignSystemPage() {
               <Badge>Volno</Badge>
               <Badge variant="muted">Obsazeno</Badge>
               <Badge variant="outline">Dnes</Badge>
+            </CardContent>
+            <CardContent className="flex flex-wrap items-center gap-4 rounded-b-lg bg-ink p-6 text-ink-foreground">
+              <span className="text-sm font-bold">
+                Na tmavé ploše akcentuje jen zlatá:
+              </span>
+              <LotusMark decorative className="size-8 text-gold" />
+              <span className="text-2xl font-extrabold text-gold">290 Kč</span>
+              <span className="flex items-center gap-2 text-gold">
+                <FacebookIcon />
+                <InstagramIcon />
+              </span>
             </CardContent>
           </Card>
           <Card>

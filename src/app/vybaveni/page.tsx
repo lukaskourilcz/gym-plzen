@@ -1,15 +1,45 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { Camera, ListChecks } from "lucide-react";
 import { footerProps, loadSiteContent } from "@/lib/content/site";
 import { Container, Section } from "@/components/ui/container";
-import { Button } from "@/components/ui/button";
-import { Notice } from "@/components/ui/notice";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
+import { LotusMark } from "@/components/site/brand";
+import { cn } from "@/lib/utils";
 
 const PHOTO =
   "https://static.wixstatic.com/media/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg/v1/fill/w_1600,h_900,al_c,q_90,enc_avif,quality_auto/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg";
+
+/**
+ * Zones the operator has confirmed. Descriptions stay within what the client
+ * stated : no unverified machines, loads or counts.
+ */
+const ZONES = [
+  {
+    title: "Silová zóna",
+    body: "Stroje a pomůcky pro silový trénink máte po celou dobu rezervace jen pro sebe.",
+  },
+  {
+    title: "Kardio zóna",
+    body: "Prostor pro rozehřátí i vytrvalostní trénink ve vlastním tempu.",
+  },
+  {
+    title: "Strečink zóna",
+    body: "Místo na protažení, mobilitu a zklidnění po tréninku.",
+  },
+  {
+    title: "Zázemí pro děti",
+    body: "Plně vybavený dětský koutek s pískovištěm a zahrádkou.",
+  },
+  {
+    title: "Vybavená lednice",
+    body: "Plná lednice a automat se svačinou i oblíbenými suplementy.",
+  },
+  {
+    title: "Zázemí pro vás",
+    body: "Relax zóna a koupelna se sprchou včetně české přírodní kosmetiky.",
+  },
+];
 
 export const metadata: Metadata = {
   title: "Vybavení a prostor",
@@ -30,7 +60,7 @@ export default async function EquipmentPage() {
                 <p className="text-xs font-extrabold uppercase tracking-[.16em] text-accent-foreground">
                   Prostor
                 </p>
-                <h1 className="mt-4 text-4xl font-black tracking-[-.04em] sm:text-6xl">
+                <h1 className="mt-4 text-4xl font-extrabold tracking-[-.01em] sm:text-6xl">
                   Vybavení a prostor
                 </h1>
               </div>
@@ -50,34 +80,44 @@ export default async function EquipmentPage() {
                 className="object-cover"
               />
             </div>
-            <div className="mt-8 grid gap-4 md:grid-cols-2">
-              <Notice title="Skutečné fotografie" className="min-h-32">
-                <span className="flex gap-3">
-                  <Camera
+
+            <h2 className="mt-16 text-3xl font-extrabold tracking-[-.01em] sm:text-4xl">
+              Jednotlivé zóny
+            </h2>
+            <p className="mt-3 max-w-2xl leading-7 text-muted-foreground">
+              Fotografie jednotlivých zón doplní provozovatel v administraci.
+            </p>
+            <ul className="mt-8 grid gap-5 lg:grid-cols-2">
+              {ZONES.map((zone, index) => (
+                <li
+                  key={zone.title}
+                  className={cn(
+                    "grid overflow-hidden rounded-lg sm:grid-cols-2",
+                    index % 2 === 0
+                      ? "bg-ink text-ink-foreground"
+                      : "bg-sage-soft text-sage-foreground",
+                  )}
+                >
+                  <div className="p-7">
+                    <h3 className="text-xl font-extrabold uppercase tracking-[.05em]">
+                      {zone.title}
+                    </h3>
+                    <p className="mt-4 text-sm leading-6 opacity-85">
+                      {zone.body}
+                    </p>
+                  </div>
+                  <div
                     aria-hidden="true"
-                    className="mt-0.5 size-5 shrink-0 text-accent-foreground"
-                  />
-                  Galerii může provozovatel rozšířit v administraci bez změny
-                  kódu.
-                </span>
-              </Notice>
-              <Notice
-                tone="warning"
-                title="Finální seznam se připravuje"
-                className="min-h-32"
-              >
-                <span className="flex gap-3">
-                  <ListChecks
-                    aria-hidden="true"
-                    className="mt-0.5 size-5 shrink-0"
-                  />
-                  Neuvádíme neověřené stroje, nosnosti ani další parametry.
-                </span>
-              </Notice>
-            </div>
-            <div className="mt-10 border-t border-border pt-8">
-              <Button href="/rezervace">Vybrat termín</Button>
-            </div>
+                    className={cn(
+                      "grid min-h-44 place-items-center",
+                      index % 2 === 0 ? "bg-ink-elevated" : "bg-sage",
+                    )}
+                  >
+                    <LotusMark className="size-16 opacity-30" />
+                  </div>
+                </li>
+              ))}
+            </ul>
           </Container>
         </Section>
       </main>

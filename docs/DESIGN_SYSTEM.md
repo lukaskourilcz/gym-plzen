@@ -19,18 +19,23 @@ marketing language, or an unnecessary call to action in every section.
 
 ### Lotus symbol
 
-- The public header contains only the lotus symbol.
 - Minimum digital size is 32 by 32 CSS pixels. The standard header size is 40.
 - Clear space is at least one quarter of the symbol width on every side.
-- Use the green symbol on light or ink surfaces. Do not place it on noisy
-  photography without a solid backing surface.
+- Use `accent-foreground` green on light surfaces and `gold` on ink surfaces.
+  Do not place it on noisy photography without a solid backing surface.
+- Pass `decorative` when adjacent text already names the brand, so the symbol
+  is hidden from assistive technology instead of announcing a second name.
 - Do not rotate, stretch, recolour arbitrarily, or combine the symbol with an
-  unrelated fitness icon.
+  unrelated fitness icon. The FAQ toggle rotation is the one sanctioned motion
+  and it only communicates open state.
 
 ### Full logo
 
-- The full symbol and wordmark appears in the footer, authentication experience,
-  admin shell, and brand documentation.
+- `BrandLogo` is the horizontal lockup: symbol beside the wordmark. It appears
+  in the public header, the admin shell, and brand documentation.
+- `BrandLockup` is the stacked lockup: symbol above the wordmark above the
+  `PRIVATE GYM` descriptor. It leads the footer and any surface where the brand
+  is the primary element rather than a navigation item.
 - Minimum width is 132 CSS pixels.
 - Use the inverse wordmark on dark surfaces.
 - A CMS logo may replace the code fallback only when it is approved full brand
@@ -38,37 +43,54 @@ marketing language, or an unnecessary call to action in every section.
 
 ## Colour
 
-All colours are semantic CSS variables in `src/app/globals.css`.
+The brand palette is deep green, gold, charcoal, and taupe. All colours are
+semantic CSS variables in `src/app/globals.css`.
 
 | Token               | Purpose                                           |
 | ------------------- | ------------------------------------------------- |
 | `background`        | Warm page background                              |
 | `foreground`        | Primary copy                                      |
 | `card`              | Raised light surface                              |
-| `primary`           | Main action, dark-surface accent                  |
+| `primary`           | Deep brand green: main action, white label        |
 | `accent`            | Selected and supportive green surface             |
 | `accent-foreground` | Accessible green copy and icons on light surfaces |
+| `gold`              | The only accent that reads on ink and charcoal    |
+| `charcoal`          | Price card and other deliberately neutral panels  |
+| `sage`              | Editorial band behind the operating steps         |
+| `sage-soft`         | Card surface inside a sage band                   |
+| `sage-foreground`   | Copy on sage surfaces                             |
+| `taupe`             | Warm neutral surface, white copy only             |
 | `secondary`         | Quiet section separation                          |
 | `muted`             | Disabled or secondary surface                     |
 | `destructive`       | Destructive action and blocking error             |
 | `success`           | Confirmed state                                   |
 | `warning`           | Recoverable risk or attention state               |
 | `info`              | Neutral operational information                   |
-| `ink`               | Hero, rules, footer, and admin navigation         |
+| `ink`               | Hero, pricing, call to action, footer, admin nav  |
 
 Never add a raw brand colour inside a component when a semantic token exists.
-Use `accent-foreground`, not the brighter `primary`, for green text and icons on
-light surfaces. Dark surfaces use `ink` rather than one-off near-black values.
-Text opacity on ink must preserve WCAG 2.2 AA contrast.
+Use `accent-foreground` for green text and icons on light surfaces. `primary`
+and `ink` are both deep green, so on an ink surface an accent must be `gold`:
+never `primary`, which would disappear. Dark surfaces use `ink` or `charcoal`
+rather than one-off near-black values. Text opacity on ink must preserve WCAG
+2.2 AA contrast; keep body copy at 75 percent or higher.
+
+A hero photograph carries a solid ink veil so white copy stays above 4.5:1 on
+any frame of the image. Do not lighten the veil below 78 percent.
 
 ## Typography
 
-- Family: Manrope, loaded through `next/font` with Latin and Latin Extended.
+- Family: Bitter, loaded through `next/font` with Latin and Latin Extended.
+  It is a slab serif and it is the only family in the product.
 - Body: 16px on small screens, 16 to 18px for editorial introductions.
-- Small metadata: never below 12px. Avoid long uppercase text.
-- H1: 40 to 76px, weight 800, line height 0.98 to 1.05.
-- H2: 30 to 48px, weight 800, line height 1.05 to 1.15.
+- Small metadata: never below 12px. Reserve uppercase for section eyebrows,
+  card titles, and the booking action.
+- H1: 36 to 60px, weight 800, line height 1.05 to 1.15.
+- H2: 30 to 48px, weight 800, line height 1.1 to 1.2.
 - H3: 18 to 24px, weight 700 or 800.
+- Tracking stays near neutral. A slab serif already has wide letterforms, so do
+  not reuse the tight negative tracking a grotesque needs; `-0.01em` is the
+  practical floor for display sizes.
 - Body line height: 1.5 to 1.7. Keep readable lines near 60 to 72 characters.
 - Czech accents must render correctly. Never remove accents to fit a layout.
 
@@ -116,7 +138,10 @@ se`, and `Uložit`.
 
 ## Icons
 
-- Approved library: Lucide React plus the code-owned lotus mark.
+- Approved library: Lucide React plus the code-owned lotus mark. Lucide no
+  longer ships brand icons, so Facebook and Instagram are code-owned glyphs in
+  `components/site/social-icons.tsx`, drawn on the same 24px grid with the same
+  2px round stroke. Do not add a third-party brand icon pack.
 - Default size is 16 or 20px. A prominent feature icon may use 24px.
 - Keep the default Lucide stroke. Do not mix emoji, unrelated SVG packs, and
   Lucide in one interface.
@@ -127,8 +152,12 @@ se`, and `Uložit`.
 
 Cards group interactive or operationally related content. Do not turn every
 paragraph into a card. Marketing sections should prefer editorial grids,
-dividers, and media. Dark surfaces are limited to the hero, operating rules,
-footer, and admin navigation shell.
+dividers, and media. Dark surfaces are limited to the hero, the pricing band,
+the closing call to action, the footer, and the admin navigation shell.
+
+The operating steps are the one sanctioned card grid on the homepage: a `sage`
+band holding `sage-soft` cards, one per step, with an uppercase centred title.
+It exists because the sequence is genuinely six parallel items.
 
 ## Forms
 

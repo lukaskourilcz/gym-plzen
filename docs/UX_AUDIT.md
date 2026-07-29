@@ -298,8 +298,9 @@ a potvrdit provozní časy.
 
 ### Odpovídá
 
-- Manrope s českou sadou, sémantické tokeny, tmavé plochy a střídmá zelená.
-- Symbol v headeru a plné logo v určených místech.
+- Bitter s českou sadou, sémantické tokeny, tmavé plochy a tmavě zelená se
+  zlatým akcentem.
+- Logo se slovní značkou v headeru, skládané logo v patičce.
 - Konzistentní radius karet, jeden hlavní CTA v rozhodovacím bloku a Lucide
   ikony.
 - Přesné časové rozsahy, české labels a transparentní preview stavy.

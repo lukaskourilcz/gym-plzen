@@ -3,15 +3,19 @@ import { cn } from "@/lib/utils";
 export function LotusMark({
   className,
   title = "NAMASTÉ",
+  decorative = false,
 }: {
   className?: string;
   title?: string;
+  /** Hide from assistive tech when the surrounding text already names it. */
+  decorative?: boolean;
 }) {
   return (
     <svg
       viewBox="0 0 48 48"
-      role="img"
-      aria-label={title}
+      {...(decorative
+        ? { "aria-hidden": true, focusable: false }
+        : { role: "img", "aria-label": title })}
       className={cn("size-10", className)}
     >
       <path

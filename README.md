@@ -31,17 +31,17 @@ nastavení a chybějící klientské podklady jsou v [NEEDED.md](./NEEDED.md).
 
 ## Stack
 
-| Oblast    | Technologie                                              |
-| --------- | -------------------------------------------------------- |
-| Web a API | Next.js 15 App Router, React 19, TypeScript              |
-| Styl      | Tailwind CSS 4, vlastní semantic tokens, Manrope, Lucide |
-| Databáze  | Supabase Postgres, Drizzle ORM                           |
-| Auth      | Supabase Auth a `@supabase/ssr`                          |
-| Platby    | Stripe Checkout                                          |
-| Vstup     | Nuki Web API                                             |
-| Zprávy    | Resend, WhatsApp Business, volitelně GoSMS               |
-| Dohled    | Sentry a Vercel Cron                                     |
-| Testy     | Node test runner přes `tsx`, Playwright                  |
+| Oblast    | Technologie                                             |
+| --------- | ------------------------------------------------------- |
+| Web a API | Next.js 15 App Router, React 19, TypeScript             |
+| Styl      | Tailwind CSS 4, vlastní semantic tokens, Bitter, Lucide |
+| Databáze  | Supabase Postgres, Drizzle ORM                          |
+| Auth      | Supabase Auth a `@supabase/ssr`                         |
+| Platby    | Stripe Checkout                                         |
+| Vstup     | Nuki Web API                                            |
+| Zprávy    | Resend, WhatsApp Business, volitelně GoSMS              |
+| Dohled    | Sentry a Vercel Cron                                    |
+| Testy     | Node test runner přes `tsx`, Playwright                 |
 
 ## Požadavky
 

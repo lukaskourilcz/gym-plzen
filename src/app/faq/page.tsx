@@ -1,13 +1,19 @@
 import type { Metadata } from "next";
 import { footerProps, loadSiteContent } from "@/lib/content/site";
-import { formatMoney } from "@/lib/helpers/format";
+import { formatMoney, minutesToHHmm } from "@/lib/helpers/format";
+import {
+  DEFAULT_CLOSE_MINUTE,
+  DEFAULT_OPEN_MINUTE,
+  DEFAULT_SLOT_MINUTES,
+} from "@/lib/config/schedule";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
+import { LotusMark } from "@/components/site/brand";
 
 export const metadata: Metadata = {
-  title: "Časté dotazy",
+  title: "Často kladené otázky",
   description:
     "Odpovědi k rezervaci, platbě, vstupu a poloze NAMASTÉ Private Gym.",
   alternates: { canonical: "/faq" },
@@ -19,7 +25,7 @@ export default async function FaqPage() {
   const items = [
     [
       "Jak si vyberu termín?",
-      "V měsíčním kalendáři zvolíte datum a potom konkrétní volný čas. U každého termínu uvidíte začátek, konec, délku a cenu.",
+      `V měsíčním kalendáři zvolíte datum a potom konkrétní volné časové okno. U každého termínu uvidíte začátek, konec, délku a cenu. Okna trvají ${DEFAULT_SLOT_MINUTES} minut a navazují na sebe od ${minutesToHHmm(DEFAULT_OPEN_MINUTE)} do ${minutesToHHmm(DEFAULT_CLOSE_MINUTE)}.`,
     ],
     [
       "Kolik stojí jednorázový vstup?",
@@ -58,25 +64,20 @@ export default async function FaqPage() {
       <main id="main-content" tabIndex={-1}>
         <Section className="pt-14 sm:pt-20">
           <Container className="max-w-4xl">
-            <p className="text-xs font-extrabold uppercase tracking-[.16em] text-accent-foreground">
-              Informace před návštěvou
-            </p>
-            <h1 className="mt-4 text-4xl font-black tracking-[-.04em] sm:text-6xl">
-              Časté dotazy
+            <h1 className="text-4xl font-extrabold tracking-[-.01em] sm:text-6xl">
+              Často kladené otázky
             </h1>
             <div className="mt-10 divide-y divide-border border-y border-border">
               {items.map(([question, answer]) => (
                 <details key={question} className="group py-1">
-                  <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-4 py-4 text-lg font-extrabold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <summary className="flex min-h-16 cursor-pointer list-none items-center gap-4 py-4 text-lg font-extrabold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <LotusMark
+                      decorative
+                      className="size-7 shrink-0 text-muted-foreground transition-[transform,color] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] group-open:rotate-180 group-open:text-accent-foreground"
+                    />
                     {question}
-                    <span
-                      aria-hidden="true"
-                      className="text-accent-foreground transition-transform group-open:rotate-45"
-                    >
-                      +
-                    </span>
                   </summary>
-                  <p className="max-w-2xl pb-6 leading-7 text-muted-foreground">
+                  <p className="max-w-2xl pb-6 pl-11 leading-7 text-muted-foreground">
                     {answer}
                   </p>
                 </details>
