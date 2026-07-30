@@ -441,66 +441,54 @@ export default async function HomePage() {
           id="kontakt"
           className="scroll-mt-[var(--header-h)] border-b border-border py-14 sm:py-16"
         >
-          <Container className="grid gap-8 lg:grid-cols-[.9fr_1.1fr] lg:items-end">
-            <div>
-              <p className="text-xs font-extrabold uppercase tracking-[.16em] text-accent-foreground">
-                Kontakt
-              </p>
-              <h2 className="mt-3 text-3xl font-extrabold tracking-[-.01em] sm:text-5xl">
-                Kde nás najdete
-              </h2>
-            </div>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <a
-                href={mapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex min-h-20 items-center gap-4 border-l-2 border-primary pl-4 font-bold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <MapPin
-                  aria-hidden="true"
-                  className="size-5 shrink-0 text-accent-foreground"
-                />
-                {address}
-              </a>
-              <div className="flex min-h-20 items-center gap-4 border-l-2 border-border pl-4">
-                <Clock3
-                  aria-hidden="true"
-                  className="size-5 shrink-0 text-accent-foreground"
-                />
-                <div>
-                  <p className="text-xs font-extrabold uppercase tracking-[.1em] text-muted-foreground">
-                    Otevírací doba
-                  </p>
-                  <p className="mt-1 font-bold">
-                    {OPENING_HOURS}, otevřeno každý den
-                  </p>
-                </div>
+          <Container>
+            <div className="max-w-2xl">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[.16em] text-accent-foreground">
+                  Kontakt
+                </p>
+                <h2 className="mt-3 text-3xl font-extrabold tracking-[-.01em] sm:text-5xl">
+                  Kde nás najdete
+                </h2>
               </div>
-              {email ? (
+              <div className="mt-8 grid gap-2">
                 <a
-                  href={`mailto:${email}`}
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex min-h-11 items-center gap-3 font-bold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <Mail
+                  <MapPin
                     aria-hidden="true"
-                    className="size-5 text-accent-foreground"
+                    className="size-5 shrink-0 text-accent-foreground"
                   />
-                  {email}
+                  {address}
                 </a>
-              ) : null}
-              {phone ? (
-                <a
-                  href={`tel:${phone.replace(/\s/g, "")}`}
-                  className="flex min-h-11 items-center gap-3 font-bold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <Phone
-                    aria-hidden="true"
-                    className="size-5 text-accent-foreground"
-                  />
-                  {phone}
-                </a>
-              ) : null}
+                {email ? (
+                  <a
+                    href={`mailto:${email}`}
+                    className="flex min-h-11 items-center gap-3 font-bold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <Mail
+                      aria-hidden="true"
+                      className="size-5 shrink-0 text-accent-foreground"
+                    />
+                    {email}
+                  </a>
+                ) : null}
+                {phone ? (
+                  <a
+                    href={`tel:${phone.replace(/\s/g, "")}`}
+                    className="flex min-h-11 items-center gap-3 font-bold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <Phone
+                      aria-hidden="true"
+                      className="size-5 shrink-0 text-accent-foreground"
+                    />
+                    {phone}
+                  </a>
+                ) : null}
+              </div>
             </div>
           </Container>
         </Section>

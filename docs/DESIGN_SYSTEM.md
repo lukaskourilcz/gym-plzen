@@ -214,10 +214,11 @@ hue. Any charcoal panel on an ink band therefore needs a non-hue cue, such as a
 `border-gold/40` hairline.
 
 The closing homepage call to action is one horizontal band from `sm`: heading
-left, one reservation button right. The contact block above the map repeats the
-confirmed public address and opening hours; the map itself carries a white
-address overlay so the location remains readable before and after the iframe
-loads.
+left, one reservation button right. The contact block above the map is a single
+left-aligned stack under its heading: confirmed public address, e-mail and
+telephone, without card borders or vertical dividers. The map itself carries a
+white address overlay so the location remains readable before and after the
+iframe loads.
 
 ## Forms
 

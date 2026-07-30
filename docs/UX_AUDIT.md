@@ -35,6 +35,8 @@ kontaktní údaje.
   navigaci, viditelný informační pás, stejnoměrné vycentrované kroky, bílou
   cenovou kartu, horizontální závěrečnou výzvu a adresu nad mapou i v mapovém
   překryvu.
+- Kontaktní údaje jsou pod nadpisem v pořadí adresa, e-mail a telefon, bez
+  samostatné otevírací doby a bez svislých oddělovačů.
 - V lokálním vestavěném prohlížeči byly ověřeny desktop 1440 × 900, mobil
   390 × 844, otevření mobilního menu, cenová karta a kontaktní blok.
 - Telefon a e-mail zůstávají layoutové placeholdery. FAQ nyní obsahuje dvacet
