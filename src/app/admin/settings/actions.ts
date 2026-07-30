@@ -16,6 +16,7 @@ import {
 import {
   HERO_IMAGE_ALT_KEY,
   HERO_IMAGE_URL_KEY,
+  SECTIONS_IMAGE_URL_KEY,
   LOGO_URL_KEY,
   SMS_ACCESS_TEMPLATE_KEY,
   TERMS_URL_KEY,
@@ -40,6 +41,11 @@ const saveBrandingImpl = defineAction({
     await cms.setSetting(
       HERO_IMAGE_ALT_KEY,
       input.heroImageAlt ?? "",
+      admin.id,
+    );
+    await cms.setSetting(
+      SECTIONS_IMAGE_URL_KEY,
+      input.sectionsImageUrl ?? "",
       admin.id,
     );
     revalidatePath("/admin/settings");

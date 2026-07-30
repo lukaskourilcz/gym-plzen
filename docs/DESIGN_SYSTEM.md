@@ -78,6 +78,15 @@ rather than one-off near-black values. Text opacity on ink must preserve WCAG
 A hero photograph carries a solid ink veil so white copy stays above 4.5:1 on
 any frame of the image. Do not lighten the veil below 78 percent.
 
+The operating-steps and pricing bands share one pinned photograph behind an
+`ink/82` veil: the image lives in an `absolute inset-0` track and is
+`sticky top-0 h-svh` inside it, so it holds still while both bands scroll over
+it. That track must not carry `overflow-hidden`, which would make it the
+scrollport and stop the child pinning. Prefer this over
+`background-attachment: fixed`, which breaks on iOS Safari and cannot use
+`next/image`. The photograph is admin-configurable through
+`branding.sections_image_url`.
+
 ## Typography
 
 - Family: Bitter, loaded through `next/font` with Latin and Latin Extended.
@@ -175,11 +184,11 @@ navigation shell.
 Two sanctioned grids exist, both because the content is genuinely a set of
 parallel items rather than prose:
 
-- **Operating steps** (homepage): a `sage` band holding one hairline-separated
-  slab of white `card` panels, one per step. Each panel leads with a two-digit
-  gold numeral badge beside an uppercase `accent-foreground` title, then body
-  copy in `muted-foreground`. The numerals carry the sequence, so the heading
-  block above the grid is left-aligned like every other section eyebrow.
+- **Operating steps** (homepage): one hairline-separated slab of white `card`
+  panels, one per step, over the pinned photograph described below. Each panel
+  leads with a two-digit gold numeral badge beside an uppercase
+  `accent-foreground` title, then body copy in `muted-foreground`. The numerals
+  carry the sequence, so the heading is left-aligned with the lotus inline.
 - **Zone tiles** (`/vybaveni`): a two-column grid alternating `ink` and
   `sage-soft`, each tile split into a copy half and a media half. The media half
   carries a decorative lotus until the operator supplies a zone photograph.
