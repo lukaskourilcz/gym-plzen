@@ -41,6 +41,8 @@ kontaktní údaje.
   navazující text jsou zarovnané do společných řádků.
 - Starý kreslený lotus byl ve všech sdílených výskytech nahrazen oficiální
   klientskou pětilistou značkou. FAQ zachovává stejnou otevírací animaci.
+- Společný kořenový layout udržuje footer u spodního okraje na krátkých
+  veřejných stránkách a přirozeně za obsahem na stránkách delších.
 - V lokálním vestavěném prohlížeči byly ověřeny šířky 320, 390, 768, 1024 a
   1440 px bez horizontálního přetékání. U provozních kroků se v každém řádku
   shoduje pozice nadpisů i začátků textu.
