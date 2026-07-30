@@ -13,6 +13,9 @@ přihlášení a v patičce.
 Namasté.“, Plzeň - Roudná, otevírací doba 5:00–23:45, informační pás v prvním
 viewportu, vycentrované časy, každý 10. vstup zdarma, stejně velké kroky 01–06,
 bílá cenová karta, horizontální závěrečná výzva a adresa nad mapou i v mapě.
+Kontaktní blok je jeden levý sloupec pod nadpisem „Kde nás najdete“: adresa,
+e-mail a telefon. Samostatná otevírací doba ani svislé oddělovače v tomto bloku
+nejsou.
 
 `/faq` obsahuje všech dvacet klientem dodaných otázek a odpovědí. Cena, délka
 slotu a otevírací doba používají sdílenou konfiguraci. Odkazy na Kontakt a

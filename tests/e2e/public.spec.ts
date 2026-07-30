@@ -13,6 +13,17 @@ test.describe("Public site", () => {
     await expect(
       page.getByRole("link", { name: /Vybrat termín/i }).first(),
     ).toBeVisible();
+    const contact = page.locator("#kontakt");
+    await expect(contact.getByText("Otevírací doba")).toHaveCount(0);
+    await expect(
+      contact.getByRole("link", { name: /Křížkova 424\/23/i }),
+    ).toBeVisible();
+    await expect(
+      contact.getByRole("link", { name: "info@namastegym.cz" }),
+    ).toBeVisible();
+    await expect(
+      contact.getByRole("link", { name: "777 666 555" }),
+    ).toBeVisible();
   });
 
   test("booking uses a monthly date-first calendar or a transparent unavailable state", async ({
