@@ -59,14 +59,16 @@ ignorované Gitem.
 Pokud prostředí používá vlastní Chromium, nastav `PW_CHROMIUM_PATH`. Jinak použij
 `npx playwright install chromium`.
 
-## Stav checkpointu 2026-07-30
+## Stav checkpointu 2026-07-31
 
 - Lokální demo a veřejný balík: **10 passed, 0 failed**.
 - FAQ regresní kontrola ověřuje všech 20 klientských položek a otevření první
   odpovědi.
 - Produkční skip navigation stress test: **5/5 passed**.
 - Mobilní 44px cíl zpětného odkazu na loginu: **3/3** v nezávislém review.
-- Produkční veřejný smoke test bez databáze: **7 passed, 1 expected skipped**.
+- Produkční veřejný smoke test bez databáze: **8 passed, 1 expected skipped**.
+  Homepage test navíc kontroluje, že metadata odkazují na nový PNG favicon s
+  oficiální klientskou lotusovou značkou.
   Přeskočený scénář vyžaduje živou dostupnost a produkce ji správně
   nenahrazuje fikcí.
 - Produkční Node 22 build prošel. Poslední Lighthouse checkpoint z 23. 7. 2026:
