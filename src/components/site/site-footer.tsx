@@ -30,6 +30,19 @@ export function SiteFooter({
   termsUrl?: string | null;
 }) {
   const year = new Date().getFullYear();
+  /*
+   * "Křížkova 424/23, 301 00 Plzeň 1" renders as street / city, with the
+   * postcode moved in front of the city the way Czech addresses are written.
+   */
+  const addressLines = (() => {
+    if (!address) return [];
+    const [street, ...rest] = address.split(",").map((part) => part.trim());
+    const tail = rest.join(", ");
+    const postcode = tail.match(/\d{3}\s?\d{2}/)?.[0];
+    const city = postcode ? tail.replace(postcode, "").trim() : tail;
+    if (!tail) return [street];
+    return [street, postcode ? `${city}, ${postcode}` : city];
+  })();
   const socials = [
     facebookUrl
       ? { href: facebookUrl, label: "Facebook", Icon: FacebookIcon }
@@ -79,7 +92,12 @@ export function SiteFooter({
               ) : null}
               {address ? (
                 <p className="py-2 text-sm leading-6 text-ink-foreground/75">
-                  {address}
+                  {/* Street on one line, city and postcode on the next. */}
+                  {addressLines.map((line) => (
+                    <span key={line} className="block">
+                      {line}
+                    </span>
+                  ))}
                 </p>
               ) : null}
               {!phone && !email ? (

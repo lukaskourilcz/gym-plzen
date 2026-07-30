@@ -10,6 +10,7 @@ import {
 import {
   HERO_IMAGE_ALT_KEY,
   HERO_IMAGE_URL_KEY,
+  SECTIONS_IMAGE_URL_KEY,
   LOGO_URL_KEY,
   TERMS_URL_KEY,
 } from "@/lib/config/branding";
@@ -79,6 +80,8 @@ export interface SiteContent {
   termsUrl: string | null;
   heroImageUrl: string | null;
   heroImageAlt: string;
+  /** Photograph pinned behind the operating-steps and pricing bands. */
+  sectionsImageUrl: string | null;
 }
 
 /** Props every public page hands to `SiteFooter`, derived from CMS content. */
@@ -102,6 +105,7 @@ export async function loadSiteContent(locale = "cs"): Promise<SiteContent> {
   let termsUrl: string | null = null;
   let heroImageUrl: string | null = null;
   let heroImageAlt = "";
+  let sectionsImageUrl: string | null = null;
 
   try {
     const rows = await db
@@ -127,6 +131,8 @@ export async function loadSiteContent(locale = "cs"): Promise<SiteContent> {
         heroImageUrl = s.value || null;
       if (s.key === HERO_IMAGE_ALT_KEY && typeof s.value === "string")
         heroImageAlt = s.value;
+      if (s.key === SECTIONS_IMAGE_URL_KEY && typeof s.value === "string")
+        sectionsImageUrl = s.value || null;
     }
   } catch (e) {
     // DB not provisioned/reachable yet : fall back to defaults so the public
@@ -144,5 +150,6 @@ export async function loadSiteContent(locale = "cs"): Promise<SiteContent> {
     termsUrl,
     heroImageUrl,
     heroImageAlt,
+    sectionsImageUrl,
   };
 }

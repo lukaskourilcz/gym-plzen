@@ -7,6 +7,8 @@ export const LOGO_URL_KEY = "branding.logo_url";
 export const TERMS_URL_KEY = "branding.terms_pdf_url";
 export const HERO_IMAGE_URL_KEY = "branding.hero_image_url";
 export const HERO_IMAGE_ALT_KEY = "branding.hero_image_alt";
+/** Photograph pinned behind the operating-steps and pricing bands. */
+export const SECTIONS_IMAGE_URL_KEY = "branding.sections_image_url";
 
 /** SMS access-code template. Placeholders: {code}, {time}. */
 export const SMS_ACCESS_TEMPLATE_KEY = "messages.sms_access_code";

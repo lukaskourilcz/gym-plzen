@@ -15,6 +15,9 @@ export const brandingSchema = z.object({
     .union([z.literal(""), z.string().url("Neplatná URL.")])
     .optional(),
   heroImageAlt: optionalText(180),
+  sectionsImageUrl: z
+    .union([z.literal(""), z.string().url("Neplatná URL.")])
+    .optional(),
 });
 
 /** SMS access-code template (placeholders {code}, {time}). */

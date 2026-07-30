@@ -33,17 +33,25 @@ export function BrandingForm({
   termsUrl,
   heroImageUrl,
   heroImageAlt,
+  sectionsImageUrl,
 }: {
   logoUrl: string;
   termsUrl: string;
   heroImageUrl: string;
   heroImageAlt: string;
+  sectionsImageUrl: string;
 }) {
   const { form, submit, serverError, success } = useActionForm({
     schema: brandingSchema,
     action: saveBrandingAction,
     successMessage: "Branding uložen.",
-    defaultValues: { logoUrl, termsUrl, heroImageUrl, heroImageAlt },
+    defaultValues: {
+      logoUrl,
+      termsUrl,
+      heroImageUrl,
+      heroImageAlt,
+      sectionsImageUrl,
+    },
   });
   const { register, formState, watch } = form;
   const currentLogo = watch("logoUrl");
@@ -103,6 +111,17 @@ export function BrandingForm({
           className="mb-4 aspect-[4/3] w-full rounded-md object-cover"
         />
       ) : null}
+      <Field
+        name="sectionsImageUrl"
+        label="URL fotografie za sekcemi (Jak to funguje + Ceník)"
+        error={formState.errors.sectionsImageUrl}
+      >
+        <Input
+          id="sectionsImageUrl"
+          placeholder="https://…/namaste-telocvicna.jpg"
+          {...register("sectionsImageUrl")}
+        />
+      </Field>
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={formState.isSubmitting}>
         Uložit branding

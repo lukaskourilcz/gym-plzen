@@ -33,6 +33,8 @@ import {
 const ADDRESS = "Křížkova 424/23, 301 00 Plzeň 1";
 const PUBLISHED_GYM_PHOTO =
   "https://static.wixstatic.com/media/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg/v1/fill/w_1600,h_900,al_c,q_90,enc_avif,quality_auto/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg";
+/** Client-supplied interior shot, pinned behind the steps and pricing bands. */
+const SECTIONS_PHOTO = "/images/gym-interior.webp";
 
 const OPENING_HOURS = `${minutesToHHmm(DEFAULT_OPEN_MINUTE)}–${minutesToHHmm(
   DEFAULT_CLOSE_MINUTE,
@@ -105,6 +107,7 @@ export default async function HomePage() {
   const heroImageUrl = content.heroImageUrl || PUBLISHED_GYM_PHOTO;
   const heroImageAlt =
     content.heroImageAlt || "Prostor NAMASTÉ Private Gym v Plzni";
+  const sectionsImageUrl = content.sectionsImageUrl || SECTIONS_PHOTO;
   const steps = STEP_KEYS.map(([titleKey, bodyKey]) => ({
     title: t(titleKey),
     body: t(bodyKey),
@@ -231,95 +234,135 @@ export default async function HomePage() {
           </Container>
         </div>
 
-        <Section id="jak-to-funguje" className="scroll-mt-[69px] bg-sage">
-          <Container>
-            <h2 className="flex items-center gap-4 text-3xl font-extrabold uppercase tracking-[.04em] text-sage-foreground sm:text-4xl">
-              <LotusMark decorative className="size-10 shrink-0 sm:size-12" />
-              {t("home.about.title")}
-            </h2>
-            <ol className="mt-12 grid gap-px overflow-hidden rounded-lg bg-white/25 md:grid-cols-2 lg:grid-cols-3">
-              {steps.map((step, index) => (
-                <li
-                  key={step.title}
-                  className="flex flex-col gap-5 bg-card p-7 sm:p-8"
-                >
-                  <div className="flex items-center gap-4">
-                    <span
-                      aria-hidden="true"
-                      className="grid size-11 shrink-0 place-items-center rounded-sm bg-gold text-base font-extrabold text-gold-foreground"
-                    >
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <h3 className="text-lg font-extrabold uppercase leading-tight tracking-[.04em] text-accent-foreground">
-                      <span className="sr-only">Krok {index + 1}: </span>
-                      {step.title}
-                    </h3>
-                  </div>
-                  <p className="text-sm leading-6 text-muted-foreground">
-                    {step.body}
-                  </p>
-                </li>
-              ))}
-            </ol>
-          </Container>
-        </Section>
+        {/*
+         * Steps and pricing share one pinned photograph. The image sits in an
+         * absolutely-positioned track and is `sticky top-0 h-svh` inside it, so
+         * it stays put while both bands scroll over it. `background-attachment:
+         * fixed` would be simpler but breaks on iOS Safari and cannot use
+         * next/image.
+         */}
+        <div className="relative isolate">
+          <div
+            aria-hidden="true"
+            /* No `overflow-hidden` here: it would become the scrollport for the
+               sticky child and stop it pinning. */
+            className="pointer-events-none absolute inset-0 -z-10"
+          >
+            <div className="sticky top-0 h-svh w-full">
+              <Image
+                src={sectionsImageUrl}
+                alt=""
+                fill
+                sizes="100vw"
+                className="object-cover"
+              />
+              {/* Green veil: white copy and the sage tone read over any frame. */}
+              <div className="absolute inset-0 bg-ink/82" />
+            </div>
+          </div>
 
-        <Section id="cenik" className="bg-ink text-ink-foreground">
-          <Container className="grid gap-10 lg:grid-cols-[1fr_1.1fr] lg:items-center">
-            <div>
-              <p className="flex items-center gap-3 text-xs font-extrabold uppercase tracking-[.16em] text-gold">
-                <LotusMark decorative className="size-6 shrink-0" />
-                Ceník
-              </p>
-              <h2 className="mt-4 max-w-xl text-3xl font-extrabold uppercase tracking-[.04em] sm:text-4xl">
-                Jednorázový vstup bez předplatného
+          <Section
+            id="jak-to-funguje"
+            className="scroll-mt-[69px] lg:flex lg:min-h-svh lg:items-center"
+          >
+            <Container>
+              <h2 className="flex items-center gap-4 text-3xl font-extrabold uppercase tracking-[.04em] text-ink-foreground sm:text-4xl">
+                <LotusMark
+                  decorative
+                  className="size-10 shrink-0 text-gold sm:size-12"
+                />
+                {t("home.about.title")}
               </h2>
-              <p className="mt-6 max-w-xl leading-7 text-ink-foreground/75">
-                {t("home.pricing.note")}
-              </p>
-              {/* Hairline rows echo the divided facts strip and step grid. */}
-              <ul className="mt-8 grid border-t border-white/15">
-                {[
-                  "Soukromé využití prostoru během rezervace",
-                  "Platba online kartou",
-                  "Pokyny ke vstupu po potvrzení rezervace",
-                  `Každý ${content.freeEntryEvery}. vstup zdarma pro registrované`,
-                ].map((item) => (
+              <ol className="mt-12 grid gap-px overflow-hidden rounded-lg bg-white/25 md:grid-cols-2 lg:grid-cols-3">
+                {steps.map((step, index) => (
                   <li
-                    key={item}
-                    className="flex items-center gap-4 border-b border-white/15 py-3.5 text-sm"
+                    key={step.title}
+                    className="flex flex-col gap-5 bg-card p-7 sm:p-8"
                   >
-                    <Check
-                      aria-hidden="true"
-                      className="size-4 shrink-0 text-gold"
-                    />
-                    <span className="text-ink-foreground/85">{item}</span>
+                    <div className="flex items-center gap-4">
+                      <span
+                        aria-hidden="true"
+                        className="grid size-11 shrink-0 place-items-center rounded-sm bg-gold text-base font-extrabold text-gold-foreground"
+                      >
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <h3 className="text-lg font-extrabold uppercase leading-tight tracking-[.04em] text-accent-foreground">
+                        <span className="sr-only">Krok {index + 1}: </span>
+                        {step.title}
+                      </h3>
+                    </div>
+                    <p className="text-sm leading-6 text-muted-foreground">
+                      {step.body}
+                    </p>
                   </li>
                 ))}
-              </ul>
-            </div>
-            {/* Gold hairline: charcoal and ink are near-identical in luminance,
-                so the card needs a non-hue cue to read as a separate surface. */}
-            <div className="flex flex-col items-center gap-8 rounded-lg border border-gold/40 bg-charcoal px-8 py-12 text-charcoal-foreground shadow-md sm:px-10 sm:py-14">
-              <p className="text-6xl font-extrabold tracking-[-.01em] text-gold sm:text-7xl">
-                {price}
-              </p>
-              <Button href="/rezervace" size="lg" className="w-full">
-                Vybrat termín <ArrowRight aria-hidden="true" />
-              </Button>
-            </div>
-          </Container>
-        </Section>
+              </ol>
+            </Container>
+          </Section>
 
-        <Section id="prostor">
+          <Section
+            id="cenik"
+            className="text-ink-foreground lg:flex lg:min-h-svh lg:items-center"
+          >
+            <Container className="grid gap-10 lg:grid-cols-[1fr_1.1fr] lg:items-center">
+              <div>
+                <p className="flex items-center gap-3 text-xs font-extrabold uppercase tracking-[.16em] text-gold">
+                  <LotusMark decorative className="size-6 shrink-0" />
+                  Ceník
+                </p>
+                <h2 className="mt-4 max-w-xl text-3xl font-extrabold uppercase tracking-[.04em] sm:text-4xl">
+                  Jednorázový vstup bez předplatného
+                </h2>
+                <p className="mt-6 max-w-xl leading-7 text-ink-foreground/75">
+                  {t("home.pricing.note")}
+                </p>
+                {/* Hairline rows echo the divided facts strip and step grid. */}
+                <ul className="mt-8 grid border-t border-white/15">
+                  {[
+                    "Soukromé využití prostoru během rezervace",
+                    "Platba online kartou",
+                    "Pokyny ke vstupu po potvrzení rezervace",
+                    `Každý ${content.freeEntryEvery}. vstup zdarma pro registrované`,
+                  ].map((item) => (
+                    <li
+                      key={item}
+                      className="flex items-center gap-4 border-b border-white/15 py-3.5 text-sm"
+                    >
+                      <Check
+                        aria-hidden="true"
+                        className="size-4 shrink-0 text-gold"
+                      />
+                      <span className="text-ink-foreground/85">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              {/* Gold hairline: charcoal and ink are near-identical in luminance,
+                so the card needs a non-hue cue to read as a separate surface. */}
+              <div className="flex flex-col items-center gap-8 rounded-lg border border-gold/40 bg-charcoal px-8 py-12 text-charcoal-foreground shadow-md sm:px-10 sm:py-14">
+                <p className="text-6xl font-extrabold tracking-[-.01em] text-gold sm:text-7xl">
+                  {price}
+                </p>
+                <Button href="/rezervace" size="lg" className="w-full">
+                  Vybrat termín <ArrowRight aria-hidden="true" />
+                </Button>
+              </div>
+            </Container>
+          </Section>
+        </div>
+
+        <Section
+          id="prostor"
+          className="lg:flex lg:min-h-svh lg:items-center lg:py-16"
+        >
           <Container>
             <SectionHeading
               eyebrow="Prostor"
               title="Podívejte se dovnitř"
               align="left"
             />
-            <div className="mt-10 grid gap-4 lg:grid-cols-[1.35fr_.65fr]">
-              <div className="relative min-h-[420px] overflow-hidden rounded-lg bg-muted lg:min-h-[600px]">
+            <div className="mt-8 grid gap-4 lg:grid-cols-[1.35fr_.65fr]">
+              <div className="relative min-h-[420px] overflow-hidden rounded-lg bg-muted lg:min-h-0 lg:h-[52svh]">
                 <Image
                   src={PUBLISHED_GYM_PHOTO}
                   alt="Interiér NAMASTÉ Private Gym"

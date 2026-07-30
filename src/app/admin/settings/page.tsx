@@ -3,6 +3,7 @@ import {
   DEFAULT_SMS_ACCESS_TEMPLATE,
   HERO_IMAGE_ALT_KEY,
   HERO_IMAGE_URL_KEY,
+  SECTIONS_IMAGE_URL_KEY,
   LOGO_URL_KEY,
   SMS_ACCESS_TEMPLATE_KEY,
   TERMS_URL_KEY,
@@ -37,6 +38,7 @@ export default async function SettingsPage() {
     termsUrl,
     heroImageUrl,
     heroImageAlt,
+    sectionsImageUrl,
     smsTemplate,
     heroPreviewDays,
   ] = await Promise.all([
@@ -44,6 +46,7 @@ export default async function SettingsPage() {
     cms.getSetting<string>(TERMS_URL_KEY).catch(() => null),
     cms.getSetting<string>(HERO_IMAGE_URL_KEY).catch(() => null),
     cms.getSetting<string>(HERO_IMAGE_ALT_KEY).catch(() => null),
+    cms.getSetting<string>(SECTIONS_IMAGE_URL_KEY).catch(() => null),
     cms.getSetting<string>(SMS_ACCESS_TEMPLATE_KEY).catch(() => null),
     cms.getSetting<number>(HERO_PREVIEW_DAYS_KEY).catch(() => null),
   ]);
@@ -66,6 +69,7 @@ export default async function SettingsPage() {
               termsUrl={termsUrl ?? ""}
               heroImageUrl={heroImageUrl ?? ""}
               heroImageAlt={heroImageAlt ?? ""}
+              sectionsImageUrl={sectionsImageUrl ?? ""}
             />
           </CardContent>
         </Card>

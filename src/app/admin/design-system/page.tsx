@@ -102,12 +102,12 @@ export default function DesignSystemPage() {
             Schválené vzory veřejného webu
           </h2>
           <div className="grid gap-5 xl:grid-cols-2">
-            <div className="rounded-lg bg-sage p-6">
-              <h3 className="flex items-center gap-3 text-lg font-extrabold uppercase tracking-[.04em] text-sage-foreground">
-                <LotusMark decorative className="size-8 shrink-0" />
+            <div className="rounded-lg bg-ink p-6">
+              <h3 className="flex items-center gap-3 text-lg font-extrabold uppercase tracking-[.04em] text-ink-foreground">
+                <LotusMark decorative className="size-8 shrink-0 text-gold" />
                 Jak to u nás funguje
               </h3>
-              <div className="mt-4 grid gap-px overflow-hidden rounded-lg bg-white/25 sm:grid-cols-2">
+              <div className="mt-4 grid gap-px overflow-hidden rounded-lg bg-white/20 sm:grid-cols-2">
                 {["Vyber si termín", "Po zaplacení"].map((title, index) => (
                   <div key={title} className="flex flex-col gap-4 bg-card p-5">
                     <div className="flex items-center gap-3">
@@ -128,8 +128,9 @@ export default function DesignSystemPage() {
                   </div>
                 ))}
               </div>
-              <p className="mt-4 text-xs text-sage-foreground">
-                Šalvějový pás nese jen nadpis. Drobný text patří na bílé karty.
+              <p className="mt-4 text-xs text-ink-foreground/80">
+                Na webu je za pásem připnutá fotografie tělocvičny se zeleným
+                závojem. Drobný text patří vždy na bílé karty.
               </p>
             </div>
 
@@ -162,7 +163,7 @@ export default function DesignSystemPage() {
                     Jak si vyberu termín?
                   </summary>
                   <p className="pb-4 pl-11 text-sm leading-6 text-muted-foreground">
-                    Otočení lotosu o 180 stupňů je jediný schválený pohyb značky
+                    Otočení lotosu o 90 stupňů je jediný schválený pohyb značky
                     a stav je vždy čitelný i bez animace.
                   </p>
                 </details>
