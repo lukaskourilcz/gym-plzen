@@ -49,6 +49,8 @@ kontaktní údaje.
   Googlu; zůstává pouze jedna vlastní kontaktní karta a lotusový marker.
 - Závěrečný zelený CTA pás používá na desktopu kontrolovanou mezeru 80 px mezi
   nadpisem a tlačítkem namísto roztažení prvků k protilehlým okrajům.
+- Pravá cenová karta neopakuje label „Vstupné“, věrnostní sdělení ani poznámku
+  o registračních poplatcích. Obsahuje jen cenu, délku, hlavní benefit a CTA.
 - Společný kořenový layout udržuje footer u spodního okraje na krátkých
   veřejných stránkách a přirozeně za obsahem na stránkách delších.
 - V lokálním vestavěném prohlížeči byly ověřeny šířky 320, 390, 768, 1024 a
