@@ -8,11 +8,11 @@
   --radius-card: 0.625rem;
 
   /*
-   * Height of the sticky public header (68px content + 1px bottom border).
+   * Height of the sticky public header (78px content + 1px bottom border).
    * Single source of truth: full-viewport sections subtract it so they align
    * under the header, and anchor targets use it as their scroll margin.
    */
-  --header-h: 69px;
+  --header-h: 79px;
 
   /* Brand palette: deep green, gold, charcoal, taupe. */
   --background: #faf8f3;

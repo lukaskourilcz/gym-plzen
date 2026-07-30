@@ -19,7 +19,9 @@ marketing language, or an unnecessary call to action in every section.
 
 ### Lotus symbol
 
-- Minimum digital size is 32 by 32 CSS pixels. The standard header size is 40.
+- The outlined `LotusMark` component is a supporting interface motif, not the
+  primary brand logo.
+- Minimum digital size is 32 by 32 CSS pixels.
 - Clear space is at least one quarter of the symbol width on every side.
 - Use `accent-foreground` green on light surfaces and `gold` on ink surfaces.
   Do not place it on noisy photography without a solid backing surface.
@@ -31,15 +33,19 @@ marketing language, or an unnecessary call to action in every section.
 
 ### Full logo
 
-- `BrandLogo` is the horizontal lockup: symbol beside the wordmark. It appears
-  in the public header, the admin shell, and brand documentation.
-- `BrandLockup` is the stacked lockup: symbol above the wordmark above the
-  `PRIVATE GYM` descriptor. It leads the footer and any surface where the brand
-  is the primary element rather than a navigation item.
-- Minimum width is 132 CSS pixels.
-- Use the inverse wordmark on dark surfaces.
-- A CMS logo may replace the code fallback only when it is approved full brand
-  artwork with adequate contrast.
+- The approved client artwork is
+  `public/images/namaste-logo.png`: a transparent, tightly cropped derivative
+  of the supplied black lotus, `Namasté` wordmark and `PRIVATE GYM` descriptor.
+- `BrandLogo` keeps the supplied artwork but rearranges its two exact image
+  parts for navigation: the client lotus sits left and the client wordmark sits
+  right. The public version is about 180 CSS pixels wide; the admin shell uses
+  the compact variant.
+- `BrandLockup` renders the same approved artwork at 190 CSS pixels in the
+  footer and at larger sizes on authentication surfaces.
+- Keep its aspect ratio, clear space and full wordmark. Do not rebuild it with
+  another font or replace it with the supporting `LotusMark`.
+- On dark surfaces use the monochrome inverse treatment. Do not recolour
+  individual parts of the supplied artwork.
 
 ## Colour
 
@@ -55,7 +61,7 @@ semantic CSS variables in `src/app/globals.css`.
 | `accent`            | Selected and supportive green surface             |
 | `accent-foreground` | Accessible green copy and icons on light surfaces |
 | `gold`              | The only accent that reads on ink and charcoal    |
-| `charcoal`          | Price card and other deliberately neutral panels  |
+| `charcoal`          | Deliberately neutral dark panels                  |
 | `sage`              | Editorial band behind the operating steps         |
 | `sage-soft`         | Card surface inside a sage band                   |
 | `sage-foreground`   | Copy on sage surfaces                             |
@@ -181,14 +187,20 @@ dividers, and media. Dark surfaces are limited to the hero, the pricing band,
 the closing call to action, the equipment zone tiles, the footer, and the admin
 navigation shell.
 
-Two sanctioned grids exist, both because the content is genuinely a set of
-parallel items rather than prose:
+Three sanctioned homepage patterns exist because the content is genuinely
+parallel or transactional:
 
 - **Operating steps** (homepage): one hairline-separated slab of white `card`
-  panels, one per step, over the pinned photograph described below. Each panel
-  leads with a two-digit gold numeral badge beside an uppercase
-  `accent-foreground` title, then body copy in `muted-foreground`. The numerals
-  carry the sequence, so the heading is left-aligned with the lotus inline.
+  panels, one per step, over the pinned photograph described below. All panels
+  have the same height and centered content. Each panel leads with a two-digit
+  gold numeral badge, then an uppercase `accent-foreground` title and body copy
+  in `muted-foreground`.
+- **Price card** (homepage): the price is always on a white `card` surface
+  inside the dark photo band. The amount, duration and loyalty benefit are
+  centered; the single reservation action spans the card width.
+- **Fact strip** (homepage): four equal centered cells with hairlines between
+  them and on both outside edges. On desktop the hero reserves enough height
+  for the strip to be visible in the initial viewport.
 - **Zone tiles** (`/vybaveni`): a two-column grid alternating `ink` and
   `sage-soft`, each tile split into a copy half and a media half. The media half
   carries a decorative lotus until the operator supplies a zone photograph.
@@ -198,8 +210,14 @@ clears AA for body copy by a hair; never put anything smaller than a section
 heading on it. Use `sage-soft` (8.03:1) for anything readable.
 
 `charcoal` and `ink` are close to identical in luminance and differ mainly in
-hue, so a charcoal panel on an ink band needs a non-hue cue: give it a
-`border-gold/40` hairline rather than relying on the colour change alone.
+hue. Any charcoal panel on an ink band therefore needs a non-hue cue, such as a
+`border-gold/40` hairline.
+
+The closing homepage call to action is one horizontal band from `sm`: heading
+left, one reservation button right. The contact block above the map repeats the
+confirmed public address and opening hours; the map itself carries a white
+address overlay so the location remains readable before and after the iframe
+loads.
 
 ## Forms
 

@@ -19,15 +19,18 @@ Supabase project URL: **`https://rkmunagymohxtclymacm.supabase.co`**
 **Co nastavit:**
 
 Providers → Email:
+
 - Enable Email provider
 - Confirm email (produkce)
 - Confirm email change
 - Secure email change
 
 URL Configuration → Site URL:
+
 - `https://gym-plzen.vercel.app` (přepsat na vlastní doménu, až bude)
 
 URL Configuration → Redirect URLs:
+
 - `http://localhost:3000/**`
 - `https://*.vercel.app/**`
 - `https://gym-plzen.vercel.app/**`
@@ -47,12 +50,14 @@ Bez toho Vercel spustí default runtime.
 Přenést z `.env.local` do Vercel Production + Preview:
 
 Public (Sensitive OFF):
+
 - `NEXT_PUBLIC_APP_URL` = `https://gym-plzen.vercel.app`
 - `NEXT_PUBLIC_DEFAULT_LOCALE` = `cs`
 - `NEXT_PUBLIC_OAUTH_PROVIDERS` = `google`
 - `NEXT_PUBLIC_SENTRY_DSN`
 
 Server-only (Sensitive ON):
+
 - `STRIPE_WEBHOOK_SECRET` (viz §3)
 - `SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`
 - `GOSMS_CLIENT_ID`, `GOSMS_CLIENT_SECRET`, `GOSMS_CHANNEL`
@@ -134,6 +139,7 @@ klient dostane zprávu s kódem.
 **Kde:** <https://web.nuki.io/>.
 
 Po pořízení zámku doplnit:
+
 - `NUKI_SMARTLOCK_ID` (číselné ID zámku z dashboardu).
 - `NUKI_WEBHOOK_SECRET` = `openssl rand -hex 32`; zapsat současně do Nuki webhook UI i do Vercelu (Sensitive, Production + Preview).
 - Webhook URL k zaregistrování na Nuki: `https://gym-plzen.vercel.app/api/webhooks/nuki` (po přechodu na vlastní doménu přepsat).

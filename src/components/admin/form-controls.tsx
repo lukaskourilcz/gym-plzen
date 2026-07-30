@@ -60,15 +60,21 @@ export function FormFeedback({
 /** Submit button that disables while the form is submitting. */
 export function SubmitButton({
   isSubmitting,
+  disabled = false,
   children = "Uložit",
   className,
 }: {
   isSubmitting: boolean;
+  disabled?: boolean;
   children?: React.ReactNode;
   className?: string;
 }) {
   return (
-    <Button type="submit" disabled={isSubmitting} className={className}>
+    <Button
+      type="submit"
+      disabled={disabled || isSubmitting}
+      className={className}
+    >
       {isSubmitting ? "Ukládám…" : children}
     </Button>
   );

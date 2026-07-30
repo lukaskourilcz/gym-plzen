@@ -22,6 +22,11 @@ export function SiteHeader({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    setReady(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -40,7 +45,7 @@ export function SiteHeader({
           corner and the actions in the very right one, at full viewport width. */}
       {/* Three tracks from `lg`: brand hard left, links centred, actions hard
           right. Equal 1fr side tracks are what keeps the nav optically centred. */}
-      <div className="flex min-h-[68px] items-center justify-between gap-3 px-4 sm:px-5 lg:grid lg:grid-cols-[1fr_auto_1fr]">
+      <div className="flex min-h-[78px] items-center justify-between gap-3 px-4 sm:px-5 lg:grid lg:grid-cols-[1fr_auto_1fr]">
         {/*
          * `scroll={false}` plus an explicit jump to the document top: the router
          * picks the first non-sticky element as its scroll target, skips this
@@ -59,14 +64,14 @@ export function SiteHeader({
 
         <nav
           aria-label="Hlavní navigace"
-          className="hidden items-center justify-center gap-1 lg:flex"
+          className="hidden items-center justify-center gap-4 xl:gap-8 lg:flex"
         >
           {PUBLIC_NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               aria-current={pathname === item.href ? "page" : undefined}
-              className="flex min-h-11 items-center px-3 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex min-h-11 items-center px-2 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {item.label}
             </Link>
@@ -95,6 +100,8 @@ export function SiteHeader({
             variant="ghost"
             size="icon"
             className="lg:hidden"
+            disabled={!ready}
+            data-ready={ready ? "true" : "false"}
             aria-expanded={open}
             aria-controls="mobile-menu"
             aria-label={open ? "Zavřít menu" : "Otevřít menu"}

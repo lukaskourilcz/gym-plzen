@@ -1,4 +1,9 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
+
+const BRAND_ASSET = "/images/namaste-logo.png";
+const BRAND_LOTUS_ASSET = "/images/namaste-lotus.png";
+const BRAND_WORDMARK_ASSET = "/images/namaste-wordmark.png";
 
 export function LotusMark({
   className,
@@ -47,37 +52,45 @@ export function LotusMark({
 export function BrandLogo({
   className,
   inverse = false,
+  compact = false,
 }: {
   className?: string;
   inverse?: boolean;
+  compact?: boolean;
 }) {
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-3",
-        inverse ? "text-white" : "text-foreground",
-        className,
-      )}
-    >
-      <LotusMark
-        decorative
-        className={inverse ? "text-gold" : "text-accent-foreground"}
+    <span className={cn("inline-flex items-center gap-2.5", className)}>
+      <Image
+        src={BRAND_LOTUS_ASSET}
+        alt=""
+        width={460}
+        height={289}
+        priority
+        className={cn(
+          "h-auto object-contain",
+          compact ? "w-10" : "w-[54px]",
+          inverse && "brightness-0 invert",
+        )}
       />
-      <span className="leading-none">
-        <strong className="block text-base font-extrabold tracking-[0.06em]">
-          NAMASTÉ
-        </strong>
-        <span className="mt-1 block text-xs font-bold uppercase leading-none tracking-[0.16em] opacity-80">
-          Private Gym
-        </span>
-      </span>
+      <Image
+        src={BRAND_WORDMARK_ASSET}
+        alt=""
+        width={712}
+        height={241}
+        priority
+        className={cn(
+          "h-auto object-contain",
+          compact ? "w-[76px]" : "w-[116px]",
+          inverse && "brightness-0 invert",
+        )}
+      />
     </span>
   );
 }
 
 /**
- * Stacked lockup: lotus above the wordmark. Used where the brand is the primary
- * element of the surface (footer, authentication) rather than a navigation item.
+ * Full client-supplied lockup. Used where the brand is the primary element of
+ * the surface (footer and authentication) rather than a navigation item.
  */
 export function BrandLockup({
   className,
@@ -87,26 +100,17 @@ export function BrandLockup({
   inverse?: boolean;
 }) {
   return (
-    <span
-      className={cn(
-        "inline-flex flex-col items-center text-center",
-        inverse ? "text-white" : "text-foreground",
-        className,
-      )}
-    >
-      <LotusMark
-        decorative
+    <span className={cn("inline-flex items-center", className)}>
+      <Image
+        src={BRAND_ASSET}
+        alt=""
+        width={720}
+        height={536}
         className={cn(
-          "size-14",
-          inverse ? "text-gold" : "text-accent-foreground",
+          "h-auto w-[190px] object-contain",
+          inverse && "brightness-0 invert",
         )}
       />
-      <strong className="mt-3 block text-2xl font-extrabold leading-none tracking-[0.04em]">
-        NAMASTÉ
-      </strong>
-      <span className="mt-2 block text-xs font-bold uppercase leading-none tracking-[0.3em] opacity-85">
-        Private Gym
-      </span>
     </span>
   );
 }

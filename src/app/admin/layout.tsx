@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { Dumbbell } from "lucide-react";
 import { requireAdmin } from "@/lib/auth/guards";
 import { SignOutButton } from "@/components/admin/sign-out-button";
 import { AdminNav } from "@/components/admin/admin-nav";
+import { BrandLogo } from "@/components/site/brand";
 
 /**
  * Admin shell. `requireAdmin()` guards every route under /admin at the layout
@@ -19,17 +19,14 @@ export default async function AdminLayout({
     <div className="min-h-screen bg-secondary/35 lg:flex">
       <aside className="border-b border-white/10 bg-ink px-4 py-3 text-white lg:fixed lg:inset-y-0 lg:flex lg:w-[248px] lg:flex-col lg:border-r lg:border-b-0 lg:px-3.5 lg:py-5">
         <div className="flex items-center justify-between gap-4">
-          <Link href="/admin" className="flex items-center gap-2.5 px-2.5 py-1">
-            <span className="grid size-[34px] shrink-0 place-items-center rounded-[9px] bg-gold text-gold-foreground">
-              <Dumbbell className="size-[18px]" />
-            </span>
-            <span>
-              <strong className="block text-[14px] font-extrabold">
-                NAMASTÉ
-              </strong>
-              <span className="block text-[11px] font-medium text-white/45">
-                Private Gym · administrace
-              </span>
+          <Link
+            href="/admin"
+            aria-label="NAMASTÉ Private Gym, administrace"
+            className="flex items-center gap-3 px-2.5 py-1"
+          >
+            <BrandLogo inverse compact />
+            <span className="text-[11px] font-medium text-white/55">
+              Administrace
             </span>
           </Link>
           <SignOutButton className="m-0 min-h-11 px-2 text-xs text-gold lg:hidden" />

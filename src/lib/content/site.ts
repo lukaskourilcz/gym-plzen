@@ -15,6 +15,24 @@ import {
   TERMS_URL_KEY,
 } from "@/lib/config/branding";
 
+export const PUBLIC_ADDRESS = "Křížkova 424/23, Plzeň - Roudná";
+export const PUBLIC_MAP_QUERY = "Křížkova 424/23, 301 00 Plzeň";
+
+/** Keep the confirmed public label even when an older seeded CMS row exists. */
+export function publicAddress(value?: string | null) {
+  const address = value?.trim();
+  if (!address || address.startsWith("Křížkova 424/23")) return PUBLIC_ADDRESS;
+  return address;
+}
+
+/** Replace the old seeded placeholder with the profile confirmed by the client. */
+function publicInstagram(value?: string | null) {
+  const instagram = value?.trim();
+  if (!instagram || instagram === "https://instagram.com")
+    return SITE_DEFAULTS["contact.instagram"];
+  return instagram;
+}
+
 /**
  * Public-site content, resilient by design. The marketing site reads copy from
  * the CMS (`content_block`), but must still render before the database is
@@ -29,7 +47,7 @@ export const SITE_DEFAULTS = {
   "home.hero.badge": "Privátní fitness v Plzni",
   "home.hero.title": "Tvůj čas. Tvůj prostor. Tvoje Namasté.",
   "home.hero.subtitle":
-    "Rezervujte si prémiové soukromé samoobslužné fitness v Plzni.",
+    "Rezervujte si celé samoobslužné fitness v Plzni jen pro sebe a svůj doprovod.",
   "home.hero.cta": "Zobrazit volné termíny",
   "home.about.title": "Jak to u nás funguje",
   "home.about.step1.title": "Vyber si termín",
@@ -59,15 +77,14 @@ export const SITE_DEFAULTS = {
     "Do fitness vstupujte pouze v čase rezervace. Po tréninku vraťte vybavení do původního stavu a otřete použité nářadí. Vstupní kód je osobní a platí pouze podle pokynů k vaší rezervaci.",
   "home.gallery.title": "Prostor",
   "home.contact.title": "Kontakt",
-  "contact.address": "Křížkova 424/23, 301 00 Plzeň 1",
+  "contact.address": PUBLIC_ADDRESS,
   // PLACEHOLDERS supplied by the client for layout purposes. These are not the
   // real contact details : replace them in the admin before launch.
   "contact.phone": "777 666 555",
   "contact.email": "info@namastegym.cz",
-  // PLACEHOLDER network home pages, not the gym's real profiles : replace with
-  // the actual page URLs in the admin before launch.
+  // Facebook remains a layout placeholder until the client supplies the page.
   "contact.facebook": "https://facebook.com",
-  "contact.instagram": "https://instagram.com",
+  "contact.instagram": "https://instagram.com/namaste_plzen",
 } as const;
 
 export type SiteContentKey = keyof typeof SITE_DEFAULTS;
@@ -90,9 +107,9 @@ export function footerProps(content: SiteContent) {
     brand: content.get("brand.name"),
     email: content.get("contact.email").trim() || undefined,
     phone: content.get("contact.phone").trim() || undefined,
-    address: content.get("contact.address").trim() || undefined,
+    address: publicAddress(content.get("contact.address")),
     facebookUrl: content.get("contact.facebook").trim() || undefined,
-    instagramUrl: content.get("contact.instagram").trim() || undefined,
+    instagramUrl: publicInstagram(content.get("contact.instagram")),
     termsUrl: content.termsUrl,
   };
 }

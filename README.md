@@ -1,7 +1,8 @@
 # NAMASTÉ Private Gym
 
 Web, rezervační systém, členský účet a administrace pro soukromý gym na adrese
-Křížkova 424/23, Plzeň. Aplikace používá Next.js, Supabase, Stripe a Nuki.
+Křížkova 424/23, Plzeň - Roudná. Aplikace používá Next.js, Supabase, Stripe a
+Nuki.
 
 ## Aktuální stav
 
@@ -10,6 +11,12 @@ měsíční výběr rezervací, lokální ukázkové účty, členský účet, C
 jsou v repozitáři. Produkční build funguje i bez databáze, ale rezervace v takovém
 případě poctivě zobrazí nedostupnou službu. Fiktivní dostupnost ani lokální demo
 přihlášení se v produkci nezapnou.
+
+Veřejný web používá klientské logo, provoz 5:00–23:45, 75minutové vstupy,
+adresu Plzeň - Roudná, bílou cenovou kartu, klientské FAQ a kontaktní blok s
+mapou. Instagram používá potvrzený profil `@namaste_plzen`. Telefon, e-mail a
+Facebook jsou zatím výslovně zástupné hodnoty, dokud klient nedodá finální
+údaje.
 
 Nezávislý finální UX audit dává **GO pro klientskou prezentaci** a **NO-GO pro
 produkci**, dokud nejsou připojené a ověřené externí služby a schválené právní

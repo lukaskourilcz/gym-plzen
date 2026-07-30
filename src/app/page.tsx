@@ -1,7 +1,20 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { ArrowRight, Check, Clock3, ImageIcon, MapPin } from "lucide-react";
-import { footerProps, loadSiteContent } from "@/lib/content/site";
+import {
+  ArrowRight,
+  Check,
+  Clock3,
+  ImageIcon,
+  Mail,
+  MapPin,
+  Phone,
+} from "lucide-react";
+import {
+  footerProps,
+  loadSiteContent,
+  publicAddress,
+  PUBLIC_MAP_QUERY,
+} from "@/lib/content/site";
 import { cn } from "@/lib/utils";
 import {
   formatMoney,
@@ -31,33 +44,24 @@ import {
   type HeroAvailabilityDay,
 } from "@/components/site/hero-availability";
 
-const ADDRESS = "Křížkova 424/23, 301 00 Plzeň 1";
 const PUBLISHED_GYM_PHOTO =
   "https://static.wixstatic.com/media/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg/v1/fill/w_1600,h_900,al_c,q_90,enc_avif,quality_auto/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg";
 /** Client-supplied interior shot, pinned behind the steps and pricing bands. */
 const SECTIONS_PHOTO = "/images/gym-interior.webp";
 
-const OPENING_HOURS = `${minutesToHHmm(DEFAULT_OPEN_MINUTE)}–${minutesToHHmm(
-  DEFAULT_CLOSE_MINUTE,
-)}`;
+const OPENING_HOURS = `${minutesToHHmm(DEFAULT_OPEN_MINUTE).replace(
+  /^0/,
+  "",
+)}–${minutesToHHmm(DEFAULT_CLOSE_MINUTE)}`;
 
 /**
  * Fixed brand copy, deliberately NOT read from the CMS. The `home.hero.*`
  * blocks were seeded with older wording, and a seeded row overrides the code
  * default, so the hero would keep rendering the superseded headline.
  */
-const HERO_TITLE = "Tvůj čas. Tvůj prostor. Tvoje Namasté";
+const HERO_TITLE = "Tvůj čas. Tvůj prostor. Tvoje Namasté.";
 const HERO_SUBTITLE =
-  "Rezervujte si prémiové soukromé samoobslužné fitness v Plzni.";
-
-/*
- * Full-viewport sections all measure `100svh - var(--header-h)` so each one
- * fills exactly the area below the sticky header. Without subtracting the
- * header, a `100svh` section is always 69px taller than the space it can
- * occupy, and the scroll never lands cleanly on a section boundary. Applied
- * from `lg` only; on smaller screens the content is taller than the viewport
- * anyway and a lock would clip it.
- */
+  "Rezervujte si celé samoobslužné fitness v Plzni jen pro sebe a svůj doprovod.";
 
 /** Six operating steps, all editable in the admin under "Obsah webu". */
 const STEP_KEYS = [
@@ -103,9 +107,11 @@ export default async function HomePage() {
   const t = content.get;
   const brand = t("brand.name");
   const price = formatMoney(content.entryPriceCents);
-  const address = t("contact.address").trim() || ADDRESS;
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-  const mapsEmbedUrl = `https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`;
+  const address = publicAddress(t("contact.address"));
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(PUBLIC_MAP_QUERY)}`;
+  const mapsEmbedUrl = `https://www.google.com/maps?q=${encodeURIComponent(PUBLIC_MAP_QUERY)}&output=embed`;
+  const phone = t("contact.phone").trim();
+  const email = t("contact.email").trim();
   const heroImageUrl = content.heroImageUrl || PUBLISHED_GYM_PHOTO;
   const heroImageAlt =
     content.heroImageAlt || "Prostor NAMASTÉ Private Gym v Plzni";
@@ -124,6 +130,7 @@ export default async function HomePage() {
       streetAddress: "Křížkova 424/23",
       postalCode: "301 00",
       addressLocality: "Plzeň",
+      addressRegion: "Roudná",
       addressCountry: "CZ",
     },
     openingHours: `Mo-Su ${minutesToHHmm(DEFAULT_OPEN_MINUTE)}-${minutesToHHmm(DEFAULT_CLOSE_MINUTE)}`,
@@ -167,7 +174,7 @@ export default async function HomePage() {
             aria-hidden="true"
             className="absolute inset-0 -z-10 bg-ink/88"
           />
-          <Container className="grid gap-12 py-14 lg:min-h-[calc(100svh-var(--header-h))] lg:grid-cols-[1fr_1fr] lg:content-center lg:items-start lg:gap-8 lg:py-10 xl:gap-12">
+          <Container className="grid gap-12 py-14 lg:min-h-[calc(100svh-var(--header-h)-112px)] lg:grid-cols-[1fr_1fr] lg:content-center lg:items-start lg:gap-8 lg:py-8 xl:gap-12">
             <div>
               <h1 className="max-w-2xl text-4xl font-extrabold leading-[1.1] tracking-[-.01em] sm:text-5xl lg:text-6xl">
                 {HERO_TITLE}
@@ -179,11 +186,17 @@ export default async function HomePage() {
                 <MapPin aria-hidden="true" className="size-4 text-gold" />
                 {address}
               </p>
-              <p className="mt-2 flex items-center gap-2 text-sm font-bold uppercase tracking-[.12em] text-ink-foreground/85">
+              <div className="mt-3 flex items-start gap-2 text-sm text-ink-foreground/85">
                 <Clock3 aria-hidden="true" className="size-4 text-gold" />
-                Každý den · {minutesToHHmm(DEFAULT_OPEN_MINUTE)} –{" "}
-                {minutesToHHmm(DEFAULT_CLOSE_MINUTE)}
-              </p>
+                <div>
+                  <span className="block text-xs font-extrabold uppercase tracking-[.12em]">
+                    Otevírací doba
+                  </span>
+                  <span className="mt-1 block font-bold">
+                    {OPENING_HOURS} · otevřeno každý den
+                  </span>
+                </div>
+              </div>
               <div className="mt-9 flex flex-wrap gap-3">
                 <Button href="/rezervace" size="lg">
                   Vybrat termín <ArrowRight aria-hidden="true" />
@@ -209,21 +222,23 @@ export default async function HomePage() {
           </Container>
         </section>
 
-        {/* Sits directly below the fold: the first thing revealed on scroll. */}
+        {/* The desktop hero reserves room for this strip so it is visible
+            immediately, without requiring the first scroll. */}
         <div className="border-b border-border bg-background">
-          <Container className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <Container className="grid grid-cols-1 border-x border-border sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { value: OPENING_HOURS, label: "otevírací doba" },
+              { value: OPENING_HOURS, label: "otevřeno každý den" },
               { value: "Dětský koutek", label: "plně vybavený s pískovištěm" },
-              { value: "Kardio & strečink", label: "a silová zóna" },
+              {
+                value: "Samoobslužné fitness",
+                label: "kardio, silová zóna a strečink",
+              },
               { value: "Komfortní zázemí", label: "plná lednice, relax zóna" },
             ].map((item, index) => (
               <div
                 key={item.value}
                 className={cn(
-                  // The first cell keeps the container gutter so its value
-                  // lines up with the hero heading above it.
-                  "flex flex-col justify-center border-border py-7 sm:px-6 sm:first:pl-0",
+                  "flex min-h-28 flex-col items-center justify-center border-border px-4 py-5 text-center",
                   FACT_BORDERS[index],
                 )}
               >
@@ -265,23 +280,23 @@ export default async function HomePage() {
 
           <Section
             id="jak-to-funguje"
-            className="scroll-mt-[var(--header-h)] lg:flex lg:min-h-[calc(100svh-var(--header-h))] lg:items-center lg:py-12"
+            className="scroll-mt-[var(--header-h)] py-16 lg:py-20"
           >
             <Container>
-              <h2 className="flex items-center gap-4 text-3xl font-extrabold uppercase tracking-[.04em] text-ink-foreground sm:text-4xl">
+              <h2 className="flex items-center justify-center gap-4 text-center text-3xl font-extrabold uppercase tracking-[.04em] text-ink-foreground sm:text-4xl">
                 <LotusMark
                   decorative
                   className="size-10 shrink-0 text-gold sm:size-12"
                 />
                 {t("home.about.title")}
               </h2>
-              <ol className="mt-10 grid gap-px overflow-hidden rounded-lg bg-white/25 md:grid-cols-2 lg:mt-8 lg:grid-cols-3">
+              <ol className="mt-8 grid auto-rows-fr gap-px overflow-hidden rounded-lg bg-white/25 md:grid-cols-2 lg:grid-cols-3">
                 {steps.map((step, index) => (
                   <li
                     key={step.title}
-                    className="flex flex-col gap-5 bg-card p-7 sm:p-8"
+                    className="flex h-full flex-col items-center gap-5 bg-card p-7 text-center sm:p-8"
                   >
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-col items-center gap-3">
                       <span
                         aria-hidden="true"
                         className="grid size-11 shrink-0 place-items-center rounded-sm bg-gold text-base font-extrabold text-gold-foreground"
@@ -304,7 +319,7 @@ export default async function HomePage() {
 
           <Section
             id="cenik"
-            className="scroll-mt-[var(--header-h)] text-ink-foreground lg:flex lg:min-h-[calc(100svh-var(--header-h))] lg:items-center lg:py-12"
+            className="scroll-mt-[var(--header-h)] py-16 text-ink-foreground lg:py-20"
           >
             <Container className="grid gap-10 lg:grid-cols-[1fr_1.1fr] lg:items-center">
               <div>
@@ -339,33 +354,34 @@ export default async function HomePage() {
                   ))}
                 </ul>
               </div>
-              {/*
-               * Same construction as the hero availability card: hairline-split
-               * zones, small uppercase label, gold figure. The gold border is
-               * load-bearing, not decoration : charcoal and ink are nearly
-               * identical in luminance, so hue alone would not separate them.
-               */}
-              <div className="overflow-hidden rounded-lg border border-gold/40 bg-charcoal text-charcoal-foreground shadow-md">
-                <p className="border-b border-white/12 px-7 py-4 text-xs font-bold uppercase tracking-[.14em] text-gold">
-                  Jednorázový vstup
+              <div className="overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-md">
+                <p className="border-b border-border px-7 py-4 text-center text-xs font-extrabold uppercase tracking-[.14em] text-accent-foreground">
+                  Vstupné
                 </p>
-                <div className="border-b border-white/12 px-7 py-7">
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-5xl font-extrabold leading-none tracking-[-.01em] text-gold">
+                <div className="border-b border-border px-7 py-8 text-center">
+                  <div className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
+                    <span className="text-5xl font-extrabold leading-none tracking-[-.01em] text-accent-foreground">
                       {price}
                     </span>
-                    <span className="text-sm font-bold uppercase tracking-[.1em] text-charcoal-foreground/70">
+                    <span className="text-sm font-bold uppercase tracking-[.1em] text-muted-foreground">
                       / {DEFAULT_SLOT_MINUTES} minut
                     </span>
                   </div>
-                  <p className="mt-4 text-sm leading-6 text-charcoal-foreground/75">
-                    Přesnou délku uvidíte u každého slotu v kalendáři.
+                  <p className="mt-4 font-bold text-foreground">
+                    Celý gym jen pro vás
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    Každý {content.freeEntryEvery}. vstup zdarma pro
+                    registrované
                   </p>
                 </div>
-                <div className="px-7 py-6">
+                <div className="px-7 py-6 text-center">
                   <Button href="/rezervace" size="lg" className="w-full">
-                    Vybrat termín <ArrowRight aria-hidden="true" />
+                    Rezervovat trénink <ArrowRight aria-hidden="true" />
                   </Button>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Bez registračních poplatků a bez závazku.
+                  </p>
                 </div>
               </div>
             </Container>
@@ -411,22 +427,85 @@ export default async function HomePage() {
         </Section>
 
         <Section id="pridej-se" className="bg-ink text-ink-foreground">
-          <Container className="flex flex-col items-center gap-8 text-center">
+          <Container className="flex flex-col items-start gap-8 text-left sm:flex-row sm:items-center sm:justify-between">
             <h2 className="max-w-3xl text-3xl font-extrabold tracking-[-.01em] sm:text-4xl">
               {t("home.cta.title")}
             </h2>
-            <Button href="/rezervace" size="lg">
-              Rezervace <ArrowRight aria-hidden="true" />
+            <Button href="/rezervace" size="lg" className="shrink-0">
+              Rezervovat <ArrowRight aria-hidden="true" />
             </Button>
           </Container>
         </Section>
 
-        {/* The map is the location section: it follows the call to action
-            directly and owns the #kontakt anchor the header links to. */}
-        <div
+        <Section
           id="kontakt"
-          className="relative h-[420px] w-full scroll-mt-[var(--header-h)] bg-muted sm:h-[520px]"
+          className="scroll-mt-[var(--header-h)] border-b border-border py-14 sm:py-16"
         >
+          <Container className="grid gap-8 lg:grid-cols-[.9fr_1.1fr] lg:items-end">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[.16em] text-accent-foreground">
+                Kontakt
+              </p>
+              <h2 className="mt-3 text-3xl font-extrabold tracking-[-.01em] sm:text-5xl">
+                Kde nás najdete
+              </h2>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex min-h-20 items-center gap-4 border-l-2 border-primary pl-4 font-bold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <MapPin
+                  aria-hidden="true"
+                  className="size-5 shrink-0 text-accent-foreground"
+                />
+                {address}
+              </a>
+              <div className="flex min-h-20 items-center gap-4 border-l-2 border-border pl-4">
+                <Clock3
+                  aria-hidden="true"
+                  className="size-5 shrink-0 text-accent-foreground"
+                />
+                <div>
+                  <p className="text-xs font-extrabold uppercase tracking-[.1em] text-muted-foreground">
+                    Otevírací doba
+                  </p>
+                  <p className="mt-1 font-bold">
+                    {OPENING_HOURS}, otevřeno každý den
+                  </p>
+                </div>
+              </div>
+              {email ? (
+                <a
+                  href={`mailto:${email}`}
+                  className="flex min-h-11 items-center gap-3 font-bold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Mail
+                    aria-hidden="true"
+                    className="size-5 text-accent-foreground"
+                  />
+                  {email}
+                </a>
+              ) : null}
+              {phone ? (
+                <a
+                  href={`tel:${phone.replace(/\s/g, "")}`}
+                  className="flex min-h-11 items-center gap-3 font-bold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Phone
+                    aria-hidden="true"
+                    className="size-5 text-accent-foreground"
+                  />
+                  {phone}
+                </a>
+              ) : null}
+            </div>
+          </Container>
+        </Section>
+
+        <div className="relative h-[480px] w-full bg-muted sm:h-[540px]">
           <iframe
             title={`Mapa, ${address}`}
             src={mapsEmbedUrl}
@@ -444,6 +523,15 @@ export default async function HomePage() {
               <LotusMark decorative className="size-9 text-gold" />
             </span>
             <span className="mx-auto block size-0 border-x-8 border-t-[12px] border-x-transparent border-t-ink" />
+          </div>
+          <div className="absolute left-5 top-5 max-w-[calc(100%_-_2.5rem)] border border-border bg-card p-5 shadow-md sm:left-8 sm:top-8 sm:max-w-sm sm:p-6">
+            <p className="text-sm font-extrabold uppercase tracking-[.08em] text-accent-foreground">
+              NAMASTÉ Private Gym
+            </p>
+            <p className="mt-2 font-bold">{address}</p>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Otevírací doba {OPENING_HOURS}, každý den
+            </p>
           </div>
           <Button
             href={mapsUrl}

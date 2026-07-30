@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -66,6 +66,11 @@ export function LoginForm({
   const [serverError, setServerError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [oauthPending, setOauthPending] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    setReady(true);
+  }, []);
 
   const { register, handleSubmit, setValue, formState } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -190,6 +195,7 @@ export function LoginForm({
         <FormFeedback error={serverError} success={notice} />
         <SubmitButton
           isSubmitting={formState.isSubmitting}
+          disabled={!ready}
           className="h-[50px] w-full"
         >
           {mode === "signin" ? "Přihlásit se" : "Zaregistrovat se"}
