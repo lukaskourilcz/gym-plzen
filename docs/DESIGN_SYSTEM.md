@@ -192,9 +192,9 @@ parallel or transactional:
 
 - **Operating steps** (homepage): one hairline-separated slab of white `card`
   panels, one per step, over the pinned photograph described below. All panels
-  have the same height and centered content. Each panel leads with a two-digit
-  gold numeral badge, then an uppercase `accent-foreground` title and body copy
-  in `muted-foreground`.
+  have the same height and centered content. Each panel leads with an uppercase
+  `accent-foreground` title in a shared-height heading row, followed by body
+  copy in `muted-foreground`. Number badges are not used.
 - **Price card** (homepage): the price is always on a white `card` surface
   inside the dark photo band. The amount, duration and loyalty benefit are
   centered; the single reservation action spans the card width.
