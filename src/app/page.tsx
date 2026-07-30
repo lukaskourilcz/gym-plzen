@@ -291,13 +291,19 @@ export default async function HomePage() {
                 {t("home.about.title")}
               </h2>
               <ol className="mt-8 grid auto-rows-fr gap-px overflow-hidden rounded-lg bg-white/25 md:grid-cols-2 lg:grid-cols-3">
-                {steps.map((step) => (
+                {steps.map((step, index) => (
                   <li
                     key={step.title}
                     className="grid h-full grid-rows-[3rem_1fr] items-start gap-4 bg-card p-7 text-center sm:p-8"
                   >
-                    <h3 className="flex h-12 items-center justify-center text-lg font-extrabold uppercase leading-tight tracking-[.04em] text-accent-foreground">
-                      {step.title}
+                    <h3 className="flex h-12 items-center justify-center gap-3 text-lg font-extrabold uppercase leading-tight tracking-[.04em] text-accent-foreground">
+                      <span
+                        aria-hidden="true"
+                        className="grid size-11 shrink-0 place-items-center rounded-sm bg-gold text-base font-extrabold tracking-normal text-gold-foreground"
+                      >
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <span>{step.title}</span>
                     </h3>
                     <p className="self-start text-sm leading-6 text-muted-foreground">
                       {step.body}
