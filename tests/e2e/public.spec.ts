@@ -13,6 +13,41 @@ test.describe("Public site", () => {
     await expect(
       page.getByRole("link", { name: /Vybrat termín/i }).first(),
     ).toBeVisible();
+    const operatingSteps = page.locator("#jak-to-funguje");
+    for (const number of ["01", "02", "03", "04", "05", "06"]) {
+      await expect(
+        operatingSteps.getByText(number, { exact: true }),
+      ).toHaveCount(0);
+    }
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const stepAlignment = await operatingSteps
+      .locator("li")
+      .evaluateAll((cards) =>
+        cards.map((card) => ({
+          headingTop: Math.round(
+            card.querySelector("h3")!.getBoundingClientRect().top,
+          ),
+          bodyTop: Math.round(
+            card.querySelector("p")!.getBoundingClientRect().top,
+          ),
+        })),
+      );
+    for (const rowStart of [0, 3]) {
+      expect(
+        new Set(
+          stepAlignment
+            .slice(rowStart, rowStart + 3)
+            .map(({ headingTop }) => headingTop),
+        ).size,
+      ).toBe(1);
+      expect(
+        new Set(
+          stepAlignment
+            .slice(rowStart, rowStart + 3)
+            .map(({ bodyTop }) => bodyTop),
+        ).size,
+      ).toBe(1);
+    }
     const contact = page.locator("#kontakt");
     await expect(contact.getByText("Otevírací doba")).toHaveCount(0);
     await expect(

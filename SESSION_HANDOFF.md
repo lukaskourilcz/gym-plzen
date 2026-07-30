@@ -16,6 +16,8 @@ bílá cenová karta, horizontální závěrečná výzva a adresa nad mapou i v
 Kontaktní blok je jeden levý sloupec pod nadpisem „Kde nás najdete“: adresa,
 e-mail a telefon. Samostatná otevírací doba ani svislé oddělovače v tomto bloku
 nejsou.
+Šest provozních kroků už nepoužívá číselné štítky. Nadpisy mají v každém řádku
+společnou výšku a navazující text začíná pod nimi ve stejné úrovni.
 
 `/faq` obsahuje všech dvacet klientem dodaných otázek a odpovědí. Cena, délka
 slotu a otevírací doba používají sdílenou konfiguraci. Odkazy na Kontakt a

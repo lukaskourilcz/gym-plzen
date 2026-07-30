@@ -37,8 +37,11 @@ kontaktní údaje.
   překryvu.
 - Kontaktní údaje jsou pod nadpisem v pořadí adresa, e-mail a telefon, bez
   samostatné otevírací doby a bez svislých oddělovačů.
-- V lokálním vestavěném prohlížeči byly ověřeny desktop 1440 × 900, mobil
-  390 × 844, otevření mobilního menu, cenová karta a kontaktní blok.
+- Provozní kroky jsou bez číselných štítků; nadpisy a navazující text jsou
+  zarovnané do společných řádků.
+- V lokálním vestavěném prohlížeči byly ověřeny šířky 320, 390, 768, 1024 a
+  1440 px bez horizontálního přetékání. U provozních kroků se v každém řádku
+  shoduje pozice nadpisů i začátků textu.
 - Telefon a e-mail zůstávají layoutové placeholdery. FAQ nyní obsahuje dvacet
   klientem dodaných otázek a odpovědí.
 
