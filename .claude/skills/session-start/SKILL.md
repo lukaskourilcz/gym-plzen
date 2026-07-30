@@ -16,5 +16,6 @@ Run at the **start** of an agentic session on this repo.
 ## NEEDED.md marker format (shared across all repos)
 
 Each task line: `- [ ] **Title** — desc. [imp:1-5] [owner:me|ai] [time:30m] [kind:K]`
+
 - `[imp:N]` 1–5 (5 = highest) · `[owner:me|ai]` · `[time:…]` (30m/2h/…)
 - `[kind:K]` one of: `setup` `deploy` `legal` `content` `decision`

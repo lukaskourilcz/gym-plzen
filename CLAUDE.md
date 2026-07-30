@@ -23,7 +23,6 @@ tests, dependency audit, and production build.
 Non-trivial UI work also requires responsive browser verification, keyboard
 verification, visible focus, contrast, reduced motion, and design-system review.
 
-
 ## Session routine & markdown conventions
 
 This repo follows a shared markdown contract (see the `session-start`,

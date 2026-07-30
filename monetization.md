@@ -1,14 +1,17 @@
-# NAMASTÉ — monetizace
+# NAMASTÉ - monetizace
 
-Rezervační web pro reálné studio — web **je** hlavní zdroj příjmů (přes Stripe).
+Web prodává jednorázové rezervace soukromého fitness. Aktuální obchodní model
+nemá předplatné: 290 Kč za 75 minut a každý 10. vstup zdarma registrovanému
+klientovi.
 
-| Možnost | Pravděpodobnost příjmu | Možný výdělek | Výhody | Nevýhody |
-|---|---|---|---|---|
-| **Rezervace lekcí / vstupů (Stripe)** | Vysoká | jádro tržeb | Přímý příjem; už zabudováno | Závisí na provozu studia |
-| **Členství / permanentky** | Střední–vysoká | opakující se | Předvídatelný příjem; věrnost | Vyžaduje správu členství |
-| **Dárkové poukazy** | Nízká–střední | 0–?/měs | Sezónní špičky; akvizice | Účetní a expirační pravidla |
-| **Workshopy / prémiové akce** | Nízká | akce | Vyšší marže | Organizace a kapacita |
-| Reklamy | n/a | — | — | Pro rezervační web nevhodné |
+| Možnost                                 | Pravděpodobnost | Role                       | Poznámka                                               |
+| --------------------------------------- | --------------- | -------------------------- | ------------------------------------------------------ |
+| **Jednorázové rezervace přes Stripe**   | Vysoká          | Hlavní příjem              | Je součástí produktu; závisí na obsazenosti slotů.     |
+| **Balíčky předplacených vstupů**        | Střední         | Vyšší opakované rezervace  | Až po ověření poptávky a účetních pravidel.            |
+| **Dárkové poukazy**                     | Nízká–střední   | Sezónní doplněk            | Vyžadují expiraci, storno a účetní pravidla.           |
+| **Pronájem prostoru osobním trenérům**  | Nízká–střední   | Doplňkové využití kapacity | Vyžaduje jiný typ účtu a jasná provozní pravidla.      |
+| **Členství nebo pravidelné předplatné** | Nízká           | Možná pozdější alternativa | Není součástí potvrzeného MVP ani aktuální komunikace. |
+| Reklamy                                 | Nevhodné        | Žádná                      | Snižovaly by důvěryhodnost rezervačního webu.          |
 
-**Doporučení:** jádrem jsou rezervace a členství přes Stripe; poukazy a workshopy
-jako doplněk. Žádné reklamy.
+**Doporučení:** nejdřív ověřit obsazenost a návratnost jednorázových rezervací.
+Nový cenový model nepřidávat před získáním reálných provozních dat.

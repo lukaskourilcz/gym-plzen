@@ -1,21 +1,30 @@
-# NAMASTÉ — náklady a škálování
+# NAMASTÉ - náklady a škálování
 
 Rezervační web na Vercelu se Supabase, Stripe, Nuki a Resendem. Technologický
 stack je v `about-project.md`; tento soubor řeší jen náklady a škálování.
-Ceny orientační, ověřit v konzolích poskytovatelů.
+Ceny jsou orientační stav k 30. 7. 2026 bez DPH a kurzových rozdílů. Před
+rozhodnutím je ověřte v konzolích poskytovatelů.
 
 ## Co to stojí
 
-| Režim | Fixní náklady | Variabilní | Praktický součet |
-|---|---|---|---|
-| Vývoj / demo | Vercel Hobby, Supabase Free | 0 | ~$0/měs |
-| Malý provoz studia | Vercel Pro $20, Supabase Pro $25 | Stripe poplatky (~1.4%+), Resend | ~$45–70/měs + poplatky z plateb |
+| Režim             | Fixní náklady                             | Variabilní                                           | Praktický základ |
+| ----------------- | ----------------------------------------- | ---------------------------------------------------- | ---------------- |
+| Vývoj / demo      | Vercel Hobby, Supabase Free               | Případné placené zprávy                              | Od 0 USD/měsíc   |
+| Malý ostrý provoz | Vercel Pro 20 USD, Supabase Pro od 25 USD | Stripe, zprávy, Sentry a využití nad zahrnuté limity | Od 45 USD/měsíc  |
+
+Stripe pro standardní evropské karty v ČR uvádí 1,5 % + 6,50 Kč za úspěšnou
+online platbu. Aktuální podmínky:
+[Vercel](https://vercel.com/pricing),
+[Supabase](https://supabase.com/pricing) a
+[Stripe](https://stripe.com/en-cz/pricing).
 
 ## Škálování a spouštěče
 
 - **Supabase**: navýšit compute až při trvalé saturaci připojení/CPU, ne podle počtu členů.
-- **Vercel**: Pro je potřeba kvůli komerčnímu provozu a cronu; sledovat Function/Edge využití.
-- **Stripe/Resend/Nuki**: náklady rostou s objemem plateb a notifikací — lineární, sledovat měsíčně.
+- **Vercel**: pro komerční provoz použít Pro a sledovat compute, přenosy a
+  optimalizaci obrázků.
+- **Stripe, Resend a Nuki**: náklady rostou s objemem plateb a notifikací.
+  Kontrolovat je měsíčně proti počtu dokončených rezervací.
 
 ## Kontrola nákladů
 

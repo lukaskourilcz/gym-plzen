@@ -2,7 +2,9 @@
 
 Datum prvního průchodu: 23. 7. 2026
 
-Datum finálního průchodu: 23. 7. 2026
+Datum finálního průchodu: 30. 7. 2026
+
+Aktualizace po klientské zpětné vazbě: 30. 7. 2026
 
 Výchozí auditovaný commit: `4c3fdf3`
 
@@ -22,8 +24,21 @@ nový P0 ani P1 kódový problém.
 
 Ostré spuštění zůstává zablokované externími P0: chybí potvrzený produkční
 backend a ověření celého řetězce rezervace, platby a vstupu, stejně jako
-schválené právní dokumenty. Před produkcí je také potřeba dodat ověřené kontakty
-a potvrdit provozní časy.
+schválené právní dokumenty. Před produkcí je také potřeba dodat ověřené
+kontaktní údaje.
+
+### Aktualizace 30. 7. 2026
+
+- Klient potvrdil provoz každý den 5:00–23:45, 75minutové sloty a lokalitu
+  Plzeň - Roudná.
+- Veřejný web používá dodané logo v horizontální navigační variantě, širší
+  navigaci, viditelný informační pás, stejnoměrné vycentrované kroky, bílou
+  cenovou kartu, horizontální závěrečnou výzvu a adresu nad mapou i v mapovém
+  překryvu.
+- V lokálním vestavěném prohlížeči byly ověřeny desktop 1440 × 900, mobil
+  390 × 844, otevření mobilního menu, cenová karta a kontaktní blok.
+- Telefon a e-mail zůstávají layoutové placeholdery. FAQ nyní obsahuje dvacet
+  klientem dodaných otázek a odpovědí.
 
 ### Finální důkazy
 
@@ -137,22 +152,24 @@ a potvrdit provozní časy.
 #### P1-04: Web tvrdí podporu Apple Pay a Google Pay dříve, než je ověřená
 
 - Stav: **RESOLVED**
-- Neověřené peněženky byly odstraněné. Copy nyní slibuje pouze online platbu
-  kartou.
+- Klientské FAQ uvádí platbu kartou, Google Pay a Apple Pay. Integrace používá
+  hostovaný Stripe Checkout; zobrazení peněženek závisí na podporovaném zařízení
+  a ostrém nastavení. Před spuštěním proto zůstává povinný test obou metod na
+  cílové doméně.
 
-#### P1-05: Kontaktní sekce nemá e-mail ani telefon
+#### P1-05: Kontaktní údaje nejsou potvrzené
 
 - Stav: **EXTERNALLY BLOCKED**
-- Aplikace používá pouze potvrzenou adresu a správně ignoruje template kontakty
-  z Wixu. Klient musí dodat skutečný e-mail a telefon; následně mají být
-  klikatelné přes `mailto:` a `tel:` v kontaktu i footeru.
+- Aplikace používá potvrzenou adresu a kontakt i patička mají klikatelné
+  `mailto:` a `tel:` odkazy. Hodnoty `info@namastegym.cz` a `777 666 555` jsou
+  ale stále výslovné placeholdery. Klient musí dodat skutečný e-mail a telefon.
 
 #### P1-06: Provozní časy nejsou v repozitáři sjednocené
 
-- Stav: **EXTERNALLY BLOCKED**
-- Interní rozpor byl odstraněn: konfigurace, admin i dokumentace používají
-  společný výchozí rozvrh 06:00 až 22:00. Tento údaj ale stále musí písemně
-  potvrdit provozovatel, proto nelze nález uzavřít jako produkčně vyřešený.
+- Stav: **RESOLVED**
+- Klient potvrdil provoz 5:00–23:45 každý den. Konfigurace, veřejný web,
+  rezervační karta a dokumentace používají společný výchozí rozvrh a
+  75minutová okna.
 
 ### P2: střední priorita
 
@@ -233,7 +250,7 @@ a potvrdit provozní časy.
 | P1-03   | RESOLVED           | Kód a automatizovaný stav ověřeny        |
 | P1-04   | RESOLVED           | Copy ověřeno                             |
 | P1-05   | EXTERNALLY BLOCKED | Provozovatel musí dodat kontakt          |
-| P1-06   | EXTERNALLY BLOCKED | Provozovatel musí potvrdit časy          |
+| P1-06   | RESOLVED           | Klient potvrdil časy 5:00–23:45          |
 | P2-01   | RESOLVED           | Vizuálně ověřeno                         |
 | P2-02   | RESOLVED           | Data a síťové chování ověřeny            |
 | P2-03   | RESOLVED           | Klávesnicová interakce ověřena           |
@@ -254,7 +271,7 @@ a potvrdit provozní časy.
 | `/login`               | Čistý formulář, lokální demo, provider gating, české chyby a 44px cíle       | Ostré identity po připojení backendu                 |
 | `/account`             | Přehledná věrnost a termíny, čistý design systém                             | Reálná data po připojení backendu                    |
 | `/admin`               | Přehledná desktop i mobilní navigace, česká lokální demo data                | Ostré zápisy a integrace po připojení Supabase       |
-| `/faq`                 | Srozumitelná témata a věcná platební informace                               | Aktualizovat podle finálních pravidel provozovatele  |
+| `/faq`                 | Dvacet klientských odpovědí, odkazy a FAQPage strukturovaná data             | Aktualizovat při změně provozních pravidel           |
 | `/vybaveni`            | Reálná fotografie a poctivé placeholdery, věcný nadpis                       | Finální seznam a fotografie od klienta               |
 | Legal routes           | Správně `noindex`, transparentní blokace                                     | Schválené dokumenty před produkcí                    |
 | `/admin/design-system` | Jediný H1 a živý vzor mobilní admin navigace                                 | Průběžně udržovat se změnami komponent               |
@@ -269,8 +286,8 @@ a potvrdit provozní časy.
    cena jsou na jednom místě.
 4. **Přihlášení:** demo e-mailový tok je srozumitelný; neaktivní OAuth volby se
    nezobrazují.
-5. **Platba:** rozhraní slibuje jen online kartu; ostrá služba ještě není
-   end-to-end ověřená.
+5. **Platba:** FAQ uvádí kartu, Google Pay a Apple Pay přes Stripe Checkout;
+   ostrá dostupnost všech metod ještě není end-to-end ověřená.
 6. **Potvrzení a účet:** účet ukazuje čitelný termín bez duplicit a jasný stav.
 7. **Vstup:** instrukce jsou srozumitelné, fyzický zámek a doručení zůstávají
    externě blokované.
@@ -300,7 +317,7 @@ a potvrdit provozní časy.
 
 - Bitter s českou sadou, sémantické tokeny, tmavé plochy a tmavě zelená se
   zlatým akcentem.
-- Logo se slovní značkou v headeru, skládané logo v patičce.
+- Dodané klientské logo ve veřejném headeru, administraci, loginu i patičce.
 - Konzistentní radius karet, jeden hlavní CTA v rozhodovacím bloku a Lucide
   ikony.
 - Přesné časové rozsahy, české labels a transparentní preview stavy.
@@ -317,11 +334,9 @@ potvrzenou design-system chybou.
 1. Potvrdit správný Supabase projekt a dokončit ostrý end-to-end funnel.
 2. Dodat a schválit právní dokumenty.
 3. Dodat potvrzený e-mail a telefon bez použití Wix template kontaktů.
-4. Potvrdit provozní časy; do té doby zachovat jednotný výchozí rozvrh
-   06:00 až 22:00 a označit jej jako nepotvrzený.
-5. Provést ruční screen-reader a doslovný 200% browser zoom test.
-6. Doplnit route-specific skeletony jako nízkou prioritu.
-7. Nahradit galerijní placeholdery finálními fotografiemi od klienta.
+4. Provést ruční screen-reader a doslovný 200% browser zoom test.
+5. Doplnit route-specific skeletony jako nízkou prioritu.
+6. Nahradit galerijní placeholdery finálními fotografiemi od klienta.
 
 ## 12. Acceptance checklist
 
@@ -344,7 +359,8 @@ potvrzenou design-system chybou.
 - [ ] Stripe Checkout a webhooky prošly testem včetně retry a expiry.
 - [ ] Nuki a doručovací kanály prošly fyzickým end-to-end testem.
 - [ ] Obchodní podmínky a privacy jsou schválené.
-- [ ] Kontaktní údaje a provozní časy jsou potvrzené.
+- [ ] Kontaktní údaje jsou potvrzené.
+- [x] Provozní časy 5:00–23:45 jsou potvrzené a sjednocené.
 - [ ] Payment copy odpovídá skutečně aktivním metodám.
 - [ ] Doslovný 200% browser zoom a screen-reader test prošly.
 - [ ] Každý externě blokovaný P0 a P1 má vlastníka a termín.
@@ -354,5 +370,5 @@ potvrzenou design-system chybou.
 Remediation uzavřela všechny původní P1 kódové nálezy a všech osm P2 nálezů.
 Jediným otevřeným lokálním nálezem je nízkoprioritní P3 route-specific skeleton;
 ten neblokuje klientskou prezentaci. Produkci nadále blokují výhradně chybějící
-vstupy a ověření mimo lokální demo: backendové integrace, právní dokumenty,
-kontakty a potvrzení provozních časů.
+vstupy a ověření mimo lokální demo: backendové integrace, právní dokumenty a
+kontakty.
