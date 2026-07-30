@@ -45,6 +45,8 @@ kontaktní údaje.
   klientskou pětilistou značkou. FAQ zachovává stejnou otevírací animaci.
 - Favicon používá přesný tvar z klientského souboru `namaste-lotus.png`, nikoli
   ručně nakreslenou aproximaci. Zlatá značka je na tmavě zeleném podkladu.
+- Mapa používá čistý souřadnicový pohled bez automatické informační bubliny
+  Googlu; zůstává pouze jedna vlastní kontaktní karta a lotusový marker.
 - Společný kořenový layout udržuje footer u spodního okraje na krátkých
   veřejných stránkách a přirozeně za obsahem na stránkách delších.
 - V lokálním vestavěném prohlížeči byly ověřeny šířky 320, 390, 768, 1024 a

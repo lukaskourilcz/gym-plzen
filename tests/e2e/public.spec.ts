@@ -63,6 +63,10 @@ test.describe("Public site", () => {
     await expect(
       contact.getByRole("link", { name: "777 666 555" }),
     ).toBeVisible();
+    await expect(page.getByTestId("location-map")).toHaveAttribute(
+      "src",
+      /maps\?ll=49\.7550669,13\.3785039&z=17&output=embed$/,
+    );
   });
 
   test("booking uses a monthly date-first calendar or a transparent unavailable state", async ({

@@ -109,7 +109,8 @@ export default async function HomePage() {
   const price = formatMoney(content.entryPriceCents);
   const address = publicAddress(t("contact.address"));
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(PUBLIC_MAP_QUERY)}`;
-  const mapsEmbedUrl = `https://www.google.com/maps?q=${encodeURIComponent(PUBLIC_MAP_QUERY)}&output=embed`;
+  const mapsEmbedUrl =
+    "https://www.google.com/maps?ll=49.7550669,13.3785039&z=17&output=embed";
   const phone = t("contact.phone").trim();
   const email = t("contact.email").trim();
   const heroImageUrl = content.heroImageUrl || PUBLISHED_GYM_PHOTO;
@@ -494,6 +495,7 @@ export default async function HomePage() {
           <iframe
             title={`Mapa, ${address}`}
             src={mapsEmbedUrl}
+            data-testid="location-map"
             className="absolute inset-0 h-full w-full border-0 grayscale"
             loading="lazy"
             allowFullScreen
