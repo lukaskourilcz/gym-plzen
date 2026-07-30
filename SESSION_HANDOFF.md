@@ -25,6 +25,8 @@ barvě na tmavě zeleném podkladu. Starý ručně kreslený SVG favicon byl ods
 Mapa se načítá vycentrovaná pomocí souřadnic, takže Google automaticky
 nezobrazuje druhou informační kartu. Viditelný zůstává pouze vlastní přední
 karta NAMASTÉ a vlastní lotusový marker.
+Závěrečný zelený CTA pás drží na desktopu tlačítko „Rezervovat“ 80 px od
+nadpisu; už se neroztahuje k pravému okraji kontejneru.
 Kořenový layout je výškový flex sloupec a přímý `main` vyplňuje volné místo.
 Footer proto končí u spodního okraje viewportu na krátkých veřejných stránkách
 a za obsahem na stránkách delších.

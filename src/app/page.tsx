@@ -425,7 +425,7 @@ export default async function HomePage() {
         </Section>
 
         <Section id="pridej-se" className="bg-ink text-ink-foreground">
-          <Container className="flex flex-col items-start gap-8 text-left sm:flex-row sm:items-center sm:justify-between">
+          <Container className="flex flex-col items-start gap-8 text-left sm:flex-row sm:items-center sm:gap-20">
             <h2 className="max-w-3xl text-3xl font-extrabold tracking-[-.01em] sm:text-4xl">
               {t("home.cta.title")}
             </h2>
