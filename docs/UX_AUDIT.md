@@ -6,6 +6,8 @@ Datum finálního průchodu: 30. 7. 2026
 
 Aktualizace po klientské zpětné vazbě: 30. 7. 2026
 
+Aktualizace značky a faviconu: 31. 7. 2026
+
 Výchozí auditovaný commit: `4c3fdf3`
 
 Remediation: `ea3e2e4`, `87692e0`, `d41507e`, `45aaa2f`
@@ -41,6 +43,8 @@ kontaktní údaje.
   navazující text jsou zarovnané do společných řádků.
 - Starý kreslený lotus byl ve všech sdílených výskytech nahrazen oficiální
   klientskou pětilistou značkou. FAQ zachovává stejnou otevírací animaci.
+- Favicon používá přesný tvar z klientského souboru `namaste-lotus.png`, nikoli
+  ručně nakreslenou aproximaci. Zlatá značka je na tmavě zeleném podkladu.
 - Společný kořenový layout udržuje footer u spodního okraje na krátkých
   veřejných stránkách a přirozeně za obsahem na stránkách delších.
 - V lokálním vestavěném prohlížeči byly ověřeny šířky 320, 390, 768, 1024 a

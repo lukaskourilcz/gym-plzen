@@ -22,6 +22,9 @@ marketing language, or an unnecessary call to action in every section.
 - `LotusMark` uses the exact client-supplied five-petal lotus silhouette from
   `public/images/namaste-lotus.png`. It is a supporting interface motif, not the
   primary brand lockup.
+- The browser icon is `src/app/icon.png`, generated directly from that same
+  supplied silhouette in `gold` on an `ink` background. Do not redraw or
+  approximate the lotus for favicons.
 - Minimum digital size is 32 by 32 CSS pixels.
 - Clear space is at least one quarter of the symbol width on every side.
 - Use `accent-foreground` green on light surfaces and `gold` on ink surfaces.

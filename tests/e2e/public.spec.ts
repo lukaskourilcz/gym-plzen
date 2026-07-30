@@ -13,6 +13,10 @@ test.describe("Public site", () => {
     await expect(
       page.getByRole("link", { name: /Vybrat termín/i }).first(),
     ).toBeVisible();
+    await expect(page.locator('link[rel~="icon"]')).toHaveAttribute(
+      "href",
+      /icon\.png/,
+    );
     const operatingSteps = page.locator("#jak-to-funguje");
     for (const number of ["01", "02", "03", "04", "05", "06"]) {
       await expect(

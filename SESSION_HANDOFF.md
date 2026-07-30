@@ -1,6 +1,6 @@
 # Předání session
 
-Aktualizováno: 30. 7. 2026
+Aktualizováno: 31. 7. 2026
 
 ## Stav
 
@@ -20,6 +20,8 @@ nejsou.
 mají v každém řádku společnou výšku a navazující text začíná pod nimi ve stejné
 úrovni. Všechny podpůrné lotusové motivy používají oficiální klientskou
 pětilistou značku; FAQ zachovává její animaci při otevření.
+Favicon v `src/app/icon.png` používá stejný přesný klientský lotus ve zlaté
+barvě na tmavě zeleném podkladu. Starý ručně kreslený SVG favicon byl odstraněn.
 Kořenový layout je výškový flex sloupec a přímý `main` vyplňuje volné místo.
 Footer proto končí u spodního okraje viewportu na krátkých veřejných stránkách
 a za obsahem na stránkách delších.
@@ -65,7 +67,7 @@ Vše běželo na Node 22:
 - `npm run typecheck`: prošlo;
 - `npm test`: 17 passed;
 - lokální demo a veřejné Playwright scénáře: 10 passed;
-- produkční veřejný smoke test bez databáze: 7 passed, 1 očekávaně skipped;
+- produkční veřejný smoke test bez databáze: 8 passed, 1 očekávaně skipped;
 - produkční skip-link stress test: 5/5 passed;
 - `npm run build`: prošlo bez `DATABASE_URL`, nedostupná DB správně přepne web
   na bezpečný fallback;
