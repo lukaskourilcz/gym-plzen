@@ -17,7 +17,7 @@ test.describe("Public site", () => {
     for (const number of ["01", "02", "03", "04", "05", "06"]) {
       await expect(
         operatingSteps.getByText(number, { exact: true }),
-      ).toHaveCount(0);
+      ).toBeVisible();
     }
     await page.setViewportSize({ width: 1280, height: 900 });
     const stepAlignment = await operatingSteps
@@ -147,11 +147,17 @@ test.describe("Public site", () => {
       page.getByRole("heading", { name: "Často kladené otázky" }),
     ).toBeVisible();
     await expect(page.locator("details")).toHaveCount(20);
-    await page
+    const firstFaqItem = page
       .locator("details")
-      .filter({ hasText: "Jak se k nám dostanete?" })
-      .locator("summary")
-      .click();
+      .filter({ hasText: "Jak se k nám dostanete?" });
+    const firstFaqMark = firstFaqItem.locator("summary [aria-hidden='true']");
+    await expect(firstFaqMark).toHaveCSS("mask-image", /namaste-lotus\.png/);
+    await firstFaqItem.locator("summary").click();
+    await expect
+      .poll(() =>
+        firstFaqMark.evaluate((mark) => getComputedStyle(mark).rotate),
+      )
+      .toBe("90deg");
     await expect(page.getByText(/zastávka Rondel/i)).toBeVisible();
     await page.goto("/vybaveni");
     await expect(

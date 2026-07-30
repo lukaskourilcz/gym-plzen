@@ -37,8 +37,10 @@ kontaktní údaje.
   překryvu.
 - Kontaktní údaje jsou pod nadpisem v pořadí adresa, e-mail a telefon, bez
   samostatné otevírací doby a bez svislých oddělovačů.
-- Provozní kroky jsou bez číselných štítků; nadpisy a navazující text jsou
-  zarovnané do společných řádků.
+- Provozní kroky mají zlaté štítky 01–06 přímo před nadpisy; nadpisy a
+  navazující text jsou zarovnané do společných řádků.
+- Starý kreslený lotus byl ve všech sdílených výskytech nahrazen oficiální
+  klientskou pětilistou značkou. FAQ zachovává stejnou otevírací animaci.
 - V lokálním vestavěném prohlížeči byly ověřeny šířky 320, 390, 768, 1024 a
   1440 px bez horizontálního přetékání. U provozních kroků se v každém řádku
   shoduje pozice nadpisů i začátků textu.
