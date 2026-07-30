@@ -14,6 +14,7 @@ import { cms } from "@/lib/services";
 import {
   DEFAULT_CLOSE_MINUTE,
   DEFAULT_OPEN_MINUTE,
+  DEFAULT_SLOT_MINUTES,
 } from "@/lib/config/schedule";
 import {
   DEFAULT_HERO_PREVIEW_DAYS,
@@ -50,11 +51,12 @@ const HERO_SUBTITLE =
   "Rezervujte si prémiové soukromé samoobslužné fitness v Plzni.";
 
 /*
- * Desktop hero sizing, expressed as a literal Tailwind arbitrary value so the
- * class is statically scannable. Header (68px + 1px border) plus hero fill the
- * first viewport exactly, so nothing else shows above the fold and the facts
- * strip is the first thing revealed on scroll. Applied from `lg` only; on
- * smaller screens the hero content is taller than the viewport anyway.
+ * Full-viewport sections all measure `100svh - var(--header-h)` so each one
+ * fills exactly the area below the sticky header. Without subtracting the
+ * header, a `100svh` section is always 69px taller than the space it can
+ * occupy, and the scroll never lands cleanly on a section boundary. Applied
+ * from `lg` only; on smaller screens the content is taller than the viewport
+ * anyway and a lock would clip it.
  */
 
 /** Six operating steps, all editable in the admin under "Obsah webu". */
@@ -165,7 +167,7 @@ export default async function HomePage() {
             aria-hidden="true"
             className="absolute inset-0 -z-10 bg-ink/88"
           />
-          <Container className="grid gap-12 py-14 lg:min-h-[calc(100svh-69px)] lg:grid-cols-[1fr_1fr] lg:content-center lg:items-start lg:gap-8 lg:py-10 xl:gap-12">
+          <Container className="grid gap-12 py-14 lg:min-h-[calc(100svh-var(--header-h))] lg:grid-cols-[1fr_1fr] lg:content-center lg:items-start lg:gap-8 lg:py-10 xl:gap-12">
             <div>
               <h1 className="max-w-2xl text-4xl font-extrabold leading-[1.1] tracking-[-.01em] sm:text-5xl lg:text-6xl">
                 {HERO_TITLE}
@@ -248,7 +250,7 @@ export default async function HomePage() {
                sticky child and stop it pinning. */
             className="pointer-events-none absolute inset-0 -z-10"
           >
-            <div className="sticky top-0 h-svh w-full">
+            <div className="sticky top-[var(--header-h)] h-[calc(100svh-var(--header-h))] w-full">
               <Image
                 src={sectionsImageUrl}
                 alt=""
@@ -263,7 +265,7 @@ export default async function HomePage() {
 
           <Section
             id="jak-to-funguje"
-            className="scroll-mt-[69px] lg:flex lg:min-h-svh lg:items-center"
+            className="scroll-mt-[var(--header-h)] lg:flex lg:min-h-[calc(100svh-var(--header-h))] lg:items-center lg:py-12"
           >
             <Container>
               <h2 className="flex items-center gap-4 text-3xl font-extrabold uppercase tracking-[.04em] text-ink-foreground sm:text-4xl">
@@ -273,7 +275,7 @@ export default async function HomePage() {
                 />
                 {t("home.about.title")}
               </h2>
-              <ol className="mt-12 grid gap-px overflow-hidden rounded-lg bg-white/25 md:grid-cols-2 lg:grid-cols-3">
+              <ol className="mt-10 grid gap-px overflow-hidden rounded-lg bg-white/25 md:grid-cols-2 lg:mt-8 lg:grid-cols-3">
                 {steps.map((step, index) => (
                   <li
                     key={step.title}
@@ -302,7 +304,7 @@ export default async function HomePage() {
 
           <Section
             id="cenik"
-            className="text-ink-foreground lg:flex lg:min-h-svh lg:items-center"
+            className="scroll-mt-[var(--header-h)] text-ink-foreground lg:flex lg:min-h-[calc(100svh-var(--header-h))] lg:items-center lg:py-12"
           >
             <Container className="grid gap-10 lg:grid-cols-[1fr_1.1fr] lg:items-center">
               <div>
@@ -337,15 +339,34 @@ export default async function HomePage() {
                   ))}
                 </ul>
               </div>
-              {/* Gold hairline: charcoal and ink are near-identical in luminance,
-                so the card needs a non-hue cue to read as a separate surface. */}
-              <div className="flex flex-col items-center gap-8 rounded-lg border border-gold/40 bg-charcoal px-8 py-12 text-charcoal-foreground shadow-md sm:px-10 sm:py-14">
-                <p className="text-6xl font-extrabold tracking-[-.01em] text-gold sm:text-7xl">
-                  {price}
+              {/*
+               * Same construction as the hero availability card: hairline-split
+               * zones, small uppercase label, gold figure. The gold border is
+               * load-bearing, not decoration : charcoal and ink are nearly
+               * identical in luminance, so hue alone would not separate them.
+               */}
+              <div className="overflow-hidden rounded-lg border border-gold/40 bg-charcoal text-charcoal-foreground shadow-md">
+                <p className="border-b border-white/12 px-7 py-4 text-xs font-bold uppercase tracking-[.14em] text-gold">
+                  Jednorázový vstup
                 </p>
-                <Button href="/rezervace" size="lg" className="w-full">
-                  Vybrat termín <ArrowRight aria-hidden="true" />
-                </Button>
+                <div className="border-b border-white/12 px-7 py-7">
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-5xl font-extrabold leading-none tracking-[-.01em] text-gold">
+                      {price}
+                    </span>
+                    <span className="text-sm font-bold uppercase tracking-[.1em] text-charcoal-foreground/70">
+                      / {DEFAULT_SLOT_MINUTES} minut
+                    </span>
+                  </div>
+                  <p className="mt-4 text-sm leading-6 text-charcoal-foreground/75">
+                    Přesnou délku uvidíte u každého slotu v kalendáři.
+                  </p>
+                </div>
+                <div className="px-7 py-6">
+                  <Button href="/rezervace" size="lg" className="w-full">
+                    Vybrat termín <ArrowRight aria-hidden="true" />
+                  </Button>
+                </div>
               </div>
             </Container>
           </Section>
@@ -353,7 +374,7 @@ export default async function HomePage() {
 
         <Section
           id="prostor"
-          className="lg:flex lg:min-h-svh lg:items-center lg:py-16"
+          className="scroll-mt-[var(--header-h)] lg:flex lg:min-h-[calc(100svh-var(--header-h))] lg:items-center lg:py-12"
         >
           <Container>
             <SectionHeading
@@ -361,8 +382,8 @@ export default async function HomePage() {
               title="Podívejte se dovnitř"
               align="left"
             />
-            <div className="mt-8 grid gap-4 lg:grid-cols-[1.35fr_.65fr]">
-              <div className="relative min-h-[420px] overflow-hidden rounded-lg bg-muted lg:min-h-0 lg:h-[52svh]">
+            <div className="mt-8 grid gap-4 lg:h-[46svh] lg:grid-cols-[1.35fr_.65fr]">
+              <div className="relative min-h-[420px] overflow-hidden rounded-lg bg-muted lg:h-full lg:min-h-0">
                 <Image
                   src={PUBLISHED_GYM_PHOTO}
                   alt="Interiér NAMASTÉ Private Gym"
@@ -371,7 +392,7 @@ export default async function HomePage() {
                   className="object-cover"
                 />
               </div>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 lg:grid-rows-3">
                 {[
                   "Další pohled na prostor",
                   "Detail tréninkové zóny",
@@ -404,7 +425,7 @@ export default async function HomePage() {
             directly and owns the #kontakt anchor the header links to. */}
         <div
           id="kontakt"
-          className="relative h-[420px] w-full scroll-mt-[69px] bg-muted sm:h-[520px]"
+          className="relative h-[420px] w-full scroll-mt-[var(--header-h)] bg-muted sm:h-[520px]"
         >
           <iframe
             title={`Mapa, ${address}`}
@@ -469,7 +490,7 @@ function SectionHeading({
 
 function GalleryPlaceholder({ label }: { label: string }) {
   return (
-    <div className="flex min-h-44 flex-col items-center justify-center rounded-md border border-dashed border-border bg-muted/60 p-5 text-center">
+    <div className="flex min-h-44 flex-col items-center justify-center rounded-md border border-dashed border-border bg-muted/60 p-5 text-center lg:min-h-0">
       <ImageIcon aria-hidden="true" className="size-6 text-muted-foreground" />
       <p className="mt-3 text-sm font-bold text-muted-foreground">{label}</p>
       <p className="mt-1 text-xs text-muted-foreground">
