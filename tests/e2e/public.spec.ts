@@ -100,6 +100,13 @@ test.describe("Public site", () => {
     await expect(
       page.getByRole("heading", { name: "Často kladené otázky" }),
     ).toBeVisible();
+    await expect(page.locator("details")).toHaveCount(20);
+    await page
+      .locator("details")
+      .filter({ hasText: "Jak se k nám dostanete?" })
+      .locator("summary")
+      .click();
+    await expect(page.getByText(/zastávka Rondel/i)).toBeVisible();
     await page.goto("/vybaveni");
     await expect(
       page.getByRole("heading", { name: /Vybavení a prostor/i }),

@@ -30,10 +30,7 @@ export function SiteFooter({
   termsUrl?: string | null;
 }) {
   const year = new Date().getFullYear();
-  /*
-   * "Křížkova 424/23, 301 00 Plzeň 1" renders as street / city, with the
-   * postcode moved in front of the city the way Czech addresses are written.
-   */
+  /** Render the street and locality on separate lines. */
   const addressLines = (() => {
     if (!address) return [];
     const [street, ...rest] = address.split(",").map((part) => part.trim());

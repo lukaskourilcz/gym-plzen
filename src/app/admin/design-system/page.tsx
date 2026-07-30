@@ -56,7 +56,7 @@ export default function DesignSystemPage() {
               </div>
               <div>
                 <p className="text-4xl font-extrabold tracking-[-0.01em]">
-                  Tvůj čas. Tvůj prostor.
+                  Tvůj čas. Tvůj prostor. Tvoje Namasté.
                 </p>
                 <p className="mt-4 text-2xl font-extrabold tracking-[-0.01em]">
                   Klidný prostor pro soustředěný trénink
@@ -109,8 +109,11 @@ export default function DesignSystemPage() {
               </h3>
               <div className="mt-4 grid gap-px overflow-hidden rounded-lg bg-white/20 sm:grid-cols-2">
                 {["Vyber si termín", "Po zaplacení"].map((title, index) => (
-                  <div key={title} className="flex flex-col gap-4 bg-card p-5">
-                    <div className="flex items-center gap-3">
+                  <div
+                    key={title}
+                    className="flex h-full flex-col items-center gap-4 bg-card p-5 text-center"
+                  >
+                    <div className="flex flex-col items-center gap-3">
                       <span
                         aria-hidden="true"
                         className="grid size-11 shrink-0 place-items-center rounded-sm bg-gold text-base font-extrabold text-gold-foreground"
@@ -130,7 +133,8 @@ export default function DesignSystemPage() {
               </div>
               <p className="mt-4 text-xs text-ink-foreground/80">
                 Na webu je za pásem připnutá fotografie tělocvičny se zeleným
-                závojem. Drobný text patří vždy na bílé karty.
+                závojem. Všechny karty mají stejnou výšku a obsah zarovnaný na
+                střed.
               </p>
             </div>
 
@@ -168,6 +172,30 @@ export default function DesignSystemPage() {
                   </p>
                 </details>
               </div>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-5 rounded-lg bg-ink p-6 text-ink-foreground lg:grid-cols-[1fr_360px] lg:items-center">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[.14em] text-gold">
+                Ceník
+              </p>
+              <h3 className="mt-3 text-2xl font-extrabold">
+                Jednorázový vstup bez předplatného
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-ink-foreground/75">
+                Cena stojí na bílé kartě. Výzva k rezervaci používá samostatný
+                pás s textem vlevo a tlačítkem vpravo.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-card p-6 text-center text-foreground shadow-md">
+              <p className="text-xs font-extrabold uppercase tracking-[.14em] text-accent-foreground">
+                Vstupné
+              </p>
+              <p className="mt-3 text-4xl font-extrabold text-accent-foreground">
+                290 Kč
+              </p>
+              <p className="mt-2 text-sm font-bold">/ 75 minut</p>
+              <Button className="mt-5 w-full">Rezervovat trénink</Button>
             </div>
           </div>
         </section>

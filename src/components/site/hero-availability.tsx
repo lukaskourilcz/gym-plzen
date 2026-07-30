@@ -134,7 +134,7 @@ export function HeroAvailability({
                     <Link
                       key={slot.startMs}
                       href={reservationHref}
-                      className="min-h-11 rounded-sm border border-primary/45 bg-primary/10 px-2 py-2 text-center text-xs font-extrabold transition-colors hover:border-primary hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="grid min-h-11 place-items-center rounded-sm border border-primary/45 bg-primary/10 px-2 py-2 text-center text-xs font-extrabold transition-colors hover:border-primary hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       {slot.label}
                     </Link>
@@ -166,12 +166,12 @@ export function HeroAvailability({
         </p>
       )}
 
-      <div className="mx-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-border py-4 sm:mx-5">
+      <div className="mx-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-border py-4 text-center sm:mx-5 sm:justify-between sm:text-left">
         <p className="text-base font-extrabold text-accent-foreground">
           {price} za vstup
           <span className="font-bold text-foreground">
             {" "}
-            · každý {freeEntryEvery}. zdarma
+            · každý {freeEntryEvery}. vstup zdarma
           </span>
         </p>
         <Link

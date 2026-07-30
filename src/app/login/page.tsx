@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { LotusMark } from "@/components/site/brand";
+import { BrandLockup } from "@/components/site/brand";
 import { LoginForm } from "./login-form";
 
 export const metadata = { title: "Přihlášení" };
@@ -19,7 +19,7 @@ export default function LoginPage() {
           aria-label="NAMASTÉ Private Gym, úvodní stránka"
           className="relative inline-flex min-h-11 items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
         >
-          <LotusMark decorative className="size-24 text-gold" />
+          <BrandLockup inverse className="[&_img]:w-56" />
         </Link>
         <div className="relative">
           <div className="text-[40px] font-extrabold leading-[1.1] tracking-[-.01em]">
