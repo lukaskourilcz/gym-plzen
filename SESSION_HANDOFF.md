@@ -20,6 +20,9 @@ nejsou.
 mají v každém řádku společnou výšku a navazující text začíná pod nimi ve stejné
 úrovni. Všechny podpůrné lotusové motivy používají oficiální klientskou
 pětilistou značku; FAQ zachovává její animaci při otevření.
+Kořenový layout je výškový flex sloupec a přímý `main` vyplňuje volné místo.
+Footer proto končí u spodního okraje viewportu na krátkých veřejných stránkách
+a za obsahem na stránkách delších.
 
 `/faq` obsahuje všech dvacet klientem dodaných otázek a odpovědí. Cena, délka
 slotu a otevírací doba používají sdílenou konfiguraci. Odkazy na Kontakt a

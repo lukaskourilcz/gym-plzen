@@ -122,6 +122,9 @@ H2 and card titles beneath them are H3.
 - Section spacing: 72px mobile and 96px desktop, unless a relationship requires
   tighter grouping.
 - Use grid for page structure and flexbox for one-dimensional alignment.
+- The root document is a minimum-height column. A direct `main` expands to fill
+  unused viewport space, so every public footer rests at the viewport bottom on
+  short pages and follows the content normally on longer pages.
 
 Primary breakpoints follow Tailwind defaults. Verify every public layout at 320,
 390, 768, 1024, 1280, 1440, and a wide desktop. Introduce a content-driven
@@ -170,7 +173,7 @@ se`, and `Uložit`.
 
 ## Icons
 
-- Approved library: Lucide React plus the code-owned lotus mark. Lucide no
+- Approved library: Lucide React plus the client-supplied lotus mark. Lucide no
   longer ships brand icons, so Facebook and Instagram are code-owned glyphs in
   `components/site/social-icons.tsx`, drawn on the same 24px grid with the same
   2px round stroke. Do not add a third-party brand icon pack.

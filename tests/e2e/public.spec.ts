@@ -207,6 +207,40 @@ test.describe("Public site", () => {
     }
   });
 
+  test("public footers finish at the document bottom", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    for (const route of [
+      "/",
+      "/faq",
+      "/vybaveni",
+      "/provozni-rad",
+      "/obchodni-podminky",
+      "/ochrana-soukromi",
+      "/rezervace",
+    ]) {
+      await page.goto(route, { waitUntil: "domcontentloaded" });
+      await expect(
+        page.locator("footer"),
+        `missing footer on ${route}`,
+      ).toBeVisible();
+      const geometry = await page.evaluate(() => {
+        const footer = document.querySelector("footer");
+        if (!(footer instanceof HTMLElement)) return null;
+        return {
+          documentBottom: document.documentElement.scrollHeight,
+          footerBottom: Math.round(
+            footer.getBoundingClientRect().bottom + window.scrollY,
+          ),
+        };
+      });
+      expect(geometry, `missing footer on ${route}`).not.toBeNull();
+      expect(
+        Math.abs(geometry!.documentBottom - geometry!.footerBottom),
+        `footer gap on ${route}`,
+      ).toBeLessThanOrEqual(1);
+    }
+  });
+
   test("reduced motion disables non-essential transitions", async ({
     page,
   }) => {
