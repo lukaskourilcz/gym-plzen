@@ -22,6 +22,9 @@ mají v každém řádku společnou výšku a navazující text začíná pod ni
 pětilistou značku; FAQ zachovává její animaci při otevření.
 Favicon v `src/app/icon.png` používá stejný přesný klientský lotus ve zlaté
 barvě na tmavě zeleném podkladu. Starý ručně kreslený SVG favicon byl odstraněn.
+Mapa se načítá vycentrovaná pomocí souřadnic, takže Google automaticky
+nezobrazuje druhou informační kartu. Viditelný zůstává pouze vlastní přední
+karta NAMASTÉ a vlastní lotusový marker.
 Kořenový layout je výškový flex sloupec a přímý `main` vyplňuje volné místo.
 Footer proto končí u spodního okraje viewportu na krátkých veřejných stránkách
 a za obsahem na stránkách delších.
