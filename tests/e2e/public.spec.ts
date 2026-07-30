@@ -67,6 +67,17 @@ test.describe("Public site", () => {
       "src",
       /maps\?ll=49\.7550669,13\.3785039&z=17&output=embed$/,
     );
+    const closingCta = page.locator("#pridej-se");
+    const [closingHeading, closingButton] = await Promise.all([
+      closingCta.getByRole("heading").boundingBox(),
+      closingCta.getByRole("link", { name: /Rezervovat/i }).boundingBox(),
+    ]);
+    expect(closingHeading).not.toBeNull();
+    expect(closingButton).not.toBeNull();
+    const closingGap =
+      closingButton!.x - (closingHeading!.x + closingHeading!.width);
+    expect(closingGap).toBeGreaterThanOrEqual(79);
+    expect(closingGap).toBeLessThanOrEqual(81);
   });
 
   test("booking uses a monthly date-first calendar or a transparent unavailable state", async ({

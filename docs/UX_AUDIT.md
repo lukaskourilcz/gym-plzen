@@ -47,6 +47,8 @@ kontaktní údaje.
   ručně nakreslenou aproximaci. Zlatá značka je na tmavě zeleném podkladu.
 - Mapa používá čistý souřadnicový pohled bez automatické informační bubliny
   Googlu; zůstává pouze jedna vlastní kontaktní karta a lotusový marker.
+- Závěrečný zelený CTA pás používá na desktopu kontrolovanou mezeru 80 px mezi
+  nadpisem a tlačítkem namísto roztažení prvků k protilehlým okrajům.
 - Společný kořenový layout udržuje footer u spodního okraje na krátkých
   veřejných stránkách a přirozeně za obsahem na stránkách delších.
 - V lokálním vestavěném prohlížeči byly ověřeny šířky 320, 390, 768, 1024 a
