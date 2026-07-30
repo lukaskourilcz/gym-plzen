@@ -27,6 +27,9 @@ nezobrazuje druhou informační kartu. Viditelný zůstává pouze vlastní pře
 karta NAMASTÉ a vlastní lotusový marker.
 Závěrečný zelený CTA pás drží na desktopu tlačítko „Rezervovat“ 80 px od
 nadpisu; už se neroztahuje k pravému okraji kontejneru.
+Cenová karta je zjednodušená na cenu, délku vstupu, sdělení „Celý gym jen pro
+vás“ a rezervační tlačítko. Nemá samostatný label „Vstupné“, opakovaný věrnostní
+text ani poznámku o registračních poplatcích.
 Kořenový layout je výškový flex sloupec a přímý `main` vyplňuje volné místo.
 Footer proto končí u spodního okraje viewportu na krátkých veřejných stránkách
 a za obsahem na stránkách delších.

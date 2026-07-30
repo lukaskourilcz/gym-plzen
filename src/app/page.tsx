@@ -352,11 +352,11 @@ export default async function HomePage() {
                   ))}
                 </ul>
               </div>
-              <div className="overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-md">
-                <p className="border-b border-border px-7 py-4 text-center text-xs font-extrabold uppercase tracking-[.14em] text-accent-foreground">
-                  Vstupné
-                </p>
-                <div className="border-b border-border px-7 py-8 text-center">
+              <div
+                data-testid="pricing-card"
+                className="overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-md"
+              >
+                <div className="border-b border-border px-7 py-10 text-center">
                   <div className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
                     <span className="text-5xl font-extrabold leading-none tracking-[-.01em] text-accent-foreground">
                       {price}
@@ -368,18 +368,11 @@ export default async function HomePage() {
                   <p className="mt-4 font-bold text-foreground">
                     Celý gym jen pro vás
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    Každý {content.freeEntryEvery}. vstup zdarma pro
-                    registrované
-                  </p>
                 </div>
                 <div className="px-7 py-6 text-center">
                   <Button href="/rezervace" size="lg" className="w-full">
                     Rezervovat trénink <ArrowRight aria-hidden="true" />
                   </Button>
-                  <p className="mt-3 text-xs text-muted-foreground">
-                    Bez registračních poplatků a bez závazku.
-                  </p>
                 </div>
               </div>
             </Container>

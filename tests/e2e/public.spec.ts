@@ -78,6 +78,16 @@ test.describe("Public site", () => {
       closingButton!.x - (closingHeading!.x + closingHeading!.width);
     expect(closingGap).toBeGreaterThanOrEqual(79);
     expect(closingGap).toBeLessThanOrEqual(81);
+    const pricingCard = page.getByTestId("pricing-card");
+    await expect(pricingCard.getByText("Vstupné", { exact: true })).toHaveCount(
+      0,
+    );
+    await expect(
+      pricingCard.getByText(/Každý 10\. vstup zdarma pro registrované/i),
+    ).toHaveCount(0);
+    await expect(
+      pricingCard.getByText(/Bez registračních poplatků a bez závazku/i),
+    ).toHaveCount(0);
   });
 
   test("booking uses a monthly date-first calendar or a transparent unavailable state", async ({
