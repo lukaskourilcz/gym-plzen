@@ -49,9 +49,9 @@ kontaktní údaje.
   Googlu; zůstává pouze jedna vlastní kontaktní karta a lotusový marker.
 - Závěrečný zelený CTA pás drží skupinu nadpisu a tlačítka uprostřed. Na
   desktopu je mezi nimi kontrolovaná mezera 80 px, na mobilu jsou ve sloupci.
-- Pravá cenová karta má label „Jednorázový vstup“, cenu, délku a CTA. Neobsahuje
-  text „Celý gym jen pro vás“, opakované věrnostní sdělení ani poznámku o
-  registračních poplatcích.
+- Pravá cenová karta má label „Jednorázový vstup“, cenu ve zlaté brandové
+  barvě, délku a CTA. Neobsahuje text „Celý gym jen pro vás“, opakované
+  věrnostní sdělení ani poznámku o registračních poplatcích.
 - Desktopový rezervační kalendář je svisle vycentrovaný v hero layoutu.
 - Společný kořenový layout udržuje footer u spodního okraje na krátkých
   veřejných stránkách a přirozeně za obsahem na stránkách delších.

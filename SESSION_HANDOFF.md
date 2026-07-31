@@ -29,9 +29,9 @@ karta NAMASTÉ a vlastní lotusový marker.
 Závěrečný zelený CTA pás drží vycentrovanou skupinu nadpisu a tlačítka.
 Na desktopu je mezi nimi 80 px; na mobilu jsou oba prvky vycentrované ve
 sloupci.
-Cenová karta má label „Jednorázový vstup“, cenu, délku vstupu a rezervační
-tlačítko. Nemá text „Celý gym jen pro vás“, opakovaný věrnostní text ani
-poznámku o registračních poplatcích.
+Cenová karta má label „Jednorázový vstup“, cenu ve zlaté brandové barvě, délku
+vstupu a rezervační tlačítko. Nemá text „Celý gym jen pro vás“, opakovaný
+věrnostní text ani poznámku o registračních poplatcích.
 V desktopovém hero je rezervační kalendář svisle vycentrovaný vůči celému
 hero layoutu.
 Kořenový layout je výškový flex sloupec a přímý `main` vyplňuje volné místo.

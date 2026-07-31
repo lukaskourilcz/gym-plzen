@@ -361,7 +361,7 @@ export default async function HomePage() {
                 </p>
                 <div className="border-b border-border px-7 py-10 text-center">
                   <div className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
-                    <span className="text-5xl font-extrabold leading-none tracking-[-.01em] text-accent-foreground">
+                    <span className="text-5xl font-extrabold leading-none tracking-[-.01em] text-gold">
                       {price}
                     </span>
                     <span className="text-sm font-bold uppercase tracking-[.1em] text-muted-foreground">
