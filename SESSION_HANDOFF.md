@@ -9,10 +9,11 @@ Veřejný header používá přesné dodané logo v horizontálním uspořádán
 vlevo a wordmark `Namasté Private Gym` vpravo. Vertikální varianta zůstává na
 přihlášení a v patičce.
 
-Úvodní stránka odpovídá klientským poznámkám: širší navigace, tečka za „Tvoje
-Namasté.“, Plzeň - Roudná, otevírací doba 5:00–23:45, informační pás v prvním
-viewportu, vycentrované časy, každý 10. vstup zdarma, stejně velké kroky 01–06,
-bílá cenová karta, horizontální závěrečná výzva a adresa nad mapou i v mapě.
+Úvodní stránka odpovídá klientským poznámkám: širší navigace ve verzálkách,
+tečka za „Tvoje Namasté.“, Plzeň - Roudná, otevírací doba 5:00–23:45,
+informační pás v prvním viewportu, vycentrované časy, každý 10. vstup zdarma,
+stejně velké kroky 01–06, bílá cenová karta, horizontální závěrečná výzva a
+adresa nad mapou i v mapě.
 Kontaktní blok je jeden levý sloupec pod nadpisem „Kde nás najdete“: adresa,
 e-mail a telefon. Samostatná otevírací doba ani svislé oddělovače v tomto bloku
 nejsou.
@@ -103,9 +104,8 @@ FAQ accordion, focus, Escape a reduced motion mají regresní pokrytí.
 4. finální fotografie jednotlivých zón;
 5. potvrzený Supabase projekt a ostré ověření Stripe, Nuki a doručování.
 
-Nejasnou část poznámky „menu více roztáhlé a možná tiskace?“ jsme neinterpretovali
-jako samostatnou funkci. Menu je více roztažené, ale žádný další prvek podle
-nejasného slova nebyl přidán.
+Desktopové i mobilní veřejné menu je ve verzálkách; desktopové položky jsou
+roztažené přes samostatný široký středový prostor headeru.
 
 ## Orientace v repozitáři
 

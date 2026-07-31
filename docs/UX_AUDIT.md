@@ -34,9 +34,9 @@ kontaktní údaje.
 - Klient potvrdil provoz každý den 5:00–23:45, 75minutové sloty a lokalitu
   Plzeň - Roudná.
 - Veřejný web používá dodané logo v horizontální navigační variantě, širší
-  navigaci, viditelný informační pás, stejnoměrné vycentrované kroky, bílou
-  cenovou kartu, horizontální závěrečnou výzvu a adresu nad mapou i v mapovém
-  překryvu.
+  navigaci ve verzálkách, viditelný informační pás, stejnoměrné vycentrované
+  kroky, bílou cenovou kartu, horizontální závěrečnou výzvu a adresu nad mapou
+  i v mapovém překryvu.
 - Kontaktní údaje jsou pod nadpisem v pořadí adresa, e-mail a telefon, bez
   samostatné otevírací doby a bez svislých oddělovačů.
 - Provozní kroky mají zlaté štítky 01–06 přímo před nadpisy; nadpisy a

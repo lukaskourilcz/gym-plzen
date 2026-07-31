@@ -64,14 +64,15 @@ export function SiteHeader({
 
         <nav
           aria-label="Hlavní navigace"
-          className="hidden items-center justify-center gap-4 xl:gap-8 lg:flex"
+          data-testid="desktop-navigation"
+          className="hidden items-center justify-between lg:flex lg:w-[min(46vw,46rem)]"
         >
           {PUBLIC_NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               aria-current={pathname === item.href ? "page" : undefined}
-              className="flex min-h-11 items-center px-2 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex min-h-11 items-center px-2 text-xs font-bold uppercase tracking-[.11em] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {item.label}
             </Link>
@@ -125,7 +126,7 @@ export function SiteHeader({
               key={item.href}
               href={item.href}
               onClick={() => setOpen(false)}
-              className="flex min-h-11 items-center border-b border-border/60 px-1 text-base font-bold last:border-0"
+              className="flex min-h-11 items-center border-b border-border/60 px-1 text-base font-bold uppercase tracking-[.08em] last:border-0"
             >
               {item.label}
             </Link>

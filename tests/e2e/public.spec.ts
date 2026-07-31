@@ -24,6 +24,25 @@ test.describe("Public site", () => {
       ).toBeVisible();
     }
     await page.setViewportSize({ width: 1280, height: 900 });
+    const desktopNavigation = page.getByTestId("desktop-navigation");
+    await expect(desktopNavigation).toBeVisible();
+    const navigationLayout = await desktopNavigation.evaluate((navigation) => {
+      const links = Array.from(navigation.querySelectorAll("a"));
+      const first = links[0]?.getBoundingClientRect();
+      const last = links.at(-1)?.getBoundingClientRect();
+      const navigationBox = navigation.getBoundingClientRect();
+      return {
+        width: Math.round(navigationBox.width),
+        occupiedWidth:
+          first && last ? Math.round(last.right - first.left) : undefined,
+        allCaps: links.every(
+          (link) => getComputedStyle(link).textTransform === "uppercase",
+        ),
+      };
+    });
+    expect(navigationLayout.allCaps).toBe(true);
+    expect(navigationLayout.width).toBeGreaterThanOrEqual(580);
+    expect(navigationLayout.occupiedWidth).toBeGreaterThanOrEqual(560);
     const stepAlignment = await operatingSteps
       .locator("li")
       .evaluateAll((cards) =>
