@@ -65,14 +65,14 @@ export function SiteHeader({
         <nav
           aria-label="Hlavní navigace"
           data-testid="desktop-navigation"
-          className="hidden items-center justify-between lg:flex lg:w-[min(46vw,46rem)]"
+          className="hidden items-center justify-between lg:flex lg:w-[min(42vw,42rem)]"
         >
           {PUBLIC_NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               aria-current={pathname === item.href ? "page" : undefined}
-              className="flex min-h-11 items-center px-2 text-xs font-bold uppercase tracking-[.11em] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex min-h-11 items-center px-2 text-sm font-bold uppercase tracking-[.09em] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {item.label}
             </Link>

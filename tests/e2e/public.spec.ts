@@ -41,8 +41,8 @@ test.describe("Public site", () => {
       };
     });
     expect(navigationLayout.allCaps).toBe(true);
-    expect(navigationLayout.width).toBeGreaterThanOrEqual(580);
-    expect(navigationLayout.occupiedWidth).toBeGreaterThanOrEqual(560);
+    expect(navigationLayout.width).toBeGreaterThanOrEqual(530);
+    expect(navigationLayout.occupiedWidth).toBeGreaterThanOrEqual(510);
     const stepAlignment = await operatingSteps
       .locator("li")
       .evaluateAll((cards) =>
