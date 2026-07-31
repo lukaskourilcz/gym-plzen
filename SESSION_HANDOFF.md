@@ -28,9 +28,9 @@ karta NAMASTÉ a vlastní lotusový marker.
 Závěrečný zelený CTA pás drží vycentrovanou skupinu nadpisu a tlačítka.
 Na desktopu je mezi nimi 80 px; na mobilu jsou oba prvky vycentrované ve
 sloupci.
-Cenová karta je zjednodušená na cenu, délku vstupu, sdělení „Celý gym jen pro
-vás“ a rezervační tlačítko. Nemá samostatný label „Vstupné“, opakovaný věrnostní
-text ani poznámku o registračních poplatcích.
+Cenová karta má label „Jednorázový vstup“, cenu, délku vstupu a rezervační
+tlačítko. Nemá text „Celý gym jen pro vás“, opakovaný věrnostní text ani
+poznámku o registračních poplatcích.
 Kořenový layout je výškový flex sloupec a přímý `main` vyplňuje volné místo.
 Footer proto končí u spodního okraje viewportu na krátkých veřejných stránkách
 a za obsahem na stránkách delších.
