@@ -52,6 +52,7 @@ kontaktní údaje.
 - Pravá cenová karta má label „Jednorázový vstup“, cenu, délku a CTA. Neobsahuje
   text „Celý gym jen pro vás“, opakované věrnostní sdělení ani poznámku o
   registračních poplatcích.
+- Desktopový rezervační kalendář je svisle vycentrovaný v hero layoutu.
 - Společný kořenový layout udržuje footer u spodního okraje na krátkých
   veřejných stránkách a přirozeně za obsahem na stránkách delších.
 - V lokálním vestavěném prohlížeči byly ověřeny šířky 320, 390, 768, 1024 a

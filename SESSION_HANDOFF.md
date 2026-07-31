@@ -31,6 +31,8 @@ sloupci.
 Cenová karta má label „Jednorázový vstup“, cenu, délku vstupu a rezervační
 tlačítko. Nemá text „Celý gym jen pro vás“, opakovaný věrnostní text ani
 poznámku o registračních poplatcích.
+V desktopovém hero je rezervační kalendář svisle vycentrovaný vůči celému
+hero layoutu.
 Kořenový layout je výškový flex sloupec a přímý `main` vyplňuje volné místo.
 Footer proto končí u spodního okraje viewportu na krátkých veřejných stránkách
 a za obsahem na stránkách delších.
