@@ -25,8 +25,9 @@ barvě na tmavě zeleném podkladu. Starý ručně kreslený SVG favicon byl ods
 Mapa se načítá vycentrovaná pomocí souřadnic, takže Google automaticky
 nezobrazuje druhou informační kartu. Viditelný zůstává pouze vlastní přední
 karta NAMASTÉ a vlastní lotusový marker.
-Závěrečný zelený CTA pás drží na desktopu tlačítko „Rezervovat“ 80 px od
-nadpisu; už se neroztahuje k pravému okraji kontejneru.
+Závěrečný zelený CTA pás drží vycentrovanou skupinu nadpisu a tlačítka.
+Na desktopu je mezi nimi 80 px; na mobilu jsou oba prvky vycentrované ve
+sloupci.
 Cenová karta je zjednodušená na cenu, délku vstupu, sdělení „Celý gym jen pro
 vás“ a rezervační tlačítko. Nemá samostatný label „Vstupné“, opakovaný věrnostní
 text ani poznámku o registračních poplatcích.

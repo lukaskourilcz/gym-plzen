@@ -47,8 +47,8 @@ kontaktní údaje.
   ručně nakreslenou aproximaci. Zlatá značka je na tmavě zeleném podkladu.
 - Mapa používá čistý souřadnicový pohled bez automatické informační bubliny
   Googlu; zůstává pouze jedna vlastní kontaktní karta a lotusový marker.
-- Závěrečný zelený CTA pás používá na desktopu kontrolovanou mezeru 80 px mezi
-  nadpisem a tlačítkem namísto roztažení prvků k protilehlým okrajům.
+- Závěrečný zelený CTA pás drží skupinu nadpisu a tlačítka uprostřed. Na
+  desktopu je mezi nimi kontrolovaná mezera 80 px, na mobilu jsou ve sloupci.
 - Pravá cenová karta neopakuje label „Vstupné“, věrnostní sdělení ani poznámku
   o registračních poplatcích. Obsahuje jen cenu, délku, hlavní benefit a CTA.
 - Společný kořenový layout udržuje footer u spodního okraje na krátkých
