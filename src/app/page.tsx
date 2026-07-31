@@ -356,6 +356,9 @@ export default async function HomePage() {
                 data-testid="pricing-card"
                 className="overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-md"
               >
+                <p className="border-b border-border px-7 py-4 text-center text-xs font-extrabold uppercase tracking-[.14em] text-accent-foreground">
+                  Jednorázový vstup
+                </p>
                 <div className="border-b border-border px-7 py-10 text-center">
                   <div className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
                     <span className="text-5xl font-extrabold leading-none tracking-[-.01em] text-accent-foreground">
@@ -365,9 +368,6 @@ export default async function HomePage() {
                       / {DEFAULT_SLOT_MINUTES} minut
                     </span>
                   </div>
-                  <p className="mt-4 font-bold text-foreground">
-                    Celý gym jen pro vás
-                  </p>
                 </div>
                 <div className="px-7 py-6 text-center">
                   <Button href="/rezervace" size="lg" className="w-full">

@@ -82,9 +82,12 @@ test.describe("Public site", () => {
       (closingHeading!.x + closingButton!.x + closingButton!.width) / 2;
     expect(Math.abs(closingGroupCenter - 640)).toBeLessThanOrEqual(1);
     const pricingCard = page.getByTestId("pricing-card");
-    await expect(pricingCard.getByText("Vstupné", { exact: true })).toHaveCount(
-      0,
-    );
+    await expect(
+      pricingCard.getByText("Jednorázový vstup", { exact: true }),
+    ).toHaveCount(1);
+    await expect(
+      pricingCard.getByText("Celý gym jen pro vás", { exact: true }),
+    ).toHaveCount(0);
     await expect(
       pricingCard.getByText(/Každý 10\. vstup zdarma pro registrované/i),
     ).toHaveCount(0);
