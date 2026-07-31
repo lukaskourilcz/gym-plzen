@@ -78,6 +78,9 @@ test.describe("Public site", () => {
       closingButton!.x - (closingHeading!.x + closingHeading!.width);
     expect(closingGap).toBeGreaterThanOrEqual(79);
     expect(closingGap).toBeLessThanOrEqual(81);
+    const closingGroupCenter =
+      (closingHeading!.x + closingButton!.x + closingButton!.width) / 2;
+    expect(Math.abs(closingGroupCenter - 640)).toBeLessThanOrEqual(1);
     const pricingCard = page.getByTestId("pricing-card");
     await expect(pricingCard.getByText("Vstupné", { exact: true })).toHaveCount(
       0,
