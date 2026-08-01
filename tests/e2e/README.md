@@ -59,7 +59,7 @@ ignorované Gitem.
 Pokud prostředí používá vlastní Chromium, nastav `PW_CHROMIUM_PATH`. Jinak použij
 `npx playwright install chromium`.
 
-## Stav checkpointu 2026-07-31
+## Stav checkpointu 2026-08-01
 
 - Lokální demo a veřejný balík: **10 passed, 0 failed**.
 - FAQ regresní kontrola ověřuje všech 20 klientských položek a otevření první
@@ -73,6 +73,9 @@ Pokud prostředí používá vlastní Chromium, nastav `PW_CHROMIUM_PATH`. Jinak
   nenahrazuje fikcí.
 - Produkční Node 22 build prošel. Poslední Lighthouse checkpoint z 23. 7. 2026:
   performance 94, accessibility 100, best practices 100 a SEO 100.
+- Poslední změny administrace, FAQ a CTA prošly `format:check`, lintem,
+  TypeScriptem, 20 unit testy a produkčním buildem. Nevyžadovaly změnu
+  vzdáleného mutačního E2E scénáře.
 - Vzdálené mutační testy nebyly spuštěné, protože nakonfigurovaný Supabase
   projekt nebyl potvrzený jako projekt této aplikace.
 - Aktuální blokátory a další kroky jsou v kořenovém `SESSION_HANDOFF.md` a

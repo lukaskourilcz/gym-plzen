@@ -42,13 +42,15 @@ kontaktní údaje.
 - Provozní kroky mají zlaté štítky 01–06 přímo před nadpisy; nadpisy a
   navazující text jsou zarovnané do společných řádků.
 - Starý kreslený lotus byl ve všech sdílených výskytech nahrazen oficiální
-  klientskou pětilistou značkou. FAQ zachovává stejnou otevírací animaci.
+  klientskou pětilistou značkou. Ve FAQ se při otevření plynule změní na
+  otazník.
 - Favicon používá přesný tvar z klientského souboru `namaste-lotus.png`, nikoli
   ručně nakreslenou aproximaci. Zlatá značka je na tmavě zeleném podkladu.
 - Mapa používá čistý souřadnicový pohled bez automatické informační bubliny
   Googlu; zůstává pouze jedna vlastní kontaktní karta a lotusový marker.
-- Závěrečný zelený CTA pás drží skupinu nadpisu a tlačítka uprostřed. Na
-  desktopu je mezi nimi kontrolovaná mezera 80 px, na mobilu jsou ve sloupci.
+- Závěrečný zelený CTA pás drží skupinu nadpisu, editovatelného citátu a
+  tlačítka pohromadě. Na desktopu je mezi textovou skupinou a akcí
+  kontrolovaná mezera, na mobilu jsou ve sloupci.
 - Pravá cenová karta má label „Jednorázový vstup“, cenu ve zlaté brandové
   barvě, délku a CTA. Neobsahuje text „Celý gym jen pro vás“, opakované
   věrnostní sdělení ani poznámku o registračních poplatcích.
@@ -121,16 +123,16 @@ kontaktní údaje.
 
 ## 4. Klientská matice
 
-| Oblast ukázky       | Co klient uvidí                                              | Podmínka prezentace                               | Verdikt  |
-| ------------------- | ------------------------------------------------------------ | ------------------------------------------------- | -------- |
-| Úvodní stránka      | Hotový hero, cena, princip, prostor, pravidla, adresa a mapa | Galerie je dočasně zčásti placeholder             | GO       |
-| Hero dostupnost     | Tři nejbližší dny a přesné rozsahy                           | Ukázkový stav musí zůstat označený                | GO       |
-| Rezervace           | Funkční kalendář, sloty a retry stav                         | Bez ostré DB jde o ilustrační data                | GO       |
-| Přihlášení          | Lokální admin a klientský demo účet                          | OAuth se zobrazí jen po konfiguraci               | GO       |
-| Klientský účet      | Věrnost a nadcházející rezervace                             | Demo data jsou ilustrační                         | GO       |
-| Administrace        | Přehled, obsah, provozní moduly, plán a inspirace            | Produkční zápisy vyžadují Supabase                | GO       |
-| Právní stránky      | Transparentní placeholder                                    | Nejde o použitelné právní dokumenty               | Jen demo |
-| Produkční rezervace | Bez falešné dostupnosti                                      | Backend, platba a vstup nejsou end-to-end ověřené | NO-GO    |
+| Oblast ukázky       | Co klient uvidí                                                   | Podmínka prezentace                               | Verdikt  |
+| ------------------- | ----------------------------------------------------------------- | ------------------------------------------------- | -------- |
+| Úvodní stránka      | Hotový hero, cena, princip, prostor, pravidla, adresa a mapa      | Galerie je dočasně zčásti placeholder             | GO       |
+| Hero dostupnost     | Tři nejbližší dny a přesné rozsahy                                | Ukázkový stav musí zůstat označený                | GO       |
+| Rezervace           | Funkční kalendář, sloty a retry stav                              | Bez ostré DB jde o ilustrační data                | GO       |
+| Přihlášení          | Lokální admin a klientský demo účet                               | OAuth se zobrazí jen po konfiguraci               | GO       |
+| Klientský účet      | Věrnost a nadcházející rezervace                                  | Demo data jsou ilustrační                         | GO       |
+| Administrace        | Přehled, zjednodušený obsah, e-maily, provozní moduly a inspirace | Produkční zápisy vyžadují Supabase                | GO       |
+| Právní stránky      | Transparentní placeholder                                         | Nejde o použitelné právní dokumenty               | Jen demo |
+| Produkční rezervace | Bez falešné dostupnosti                                           | Backend, platba a vstup nejsou end-to-end ověřené | NO-GO    |
 
 ## 5. Stav nálezů P0 až P3
 
@@ -298,7 +300,7 @@ kontaktní údaje.
 | `/login`               | Čistý formulář, lokální demo, provider gating, české chyby a 44px cíle       | Ostré identity po připojení backendu                 |
 | `/account`             | Přehledná věrnost a termíny, čistý design systém                             | Reálná data po připojení backendu                    |
 | `/admin`               | Přehledná desktop i mobilní navigace, česká lokální demo data                | Ostré zápisy a integrace po připojení Supabase       |
-| `/faq`                 | Dvacet klientských odpovědí, odkazy a FAQPage strukturovaná data             | Aktualizovat při změně provozních pravidel           |
+| `/faq`                 | Dvacet klientských odpovědí, CMS editor a FAQPage strukturovaná data         | Aktualizovat při změně provozních pravidel           |
 | `/vybaveni`            | Reálná fotografie a poctivé placeholdery, věcný nadpis                       | Finální seznam a fotografie od klienta               |
 | Legal routes           | Správně `noindex`, transparentní blokace                                     | Schválené dokumenty před produkcí                    |
 | `/admin/design-system` | Jediný H1 a živý vzor mobilní admin navigace                                 | Průběžně udržovat se změnami komponent               |
@@ -377,7 +379,7 @@ potvrzenou design-system chybou.
 - [x] Neaktivní OAuth poskytovatelé se nezobrazují.
 - [x] Demo admin používá lokální česká data.
 - [x] Account nezobrazuje duplicitní čas ani cizí vizuální dekorace.
-- [x] Plán a inspirace zůstávají v administraci a připravenost nepřekračuje 60 %.
+- [x] Inspirace zůstává v administraci a obsah i e-maily jsou srozumitelně oddělené od provozních modulů.
 
 ### Před produkčním spuštěním
 

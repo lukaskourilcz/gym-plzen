@@ -32,8 +32,8 @@ marketing language, or an unnecessary call to action in every section.
 - Pass `decorative` when adjacent text already names the brand, so the symbol
   is hidden from assistive technology instead of announcing a second name.
 - Do not rotate, stretch, recolour arbitrarily, or combine the symbol with an
-  unrelated fitness icon. The FAQ toggle rotation is the one sanctioned motion
-  and it only communicates open state.
+  unrelated fitness icon. The FAQ toggle may crossfade and scale between the
+  lotus and an accessible visual question mark to communicate open state.
 
 ### Full logo
 
@@ -294,8 +294,8 @@ The public booking flow is date first.
 - Standard duration: 140ms for controls and 220ms for panels.
 - Easing: `cubic-bezier(.2,.8,.2,1)`, exposed as the `ease-brand` utility. Use
   the token rather than repeating the literal.
-- One exception: the FAQ lotus turns 90 degrees clockwise and rests on its side
-  when a question opens. It runs at 320ms on `ease-brand-spring`, a gentle
+- One exception: the FAQ lotus crossfades into a question mark when a question
+  opens. It runs at 220ms with a restrained scale transition, a gentle
   overshoot reserved for this single brand mark. Do not reuse that easing for
   ordinary controls, and do not add a third easing token.
 - Motion explains state changes; it is not decoration.

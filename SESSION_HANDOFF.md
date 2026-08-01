@@ -20,7 +20,7 @@ v mapové kartě, telefon a e-mail v patičce.
 Šest provozních kroků používá zlaté štítky 01–06 přímo před nadpisy. Nadpisy
 mají v každém řádku společnou výšku a navazující text začíná pod nimi ve stejné
 úrovni. Všechny podpůrné lotusové motivy používají oficiální klientskou
-pětilistou značku; FAQ zachovává její animaci při otevření.
+pětilistou značku; ve FAQ se lotos při otevření plynule změní na otazník.
 Favicon v `src/app/icon.png` používá stejný přesný klientský lotus ve zlaté
 barvě na tmavě zeleném podkladu. Starý ručně kreslený SVG favicon byl odstraněn.
 Mapa se načítá vycentrovaná pomocí souřadnic, takže Google automaticky
@@ -28,6 +28,7 @@ nezobrazuje druhou informační kartu. Viditelný zůstává pouze vlastní pře
 karta NAMASTÉ a vlastní lotusový marker.
 Závěrečný zelený CTA pás je vlevo zarovnaný s okolním obsahem; na desktopu
 navazuje větší tlačítko Rezervovat, na mobilu se prvky řadí pod sebe vlevo.
+Pod nadpisem je zlatou linkou oddělený editovatelný citát.
 Cenová karta má label „Jednorázový vstup“, cenu ve zlaté brandové barvě, délku
 vstupu a rezervační tlačítko. Nemá text „Celý gym jen pro vás“, opakovaný
 věrnostní text ani poznámku o registračních poplatcích.
@@ -56,10 +57,9 @@ Kořenový layout je výškový flex sloupec a přímý `main` vyplňuje volné 
 Footer proto končí u spodního okraje viewportu na krátkých veřejných stránkách
 a za obsahem na stránkách delších.
 
-`/faq` obsahuje všech dvacet klientem dodaných otázek a odpovědí. Cena, délka
-slotu a otevírací doba používají sdílenou konfiguraci. Odkazy na Kontakt a
-Vybavení vedou na existující cíle a stránka generuje `FAQPage` strukturovaná
-data.
+`/faq` obsahuje všech dvacet klientem dodaných otázek a odpovědí a stránka
+generuje `FAQPage` strukturovaná data. FAQ i Vybavení jsou editovatelné přes
+zjednodušený editor obsahu.
 
 ## Potvrzené podklady
 
