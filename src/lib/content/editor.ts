@@ -84,6 +84,7 @@ export const CONTENT_EDITOR_SECTIONS: readonly ContentEditorSection[] = [
       item("home.pricing.cardLabel", "Nadpis cenové karty"),
       item("home.pricing.button", "Tlačítko v cenové kartě"),
       item("home.cta.title", "Závěrečný nadpis"),
+      item("home.cta.quote", "Citát pod závěrečným nadpisem"),
       item("home.cta.button", "Závěrečné tlačítko"),
     ],
   },

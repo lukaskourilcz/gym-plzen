@@ -46,10 +46,18 @@ export default async function FaqPage() {
               {items.map(({ question, answer }) => (
                 <details key={question} className="group py-1">
                   <summary className="flex min-h-16 cursor-pointer list-none items-center gap-4 py-4 text-lg font-extrabold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                    <LotusMark
-                      decorative
-                      className="size-7 shrink-0 text-muted-foreground transition-[rotate,color] duration-[320ms] ease-brand-spring group-open:rotate-90 group-open:text-accent-foreground motion-safe:group-hover:text-accent-foreground"
-                    />
+                    <span
+                      aria-hidden="true"
+                      className="relative grid size-7 shrink-0 place-items-center"
+                    >
+                      <LotusMark
+                        decorative
+                        className="absolute size-7 text-muted-foreground transition-[opacity,scale,color] duration-[220ms] ease-out group-open:scale-75 group-open:opacity-0 motion-safe:group-hover:text-accent-foreground"
+                      />
+                      <span className="scale-75 text-2xl font-extrabold leading-none text-accent-foreground opacity-0 transition-[opacity,scale] duration-[220ms] ease-out group-open:scale-100 group-open:opacity-100">
+                        ?
+                      </span>
+                    </span>
                     {question}
                   </summary>
                   <p className="max-w-2xl pb-6 pl-11 leading-7 text-muted-foreground">

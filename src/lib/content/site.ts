@@ -90,6 +90,7 @@ export const SITE_DEFAULTS = {
   "home.pricing.button": "Rezervovat trénink",
   "home.gallery.eyebrow": "Prostor",
   "home.cta.title": "Připravený na změnu? Přidej se k nám!",
+  "home.cta.quote": "Tady bude citát Buddhy",
   "home.cta.button": "Rezervovat",
   "home.rules.title": "Provozní řád",
   "home.rules.body":

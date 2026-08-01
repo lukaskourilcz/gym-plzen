@@ -420,9 +420,14 @@ export default async function HomePage() {
 
         <Section id="pridej-se" className="bg-ink text-ink-foreground">
           <Container className="flex flex-col items-start gap-6 text-left sm:flex-row sm:items-center sm:justify-start sm:gap-10">
-            <h2 className="max-w-3xl text-3xl font-extrabold tracking-[-.01em] sm:text-4xl">
-              {t("home.cta.title")}
-            </h2>
+            <div className="max-w-3xl">
+              <h2 className="text-3xl font-extrabold tracking-[-.01em] sm:text-4xl">
+                {t("home.cta.title")}
+              </h2>
+              <blockquote className="mt-4 border-l-2 border-gold pl-4 text-base leading-7 text-ink-foreground/75">
+                <p>„{t("home.cta.quote")}“</p>
+              </blockquote>
+            </div>
             <Button
               href="/rezervace"
               size="lg"
