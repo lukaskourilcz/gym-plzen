@@ -10,13 +10,13 @@ vlevo a wordmark `Namasté Private Gym` vpravo. Vertikální varianta zůstává
 přihlášení a v patičce.
 
 Úvodní stránka odpovídá klientským poznámkám: širší navigace ve verzálkách,
-tečka za „Tvoje Namasté.“, Plzeň - Roudná, otevírací doba 5:00–23:45,
+zlaté „Namasté.“ v hero, Plzeň - Roudná, otevírací doba 5:00–23:45,
 informační pás v prvním viewportu, vycentrované časy, každý 10. vstup zdarma,
-stejně velké kroky 01–06, bílá cenová karta, horizontální závěrečná výzva a
-adresa nad mapou i v mapě.
-Kontaktní blok je jeden levý sloupec pod nadpisem „Kde nás najdete“: adresa,
-e-mail a telefon. Samostatná otevírací doba ani svislé oddělovače v tomto bloku
-nejsou.
+stejně velké kroky 01–06 a bílá cenová karta. Hero adresa a otevírací doba jsou
+vedle sebe se zarovnanými CTA pod nimi. Informační pás začíná
+„Samoobslužné fitness“ a karta dostupnosti výslovně uvádí cenu za 75 minut.
+Kontaktní údaje se neopakují před mapou: adresa a otevírací doba zůstávají jen
+v mapové kartě, telefon a e-mail v patičce.
 Šest provozních kroků používá zlaté štítky 01–06 přímo před nadpisy. Nadpisy
 mají v každém řádku společnou výšku a navazující text začíná pod nimi ve stejné
 úrovni. Všechny podpůrné lotusové motivy používají oficiální klientskou
@@ -26,14 +26,16 @@ barvě na tmavě zeleném podkladu. Starý ručně kreslený SVG favicon byl ods
 Mapa se načítá vycentrovaná pomocí souřadnic, takže Google automaticky
 nezobrazuje druhou informační kartu. Viditelný zůstává pouze vlastní přední
 karta NAMASTÉ a vlastní lotusový marker.
-Závěrečný zelený CTA pás drží vycentrovanou skupinu nadpisu a tlačítka.
-Na desktopu je mezi nimi 80 px; na mobilu jsou oba prvky vycentrované ve
-sloupci.
+Závěrečný zelený CTA pás je vlevo zarovnaný s okolním obsahem; na desktopu
+navazuje větší tlačítko Rezervovat, na mobilu se prvky řadí pod sebe vlevo.
 Cenová karta má label „Jednorázový vstup“, cenu ve zlaté brandové barvě, délku
 vstupu a rezervační tlačítko. Nemá text „Celý gym jen pro vás“, opakovaný
 věrnostní text ani poznámku o registračních poplatcích.
 V desktopovém hero je rezervační kalendář svisle vycentrovaný vůči celému
 hero layoutu.
+Hlavní navazující úkol je transakční e-mailing z `noreply@namastegym.cz`.
+Rozsah, DNS předpoklady a požadované administrační šablony jsou aktuálně
+vedené v [NEEDED.md](./NEEDED.md).
 Kořenový layout je výškový flex sloupec a přímý `main` vyplňuje volné místo.
 Footer proto končí u spodního okraje viewportu na krátkých veřejných stránkách
 a za obsahem na stránkách delších.

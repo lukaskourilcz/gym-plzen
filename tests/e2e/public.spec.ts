@@ -71,17 +71,11 @@ test.describe("Public site", () => {
         ).size,
       ).toBe(1);
     }
-    const contact = page.locator("#kontakt");
-    await expect(contact.getByText("Otevírací doba")).toHaveCount(0);
-    await expect(
-      contact.getByRole("link", { name: /Křížkova 424\/23/i }),
-    ).toBeVisible();
-    await expect(
-      contact.getByRole("link", { name: "info@namastegym.cz" }),
-    ).toBeVisible();
-    await expect(
-      contact.getByRole("link", { name: "777 666 555" }),
-    ).toBeVisible();
+    const contact = page.getByTestId("location-card");
+    await expect(contact.getByText("Otevírací doba")).toHaveCount(1);
+    await expect(contact.getByText(/Křížkova 424\/23/i)).toBeVisible();
+    await expect(contact.getByText("info@namastegym.cz")).toHaveCount(0);
+    await expect(contact.getByText("777 666 555")).toHaveCount(0);
     await expect(page.getByTestId("location-map")).toHaveAttribute(
       "src",
       /maps\?ll=49\.7550669,13\.3785039&z=17&output=embed$/,
@@ -93,13 +87,15 @@ test.describe("Public site", () => {
     ]);
     expect(closingHeading).not.toBeNull();
     expect(closingButton).not.toBeNull();
+    const spaceHeading = await page.locator("#prostor h2").boundingBox();
+    expect(spaceHeading).not.toBeNull();
     const closingGap =
       closingButton!.x - (closingHeading!.x + closingHeading!.width);
-    expect(closingGap).toBeGreaterThanOrEqual(79);
-    expect(closingGap).toBeLessThanOrEqual(81);
-    const closingGroupCenter =
-      (closingHeading!.x + closingButton!.x + closingButton!.width) / 2;
-    expect(Math.abs(closingGroupCenter - 640)).toBeLessThanOrEqual(1);
+    expect(Math.abs(closingHeading!.x - spaceHeading!.x)).toBeLessThanOrEqual(
+      1,
+    );
+    expect(closingGap).toBeGreaterThanOrEqual(39);
+    expect(closingGap).toBeLessThanOrEqual(41);
     const pricingCard = page.getByTestId("pricing-card");
     await expect(
       pricingCard.getByText("Jednorázový vstup", { exact: true }),
