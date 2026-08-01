@@ -4,6 +4,7 @@ import {
   MAX_HERO_PREVIEW_DAYS,
   MIN_HERO_PREVIEW_DAYS,
 } from "@/lib/config/hero";
+import { EMAIL_TEMPLATE_IDS } from "@/lib/config/email-templates";
 
 /** Branding assets: logo + terms PDF, provided as URLs (from the uploader or pasted). */
 export const brandingSchema = z.object({
@@ -25,6 +26,29 @@ export const smsTemplateSchema = z.object({
   template: optionalText(320),
 });
 
+const emailTemplateIdSchema = z.enum(EMAIL_TEMPLATE_IDS);
+
+/** Editable sender-owned e-mail template. Variables remain in `{braces}`. */
+export const emailTemplateSchema = z.object({
+  id: emailTemplateIdSchema,
+  subject: z
+    .string()
+    .trim()
+    .min(3, "Předmět musí obsahovat alespoň 3 znaky.")
+    .max(160, "Předmět může mít nejvýše 160 znaků."),
+  body: z
+    .string()
+    .trim()
+    .min(10, "Text šablony musí obsahovat alespoň 10 znaků.")
+    .max(8_000, "Text šablony může mít nejvýše 8 000 znaků."),
+});
+
+/** Admin-triggered delivery of the current e-mail template to a test inbox. */
+export const emailTemplateTestSchema = z.object({
+  id: emailTemplateIdSchema,
+  email: z.string().trim().email("Zadejte platnou e-mailovou adresu."),
+});
+
 /** How many days ahead (incl. today) the hero availability calendar lets visitors browse. */
 export const heroPreviewSchema = z.object({
   previewDays: z
@@ -36,4 +60,6 @@ export const heroPreviewSchema = z.object({
 
 export type BrandingValues = z.infer<typeof brandingSchema>;
 export type SmsTemplateValues = z.infer<typeof smsTemplateSchema>;
+export type EmailTemplateValues = z.infer<typeof emailTemplateSchema>;
+export type EmailTemplateTestValues = z.infer<typeof emailTemplateTestSchema>;
 export type HeroPreviewValues = z.infer<typeof heroPreviewSchema>;

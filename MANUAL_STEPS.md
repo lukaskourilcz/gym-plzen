@@ -1,8 +1,8 @@
 # Manuální kroky
 
 Kroky, které vyžadují Dashboard, externí konzoli nebo fyzické ověření.
-Produkční doména se řeší až později; do té doby vše přes
-`https://gym-plzen.vercel.app` a preview subdomény.
+Produkční web běží na `https://www.namastegym.cz`. Při změně domény vždy
+aktualizujte také Supabase Auth URL, Stripe webhook a Nuki webhook.
 
 Supabase project ref: **`rkmunagymohxtclymacm`**
 Supabase project URL: **`https://rkmunagymohxtclymacm.supabase.co`**
@@ -27,13 +27,13 @@ Providers → Email:
 
 URL Configuration → Site URL:
 
-- `https://gym-plzen.vercel.app` (přepsat na vlastní doménu, až bude)
+- `https://www.namastegym.cz`
 
 URL Configuration → Redirect URLs:
 
 - `http://localhost:3000/**`
 - `https://*.vercel.app/**`
-- `https://gym-plzen.vercel.app/**`
+- `https://www.namastegym.cz/**`
 
 **Ověření:** `POST /login` s platným e-mailem vrátí `Zkontrolujte e-mail`;
 v Auth logu vidíš `user_created` a `magic_link_sent`.
@@ -51,7 +51,7 @@ Přenést z `.env.local` do Vercel Production + Preview:
 
 Public (Sensitive OFF):
 
-- `NEXT_PUBLIC_APP_URL` = `https://gym-plzen.vercel.app`
+- `NEXT_PUBLIC_APP_URL` = `https://www.namastegym.cz`
 - `NEXT_PUBLIC_DEFAULT_LOCALE` = `cs`
 - `NEXT_PUBLIC_OAUTH_PROVIDERS` = `google`
 - `NEXT_PUBLIC_SENTRY_DSN`
@@ -76,13 +76,12 @@ runtime i `vercel env pull` je dostanou normálně.
 
 **Kde:** <https://dashboard.stripe.com/webhooks> (a Test-mode analog).
 
-- **Endpoint URL:** `https://gym-plzen.vercel.app/api/webhooks/stripe`
-  (po přechodu na vlastní doménu doplnit nový endpoint na finální doméně a starý deaktivovat)
+- **Endpoint URL:** `https://www.namastegym.cz/api/webhooks/stripe`
 - **Události:** `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`
 - **Signing secret** (`whsec_...`) → do Vercel Production jako `STRIPE_WEBHOOK_SECRET` (Sensitive).
   Založ analog i pro Test mode, jeho secret nastav do Vercel Preview.
 
-**Ověření:** `stripe listen --forward-to https://gym-plzen.vercel.app/api/webhooks/stripe`
+**Ověření:** `stripe listen --forward-to https://www.namastegym.cz/api/webhooks/stripe`
 vrátí `200` na `checkout.session.completed`; testovací Checkout dojde na success URL
 a rezervace přejde do `confirmed`.
 
@@ -142,36 +141,89 @@ Po pořízení zámku doplnit:
 
 - `NUKI_SMARTLOCK_ID` (číselné ID zámku z dashboardu).
 - `NUKI_WEBHOOK_SECRET` = `openssl rand -hex 32`; zapsat současně do Nuki webhook UI i do Vercelu (Sensitive, Production + Preview).
-- Webhook URL k zaregistrování na Nuki: `https://gym-plzen.vercel.app/api/webhooks/nuki` (po přechodu na vlastní doménu přepsat).
+- Webhook URL k zaregistrování na Nuki: `https://www.namastegym.cz/api/webhooks/nuki`.
 
 **Fyzicky ověřit:** admin vytvoří rezervaci → kód doručen → zámek otevře →
 po skončení kód přestane platit → ruční revocation zafunguje.
 
 ---
 
-## 6. Resend — vlastní doména (čeká na doménu)
+## 6. Resend — odchozí aplikační e-maily
 
-Po pořízení vlastní domény:
+Doména `namastegym.cz` je v Resend ověřená a Vercel má nastavené
+`RESEND_API_KEY` a `RESEND_FROM_EMAIL` pro Production i Preview.
 
-1. Přidat v <https://resend.com/domains>.
-2. Vložit SPF/DKIM/DMARC záznamy do registrátora.
-3. Kliknout **Verify** — po propagaci DNS se stav změní na `Verified`.
-4. Přepsat `RESEND_FROM_EMAIL` v `.env.local` i Vercelu na
-   `NAMASTÉ Private Gym <noreply@<vlastní-doména>>`.
+- Sender: `Namasté Private Gym <noreply@namastegym.cz>`
+- Šablony aplikace jsou v administraci → **E-maily**. Je zde náhled s
+  ukázkovými daty, test na zadanou
+  adresu a editace textu pro potvrzení rezervace, vstupní kód a storno.
 
-**Ověření:** test e-mail dorazí bez SPF failu, Resend logs ukazují `delivered`.
+**Ověření:** přihlásit se jako administrátor, zadat vlastní adresu do
+„Odeslat test na“, kliknout na „Odeslat testovací e-mail“ a zkontrolovat
+Resend Logs. Odeslání se provádí pouze ze serveru; API klíč není v prohlížeči.
 
 ---
 
-## 7. Uptime a cron heartbeat monitoring
+## 7. Supabase Auth SMTP — registrace a obnova hesla
 
-- UptimeRobot check na `https://gym-plzen.vercel.app/` (po pořízení domény přepsat).
+Tento krok je ještě nutný. Aplikace už obsahuje `/forgot-password` a
+`/reset-password`; registrační potvrzení i resetovací odkaz posílá Supabase
+Auth. Aby používaly značkovou adresu a Resend, musí SMTP uložit uživatel s
+oprávněním upravovat Supabase projekt.
+
+**Kde:** <https://supabase.com/dashboard/project/rkmunagymohxtclymacm/auth/smtp>
+
+1. Zapnout **Custom SMTP**.
+2. Vyplnit:
+   - Sender email: `noreply@namastegym.cz`
+   - Sender name: `Namasté Private Gym`
+   - Host: `smtp.resend.com`
+   - Port: `465` (SSL / implicit TLS)
+   - Username: `resend`
+   - Password: stejný Resend API key jako `RESEND_API_KEY` ve Vercelu
+3. Uložit. Při vkládání API klíče jej nikam jinam nekopírovat a nikdy jej
+   necommitovat.
+4. V Supabase → Auth → **Email Templates** upravit nejméně:
+   - **Confirm signup** — předmět `Potvrďte svůj e-mail | NAMASTÉ Private Gym`
+   - **Reset password** — předmět `Obnova hesla | NAMASTÉ Private Gym`
+
+Do obou šablon ponechat Supabase proměnnou `{{ .ConfirmationURL }}`; je to
+jednorázový zabezpečený odkaz, který Supabase vytvoří pro konkrétního uživatele.
+Vzor resetu:
+
+```text
+Dobrý den,
+
+pro nastavení nového hesla použijte zabezpečený odkaz níže.
+
+{{ .ConfirmationURL }}
+
+Pokud jste o změnu nežádali, tento e-mail ignorujte.
+
+NAMASTÉ Private Gym
+```
+
+**Ověření:**
+
+1. V produkci se zaregistrovat na novou testovací adresu a potvrdit e-mail.
+2. Na `/forgot-password` požádat o obnovu a přes e-mail nastavit nové heslo.
+3. V Resend Logs ověřit odesílatele `noreply@namastegym.cz` a doručení.
+
+Administrace řídí aplikační šablony rezervací. Šablony registrace a resetu
+zůstávají v Supabase Auth, protože Supabase vytváří a zabezpečuje tokeny;
+nejsou záměrně duplikované v administraci webu.
+
+---
+
+## 8. Uptime a cron heartbeat monitoring
+
+- UptimeRobot check na `https://www.namastegym.cz/`.
 - Cron heartbeat monitor pro `/api/cron/watchdog` (nebo přes `UPTIMEROBOT_HEARTBEAT_URL`,
   který cron pinguje po úspěšném běhu — env je nastavené v `.env.local`).
 
 ---
 
-## 8. Poznámky
+## 9. Poznámky
 
 - `.env.local` a všechny výše uvedené klíče **nikdy** necommituj.
 - Po nastavení §1 a §2 proveď v prohlížeči úplný reálný test: registrace, magic-link,

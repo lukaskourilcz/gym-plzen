@@ -31,8 +31,12 @@ nastavení a chybějící klientské podklady jsou v [NEEDED.md](./NEEDED.md).
 - `/`: veřejný web, cena, způsob rezervace, pravidla, galerie, kontakt a mapa.
 - `/rezervace`: měsíční date-first kalendář a přesné časové rozsahy slotů.
 - `/login`: Supabase přihlášení a registrace; v lokálním vývoji také demo účty.
+- `/forgot-password`, `/reset-password`: bezpečná obnova hesla přes Supabase Auth.
 - `/account`: profil člena, věrnost a rezervace.
-- `/admin`: chráněná administrace, CMS, rozvrh, rezervace a provozní přehledy.
+- `/admin`: chráněná administrace, CMS, rozvrh, rezervace, provozní přehledy a
+  editovatelné aplikační e-mailové šablony s náhledem a testovacím odesláním.
+  Obsah webu je rozdělený do lidsky pojmenovaných sekcí; u každého aktuálního
+  textu je samostatná ikona úprav bez technických CMS polí.
 - `/faq`, `/vybaveni`: potvrzené informace bez domyšleného vybavení nebo pravidel.
 - `/admin/design-system`: chráněná živá galerie design systému.
 

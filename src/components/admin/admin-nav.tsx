@@ -14,9 +14,9 @@ import {
   KeyRound,
   Lightbulb,
   ListChecks,
+  Mail,
   MessageCircle,
   Palette,
-  Rocket,
   Settings,
   Tags,
   Users,
@@ -47,6 +47,7 @@ const NAV_GROUPS = [
     label: "Obsah",
     items: [
       ["/admin/content", "Obsah webu", FileText],
+      ["/admin/emails", "E-maily", Mail],
       ["/admin/settings", "Nastavení a branding", Settings],
       ["/admin/design-system", "Design systém", Palette],
     ],
@@ -57,7 +58,6 @@ const NAV_GROUPS = [
       ["/admin/statistics", "Statistiky", ChartNoAxesColumnIncreasing],
       ["/admin/alerts", "Upozornění", Bell],
       ["/admin/inspirations", "Inspirace", Lightbulb],
-      ["/admin/plan", "Plán spuštění", Rocket],
     ],
   },
 ] as const;

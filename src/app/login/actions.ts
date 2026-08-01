@@ -10,6 +10,8 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { safeInternalPath } from "@/lib/security/redirects";
 import { takeRateLimit } from "@/lib/security/rate-limit";
+import { publicEnv } from "@/lib/public-env";
+import { passwordResetRequestSchema } from "@/lib/validations/auth";
 
 const inputSchema = z.object({
   mode: z.enum(["signin", "signup"]),
@@ -85,6 +87,52 @@ export async function authenticateAction(input: unknown): Promise<AuthResult> {
   return data.session
     ? { ok: true, destination }
     : { ok: true, confirmationRequired: true };
+}
+
+/**
+ * Trigger Supabase Auth's reset flow. The same response is intentionally
+ * returned for unknown accounts, so this endpoint cannot be used to enumerate
+ * members. Supabase delivers the actual e-mail through its configured SMTP.
+ */
+export async function requestPasswordResetAction(input: unknown): Promise<{
+  ok: boolean;
+  error?: string;
+}> {
+  const parsed = passwordResetRequestSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Zadejte platný e-mail." };
+
+  const requestHeaders = await headers();
+  const source =
+    requestHeaders.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
+  if (
+    !takeRateLimit(
+      "password-reset",
+      `${source}:${parsed.data.email.toLowerCase()}`,
+      { limit: 5, windowMs: 15 * 60 * 1000 },
+    )
+  ) {
+    return {
+      ok: false,
+      error: "Příliš mnoho pokusů. Zkuste to znovu za několik minut.",
+    };
+  }
+
+  const supabase = await createClient();
+  if (!supabase) {
+    return { ok: false, error: "Obnovu hesla teď nelze odeslat." };
+  }
+
+  const origin = new URL(publicEnv.NEXT_PUBLIC_APP_URL).origin;
+  try {
+    // Deliberately discard Auth errors here. This keeps the response identical
+    // for an unknown address and for a temporarily unavailable Auth provider.
+    await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+      redirectTo: `${origin}/auth/callback?next=${encodeURIComponent("/reset-password")}`,
+    });
+  } catch {
+    // The generic success message below is part of the anti-enumeration policy.
+  }
+  return { ok: true };
 }
 
 export async function demoAdminLogoutAction() {

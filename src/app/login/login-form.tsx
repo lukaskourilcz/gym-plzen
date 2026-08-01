@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -201,6 +202,17 @@ export function LoginForm({
           {mode === "signin" ? "Přihlásit se" : "Zaregistrovat se"}
         </SubmitButton>
       </form>
+
+      {mode === "signin" ? (
+        <div className="mt-3 text-right">
+          <Link
+            href="/forgot-password"
+            className="inline-flex min-h-11 items-center text-sm font-bold text-accent-foreground hover:underline"
+          >
+            Zapomněli jste heslo?
+          </Link>
+        </div>
+      ) : null}
 
       <p className="mt-5 text-center text-sm text-muted-foreground">
         <button

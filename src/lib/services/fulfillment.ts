@@ -5,7 +5,11 @@ import {
   listCodesForReservation,
   revokeAccessCode,
 } from "./access-codes";
-import { dispatchAccessCode, loadMemberChannels } from "./notifications";
+import {
+  dispatchAccessCode,
+  loadMemberChannels,
+  sendReservationConfirmation,
+} from "./notifications";
 import { getPipeline, markStepFailed, markStepSucceeded } from "./pipeline";
 
 /**
@@ -25,6 +29,25 @@ export async function fulfillReservation(reservationId: string): Promise<void> {
 
   // Step: payment : reaching here means it's confirmed/paid.
   await markStepSucceeded(reservationId, "payment");
+
+  // Confirmation is useful operationally, but must never hold back the entry
+  // code. Access-code delivery remains the reliability pipeline's invariant.
+  try {
+    await sendReservationConfirmation({
+      userId: reservation.userId ?? null,
+      reservationId,
+      name: reservation.contactName,
+      startsAt: reservation.startsAt,
+      endsAt: reservation.endsAt,
+      priceCents: reservation.priceCents,
+      email: reservation.contactEmail,
+    });
+  } catch (error) {
+    logger.error(error, {
+      where: "fulfillment.sendReservationConfirmation",
+      reservationId,
+    });
+  }
 
   // Step: code_created : issue a code + provision it on the lock (once).
   const existing = await listCodesForReservation(reservationId);
@@ -88,6 +111,7 @@ export async function fulfillReservation(reservationId: string): Promise<void> {
     const outcome = await dispatchAccessCode({
       userId: reservation.userId ?? null,
       reservationId,
+      name: reservation.contactName,
       code: plaintext,
       startsAt: reservation.startsAt,
       email: reservation.contactEmail,

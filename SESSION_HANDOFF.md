@@ -1,6 +1,6 @@
 # Předání session
 
-Aktualizováno: 31. 7. 2026
+Aktualizováno: 1. 8. 2026
 
 ## Stav
 
@@ -33,9 +33,25 @@ vstupu a rezervační tlačítko. Nemá text „Celý gym jen pro vás“, opako
 věrnostní text ani poznámku o registračních poplatcích.
 V desktopovém hero je rezervační kalendář svisle vycentrovaný vůči celému
 hero layoutu.
-Hlavní navazující úkol je transakční e-mailing z `noreply@namastegym.cz`.
-Rozsah, DNS předpoklady a požadované administrační šablony jsou aktuálně
-vedené v [NEEDED.md](./NEEDED.md).
+Resend doména `namastegym.cz` je ověřená a Vercel má nastavený serverový
+sender `Namasté Private Gym <noreply@namastegym.cz>`. Administrace →
+**E-maily** obsahuje editovatelné aplikační e-mailové šablony pro
+potvrzení rezervace, vstupní kód a storno, včetně bezpečného náhledu, proměnných
+a testovacího odeslání na zadanou adresu. Potvrzení rezervace se odesílá po
+potvrzené platbě, vstupní kód a storno používají stejný systém šablon.
+
+Přibyly `/forgot-password` a `/reset-password`. Obnova hesla už volá Supabase
+Auth s rate-limitem a odpovědí, která neprozradí existenci účtu. Aby registrační
+a resetovací e-maily používaly Resend, zbývá ručně uložit Custom SMTP v
+Supabase. Přesné hodnoty, URL a testovací postup jsou v §7
+[MANUAL_STEPS.md](./MANUAL_STEPS.md#7-supabase-auth-smtp--registrace-a-obnova-hesla).
+
+Administrace už neobsahuje položku ani route „Plán spuštění“. `/admin/content`
+je přepsaný na klientsky bezpečný editor: aktuální texty jsou rozdělené na
+Hero, informační lištu, průběh rezervace, ceník, galerii, Vybavení, FAQ, mapu a
+kontakt a provozní řád. Jedinou editovatelnou hodnotou je text po kliknutí na
+ikonu tužky; klíč, typ a interní skupina se nikde nezobrazují. Texty z FAQ a
+Vybavení jsou nyní také čtené z CMS, nikoli z lokálních konstant.
 Kořenový layout je výškový flex sloupec a přímý `main` vyplňuje volné místo.
 Footer proto končí u spodního okraje viewportu na krátkých veřejných stránkách
 a za obsahem na stránkách delších.
@@ -79,7 +95,7 @@ Vše běželo na Node 22:
 - `npm run format:check`: prošlo;
 - `npm run lint`: prošlo;
 - `npm run typecheck`: prošlo;
-- `npm test`: 17 passed;
+- `npm test`: 20 passed;
 - lokální demo a veřejné Playwright scénáře: 10 passed;
 - produkční veřejný smoke test bez databáze: 8 passed, 1 očekávaně skipped;
 - produkční skip-link stress test: 5/5 passed;
@@ -104,7 +120,8 @@ FAQ accordion, focus, Escape a reduced motion mají regresní pokrytí.
 2. skutečná Facebook URL;
 3. schválené právní texty a provozní řád;
 4. finální fotografie jednotlivých zón;
-5. potvrzený Supabase projekt a ostré ověření Stripe, Nuki a doručování.
+5. nastavené Supabase Auth SMTP a ostré ověření registrace, resetu a doručování;
+6. potvrzený Supabase projekt a ostré ověření Stripe a Nuki.
 
 Desktopové i mobilní veřejné menu je ve verzálkách; desktopové položky jsou
 roztažené přes samostatný široký středový prostor headeru.

@@ -46,14 +46,6 @@ const OPENING_HOURS = `${minutesToHHmm(DEFAULT_OPEN_MINUTE).replace(
   "",
 )}–${minutesToHHmm(DEFAULT_CLOSE_MINUTE)}`;
 
-/**
- * Fixed brand copy, deliberately NOT read from the CMS. The `home.hero.*`
- * blocks were seeded with older wording, and a seeded row overrides the code
- * default, so the hero would keep rendering the superseded headline.
- */
-const HERO_SUBTITLE =
-  "Rezervujte si prémiové, soukromé, samoobslužné fitness v Plzni. Jen pro sebe a svůj doprovod.";
-
 /** Six operating steps, all editable in the admin under "Obsah webu". */
 const STEP_KEYS = [
   ["home.about.step1.title", "home.about.step1.body"],
@@ -167,11 +159,11 @@ export default async function HomePage() {
           <Container className="grid gap-12 py-14 lg:min-h-[calc(100svh-var(--header-h)-112px)] lg:grid-cols-[1fr_1fr] lg:content-center lg:items-center lg:gap-8 lg:py-8 xl:gap-12">
             <div>
               <h1 className="max-w-2xl text-4xl font-extrabold leading-[1.1] tracking-[-.01em] sm:text-5xl lg:text-6xl">
-                Tvůj čas. Tvůj prostor. Tvoje{" "}
-                <span className="text-gold">Namasté.</span>
+                {t("home.hero.title")}{" "}
+                <span className="text-gold">{t("home.hero.titleAccent")}</span>
               </h1>
               <p className="mt-7 max-w-xl text-lg leading-8 text-ink-foreground/75">
-                {HERO_SUBTITLE}
+                {t("home.hero.subtitle")}
               </p>
               <div className="mt-7 grid gap-4 text-sm text-ink-foreground/85 sm:grid-cols-2 sm:gap-6">
                 <div className="flex items-start gap-2">
@@ -181,7 +173,7 @@ export default async function HomePage() {
                   />
                   <div>
                     <span className="block text-xs font-extrabold uppercase tracking-[.12em]">
-                      Adresa
+                      {t("home.hero.addressLabel")}
                     </span>
                     <span className="mt-1 block font-bold">{address}</span>
                   </div>
@@ -193,7 +185,7 @@ export default async function HomePage() {
                   />
                   <div>
                     <span className="block text-xs font-extrabold uppercase tracking-[.12em]">
-                      Otevírací doba
+                      {t("home.hero.hoursLabel")}
                     </span>
                     <span className="mt-1 block font-bold">
                       {OPENING_HOURS} · otevřeno každý den
@@ -203,7 +195,7 @@ export default async function HomePage() {
               </div>
               <div className="mt-8 grid max-w-xl gap-3 sm:grid-cols-2">
                 <Button href="/rezervace" size="lg" className="justify-center">
-                  Vybrat termín <ArrowRight aria-hidden="true" />
+                  {t("home.hero.primaryCta")} <ArrowRight aria-hidden="true" />
                 </Button>
                 <Button
                   href="/#jak-to-funguje"
@@ -211,7 +203,7 @@ export default async function HomePage() {
                   variant="outline"
                   className="justify-center border-white/45 text-white hover:bg-white/10 hover:text-white"
                 >
-                  Jak rezervovat
+                  {t("home.hero.secondaryCta")}
                 </Button>
               </div>
             </div>
@@ -232,12 +224,18 @@ export default async function HomePage() {
           <Container className="grid grid-cols-1 border-x border-border sm:grid-cols-2 lg:grid-cols-4">
             {[
               {
-                value: "Samoobslužné fitness",
-                label: "kardio, silová zóna a strečink",
+                value: t("home.facts.1.title"),
+                label: t("home.facts.1.body"),
               },
-              { value: "Dětský koutek", label: "plně vybavený s pískovištěm" },
-              { value: OPENING_HOURS, label: "otevřeno každý den" },
-              { value: "Komfortní zázemí", label: "plná lednice, relax zóna" },
+              {
+                value: t("home.facts.2.title"),
+                label: t("home.facts.2.body"),
+              },
+              { value: OPENING_HOURS, label: t("home.facts.3.body") },
+              {
+                value: t("home.facts.4.title"),
+                label: t("home.facts.4.body"),
+              },
             ].map((item, index) => (
               <div
                 key={item.value}
@@ -326,10 +324,10 @@ export default async function HomePage() {
               <div>
                 <p className="flex items-center gap-3 text-xs font-extrabold uppercase tracking-[.16em] text-gold">
                   <LotusMark decorative className="size-6 shrink-0" />
-                  Ceník
+                  {t("home.pricing.eyebrow")}
                 </p>
                 <h2 className="mt-4 max-w-xl text-3xl font-extrabold uppercase tracking-[.04em] sm:text-4xl">
-                  Jednorázový vstup bez předplatného
+                  {t("home.pricing.title")}
                 </h2>
                 <p className="mt-6 max-w-xl leading-7 text-ink-foreground/75">
                   {t("home.pricing.note")}
@@ -337,9 +335,9 @@ export default async function HomePage() {
                 {/* Hairline rows echo the divided facts strip and step grid. */}
                 <ul className="mt-8 grid border-t border-white/15">
                   {[
-                    "Soukromé využití prostoru během rezervace",
-                    "Platba online kartou",
-                    "Pokyny ke vstupu po potvrzení rezervace",
+                    t("home.pricing.feature1"),
+                    t("home.pricing.feature2"),
+                    t("home.pricing.feature3"),
                     `Každý ${content.freeEntryEvery}. vstup zdarma pro registrované`,
                   ].map((item) => (
                     <li
@@ -360,7 +358,7 @@ export default async function HomePage() {
                 className="overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-md"
               >
                 <p className="border-b border-border px-7 py-4 text-center text-xs font-extrabold uppercase tracking-[.14em] text-accent-foreground">
-                  Jednorázový vstup
+                  {t("home.pricing.cardLabel")}
                 </p>
                 <div className="border-b border-border px-7 py-10 text-center">
                   <div className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
@@ -374,7 +372,7 @@ export default async function HomePage() {
                 </div>
                 <div className="px-7 py-6 text-center">
                   <Button href="/rezervace" size="lg" className="w-full">
-                    Rezervovat trénink <ArrowRight aria-hidden="true" />
+                    {t("home.pricing.button")} <ArrowRight aria-hidden="true" />
                   </Button>
                 </div>
               </div>
@@ -388,15 +386,15 @@ export default async function HomePage() {
         >
           <Container>
             <SectionHeading
-              eyebrow="Prostor"
-              title="Podívejte se dovnitř"
+              eyebrow={t("home.gallery.eyebrow")}
+              title={t("home.gallery.title")}
               align="left"
             />
             <div className="mt-8 grid gap-4 lg:h-[46svh] lg:grid-cols-[1.35fr_.65fr]">
               <div className="relative min-h-[420px] overflow-hidden rounded-lg bg-muted lg:h-full lg:min-h-0">
                 <Image
                   src={PUBLISHED_GYM_PHOTO}
-                  alt="Interiér NAMASTÉ Private Gym"
+                  alt={t("home.gallery.mainImageAlt")}
                   fill
                   sizes="(max-width: 1023px) 100vw, 66vw"
                   className="object-cover"
@@ -404,9 +402,9 @@ export default async function HomePage() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 lg:grid-rows-3">
                 {[
-                  "Další pohled na prostor",
-                  "Detail tréninkové zóny",
-                  "Zázemí a vstup",
+                  t("home.gallery.image2"),
+                  t("home.gallery.image3"),
+                  t("home.gallery.image4"),
                 ].map((label) => (
                   <GalleryPlaceholder key={label} label={label} />
                 ))}
@@ -414,7 +412,7 @@ export default async function HomePage() {
             </div>
             <div className="mt-7 border-t border-border pt-7">
               <Button href="/vybaveni" variant="outline">
-                Informace o vybavení
+                {t("home.gallery.button")}
               </Button>
             </div>
           </Container>
@@ -430,7 +428,7 @@ export default async function HomePage() {
               size="lg"
               className="min-w-52 shrink-0 justify-center"
             >
-              Rezervovat <ArrowRight aria-hidden="true" />
+              {t("home.cta.button")} <ArrowRight aria-hidden="true" />
             </Button>
           </Container>
         </Section>
@@ -463,11 +461,11 @@ export default async function HomePage() {
             className="absolute left-5 top-5 max-w-[calc(100%_-_2.5rem)] border border-border bg-card p-5 shadow-md sm:left-8 sm:top-8 sm:max-w-sm sm:p-6"
           >
             <p className="text-sm font-extrabold uppercase tracking-[.08em] text-accent-foreground">
-              NAMASTÉ Private Gym
+              {t("home.contact.mapHeading")}
             </p>
             <p className="mt-2 font-bold">{address}</p>
             <p className="mt-3 text-sm text-muted-foreground">
-              Otevírací doba {OPENING_HOURS}, každý den
+              {t("home.contact.hours").replace("{hours}", OPENING_HOURS)}
             </p>
           </div>
           <Button
@@ -477,7 +475,7 @@ export default async function HomePage() {
             variant="ink"
             className="absolute bottom-5 left-5 sm:left-8"
           >
-            Otevřít v Mapách Google
+            {t("home.contact.mapsButton")}
           </Button>
         </div>
       </main>

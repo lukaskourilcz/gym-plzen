@@ -26,4 +26,5 @@ export * as schedule from "./schedule";
 export * as cms from "./cms";
 export * as media from "./media";
 export * as messages from "./messages";
+export * as emailTemplates from "./email-templates";
 export * as entryLog from "./entry-log";

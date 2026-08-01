@@ -57,6 +57,7 @@ const createBlockedSlotImpl = defineAction({
       await notifications.sendReservationClosure({
         userId: r.userId ?? null,
         reservationId: r.id,
+        name: r.contactName,
         startsAt: r.startsAt,
         email: r.contactEmail ?? channels?.user.email ?? null,
         phone: r.contactPhone ?? channels?.profile?.phone ?? null,

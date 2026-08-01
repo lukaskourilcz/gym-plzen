@@ -1,9 +1,8 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { profiles, messageDelivery } from "@/lib/db/schema";
 import type { MessageDelivery } from "@/lib/db/types";
 import { formatDateTime } from "@/lib/helpers/format";
-import { sendEmail } from "@/lib/integrations/resend";
 import {
   sendTemplateMessage,
   sendTextMessage,
@@ -15,6 +14,7 @@ import {
   SMS_ACCESS_TEMPLATE_KEY,
   renderTemplate,
 } from "@/lib/config/branding";
+import { sendTransactionalEmail } from "./email-templates";
 
 /**
  * Multi-channel notification dispatch. The access code is sent over every
@@ -57,6 +57,7 @@ async function record(
 export interface AccessCodeMessageContext {
   userId: string | null;
   reservationId: string;
+  name?: string | null;
   code: string;
   startsAt: Date;
   email?: string | null;
@@ -83,11 +84,14 @@ export async function dispatchAccessCode(
 
   // Email : always attempted when we have an address.
   if (ctx.email) {
-    const result = await sendEmail({
+    const result = await sendTransactionalEmail({
+      id: "access_code",
       to: ctx.email,
-      subject: `Váš vstupní kód – ${when}`,
-      html: accessCodeEmailHtml(ctx.code, when),
-      text: `Váš vstupní kód je ${ctx.code}. Platí pro rezervaci ${when}.`,
+      variables: {
+        name: ctx.name || "zákazníku",
+        code: ctx.code,
+        time: when,
+      },
     });
     deliveries.push(
       await record(
@@ -151,6 +155,7 @@ function channelBase(ctx: AccessCodeMessageContext) {
 export async function sendReservationClosure(params: {
   userId: string | null;
   reservationId: string;
+  name?: string | null;
   startsAt: Date;
   email?: string | null;
   phone?: string | null;
@@ -165,13 +170,14 @@ export async function sendReservationClosure(params: {
   };
 
   if (params.email) {
-    const result = await sendEmail({
+    const result = await sendTransactionalEmail({
+      id: "reservation_cancellation",
       to: params.email,
-      subject: `Zrušení rezervace – ${when}`,
-      html: closureEmailHtml(when, params.reason),
-      text: `Vaše rezervace na ${when} byla bohužel zrušena${
-        params.reason ? ` (${params.reason})` : ""
-      }. Omlouváme se za komplikace. Vyberte si prosím jiný termín.`,
+      variables: {
+        name: params.name || "zákazníku",
+        time: when,
+        reason: params.reason || "Změna provozní doby",
+      },
     });
     await record(
       { ...base, channel: "email", recipient: params.email },
@@ -193,14 +199,63 @@ export async function sendReservationClosure(params: {
   }
 }
 
-function closureEmailHtml(when: string, reason?: string): string {
-  return `<div style="font-family:sans-serif">
-    <h2>Rezervace byla zrušena</h2>
-    <p>Vaše rezervace na <strong>${when}</strong> byla bohužel zrušena${
-      reason ? ` (${reason})` : ""
-    }.</p>
-    <p>Omlouváme se za komplikace. Vyberte si prosím jiný volný termín na webu.</p>
-  </div>`;
+/**
+ * Send the booking confirmation once per reservation. It intentionally does
+ * not participate in the access-code pipeline: confirmation failure must
+ * never prevent a paid customer from receiving their entry code.
+ */
+export async function sendReservationConfirmation(params: {
+  userId: string | null;
+  reservationId: string;
+  name?: string | null;
+  startsAt: Date;
+  endsAt: Date;
+  priceCents: number | null;
+  email?: string | null;
+}): Promise<void> {
+  if (!params.email) return;
+
+  const [alreadySent] = await db
+    .select({ id: messageDelivery.id })
+    .from(messageDelivery)
+    .where(
+      and(
+        eq(messageDelivery.reservationId, params.reservationId),
+        eq(messageDelivery.channel, "email"),
+        eq(messageDelivery.kind, "reservation_confirmation"),
+        eq(messageDelivery.status, "sent"),
+      ),
+    )
+    .limit(1);
+  if (alreadySent) return;
+
+  const result = await sendTransactionalEmail({
+    id: "reservation_confirmation",
+    to: params.email,
+    variables: {
+      name: params.name || "zákazníku",
+      time: formatDateTime(params.startsAt),
+      duration: `${Math.round(
+        (params.endsAt.getTime() - params.startsAt.getTime()) / 60_000,
+      )} minut`,
+      price:
+        params.priceCents === 0
+          ? "zdarma (věrnostní vstup)"
+          : params.priceCents === null
+            ? "v ceně členství"
+            : `${Math.round(params.priceCents / 100)} Kč`,
+    },
+  });
+  await record(
+    {
+      userId: params.userId,
+      reservationId: params.reservationId,
+      channel: "email",
+      kind: "reservation_confirmation",
+      recipient: params.email,
+    },
+    result,
+  );
 }
 
 /** Load member contact + channel prefs for building an AccessCodeMessageContext. */
@@ -220,14 +275,4 @@ export async function loadMemberChannels(userId: string): Promise<{
     notifyBySms: profile.notifyBySms,
     phone: profile.phone,
   };
-}
-
-/** Minimal inline email template (design comes later : see the task brief). */
-function accessCodeEmailHtml(code: string, when: string): string {
-  return `<div style="font-family:sans-serif">
-    <h2>Váš vstupní kód</h2>
-    <p style="font-size:28px;letter-spacing:4px;font-weight:bold">${code}</p>
-    <p>Platí pro rezervaci: <strong>${when}</strong>.</p>
-    <p>Kód zadejte na klávesnici u dveří v čase vaší rezervace.</p>
-  </div>`;
 }
