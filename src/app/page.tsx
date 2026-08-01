@@ -426,6 +426,9 @@ export default async function HomePage() {
               </h2>
               <blockquote className="mt-4 border-l-2 border-gold pl-4 text-base leading-7 text-ink-foreground/75">
                 <p>„{t("home.cta.quote")}“</p>
+                <cite className="mt-2 block text-sm font-extrabold not-italic text-gold">
+                  {t("home.cta.quoteAuthor")}
+                </cite>
               </blockquote>
             </div>
             <Button

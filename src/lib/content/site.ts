@@ -90,7 +90,9 @@ export const SITE_DEFAULTS = {
   "home.pricing.button": "Rezervovat trénink",
   "home.gallery.eyebrow": "Prostor",
   "home.cta.title": "Připravený na změnu? Přidej se k nám!",
-  "home.cta.quote": "Tady bude citát Buddhy",
+  "home.cta.quote":
+    "To keep the body in good health is a duty... otherwise we shall not be able to keep our mind strong and clear.",
+  "home.cta.quoteAuthor": "Buddha",
   "home.cta.button": "Rezervovat",
   "home.rules.title": "Provozní řád",
   "home.rules.body":
