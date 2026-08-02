@@ -103,7 +103,8 @@ export default async function HomePage() {
     body: t(bodyKey),
   }));
   const ctaQuote = t("home.cta.quote");
-  const ctaQuoteSecondLine = "be able to keep our mind strong and clear.";
+  const ctaQuoteSecondLine =
+    "otherwise we shall not be able to keep our mind strong and clear.";
   const ctaQuoteBreakIndex = ctaQuote.indexOf(ctaQuoteSecondLine);
   const ctaQuoteFirstLine =
     ctaQuoteBreakIndex > 0
