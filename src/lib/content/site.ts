@@ -48,7 +48,7 @@ export const SITE_DEFAULTS = {
   "home.hero.title": "Tvůj čas.\nTvůj prostor.\nTvoje",
   "home.hero.titleAccent": "Namasté.",
   "home.hero.subtitle":
-    "Rezervujte si prémiové, soukromé, samoobslužné fitness v Plzni. Jen pro sebe a svůj doprovod.",
+    "Rezervujte si celé samoobslužné fitness v Plzni jen pro sebe a svůj doprovod.",
   "home.hero.primaryCta": "Vybrat termín",
   "home.hero.secondaryCta": "Jak rezervovat",
   "home.hero.addressLabel": "Adresa",
@@ -215,8 +215,6 @@ const LEGACY_CONTENT_VALUES: Partial<
   Record<keyof typeof SITE_DEFAULTS, string>
 > = {
   "home.hero.title": "Tvůj čas. Tvůj prostor. Tvoje Namasté.",
-  "home.hero.subtitle":
-    "Rezervujte si celé samoobslužné fitness v Plzni jen pro sebe a svůj doprovod.",
 };
 
 export type SiteContentKey = keyof typeof SITE_DEFAULTS;
