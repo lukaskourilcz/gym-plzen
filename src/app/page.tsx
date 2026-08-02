@@ -166,7 +166,7 @@ export default async function HomePage() {
           />
           <Container className="grid gap-12 py-14 lg:min-h-[calc(100svh-var(--header-h)-112px)] lg:grid-cols-[1fr_1fr] lg:content-center lg:items-center lg:gap-8 lg:py-8 xl:gap-12">
             <div>
-              <h1 className="max-w-2xl text-4xl font-extrabold leading-[1.1] tracking-[-.01em] sm:text-5xl lg:text-6xl">
+              <h1 className="max-w-2xl whitespace-pre-line text-4xl font-extrabold leading-[1.1] tracking-[-.01em] sm:text-5xl lg:text-6xl">
                 {t("home.hero.title")}{" "}
                 <span className="text-gold">{t("home.hero.titleAccent")}</span>
               </h1>

@@ -45,7 +45,7 @@ function publicInstagram(value?: string | null) {
 export const SITE_DEFAULTS = {
   "brand.name": "NAMASTÉ Private Gym",
   "home.hero.badge": "Privátní fitness v Plzni",
-  "home.hero.title": "Tvůj čas. Tvůj prostor. Tvoje",
+  "home.hero.title": "Tvůj čas.\nTvůj prostor.\nTvoje",
   "home.hero.titleAccent": "Namasté.",
   "home.hero.subtitle":
     "Rezervujte si prémiové, soukromé, samoobslužné fitness v Plzni. Jen pro sebe a svůj doprovod.",
