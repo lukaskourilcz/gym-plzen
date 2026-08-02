@@ -102,6 +102,13 @@ export default async function HomePage() {
     title: t(titleKey),
     body: t(bodyKey),
   }));
+  const ctaQuote = t("home.cta.quote");
+  const ctaQuoteSecondLine = "be able to keep our mind strong and clear.";
+  const ctaQuoteBreakIndex = ctaQuote.indexOf(ctaQuoteSecondLine);
+  const ctaQuoteFirstLine =
+    ctaQuoteBreakIndex > 0
+      ? ctaQuote.slice(0, ctaQuoteBreakIndex).trimEnd()
+      : ctaQuote;
   const businessJson = {
     "@context": "https://schema.org",
     "@type": "HealthClub",
@@ -425,7 +432,16 @@ export default async function HomePage() {
                 {t("home.cta.title")}
               </h2>
               <blockquote className="mt-4 border-l-2 border-gold pl-4 text-base leading-7 text-ink-foreground/75">
-                <p>„{t("home.cta.quote")}“</p>
+                <p>
+                  „{ctaQuoteFirstLine}
+                  {ctaQuoteBreakIndex > 0 ? (
+                    <>
+                      <br />
+                      {ctaQuoteSecondLine}
+                    </>
+                  ) : null}
+                  “
+                </p>
                 <cite className="mt-2 block text-sm font-extrabold not-italic text-gold">
                   {t("home.cta.quoteAuthor")}
                 </cite>
