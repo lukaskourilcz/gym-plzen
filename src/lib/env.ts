@@ -32,6 +32,9 @@ const serverSchema = z.object({
   SUPABASE_URL: z.string().url().optional(),
   SUPABASE_PUBLISHABLE_KEY: z.string().optional(),
   SUPABASE_JWKS_URL: z.string().url().optional(),
+  // Server-only Personal Access Token used solely to keep the hosted Supabase
+  // Auth e-mail templates in sync with the admin editor. Never expose it.
+  SUPABASE_MANAGEMENT_API_TOKEN: z.string().optional(),
 
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),

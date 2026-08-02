@@ -17,11 +17,12 @@ const saveEmailTemplateImpl = defineAction({
   schema: emailTemplateSchema,
   authorize: assertAdmin,
   handler: async (input, admin) => {
-    await emailTemplates.saveEmailTemplate({
+    const result = await emailTemplates.saveEmailTemplate({
       ...input,
       updatedByAdminId: admin.id,
     });
     revalidatePath("/admin/emails");
+    return result;
   },
 });
 
@@ -48,7 +49,7 @@ const sendEmailTemplateTestImpl = defineAction({
 
 export async function saveEmailTemplateAction(
   input: EmailTemplateValues,
-): Promise<Result<unknown>> {
+): Promise<Result<{ supabaseSynced?: boolean }>> {
   return saveEmailTemplateImpl(input);
 }
 

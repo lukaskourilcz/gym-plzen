@@ -36,16 +36,19 @@ V desktopovém hero je rezervační kalendář svisle vycentrovaný vůči celé
 hero layoutu.
 Resend doména `namastegym.cz` je ověřená a Vercel má nastavený serverový
 sender `Namasté Private Gym <noreply@namastegym.cz>`. Administrace →
-**E-maily** obsahuje editovatelné aplikační e-mailové šablony pro
-potvrzení rezervace, vstupní kód a storno, včetně bezpečného náhledu, proměnných
-a testovacího odeslání na zadanou adresu. Potvrzení rezervace se odesílá po
-potvrzené platbě, vstupní kód a storno používají stejný systém šablon.
+**E-maily** obsahuje pět editovatelných českých šablon: potvrzení registrace,
+obnovu hesla, potvrzení rezervace, vstupní kód a storno. Všechny mají stejné
+logo, náhled, proměnné a testovací odeslání na zadanou adresu. Potvrzení
+rezervace se odesílá po potvrzené platbě, vstupní kód a storno používají stejný
+systém šablon.
 
 Přibyly `/forgot-password` a `/reset-password`. Obnova hesla už volá Supabase
-Auth s rate-limitem a odpovědí, která neprozradí existenci účtu. Aby registrační
-a resetovací e-maily používaly Resend, zbývá ručně uložit Custom SMTP v
-Supabase. Přesné hodnoty, URL a testovací postup jsou v §7
-[MANUAL_STEPS.md](./MANUAL_STEPS.md#7-supabase-auth-smtp--registrace-a-obnova-hesla).
+Auth s rate-limitem a odpovědí, která neprozradí existenci účtu. Custom SMTP
+přes Resend je nastavený a resetovací tok na vlastní doméně byl ověřený. Aby
+administrace mohla propsat šablony registrace a resetu přímo do Supabase Auth,
+ještě doplnit ve Vercelu serverový `SUPABASE_MANAGEMENT_API_TOKEN`. Přesný
+postup je v §7
+[MANUAL_STEPS.md](./MANUAL_STEPS.md#7-supabase-auth-smtp-a-šablony-z-administrace).
 
 Administrace už neobsahuje položku ani route „Plán spuštění“. `/admin/content`
 je přepsaný na klientsky bezpečný editor: aktuální texty jsou rozdělené na
@@ -120,7 +123,8 @@ FAQ accordion, focus, Escape a reduced motion mají regresní pokrytí.
 2. skutečná Facebook URL;
 3. schválené právní texty a provozní řád;
 4. finální fotografie jednotlivých zón;
-5. nastavené Supabase Auth SMTP a ostré ověření registrace, resetu a doručování;
+5. `SUPABASE_MANAGEMENT_API_TOKEN`, ostré ověření registrace a všech pěti
+   e-mailových šablon v Resend Logs;
 6. potvrzený Supabase projekt a ostré ověření Stripe a Nuki.
 
 Desktopové i mobilní veřejné menu je ve verzálkách; desktopové položky jsou

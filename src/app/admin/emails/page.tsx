@@ -30,24 +30,29 @@ export default async function EmailsPage() {
           ]),
         ) as Record<EmailTemplateId, EmailTemplate>,
     );
+  const supabaseAuthSyncConfigured =
+    emailTemplates.isSupabaseAuthTemplateSyncConfigured();
 
   return (
     <div>
       <PageHeader
         title="E-maily"
-        description="Texty a náhledy automatických e-mailů. U každé šablony můžete poslat bezpečný test na vlastní adresu."
+        description="České texty, náhledy a testy všech automatických e-mailů. Každý e-mail používá stejné logo NAMASTÉ."
       />
       <Card>
         <CardHeader>
           <CardTitle>Automatické e-maily zákazníkům</CardTitle>
           <CardDescription>
-            Potvrzení rezervace, vstupní kód a storno používají tyto šablony.
-            Registraci a obnovu hesla odesílá Supabase Auth přes SMTP; jejich
-            nastavení je popsané v MANUAL_STEPS.md.
+            Potvrzení registrace a obnova hesla se po uložení synchronizují do
+            Supabase Auth. Rezervace, vstupní kód a storno se odesílají přímo
+            přes Resend.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <EmailTemplateForms templates={templates} />
+          <EmailTemplateForms
+            templates={templates}
+            supabaseAuthSyncConfigured={supabaseAuthSyncConfigured}
+          />
         </CardContent>
       </Card>
     </div>

@@ -39,8 +39,10 @@ const PREVIEW_VALUES: Record<string, string> = {
 /** Edit, preview, and test every transactional template sent by this app. */
 export function EmailTemplateForms({
   templates,
+  supabaseAuthSyncConfigured,
 }: {
   templates: Record<EmailTemplateId, EmailTemplate>;
+  supabaseAuthSyncConfigured: boolean;
 }) {
   const [selectedId, setSelectedId] = useState<EmailTemplateId>(
     "reservation_confirmation",
@@ -89,7 +91,9 @@ export function EmailTemplateForms({
       return;
     }
     setSaveSuccess(
-      "Šablona uložená. Další odpovídající e-mail použije nový text.",
+      definition.delivery === "supabase_auth" && !result.data.supabaseSynced
+        ? "Text je uložený. Aby se změna promítla do registračních a resetovacích e-mailů, doplňte ve Vercelu SUPABASE_MANAGEMENT_API_TOKEN."
+        : "Šablona uložená. Další odpovídající e-mail použije nový text.",
     );
   });
 
@@ -138,6 +142,13 @@ export function EmailTemplateForms({
               {index < definition.variables.length - 1 ? ", " : "."}
             </span>
           ))}
+          {definition.delivery === "supabase_auth" ? (
+            <span className="block mt-2">
+              {supabaseAuthSyncConfigured
+                ? "Tato šablona se po uložení automaticky propíše do Supabase Auth."
+                : "Pro automatické propsání do Supabase Auth je potřeba doplnit serverovou proměnnou SUPABASE_MANAGEMENT_API_TOKEN."}
+            </span>
+          ) : null}
         </p>
 
         <form onSubmit={save} className="max-w-2xl">
@@ -191,7 +202,20 @@ export function EmailTemplateForms({
           </p>
           <div
             className="bg-card shadow-sm"
-            dangerouslySetInnerHTML={{ __html: emailTextToHtml(preview.body) }}
+            dangerouslySetInnerHTML={{
+              __html: emailTextToHtml(
+                preview.body,
+                definition.delivery === "supabase_auth"
+                  ? {
+                      actionUrl:
+                        selectedId === "signup_confirmation"
+                          ? "https://www.namastegym.cz/login"
+                          : "https://www.namastegym.cz/reset-password",
+                      actionLabel: definition.actionLabel,
+                    }
+                  : undefined,
+              ),
+            }}
           />
         </div>
 

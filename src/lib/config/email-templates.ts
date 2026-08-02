@@ -1,11 +1,12 @@
 /**
- * The customer-facing transactional e-mails that the application owns. Their
- * subject and text body live in `site_setting`, so an administrator can edit
- * wording without a deployment. Supabase owns its authentication e-mail HTML
- * (registration / reset password) because it sends those messages over SMTP.
+ * The customer-facing transactional e-mails. Their subject and text body live
+ * in `site_setting`, so an administrator can edit wording without a deployment.
+ * Authentication templates are additionally synchronised to Supabase Auth.
  */
 
 export const EMAIL_TEMPLATE_IDS = [
+  "signup_confirmation",
+  "password_reset",
   "reservation_confirmation",
   "access_code",
   "reservation_cancellation",
@@ -23,16 +24,45 @@ export interface EmailTemplateDefinition {
   label: string;
   description: string;
   variables: readonly string[];
+  delivery: "application" | "supabase_auth";
+  actionLabel?: string;
   fallback: EmailTemplate;
 }
 
 export const EMAIL_TEMPLATE_DEFINITIONS: readonly EmailTemplateDefinition[] = [
+  {
+    id: "signup_confirmation",
+    label: "Potvrzení registrace",
+    description:
+      "Odešle se po vytvoření účtu. Tlačítko pro potvrzení přidává systém automaticky.",
+    variables: ["{name}"],
+    delivery: "supabase_auth",
+    actionLabel: "Potvrdit e-mail",
+    fallback: {
+      subject: "Potvrďte svůj e-mail | NAMASTÉ Private Gym",
+      body: "Dobrý den, {name},\n\nvítáme vás v NAMASTÉ Private Gym. Pro dokončení registrace potvrďte svou e-mailovou adresu tlačítkem níže.\n\nPokud jste si účet nevytvořili, tento e-mail ignorujte.",
+    },
+  },
+  {
+    id: "password_reset",
+    label: "Obnova hesla",
+    description:
+      "Odešle se po žádosti o změnu hesla. Tlačítko pro nastavení nového hesla přidává systém automaticky.",
+    variables: ["{name}"],
+    delivery: "supabase_auth",
+    actionLabel: "Nastavit nové heslo",
+    fallback: {
+      subject: "Obnova hesla | NAMASTÉ Private Gym",
+      body: "Dobrý den, {name},\n\nobdrželi jsme žádost o změnu hesla k vašemu účtu. Nové heslo nastavíte tlačítkem níže.\n\nPokud jste o změnu nežádali, tento e-mail můžete ignorovat.",
+    },
+  },
   {
     id: "reservation_confirmation",
     label: "Potvrzení rezervace",
     description:
       "Odešle se po úspěšné platbě nebo při bezplatném věrnostním vstupu.",
     variables: ["{name}", "{time}", "{duration}", "{price}"],
+    delivery: "application",
     fallback: {
       subject: "Potvrzení rezervace | NAMASTÉ Private Gym",
       body: "Ahoj {name},\n\nvaše rezervace je potvrzená.\n\nTermín: {time}\nDélka: {duration}\nCena: {price}\n\nPřed začátkem rezervace vám pošleme osobní vstupní kód.\n\nNAMASTÉ Private Gym",
@@ -44,6 +74,7 @@ export const EMAIL_TEMPLATE_DEFINITIONS: readonly EmailTemplateDefinition[] = [
     description:
       "Odešle se po vytvoření jednorázového kódu pro vstup do studia.",
     variables: ["{name}", "{code}", "{time}"],
+    delivery: "application",
     fallback: {
       subject: "Váš vstupní kód | NAMASTÉ Private Gym",
       body: "Ahoj {name},\n\nvaše rezervace je dnes {time}.\n\nVstupní kód: {code}\n\nKód zadejte na klávesnici u dveří v čase vaší rezervace. Kód je osobní a platí pouze pro tento termín.\n\nNAMASTÉ Private Gym",
@@ -55,6 +86,7 @@ export const EMAIL_TEMPLATE_DEFINITIONS: readonly EmailTemplateDefinition[] = [
     description:
       "Odešle se při zrušení termínu administrací nebo při uzavření studia.",
     variables: ["{name}", "{time}", "{reason}"],
+    delivery: "application",
     fallback: {
       subject: "Zrušení rezervace | NAMASTÉ Private Gym",
       body: "Ahoj {name},\n\nvaše rezervace na {time} byla bohužel zrušena.\n\nDůvod: {reason}\n\nOmlouváme se za komplikace. Vyberte si prosím jiný volný termín.\n\nNAMASTÉ Private Gym",
@@ -80,6 +112,10 @@ export function getEmailTemplateDefinition(
   return definition;
 }
 
+export function isSupabaseAuthEmailTemplate(id: EmailTemplateId): boolean {
+  return getEmailTemplateDefinition(id).delivery === "supabase_auth";
+}
+
 /** Plain text only: template authoring never injects arbitrary HTML into mail. */
 export function renderEmailTemplateText(
   template: EmailTemplate,
@@ -92,14 +128,20 @@ export function renderEmailTemplateText(
   return { subject: replace(template.subject), body: replace(template.body) };
 }
 
-export function emailTextToHtml(text: string): string {
-  const escaped = text
+function escapeEmailHtml(value: string): string {
+  return value
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-  const paragraphs = escaped
+}
+
+export function emailTextToHtml(
+  text: string,
+  options?: { actionUrl?: string; actionLabel?: string },
+): string {
+  const paragraphs = escapeEmailHtml(text)
     .split(/\n{2,}/)
     .filter(Boolean)
     .map(
@@ -107,6 +149,10 @@ export function emailTextToHtml(text: string): string {
         `<p style="margin:0 0 18px">${paragraph.replaceAll("\n", "<br />")}</p>`,
     )
     .join("");
+  const action =
+    options?.actionUrl && options.actionLabel
+      ? `<p style="margin:26px 0 4px"><a href="${escapeEmailHtml(options.actionUrl)}" style="display:inline-block;background:#005340;color:#ffffff;padding:13px 20px;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;font-weight:700">${escapeEmailHtml(options.actionLabel)}</a></p>`
+      : "";
 
-  return `<div style="margin:0;background:#f5f3ee;padding:32px 16px;color:#18221e;font-family:Georgia,'Times New Roman',serif;line-height:1.6"><div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #d8d2c6;padding:36px"><p style="margin:0 0 28px;color:#005340;font-weight:700;letter-spacing:.08em;font-size:13px">NAMASTÉ PRIVATE GYM</p>${paragraphs}<p style="margin:28px 0 0;color:#68706b;font-size:13px">Tento e-mail byl odeslán automaticky. Na tuto adresu prosím neodpovídejte.</p></div></div>`;
+  return `<div style="margin:0;background:#f5f3ee;padding:32px 16px;color:#18221e;font-family:Georgia,'Times New Roman',serif;line-height:1.6"><div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #d8d2c6;padding:36px"><img src="https://www.namastegym.cz/images/namaste-logo.png" alt="NAMASTÉ Private Gym" width="150" style="display:block;width:150px;height:auto;margin:0 0 28px" /><p style="margin:0 0 24px;color:#005340;font-weight:700;letter-spacing:.08em;font-size:13px">NAMASTÉ PRIVATE GYM</p>${paragraphs}${action}<p style="margin:28px 0 0;color:#68706b;font-size:13px">Tento e-mail byl odeslán automaticky. Na tuto adresu prosím neodpovídejte.</p></div></div>`;
 }

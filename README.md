@@ -34,7 +34,9 @@ nastavení a chybějící klientské podklady jsou v [NEEDED.md](./NEEDED.md).
 - `/forgot-password`, `/reset-password`: bezpečná obnova hesla přes Supabase Auth.
 - `/account`: profil člena, věrnost a rezervace.
 - `/admin`: chráněná administrace, CMS, rozvrh, rezervace, provozní přehledy a
-  editovatelné aplikační e-mailové šablony s náhledem a testovacím odesláním.
+  pět editovatelných e-mailových šablon s logem, náhledem a testovacím
+  odesláním. Registrace a obnova hesla se přes serverový Supabase Management
+  token synchronizují do Supabase Auth.
   Obsah webu je rozdělený do lidsky pojmenovaných sekcí; u každého aktuálního
   textu je samostatná ikona úprav bez technických CMS polí.
 - `/faq`, `/vybaveni`: potvrzené informace bez domyšleného vybavení nebo pravidel.

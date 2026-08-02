@@ -154,9 +154,10 @@ Doména `namastegym.cz` je v Resend ověřená a Vercel má nastavené
 `RESEND_API_KEY` a `RESEND_FROM_EMAIL` pro Production i Preview.
 
 - Sender: `Namasté Private Gym <noreply@namastegym.cz>`
-- Šablony aplikace jsou v administraci → **E-maily**. Je zde náhled s
-  ukázkovými daty, test na zadanou
-  adresu a editace textu pro potvrzení rezervace, vstupní kód a storno.
+- Šablony jsou v administraci → **E-maily**. Je zde náhled s ukázkovými daty,
+  test na zadanou adresu a editace textu pro potvrzení registrace, obnovu
+  hesla, potvrzení rezervace, vstupní kód a storno. Všechny používají stejné
+  logo a český značkový rámec.
 
 **Ověření:** přihlásit se jako administrátor, zadat vlastní adresu do
 „Odeslat test na“, kliknout na „Odeslat testovací e-mail“ a zkontrolovat
@@ -164,14 +165,15 @@ Resend Logs. Odeslání se provádí pouze ze serveru; API klíč není v prohl�
 
 ---
 
-## 7. Supabase Auth SMTP — registrace a obnova hesla
+## 7. Supabase Auth SMTP a šablony z administrace
 
-Tento krok je ještě nutný. Aplikace už obsahuje `/forgot-password` a
-`/reset-password`; registrační potvrzení i resetovací odkaz posílá Supabase
-Auth. Aby používaly značkovou adresu a Resend, musí SMTP uložit uživatel s
-oprávněním upravovat Supabase projekt.
+Custom SMTP přes Resend je nastavený a odkaz pro obnovu hesla byl ověřený.
+Aplikace obsahuje `/forgot-password` a `/reset-password`; registrační potvrzení
+i resetovací odkaz posílá Supabase Auth.
 
 **Kde:** <https://supabase.com/dashboard/project/rkmunagymohxtclymacm/auth/smtp>
+
+Pokud by se SMTP nastavovalo znovu:
 
 1. Zapnout **Custom SMTP**.
 2. Vyplnit:
@@ -183,35 +185,26 @@ oprávněním upravovat Supabase projekt.
    - Password: stejný Resend API key jako `RESEND_API_KEY` ve Vercelu
 3. Uložit. Při vkládání API klíče jej nikam jinam nekopírovat a nikdy jej
    necommitovat.
-4. V Supabase → Auth → **Email Templates** upravit nejméně:
-   - **Confirm signup** — předmět `Potvrďte svůj e-mail | NAMASTÉ Private Gym`
-   - **Reset password** — předmět `Obnova hesla | NAMASTÉ Private Gym`
 
-Do obou šablon ponechat Supabase proměnnou `{{ .ConfirmationURL }}`; je to
-jednorázový zabezpečený odkaz, který Supabase vytvoří pro konkrétního uživatele.
-Vzor resetu:
+### Zpřístupnění šablon v administraci
 
-```text
-Dobrý den,
-
-pro nastavení nového hesla použijte zabezpečený odkaz níže.
-
-{{ .ConfirmationURL }}
-
-Pokud jste o změnu nežádali, tento e-mail ignorujte.
-
-NAMASTÉ Private Gym
-```
+1. Otevřít <https://supabase.com/dashboard/account/tokens> a vytvořit nový
+   **Personal Access Token** s oprávněním upravovat konfiguraci projektu.
+2. Ve Vercelu → Project → Settings → Environment Variables přidat
+   `SUPABASE_MANAGEMENT_API_TOKEN` pro **Production** i **Preview**.
+3. Uložit a spustit nový deployment.
+4. V administraci webu → **E-maily** upravit „Potvrzení registrace“ nebo
+   „Obnova hesla“ a uložit. Aplikace v bezpečném serverovém volání propíše
+   český předmět, text, logo a tlačítko s `{{ .ConfirmationURL }}` do
+   hostovaného Supabase Auth. Token se nikdy neposílá do prohlížeče.
 
 **Ověření:**
 
 1. V produkci se zaregistrovat na novou testovací adresu a potvrdit e-mail.
 2. Na `/forgot-password` požádat o obnovu a přes e-mail nastavit nové heslo.
-3. V Resend Logs ověřit odesílatele `noreply@namastegym.cz` a doručení.
-
-Administrace řídí aplikační šablony rezervací. Šablony registrace a resetu
-zůstávají v Supabase Auth, protože Supabase vytváří a zabezpečuje tokeny;
-nejsou záměrně duplikované v administraci webu.
+3. V administraci odeslat test každé z pěti šablon na vlastní adresu.
+4. V Resend Logs ověřit odesílatele `noreply@namastegym.cz`, české texty a
+   načtené logo.
 
 ---
 

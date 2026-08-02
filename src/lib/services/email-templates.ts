@@ -1,12 +1,18 @@
 import {
+  EMAIL_TEMPLATE_IDS,
   emailTemplateSettingKey,
   emailTextToHtml,
   getEmailTemplateDefinition,
+  isSupabaseAuthEmailTemplate,
   type EmailTemplate,
   type EmailTemplateId,
   renderEmailTemplateText,
 } from "@/lib/config/email-templates";
 import { sendEmail, type SendEmailResult } from "@/lib/integrations/resend";
+import {
+  isSupabaseAuthTemplateSyncConfigured,
+  syncSupabaseAuthEmailTemplate,
+} from "@/lib/integrations/supabase-management";
 import { getSetting, setSetting } from "./cms";
 
 /** Resolve the saved template, with a safe branded fallback on first use. */
@@ -27,13 +33,9 @@ export async function getAllEmailTemplates(): Promise<
   Record<EmailTemplateId, EmailTemplate>
 > {
   const entries = await Promise.all(
-    (
-      [
-        "reservation_confirmation",
-        "access_code",
-        "reservation_cancellation",
-      ] as const
-    ).map(async (id) => [id, await getEmailTemplate(id)] as const),
+    EMAIL_TEMPLATE_IDS.map(
+      async (id) => [id, await getEmailTemplate(id)] as const,
+    ),
   );
   return Object.fromEntries(entries) as Record<EmailTemplateId, EmailTemplate>;
 }
@@ -43,12 +45,19 @@ export async function saveEmailTemplate(params: {
   subject: string;
   body: string;
   updatedByAdminId: string;
-}): Promise<void> {
+}): Promise<{ supabaseSynced?: boolean }> {
   await setSetting(
     emailTemplateSettingKey(params.id),
     { subject: params.subject.trim(), body: params.body.trim() },
     params.updatedByAdminId,
   );
+  if (!isSupabaseAuthEmailTemplate(params.id)) return {};
+
+  const sync = await syncSupabaseAuthEmailTemplate({
+    id: params.id,
+    template: { subject: params.subject.trim(), body: params.body.trim() },
+  });
+  return { supabaseSynced: sync.synced };
 }
 
 export async function sendTransactionalEmail(params: {
@@ -58,11 +67,24 @@ export async function sendTransactionalEmail(params: {
 }): Promise<SendEmailResult> {
   const template = await getEmailTemplate(params.id);
   const rendered = renderEmailTemplateText(template, params.variables);
+  const definition = getEmailTemplateDefinition(params.id);
+  const actionUrl =
+    params.id === "signup_confirmation"
+      ? "https://www.namastegym.cz/login"
+      : "https://www.namastegym.cz/reset-password";
   return sendEmail({
     to: params.to,
     subject: rendered.subject,
     text: rendered.body,
-    html: emailTextToHtml(rendered.body),
+    html: emailTextToHtml(
+      rendered.body,
+      definition.delivery === "supabase_auth"
+        ? {
+            actionUrl,
+            actionLabel: definition.actionLabel,
+          }
+        : undefined,
+    ),
   });
 }
 
@@ -91,3 +113,5 @@ export function getEmailTemplatePreview(id: EmailTemplateId): EmailTemplate {
   const definition = getEmailTemplateDefinition(id);
   return renderEmailTemplateText(definition.fallback, TEST_VARIABLES);
 }
+
+export { isSupabaseAuthTemplateSyncConfigured };

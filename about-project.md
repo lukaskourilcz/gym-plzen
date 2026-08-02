@@ -19,11 +19,11 @@ obsahová i provozní administrace a věrnostní pravidlo každého 10. vstupu z
 ## Třetí strany / integrace
 
 - **Supabase** — databáze, autentizace a RLS; registrační a resetovací e-maily
-  odešle přes Resend po ručním uložení SMTP nastavení.
+  odesílá přes Resend SMTP. Jejich české šablony se z administrace
+  synchronizují přes serverový Management API token.
 - **Stripe** — jednorázové platby za rezervace.
 - **Nuki** — generování a ověření vstupních kódů.
-- **Resend / WhatsApp** — doručení potvrzení rezervace, vstupních kódů a
-  provozních pokynů; Resend je připravený také jako SMTP poskytovatel pro
-  Supabase Auth.
+- **Resend / WhatsApp** — doručení pěti e-mailových šablon, vstupních kódů a
+  provozních pokynů; Resend je poskytovatelem SMTP pro Supabase Auth.
 - **Sentry** — sledování chyb a výkonu.
 - **Vercel** — hosting, analytika a cron.
