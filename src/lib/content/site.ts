@@ -207,14 +207,16 @@ export const SITE_DEFAULTS = {
 
 /**
  * Early seed values that were intentionally superseded by the client-approved
- * hero. Ignore only these exact values so an administrator's own edit always
- * wins, while the editor and public page start from the currently published
- * copy instead of reverting during this migration.
+ * hero. Ignore only these exact superseded values so the public page does not
+ * keep showing an unapproved seed when the CMS has not yet been edited by a
+ * production administrator.
  */
 const LEGACY_CONTENT_VALUES: Partial<
   Record<keyof typeof SITE_DEFAULTS, string>
 > = {
   "home.hero.title": "Tvůj čas. Tvůj prostor. Tvoje Namasté.",
+  "home.hero.subtitle":
+    "Rezervujte si prémiové, soukromé, samoobslužné fitness v Plzni. Jen pro sebe a svůj doprovod.",
 };
 
 export type SiteContentKey = keyof typeof SITE_DEFAULTS;
