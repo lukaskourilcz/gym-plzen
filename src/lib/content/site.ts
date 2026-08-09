@@ -115,6 +115,9 @@ export const SITE_DEFAULTS = {
   // Facebook remains a layout placeholder until the client supplies the page.
   "contact.facebook": "https://facebook.com",
   "contact.instagram": "https://instagram.com/namaste_plzen",
+  // Empty until the operator supplies the number: the footer only renders the
+  // WhatsApp glyph once a link exists (see NEEDED.md).
+  "contact.whatsapp": "",
   "equipment.eyebrow": "Prostor",
   "equipment.title": "Vybavení a prostor",
   "equipment.imageAlt": "Interiér NAMASTÉ Private Gym",
@@ -243,6 +246,7 @@ export function footerProps(content: SiteContent) {
     address: publicAddress(content.get("contact.address")),
     facebookUrl: content.get("contact.facebook").trim() || undefined,
     instagramUrl: publicInstagram(content.get("contact.instagram")),
+    whatsappUrl: content.get("contact.whatsapp").trim() || undefined,
     termsUrl: content.termsUrl,
   };
 }

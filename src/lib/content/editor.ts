@@ -143,6 +143,7 @@ export const CONTENT_EDITOR_SECTIONS: readonly ContentEditorSection[] = [
       item("contact.email", "E-mail"),
       item("contact.facebook", "Odkaz na Facebook"),
       item("contact.instagram", "Odkaz na Instagram"),
+      item("contact.whatsapp", "Odkaz na WhatsApp (např. https://wa.me/420…)"),
     ],
   },
   {

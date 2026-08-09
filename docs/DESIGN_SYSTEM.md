@@ -177,9 +177,13 @@ se`, and `Uložit`.
 ## Icons
 
 - Approved library: Lucide React plus the client-supplied lotus mark. Lucide no
-  longer ships brand icons, so Facebook and Instagram are code-owned glyphs in
-  `components/site/social-icons.tsx`, drawn on the same 24px grid with the same
-  2px round stroke. Do not add a third-party brand icon pack.
+  longer ships brand icons, so Facebook, Instagram and WhatsApp are code-owned
+  glyphs in `components/site/social-icons.tsx`, drawn on the same 24px grid with
+  the same 2px round stroke. Do not add a third-party brand icon pack.
+- In the footer these glyphs sit in `gold` (6.87:1 on `ink`, comfortably past
+  the 3:1 floor for non-text content) and lift to `ink-foreground` on hover.
+  Each one renders only once its link is filled in, so the row never shows a
+  channel the gym does not have.
 - Default size is 16 or 20px. A prominent feature icon may use 24px.
 - Keep the default Lucide stroke. Do not mix emoji, unrelated SVG packs, and
   Lucide in one interface.
