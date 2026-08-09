@@ -58,12 +58,19 @@ export default async function BookingPage({
           requestedMonth <= maxDateKey.slice(0, 7)
         ? requestedMonth
         : todayKey.slice(0, 7);
+  /*
+   * With no explicit date the page opens on today, so the visitor lands on a
+   * calendar that already shows times. Only the current month can fall back
+   * this way : on any other month today is not in the grid.
+   */
   const selectedDateKey =
     requestedDate &&
     requestedDate.startsWith(monthKey) &&
     isWithinBookingHorizon(requestedDate, now)
       ? requestedDate
-      : null;
+      : monthKey === todayKey.slice(0, 7)
+        ? todayKey
+        : null;
   const grid = monthGrid(monthKey);
   const rangeStart = grid[0]!.dateKey;
   const rangeEnd = addDaysToDateKey(grid.at(-1)!.dateKey, 1);
@@ -106,8 +113,8 @@ export default async function BookingPage({
                 Vyberte datum a čas
               </h1>
               <p className="mt-4 text-base leading-7 text-muted-foreground sm:text-lg">
-                Nejdřív zvolte den v kalendáři. Potom uvidíte volné termíny
-                včetně přesného času konce, délky a ceny.
+                Vpravo vidíte volné termíny vybraného dne včetně přesného času
+                konce, délky a ceny. Rezervovat můžete i bez registrace.
               </p>
             </div>
 
@@ -122,6 +129,17 @@ export default async function BookingPage({
                 zvolit jiný čas.
               </Notice>
             ) : null}
+            {params.stav === "obsazeno" ? (
+              <Notice
+                tone="warning"
+                title="Termín už není volný"
+                className="mt-7 max-w-2xl"
+                role="status"
+              >
+                Než jste rezervaci dokončili, obsadil ho někdo jiný. Vyberte
+                prosím jiný čas.
+              </Notice>
+            ) : null}
 
             <div className="mt-10">
               <BookingCalendar
@@ -132,7 +150,6 @@ export default async function BookingPage({
                 days={days}
                 source={availability.source}
                 price={price}
-                isAuthenticated={Boolean(session)}
               />
             </div>
           </Container>

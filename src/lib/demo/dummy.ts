@@ -218,6 +218,8 @@ export function buildDemoReservations(
       contactPhone: u.phone,
       priceCents: n % 10 === 9 ? 0 : 29000,
       currency: "czk",
+      rulesAcceptedAt: addMinutes(startsAt, -60 * 24),
+      termsAcceptedAt: addMinutes(startsAt, -60 * 24),
       createdByAdminId: null,
       cancelledAt: status === "cancelled" ? startsAt : null,
       cancelReason: status === "cancelled" ? "Zrušeno zákazníkem" : null,

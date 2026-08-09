@@ -76,6 +76,12 @@ export function LoginForm({
   const next = safeInternalPath(params.get("next"));
 
   const callbackError = CALLBACK_ERRORS[params.get("chyba") ?? ""] ?? null;
+  /*
+   * Where "continue without registration" goes. When the visitor was sent here
+   * from the booking flow, `next` already points at the slot they picked, so we
+   * return them to it; otherwise the calendar is the right place to start.
+   */
+  const guestHref = next.startsWith("/rezervace") ? next : "/rezervace";
 
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [serverError, setServerError] = useState<string | null>(callbackError);
@@ -239,6 +245,18 @@ export function LoginForm({
             : "Máte účet? Přihlaste se"}
         </button>
       </p>
+
+      {/* A reservation no longer needs an account, so the login page has to say
+          so and lead back to the booking flow the visitor came from. */}
+      <div className="mt-6 border-t border-border pt-6">
+        <Button href={guestHref} variant="outline" className="h-[46px] w-full">
+          Pokračovat bez registrace
+        </Button>
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          Rezervaci dokončíte i bez účtu. S účtem se vám počítá každý 10. vstup
+          zdarma.
+        </p>
+      </div>
     </div>
   );
 }

@@ -134,7 +134,12 @@ export function HeroAvailability({
                   return (
                     <Link
                       key={slot.startMs}
-                      href={reservationHref}
+                      // Straight to the details step: picking a time here used
+                      // to drop the visitor back into the calendar to pick the
+                      // same time a second time.
+                      href={`/rezervace/udaje?start=${encodeURIComponent(
+                        new Date(slot.startMs).toISOString(),
+                      )}`}
                       className="grid min-h-11 place-items-center rounded-sm border border-primary/45 bg-primary/10 px-2 py-2 text-center text-xs font-extrabold transition-colors hover:border-primary hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       {slot.label}

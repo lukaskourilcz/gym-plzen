@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 import { addDaysToDateKey, monthGrid } from "@/lib/helpers/datetime";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
-import { SlotButton } from "./slot-button";
 
 export interface BookingDayView {
   dateKey: string;
@@ -39,7 +38,6 @@ export function BookingCalendar({
   days,
   source,
   price,
-  isAuthenticated,
 }: {
   monthKey: string;
   selectedDateKey: string | null;
@@ -48,7 +46,6 @@ export function BookingCalendar({
   days: BookingDayView[];
   source: "live" | "preview" | "unavailable";
   price: string;
-  isAuthenticated: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -375,36 +372,28 @@ export function BookingCalendar({
 
         {availableSlots.length > 0 ? (
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-            {availableSlots.map((slot) =>
-              isAuthenticated ? (
-                <SlotButton
-                  key={slot.startISO}
-                  startsAtISO={slot.startISO}
-                  dateKey={selectedDateKey!}
-                  label={slot.label}
-                  durationMinutes={slot.durationMinutes}
-                  price={price}
-                />
-              ) : (
-                <Button
-                  key={slot.startISO}
-                  href={`/login?next=${encodeURIComponent(buildHref({ month: monthKey, date: selectedDateKey }))}`}
-                  variant="outline"
-                  className="h-auto min-h-16 justify-between px-4 py-3"
-                  aria-label={`${slot.label}, přihlásit se a rezervovat`}
-                >
-                  <span className="text-left">
-                    <span className="block font-extrabold">{slot.label}</span>
-                    <span className="mt-0.5 block text-xs font-medium text-muted-foreground">
-                      {slot.durationMinutes} min · {price}
-                    </span>
+            {/* A slot leads straight to the details step. It used to bounce a
+                signed-out visitor to the login page and back to an empty
+                calendar, which meant picking the same time twice. */}
+            {availableSlots.map((slot) => (
+              <Button
+                key={slot.startISO}
+                href={`/rezervace/udaje?start=${encodeURIComponent(slot.startISO)}`}
+                variant="outline"
+                className="h-auto min-h-16 justify-between border-primary/35 bg-primary/10 px-4 py-3 hover:border-primary hover:bg-primary/20"
+                aria-label={`${slot.label}, pokračovat k rezervaci`}
+              >
+                <span className="text-left">
+                  <span className="block font-extrabold">{slot.label}</span>
+                  <span className="mt-0.5 block text-xs font-medium text-muted-foreground">
+                    {slot.durationMinutes} min · {price}
                   </span>
-                  <span className="text-xs font-extrabold text-accent-foreground">
-                    Vybrat
-                  </span>
-                </Button>
-              ),
-            )}
+                </span>
+                <span className="text-xs font-extrabold text-accent-foreground">
+                  Vybrat
+                </span>
+              </Button>
+            ))}
           </div>
         ) : null}
 
@@ -415,8 +404,8 @@ export function BookingCalendar({
               className="mt-0.5 size-5 shrink-0 text-accent-foreground"
             />
             <p>
-              Cena a délka jsou uvedené u každého termínu. Po přihlášení
-              pokračujete k bezpečné platbě.
+              Cena a délka jsou uvedené u každého termínu. Po vyplnění údajů
+              pokračujete k bezpečné platbě. Registrace není potřeba.
             </p>
           </div>
         ) : null}

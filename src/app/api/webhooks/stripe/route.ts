@@ -59,10 +59,13 @@ async function handleStripeEvent(event: Stripe.Event): Promise<void> {
       const session = event.data.object as Stripe.Checkout.Session;
       if (session.payment_status !== "paid") break;
       const reservationId = session.metadata?.reservationId;
+      // Guest checkouts carry no `userId`, and their reservation has no owner.
+      // Comparing both sides as nullable keeps the invariant intact: the
+      // reservation must belong to whoever the session says paid for it.
       const userId = session.metadata?.userId ?? null;
       if (reservationId) {
         const reservation = await reservations.getReservation(reservationId);
-        if (!reservation || !userId || reservation.userId !== userId) {
+        if (!reservation || (reservation.userId ?? null) !== userId) {
           throw new Error("Checkout ownership mismatch.");
         }
       }
@@ -105,7 +108,7 @@ async function handleStripeEvent(event: Stripe.Event): Promise<void> {
         const reservation = await reservations.getReservation(reservationId);
         if (
           reservation?.status === "pending" &&
-          reservation.userId === session.metadata?.userId
+          (reservation.userId ?? null) === (session.metadata?.userId ?? null)
         ) {
           await reservations.cancelReservation({
             id: reservationId,
