@@ -57,7 +57,10 @@ export function BrandLogo({
         priority
         className={cn(
           "h-auto object-contain",
-          compact ? "w-10" : "w-[54px]",
+          // The public header carries a permanent booking button from the
+          // narrowest width up, so the lockup steps down below `sm` to leave
+          // room for it. Both parts scale together, keeping the proportions.
+          compact ? "w-10" : "w-11 sm:w-[54px]",
           inverse && "brightness-0 invert",
         )}
       />
@@ -69,7 +72,7 @@ export function BrandLogo({
         priority
         className={cn(
           "h-auto object-contain",
-          compact ? "w-[76px]" : "w-[116px]",
+          compact ? "w-[76px]" : "w-[84px] sm:w-[116px]",
           inverse && "brightness-0 invert",
         )}
       />

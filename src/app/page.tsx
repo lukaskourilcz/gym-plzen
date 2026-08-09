@@ -174,10 +174,10 @@ export default async function HomePage() {
                 {t("home.hero.subtitle")}
               </p>
               <div className="mt-7 grid gap-4 text-sm text-ink-foreground/85 sm:grid-cols-2 sm:gap-6">
-                <div className="flex items-start gap-2">
+                <div className="flex items-center gap-3">
                   <MapPin
                     aria-hidden="true"
-                    className="mt-0.5 size-4 shrink-0 text-gold"
+                    className="size-6 shrink-0 text-gold"
                   />
                   <div>
                     <span className="block text-xs font-extrabold uppercase tracking-[.12em]">
@@ -186,10 +186,10 @@ export default async function HomePage() {
                     <span className="mt-1 block font-bold">{address}</span>
                   </div>
                 </div>
-                <div className="flex items-start gap-2">
+                <div className="flex items-center gap-3">
                   <Clock3
                     aria-hidden="true"
-                    className="mt-0.5 size-4 shrink-0 text-gold"
+                    className="size-6 shrink-0 text-gold"
                   />
                   <div>
                     <span className="block text-xs font-extrabold uppercase tracking-[.12em]">
@@ -201,7 +201,13 @@ export default async function HomePage() {
                   </div>
                 </div>
               </div>
-              <div className="mt-8 grid max-w-xl gap-3 sm:grid-cols-2">
+              {/*
+               * Mobile only. On desktop the persistent header booking button
+               * carries the same action, and the client asked for the hero to
+               * stay uncluttered there; below `lg` that header button competes
+               * with the logo for width, so the hero keeps its own pair.
+               */}
+              <div className="mt-8 grid max-w-xl gap-3 sm:grid-cols-2 lg:hidden">
                 <Button href="/rezervace" size="lg" className="justify-center">
                   {t("home.hero.primaryCta")} <ArrowRight aria-hidden="true" />
                 </Button>

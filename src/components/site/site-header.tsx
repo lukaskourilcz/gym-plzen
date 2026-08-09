@@ -80,10 +80,12 @@ export function SiteHeader({
         </nav>
 
         <div className="ml-auto flex items-center gap-2 lg:ml-0 lg:justify-self-end">
+          {/* Visible at every width: on mobile the hero no longer carries a
+              booking action of its own above the fold. */}
           <Button
             href="/rezervace"
             size="sm"
-            className="hidden uppercase tracking-[.1em] sm:inline-flex"
+            className="px-3 uppercase tracking-[.04em] sm:px-4 sm:tracking-[.1em]"
           >
             Rezervovat
           </Button>
