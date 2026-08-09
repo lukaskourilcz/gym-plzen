@@ -48,7 +48,12 @@ export function BrandLogo({
   compact?: boolean;
 }) {
   return (
-    <span className={cn("inline-flex items-center gap-2.5", className)}>
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center gap-2 sm:gap-2.5",
+        className,
+      )}
+    >
       <Image
         src={BRAND_LOTUS_ASSET}
         alt=""
@@ -59,8 +64,10 @@ export function BrandLogo({
           "h-auto object-contain",
           // The public header carries a permanent booking button from the
           // narrowest width up, so the lockup steps down below `sm` to leave
-          // room for it. Both parts scale together, keeping the proportions.
-          compact ? "w-10" : "w-11 sm:w-[54px]",
+          // room for it beside the menu toggle at 320px. Both parts scale
+          // together, keeping the artwork's proportions, and the lotus stays
+          // above its 32px floor.
+          compact ? "w-10" : "w-9 sm:w-[54px]",
           inverse && "brightness-0 invert",
         )}
       />
@@ -72,7 +79,7 @@ export function BrandLogo({
         priority
         className={cn(
           "h-auto object-contain",
-          compact ? "w-[76px]" : "w-[84px] sm:w-[116px]",
+          compact ? "w-[76px]" : "w-[62px] sm:w-[116px]",
           inverse && "brightness-0 invert",
         )}
       />

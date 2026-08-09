@@ -126,12 +126,12 @@ export default async function BookingDetailsPage({
               <Notice className="mt-6" role="status">
                 Rezervaci dokončíte i bez registrace. S účtem navíc uvidíte své
                 termíny na jednom místě a počítá se vám každý{" "}
-                {content.freeEntryEvery}. vstup zdarma :{" "}
+                {content.freeEntryEvery}. vstup zdarma.{" "}
                 <Link
                   href={`/login?next=${encodeURIComponent(`/rezervace/udaje?start=${startsAt.toISOString()}`)}`}
                   className="font-bold text-accent-foreground underline"
                 >
-                  přihlásit se nebo se zaregistrovat
+                  Přihlásit se nebo se zaregistrovat
                 </Link>
                 .
               </Notice>
@@ -140,7 +140,6 @@ export default async function BookingDetailsPage({
             <div className="mt-8">
               <BookingDetailsForm
                 startsAtISO={startsAt.toISOString()}
-                dateKey={dateKey}
                 termsUrl={content.termsUrl}
                 defaultValues={{
                   firstName: nameParts.firstName,

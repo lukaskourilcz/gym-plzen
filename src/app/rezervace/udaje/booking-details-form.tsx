@@ -22,12 +22,10 @@ import { startCheckoutAction } from "../actions";
  */
 export function BookingDetailsForm({
   startsAtISO,
-  dateKey,
   termsUrl,
   defaultValues,
 }: {
   startsAtISO: string;
-  dateKey: string;
   termsUrl: string | null;
   defaultValues: {
     firstName: string;
@@ -177,7 +175,8 @@ export function BookingDetailsForm({
         <ArrowRight aria-hidden="true" />
       </Button>
       <p className="mt-3 text-xs text-muted-foreground">
-        Termín {dateKey} držíme, dokud platbu nedokončíte nebo nevyprší.
+        Termín vám držíme, dokud platbu nedokončíte nebo dokud platební relace
+        nevyprší.
       </p>
     </form>
   );

@@ -45,7 +45,7 @@ export function SiteHeader({
           corner and the actions in the very right one, at full viewport width. */}
       {/* Three tracks from `lg`: brand hard left, links centred, actions hard
           right. Equal 1fr side tracks are what keeps the nav optically centred. */}
-      <div className="flex min-h-[78px] items-center justify-between gap-3 px-4 sm:px-5 lg:grid lg:grid-cols-[1fr_auto_1fr]">
+      <div className="flex min-h-[78px] items-center justify-between gap-2 px-4 sm:gap-3 sm:px-5 lg:grid lg:grid-cols-[1fr_auto_1fr]">
         {/*
          * `scroll={false}` plus an explicit jump to the document top: the router
          * picks the first non-sticky element as its scroll target, skips this
@@ -85,7 +85,7 @@ export function SiteHeader({
           <Button
             href="/rezervace"
             size="sm"
-            className="px-3 uppercase tracking-[.04em] sm:px-4 sm:tracking-[.1em]"
+            className="px-2.5 uppercase tracking-[.04em] sm:px-4 sm:tracking-[.1em]"
           >
             Rezervovat
           </Button>
