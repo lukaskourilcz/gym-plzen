@@ -205,7 +205,9 @@ parallel or transactional:
   `muted-foreground`.
 - **Price card** (homepage): the price is always on a white `card` surface
   inside the dark photo band. The amount, duration and loyalty benefit are
-  centered; the single reservation action spans the card width.
+  centered; the single reservation action spans the card width. The card
+  stretches to the height of the copy column beside it, so the band reads as one
+  block rather than a short card floating against a tall column.
 - **Fact strip** (homepage): four equal centered cells with hairlines between
   them and on both outside edges. On desktop the hero reserves enough height
   for the strip to be visible in the initial viewport.
@@ -226,7 +228,13 @@ left, one reservation button right. The contact block above the map is a single
 left-aligned stack under its heading: confirmed public address, e-mail and
 telephone, without card borders or vertical dividers. The map itself carries a
 white address overlay so the location remains readable before and after the
-iframe loads.
+iframe loads. The pin belongs to the embed (`?q=<lat>,<lng>`), never to an
+overlay drawn over the frame: an overlay only lines up at the initial view and
+drifts off the address as soon as the visitor zooms or pans.
+
+Display headings may be set as stacked short lines with the final line in
+`gold`, the pattern the hero establishes. Reserve it for the hero and the
+pricing band; it loses its force if every section shouts.
 
 ## Forms
 

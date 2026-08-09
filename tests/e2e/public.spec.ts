@@ -76,9 +76,11 @@ test.describe("Public site", () => {
     await expect(contact.getByText(/Křížkova 424\/23/i)).toBeVisible();
     await expect(contact.getByText("info@namastegym.cz")).toHaveCount(0);
     await expect(contact.getByText("777 666 555")).toHaveCount(0);
+    // `q` is what makes Google draw its own marker, so it stays on the address
+    // when the visitor zooms or pans.
     await expect(page.getByTestId("location-map")).toHaveAttribute(
       "src",
-      /maps\?ll=49\.7550669,13\.3785039&z=17&output=embed$/,
+      /maps\?q=49\.7550669,13\.3785039&ll=49\.7550669,13\.3785039&z=17&output=embed$/,
     );
     const closingCta = page.locator("#pridej-se");
     const [closingHeading, closingButton] = await Promise.all([

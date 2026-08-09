@@ -54,7 +54,6 @@ const CONTENT_BLOCKS = [
   seeded("home.about.step5.body", "Krok 5 : text", "home"),
   seeded("home.about.step6.title", "Krok 6 : nadpis", "home"),
   seeded("home.about.step6.body", "Krok 6 : text", "home"),
-  seeded("home.pricing.note", "Poznámka u ceníku", "home"),
   seeded("home.cta.title", "Závěrečná výzva k rezervaci", "home"),
   seeded("home.rules.title", "Provozní řád : nadpis", "pravidla"),
   seeded("home.rules.body", "Provozní řád : text", "pravidla"),

@@ -179,8 +179,9 @@ export default function DesignSystemPage() {
               <p className="text-xs font-extrabold uppercase tracking-[.14em] text-gold">
                 Ceník
               </p>
-              <h3 className="mt-3 text-2xl font-extrabold">
-                Jednorázový vstup bez předplatného
+              <h3 className="mt-3 whitespace-pre-line text-2xl font-extrabold leading-[1.15]">
+                {"Bez závazků.\nBez předplatného.\n"}
+                <span className="text-gold">Bez měsíčních plateb.</span>
               </h3>
               <p className="mt-3 text-sm leading-6 text-ink-foreground/75">
                 Cena stojí na bílé kartě. Výzva k rezervaci používá samostatný
