@@ -30,6 +30,27 @@ export function FacebookIcon({ className }: { className?: string }) {
   );
 }
 
+export function WhatsAppIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      focusable="false"
+      className={cn(base, className)}
+    >
+      {/* Bubble with its tail bottom-left, then the handset inside it. */}
+      <path
+        {...strokeProps}
+        d="M20.5 11.6a8.5 8.5 0 0 1-12.7 7.4L3.5 20.5l1.5-4.3a8.5 8.5 0 1 1 15.5-4.6Z"
+      />
+      <path
+        {...strokeProps}
+        d="M9.4 8.8h.8l1 2.1-1 .9a6 6 0 0 0 2.5 2.5l.9-1 2.1 1v.8c0 .6-.5 1.1-1.2 1.1a7.6 7.6 0 0 1-6.2-6.2c0-.7.5-1.2 1.1-1.2Z"
+      />
+    </svg>
+  );
+}
+
 export function InstagramIcon({ className }: { className?: string }) {
   return (
     <svg

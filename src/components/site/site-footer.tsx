@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { Container } from "@/components/ui/container";
 import { BrandLockup } from "@/components/site/brand";
-import { FacebookIcon, InstagramIcon } from "@/components/site/social-icons";
+import {
+  FacebookIcon,
+  InstagramIcon,
+  WhatsAppIcon,
+} from "@/components/site/social-icons";
 import { PUBLIC_NAV } from "@/lib/config/navigation";
 
 /*
@@ -19,6 +23,7 @@ export function SiteFooter({
   address,
   facebookUrl,
   instagramUrl,
+  whatsappUrl,
   termsUrl,
 }: {
   brand?: string;
@@ -27,6 +32,7 @@ export function SiteFooter({
   address?: string;
   facebookUrl?: string;
   instagramUrl?: string;
+  whatsappUrl?: string;
   termsUrl?: string | null;
 }) {
   const year = new Date().getFullYear();
@@ -46,6 +52,9 @@ export function SiteFooter({
       : null,
     instagramUrl
       ? { href: instagramUrl, label: "Instagram", Icon: InstagramIcon }
+      : null,
+    whatsappUrl
+      ? { href: whatsappUrl, label: "WhatsApp", Icon: WhatsAppIcon }
       : null,
   ].filter((item) => item !== null);
 
@@ -139,7 +148,10 @@ export function SiteFooter({
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`${label}, ${brand}`}
-                        className="grid size-11 place-items-center rounded-sm text-ink-foreground/75 transition-colors hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                        /* Gold at rest (6.87:1 on ink, well past the 3:1 floor
+                           for a non-text glyph); hover lifts to cream so the
+                           state change is unmistakable. */
+                        className="grid size-11 place-items-center rounded-sm text-gold transition-colors hover:text-ink-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
                       >
                         <Icon />
                       </a>

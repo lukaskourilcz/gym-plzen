@@ -45,7 +45,7 @@ export function SiteHeader({
           corner and the actions in the very right one, at full viewport width. */}
       {/* Three tracks from `lg`: brand hard left, links centred, actions hard
           right. Equal 1fr side tracks are what keeps the nav optically centred. */}
-      <div className="flex min-h-[78px] items-center justify-between gap-3 px-4 sm:px-5 lg:grid lg:grid-cols-[1fr_auto_1fr]">
+      <div className="flex min-h-[78px] items-center justify-between gap-2 px-4 sm:gap-3 sm:px-5 lg:grid lg:grid-cols-[1fr_auto_1fr]">
         {/*
          * `scroll={false}` plus an explicit jump to the document top: the router
          * picks the first non-sticky element as its scroll target, skips this
@@ -80,10 +80,12 @@ export function SiteHeader({
         </nav>
 
         <div className="ml-auto flex items-center gap-2 lg:ml-0 lg:justify-self-end">
+          {/* Visible at every width: on mobile the hero no longer carries a
+              booking action of its own above the fold. */}
           <Button
             href="/rezervace"
             size="sm"
-            className="hidden uppercase tracking-[.1em] sm:inline-flex"
+            className="px-2.5 uppercase tracking-[.04em] sm:px-4 sm:tracking-[.1em]"
           >
             Rezervovat
           </Button>
@@ -131,11 +133,11 @@ export function SiteHeader({
               {item.label}
             </Link>
           ))}
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <Button href="/rezervace" className="uppercase tracking-[.08em]">
-              Rezervovat
-            </Button>
-            <Button href={accountHref} variant="outline">
+          {/* No booking button here: the bar above carries it at every width
+              now, and two identical primaries in one viewport read as two
+              different actions. */}
+          <div className="mt-3">
+            <Button href={accountHref} variant="outline" className="w-full">
               {accountLabel}
             </Button>
           </div>

@@ -9,11 +9,11 @@ description: >-
 
 # gym-plzen architecture
 
-A single-occupancy gym booking system: members book one-at-a-time training
-slots, pay one-time entry (290 Kč, every 10th free: no subscriptions), and
-receive a time-limited Nuki keypad code over email/WhatsApp. An admin CMS
-("redakční systém") manages content, reservations, members, pricing, and
-monitors reliability.
+A single-occupancy gym booking system: visitors book one-at-a-time training
+slots, pay one-time entry (290 Kč, every 10th free for members: no
+subscriptions), and receive a time-limited Nuki keypad code over
+email/WhatsApp. An account is optional. An admin CMS ("redakční systém")
+manages content, reservations, members, pricing, and monitors reliability.
 
 ## Layered architecture: respect the boundaries
 
@@ -72,6 +72,15 @@ Every form: admin and login: is built on **React Hook Form + Zod**:
 - **Booking availability**: `services/slots.ts` resolves configured weekday
   duration and returns `live`, non-production `preview`, or `unavailable`.
   Production never falls back to fictional slots.
+- **Guest booking**: `/rezervace` → `/rezervace/udaje?start=<ISO>` → Stripe.
+  `booking.startBooking` takes a nullable `userId`; a guest reservation has
+  `userId = null` and is identified by its contact snapshot. Ownership checks
+  (Stripe webhook, `getBookingConfirmation`) compare both sides as nullable, so
+  `null === null` is a valid match and a member's booking still cannot be
+  claimed by anyone else. Loyalty needs an account and stays members-only.
+- **Consents**: both checkboxes (house rules, terms) are part of the
+  reservation, not the account, so every visitor ticks them per booking. Stored
+  as `rules_accepted_at` / `terms_accepted_at` timestamps, set from server time.
 - **Public Realtime**: subscribe only to the PII-free `availability_signal`
   table created by migration `0003`. Never publish `reservation` rows to public
   clients.

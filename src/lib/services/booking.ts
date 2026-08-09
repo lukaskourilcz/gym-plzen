@@ -13,7 +13,7 @@ import {
   getReservation,
   releaseExpiredPendingReservations,
 } from "./reservations";
-import { priceForNextEntry } from "./loyalty";
+import { getEntryPriceCents, priceForNextEntry } from "./loyalty";
 import { getMember, setStripeCustomerId } from "./members";
 import { recordPayment } from "./memberships";
 import { fulfillReservation } from "./fulfillment";
@@ -44,16 +44,31 @@ const AVAILABILITY_MESSAGES: Record<string, string> = {
   invalid_range: "Neplatný časový rozsah.",
 };
 
+/** Details every visitor supplies before paying, member or guest alike. */
+export interface BookingDetails {
+  name: string;
+  email: string;
+  /** E.164, already normalised by the action. */
+  phone: string;
+  /** When the visitor ticked the house rules and the terms of business. */
+  acceptedAt: Date;
+}
+
 /**
- * Start a booking for `userId` at the hour beginning `startsAt`.
+ * Start a booking at the window beginning `startsAt`.
  * - Free (loyalty) entry → creates a confirmed reservation, fulfills it,
  *   returns `{ kind: "free" }`.
  * - Paid entry → creates a pending reservation + a Stripe Checkout session,
  *   returns `{ kind: "checkout", url }`.
+ *
+ * `userId` is null for a guest booking. A guest pays the standard price and
+ * receives their code on the contact details recorded here; loyalty (every
+ * n-th entry free) needs an account to count against and stays members-only.
  */
 export async function startBooking(params: {
-  userId: string;
+  userId: string | null;
   startsAt: Date;
+  details: BookingDetails;
 }): Promise<BookingOutcome> {
   await releaseExpiredPendingReservations();
   const startsAt = params.startsAt;
@@ -74,10 +89,23 @@ export async function startBooking(params: {
     );
   }
 
-  const member = await getMember(params.userId);
-  if (!member) throw new ActionError("Účet nenalezen.");
+  const member = params.userId ? await getMember(params.userId) : null;
+  if (params.userId && !member) throw new ActionError("Účet nenalezen.");
 
-  const { priceCents, isFree } = await priceForNextEntry(params.userId);
+  // The details typed into the booking form win over the profile: they are what
+  // the visitor just confirmed, and they are where the entry code will be sent.
+  const contact = {
+    contactName: params.details.name,
+    contactEmail: params.details.email,
+    contactPhone: params.details.phone,
+    rulesAcceptedAt: params.details.acceptedAt,
+    termsAcceptedAt: params.details.acceptedAt,
+  };
+
+  // Loyalty is counted against an account, so a guest always pays.
+  const { priceCents, isFree } = params.userId
+    ? await priceForNextEntry(params.userId)
+    : { priceCents: await getEntryPriceCents(), isFree: false };
 
   // Free loyalty entry : no payment needed.
   if (isFree) {
@@ -86,9 +114,7 @@ export async function startBooking(params: {
       startsAt,
       endsAt,
       status: "confirmed",
-      contactName: member.user.name,
-      contactEmail: member.user.email,
-      contactPhone: member.profile?.phone ?? null,
+      ...contact,
       priceCents: 0,
     });
     await fulfillReservation(reservation.id);
@@ -107,31 +133,40 @@ export async function startBooking(params: {
     startsAt,
     endsAt,
     status: "pending",
-    contactName: member.user.name,
-    contactEmail: member.user.email,
-    contactPhone: member.profile?.phone ?? null,
+    ...contact,
     priceCents,
   });
 
-  const customerId = await ensureStripeCustomer({
-    existingCustomerId: member.profile?.stripeCustomerId ?? null,
-    email: member.user.email,
-    name: member.user.name,
-    userId: params.userId,
-  });
-  if (customerId !== member.profile?.stripeCustomerId) {
-    await setStripeCustomerId(params.userId, customerId);
+  // A guest has no Stripe customer to reuse; Checkout collects the receipt
+  // address from `customerEmail` instead.
+  let customerId: string | undefined;
+  if (params.userId && member) {
+    customerId = await ensureStripeCustomer({
+      existingCustomerId: member.profile?.stripeCustomerId ?? null,
+      email: params.details.email,
+      name: params.details.name,
+      userId: params.userId,
+    });
+    if (customerId !== member.profile?.stripeCustomerId) {
+      await setStripeCustomerId(params.userId, customerId);
+    }
   }
 
   const appUrl = publicEnv.NEXT_PUBLIC_APP_URL;
   const session = await createOneOffCheckout({
     customerId,
+    customerEmail: customerId ? undefined : params.details.email,
     amountCents: priceCents,
     currency: "czk",
     description: "Jednorázový vstup | NAMASTÉ Private Gym",
     successUrl: `${appUrl}/rezervace/hotovo?session_id={CHECKOUT_SESSION_ID}`,
     cancelUrl: `${appUrl}/rezervace?date=${dateKeyInTimeZone(startsAt)}&stav=zruseno`,
-    metadata: { reservationId: reservation.id, userId: params.userId },
+    // Guests carry no `userId`; the webhook matches an absent one against a
+    // reservation with no owner, so the ownership check still holds.
+    metadata: {
+      reservationId: reservation.id,
+      ...(params.userId ? { userId: params.userId } : {}),
+    },
     expiresAt: new Date(Date.now() + 31 * 60 * 1000),
   });
 
@@ -152,9 +187,14 @@ export async function startBooking(params: {
   return { kind: "checkout", url: session.url, reservationId: reservation.id };
 }
 
-/** Verify success-page parameters against Stripe and reservation ownership. */
+/**
+ * Verify success-page parameters against Stripe and reservation ownership.
+ *
+ * `userId` is null for a guest: the reservation has no owner either, and the
+ * unguessable Checkout session id in the redirect is what stands in for one.
+ */
 export async function getBookingConfirmation(params: {
-  userId: string;
+  userId: string | null;
   stripeSessionId?: string;
   reservationId?: string;
 }): Promise<BookingConfirmation> {
@@ -164,11 +204,14 @@ export async function getBookingConfirmation(params: {
         params.stripeSessionId,
       );
       const reservationId = session.metadata?.reservationId;
-      if (!reservationId || session.metadata?.userId !== params.userId) {
+      if (
+        !reservationId ||
+        (session.metadata?.userId ?? null) !== params.userId
+      ) {
         return { state: "invalid" };
       }
       const reservation = await getReservation(reservationId);
-      if (!reservation || reservation.userId !== params.userId) {
+      if (!reservation || (reservation.userId ?? null) !== params.userId) {
         return { state: "invalid" };
       }
       return session.payment_status === "paid" &&
@@ -180,7 +223,9 @@ export async function getBookingConfirmation(params: {
     }
   }
 
-  if (params.reservationId) {
+  // Free loyalty entries skip Stripe entirely, so they are members-only and
+  // identified by the reservation id alone.
+  if (params.reservationId && params.userId) {
     const reservation = await getReservation(params.reservationId);
     if (
       reservation?.userId === params.userId &&

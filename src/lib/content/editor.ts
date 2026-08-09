@@ -76,8 +76,8 @@ export const CONTENT_EDITOR_SECTIONS: readonly ContentEditorSection[] = [
     description: "Texty v cenové části a závěrečné výzvě k rezervaci.",
     items: [
       item("home.pricing.eyebrow", "Štítek ceníku"),
-      item("home.pricing.title", "Nadpis ceníku"),
-      item("home.pricing.note", "Vysvětlující text"),
+      item("home.pricing.title", "Nadpis ceníku (první dva řádky)"),
+      item("home.pricing.titleAccent", "Zlatý třetí řádek nadpisu"),
       item("home.pricing.feature1", "Výhoda 1"),
       item("home.pricing.feature2", "Výhoda 2"),
       item("home.pricing.feature3", "Výhoda 3"),
@@ -143,6 +143,7 @@ export const CONTENT_EDITOR_SECTIONS: readonly ContentEditorSection[] = [
       item("contact.email", "E-mail"),
       item("contact.facebook", "Odkaz na Facebook"),
       item("contact.instagram", "Odkaz na Instagram"),
+      item("contact.whatsapp", "Odkaz na WhatsApp (např. https://wa.me/420…)"),
     ],
   },
   {

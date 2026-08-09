@@ -77,6 +77,8 @@ export async function createSubscriptionCheckout(params: {
 /** Create a Checkout session for a one-off single-session payment. */
 export async function createOneOffCheckout(params: {
   customerId?: string;
+  /** Guest checkout: no reusable customer, so Checkout is given the address. */
+  customerEmail?: string;
   amountCents: number;
   currency?: string;
   description: string;
@@ -88,6 +90,7 @@ export async function createOneOffCheckout(params: {
   return stripe().checkout.sessions.create({
     mode: "payment",
     customer: params.customerId,
+    customer_email: params.customerId ? undefined : params.customerEmail,
     line_items: [
       {
         price_data: {

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { CheckCircle2, Clock3, TriangleAlert } from "lucide-react";
-import { requireUser } from "@/lib/auth/guards";
+import { getSession } from "@/lib/auth/guards";
 import { booking } from "@/lib/services";
 import { footerProps, loadSiteContent } from "@/lib/content/site";
 import { Container, Section } from "@/components/ui/container";
@@ -20,12 +20,13 @@ export default async function BookingDonePage({
 }: {
   searchParams: Promise<{ session_id?: string; reservation_id?: string }>;
 }) {
-  const user = await requireUser("/rezervace/hotovo");
-  const params = await searchParams;
+  // No `requireUser`: a guest booking has no account to sign in to, and the
+  // unguessable Stripe session id in the redirect is what identifies it.
+  const [session, params] = await Promise.all([getSession(), searchParams]);
   const [content, confirmation] = await Promise.all([
     loadSiteContent(),
     booking.getBookingConfirmation({
-      userId: user.id,
+      userId: session?.user.id ?? null,
       stripeSessionId: params.session_id,
       reservationId: params.reservation_id,
     }),
@@ -35,17 +36,23 @@ export default async function BookingDonePage({
     confirmed: {
       icon: CheckCircle2,
       title: "Rezervace je potvrzená",
-      body: "Termín najdete ve svém účtu. Pokyny ke vstupu obdržíte před návštěvou.",
+      body: session
+        ? "Termín najdete ve svém účtu. Pokyny ke vstupu obdržíte před návštěvou."
+        : "Potvrzení jsme poslali na váš e-mail. Pokyny ke vstupu obdržíte před návštěvou e-mailem a SMS.",
     },
     processing: {
       icon: Clock3,
       title: "Platbu ještě ověřujeme",
-      body: "Potvrzení může krátce trvat. Stav zkontrolujte ve svém účtu a platbu neopakujte.",
+      body: session
+        ? "Potvrzení může krátce trvat. Stav zkontrolujte ve svém účtu a platbu neopakujte."
+        : "Potvrzení může krátce trvat. Přijde vám e-mailem, platbu prosím neopakujte.",
     },
     invalid: {
       icon: TriangleAlert,
       title: "Potvrzení se nepodařilo ověřit",
-      body: "Adresa stránky sama o sobě nepotvrzuje platbu. Zkontrolujte své rezervace v účtu.",
+      body: session
+        ? "Adresa stránky sama o sobě nepotvrzuje platbu. Zkontrolujte své rezervace v účtu."
+        : "Adresa stránky sama o sobě nepotvrzuje platbu. Zkontrolujte prosím e-mail s potvrzením.",
     },
   }[confirmation.state];
   const Icon = state.icon;
@@ -54,8 +61,8 @@ export default async function BookingDonePage({
     <>
       <SiteHeader
         brand={content.get("brand.name")}
-        accountHref="/account"
-        accountLabel="Můj účet"
+        accountHref={session ? "/account" : "/login"}
+        accountLabel={session ? "Můj účet" : "Přihlásit se"}
       />
       <main id="main-content" tabIndex={-1}>
         <Section>
@@ -74,8 +81,11 @@ export default async function BookingDonePage({
               </Notice>
             ) : null}
             <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <Button href="/account">Můj účet</Button>
-              <Button href="/rezervace" variant="outline">
+              {session ? <Button href="/account">Můj účet</Button> : null}
+              <Button
+                href="/rezervace"
+                variant={session ? "outline" : "default"}
+              >
                 Další rezervace
               </Button>
             </div>

@@ -80,9 +80,9 @@ export const SITE_DEFAULTS = {
   "home.about.step6.body":
     "Můžeš využít koupelnu, kde najdeš sprchu včetně české přírodní kosmetiky. V automatu si můžeš zakoupit své oblíbené suplementy nebo svačinu. Nezapomeň se vyfotit a označit nás na sociálních sítích nebo nás ohodnotit. Budeme se těšit na příště.",
   "home.pricing.eyebrow": "Ceník",
-  "home.pricing.title": "Jednorázový vstup bez předplatného",
-  "home.pricing.note":
-    "Bez závazků a měsíčních plateb. Platíte jen za to, co si odtrénujete.",
+  // Three lines in the hero's format, the last one carrying the gold accent.
+  "home.pricing.title": "Bez závazků.\nBez předplatného.",
+  "home.pricing.titleAccent": "Bez měsíčních plateb.",
   "home.pricing.feature1": "Soukromé využití prostoru během rezervace",
   "home.pricing.feature2": "Platba online kartou",
   "home.pricing.feature3": "Pokyny ke vstupu po potvrzení rezervace",
@@ -115,6 +115,9 @@ export const SITE_DEFAULTS = {
   // Facebook remains a layout placeholder until the client supplies the page.
   "contact.facebook": "https://facebook.com",
   "contact.instagram": "https://instagram.com/namaste_plzen",
+  // Empty until the operator supplies the number: the footer only renders the
+  // WhatsApp glyph once a link exists (see NEEDED.md).
+  "contact.whatsapp": "",
   "equipment.eyebrow": "Prostor",
   "equipment.title": "Vybavení a prostor",
   "equipment.imageAlt": "Interiér NAMASTÉ Private Gym",
@@ -217,6 +220,7 @@ const LEGACY_CONTENT_VALUES: Partial<
   "home.hero.title": "Tvůj čas. Tvůj prostor. Tvoje Namasté.",
   "home.hero.subtitle":
     "Rezervujte si prémiové, soukromé, samoobslužné fitness v Plzni. Jen pro sebe a svůj doprovod.",
+  "home.pricing.title": "Jednorázový vstup bez předplatného",
 };
 
 export type SiteContentKey = keyof typeof SITE_DEFAULTS;
@@ -242,6 +246,7 @@ export function footerProps(content: SiteContent) {
     address: publicAddress(content.get("contact.address")),
     facebookUrl: content.get("contact.facebook").trim() || undefined,
     instagramUrl: publicInstagram(content.get("contact.instagram")),
+    whatsappUrl: content.get("contact.whatsapp").trim() || undefined,
     termsUrl: content.termsUrl,
   };
 }

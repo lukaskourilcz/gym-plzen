@@ -40,6 +40,12 @@ export const reservation = pgTable(
     priceCents: integer("price_cents"), // null when covered by membership
     currency: text("currency").default("czk").notNull(),
 
+    // Consents ticked at booking time. Required from every visitor, member or
+    // guest, so the gym can show what was agreed to and when. Null on rows
+    // created before the checkbox existed and on admin walk-in bookings.
+    rulesAcceptedAt: timestamp("rules_accepted_at", { withTimezone: true }),
+    termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
+
     // Who created it, for the audit trail ("member" | admin user id).
     createdByAdminId: uuid("created_by_admin_id").references(
       () => profiles.id,

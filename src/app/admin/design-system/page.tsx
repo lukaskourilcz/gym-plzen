@@ -13,7 +13,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Notice } from "@/components/ui/notice";
 import { BrandLockup, BrandLogo, LotusMark } from "@/components/site/brand";
-import { FacebookIcon, InstagramIcon } from "@/components/site/social-icons";
+import {
+  FacebookIcon,
+  InstagramIcon,
+  WhatsAppIcon,
+} from "@/components/site/social-icons";
 import { PageHeader } from "@/components/admin/page-header";
 
 export const metadata = { title: "Design systém" };
@@ -179,23 +183,32 @@ export default function DesignSystemPage() {
               <p className="text-xs font-extrabold uppercase tracking-[.14em] text-gold">
                 Ceník
               </p>
-              <h3 className="mt-3 text-2xl font-extrabold">
-                Jednorázový vstup bez předplatného
+              <h3 className="mt-3 whitespace-pre-line text-2xl font-extrabold leading-[1.15]">
+                {"Bez závazků.\nBez předplatného.\n"}
+                <span className="text-gold">Bez měsíčních plateb.</span>
               </h3>
               <p className="mt-3 text-sm leading-6 text-ink-foreground/75">
                 Cena stojí na bílé kartě. Výzva k rezervaci používá samostatný
                 pás s textem vlevo a tlačítkem vpravo.
               </p>
             </div>
-            <div className="rounded-lg border border-border bg-card p-6 text-center text-foreground shadow-md">
-              <p className="text-xs font-extrabold uppercase tracking-[.14em] text-accent-foreground">
-                Vstupné
+            {/* Stretches to the copy column beside it; gold figure at the top
+                of the display range. Mirrors the homepage pricing band. */}
+            <div className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card text-center text-foreground shadow-md">
+              <p className="border-b border-border px-6 py-5 text-sm font-extrabold uppercase tracking-[.14em] text-accent-foreground">
+                Jednorázový vstup
               </p>
-              <p className="mt-3 text-4xl font-extrabold text-accent-foreground">
-                290 Kč
-              </p>
-              <p className="mt-2 text-sm font-bold">/ 75 minut</p>
-              <Button className="mt-5 w-full">Rezervovat trénink</Button>
+              <div className="flex flex-1 flex-col justify-center border-b border-border px-6 py-10">
+                <p className="text-6xl font-extrabold leading-none tracking-[-.01em] text-gold">
+                  290 Kč
+                </p>
+                <p className="mt-2 text-base font-bold uppercase tracking-[.1em] text-muted-foreground">
+                  / 75 minut
+                </p>
+              </div>
+              <div className="px-6 py-7">
+                <Button className="w-full">Rezervovat trénink</Button>
+              </div>
             </div>
           </div>
         </section>
@@ -245,6 +258,7 @@ export default function DesignSystemPage() {
               <span className="flex items-center gap-2 text-gold">
                 <FacebookIcon />
                 <InstagramIcon />
+                <WhatsAppIcon />
               </span>
             </CardContent>
           </Card>
@@ -257,15 +271,48 @@ export default function DesignSystemPage() {
                 E-mail
                 <Input type="email" placeholder="jmeno@example.cz" />
               </label>
-              <label className="grid gap-1.5 text-sm font-bold">
-                Neplatná hodnota
+              <div>
+                <label htmlFor="kit-invalid" className="text-sm font-bold">
+                  Neplatná hodnota
+                </label>
                 <Input
+                  id="kit-invalid"
                   aria-invalid="true"
+                  aria-describedby="kit-invalid-error"
                   defaultValue="chybná hodnota"
-                  className="border-destructive"
+                  className="mt-1.5 border-destructive"
                 />
-              </label>
+                {/* The error is wired to the input, not merely placed near it. */}
+                <p
+                  id="kit-invalid-error"
+                  className="mt-1 text-xs text-destructive"
+                >
+                  Zadejte prosím platnou hodnotu.
+                </p>
+              </div>
               <Input disabled value="Pole je vypnuté" readOnly />
+              {/*
+               * Consent row. The `label` holds plain text only; the document
+               * link sits beside it, because a `label` may not contain an
+               * interactive element. `accent-color` is the only styling a
+               * native checkbox honours.
+               */}
+              <div className="flex min-h-11 items-center gap-3 text-sm">
+                <input
+                  id="kit-consent"
+                  type="checkbox"
+                  className="size-5 shrink-0 accent-[var(--color-primary)]"
+                />
+                <span>
+                  <label htmlFor="kit-consent">
+                    Souhlasím s provozním řádem
+                  </label>{" "}
+                  <span className="font-bold text-accent-foreground underline">
+                    (otevřít provozní řád)
+                  </span>
+                  .
+                </span>
+              </div>
             </CardContent>
           </Card>
         </section>
@@ -317,7 +364,9 @@ export default function DesignSystemPage() {
             </Card>
             <Card>
               <CardContent className="grid gap-3 p-5 sm:grid-cols-2">
-                <button className="min-h-12 rounded-md border border-primary bg-accent px-4 text-left font-extrabold">
+                {/* Solid `border-primary` on a 10% fill: the border is the
+                    control's only boundary and must clear 3:1 on its own. */}
+                <button className="min-h-12 rounded-md border border-primary bg-primary/10 px-4 text-left font-extrabold">
                   <Clock3 className="mr-2 inline size-4" />
                   08:00 až 09:15
                 </button>

@@ -33,7 +33,8 @@ test("Prague wall-clock conversion respects summer and winter offsets", () => {
 test("exact ranges render the authoritative end time", () => {
   const start = localDateTimeToDate("2026-07-22", 8 * 60);
   const end = localDateTimeToDate("2026-07-22", 9 * 60 + 15);
-  assert.equal(formatTimeRange(start, end), "8:00–9:15");
+  // Non-breaking spaces flank the dash so a range never wraps mid-way.
+  assert.equal(formatTimeRange(start, end), "8:00 – 9:15");
 });
 
 test("account dates do not repeat the start time", () => {

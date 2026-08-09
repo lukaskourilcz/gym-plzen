@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { safeInternalPath } from "@/lib/security/redirects";
+import { FREE_ENTRY_EVERY } from "@/lib/config/pricing";
 import { publicEnv } from "@/lib/public-env";
 import { authenticateAction } from "./actions";
 
@@ -34,6 +35,18 @@ const enabledOAuthProviders = new Set(
 const CONFIGURED_OAUTH_PROVIDERS = OAUTH_PROVIDERS.filter((provider) =>
   enabledOAuthProviders.has(provider.id),
 );
+
+/**
+ * Reasons `/auth/callback` can bounce a visitor back here. Without these the
+ * failure is invisible: the visitor returns to a signed-out page and concludes
+ * the provider button is broken.
+ */
+const CALLBACK_ERRORS: Record<string, string> = {
+  odmitnuto: "Přihlášení přes externí účet bylo zrušeno.",
+  vyprselo:
+    "Přihlášení se nepodařilo dokončit. Zkuste to prosím znovu, nebo se přihlaste e-mailem a heslem.",
+  selhalo: "Přihlášení přes externí účet se nepodařilo.",
+};
 
 // One flat schema serves both modes; `name` is only required in sign-up.
 const schema = z
@@ -63,8 +76,16 @@ export function LoginForm({
   const params = useSearchParams();
   const next = safeInternalPath(params.get("next"));
 
+  const callbackError = CALLBACK_ERRORS[params.get("chyba") ?? ""] ?? null;
+  /*
+   * Where "continue without registration" goes. When the visitor was sent here
+   * from the booking flow, `next` already points at the slot they picked, so we
+   * return them to it; otherwise the calendar is the right place to start.
+   */
+  const guestHref = next.startsWith("/rezervace") ? next : "/rezervace";
+
   const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [serverError, setServerError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(callbackError);
   const [notice, setNotice] = useState<string | null>(null);
   const [oauthPending, setOauthPending] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -225,6 +246,22 @@ export function LoginForm({
             : "Máte účet? Přihlaste se"}
         </button>
       </p>
+
+      {/* A reservation no longer needs an account, so the login page has to say
+          so and lead back to the booking flow the visitor came from. */}
+      <div className="mt-6 border-t border-border pt-6">
+        <Button
+          href={guestHref}
+          variant="outline"
+          className="h-[46px] w-full bg-card"
+        >
+          Pokračovat bez registrace
+        </Button>
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          Rezervaci dokončíte i bez účtu. S účtem se vám počítá každý{" "}
+          {FREE_ENTRY_EVERY}. vstup zdarma.
+        </p>
+      </div>
     </div>
   );
 }

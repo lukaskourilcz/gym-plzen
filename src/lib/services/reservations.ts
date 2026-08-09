@@ -28,6 +28,10 @@ export interface CreateReservationInput {
   contactEmail?: string | null;
   contactPhone?: string | null;
   priceCents?: number | null;
+  /** When the visitor ticked the house rules; null for admin walk-ins. */
+  rulesAcceptedAt?: Date | null;
+  /** When the visitor ticked the terms of business; null for admin walk-ins. */
+  termsAcceptedAt?: Date | null;
   /** Set when an admin creates the booking manually. */
   createdByAdminId?: string | null;
   /** Admin bookings and membership-covered bookings start confirmed. */
@@ -59,6 +63,8 @@ export async function createReservation(
     contactEmail: input.contactEmail ?? null,
     contactPhone: input.contactPhone ?? null,
     priceCents: input.priceCents ?? null,
+    rulesAcceptedAt: input.rulesAcceptedAt ?? null,
+    termsAcceptedAt: input.termsAcceptedAt ?? null,
     createdByAdminId: input.createdByAdminId ?? null,
   };
 

@@ -48,7 +48,12 @@ export function BrandLogo({
   compact?: boolean;
 }) {
   return (
-    <span className={cn("inline-flex items-center gap-2.5", className)}>
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center gap-2 sm:gap-2.5",
+        className,
+      )}
+    >
       <Image
         src={BRAND_LOTUS_ASSET}
         alt=""
@@ -57,7 +62,9 @@ export function BrandLogo({
         priority
         className={cn(
           "h-auto object-contain",
-          compact ? "w-10" : "w-[54px]",
+          // The artwork is 460x289, so 52px wide is 32.7px tall: the smallest
+          // the lotus may go. It never steps below this.
+          compact ? "w-10" : "w-[52px] sm:w-[54px]",
           inverse && "brightness-0 invert",
         )}
       />
@@ -69,7 +76,15 @@ export function BrandLogo({
         priority
         className={cn(
           "h-auto object-contain",
-          compact ? "w-[76px]" : "w-[116px]",
+          /*
+           * The header carries a permanent booking button now, and below 380px
+           * the full lockup, the button and the menu toggle cannot all fit. The
+           * wordmark drops out there rather than shrinking to a size where the
+           * `PRIVATE GYM` descriptor is a grey smear; the lotus carries the
+           * brand alone on those widths. Every common phone is 390 or wider and
+           * keeps the whole lockup.
+           */
+          compact ? "w-[76px]" : "w-[100px] max-[379px]:hidden sm:w-[116px]",
           inverse && "brightness-0 invert",
         )}
       />

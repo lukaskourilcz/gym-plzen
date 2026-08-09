@@ -76,9 +76,11 @@ test.describe("Public site", () => {
     await expect(contact.getByText(/Křížkova 424\/23/i)).toBeVisible();
     await expect(contact.getByText("info@namastegym.cz")).toHaveCount(0);
     await expect(contact.getByText("777 666 555")).toHaveCount(0);
+    // `q` is what makes Google draw its own marker, so it stays on the address
+    // when the visitor zooms or pans.
     await expect(page.getByTestId("location-map")).toHaveAttribute(
       "src",
-      /maps\?ll=49\.7550669,13\.3785039&z=17&output=embed$/,
+      /maps\?q=49\.7550669,13\.3785039&ll=49\.7550669,13\.3785039&z=17&output=embed$/,
     );
     const closingCta = page.locator("#pridej-se");
     const [closingHeading, closingButton] = await Promise.all([
@@ -122,14 +124,19 @@ test.describe("Public site", () => {
     const unavailable = page.getByText(/Termíny teď nelze načíst/i);
     if (await calendar.isVisible().catch(() => false)) {
       await expect(calendar).toBeVisible();
-      await expect(page.getByText(/Nejprve zvolte den/i)).toBeVisible();
+      // The page opens on today, so nobody has to pick a day before seeing
+      // times, and the "choose a day first" prompt never applies.
+      await expect(page.getByText(/Nejprve zvolte den/i)).toHaveCount(0);
+      await expect(
+        page.locator('a[role="gridcell"][aria-selected="true"]'),
+      ).toHaveCount(1);
       const available = page.getByRole("gridcell", {
         name: /dostupné termíny/i,
       });
       if ((await available.count()) > 0) {
         await available.first().click();
         await expect(
-          page.getByText(/\d{1,2}:\d{2}–\d{1,2}:\d{2}/).first(),
+          page.getByText(/\d{1,2}:\d{2}\s*–\s*\d{1,2}:\d{2}/).first(),
         ).toBeVisible();
       }
     } else {
@@ -138,6 +145,33 @@ test.describe("Public site", () => {
         page.getByRole("button", { name: "Zkusit znovu" }),
       ).toBeVisible();
     }
+  });
+
+  test("a slot leads straight to the details step, consents and all", async ({
+    page,
+  }) => {
+    await page.goto("/rezervace", { waitUntil: "domcontentloaded" });
+    const slot = page.getByRole("link", { name: /pokračovat k rezervaci/i });
+    test.skip(
+      (await slot.count()) === 0,
+      "No bookable slot in this environment",
+    );
+
+    await slot.first().click();
+    // No detour through the login page: booking works without an account.
+    await expect(page).toHaveURL(/\/rezervace\/udaje\?start=/);
+    await expect(page.getByTestId("chosen-slot")).toBeVisible();
+    for (const label of [/Jméno/, /Příjmení/, /E-mail/, /Telefon/]) {
+      await expect(page.getByLabel(label).first()).toBeVisible();
+    }
+    const consents = page.getByRole("checkbox");
+    await expect(consents).toHaveCount(2);
+    for (const box of await consents.all()) {
+      await expect(box).not.toBeChecked();
+    }
+    await expect(
+      page.getByRole("button", { name: /Pokračovat k platbě/i }),
+    ).toBeVisible();
   });
 
   test("available calendar dates support arrow keys and keyboard selection", async ({
@@ -165,7 +199,7 @@ test.describe("Public site", () => {
     await focusedDate.press("Enter");
     await expect(page).toHaveURL(/date=\d{4}-\d{2}-\d{2}/);
     await expect(
-      page.getByText(/\d{1,2}:\d{2}–\d{1,2}:\d{2}/).first(),
+      page.getByText(/\d{1,2}:\d{2}\s*–\s*\d{1,2}:\d{2}/).first(),
     ).toBeVisible();
   });
 

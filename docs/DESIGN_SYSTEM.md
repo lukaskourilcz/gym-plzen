@@ -43,7 +43,10 @@ marketing language, or an unnecessary call to action in every section.
 - `BrandLogo` keeps the supplied artwork but rearranges its two exact image
   parts for navigation: the client lotus sits left and the client wordmark sits
   right. The public version is about 180 CSS pixels wide; the admin shell uses
-  the compact variant.
+  the compact variant. Below 380 CSS pixels the wordmark is hidden and the lotus
+  carries the brand alone, because the header also holds a permanent booking
+  button there. Shrinking the wordmark instead would reduce the `PRIVATE GYM`
+  descriptor to an illegible smear; the lotus never drops below its 32px floor.
 - `BrandLockup` renders the same approved artwork at 190 CSS pixels in the
   footer and at larger sizes on authentication surfaces.
 - Keep its aspect ratio, clear space and full wordmark. Do not rebuild it with
@@ -130,8 +133,10 @@ H2 and card titles beneath them are H3.
   short pages and follows the content normally on longer pages.
 
 Primary breakpoints follow Tailwind defaults. Verify every public layout at 320,
-390, 768, 1024, 1280, 1440, and a wide desktop. Introduce a content-driven
-breakpoint when the default breakpoints cause a collision.
+390, 667 landscape, 768, 1024, 1280, 1440, and a wide desktop. Introduce a
+content-driven breakpoint when the default breakpoints cause a collision: the
+public header does exactly that at 380px, where the full brand lockup, the
+permanent booking button and the menu toggle stop fitting on one row.
 
 ## Borders, radii, and shadows
 
@@ -151,15 +156,17 @@ breakpoint when the default breakpoints cause a collision.
 
 - Buttons are square or minimally rounded.
 - Primary actions use `primary`; important dark-surface actions may use `ink`.
-- Minimum target size is 44 by 44 CSS pixels. The one exception is a stacked
-  footer link list, which drops to 28px from `lg` up where the pointer is
-  precise; that still clears the WCAG 2.2 AA 24px floor and keeps the footer
-  from dominating the page. Touch widths keep the full 44px.
+- Minimum target size is 44 by 44 CSS pixels. Two exceptions: a stacked footer
+  link list drops to 28px from `lg` up where the pointer is precise (still past
+  the WCAG 2.2 AA 24px floor, and it keeps the footer from dominating the page),
+  and a link set inside a running sentence keeps its line height, which WCAG
+  2.5.8 exempts. Touch widths keep the full 44px.
 - Use one primary action per decision area. Secondary actions use outline or
   ghost variants. The persistent header booking button is the single documented
   exception: it is a global navigation action rather than part of any one
   decision area, so it may render as `primary` alongside a section's own primary
-  action.
+  action. It is the only booking primary in the header region: the mobile menu
+  below it must not repeat the same action as a second `primary`.
 - An outline button on a dark surface needs its border at 3:1 or better against
   that surface, because the border is the only thing identifying the control.
   `border-white/45` is the floor on `ink`.
@@ -177,9 +184,15 @@ se`, and `Uložit`.
 ## Icons
 
 - Approved library: Lucide React plus the client-supplied lotus mark. Lucide no
-  longer ships brand icons, so Facebook and Instagram are code-owned glyphs in
-  `components/site/social-icons.tsx`, drawn on the same 24px grid with the same
-  2px round stroke. Do not add a third-party brand icon pack.
+  longer ships brand icons, so Facebook, Instagram and WhatsApp are code-owned
+  glyphs in `components/site/social-icons.tsx`, drawn on the same 24px grid with
+  the same 2px round stroke. Do not add a third-party brand icon pack.
+- In the footer these glyphs sit in `gold` (6.87:1 on `ink`, comfortably past
+  the 3:1 floor for non-text content) and lift to `ink-foreground` on hover.
+  Each one renders only once its content block holds a link. Note that
+  `contact.facebook` still ships a placeholder URL, so that glyph is visible
+  before the operator supplies the real page: an outstanding item in
+  `NEEDED.md`, not a property of the pattern.
 - Default size is 16 or 20px. A prominent feature icon may use 24px.
 - Keep the default Lucide stroke. Do not mix emoji, unrelated SVG packs, and
   Lucide in one interface.
@@ -204,8 +217,10 @@ parallel or transactional:
   in a shared-height heading row, followed by body copy in
   `muted-foreground`.
 - **Price card** (homepage): the price is always on a white `card` surface
-  inside the dark photo band. The amount, duration and loyalty benefit are
-  centered; the single reservation action spans the card width.
+  inside the dark photo band. The label, amount and duration are centered; the
+  single reservation action spans the card width. The card stretches to the
+  height of the copy column beside it, so the band reads as one block rather
+  than a short card floating against a tall column.
 - **Fact strip** (homepage): four equal centered cells with hairlines between
   them and on both outside edges. On desktop the hero reserves enough height
   for the strip to be visible in the initial viewport.
@@ -226,15 +241,28 @@ left, one reservation button right. The contact block above the map is a single
 left-aligned stack under its heading: confirmed public address, e-mail and
 telephone, without card borders or vertical dividers. The map itself carries a
 white address overlay so the location remains readable before and after the
-iframe loads.
+iframe loads. The pin belongs to the embed (`?q=<lat>,<lng>`), never to an
+overlay drawn over the frame: an overlay only lines up at the initial view and
+drifts off the address as soon as the visitor zooms or pans.
+
+Display headings may be set as stacked short lines with the final line in
+`gold`, the pattern the hero establishes. Reserve it for the hero and the
+pricing band; it loses its force if every section shouts.
 
 ## Forms
 
 - Every field has a persistent programmatic label.
 - Inputs are at least 44px high and use 16px text on mobile.
-- Field errors appear next to the relevant field and use `aria-describedby` and
-  `aria-invalid` where possible.
+- Field errors appear next to the relevant field and are wired to the control
+  with `aria-describedby` and `aria-invalid`. The shared `Field` wrapper does
+  this for whatever control it is given, because React Hook Form focuses the
+  first invalid field on submit and an unannounced landing there is silence.
 - Top-level errors use the notice component with `role="alert"`.
+- A consent checkbox pairs a plain-text `label` with the document link beside
+  it, never inside it: a `label` may not contain an interactive element, and a
+  wrapped link is swallowed into the checkbox's accessible name. The checkbox
+  itself is styled through `accent-color` only; border and radius utilities are
+  inert on a native control and should not be written as though they applied.
 - Pending submission prevents repeats and retains the original verb.
 - Do not expose raw provider errors or reveal whether an account exists.
 

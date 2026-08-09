@@ -12,6 +12,7 @@ import {
   formatMoney,
   formatTimeRange,
   minutesToHHmm,
+  RANGE_DASH,
 } from "@/lib/helpers/format";
 import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/helpers/datetime";
 import { getSlotsForRange } from "@/lib/services/slots";
@@ -40,11 +41,13 @@ const PUBLISHED_GYM_PHOTO =
   "https://static.wixstatic.com/media/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg/v1/fill/w_1600,h_900,al_c,q_90,enc_avif,quality_auto/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg";
 /** Client-supplied interior shot, pinned behind the steps and pricing bands. */
 const SECTIONS_PHOTO = "/images/gym-interior.webp";
+/** Verified position of the entrance, used as the map's marker. */
+const GYM_COORDINATES = "49.7550669,13.3785039";
 
 const OPENING_HOURS = `${minutesToHHmm(DEFAULT_OPEN_MINUTE).replace(
   /^0/,
   "",
-)}–${minutesToHHmm(DEFAULT_CLOSE_MINUTE)}`;
+)}${RANGE_DASH}${minutesToHHmm(DEFAULT_CLOSE_MINUTE)}`;
 
 /** Six operating steps, all editable in the admin under "Obsah webu". */
 const STEP_KEYS = [
@@ -92,8 +95,13 @@ export default async function HomePage() {
   const price = formatMoney(content.entryPriceCents);
   const address = publicAddress(t("contact.address"));
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(PUBLIC_MAP_QUERY)}`;
-  const mapsEmbedUrl =
-    "https://www.google.com/maps?ll=49.7550669,13.3785039&z=17&output=embed";
+  /*
+   * `q` makes Google render its own marker anchored to the coordinates, so it
+   * tracks the map on zoom and pan. An overlay drawn at the centre of the frame
+   * only lines up at the initial view and drifts off the address as soon as the
+   * visitor moves the map.
+   */
+  const mapsEmbedUrl = `https://www.google.com/maps?q=${GYM_COORDINATES}&ll=${GYM_COORDINATES}&z=17&output=embed`;
   const heroImageUrl = content.heroImageUrl || PUBLISHED_GYM_PHOTO;
   const heroImageAlt =
     content.heroImageAlt || "Prostor NAMASTÉ Private Gym v Plzni";
@@ -174,10 +182,10 @@ export default async function HomePage() {
                 {t("home.hero.subtitle")}
               </p>
               <div className="mt-7 grid gap-4 text-sm text-ink-foreground/85 sm:grid-cols-2 sm:gap-6">
-                <div className="flex items-start gap-2">
+                <div className="flex items-center gap-3">
                   <MapPin
                     aria-hidden="true"
-                    className="mt-0.5 size-4 shrink-0 text-gold"
+                    className="size-6 shrink-0 text-gold"
                   />
                   <div>
                     <span className="block text-xs font-extrabold uppercase tracking-[.12em]">
@@ -186,10 +194,10 @@ export default async function HomePage() {
                     <span className="mt-1 block font-bold">{address}</span>
                   </div>
                 </div>
-                <div className="flex items-start gap-2">
+                <div className="flex items-center gap-3">
                   <Clock3
                     aria-hidden="true"
-                    className="mt-0.5 size-4 shrink-0 text-gold"
+                    className="size-6 shrink-0 text-gold"
                   />
                   <div>
                     <span className="block text-xs font-extrabold uppercase tracking-[.12em]">
@@ -201,7 +209,13 @@ export default async function HomePage() {
                   </div>
                 </div>
               </div>
-              <div className="mt-8 grid max-w-xl gap-3 sm:grid-cols-2">
+              {/*
+               * Mobile only. On desktop the persistent header booking button
+               * carries the same action, and the client asked for the hero to
+               * stay uncluttered there; below `lg` that header button competes
+               * with the logo for width, so the hero keeps its own pair.
+               */}
+              <div className="mt-8 grid max-w-xl gap-3 sm:grid-cols-2 lg:hidden">
                 <Button href="/rezervace" size="lg" className="justify-center">
                   {t("home.hero.primaryCta")} <ArrowRight aria-hidden="true" />
                 </Button>
@@ -328,18 +342,21 @@ export default async function HomePage() {
             id="cenik"
             className="scroll-mt-[var(--header-h)] py-16 text-ink-foreground lg:py-20"
           >
-            <Container className="grid gap-10 lg:grid-cols-[1fr_1.1fr] lg:items-center">
+            {/* `items-stretch`: the card is sized to the copy beside it so the
+                band reads as one block rather than a short card floating
+                against a tall column. */}
+            <Container className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-stretch">
               <div>
-                <p className="flex items-center gap-3 text-xs font-extrabold uppercase tracking-[.16em] text-gold">
-                  <LotusMark decorative className="size-6 shrink-0" />
+                <p className="text-xs font-extrabold uppercase tracking-[.16em] text-gold">
                   {t("home.pricing.eyebrow")}
                 </p>
-                <h2 className="mt-4 max-w-xl text-3xl font-extrabold uppercase tracking-[.04em] sm:text-4xl">
-                  {t("home.pricing.title")}
+                {/* Three lines in the hero's format, the last one in gold. */}
+                <h2 className="mt-4 max-w-xl whitespace-pre-line text-3xl font-extrabold leading-[1.15] tracking-[-.01em] sm:text-4xl">
+                  {`${t("home.pricing.title")}\n`}
+                  <span className="text-gold">
+                    {t("home.pricing.titleAccent")}
+                  </span>
                 </h2>
-                <p className="mt-6 max-w-xl leading-7 text-ink-foreground/75">
-                  {t("home.pricing.note")}
-                </p>
                 {/* Hairline rows echo the divided facts strip and step grid. */}
                 <ul className="mt-8 grid border-t border-white/15">
                   {[
@@ -363,22 +380,24 @@ export default async function HomePage() {
               </div>
               <div
                 data-testid="pricing-card"
-                className="overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-md"
+                className="flex flex-col overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-md"
               >
-                <p className="border-b border-border px-7 py-4 text-center text-xs font-extrabold uppercase tracking-[.14em] text-accent-foreground">
+                <p className="border-b border-border px-7 py-5 text-center text-sm font-extrabold uppercase tracking-[.14em] text-accent-foreground">
                   {t("home.pricing.cardLabel")}
                 </p>
-                <div className="border-b border-border px-7 py-10 text-center">
+                {/* Grows to fill whatever height the copy column sets. */}
+                <div className="flex flex-1 flex-col justify-center border-b border-border px-7 py-12 text-center">
                   <div className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
-                    <span className="text-5xl font-extrabold leading-none tracking-[-.01em] text-gold">
+                    {/* 60px: the top of the documented display range. */}
+                    <span className="text-6xl font-extrabold leading-none tracking-[-.01em] text-gold">
                       {price}
                     </span>
-                    <span className="text-sm font-bold uppercase tracking-[.1em] text-muted-foreground">
+                    <span className="text-base font-bold uppercase tracking-[.1em] text-muted-foreground">
                       / {DEFAULT_SLOT_MINUTES} minut
                     </span>
                   </div>
                 </div>
-                <div className="px-7 py-6 text-center">
+                <div className="px-7 py-7 text-center">
                   <Button href="/rezervace" size="lg" className="w-full">
                     {t("home.pricing.button")} <ArrowRight aria-hidden="true" />
                   </Button>
@@ -432,20 +451,29 @@ export default async function HomePage() {
               <h2 className="text-3xl font-extrabold tracking-[-.01em] sm:text-4xl">
                 {t("home.cta.title")}
               </h2>
-              <blockquote className="mt-4 border-l-2 border-gold pl-4 text-base leading-7 text-ink-foreground/75">
-                <p>
-                  „{ctaQuoteFirstLine}
-                  {ctaQuoteBreakIndex > 0 ? (
-                    <>
-                      <br />
-                      {ctaQuoteSecondLine}
-                    </>
-                  ) : null}
-                  “
-                </p>
-                <cite className="mt-2 block text-sm font-extrabold not-italic text-gold">
-                  {t("home.cta.quoteAuthor")}
-                </cite>
+              {/* The lotus stands in for the illustration the client marked up:
+                  gold on ink, and decorative because the quote names its own
+                  author. */}
+              <blockquote className="mt-5 flex flex-col gap-4 text-base leading-7 text-ink-foreground/75 sm:flex-row sm:items-center sm:gap-6">
+                <LotusMark
+                  decorative
+                  className="size-16 shrink-0 text-gold sm:size-20"
+                />
+                <div>
+                  <p>
+                    „{ctaQuoteFirstLine}
+                    {ctaQuoteBreakIndex > 0 ? (
+                      <>
+                        <br />
+                        {ctaQuoteSecondLine}
+                      </>
+                    ) : null}
+                    “
+                  </p>
+                  <cite className="mt-2 block text-sm font-extrabold not-italic text-gold">
+                    {t("home.cta.quoteAuthor")}
+                  </cite>
+                </div>
               </blockquote>
             </div>
             <Button
@@ -471,16 +499,6 @@ export default async function HomePage() {
             allowFullScreen
             referrerPolicy="no-referrer-when-downgrade"
           />
-          {/* Brand marker: covers the generic map pin sitting at the centre. */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[calc(100%+2px)]"
-          >
-            <span className="grid size-16 place-items-center rounded-full bg-ink shadow-md ring-4 ring-white/70">
-              <LotusMark decorative className="size-9 text-gold" />
-            </span>
-            <span className="mx-auto block size-0 border-x-8 border-t-[12px] border-x-transparent border-t-ink" />
-          </div>
           <div
             data-testid="location-card"
             className="absolute left-5 top-5 max-w-[calc(100%_-_2.5rem)] border border-border bg-card p-5 shadow-md sm:left-8 sm:top-8 sm:max-w-sm sm:p-6"
