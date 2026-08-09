@@ -56,9 +56,16 @@ export function formatTime(
   }).format(date);
 }
 
-/** Exact customer-facing range in the gym timezone. */
+/**
+ * En dash flanked by non-breaking spaces. The client asked for the spacing;
+ * the spaces are non-breaking so a range never wraps mid-way inside the narrow
+ * slot buttons.
+ */
+export const RANGE_DASH = " – ";
+
+/** Exact customer-facing range in the gym timezone, e.g. "8:00 – 9:15". */
 export function formatTimeRange(start: Date, end: Date): string {
-  return `${formatTime(start)}–${formatTime(end)}`;
+  return `${formatTime(start)}${RANGE_DASH}${formatTime(end)}`;
 }
 
 const STATUS_LABELS: Record<string, string> = {

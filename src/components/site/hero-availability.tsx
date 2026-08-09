@@ -77,7 +77,7 @@ export function HeroAvailability({
             aria-hidden="true"
             className={`size-2.5 rounded-full ${source === "live" ? "bg-success" : source === "preview" ? "bg-warning" : "bg-destructive"}`}
           />
-          Nejbližší termíny
+          Nejbližší volné termíny
         </div>
         {source === "live" ? null : (
           <span
@@ -175,11 +175,14 @@ export function HeroAvailability({
             · každý {freeEntryEvery}. vstup zdarma
           </span>
         </p>
+        {/* Same type size as the price on the left so the two read as one
+            row, with a standing underline to carry the extra emphasis the
+            client asked for without competing with the slot buttons above. */}
         <Link
           href={reservationHref}
-          className="inline-flex min-h-11 items-center gap-1 text-sm font-extrabold text-accent-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex min-h-11 items-center gap-2 text-base font-extrabold text-accent-foreground underline decoration-2 underline-offset-4 hover:decoration-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          Otevřít kalendář <ArrowRight aria-hidden="true" className="size-4" />
+          Otevřít kalendář <ArrowRight aria-hidden="true" className="size-5" />
         </Link>
       </div>
     </section>

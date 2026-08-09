@@ -12,6 +12,7 @@ import {
   formatMoney,
   formatTimeRange,
   minutesToHHmm,
+  RANGE_DASH,
 } from "@/lib/helpers/format";
 import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/helpers/datetime";
 import { getSlotsForRange } from "@/lib/services/slots";
@@ -44,7 +45,7 @@ const SECTIONS_PHOTO = "/images/gym-interior.webp";
 const OPENING_HOURS = `${minutesToHHmm(DEFAULT_OPEN_MINUTE).replace(
   /^0/,
   "",
-)}–${minutesToHHmm(DEFAULT_CLOSE_MINUTE)}`;
+)}${RANGE_DASH}${minutesToHHmm(DEFAULT_CLOSE_MINUTE)}`;
 
 /** Six operating steps, all editable in the admin under "Obsah webu". */
 const STEP_KEYS = [
