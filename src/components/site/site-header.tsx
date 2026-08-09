@@ -133,11 +133,11 @@ export function SiteHeader({
               {item.label}
             </Link>
           ))}
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <Button href="/rezervace" className="uppercase tracking-[.08em]">
-              Rezervovat
-            </Button>
-            <Button href={accountHref} variant="outline">
+          {/* No booking button here: the bar above carries it at every width
+              now, and two identical primaries in one viewport read as two
+              different actions. */}
+          <div className="mt-3">
+            <Button href={accountHref} variant="outline" className="w-full">
               {accountLabel}
             </Button>
           </div>

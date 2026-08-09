@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { safeInternalPath } from "@/lib/security/redirects";
+import { FREE_ENTRY_EVERY } from "@/lib/config/pricing";
 import { publicEnv } from "@/lib/public-env";
 import { authenticateAction } from "./actions";
 
@@ -249,12 +250,16 @@ export function LoginForm({
       {/* A reservation no longer needs an account, so the login page has to say
           so and lead back to the booking flow the visitor came from. */}
       <div className="mt-6 border-t border-border pt-6">
-        <Button href={guestHref} variant="outline" className="h-[46px] w-full">
+        <Button
+          href={guestHref}
+          variant="outline"
+          className="h-[46px] w-full bg-card"
+        >
           Pokračovat bez registrace
         </Button>
         <p className="mt-2 text-center text-xs text-muted-foreground">
-          Rezervaci dokončíte i bez účtu. S účtem se vám počítá každý 10. vstup
-          zdarma.
+          Rezervaci dokončíte i bez účtu. S účtem se vám počítá každý{" "}
+          {FREE_ENTRY_EVERY}. vstup zdarma.
         </p>
       </div>
     </div>

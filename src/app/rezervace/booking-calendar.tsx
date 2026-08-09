@@ -372,16 +372,22 @@ export function BookingCalendar({
 
         {availableSlots.length > 0 ? (
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-            {/* A slot leads straight to the details step. It used to bounce a
-                signed-out visitor to the login page and back to an empty
-                calendar, which meant picking the same time twice. */}
+            {/*
+             * A slot leads straight to the details step. It used to bounce a
+             * signed-out visitor to the login page and back to an empty
+             * calendar, which meant picking the same time twice.
+             *
+             * Solid `border-primary`: the border is the control's only
+             * boundary, and at 35% it computed to 1.95:1 against the page,
+             * under the 3:1 floor. No `aria-label` either, so the accessible
+             * name contains the visible "Vybrat".
+             */}
             {availableSlots.map((slot) => (
               <Button
                 key={slot.startISO}
                 href={`/rezervace/udaje?start=${encodeURIComponent(slot.startISO)}`}
                 variant="outline"
-                className="h-auto min-h-16 justify-between border-primary/35 bg-primary/10 px-4 py-3 hover:border-primary hover:bg-primary/20"
-                aria-label={`${slot.label}, pokračovat k rezervaci`}
+                className="h-auto min-h-16 justify-between border-primary bg-primary/10 px-4 py-3 hover:bg-primary/20"
               >
                 <span className="text-left">
                   <span className="block font-extrabold">{slot.label}</span>

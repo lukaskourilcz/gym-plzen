@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -36,6 +36,13 @@ export function BookingDetailsForm({
 }) {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
+  /*
+   * Submitting before hydration falls back to a native GET, which replaces the
+   * `start` query parameter with the form fields and bounces the visitor back
+   * to the calendar. Same guard the login form uses.
+   */
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
 
   const { register, handleSubmit, formState } = useForm<BookingDetailsValues>({
     resolver: zodResolver(bookingDetailsSchema),
@@ -124,43 +131,43 @@ export function BookingDetailsForm({
           name="acceptRules"
           error={formState.errors.acceptRules?.message}
           register={register("acceptRules")}
-        >
-          Souhlasím s{" "}
-          <Link
-            href="/provozni-rad"
-            target="_blank"
-            className="font-bold text-accent-foreground underline"
-          >
-            provozním řádem
-          </Link>
-          .
-        </Consent>
+          label="Souhlasím s provozním řádem"
+          document={
+            <Link
+              href="/provozni-rad"
+              target="_blank"
+              className="font-bold text-accent-foreground underline"
+            >
+              (otevřít provozní řád)
+            </Link>
+          }
+        />
         <Consent
           name="acceptTerms"
           error={formState.errors.acceptTerms?.message}
           register={register("acceptTerms")}
-        >
-          Souhlasím s{" "}
-          {termsUrl ? (
-            <a
-              href={termsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-bold text-accent-foreground underline"
-            >
-              obchodními podmínkami
-            </a>
-          ) : (
-            <Link
-              href="/obchodni-podminky"
-              target="_blank"
-              className="font-bold text-accent-foreground underline"
-            >
-              obchodními podmínkami
-            </Link>
-          )}
-          .
-        </Consent>
+          label="Souhlasím s obchodními podmínkami"
+          document={
+            termsUrl ? (
+              <a
+                href={termsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-accent-foreground underline"
+              >
+                (otevřít obchodní podmínky)
+              </a>
+            ) : (
+              <Link
+                href="/obchodni-podminky"
+                target="_blank"
+                className="font-bold text-accent-foreground underline"
+              >
+                (otevřít obchodní podmínky)
+              </Link>
+            )
+          }
+        />
       </fieldset>
 
       <FormFeedback error={serverError} />
@@ -168,7 +175,7 @@ export function BookingDetailsForm({
       <Button
         type="submit"
         size="lg"
-        disabled={formState.isSubmitting}
+        disabled={!ready || formState.isSubmitting}
         className="mt-6 w-full sm:w-auto"
       >
         {formState.isSubmitting ? "Připravuji platbu…" : "Pokračovat k platbě"}{" "}
@@ -190,26 +197,40 @@ function Consent({
   name,
   error,
   register,
-  children,
+  label,
+  document: documentLink,
 }: {
   name: string;
   error?: string;
   register: React.InputHTMLAttributes<HTMLInputElement>;
-  children: React.ReactNode;
+  /** Plain text; it is the checkbox's whole accessible name. */
+  label: string;
+  /** The link to the document being agreed to, rendered beside the label. */
+  document: React.ReactNode;
 }) {
   return (
     <div className="mb-4 last:mb-0">
-      <label className="flex min-h-11 items-center gap-3 text-sm">
+      <div className="flex min-h-11 items-center gap-3 text-sm">
         <input
           id={name}
           type="checkbox"
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${name}-error` : undefined}
-          className="size-5 shrink-0 rounded border-input accent-[var(--color-primary)]"
+          // `accent-color` is the only thing a native checkbox honours here;
+          // border and radius utilities would be inert.
+          className="size-5 shrink-0 accent-[var(--color-primary)]"
           {...register}
         />
-        <span>{children}</span>
-      </label>
+        {/*
+         * `label` deliberately wraps only the text. A `<label>` may not contain
+         * an interactive element: the link would be swallowed into the
+         * checkbox's accessible name and clicking it would behave differently
+         * from browser to browser.
+         */}
+        <span>
+          <label htmlFor={name}>{label}</label> {documentLink}.
+        </span>
+      </div>
       {error ? (
         <p id={`${name}-error`} className="mt-1 text-xs text-destructive">
           {error}

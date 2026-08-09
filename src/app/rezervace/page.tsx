@@ -113,7 +113,7 @@ export default async function BookingPage({
                 Vyberte datum a čas
               </h1>
               <p className="mt-4 text-base leading-7 text-muted-foreground sm:text-lg">
-                Vpravo vidíte volné termíny vybraného dne včetně přesného času
+                U vybraného dne uvidíte volné termíny včetně přesného času
                 konce, délky a ceny. Rezervovat můžete i bez registrace.
               </p>
             </div>

@@ -388,7 +388,8 @@ export default async function HomePage() {
                 {/* Grows to fill whatever height the copy column sets. */}
                 <div className="flex flex-1 flex-col justify-center border-b border-border px-7 py-12 text-center">
                   <div className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
-                    <span className="text-6xl font-extrabold leading-none tracking-[-.01em] text-gold sm:text-7xl">
+                    {/* 60px: the top of the documented display range. */}
+                    <span className="text-6xl font-extrabold leading-none tracking-[-.01em] text-gold">
                       {price}
                     </span>
                     <span className="text-base font-bold uppercase tracking-[.1em] text-muted-foreground">
