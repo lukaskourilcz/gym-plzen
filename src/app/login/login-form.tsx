@@ -35,6 +35,18 @@ const CONFIGURED_OAUTH_PROVIDERS = OAUTH_PROVIDERS.filter((provider) =>
   enabledOAuthProviders.has(provider.id),
 );
 
+/**
+ * Reasons `/auth/callback` can bounce a visitor back here. Without these the
+ * failure is invisible: the visitor returns to a signed-out page and concludes
+ * the provider button is broken.
+ */
+const CALLBACK_ERRORS: Record<string, string> = {
+  odmitnuto: "Přihlášení přes externí účet bylo zrušeno.",
+  vyprselo:
+    "Přihlášení se nepodařilo dokončit. Zkuste to prosím znovu, nebo se přihlaste e-mailem a heslem.",
+  selhalo: "Přihlášení přes externí účet se nepodařilo.",
+};
+
 // One flat schema serves both modes; `name` is only required in sign-up.
 const schema = z
   .object({
@@ -63,8 +75,10 @@ export function LoginForm({
   const params = useSearchParams();
   const next = safeInternalPath(params.get("next"));
 
+  const callbackError = CALLBACK_ERRORS[params.get("chyba") ?? ""] ?? null;
+
   const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [serverError, setServerError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(callbackError);
   const [notice, setNotice] = useState<string | null>(null);
   const [oauthPending, setOauthPending] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
