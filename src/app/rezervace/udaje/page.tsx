@@ -96,10 +96,6 @@ export default async function BookingDetailsPage({
               <ArrowLeft aria-hidden="true" className="size-4" />
               Zpět na výběr termínu
             </Link>
-            {/* Step 3: the calendar page numbers the date 1 and the time 2. */}
-            <div className="mt-3 text-xs font-extrabold uppercase tracking-[.14em] text-accent-foreground">
-              3. Údaje
-            </div>
             <h1 className="mt-3 text-4xl font-extrabold tracking-[-.01em] sm:text-5xl">
               Vyplňte údaje k rezervaci
             </h1>

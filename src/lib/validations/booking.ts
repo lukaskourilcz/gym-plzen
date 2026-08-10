@@ -4,7 +4,7 @@ import { dateTimeStringSchema, emailSchema, phoneSchema } from "./common";
 /**
  * Public booking details. One schema covers both visitors: a guest fills it in
  * from scratch, a member sees it prefilled from their profile. Either way the
- * two consents are part of the booking, not of the account, so they are
+ * combined consent is part of the booking, not of the account, so it is
  * re-confirmed for every reservation.
  *
  * Transform-free like the rest of `validations/*`: the action trims the names
@@ -24,8 +24,7 @@ export const bookingDetailsSchema = z.object({
   lastName: z.string().min(1, "Zadejte příjmení.").max(60),
   email: emailSchema,
   phone: phoneSchema,
-  acceptRules: consentSchema,
-  acceptTerms: consentSchema,
+  acceptConditions: consentSchema,
 });
 
 export type BookingDetailsValues = z.infer<typeof bookingDetailsSchema>;

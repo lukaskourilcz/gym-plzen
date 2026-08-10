@@ -1,0 +1,170 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
+import { cn } from "@/lib/utils";
+
+const FALLBACK_MAP_ID = "DEMO_MAP_ID";
+let configuredApiKey: string | null = null;
+
+function configureLoader(apiKey: string, mapId: string) {
+  if (configuredApiKey === apiKey) return;
+  if (configuredApiKey) {
+    throw new Error("Google Maps loader is already configured.");
+  }
+  setOptions({
+    key: apiKey,
+    v: "weekly",
+    language: "cs",
+    region: "CZ",
+    authReferrerPolicy: "origin",
+    mapIds: [mapId],
+  });
+  configuredApiKey = apiKey;
+}
+
+/** Build the approved gold lotus marker; its bottom tip is the map coordinate. */
+function createLotusMarker() {
+  const marker = document.createElement("span");
+  marker.dataset.testid = "lotus-map-marker";
+  marker.setAttribute("aria-hidden", "true");
+  marker.className = "pointer-events-none flex flex-col items-center";
+
+  const disc = document.createElement("span");
+  disc.className =
+    "grid size-16 place-items-center rounded-full bg-ink shadow-md ring-4 ring-white/75";
+
+  const lotus = document.createElement("span");
+  lotus.className = "block size-9 bg-gold";
+  lotus.style.maskImage = 'url("/images/namaste-lotus.png")';
+  lotus.style.maskPosition = "center";
+  lotus.style.maskRepeat = "no-repeat";
+  lotus.style.maskSize = "contain";
+  lotus.style.webkitMaskImage = 'url("/images/namaste-lotus.png")';
+  lotus.style.webkitMaskPosition = "center";
+  lotus.style.webkitMaskRepeat = "no-repeat";
+  lotus.style.webkitMaskSize = "contain";
+  disc.append(lotus);
+
+  const tip = document.createElement("span");
+  tip.className =
+    "block size-0 border-x-8 border-t-[12px] border-x-transparent border-t-ink";
+
+  marker.append(disc, tip);
+  return marker;
+}
+
+export function LocationMap({
+  address,
+  apiKey,
+  mapId,
+  fallbackEmbedUrl,
+  position,
+}: {
+  address: string;
+  apiKey?: string;
+  mapId?: string;
+  fallbackEmbedUrl: string;
+  position: { lat: number; lng: number };
+}) {
+  const mapElementRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    if (!apiKey || !sectionRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        setShouldLoad(true);
+        observer.disconnect();
+      },
+      { rootMargin: "320px" },
+    );
+    observer.observe(sectionRef.current);
+    return () => observer.disconnect();
+  }, [apiKey]);
+
+  useEffect(() => {
+    if (!apiKey || !shouldLoad || !mapElementRef.current) return;
+    const container = mapElementRef.current;
+    const resolvedMapId = mapId || FALLBACK_MAP_ID;
+    let cancelled = false;
+    let map: google.maps.Map | null = null;
+    let marker: google.maps.marker.AdvancedMarkerElement | null = null;
+
+    try {
+      configureLoader(apiKey, resolvedMapId);
+    } catch {
+      setFailed(true);
+      return;
+    }
+
+    void Promise.all([importLibrary("maps"), importLibrary("marker")])
+      .then(([{ Map }, { AdvancedMarkerElement }]) => {
+        if (cancelled) return;
+        map = new Map(container, {
+          center: position,
+          zoom: 17,
+          mapId: resolvedMapId,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: true,
+          gestureHandling: "cooperative",
+          clickableIcons: false,
+        });
+        marker = new AdvancedMarkerElement({
+          map,
+          position,
+          title: address,
+          anchorLeft: "-50%",
+          anchorTop: "-100%",
+        });
+        marker.append(createLotusMarker());
+        setReady(true);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+
+    return () => {
+      cancelled = true;
+      marker?.remove();
+      map?.unbindAll();
+      container.replaceChildren();
+    };
+  }, [address, apiKey, mapId, position, shouldLoad]);
+
+  return (
+    <div ref={sectionRef} className="absolute inset-0">
+      <iframe
+        title={`Mapa, ${address}`}
+        src={fallbackEmbedUrl}
+        data-testid="location-map"
+        aria-hidden={ready || undefined}
+        tabIndex={ready ? -1 : 0}
+        className={cn("h-full w-full border-0 grayscale", ready && "hidden")}
+        loading="lazy"
+        allowFullScreen
+        referrerPolicy="no-referrer-when-downgrade"
+      />
+      {apiKey && !failed ? (
+        <div
+          ref={mapElementRef}
+          data-testid="location-map-canvas"
+          role="region"
+          aria-label={`Mapa, ${address}`}
+          aria-hidden={!ready}
+          className={cn(
+            "absolute inset-0 transition-opacity duration-[220ms] ease-brand",
+            ready
+              ? "pointer-events-auto opacity-100"
+              : "pointer-events-none opacity-0",
+          )}
+        />
+      ) : null}
+    </div>
+  );
+}

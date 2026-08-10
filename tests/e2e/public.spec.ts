@@ -1,6 +1,96 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Public site", () => {
+  test("operating rules render as nine navigable sections", async ({
+    page,
+  }) => {
+    await page.goto("/provozni-rad", { waitUntil: "domcontentloaded" });
+
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Provozní řád" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Tento provozní řád je platný a účinný od: 1. září 2026"),
+    ).toBeVisible();
+    await expect(page.locator("article > section")).toHaveCount(9);
+    await expect(page.locator("article h2")).toHaveCount(9);
+    await expect(page.locator("article li")).toHaveCount(36);
+    await expect(
+      page.getByRole("navigation", { name: "Obsah provozního řádu" }),
+    ).toBeVisible();
+
+    const target = page.locator("#bod-9");
+    await page.getByRole("link", { name: /09 Závěrečná ustanovení/ }).click();
+    await expect(target).toBeInViewport();
+  });
+
+  test("operating rules preserve editorial hierarchy and reflow", async ({
+    page,
+  }) => {
+    for (const width of [320, 390, 667, 768, 1024, 1280, 1440, 1728]) {
+      await page.setViewportSize({
+        width,
+        height: width === 667 ? 375 : width < 700 ? 760 : 900,
+      });
+      await page.goto("/provozni-rad", { waitUntil: "domcontentloaded" });
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Provozní řád" }),
+      ).toBeVisible();
+
+      const layout = await page.evaluate(() => {
+        const sectionHeading = document.querySelector("article h2");
+        const clause = document.querySelector("article p");
+        const contentsLinks = Array.from(
+          document.querySelectorAll<HTMLElement>(
+            'nav[aria-label="Obsah provozního řádu"] a',
+          ),
+        );
+        return {
+          overflow: document.documentElement.scrollWidth - window.innerWidth,
+          headingSize: sectionHeading
+            ? Number.parseFloat(getComputedStyle(sectionHeading).fontSize)
+            : 0,
+          clauseSize: clause
+            ? Number.parseFloat(getComputedStyle(clause).fontSize)
+            : 0,
+          contentsTargetsAreLargeEnough: contentsLinks.every(
+            (link) => link.getBoundingClientRect().height >= 44,
+          ),
+        };
+      });
+
+      expect(
+        layout.overflow,
+        `horizontal overflow at ${width}px`,
+      ).toBeLessThanOrEqual(1);
+      expect(layout.headingSize).toBeGreaterThan(layout.clauseSize);
+      expect(layout.contentsTargetsAreLargeEnough).toBe(true);
+    }
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/provozni-rad", { waitUntil: "domcontentloaded" });
+    await page.keyboard.press("Tab");
+    await expect(
+      page.getByRole("link", { name: "Přeskočit na obsah" }),
+    ).toBeFocused();
+
+    let reachedLastSectionLink = false;
+    for (let index = 0; index < 24; index += 1) {
+      await page.keyboard.press("Tab");
+      reachedLastSectionLink = await page.evaluate(
+        () => document.activeElement?.getAttribute("href") === "#bod-9",
+      );
+      if (reachedLastSectionLink) break;
+    }
+    expect(reachedLastSectionLink).toBe(true);
+    const outlineStyle = await page.evaluate(
+      () => getComputedStyle(document.activeElement!).outlineStyle,
+    );
+    expect(outlineStyle).not.toBe("none");
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/#bod-9$/);
+  });
+
   test("homepage communicates the offer, price, location and booking action", async ({
     page,
   }) => {
@@ -11,7 +101,7 @@ test.describe("Public site", () => {
     await expect(page.getByText(/Kč/).first()).toBeVisible();
     await expect(page.getByText(/Křížkova 424\/23/).first()).toBeVisible();
     await expect(
-      page.getByRole("link", { name: /Vybrat termín/i }).first(),
+      page.getByRole("link", { name: "Rezervovat", exact: true }).first(),
     ).toBeVisible();
     await expect(page.locator('link[rel~="icon"]')).toHaveAttribute(
       "href",
@@ -76,6 +166,9 @@ test.describe("Public site", () => {
     await expect(contact.getByText(/Křížkova 424\/23/i)).toBeVisible();
     await expect(contact.getByText("info@namastegym.cz")).toHaveCount(0);
     await expect(contact.getByText("777 666 555")).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: /WhatsApp, NAMASTÉ Private Gym/i }),
+    ).toBeVisible();
     // `q` is what makes Google draw its own marker, so it stays on the address
     // when the visitor zooms or pans.
     await expect(page.getByTestId("location-map")).toHaveAttribute(
@@ -165,10 +258,17 @@ test.describe("Public site", () => {
       await expect(page.getByLabel(label).first()).toBeVisible();
     }
     const consents = page.getByRole("checkbox");
-    await expect(consents).toHaveCount(2);
-    for (const box of await consents.all()) {
-      await expect(box).not.toBeChecked();
-    }
+    await expect(consents).toHaveCount(1);
+    await expect(consents).not.toBeChecked();
+    await expect(consents).toHaveAccessibleName(
+      "Souhlasím s provozním řádem a obchodními podmínkami.",
+    );
+    await expect(
+      page.getByRole("link", { name: "provozním řádem" }),
+    ).toHaveAttribute("href", "/provozni-rad");
+    await expect(
+      page.getByRole("link", { name: "obchodními podmínkami" }),
+    ).toHaveAttribute("href", /obchodni-podminky/);
     await expect(
       page.getByRole("button", { name: /Pokračovat k platbě/i }),
     ).toBeVisible();
@@ -234,14 +334,16 @@ test.describe("Public site", () => {
     const firstFaqItem = page
       .locator("details")
       .filter({ hasText: "Jak se k nám dostanete?" });
-    const firstFaqMark = firstFaqItem.locator("summary [aria-hidden='true']");
+    const firstFaqMark = firstFaqItem.locator(
+      "summary > span > span[aria-hidden='true']",
+    );
     await expect(firstFaqMark).toHaveCSS("mask-image", /namaste-lotus\.png/);
     await firstFaqItem.locator("summary").click();
     await expect
       .poll(() =>
-        firstFaqMark.evaluate((mark) => getComputedStyle(mark).rotate),
+        firstFaqMark.evaluate((mark) => getComputedStyle(mark).opacity),
       )
-      .toBe("90deg");
+      .toBe("0");
     await expect(page.getByText(/zastávka Rondel/i)).toBeVisible();
     await page.goto("/vybaveni");
     await expect(
@@ -331,7 +433,7 @@ test.describe("Public site", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/", { waitUntil: "domcontentloaded" });
     const duration = await page
-      .getByRole("link", { name: /Vybrat termín/i })
+      .getByRole("link", { name: "Rezervovat", exact: true })
       .first()
       .evaluate((element) => getComputedStyle(element).transitionDuration);
     const durationSeconds = duration.endsWith("ms")

@@ -195,7 +195,7 @@ export default function DesignSystemPage() {
             {/* Stretches to the copy column beside it; gold figure at the top
                 of the display range. Mirrors the homepage pricing band. */}
             <div className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card text-center text-foreground shadow-md">
-              <p className="border-b border-border px-6 py-5 text-sm font-extrabold uppercase tracking-[.14em] text-accent-foreground">
+              <p className="border-b border-border px-6 py-5 text-lg font-extrabold uppercase tracking-[.14em] text-accent-foreground sm:text-xl">
                 Jednorázový vstup
               </p>
               <div className="flex flex-1 flex-col justify-center border-b border-border px-6 py-10">
@@ -291,24 +291,23 @@ export default function DesignSystemPage() {
                 </p>
               </div>
               <Input disabled value="Pole je vypnuté" readOnly />
-              {/*
-               * Consent row. The `label` holds plain text only; the document
-               * link sits beside it, because a `label` may not contain an
-               * interactive element. `accent-color` is the only styling a
-               * native checkbox honours.
-               */}
+              {/* Combined consent: links stay outside the plain-text label and
+                  the full sentence supplies the accessible name. */}
               <div className="flex min-h-11 items-center gap-3 text-sm">
                 <input
                   id="kit-consent"
                   type="checkbox"
+                  aria-labelledby="kit-consent-label"
                   className="size-5 shrink-0 accent-[var(--color-primary)]"
                 />
-                <span>
-                  <label htmlFor="kit-consent">
-                    Souhlasím s provozním řádem
-                  </label>{" "}
+                <span id="kit-consent-label">
+                  <label htmlFor="kit-consent">Souhlasím s</label>{" "}
                   <span className="font-bold text-accent-foreground underline">
-                    (otevřít provozní řád)
+                    provozním řádem
+                  </span>{" "}
+                  a{" "}
+                  <span className="font-bold text-accent-foreground underline">
+                    obchodními podmínkami
                   </span>
                   .
                 </span>

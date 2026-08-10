@@ -14,6 +14,7 @@ import {
   LOGO_URL_KEY,
   TERMS_URL_KEY,
 } from "@/lib/config/branding";
+import { DEFAULT_RULES_BODY, LEGACY_RULES_BODY } from "@/lib/content/rules";
 
 export const PUBLIC_ADDRESS = "Křížkova 424/23, Plzeň - Roudná";
 export const PUBLIC_MAP_QUERY = "Křížkova 424/23, 301 00 Plzeň";
@@ -31,6 +32,18 @@ function publicInstagram(value?: string | null) {
   if (!instagram || instagram === "https://instagram.com")
     return SITE_DEFAULTS["contact.instagram"];
   return instagram;
+}
+
+/** Use an explicit wa.me URL, or derive one from the public Czech phone. */
+export function publicWhatsApp(value?: string | null, phone?: string | null) {
+  const whatsapp = value?.trim();
+  if (whatsapp) return whatsapp;
+
+  let digits = phone?.replace(/\D/g, "") ?? "";
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (/^\d{9}$/.test(digits)) digits = `420${digits}`;
+
+  return /^\d{10,15}$/.test(digits) ? `https://wa.me/${digits}` : undefined;
 }
 
 /**
@@ -95,8 +108,7 @@ export const SITE_DEFAULTS = {
   "home.cta.quoteAuthor": "Buddha",
   "home.cta.button": "Rezervovat",
   "home.rules.title": "Provozní řád",
-  "home.rules.body":
-    "Do fitness vstupujte pouze v čase rezervace. Po tréninku vraťte vybavení do původního stavu a otřete použité nářadí. Vstupní kód je osobní a platí pouze podle pokynů k vaší rezervaci.",
+  "home.rules.body": DEFAULT_RULES_BODY,
   "home.gallery.title": "Podívejte se dovnitř",
   "home.gallery.mainImageAlt": "Interiér NAMASTÉ Private Gym",
   "home.gallery.image2": "Další pohled na prostor",
@@ -115,8 +127,7 @@ export const SITE_DEFAULTS = {
   // Facebook remains a layout placeholder until the client supplies the page.
   "contact.facebook": "https://facebook.com",
   "contact.instagram": "https://instagram.com/namaste_plzen",
-  // Empty until the operator supplies the number: the footer only renders the
-  // WhatsApp glyph once a link exists (see NEEDED.md).
+  // Optional override; otherwise the footer derives wa.me from contact.phone.
   "contact.whatsapp": "",
   "equipment.eyebrow": "Prostor",
   "equipment.title": "Vybavení a prostor",
@@ -221,6 +232,7 @@ const LEGACY_CONTENT_VALUES: Partial<
   "home.hero.subtitle":
     "Rezervujte si prémiové, soukromé, samoobslužné fitness v Plzni. Jen pro sebe a svůj doprovod.",
   "home.pricing.title": "Jednorázový vstup bez předplatného",
+  "home.rules.body": LEGACY_RULES_BODY,
 };
 
 export type SiteContentKey = keyof typeof SITE_DEFAULTS;
@@ -239,14 +251,16 @@ export interface SiteContent {
 
 /** Props every public page hands to `SiteFooter`, derived from CMS content. */
 export function footerProps(content: SiteContent) {
+  const phone = content.get("contact.phone").trim() || undefined;
+
   return {
     brand: content.get("brand.name"),
     email: content.get("contact.email").trim() || undefined,
-    phone: content.get("contact.phone").trim() || undefined,
+    phone,
     address: publicAddress(content.get("contact.address")),
     facebookUrl: content.get("contact.facebook").trim() || undefined,
     instagramUrl: publicInstagram(content.get("contact.instagram")),
-    whatsappUrl: content.get("contact.whatsapp").trim() || undefined,
+    whatsappUrl: publicWhatsApp(content.get("contact.whatsapp"), phone),
     termsUrl: content.termsUrl,
   };
 }

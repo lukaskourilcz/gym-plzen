@@ -189,10 +189,12 @@ se`, and `Uložit`.
   the same 2px round stroke. Do not add a third-party brand icon pack.
 - In the footer these glyphs sit in `gold` (6.87:1 on `ink`, comfortably past
   the 3:1 floor for non-text content) and lift to `ink-foreground` on hover.
-  Each one renders only once its content block holds a link. Note that
-  `contact.facebook` still ships a placeholder URL, so that glyph is visible
-  before the operator supplies the real page: an outstanding item in
-  `NEEDED.md`, not a property of the pattern.
+  Facebook and Instagram render from their content links. WhatsApp prefers the
+  optional `contact.whatsapp` URL and otherwise derives a `wa.me` link from the
+  public contact phone, so its glyph stays in sync when the operator changes
+  the number. Note that `contact.facebook` still ships a placeholder URL, so
+  that glyph is visible before the operator supplies the real page: an
+  outstanding item in `NEEDED.md`, not a property of the pattern.
 - Default size is 16 or 20px. A prominent feature icon may use 24px.
 - Keep the default Lucide stroke. Do not mix emoji, unrelated SVG packs, and
   Lucide in one interface.
@@ -240,10 +242,13 @@ The closing homepage call to action is one horizontal band from `sm`: heading
 left, one reservation button right. The contact block above the map is a single
 left-aligned stack under its heading: confirmed public address, e-mail and
 telephone, without card borders or vertical dividers. The map itself carries a
-white address overlay so the location remains readable before and after the
-iframe loads. The pin belongs to the embed (`?q=<lat>,<lng>`), never to an
-overlay drawn over the frame: an overlay only lines up at the initial view and
-drifts off the address as soon as the visitor zooms or pans.
+white address overlay so the location remains readable before and after the map
+loads. The gold lotus is an Advanced Marker positioned at the verified entrance
+coordinates inside Google Maps, so it remains fixed to the address while the
+visitor zooms or pans. Never draw it as an overlay above an iframe: an overlay
+only lines up at the initial view and then drifts. When the Maps JavaScript API
+is unavailable, the coordinate-query embed remains as a fallback and supplies
+Google's standard anchored pin.
 
 Display headings may be set as stacked short lines with the final line in
 `gold`, the pattern the hero establishes. Reserve it for the hero and the
@@ -258,11 +263,13 @@ pricing band; it loses its force if every section shouts.
   this for whatever control it is given, because React Hook Form focuses the
   first invalid field on submit and an unannounced landing there is silence.
 - Top-level errors use the notice component with `role="alert"`.
-- A consent checkbox pairs a plain-text `label` with the document link beside
-  it, never inside it: a `label` may not contain an interactive element, and a
-  wrapped link is swallowed into the checkbox's accessible name. The checkbox
-  itself is styled through `accent-color` only; border and radius utilities are
-  inert on a native control and should not be written as though they applied.
+- A combined consent checkbox may name multiple linked documents in one
+  sentence. Keep every document link outside the plain-text `label`, because a
+  `label` may not contain an interactive element. Put the full sentence in an
+  `aria-labelledby` container so it remains the checkbox's accessible name.
+  The checkbox itself is styled through `accent-color` only; border and radius
+  utilities are inert on a native control and should not be written as though
+  they applied.
 - Pending submission prevents repeats and retains the original verb.
 - Do not expose raw provider errors or reveal whether an account exists.
 

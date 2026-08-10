@@ -29,6 +29,7 @@
     "@fullcalendar/interaction": "^6.1.21",
     "@fullcalendar/react": "^6.1.21",
     "@fullcalendar/timegrid": "^6.1.21",
+    "@googlemaps/js-api-loader": "^2.1.1",
     "@hookform/resolvers": "^3.10.0",
     "@sentry/nextjs": "^10.68.0",
     "@supabase/server": "^1.4.1",
@@ -54,6 +55,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.6",
     "@playwright/test": "^1.61.1",
+    "@types/google.maps": "^3.65.5",
     "@types/node": "^22.15.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",

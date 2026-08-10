@@ -177,7 +177,7 @@ export function HeroAvailability({
       <div className="mx-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-border py-4 text-center sm:mx-5 sm:justify-between sm:text-left">
         <p className="text-base font-extrabold text-accent-foreground">
           {price} / {DEFAULT_SLOT_MINUTES} minut
-          <span className="font-bold text-foreground">
+          <span className="text-sm font-semibold text-muted-foreground">
             {" "}
             · každý {freeEntryEvery}. vstup zdarma
           </span>

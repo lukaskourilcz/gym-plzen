@@ -16,9 +16,9 @@ import {
 import { startCheckoutAction } from "../actions";
 
 /**
- * Booking details + the two consents, for members and guests alike. A member
- * arrives with their profile prefilled but still ticks the consents: they
- * belong to the reservation, not to the account.
+ * Booking details + the combined document consent, for members and guests
+ * alike. A member arrives with their profile prefilled but still confirms it:
+ * consent belongs to the reservation, not to the account.
  */
 export function BookingDetailsForm({
   startsAtISO,
@@ -51,8 +51,7 @@ export function BookingDetailsForm({
       ...defaultValues,
       // `undefined` rather than `false`: an unticked box must fail validation,
       // and React needs the input to stay uncontrolled either way.
-      acceptRules: undefined,
-      acceptTerms: undefined,
+      acceptConditions: undefined,
     },
   });
 
@@ -126,28 +125,20 @@ export function BookingDetailsForm({
       </p>
 
       <fieldset className="mt-7 border-t border-border pt-6">
-        <legend className="sr-only">Souhlasy</legend>
-        <Consent
-          name="acceptRules"
-          error={formState.errors.acceptRules?.message}
-          register={register("acceptRules")}
-          label="Souhlasím s provozním řádem"
-          document={
+        <legend className="sr-only">Souhlas s dokumenty</legend>
+        <CombinedConsent
+          error={formState.errors.acceptConditions?.message}
+          register={register("acceptConditions")}
+          rulesLink={
             <Link
               href="/provozni-rad"
               target="_blank"
               className="font-bold text-accent-foreground underline"
             >
-              (otevřít provozní řád)
+              provozním řádem
             </Link>
           }
-        />
-        <Consent
-          name="acceptTerms"
-          error={formState.errors.acceptTerms?.message}
-          register={register("acceptTerms")}
-          label="Souhlasím s obchodními podmínkami"
-          document={
+          termsLink={
             termsUrl ? (
               <a
                 href={termsUrl}
@@ -155,7 +146,7 @@ export function BookingDetailsForm({
                 rel="noopener noreferrer"
                 className="font-bold text-accent-foreground underline"
               >
-                (otevřít obchodní podmínky)
+                obchodními podmínkami
               </a>
             ) : (
               <Link
@@ -163,7 +154,7 @@ export function BookingDetailsForm({
                 target="_blank"
                 className="font-bold text-accent-foreground underline"
               >
-                (otevřít obchodní podmínky)
+                obchodními podmínkami
               </Link>
             )
           }
@@ -190,30 +181,29 @@ export function BookingDetailsForm({
 }
 
 /**
- * A consent row: 44px target, the checkbox labelled by its own text, and the
- * error wired to the input so a screen reader hears why it cannot continue.
+ * One combined consent with two independent document links. `aria-labelledby`
+ * gives the checkbox the complete sentence as its accessible name without
+ * placing either interactive link inside the HTML label.
  */
-function Consent({
-  name,
+function CombinedConsent({
   error,
   register,
-  label,
-  document: documentLink,
+  rulesLink,
+  termsLink,
 }: {
-  name: string;
   error?: string;
   register: React.InputHTMLAttributes<HTMLInputElement>;
-  /** Plain text; it is the checkbox's whole accessible name. */
-  label: string;
-  /** The link to the document being agreed to, rendered beside the label. */
-  document: React.ReactNode;
+  rulesLink: React.ReactNode;
+  termsLink: React.ReactNode;
 }) {
+  const name = "acceptConditions";
   return (
-    <div className="mb-4 last:mb-0">
+    <div>
       <div className="flex min-h-11 items-center gap-3 text-sm">
         <input
           id={name}
           type="checkbox"
+          aria-labelledby={`${name}-label`}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${name}-error` : undefined}
           // `accent-color` is the only thing a native checkbox honours here;
@@ -221,14 +211,8 @@ function Consent({
           className="size-5 shrink-0 accent-[var(--color-primary)]"
           {...register}
         />
-        {/*
-         * `label` deliberately wraps only the text. A `<label>` may not contain
-         * an interactive element: the link would be swallowed into the
-         * checkbox's accessible name and clicking it would behave differently
-         * from browser to browser.
-         */}
-        <span>
-          <label htmlFor={name}>{label}</label> {documentLink}.
+        <span id={`${name}-label`}>
+          <label htmlFor={name}>Souhlasím s</label> {rulesLink} a {termsLink}.
         </span>
       </div>
       {error ? (

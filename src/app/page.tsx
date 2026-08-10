@@ -32,6 +32,8 @@ import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { LotusMark } from "@/components/site/brand";
+import { LocationMap } from "@/components/site/location-map";
+import { publicEnv } from "@/lib/public-env";
 import {
   HeroAvailability,
   type HeroAvailabilityDay,
@@ -42,7 +44,8 @@ const PUBLISHED_GYM_PHOTO =
 /** Client-supplied interior shot, pinned behind the steps and pricing bands. */
 const SECTIONS_PHOTO = "/images/gym-interior.webp";
 /** Verified position of the entrance, used as the map's marker. */
-const GYM_COORDINATES = "49.7550669,13.3785039";
+const GYM_POSITION = { lat: 49.7550669, lng: 13.3785039 } as const;
+const GYM_COORDINATES = `${GYM_POSITION.lat},${GYM_POSITION.lng}`;
 
 const OPENING_HOURS = `${minutesToHHmm(DEFAULT_OPEN_MINUTE).replace(
   /^0/,
@@ -382,7 +385,7 @@ export default async function HomePage() {
                 data-testid="pricing-card"
                 className="flex flex-col overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-md"
               >
-                <p className="border-b border-border px-7 py-5 text-center text-sm font-extrabold uppercase tracking-[.14em] text-accent-foreground">
+                <p className="border-b border-border px-7 py-5 text-center text-lg font-extrabold uppercase tracking-[.14em] text-accent-foreground sm:text-xl">
                   {t("home.pricing.cardLabel")}
                 </p>
                 {/* Grows to fill whatever height the copy column sets. */}
@@ -490,14 +493,12 @@ export default async function HomePage() {
           id="kontakt"
           className="relative h-[480px] w-full scroll-mt-[var(--header-h)] bg-muted sm:h-[540px]"
         >
-          <iframe
-            title={`Mapa, ${address}`}
-            src={mapsEmbedUrl}
-            data-testid="location-map"
-            className="absolute inset-0 h-full w-full border-0 grayscale"
-            loading="lazy"
-            allowFullScreen
-            referrerPolicy="no-referrer-when-downgrade"
+          <LocationMap
+            address={address}
+            apiKey={publicEnv.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+            mapId={publicEnv.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID}
+            fallbackEmbedUrl={mapsEmbedUrl}
+            position={GYM_POSITION}
           />
           <div
             data-testid="location-card"
