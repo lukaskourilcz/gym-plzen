@@ -26,6 +26,19 @@ export function publicAddress(value?: string | null) {
   return address;
 }
 
+/** Replace the old seeded placeholder with the confirmed Facebook profile. */
+function publicFacebook(value?: string | null) {
+  const facebook = value?.trim();
+  if (
+    !facebook ||
+    facebook === "https://facebook.com" ||
+    facebook === "https://www.facebook.com"
+  ) {
+    return SITE_DEFAULTS["contact.facebook"];
+  }
+  return facebook;
+}
+
 /** Replace the old seeded placeholder with the profile confirmed by the client. */
 function publicInstagram(value?: string | null) {
   const instagram = value?.trim();
@@ -124,9 +137,8 @@ export const SITE_DEFAULTS = {
   // real contact details : replace them in the admin before launch.
   "contact.phone": "777 666 555",
   "contact.email": "info@namastegym.cz",
-  // Facebook remains a layout placeholder until the client supplies the page.
-  "contact.facebook": "https://facebook.com",
-  "contact.instagram": "https://instagram.com/namaste_plzen",
+  "contact.facebook": "https://www.facebook.com/profile.php?id=61592125101750",
+  "contact.instagram": "https://www.instagram.com/namaste_plzen/",
   // Optional override; otherwise the footer derives wa.me from contact.phone.
   "contact.whatsapp": "",
   "equipment.eyebrow": "Prostor",
@@ -258,7 +270,7 @@ export function footerProps(content: SiteContent) {
     email: content.get("contact.email").trim() || undefined,
     phone,
     address: publicAddress(content.get("contact.address")),
-    facebookUrl: content.get("contact.facebook").trim() || undefined,
+    facebookUrl: publicFacebook(content.get("contact.facebook")),
     instagramUrl: publicInstagram(content.get("contact.instagram")),
     whatsappUrl: publicWhatsApp(content.get("contact.whatsapp"), phone),
     termsUrl: content.termsUrl,

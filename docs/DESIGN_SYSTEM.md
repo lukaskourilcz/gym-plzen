@@ -192,9 +192,8 @@ se`, and `Uložit`.
   Facebook and Instagram render from their content links. WhatsApp prefers the
   optional `contact.whatsapp` URL and otherwise derives a `wa.me` link from the
   public contact phone, so its glyph stays in sync when the operator changes
-  the number. Note that `contact.facebook` still ships a placeholder URL, so
-  that glyph is visible before the operator supplies the real page: an
-  outstanding item in `NEEDED.md`, not a property of the pattern.
+  the number. The confirmed Facebook and Instagram profile URLs are the public
+  defaults; the Facebook resolver also replaces the old seeded placeholder.
 - Default size is 16 or 20px. A prominent feature icon may use 24px.
 - Keep the default Lucide stroke. Do not mix emoji, unrelated SVG packs, and
   Lucide in one interface.
