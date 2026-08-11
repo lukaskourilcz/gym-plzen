@@ -18,6 +18,7 @@ import { DEFAULT_RULES_BODY, LEGACY_RULES_BODY } from "@/lib/content/rules";
 
 export const PUBLIC_ADDRESS = "Křížkova 424/23, Plzeň - Roudná";
 export const PUBLIC_MAP_QUERY = "Křížkova 424/23, 301 00 Plzeň";
+const LEGACY_PLACEHOLDER_PHONE = "777 666 555";
 
 /** Keep the confirmed public label even when an older seeded CMS row exists. */
 export function publicAddress(value?: string | null) {
@@ -47,11 +48,8 @@ function publicInstagram(value?: string | null) {
   return instagram;
 }
 
-/** Use an explicit wa.me URL, or derive one from the public Czech phone. */
-export function publicWhatsApp(value?: string | null, phone?: string | null) {
-  const whatsapp = value?.trim();
-  if (whatsapp) return whatsapp;
-
+/** Derive WhatsApp exclusively from the primary public Czech phone. */
+export function publicWhatsApp(phone?: string | null) {
   let digits = phone?.replace(/\D/g, "") ?? "";
   if (digits.startsWith("00")) digits = digits.slice(2);
   if (/^\d{9}$/.test(digits)) digits = `420${digits}`;
@@ -133,14 +131,11 @@ export const SITE_DEFAULTS = {
   "home.contact.hours": "Otevírací doba {hours}, každý den",
   "home.contact.mapsButton": "Otevřít v Mapách Google",
   "contact.address": PUBLIC_ADDRESS,
-  // PLACEHOLDERS supplied by the client for layout purposes. These are not the
-  // real contact details : replace them in the admin before launch.
-  "contact.phone": "777 666 555",
+  "contact.phone": "731 737 355",
+  "contact.phoneSecondary": "721 560 150",
   "contact.email": "info@namastegym.cz",
   "contact.facebook": "https://www.facebook.com/profile.php?id=61592125101750",
   "contact.instagram": "https://www.instagram.com/namaste_plzen/",
-  // Optional override; otherwise the footer derives wa.me from contact.phone.
-  "contact.whatsapp": "",
   "equipment.eyebrow": "Prostor",
   "equipment.title": "Vybavení a prostor",
   "equipment.imageAlt": "Interiér NAMASTÉ Private Gym",
@@ -245,6 +240,7 @@ const LEGACY_CONTENT_VALUES: Partial<
     "Rezervujte si prémiové, soukromé, samoobslužné fitness v Plzni. Jen pro sebe a svůj doprovod.",
   "home.pricing.title": "Jednorázový vstup bez předplatného",
   "home.rules.body": LEGACY_RULES_BODY,
+  "contact.phone": LEGACY_PLACEHOLDER_PHONE,
 };
 
 export type SiteContentKey = keyof typeof SITE_DEFAULTS;
@@ -269,10 +265,11 @@ export function footerProps(content: SiteContent) {
     brand: content.get("brand.name"),
     email: content.get("contact.email").trim() || undefined,
     phone,
+    secondaryPhone: content.get("contact.phoneSecondary").trim() || undefined,
     address: publicAddress(content.get("contact.address")),
     facebookUrl: publicFacebook(content.get("contact.facebook")),
     instagramUrl: publicInstagram(content.get("contact.instagram")),
-    whatsappUrl: publicWhatsApp(content.get("contact.whatsapp"), phone),
+    whatsappUrl: publicWhatsApp(phone),
     termsUrl: content.termsUrl,
   };
 }

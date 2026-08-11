@@ -20,6 +20,7 @@ export function SiteFooter({
   brand = "NAMASTÉ Private Gym",
   email,
   phone,
+  secondaryPhone,
   address,
   facebookUrl,
   instagramUrl,
@@ -29,6 +30,7 @@ export function SiteFooter({
   brand?: string;
   email?: string;
   phone?: string;
+  secondaryPhone?: string;
   address?: string;
   facebookUrl?: string;
   instagramUrl?: string;
@@ -91,6 +93,14 @@ export function SiteFooter({
                   {phone}
                 </a>
               ) : null}
+              {secondaryPhone ? (
+                <a
+                  href={`tel:${secondaryPhone.replace(/\s/g, "")}`}
+                  className={footerLink}
+                >
+                  {secondaryPhone}
+                </a>
+              ) : null}
               {email ? (
                 <a href={`mailto:${email}`} className={footerLink}>
                   {email}
@@ -106,7 +116,7 @@ export function SiteFooter({
                   ))}
                 </p>
               ) : null}
-              {!phone && !email ? (
+              {!phone && !secondaryPhone && !email ? (
                 <p className="py-2 text-sm leading-6 text-ink-foreground/75">
                   Kontaktní údaje doplní provozovatel.
                 </p>

@@ -59,9 +59,9 @@ const CONTENT_BLOCKS = [
   seeded("home.rules.body", "Provozní řád : text", "pravidla"),
   seeded("contact.facebook", "Facebook (URL)", "kontakt"),
   seeded("contact.instagram", "Instagram (URL)", "kontakt"),
-  seeded("contact.whatsapp", "WhatsApp (URL)", "kontakt"),
   seeded("contact.address", "Adresa", "kontakt"),
-  seeded("contact.phone", "Telefon", "kontakt"),
+  seeded("contact.phone", "Telefon 1 (WhatsApp)", "kontakt"),
+  seeded("contact.phoneSecondary", "Telefon 2", "kontakt"),
   seeded("contact.email", "E-mail", "kontakt"),
 ];
 

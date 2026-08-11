@@ -139,11 +139,11 @@ export const CONTENT_EDITOR_SECTIONS: readonly ContentEditorSection[] = [
       item("home.contact.hours", "Text otevírací doby v mapě"),
       item("home.contact.mapsButton", "Tlačítko mapy"),
       item("contact.address", "Adresa"),
-      item("contact.phone", "Telefon"),
+      item("contact.phone", "Telefon 1 (WhatsApp)"),
+      item("contact.phoneSecondary", "Telefon 2"),
       item("contact.email", "E-mail"),
       item("contact.facebook", "Odkaz na Facebook"),
       item("contact.instagram", "Odkaz na Instagram"),
-      item("contact.whatsapp", "Odkaz na WhatsApp (např. https://wa.me/420…)"),
     ],
   },
   {

@@ -167,8 +167,14 @@ test.describe("Public site", () => {
     await expect(contact.getByText("info@namastegym.cz")).toHaveCount(0);
     await expect(contact.getByText("777 666 555")).toHaveCount(0);
     await expect(
+      page.getByRole("link", { name: "731 737 355", exact: true }),
+    ).toHaveAttribute("href", "tel:731737355");
+    await expect(
+      page.getByRole("link", { name: "721 560 150", exact: true }),
+    ).toHaveAttribute("href", "tel:721560150");
+    await expect(
       page.getByRole("link", { name: /WhatsApp, NAMASTÉ Private Gym/i }),
-    ).toBeVisible();
+    ).toHaveAttribute("href", "https://wa.me/420731737355");
     await expect(
       page.getByRole("link", { name: /Facebook, NAMASTÉ Private Gym/i }),
     ).toHaveAttribute(

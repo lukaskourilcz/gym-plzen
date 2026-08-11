@@ -186,12 +186,12 @@ kontaktní údaje.
   a ostrém nastavení. Před spuštěním proto zůstává povinný test obou metod na
   cílové doméně.
 
-#### P1-05: Kontaktní údaje nejsou potvrzené
+#### P1-05: Kontaktní e-mail není potvrzený
 
 - Stav: **EXTERNALLY BLOCKED**
-- Aplikace používá potvrzenou adresu a kontakt i patička mají klikatelné
-  `mailto:` a `tel:` odkazy. Hodnoty `info@namastegym.cz` a `777 666 555` jsou
-  ale stále výslovné placeholdery. Klient musí dodat skutečný e-mail a telefon.
+- Aplikace používá potvrzenou adresu a telefonní čísla; kontakt i patička mají
+  klikatelné `mailto:` a `tel:` odkazy. Hodnota `info@namastegym.cz` je ale
+  stále výslovný placeholder. Klient musí dodat skutečný e-mail.
 
 #### P1-06: Provozní časy nejsou v repozitáři sjednocené
 

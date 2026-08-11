@@ -189,10 +189,10 @@ se`, and `Uložit`.
   the same 2px round stroke. Do not add a third-party brand icon pack.
 - In the footer these glyphs sit in `gold` (6.87:1 on `ink`, comfortably past
   the 3:1 floor for non-text content) and lift to `ink-foreground` on hover.
-  Facebook and Instagram render from their content links. WhatsApp prefers the
-  optional `contact.whatsapp` URL and otherwise derives a `wa.me` link from the
-  public contact phone, so its glyph stays in sync when the operator changes
-  the number. The confirmed Facebook and Instagram profile URLs are the public
+  Facebook and Instagram render from their content links. WhatsApp derives a
+  `wa.me` link exclusively from the primary public contact phone, so its glyph
+  stays in sync when the operator changes that number; the secondary phone is
+  call-only. The confirmed Facebook and Instagram profile URLs are the public
   defaults; the Facebook resolver also replaces the old seeded placeholder.
 - Default size is 16 or 20px. A prominent feature icon may use 24px.
 - Keep the default Lucide stroke. Do not mix emoji, unrelated SVG packs, and
