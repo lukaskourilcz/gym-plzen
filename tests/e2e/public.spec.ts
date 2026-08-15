@@ -91,6 +91,96 @@ test.describe("Public site", () => {
     await expect(page).toHaveURL(/#bod-9$/);
   });
 
+  test("terms render as 21 navigable sections", async ({ page }) => {
+    await page.goto("/obchodni-podminky", {
+      waitUntil: "domcontentloaded",
+    });
+    await page
+      .getByTestId("tracking-consent")
+      .getByRole("button", { name: "Pouze nezbytné" })
+      .click();
+
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: "VŠEOBECNÉ OBCHODNÍ PODMÍNKY",
+      }),
+    ).toBeVisible();
+    await expect(page.getByText("Účinnost od 17. 8. 2026")).toBeVisible();
+    await expect(page.locator("article > section")).toHaveCount(21);
+    await expect(page.locator("article h2")).toHaveCount(21);
+    await expect(
+      page.getByRole("navigation", {
+        name: "Obsah všeobecných obchodních podmínek",
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "České obchodní inspekce" }),
+    ).toHaveAttribute(
+      "href",
+      "https://coi.gov.cz/informace-o-adr/?utm_source=chatgpt.com",
+    );
+
+    const target = page.locator("#clanek-21");
+    await page.getByRole("link", { name: /21\. ZÁVĚREČNÁ USTANOVENÍ/ }).click();
+    await expect(target).toBeInViewport();
+  });
+
+  test("terms preserve hierarchy and reflow", async ({ page }) => {
+    let consentHandled = false;
+    for (const width of [320, 768, 1280]) {
+      await page.setViewportSize({
+        width,
+        height: width < 700 ? 760 : 900,
+      });
+      await page.goto("/obchodni-podminky", {
+        waitUntil: "domcontentloaded",
+      });
+      await expect(
+        page.getByRole("heading", {
+          level: 1,
+          name: "VŠEOBECNÉ OBCHODNÍ PODMÍNKY",
+        }),
+      ).toBeVisible();
+      if (!consentHandled) {
+        await page
+          .getByTestId("tracking-consent")
+          .getByRole("button", { name: "Pouze nezbytné" })
+          .click();
+        consentHandled = true;
+      }
+
+      const layout = await page.evaluate(() => {
+        const sectionHeading = document.querySelector("article h2");
+        const clause = document.querySelector("article p");
+        const contentsLinks = Array.from(
+          document.querySelectorAll<HTMLElement>(
+            'nav[aria-label="Obsah všeobecných obchodních podmínek"] a',
+          ),
+        );
+        return {
+          overflow: document.documentElement.scrollWidth - window.innerWidth,
+          headingSize: sectionHeading
+            ? Number.parseFloat(getComputedStyle(sectionHeading).fontSize)
+            : 0,
+          clauseSize: clause
+            ? Number.parseFloat(getComputedStyle(clause).fontSize)
+            : 0,
+          contentsTargetsAreLargeEnough: contentsLinks.every(
+            (link) => link.getBoundingClientRect().height >= 44,
+          ),
+        };
+      });
+
+      expect(
+        layout.overflow,
+        `horizontal overflow at ${width}px`,
+      ).toBeLessThanOrEqual(1);
+      expect(layout.headingSize).toBeGreaterThan(layout.clauseSize);
+      expect(layout.contentsTargetsAreLargeEnough).toBe(true);
+    }
+  });
+
   test("homepage communicates the offer, price, location and booking action", async ({
     page,
   }) => {
@@ -167,11 +257,14 @@ test.describe("Public site", () => {
     await expect(contact.getByText("info@namastegym.cz")).toHaveCount(0);
     await expect(contact.getByText("777 666 555")).toHaveCount(0);
     await expect(
-      page.getByRole("link", { name: "731 737 355", exact: true }),
-    ).toHaveAttribute("href", "tel:731737355");
+      page.getByRole("link", { name: "+420 731 737 355", exact: true }),
+    ).toHaveAttribute("href", "tel:+420731737355");
     await expect(
-      page.getByRole("link", { name: "721 560 150", exact: true }),
-    ).toHaveAttribute("href", "tel:721560150");
+      page.getByRole("link", { name: "+420 721 560 150", exact: true }),
+    ).toHaveAttribute("href", "tel:+420721560150");
+    await expect(
+      page.getByRole("contentinfo").getByText("301 00", { exact: true }),
+    ).toBeVisible();
     await expect(
       page.getByRole("link", { name: /WhatsApp, NAMASTÉ Private Gym/i }),
     ).toHaveAttribute("href", "https://wa.me/420731737355");
@@ -440,6 +533,35 @@ test.describe("Public site", () => {
         `footer gap on ${route}`,
       ).toBeLessThanOrEqual(1);
     }
+  });
+
+  test("privacy page publishes the GDPR information", async ({ page }) => {
+    await page.goto("/ochrana-soukromi", {
+      waitUntil: "domcontentloaded",
+    });
+
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: "Zásady ochrany osobních údajů",
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Dokument čeká na schválení provozovatelem"),
+    ).toHaveCount(0);
+    await expect(
+      page.getByText("Klára Bílková", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Renáta Janoušková", { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("G-6L9N41NKT8")).toBeVisible();
+    await expect(page.getByText("1816423579552231")).toBeVisible();
+    await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      "href",
+      /\/ochrana-soukromi$/,
+    );
   });
 
   test("reduced motion disables non-essential transitions", async ({

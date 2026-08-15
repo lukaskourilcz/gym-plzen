@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
+import { BookingConversionTracker } from "@/components/site/booking-conversion-tracker";
 
 export const metadata: Metadata = {
   title: "Stav rezervace",
@@ -64,6 +65,13 @@ export default async function BookingDonePage({
         accountHref={session ? "/account" : "/login"}
         accountLabel={session ? "Můj účet" : "Přihlásit se"}
       />
+      {confirmation.state === "confirmed" ? (
+        <BookingConversionTracker
+          reservationId={confirmation.reservationId}
+          priceCents={confirmation.priceCents}
+          currency={confirmation.currency}
+        />
+      ) : null}
       <main id="main-content" tabIndex={-1}>
         <Section>
           <Container className="max-w-xl text-center">

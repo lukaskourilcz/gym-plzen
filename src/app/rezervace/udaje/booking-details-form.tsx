@@ -14,6 +14,7 @@ import {
   type BookingDetailsValues,
 } from "@/lib/validations/booking";
 import { startCheckoutAction } from "../actions";
+import { trackMetaEvent } from "@/lib/analytics/meta-pixel";
 
 /**
  * Booking details + the combined document consent, for members and guests
@@ -22,11 +23,11 @@ import { startCheckoutAction } from "../actions";
  */
 export function BookingDetailsForm({
   startsAtISO,
-  termsUrl,
+  entryPriceCents,
   defaultValues,
 }: {
   startsAtISO: string;
-  termsUrl: string | null;
+  entryPriceCents: number;
   defaultValues: {
     firstName: string;
     lastName: string;
@@ -66,6 +67,11 @@ export function BookingDetailsForm({
       return;
     }
     if (result.data.kind === "checkout") {
+      trackMetaEvent(
+        "InitiateCheckout",
+        { value: entryPriceCents / 100, currency: "CZK" },
+        `reservation:${result.data.reservationId}:checkout`,
+      );
       window.location.href = result.data.url;
       return;
     }
@@ -139,24 +145,13 @@ export function BookingDetailsForm({
             </Link>
           }
           termsLink={
-            termsUrl ? (
-              <a
-                href={termsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-bold text-accent-foreground underline"
-              >
-                obchodními podmínkami
-              </a>
-            ) : (
-              <Link
-                href="/obchodni-podminky"
-                target="_blank"
-                className="font-bold text-accent-foreground underline"
-              >
-                obchodními podmínkami
-              </Link>
-            )
+            <Link
+              href="/obchodni-podminky"
+              target="_blank"
+              className="font-bold text-accent-foreground underline"
+            >
+              obchodními podmínkami
+            </Link>
           }
         />
       </fieldset>

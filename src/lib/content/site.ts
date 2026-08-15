@@ -16,7 +16,7 @@ import {
 } from "@/lib/config/branding";
 import { DEFAULT_RULES_BODY, LEGACY_RULES_BODY } from "@/lib/content/rules";
 
-export const PUBLIC_ADDRESS = "Křížkova 424/23, Plzeň - Roudná";
+export const PUBLIC_ADDRESS = "Křížkova 424/23, 301 00 Plzeň - Roudná";
 export const PUBLIC_MAP_QUERY = "Křížkova 424/23, 301 00 Plzeň";
 const LEGACY_PLACEHOLDER_PHONE = "777 666 555";
 
@@ -25,6 +25,22 @@ export function publicAddress(value?: string | null) {
   const address = value?.trim();
   if (!address || address.startsWith("Křížkova 424/23")) return PUBLIC_ADDRESS;
   return address;
+}
+
+/** Present Czech contact numbers consistently, including the country code. */
+export function publicPhone(value?: string | null) {
+  const phone = value?.trim();
+  if (!phone) return undefined;
+
+  let digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (/^\d{9}$/.test(digits)) digits = `420${digits}`;
+
+  if (/^420\d{9}$/.test(digits)) {
+    return `+420 ${digits.slice(3, 6)} ${digits.slice(6, 9)} ${digits.slice(9)}`;
+  }
+
+  return phone;
 }
 
 /** Replace the old seeded placeholder with the confirmed Facebook profile. */
@@ -131,8 +147,8 @@ export const SITE_DEFAULTS = {
   "home.contact.hours": "Otevírací doba {hours}, každý den",
   "home.contact.mapsButton": "Otevřít v Mapách Google",
   "contact.address": PUBLIC_ADDRESS,
-  "contact.phone": "731 737 355",
-  "contact.phoneSecondary": "721 560 150",
+  "contact.phone": "+420 731 737 355",
+  "contact.phoneSecondary": "+420 721 560 150",
   "contact.email": "info@namastegym.cz",
   "contact.facebook": "https://www.facebook.com/profile.php?id=61592125101750",
   "contact.instagram": "https://www.instagram.com/namaste_plzen/",
@@ -165,7 +181,7 @@ export const SITE_DEFAULTS = {
   "faq.ctaButton": "Otevřít kalendář",
   "faq.1.question": "Jak se k nám dostanete?",
   "faq.1.answer":
-    "Najdete nás na adrese Křížkova 424/23, Plzeň - Roudná. Můžete k nám pohodlně přijet autem. Autobusová zastávka Rondel je vzdálená přibližně 300 metrů.",
+    "Najdete nás na adrese Křížkova 424/23, 301 00 Plzeň - Roudná. Můžete k nám pohodlně přijet autem. Autobusová zastávka Rondel je vzdálená přibližně 300 metrů.",
   "faq.2.question": "Dá se u vás zaparkovat?",
   "faq.2.answer":
     "Ano, přímo před studiem je k dispozici dostatek parkovacích míst.",
@@ -259,18 +275,17 @@ export interface SiteContent {
 
 /** Props every public page hands to `SiteFooter`, derived from CMS content. */
 export function footerProps(content: SiteContent) {
-  const phone = content.get("contact.phone").trim() || undefined;
+  const phone = publicPhone(content.get("contact.phone"));
 
   return {
     brand: content.get("brand.name"),
     email: content.get("contact.email").trim() || undefined,
     phone,
-    secondaryPhone: content.get("contact.phoneSecondary").trim() || undefined,
+    secondaryPhone: publicPhone(content.get("contact.phoneSecondary")),
     address: publicAddress(content.get("contact.address")),
     facebookUrl: publicFacebook(content.get("contact.facebook")),
     instagramUrl: publicInstagram(content.get("contact.instagram")),
     whatsappUrl: publicWhatsApp(phone),
-    termsUrl: content.termsUrl,
   };
 }
 

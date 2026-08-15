@@ -26,7 +26,6 @@ export function SiteFooter({
   facebookUrl,
   instagramUrl,
   whatsappUrl,
-  termsUrl,
 }: {
   brand?: string;
   email?: string;
@@ -36,18 +35,24 @@ export function SiteFooter({
   facebookUrl?: string;
   instagramUrl?: string;
   whatsappUrl?: string;
-  termsUrl?: string | null;
 }) {
   const year = new Date().getFullYear();
-  /** Render the street and locality on separate lines. */
+  /** Render the street, locality and postcode on separate lines. */
   const addressLines = (() => {
     if (!address) return [];
     const [street, ...rest] = address.split(",").map((part) => part.trim());
     const tail = rest.join(", ");
     const postcode = tail.match(/\d{3}\s?\d{2}/)?.[0];
-    const city = postcode ? tail.replace(postcode, "").trim() : tail;
+    const city = postcode
+      ? tail
+          .replace(postcode, "")
+          .replace(/^\s*,\s*|\s*,\s*$/g, "")
+          .trim()
+      : tail;
     if (!tail) return [street];
-    return [street, postcode ? `${city}, ${postcode}` : city];
+    return postcode
+      ? [street, city, postcode].filter(Boolean)
+      : [street, city].filter(Boolean);
   })();
   const socials = [
     facebookUrl
@@ -109,7 +114,7 @@ export function SiteFooter({
               ) : null}
               {address ? (
                 <p className="py-2 text-sm leading-6 text-ink-foreground/75">
-                  {/* Street on one line, city and postcode on the next. */}
+                  {/* Street, locality and postcode each get their own line. */}
                   {addressLines.map((line) => (
                     <span key={line} className="block">
                       {line}
@@ -130,20 +135,9 @@ export function SiteFooter({
               <Link href="/provozni-rad" className={footerLink}>
                 Provozní řád
               </Link>
-              {termsUrl ? (
-                <a
-                  href={termsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={footerLink}
-                >
-                  Obchodní podmínky
-                </a>
-              ) : (
-                <Link href="/obchodni-podminky" className={footerLink}>
-                  Obchodní podmínky
-                </Link>
-              )}
+              <Link href="/obchodni-podminky" className={footerLink}>
+                Obchodní podmínky
+              </Link>
               <Link href="/ochrana-soukromi" className={footerLink}>
                 Ochrana soukromí
               </Link>

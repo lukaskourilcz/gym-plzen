@@ -4,6 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
 import { cn } from "@/lib/utils";
 
+declare global {
+  interface Window {
+    gm_authFailure?: () => void;
+  }
+}
+
 const FALLBACK_MAP_ID = "DEMO_MAP_ID";
 let configuredApiKey: string | null = null;
 
@@ -94,10 +100,26 @@ export function LocationMap({
     let cancelled = false;
     let map: google.maps.Map | null = null;
     let marker: google.maps.marker.AdvancedMarkerElement | null = null;
+    const previousAuthFailure = window.gm_authFailure;
+
+    // Google reports credential failures outside the importLibrary promise.
+    // Keep the embedded map visible instead of leaving visitors on Google's
+    // "Jejda…" error surface when a deployed key is invalid or revoked.
+    const handleAuthFailure = () => {
+      if (!cancelled) {
+        setReady(false);
+        setFailed(true);
+      }
+      previousAuthFailure?.();
+    };
+    window.gm_authFailure = handleAuthFailure;
 
     try {
       configureLoader(apiKey, resolvedMapId);
     } catch {
+      if (window.gm_authFailure === handleAuthFailure) {
+        window.gm_authFailure = previousAuthFailure;
+      }
       setFailed(true);
       return;
     }
@@ -131,6 +153,9 @@ export function LocationMap({
 
     return () => {
       cancelled = true;
+      if (window.gm_authFailure === handleAuthFailure) {
+        window.gm_authFailure = previousAuthFailure;
+      }
       marker?.remove();
       map?.unbindAll();
       container.replaceChildren();

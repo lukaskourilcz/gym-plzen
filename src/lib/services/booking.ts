@@ -33,7 +33,12 @@ export type BookingOutcome =
   | { kind: "checkout"; url: string; reservationId: string };
 
 export type BookingConfirmation =
-  | { state: "confirmed"; reservationId: string }
+  | {
+      state: "confirmed";
+      reservationId: string;
+      priceCents: number;
+      currency: string;
+    }
   | { state: "processing"; reservationId: string }
   | { state: "invalid" };
 
@@ -216,7 +221,12 @@ export async function getBookingConfirmation(params: {
       }
       return session.payment_status === "paid" &&
         reservation.status === "confirmed"
-        ? { state: "confirmed", reservationId }
+        ? {
+            state: "confirmed",
+            reservationId,
+            priceCents: session.amount_total ?? reservation.priceCents ?? 0,
+            currency: session.currency ?? "czk",
+          }
         : { state: "processing", reservationId };
     } catch {
       return { state: "invalid" };
@@ -232,7 +242,12 @@ export async function getBookingConfirmation(params: {
       reservation.status === "confirmed" &&
       reservation.priceCents === 0
     ) {
-      return { state: "confirmed", reservationId: reservation.id };
+      return {
+        state: "confirmed",
+        reservationId: reservation.id,
+        priceCents: 0,
+        currency: "czk",
+      };
     }
   }
   return { state: "invalid" };

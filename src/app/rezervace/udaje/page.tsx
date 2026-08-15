@@ -137,7 +137,7 @@ export default async function BookingDetailsPage({
             <div className="mt-8">
               <BookingDetailsForm
                 startsAtISO={startsAt.toISOString()}
-                termsUrl={content.termsUrl}
+                entryPriceCents={entryPriceCents}
                 defaultValues={{
                   firstName: nameParts.firstName,
                   lastName: nameParts.lastName,
