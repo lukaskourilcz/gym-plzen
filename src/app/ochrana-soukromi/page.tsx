@@ -30,6 +30,21 @@ export default async function PrivacyPage() {
               doplnit a právně ověřit před spuštěním služby. Tato stránka proto
               není indexována.
             </Notice>
+            <section className="mt-12 border-t border-border pt-8">
+              <h2 className="text-2xl font-extrabold">Analytické cookies</h2>
+              <div className="mt-4 space-y-4 text-sm leading-7 text-muted-foreground">
+                <p>
+                  Návštěvnost webu měříme pomocí Google Analytics 4 (ID měření
+                  G-6L9N41NKT8). Google tag se načte až poté, co návštěvník
+                  výslovně povolí analytiku v cookie liště.
+                </p>
+                <p>
+                  Reklamní úložiště, předávání údajů pro reklamu a personalizace
+                  reklam zůstávají vypnuté. Volbu lze kdykoliv změnit odkazem
+                  „Nastavení cookies“ v patičce webu.
+                </p>
+              </div>
+            </section>
           </Container>
         </Section>
       </main>

@@ -7,6 +7,7 @@ import {
   WhatsAppIcon,
 } from "@/components/site/social-icons";
 import { PUBLIC_NAV } from "@/lib/config/navigation";
+import { CookieSettingsButton } from "@/components/site/cookie-settings-button";
 
 /*
  * 44px targets on touch, 28px from `lg` where the pointer is precise: a stacked
@@ -146,6 +147,9 @@ export function SiteFooter({
               <Link href="/ochrana-soukromi" className={footerLink}>
                 Ochrana soukromí
               </Link>
+              <CookieSettingsButton
+                className={`${footerLink} w-fit cursor-pointer appearance-none border-0 bg-transparent p-0 text-left`}
+              />
             </div>
             {socials.length > 0 ? (
               <div className="mt-5">
