@@ -28,5 +28,13 @@ export const cancelReservationSchema = z.object({
   reason: optionalText(300),
 });
 
+export const rescheduleReservationSchema = z.object({
+  reservationId: z.string().uuid(),
+  startsAt: dateTimeStringSchema,
+});
+
 export type CreateReservationValues = z.infer<typeof createReservationSchema>;
 export type CancelReservationValues = z.infer<typeof cancelReservationSchema>;
+export type RescheduleReservationValues = z.infer<
+  typeof rescheduleReservationSchema
+>;

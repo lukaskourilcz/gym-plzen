@@ -171,6 +171,7 @@ export async function listUpcomingForUser(
     .where(
       and(
         eq(reservation.userId, userId),
+        eq(reservation.status, "confirmed"),
         gte(reservation.startsAt, new Date()),
       ),
     )

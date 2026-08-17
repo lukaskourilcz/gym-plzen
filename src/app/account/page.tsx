@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth/guards";
-import { loyalty, reservations } from "@/lib/services";
+import { loyalty, reservations, rescheduling } from "@/lib/services";
 import { footerProps, loadSiteContent } from "@/lib/content/site";
 import {
   formatDate,
@@ -9,6 +9,7 @@ import {
 } from "@/lib/helpers/format";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/notice";
 import { CalendarDays } from "lucide-react";
 import { LoyaltyWidget } from "@/components/loyalty-widget";
 import { SiteHeader } from "@/components/site/site-header";
@@ -23,16 +24,24 @@ export const metadata = { title: "Můj účet" };
  * Member account page. Shows the loyalty counter (progress to the next free
  * entry) and upcoming reservations.
  */
-export default async function AccountPage() {
+export default async function AccountPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
   const user = await requireUser("/account");
   const isDemoCustomer = user.id === DEMO_CUSTOMER_ID;
-  const [status, upcoming, content] = await Promise.all([
+  const [status, upcoming, rescheduledIds, content] = await Promise.all([
     isDemoCustomer
       ? Promise.resolve(deriveLoyaltyStatus(6))
       : loyalty.getLoyaltyStatus(user.id),
     isDemoCustomer
       ? Promise.resolve(demoUpcomingReservations())
       : reservations.listUpcomingForUser(user.id),
+    isDemoCustomer
+      ? Promise.resolve(new Set<string>())
+      : rescheduling.listRescheduledReservationIds(user.id),
     loadSiteContent(),
   ]);
 
@@ -59,6 +68,18 @@ export default async function AccountPage() {
             <p className="mt-2 text-sm text-muted-foreground">
               {user.email} · cena vstupu {formatMoney(content.entryPriceCents)}
             </p>
+
+            {params.zmena === "uspesna" ? (
+              <Notice
+                tone="success"
+                title="Termín byl změněn"
+                className="mt-6"
+                role="status"
+              >
+                Původní čas je znovu volný. Nový vstupní kód vám pošleme na
+                uložené kontakty.
+              </Notice>
+            ) : null}
 
             <div className="mt-8 grid gap-5 lg:grid-cols-[1.6fr_1fr] lg:items-start">
               <LoyaltyWidget status={status} />
@@ -96,21 +117,36 @@ export default async function AccountPage() {
               {upcoming.map((r) => (
                 <div
                   key={r.id}
-                  className="flex items-center gap-4 rounded-md border border-border bg-card px-5 py-4"
+                  className="rounded-md border border-border bg-card px-5 py-4"
                 >
-                  <span className="grid size-11 place-items-center rounded-sm bg-accent text-accent-foreground">
-                    <CalendarDays className="size-5" />
-                  </span>
-                  <div className="flex-1">
-                    <div className="font-extrabold">Trénink · celý gym</div>
-                    <div className="mt-0.5 text-sm text-muted-foreground">
-                      {formatDate(r.startsAt)} ·{" "}
-                      {formatTimeRange(r.startsAt, r.endsAt)}
+                  <div className="flex flex-wrap items-center gap-4">
+                    <span className="grid size-11 place-items-center rounded-sm bg-accent text-accent-foreground">
+                      <CalendarDays className="size-5" />
+                    </span>
+                    <div className="min-w-48 flex-1">
+                      <div className="font-extrabold">Trénink · celý gym</div>
+                      <div className="mt-0.5 text-sm text-muted-foreground">
+                        {formatDate(r.startsAt)} ·{" "}
+                        {formatTimeRange(r.startsAt, r.endsAt)}
+                      </div>
                     </div>
+                    <span className="rounded-sm bg-accent px-3 py-1 text-xs font-bold text-accent-foreground">
+                      {formatStatus(r.status)}
+                    </span>
+                    {!isDemoCustomer &&
+                    rescheduling.getRescheduleEligibility(
+                      r,
+                      rescheduledIds.has(r.id),
+                    ).eligible ? (
+                      <Button
+                        href={`/account/rezervace/${r.id}/zmenit`}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Změnit termín
+                      </Button>
+                    ) : null}
                   </div>
-                  <span className="rounded-sm bg-accent px-3 py-1 text-xs font-bold text-accent-foreground">
-                    {formatStatus(r.status)}
-                  </span>
                 </div>
               ))}
               {upcoming.length === 0 && (
@@ -145,13 +181,13 @@ function demoUpcomingReservations() {
       id: "demo-reservation-1",
       startsAt: tomorrow,
       endsAt: new Date(tomorrow.getTime() + 75 * 60_000),
-      status: "confirmed",
+      status: "confirmed" as const,
     },
     {
       id: "demo-reservation-2",
       startsAt: nextWeek,
       endsAt: new Date(nextWeek.getTime() + 60 * 60_000),
-      status: "confirmed",
+      status: "confirmed" as const,
     },
   ];
 }

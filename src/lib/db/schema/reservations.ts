@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   index,
   integer,
@@ -5,6 +6,7 @@ import {
   smallint,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { profiles } from "./members";
@@ -63,6 +65,39 @@ export const reservation = pgTable(
     index("reservation_starts_at_idx").on(t.startsAt),
     index("reservation_user_idx").on(t.userId),
     index("reservation_status_idx").on(t.status),
+    index("reservation_confirmed_user_starts_idx")
+      .on(t.userId, t.startsAt)
+      .where(sql`${t.status} = 'confirmed'`),
+  ],
+);
+
+/** Immutable audit record for the single customer-initiated term change. */
+export const reservationReschedule = pgTable(
+  "reservation_reschedule",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    reservationId: uuid("reservation_id")
+      .notNull()
+      .references(() => reservation.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    previousStartsAt: timestamp("previous_starts_at", {
+      withTimezone: true,
+    }).notNull(),
+    previousEndsAt: timestamp("previous_ends_at", {
+      withTimezone: true,
+    }).notNull(),
+    newStartsAt: timestamp("new_starts_at", { withTimezone: true }).notNull(),
+    newEndsAt: timestamp("new_ends_at", { withTimezone: true }).notNull(),
+    changedAt: timestamp("changed_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    // VOP 8.1: the audit row itself is also the database-level one-change
+    // invariant. A reservation can never receive a second history row.
+    uniqueIndex("reservation_reschedule_reservation_uidx").on(t.reservationId),
   ],
 );
 
