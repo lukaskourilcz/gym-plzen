@@ -501,8 +501,8 @@ export default async function HomePage() {
         </div>
 
         <section className="bg-ink text-ink-foreground">
-          <Container className="grid gap-10 py-12 md:grid-cols-2 md:gap-12 lg:py-14">
-            <blockquote className="flex gap-5 text-base leading-7 text-ink-foreground/80">
+          <Container className="grid gap-10 py-12 md:grid-cols-2 md:items-center md:gap-12 lg:py-14">
+            <blockquote className="flex items-center gap-5 text-base leading-7 text-ink-foreground/80 md:justify-self-center">
               <LotusMark
                 decorative
                 className="mt-1 size-14 shrink-0 text-gold sm:size-16"
@@ -525,8 +525,7 @@ export default async function HomePage() {
             </blockquote>
             <div className="border-t border-white/15 pt-8 md:border-l md:border-t-0 md:pl-12 md:pt-0">
               <h2 className="text-2xl font-extrabold sm:text-3xl">
-                Chcete se dozvědět novinky ze světa Namasté Private Gym jako
-                první?
+                Chcete se dozvědět novinky z Namasté jako první?
               </h2>
               <p className="mt-3 text-sm text-ink-foreground/75">
                 Zanechte nám svou e-mailovou adresu.
