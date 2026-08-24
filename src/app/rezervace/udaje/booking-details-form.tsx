@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, TicketPercent } from "lucide-react";
 import { Field, FormFeedback } from "@/components/admin/form-controls";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,9 @@ import {
 } from "@/lib/validations/booking";
 import { startCheckoutAction } from "../actions";
 import { trackMetaEvent } from "@/lib/analytics/meta-pixel";
+import { formatMoney } from "@/lib/helpers/format";
+import type { VoucherQuote } from "@/lib/services/vouchers";
+import { quoteVoucherAction } from "../actions";
 
 /**
  * Booking details + the combined document consent, for members and guests
@@ -37,6 +40,9 @@ export function BookingDetailsForm({
 }) {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [voucherError, setVoucherError] = useState<string | null>(null);
+  const [voucherQuote, setVoucherQuote] = useState<VoucherQuote | null>(null);
+  const [voucherLoading, setVoucherLoading] = useState(false);
   /*
    * Submitting before hydration falls back to a native GET, which replaces the
    * `start` query parameter with the form fields and bounces the visitor back
@@ -45,16 +51,39 @@ export function BookingDetailsForm({
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
 
-  const { register, handleSubmit, formState } = useForm<BookingDetailsValues>({
-    resolver: zodResolver(bookingDetailsSchema),
-    defaultValues: {
-      startsAt: startsAtISO,
-      ...defaultValues,
-      // `undefined` rather than `false`: an unticked box must fail validation,
-      // and React needs the input to stay uncontrolled either way.
-      acceptConditions: undefined,
-    },
-  });
+  const { register, handleSubmit, formState, getValues, setValue } =
+    useForm<BookingDetailsValues>({
+      resolver: zodResolver(bookingDetailsSchema),
+      defaultValues: {
+        startsAt: startsAtISO,
+        ...defaultValues,
+        voucherCode: "",
+        // `undefined` rather than `false`: an unticked box must fail validation,
+        // and React needs the input to stay uncontrolled either way.
+        acceptConditions: undefined,
+      },
+    });
+
+  const voucherField = register("voucherCode");
+
+  async function applyVoucher() {
+    const code = getValues("voucherCode")?.trim() ?? "";
+    setVoucherError(null);
+    setVoucherQuote(null);
+    if (!code) {
+      setVoucherError("Zadejte kód voucheru.");
+      return;
+    }
+    setVoucherLoading(true);
+    const result = await quoteVoucherAction({ code, startsAt: startsAtISO });
+    setVoucherLoading(false);
+    if (!result.ok) {
+      setVoucherError(result.error);
+      return;
+    }
+    setValue("voucherCode", result.data.code, { shouldValidate: true });
+    setVoucherQuote(result.data);
+  }
 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
@@ -69,7 +98,7 @@ export function BookingDetailsForm({
     if (result.data.kind === "checkout") {
       trackMetaEvent(
         "InitiateCheckout",
-        { value: entryPriceCents / 100, currency: "CZK" },
+        { value: result.data.priceCents / 100, currency: "CZK" },
         `reservation:${result.data.reservationId}:checkout`,
       );
       window.location.href = result.data.url;
@@ -129,6 +158,62 @@ export function BookingDetailsForm({
       <p className="-mt-2 text-xs text-muted-foreground">
         Na e-mail a telefon vám pošleme potvrzení a kód ke vstupu.
       </p>
+
+      {entryPriceCents > 0 ? (
+        <fieldset className="mt-7 border-t border-border pt-6">
+          <legend className="flex items-center gap-2 text-sm font-extrabold">
+            <TicketPercent
+              aria-hidden="true"
+              className="size-5 text-accent-foreground"
+            />
+            Máte voucher?
+          </legend>
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start">
+            <div className="flex-1">
+              <label htmlFor="voucherCode" className="sr-only">
+                Kód voucheru
+              </label>
+              <Input
+                id="voucherCode"
+                autoComplete="off"
+                placeholder="Zadejte kód"
+                aria-invalid={voucherError ? true : undefined}
+                aria-describedby={voucherError ? "voucher-error" : undefined}
+                {...voucherField}
+                onChange={(event) => {
+                  void voucherField.onChange(event);
+                  setVoucherQuote(null);
+                  setVoucherError(null);
+                }}
+              />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={voucherLoading}
+              onClick={() => void applyVoucher()}
+              className="shrink-0"
+            >
+              {voucherLoading ? "Ověřuji…" : "Použít voucher"}
+            </Button>
+          </div>
+          {voucherError ? (
+            <p
+              id="voucher-error"
+              role="alert"
+              className="mt-2 text-sm text-destructive"
+            >
+              {voucherError}
+            </p>
+          ) : null}
+          {voucherQuote ? (
+            <p role="status" className="mt-3 text-sm font-bold text-success">
+              Voucher uplatněn. Sleva {formatMoney(voucherQuote.discountCents)},
+              k platbě {formatMoney(voucherQuote.finalPriceCents)}.
+            </p>
+          ) : null}
+        </fieldset>
+      ) : null}
 
       <fieldset className="mt-7 border-t border-border pt-6">
         <legend className="sr-only">Souhlas s dokumenty</legend>

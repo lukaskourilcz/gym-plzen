@@ -38,6 +38,7 @@ import {
   HeroAvailability,
   type HeroAvailabilityDay,
 } from "@/components/site/hero-availability";
+import { NewsletterSignup } from "@/components/site/newsletter-signup";
 
 const PUBLISHED_GYM_PHOTO =
   "https://static.wixstatic.com/media/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg/v1/fill/w_1600,h_900,al_c,q_90,enc_avif,quality_auto/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg";
@@ -454,35 +455,11 @@ export default async function HomePage() {
               <h2 className="text-3xl font-extrabold tracking-[-.01em] sm:text-4xl">
                 {t("home.cta.title")}
               </h2>
-              {/* The lotus stands in for the illustration the client marked up:
-                  gold on ink, and decorative because the quote names its own
-                  author. */}
-              <blockquote className="mt-5 flex flex-col gap-4 text-base leading-7 text-ink-foreground/75 sm:flex-row sm:items-center sm:gap-6">
-                <LotusMark
-                  decorative
-                  className="size-16 shrink-0 text-gold sm:size-20"
-                />
-                <div>
-                  <p>
-                    „{ctaQuoteFirstLine}
-                    {ctaQuoteBreakIndex > 0 ? (
-                      <>
-                        <br />
-                        {ctaQuoteSecondLine}
-                      </>
-                    ) : null}
-                    “
-                  </p>
-                  <cite className="mt-2 block text-sm font-extrabold not-italic text-gold">
-                    {t("home.cta.quoteAuthor")}
-                  </cite>
-                </div>
-              </blockquote>
             </div>
             <Button
               href="/rezervace"
               size="lg"
-              className="min-w-52 shrink-0 justify-center"
+              className="min-w-52 shrink-0 justify-center bg-gold text-gold-foreground hover:bg-gold/90"
             >
               {t("home.cta.button")} <ArrowRight aria-hidden="true" />
             </Button>
@@ -522,6 +499,42 @@ export default async function HomePage() {
             {t("home.contact.mapsButton")}
           </Button>
         </div>
+
+        <section className="bg-ink text-ink-foreground">
+          <Container className="grid gap-10 py-12 md:grid-cols-2 md:gap-12 lg:py-14">
+            <blockquote className="flex gap-5 text-base leading-7 text-ink-foreground/80">
+              <LotusMark
+                decorative
+                className="mt-1 size-14 shrink-0 text-gold sm:size-16"
+              />
+              <div>
+                <p>
+                  „{ctaQuoteFirstLine}
+                  {ctaQuoteBreakIndex > 0 ? (
+                    <>
+                      <br />
+                      {ctaQuoteSecondLine}
+                    </>
+                  ) : null}
+                  “
+                </p>
+                <cite className="mt-2 block text-sm font-extrabold not-italic text-gold">
+                  {t("home.cta.quoteAuthor")}
+                </cite>
+              </div>
+            </blockquote>
+            <div className="border-t border-white/15 pt-8 md:border-l md:border-t-0 md:pl-12 md:pt-0">
+              <h2 className="text-2xl font-extrabold sm:text-3xl">
+                Chcete se dozvědět novinky ze světa Namasté Private Gym jako
+                první?
+              </h2>
+              <p className="mt-3 text-sm text-ink-foreground/75">
+                Zanechte nám svou e-mailovou adresu.
+              </p>
+              <NewsletterSignup />
+            </div>
+          </Container>
+        </section>
       </main>
       <script
         type="application/ld+json"

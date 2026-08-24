@@ -29,3 +29,5 @@ export * as media from "./media";
 export * as messages from "./messages";
 export * as emailTemplates from "./email-templates";
 export * as entryLog from "./entry-log";
+export * as vouchers from "./vouchers";
+export * as newsletter from "./newsletter";

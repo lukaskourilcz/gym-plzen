@@ -66,9 +66,9 @@ export default function DesignSystemPage() {
                   Klidný prostor pro soustředěný trénink
                 </p>
                 <p className="mt-3 max-w-xl text-muted-foreground">
-                  Bitter s českou a Latin Extended sadou je společný font pro
-                  rozhraní i marketing. U velkých nadpisů držte prostrkání
-                  blízko nule, patkové písmo už je samo o sobě široké.
+                  Galvji je společný font pro rozhraní i marketing. Na
+                  zařízeních, kde není dostupný, navazuje systémový sans-serif
+                  fallback. U velkých nadpisů držte prostrkání blízko nule.
                 </p>
               </div>
             </CardContent>

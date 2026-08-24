@@ -12,3 +12,4 @@ export * from "./access";
 export * from "./messaging";
 export * from "./cms";
 export * from "./system";
+export * from "./marketing";

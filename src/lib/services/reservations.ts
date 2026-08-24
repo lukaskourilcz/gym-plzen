@@ -107,6 +107,19 @@ export async function confirmReservation(id: string): Promise<boolean> {
   return existing?.status === "confirmed";
 }
 
+/** Persist the server-calculated price after an optional voucher claim. */
+export async function updateReservationPrice(
+  id: string,
+  priceCents: number,
+): Promise<void> {
+  const [updated] = await db
+    .update(reservation)
+    .set({ priceCents, updatedAt: new Date() })
+    .where(and(eq(reservation.id, id), eq(reservation.status, "pending")))
+    .returning({ id: reservation.id });
+  if (!updated) throw new ActionError("Cenu rezervace se nepodařilo uložit.");
+}
+
 /** Cancel a reservation, recording who/why. */
 export async function cancelReservation(params: {
   id: string;

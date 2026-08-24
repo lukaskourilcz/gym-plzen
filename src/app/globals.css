@@ -16,20 +16,20 @@
 
   /* Brand palette: deep green, gold, charcoal, taupe. */
   --background: #faf8f3;
-  --foreground: #2e2e2e;
+  --foreground: #373838;
   --card: #ffffff;
-  --card-foreground: #2e2e2e;
-  --primary: #004534;
+  --card-foreground: #373838;
+  --primary: #0a271e;
   --primary-foreground: #ffffff;
   --secondary: #efece4;
-  --secondary-foreground: #2e2e2e;
+  --secondary-foreground: #373838;
   --muted: #eeebe4;
   --muted-foreground: #5b6360;
   --accent: #dde8e1;
-  --accent-foreground: #004534;
-  --gold: #ddb255;
-  --gold-foreground: #2e2408;
-  --taupe: #7c6650;
+  --accent-foreground: #0a271e;
+  --gold: #be924a;
+  --gold-foreground: #0a271e;
+  --taupe: #9d8671;
   --taupe-foreground: #ffffff;
   --sage: #7e9c8b;
   --sage-soft: #b9cbbe;
@@ -44,14 +44,14 @@
   --info-foreground: #ffffff;
   --border: #dcd7cc;
   --input: #c7c1b4;
-  --ring: #004534;
-  --ink: #003527;
-  --ink-elevated: #0a4230;
+  --ring: #0a271e;
+  --ink: #0a271e;
+  --ink-elevated: #12382d;
   --ink-foreground: #f4f1e9;
-  --charcoal: #2e2e2e;
+  --charcoal: #373838;
   --charcoal-foreground: #f5f2ec;
-  --elevation-sm: 0 1px 2px rgb(0 53 39 / 0.08);
-  --elevation-md: 0 16px 40px -24px rgb(0 53 39 / 0.4);
+  --elevation-sm: 0 1px 2px rgb(10 39 30 / 0.08);
+  --elevation-md: 0 16px 40px -24px rgb(10 39 30 / 0.4);
 }
 
 .dark {
@@ -125,8 +125,9 @@
   /* Gentle overshoot, reserved for the lotus open/close mark. */
   --ease-brand-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* Bitter is the single brand family for interface and marketing alike. */
-  --font-sans: var(--font-brand, ui-serif, Georgia, "Times New Roman", serif);
+  /* Galvji is the client-approved logo family. It ships on Apple platforms;
+     close system sans-serifs keep the layout legible elsewhere. */
+  --font-sans: Galvji, "Avenir Next", Avenir, "Segoe UI", sans-serif;
 }
 
 /*

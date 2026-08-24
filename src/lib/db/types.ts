@@ -41,3 +41,10 @@ export type ReservationPipeline = InferSelectModel<
 >;
 export type SystemAlert = InferSelectModel<typeof s.systemAlert>;
 export type WebhookEvent = InferSelectModel<typeof s.webhookEvent>;
+
+export type Voucher = InferSelectModel<typeof s.voucher>;
+export type NewVoucher = InferInsertModel<typeof s.voucher>;
+export type VoucherRedemption = InferSelectModel<typeof s.voucherRedemption>;
+export type NewsletterSubscriber = InferSelectModel<
+  typeof s.newsletterSubscriber
+>;

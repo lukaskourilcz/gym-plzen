@@ -114,3 +114,22 @@ export const cmsBlockType = pgEnum("cms_block_type", [
   "file",
   "json",
 ]);
+
+/** How a voucher reduces the one-off reservation price. */
+export const voucherKind = pgEnum("voucher_kind", [
+  "percentage",
+  "fixed_amount",
+]);
+
+/** A claim is held during Checkout, then either consumed or released. */
+export const voucherRedemptionStatus = pgEnum("voucher_redemption_status", [
+  "reserved",
+  "redeemed",
+  "released",
+]);
+
+/** Newsletter lifecycle retained for suppression and consent history. */
+export const newsletterSubscriptionStatus = pgEnum(
+  "newsletter_subscription_status",
+  ["subscribed", "unsubscribed"],
+);

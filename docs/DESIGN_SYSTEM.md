@@ -56,8 +56,9 @@ marketing language, or an unnecessary call to action in every section.
 
 ## Colour
 
-The brand palette is deep green, gold, charcoal, and taupe. All colours are
-semantic CSS variables in `src/app/globals.css`.
+The client-approved palette is deep green `#0A271E`, gold `#be924a`, taupe
+`#9d8671`, and charcoal `#373838`. All colours are semantic CSS variables in
+`src/app/globals.css`.
 
 | Token               | Purpose                                           |
 | ------------------- | ------------------------------------------------- |
@@ -102,8 +103,10 @@ scrollport and stop the child pinning. Prefer this over
 
 ## Typography
 
-- Family: Bitter, loaded through `next/font` with Latin and Latin Extended.
-  It is a slab serif and it is the only family in the product.
+- Family: Galvji, matching the supplied logo as requested by the client.
+  Galvji is used as a system font where available; Avenir Next, Avenir and
+  Segoe UI are the cross-platform fallbacks because the Apple font file is not
+  redistributed with the site.
 - Body: 16px on small screens, 16 to 18px for editorial introductions.
 - Small metadata: never below 12px. Reserve uppercase for section eyebrows,
   card titles, and the booking action.

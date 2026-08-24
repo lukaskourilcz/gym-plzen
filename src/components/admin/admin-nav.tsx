@@ -19,6 +19,7 @@ import {
   Palette,
   Settings,
   Tags,
+  TicketPercent,
   Users,
   X,
 } from "lucide-react";
@@ -40,6 +41,7 @@ const NAV_GROUPS = [
     items: [
       ["/admin/members", "Členové", Users],
       ["/admin/memberships", "Vstupné a věrnost", Tags],
+      ["/admin/vouchers", "Vouchery", TicketPercent],
       ["/admin/messages", "Doručené zprávy", MessageCircle],
     ],
   },
@@ -48,6 +50,7 @@ const NAV_GROUPS = [
     items: [
       ["/admin/content", "Obsah webu", FileText],
       ["/admin/emails", "E-maily", Mail],
+      ["/admin/newsletter", "Odběratelé novinek", Mail],
       ["/admin/settings", "Nastavení a branding", Settings],
       ["/admin/design-system", "Design systém", Palette],
     ],

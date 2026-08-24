@@ -24,7 +24,14 @@ export const bookingDetailsSchema = z.object({
   lastName: z.string().min(1, "Zadejte příjmení.").max(60),
   email: emailSchema,
   phone: phoneSchema,
+  voucherCode: z.string().max(64, "Kód je příliš dlouhý.").optional(),
   acceptConditions: consentSchema,
 });
 
+export const voucherQuoteSchema = z.object({
+  startsAt: dateTimeStringSchema,
+  code: z.string().min(1, "Zadejte kód voucheru.").max(64),
+});
+
 export type BookingDetailsValues = z.infer<typeof bookingDetailsSchema>;
+export type VoucherQuoteValues = z.infer<typeof voucherQuoteSchema>;

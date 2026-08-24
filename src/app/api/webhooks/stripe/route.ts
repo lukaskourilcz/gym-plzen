@@ -7,7 +7,13 @@ import {
   recordWebhookEvent,
   releaseWebhookClaim,
 } from "@/lib/services/webhooks";
-import { memberships, reservations, fulfillment, alerts } from "@/lib/services";
+import {
+  memberships,
+  reservations,
+  fulfillment,
+  alerts,
+  vouchers,
+} from "@/lib/services";
 
 /**
  * Stripe webhook. Verifies the signature, dedupes by event id, and mirrors
@@ -94,6 +100,7 @@ async function handleStripeEvent(event: Stripe.Event): Promise<void> {
           });
           break;
         }
+        await vouchers.redeemForReservation(reservationId);
         await fulfillment.fulfillReservation(reservationId);
       }
       break;
@@ -105,6 +112,7 @@ async function handleStripeEvent(event: Stripe.Event): Promise<void> {
       await memberships.markCheckoutPaymentFailed(session.id, event.type);
       const reservationId = session.metadata?.reservationId;
       if (reservationId) {
+        await vouchers.releaseForReservation(reservationId);
         const reservation = await reservations.getReservation(reservationId);
         if (
           reservation?.status === "pending" &&
