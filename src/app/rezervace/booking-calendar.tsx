@@ -250,7 +250,7 @@ export function BookingCalendar({
                           year: "numeric",
                         });
                         const cellClass = cn(
-                          "relative flex aspect-square min-h-11 min-w-0 items-center justify-center rounded-sm border text-sm font-bold outline-none transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                          "relative flex aspect-square min-h-11 min-w-0 items-center justify-center rounded-sm border text-base font-bold outline-none transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:text-lg",
                           !cell.inMonth && "invisible",
                           cell.inMonth && "border-transparent",
                           (isPast || outsideHorizon) &&
@@ -262,20 +262,7 @@ export function BookingCalendar({
                           selected &&
                             "border-primary bg-primary text-primary-foreground",
                         );
-                        const content = (
-                          <>
-                            {Number(cell.dateKey.slice(-2))}
-                            {hasAvailability && (
-                              <span
-                                aria-hidden="true"
-                                className={cn(
-                                  "absolute bottom-1 size-1.5 rounded-full bg-accent-foreground",
-                                  selected && "bg-primary-foreground",
-                                )}
-                              />
-                            )}
-                          </>
-                        );
+                        const content = Number(cell.dateKey.slice(-2));
                         const ariaLabel = `${label}${isPast ? ", minulý termín" : outsideHorizon ? ", mimo rezervační období" : hasAvailability ? ", dostupné termíny" : ", bez volných termínů"}`;
 
                         return disabled ? (
@@ -316,7 +303,8 @@ export function BookingCalendar({
                             }
                             className={cn(
                               cellClass,
-                              "hover:border-primary/50 hover:bg-primary/10",
+                              !selected &&
+                                "hover:border-primary/50 hover:bg-primary/10",
                             )}
                           >
                             {content}
@@ -326,8 +314,7 @@ export function BookingCalendar({
                   </div>
                 ))}
               </div>
-              <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-border pt-4 text-xs text-muted-foreground">
-                <span>Tečka označuje den s volným termínem.</span>
+              <div className="mt-4 border-t border-border pt-4 text-xs text-muted-foreground">
                 <span>Rezervovat lze nejvýše 60 dní dopředu.</span>
               </div>
             </div>

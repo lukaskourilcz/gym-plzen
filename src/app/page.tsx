@@ -318,11 +318,11 @@ export default async function HomePage() {
                 />
                 {t("home.about.title")}
               </h2>
-              <ol className="mt-6 grid auto-rows-fr gap-px overflow-hidden rounded-lg bg-white/25 md:grid-cols-2 lg:grid-cols-3">
+              <ol className="mt-6 grid gap-px overflow-hidden rounded-lg bg-white/25 md:grid-cols-2 lg:grid-cols-3">
                 {steps.map((step, index) => (
                   <li
                     key={step.title}
-                    className="grid h-full grid-rows-[3rem_1fr] items-start gap-3 bg-card px-8 py-7 text-center sm:px-10 sm:py-8 xl:px-12"
+                    className="grid grid-rows-[3rem_auto] content-start gap-3 bg-card px-8 py-8 text-center sm:px-10 lg:py-10 xl:px-12"
                   >
                     <h3 className="flex h-12 items-center justify-center gap-3 text-lg font-extrabold uppercase leading-tight tracking-[.04em] text-accent-foreground">
                       <span

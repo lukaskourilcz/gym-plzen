@@ -12,7 +12,6 @@ import {
   FileText,
   Home,
   KeyRound,
-  Lightbulb,
   ListChecks,
   Mail,
   MessageCircle,
@@ -60,7 +59,6 @@ const NAV_GROUPS = [
     items: [
       ["/admin/statistics", "Statistiky", ChartNoAxesColumnIncreasing],
       ["/admin/alerts", "Upozornění", Bell],
-      ["/admin/inspirations", "Inspirace", Lightbulb],
     ],
   },
 ] as const;

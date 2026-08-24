@@ -23,17 +23,10 @@ import { PageHeader } from "@/components/admin/page-header";
 export const metadata = { title: "Design systém" };
 
 const swatches = [
-  ["Ink", "bg-ink text-ink-foreground"],
-  ["Primární", "bg-primary text-primary-foreground"],
-  ["Zlatá", "bg-gold text-gold-foreground"],
-  ["Uhlová", "bg-charcoal text-charcoal-foreground"],
-  ["Šalvějová", "bg-sage text-sage-foreground"],
-  ["Šalvějová světlá", "bg-sage-soft text-sage-foreground"],
-  ["Taupe", "bg-taupe text-taupe-foreground"],
-  ["Plocha", "bg-card text-card-foreground"],
-  ["Tlumená", "bg-muted text-muted-foreground"],
-  ["Úspěch", "bg-success text-success-foreground"],
-  ["Varování", "bg-warning text-warning-foreground"],
+  ["Tmavě zelená", "#0A271E", "bg-ink text-ink-foreground"],
+  ["Zlatá", "#BE924A", "bg-gold text-gold-foreground"],
+  ["Taupe", "#9D8671", "bg-taupe text-taupe-foreground"],
+  ["Uhlová", "#373838", "bg-charcoal text-charcoal-foreground"],
 ] as const;
 
 export default function DesignSystemPage() {
@@ -149,8 +142,8 @@ export default function DesignSystemPage() {
                     Dlaždice zóny
                   </h3>
                   <p className="mt-3 text-sm leading-6 opacity-85">
-                    Střídá se tmavě zelená a světle šalvějová. Média drží lotos,
-                    dokud provozovatel nedodá fotografii.
+                    Střídá se tmavě zelená a její zvýšená plocha. Média drží
+                    lotos, dokud provozovatel nedodá fotografii.
                   </p>
                 </div>
                 <div className="grid min-h-32 place-items-center bg-ink-elevated">
@@ -217,13 +210,16 @@ export default function DesignSystemPage() {
           <h2 id="kit-colors" className="mb-4 text-xl font-extrabold">
             Barvy a plochy
           </h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {swatches.map(([label, classes]) => (
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {swatches.map(([label, hex, classes]) => (
               <div
                 key={label}
-                className={`${classes} min-h-24 rounded-lg border p-4 font-extrabold`}
+                className={`${classes} flex min-h-28 flex-col justify-between rounded-lg border p-5`}
               >
-                {label}
+                <span className="font-extrabold">{label}</span>
+                <code className="mt-6 text-sm font-bold tracking-[.08em]">
+                  {hex}
+                </code>
               </div>
             ))}
           </div>

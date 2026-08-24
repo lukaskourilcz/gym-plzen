@@ -38,7 +38,6 @@ const ADMIN_PAGES: { path: string; heading: RegExp }[] = [
   { path: "/admin/messages", heading: /Doručené zprávy/i },
   { path: "/admin/entry-log", heading: /Kniha vstupů/i },
   { path: "/admin/alerts", heading: /Upozornění/i },
-  { path: "/admin/inspirations", heading: /Inspirace/i },
   { path: "/admin/plan", heading: /Plán spuštění/i },
 ];
 
