@@ -318,7 +318,7 @@ export default async function HomePage() {
                 />
                 {t("home.about.title")}
               </h2>
-              <ol className="mt-6 grid gap-px overflow-hidden rounded-lg bg-white/25 md:grid-cols-2 lg:grid-cols-3">
+              <ol className="mt-6 grid gap-px overflow-hidden rounded-lg bg-[color-mix(in_srgb,var(--ink)_30%,var(--card))] md:grid-cols-2 lg:grid-cols-3">
                 {steps.map((step, index) => (
                   <li
                     key={step.title}
@@ -450,7 +450,7 @@ export default async function HomePage() {
         </Section>
 
         <Section id="pridej-se" className="bg-ink text-ink-foreground">
-          <Container className="flex flex-col items-start gap-6 text-left sm:flex-row sm:items-center sm:justify-start sm:gap-10">
+          <Container className="flex flex-col items-center justify-center gap-6 text-center sm:flex-row sm:gap-10">
             <div className="max-w-3xl">
               <h2 className="text-3xl font-extrabold tracking-[-.01em] sm:text-4xl">
                 {t("home.cta.title")}
