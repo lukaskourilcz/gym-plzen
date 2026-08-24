@@ -176,7 +176,7 @@ export default async function HomePage() {
             aria-hidden="true"
             className="absolute inset-0 -z-10 bg-ink/88"
           />
-          <Container className="grid gap-12 py-14 lg:min-h-[calc(100svh-var(--header-h)-112px)] lg:grid-cols-[1fr_1fr] lg:content-center lg:items-center lg:gap-8 lg:py-8 xl:gap-12">
+          <Container className="grid gap-12 py-14 lg:min-h-[calc(100svh-var(--header-h)-112px)] lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:content-center lg:items-center lg:gap-8 lg:py-8 xl:gap-12">
             <div>
               <h1 className="max-w-2xl whitespace-pre-line text-4xl font-extrabold leading-[1.1] tracking-[-.01em] sm:text-5xl lg:text-6xl">
                 {t("home.hero.title")}{" "}
@@ -322,7 +322,7 @@ export default async function HomePage() {
                 {steps.map((step, index) => (
                   <li
                     key={step.title}
-                    className="grid h-full grid-rows-[3rem_1fr] items-start gap-3 bg-card p-7 text-center sm:p-8"
+                    className="grid h-full grid-rows-[3rem_1fr] items-start gap-3 bg-card px-8 py-7 text-center sm:px-10 sm:py-8 xl:px-12"
                   >
                     <h3 className="flex h-12 items-center justify-center gap-3 text-lg font-extrabold uppercase leading-tight tracking-[.04em] text-accent-foreground">
                       <span
@@ -525,7 +525,8 @@ export default async function HomePage() {
             </blockquote>
             <div className="border-t border-white/15 pt-8 md:border-l md:border-t-0 md:pl-12 md:pt-0">
               <h2 className="text-2xl font-extrabold sm:text-3xl">
-                Chcete se dozvědět novinky z Namasté jako první?
+                Chcete se dozvědět novinky ze světa Namasté Private Gym jako
+                první?
               </h2>
               <p className="mt-3 text-sm text-ink-foreground/75">
                 Zanechte nám svou e-mailovou adresu.

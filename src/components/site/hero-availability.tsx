@@ -142,7 +142,7 @@ export function HeroAvailability({
                       )}`}
                       // Solid border: it is the only thing marking the chip's
                       // boundary, and at 45% it fell under the 3:1 floor.
-                      className="grid min-h-11 place-items-center rounded-sm border border-primary bg-primary/10 px-2 py-2 text-center text-xs font-extrabold transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="grid min-h-11 place-items-center whitespace-nowrap rounded-sm border border-primary bg-primary/10 px-2 py-2 text-center text-xs font-extrabold transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       {slot.label}
                     </Link>
@@ -152,7 +152,7 @@ export function HeroAvailability({
                   <span
                     key={slot.startMs}
                     title={state === "booked" ? "Obsazeno" : "Čas už proběhl"}
-                    className="grid min-h-11 place-items-center rounded-sm bg-muted px-2 py-2 text-center text-xs font-semibold text-muted-foreground line-through"
+                    className="grid min-h-11 place-items-center whitespace-nowrap rounded-sm bg-muted px-2 py-2 text-center text-xs font-semibold text-muted-foreground line-through"
                   >
                     {slot.label}
                     <span className="sr-only">
