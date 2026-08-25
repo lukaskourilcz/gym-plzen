@@ -64,11 +64,30 @@ export function SiteFooter({
       ? { href: whatsappUrl, label: "WhatsApp", Icon: WhatsAppIcon }
       : null,
   ].filter((item) => item !== null);
+  const socialLinks = () => (
+    <ul className="mt-2 flex items-center gap-2">
+      {socials.map(({ href, label, Icon }) => (
+        <li key={label}>
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${label}, ${brand}`}
+            /* A subtle outlined circle gives every official brand silhouette
+               the same visual weight. */
+            className="grid size-11 place-items-center rounded-full border border-gold/45 bg-white/5 text-gold transition-colors hover:border-gold hover:bg-gold hover:text-gold-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+          >
+            <Icon />
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
 
   return (
     <footer className="border-t border-white/10 bg-ink text-ink-foreground">
       <Container className="grid gap-10 py-12 md:grid-cols-[1fr_2fr] lg:py-10">
-        <div>
+        <div className="text-center md:text-left">
           <BrandLockup inverse className="items-start text-left" />
           <p className="mt-6 text-xs leading-6 text-ink-foreground/75">
             © {year} {brand}
@@ -128,7 +147,7 @@ export function SiteFooter({
               ) : null}
             </div>
           </div>
-          <div className="col-span-2 sm:col-span-1">
+          <div>
             <h2 className="text-sm font-extrabold">Informace</h2>
             <div className="mt-2 grid">
               <Link href="/provozni-rad" className={footerLink}>
@@ -145,28 +164,18 @@ export function SiteFooter({
               />
             </div>
             {socials.length > 0 ? (
-              <div className="mt-5">
+              <div className="mt-5 hidden sm:block">
                 <h3 className="text-sm font-extrabold">Sledujte nás</h3>
-                <ul className="mt-2 flex items-center gap-2">
-                  {socials.map(({ href, label, Icon }) => (
-                    <li key={label}>
-                      <a
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`${label}, ${brand}`}
-                        /* A subtle outlined circle gives every official brand
-                           silhouette the same visual weight. */
-                        className="grid size-11 place-items-center rounded-full border border-gold/45 bg-white/5 text-gold transition-colors hover:border-gold hover:bg-gold hover:text-gold-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
-                      >
-                        <Icon />
-                      </a>
-                    </li>
-                  ))}
-                </ul>
+                {socialLinks()}
               </div>
             ) : null}
           </div>
+          {socials.length > 0 ? (
+            <div className="sm:hidden">
+              <h2 className="text-sm font-extrabold">Sledujte nás</h2>
+              {socialLinks()}
+            </div>
+          ) : null}
         </div>
       </Container>
     </footer>

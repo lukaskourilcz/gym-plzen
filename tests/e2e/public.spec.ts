@@ -234,9 +234,13 @@ test.describe("Public site", () => {
           bodyAlign: getComputedStyle(card.querySelector("p")!).textAlign,
         })),
       );
+    expect(stepAlignment).toHaveLength(6);
     expect(
       new Set(stepAlignment.map(({ numberLeft }) => numberLeft)).size,
-    ).toBe(1);
+    ).toBe(3);
+    expect(stepAlignment[0]!.numberLeft).toBe(stepAlignment[3]!.numberLeft);
+    expect(stepAlignment[1]!.numberLeft).toBe(stepAlignment[4]!.numberLeft);
+    expect(stepAlignment[2]!.numberLeft).toBe(stepAlignment[5]!.numberLeft);
     expect(
       stepAlignment.every(
         ({ headingAlign, bodyAlign }) =>
@@ -282,6 +286,14 @@ test.describe("Public site", () => {
     ]);
     expect(closingHeading).not.toBeNull();
     expect(closingButton).not.toBeNull();
+    const closingHeadingLineCount = await closingCta
+      .getByRole("heading")
+      .evaluate((heading) => {
+        const range = document.createRange();
+        range.selectNodeContents(heading);
+        return range.getClientRects().length;
+      });
+    expect(closingHeadingLineCount).toBe(1);
     const spaceHeading = await page.locator("#prostor h2").boundingBox();
     expect(spaceHeading).not.toBeNull();
     const closingGap =
@@ -450,19 +462,51 @@ test.describe("Public site", () => {
     expect(
       mobileStepLayout.every(({ bodyAlign }) => bodyAlign === "left"),
     ).toBe(true);
-    const [footerMenu, footerContact] = await Promise.all([
-      page
-        .getByRole("contentinfo")
-        .getByRole("heading", { name: "Menu" })
-        .boundingBox(),
-      page
-        .getByRole("contentinfo")
-        .getByRole("heading", { name: "Kontakt" })
-        .boundingBox(),
-    ]);
+    const footerBrandLayout = await page
+      .locator("footer > div > div")
+      .first()
+      .evaluate((brandBlock) => {
+        const block = brandBlock.getBoundingClientRect();
+        const logo = brandBlock.querySelector("img")!.getBoundingClientRect();
+        const copy = brandBlock.querySelector("p")!;
+        return {
+          blockCenter: Math.round(block.left + block.width / 2),
+          logoCenter: Math.round(logo.left + logo.width / 2),
+          copyAlign: getComputedStyle(copy).textAlign,
+        };
+      });
+    expect(
+      Math.abs(footerBrandLayout.blockCenter - footerBrandLayout.logoCenter),
+    ).toBeLessThanOrEqual(1);
+    expect(footerBrandLayout.copyAlign).toBe("center");
+    const [footerMenu, footerContact, footerInformation, footerSocials] =
+      await Promise.all([
+        page
+          .getByRole("contentinfo")
+          .getByRole("heading", { name: "Menu" })
+          .boundingBox(),
+        page
+          .getByRole("contentinfo")
+          .getByRole("heading", { name: "Kontakt" })
+          .boundingBox(),
+        page
+          .getByRole("contentinfo")
+          .getByRole("heading", { name: "Informace" })
+          .boundingBox(),
+        page
+          .getByRole("contentinfo")
+          .getByRole("heading", { name: "Sledujte nás" })
+          .boundingBox(),
+      ]);
     expect(footerMenu).not.toBeNull();
     expect(footerContact).not.toBeNull();
+    expect(footerInformation).not.toBeNull();
+    expect(footerSocials).not.toBeNull();
     expect(Math.abs(footerMenu!.y - footerContact!.y)).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(footerInformation!.y - footerSocials!.y),
+    ).toBeLessThanOrEqual(1);
+    expect(footerSocials!.x).toBeGreaterThan(footerInformation!.x);
     const [mobileCta, mobileCtaContainer] = await Promise.all([
       page
         .locator("#pridej-se")

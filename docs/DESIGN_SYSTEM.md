@@ -48,7 +48,9 @@ marketing language, or an unnecessary call to action in every section.
   button there. Shrinking the wordmark instead would reduce the `PRIVATE GYM`
   descriptor to an illegible smear; the lotus never drops below its 32px floor.
 - `BrandLockup` renders the same approved artwork at 190 CSS pixels in the
-  footer and at larger sizes on authentication surfaces.
+  footer and at larger sizes on authentication surfaces. The footer centers the
+  full brand block and its supporting copy on mobile, then aligns it left from
+  the tablet layout upward.
 - Keep its aspect ratio, clear space and full wordmark. Do not rebuild it with
   another font or replace it with the supporting `LotusMark`.
 - On dark surfaces use the monochrome inverse treatment. Do not recolour
@@ -188,7 +190,9 @@ se`, and `Uložit`.
   official filled silhouettes in `components/site/social-icons.tsx`. Do not add
   a third-party brand icon pack.
 - In the footer these glyphs sit in `gold` on subtle circular outlines and fill
-  with gold on hover, comfortably preserving the non-text contrast floor.
+  with gold on hover, comfortably preserving the non-text contrast floor. On
+  mobile the footer links form a 2×2 grid, with social links in the lower-right
+  cell beside the Information links; larger screens keep socials under them.
   Facebook and Instagram render from their content links. WhatsApp derives a
   `wa.me` link exclusively from the primary public contact phone, so its glyph
   stays in sync when the operator changes that number; the secondary phone is
@@ -211,10 +215,11 @@ navigation shell.
 Three sanctioned homepage patterns exist because the content is genuinely
 parallel or transactional:
 
-- **Operating steps** (homepage): one vertical hairline-separated list over the
-  pinned photograph. Every row uses the same fixed left number column, followed
-  by a left-aligned uppercase title and body copy. This keeps all two-digit gold
-  badges directly beneath one another on desktop and mobile.
+- **Operating steps** (homepage): one hairline-separated grid of white `card`
+  panels over the pinned photograph. Every panel uses the same fixed left
+  number column, followed by a left-aligned uppercase title and body copy. On
+  desktop the badges align vertically within each of the grid's three columns;
+  the grid collapses to two and then one column on narrower screens.
 - **Price card** (homepage): the price is always on a white `card` surface
   inside the dark photo band. The label, amount and duration are centered; the
   single reservation action spans the card width. The card stretches to the
@@ -235,8 +240,9 @@ heading on it. Use `sage-soft` (8.03:1) for anything readable.
 hue. Any charcoal panel on an ink band therefore needs a non-hue cue, such as a
 `border-gold/40` hairline.
 
-The closing homepage call to action is one horizontal band from `sm`: heading
-left, one reservation button right. The contact block above the map is a single
+The closing homepage call to action is one horizontal band from `lg`: its
+heading stays on one line at desktop widths, with one reservation button right.
+The contact block above the map is a single
 left-aligned stack under its heading: confirmed public address, e-mail and
 telephone, without card borders or vertical dividers. The map itself carries a
 white address overlay so the location remains readable before and after the map

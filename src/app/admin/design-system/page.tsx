@@ -23,10 +23,15 @@ import { PageHeader } from "@/components/admin/page-header";
 export const metadata = { title: "Design systém" };
 
 const swatches = [
-  ["Tmavě zelená", "#0A271E", "bg-ink text-ink-foreground"],
-  ["Zlatá", "#BE924A", "bg-gold text-gold-foreground"],
-  ["Taupe", "#9D8671", "bg-taupe text-taupe-foreground"],
-  ["Uhlová", "#373838", "bg-charcoal text-charcoal-foreground"],
+  ["Primární zelená", "#004534", "bg-primary text-primary-foreground"],
+  ["Ink zelená", "#003527", "bg-ink text-ink-foreground"],
+  ["Zvýšená ink", "#0A4230", "bg-ink-elevated text-ink-foreground"],
+  ["Šalvějová", "#7E9C8B", "bg-sage text-sage-foreground"],
+  ["Jemná šalvějová", "#B9CBBE", "bg-sage-soft text-sage-foreground"],
+  ["Zelený akcent", "#DDE8E1", "bg-accent text-accent-foreground"],
+  ["Zlatá", "#DDB255", "bg-gold text-gold-foreground"],
+  ["Taupe", "#7C6650", "bg-taupe text-taupe-foreground"],
+  ["Uhlová", "#2E2E2E", "bg-charcoal text-charcoal-foreground"],
 ] as const;
 
 export default function DesignSystemPage() {
@@ -59,9 +64,9 @@ export default function DesignSystemPage() {
                   Klidný prostor pro soustředěný trénink
                 </p>
                 <p className="mt-3 max-w-xl text-muted-foreground">
-                  Galvji je společný font pro rozhraní i marketing. Na
-                  zařízeních, kde není dostupný, navazuje systémový sans-serif
-                  fallback. U velkých nadpisů držte prostrkání blízko nule.
+                  Bitter je společný font pro rozhraní i marketing a načítá se s
+                  českou znakovou sadou. U velkých nadpisů držte prostrkání
+                  blízko nule.
                 </p>
               </div>
             </CardContent>
@@ -108,20 +113,18 @@ export default function DesignSystemPage() {
                 {["Vyber si termín", "Po zaplacení"].map((title, index) => (
                   <div
                     key={title}
-                    className="flex h-full flex-col items-center gap-4 bg-card p-5 text-center"
+                    className="grid h-full grid-cols-[3rem_minmax(0,1fr)] content-start items-start gap-x-4 bg-card p-5 text-left"
                   >
-                    <div className="flex flex-col items-center gap-3">
-                      <span
-                        aria-hidden="true"
-                        className="grid size-11 shrink-0 place-items-center rounded-sm bg-gold text-base font-extrabold text-gold-foreground"
-                      >
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                      <h4 className="text-base font-extrabold uppercase leading-tight tracking-[.04em] text-accent-foreground">
-                        {title}
-                      </h4>
-                    </div>
-                    <p className="text-sm leading-6 text-muted-foreground">
+                    <span
+                      aria-hidden="true"
+                      className="row-span-2 grid size-11 shrink-0 place-items-center rounded-sm bg-gold text-base font-extrabold text-gold-foreground"
+                    >
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <h4 className="pt-1 text-base font-extrabold uppercase leading-tight tracking-[.04em] text-accent-foreground">
+                      {title}
+                    </h4>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
                       Zlatá číslice nese pořadí kroku, text zůstává na bílé
                       ploše kvůli čitelnosti.
                     </p>
@@ -130,8 +133,8 @@ export default function DesignSystemPage() {
               </div>
               <p className="mt-4 text-xs text-ink-foreground/80">
                 Na webu je za pásem připnutá fotografie tělocvičny se zeleným
-                závojem. Všechny karty mají stejnou výšku a obsah zarovnaný na
-                střed.
+                závojem. Karty mají stejnou výšku, pevný sloupec pro číslo a
+                text zarovnaný vlevo.
               </p>
             </div>
 
@@ -210,7 +213,7 @@ export default function DesignSystemPage() {
           <h2 id="kit-colors" className="mb-4 text-xl font-extrabold">
             Barvy a plochy
           </h2>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {swatches.map(([label, hex, classes]) => (
               <div
                 key={label}

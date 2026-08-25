@@ -325,11 +325,11 @@ export default async function HomePage() {
                 />
                 {t("home.about.title")}
               </h2>
-              <ol className="mx-auto mt-8 grid max-w-5xl overflow-hidden rounded-lg border border-border bg-card">
+              <ol className="mt-6 grid gap-px overflow-hidden rounded-lg bg-[color-mix(in_srgb,var(--ink)_30%,var(--card))] md:grid-cols-2 lg:grid-cols-3">
                 {steps.map((step, index) => (
                   <li
                     key={step.title}
-                    className="grid grid-cols-[2.75rem_minmax(0,1fr)] items-start gap-x-4 border-t border-border px-5 py-6 text-left first:border-t-0 sm:grid-cols-[3rem_minmax(0,1fr)] sm:px-8 sm:py-7"
+                    className="grid grid-cols-[2.75rem_minmax(0,1fr)] content-start items-start gap-x-4 bg-card px-5 py-6 text-left sm:grid-cols-[3rem_minmax(0,1fr)] sm:px-8 sm:py-7 lg:px-7 lg:py-8 xl:px-9"
                   >
                     <span
                       aria-hidden="true"
@@ -457,9 +457,9 @@ export default async function HomePage() {
         </Section>
 
         <Section id="pridej-se" className="bg-ink text-ink-foreground">
-          <Container className="grid gap-6 text-left sm:grid-cols-2 sm:items-center sm:gap-10">
+          <Container className="grid gap-6 text-left lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-10">
             <div className="max-w-3xl">
-              <h2 className="text-3xl font-extrabold tracking-[-.01em] sm:text-4xl">
+              <h2 className="text-3xl font-extrabold tracking-[-.01em] md:whitespace-nowrap lg:text-3xl xl:text-4xl">
                 {t("home.cta.title")}
               </h2>
             </div>
