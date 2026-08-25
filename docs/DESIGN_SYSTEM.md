@@ -56,9 +56,9 @@ marketing language, or an unnecessary call to action in every section.
 
 ## Colour
 
-The client-approved palette is deep green `#0A271E`, gold `#be924a`, taupe
-`#9d8671`, and charcoal `#373838`. All colours are semantic CSS variables in
-`src/app/globals.css`.
+The client-approved palette is deep green `#004534` with ink `#003527`, gold
+`#ddb255`, taupe `#7c6650`, and charcoal `#2e2e2e`. All colours are semantic
+CSS variables in `src/app/globals.css`.
 
 | Token               | Purpose                                           |
 | ------------------- | ------------------------------------------------- |
@@ -103,10 +103,8 @@ scrollport and stop the child pinning. Prefer this over
 
 ## Typography
 
-- Family: Galvji, matching the supplied logo as requested by the client.
-  Galvji is used as a system font where available; Avenir Next, Avenir and
-  Segoe UI are the cross-platform fallbacks because the Apple font file is not
-  redistributed with the site.
+- Family: Bitter, served through the application with its `latin-ext` subset
+  so Czech diacritics and metrics are consistent on iPhone, Android and desktop.
 - Body: 16px on small screens, 16 to 18px for editorial introductions.
 - Small metadata: never below 12px. Reserve uppercase for section eyebrows,
   card titles, and the booking action.
@@ -160,10 +158,9 @@ permanent booking button and the menu toggle stop fitting on one row.
 - Buttons are square or minimally rounded.
 - Primary actions use `primary`; important dark-surface actions may use `ink`.
 - Minimum target size is 44 by 44 CSS pixels. Two exceptions: a stacked footer
-  link list drops to 28px from `lg` up where the pointer is precise (still past
-  the WCAG 2.2 AA 24px floor, and it keeps the footer from dominating the page),
-  and a link set inside a running sentence keeps its line height, which WCAG
-  2.5.8 exempts. Touch widths keep the full 44px.
+  link list uses compact 36px rows on touch and drops to 28px from `lg` up
+  (both remain past the WCAG 2.2 AA 24px floor), and a link set inside a running
+  sentence keeps its line height, which WCAG 2.5.8 exempts.
 - Use one primary action per decision area. Secondary actions use outline or
   ghost variants. The persistent header booking button is the single documented
   exception: it is a global navigation action rather than part of any one
@@ -187,11 +184,11 @@ se`, and `Uložit`.
 ## Icons
 
 - Approved library: Lucide React plus the client-supplied lotus mark. Lucide no
-  longer ships brand icons, so Facebook, Instagram and WhatsApp are code-owned
-  glyphs in `components/site/social-icons.tsx`, drawn on the same 24px grid with
-  the same 2px round stroke. Do not add a third-party brand icon pack.
-- In the footer these glyphs sit in `gold` (6.87:1 on `ink`, comfortably past
-  the 3:1 floor for non-text content) and lift to `ink-foreground` on hover.
+  longer ships brand icons, so Facebook, Instagram and WhatsApp use code-owned
+  official filled silhouettes in `components/site/social-icons.tsx`. Do not add
+  a third-party brand icon pack.
+- In the footer these glyphs sit in `gold` on subtle circular outlines and fill
+  with gold on hover, comfortably preserving the non-text contrast floor.
   Facebook and Instagram render from their content links. WhatsApp derives a
   `wa.me` link exclusively from the primary public contact phone, so its glyph
   stays in sync when the operator changes that number; the secondary phone is
@@ -214,12 +211,10 @@ navigation shell.
 Three sanctioned homepage patterns exist because the content is genuinely
 parallel or transactional:
 
-- **Operating steps** (homepage): one hairline-separated slab of white `card`
-  panels, one per step, over the pinned photograph described below. All panels
-  have the same height and centered content. Each panel leads with a two-digit
-  gold number badge immediately before an uppercase `accent-foreground` title
-  in a shared-height heading row, followed by body copy in
-  `muted-foreground`.
+- **Operating steps** (homepage): one vertical hairline-separated list over the
+  pinned photograph. Every row uses the same fixed left number column, followed
+  by a left-aligned uppercase title and body copy. This keeps all two-digit gold
+  badges directly beneath one another on desktop and mobile.
 - **Price card** (homepage): the price is always on a white `card` surface
   inside the dark photo band. The label, amount and duration are centered; the
   single reservation action spans the card width. The card stretches to the

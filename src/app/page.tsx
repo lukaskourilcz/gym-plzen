@@ -152,6 +152,7 @@ export default async function HomePage() {
       dateLabel: day.dateKey,
       slots: day.slots.map((slot) => ({
         label: formatTimeRange(slot.start, slot.end),
+        price,
         startMs: slot.start.getTime(),
         booked: slot.booked,
       })),
@@ -189,27 +190,35 @@ export default async function HomePage() {
                 <div className="flex items-center gap-3">
                   <MapPin
                     aria-hidden="true"
-                    className="size-6 shrink-0 text-gold"
+                    className="size-6 shrink-0 self-center text-gold"
                   />
-                  <div>
+                  <div className="leading-5">
                     <span className="block text-xs font-extrabold uppercase tracking-[.12em]">
                       {t("home.hero.addressLabel")}
                     </span>
-                    <span className="mt-1 block font-bold">{address}</span>
+                    {address.split(",").map((line, index) => (
+                      <span
+                        key={`${line}-${index}`}
+                        className={cn("block font-bold", index === 0 && "mt-1")}
+                      >
+                        {line.trim()}
+                      </span>
+                    ))}
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Clock3
                     aria-hidden="true"
-                    className="size-6 shrink-0 text-gold"
+                    className="size-6 shrink-0 self-center text-gold"
                   />
-                  <div>
+                  <div className="leading-5">
                     <span className="block text-xs font-extrabold uppercase tracking-[.12em]">
                       {t("home.hero.hoursLabel")}
                     </span>
                     <span className="mt-1 block font-bold">
-                      {OPENING_HOURS} · otevřeno každý den
+                      {OPENING_HOURS}
                     </span>
+                    <span className="block font-bold">otevřeno každý den</span>
                   </div>
                 </div>
               </div>
@@ -236,8 +245,6 @@ export default async function HomePage() {
 
             <HeroAvailability
               days={previewDays}
-              price={price}
-              freeEntryEvery={content.freeEntryEvery}
               source={availability.source}
               nowMs={now.getTime()}
             />
@@ -318,22 +325,22 @@ export default async function HomePage() {
                 />
                 {t("home.about.title")}
               </h2>
-              <ol className="mt-6 grid gap-px overflow-hidden rounded-lg bg-[color-mix(in_srgb,var(--ink)_30%,var(--card))] md:grid-cols-2 lg:grid-cols-3">
+              <ol className="mx-auto mt-8 grid max-w-5xl overflow-hidden rounded-lg border border-border bg-card">
                 {steps.map((step, index) => (
                   <li
                     key={step.title}
-                    className="grid grid-rows-[3rem_auto] content-start gap-3 bg-card px-8 py-8 text-center sm:px-10 lg:py-10 xl:px-12"
+                    className="grid grid-cols-[2.75rem_minmax(0,1fr)] items-start gap-x-4 border-t border-border px-5 py-6 text-left first:border-t-0 sm:grid-cols-[3rem_minmax(0,1fr)] sm:px-8 sm:py-7"
                   >
-                    <h3 className="flex h-12 items-center justify-center gap-3 text-lg font-extrabold uppercase leading-tight tracking-[.04em] text-accent-foreground">
-                      <span
-                        aria-hidden="true"
-                        className="grid size-11 shrink-0 place-items-center rounded-sm bg-gold text-base font-extrabold tracking-normal text-gold-foreground"
-                      >
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                      <span>{step.title}</span>
+                    <span
+                      aria-hidden="true"
+                      className="row-span-2 grid size-11 place-items-center rounded-sm bg-gold text-base font-extrabold text-gold-foreground"
+                    >
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <h3 className="pt-1 text-lg font-extrabold uppercase leading-tight tracking-[.04em] text-accent-foreground">
+                      {step.title}
                     </h3>
-                    <p className="self-start text-sm leading-6 text-muted-foreground">
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
                       {step.body}
                     </p>
                   </li>
@@ -450,7 +457,7 @@ export default async function HomePage() {
         </Section>
 
         <Section id="pridej-se" className="bg-ink text-ink-foreground">
-          <Container className="flex flex-col items-center justify-center gap-6 text-center sm:flex-row sm:gap-10">
+          <Container className="grid gap-6 text-left sm:grid-cols-2 sm:items-center sm:gap-10">
             <div className="max-w-3xl">
               <h2 className="text-3xl font-extrabold tracking-[-.01em] sm:text-4xl">
                 {t("home.cta.title")}
@@ -459,7 +466,7 @@ export default async function HomePage() {
             <Button
               href="/rezervace"
               size="lg"
-              className="min-w-52 shrink-0 justify-center bg-gold text-gold-foreground hover:bg-gold/90"
+              className="min-w-52 justify-center justify-self-end bg-gold text-gold-foreground hover:bg-gold/90"
             >
               {t("home.cta.button")} <ArrowRight aria-hidden="true" />
             </Button>

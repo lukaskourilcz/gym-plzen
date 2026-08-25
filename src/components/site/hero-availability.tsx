@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
-import { DEFAULT_SLOT_MINUTES } from "@/lib/config/schedule";
 
 export interface HeroAvailabilitySlot {
   label: string;
+  /** Kept per slot so future attendance-based pricing can vary by window. */
+  price: string;
   startMs: number;
   booked: boolean;
 }
@@ -35,14 +36,10 @@ function getVisibleSlots(slots: HeroAvailabilitySlot[]) {
 
 export function HeroAvailability({
   days,
-  price,
-  freeEntryEvery,
   source,
   nowMs,
 }: {
   days: HeroAvailabilityDay[];
-  price: string;
-  freeEntryEvery: number;
   source: "live" | "preview" | "unavailable";
   nowMs: number;
 }) {
@@ -142,9 +139,14 @@ export function HeroAvailability({
                       )}`}
                       // Solid border: it is the only thing marking the chip's
                       // boundary, and at 45% it fell under the 3:1 floor.
-                      className="grid min-h-11 place-items-center whitespace-nowrap rounded-sm border border-primary bg-primary/10 px-2 py-2 text-center text-xs font-extrabold transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="flex min-h-14 flex-col items-center justify-center whitespace-nowrap rounded-sm border border-primary bg-primary/10 px-2 py-1.5 text-center transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                      {slot.label}
+                      <span className="text-xs font-extrabold">
+                        {slot.label}
+                      </span>
+                      <span className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
+                        {slot.price}
+                      </span>
                     </Link>
                   );
                 }
@@ -152,9 +154,14 @@ export function HeroAvailability({
                   <span
                     key={slot.startMs}
                     title={state === "booked" ? "Obsazeno" : "Čas už proběhl"}
-                    className="grid min-h-11 place-items-center whitespace-nowrap rounded-sm bg-muted px-2 py-2 text-center text-xs font-semibold text-muted-foreground line-through"
+                    className="flex min-h-14 flex-col items-center justify-center whitespace-nowrap rounded-sm bg-muted px-2 py-1.5 text-center text-muted-foreground"
                   >
-                    {slot.label}
+                    <span className="text-xs font-semibold line-through">
+                      {slot.label}
+                    </span>
+                    <span className="mt-0.5 text-[11px] font-semibold">
+                      {slot.price}
+                    </span>
                     <span className="sr-only">
                       {state === "booked" ? ", obsazeno" : ", čas už proběhl"}
                     </span>
@@ -174,17 +181,7 @@ export function HeroAvailability({
         </p>
       )}
 
-      <div className="mx-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-border py-4 text-center sm:mx-5 sm:justify-between sm:text-left">
-        <p className="text-base font-extrabold text-accent-foreground">
-          {price} / {DEFAULT_SLOT_MINUTES} minut
-          <span className="text-sm font-semibold text-muted-foreground">
-            {" "}
-            · každý {freeEntryEvery}. vstup zdarma
-          </span>
-        </p>
-        {/* Same type size as the price on the left so the two read as one
-            row, with a standing underline to carry the extra emphasis the
-            client asked for without competing with the slot buttons above. */}
+      <div className="mx-4 flex justify-end border-t border-border py-4 sm:mx-5">
         <Link
           href={reservationHref}
           className="inline-flex min-h-11 items-center gap-2 text-base font-extrabold text-accent-foreground underline decoration-2 underline-offset-4 hover:decoration-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

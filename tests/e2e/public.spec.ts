@@ -227,30 +227,22 @@ test.describe("Public site", () => {
       .locator("li")
       .evaluateAll((cards) =>
         cards.map((card) => ({
-          headingTop: Math.round(
-            card.querySelector("h3")!.getBoundingClientRect().top,
+          numberLeft: Math.round(
+            card.querySelector("span")!.getBoundingClientRect().left,
           ),
-          bodyTop: Math.round(
-            card.querySelector("p")!.getBoundingClientRect().top,
-          ),
+          headingAlign: getComputedStyle(card.querySelector("h3")!).textAlign,
+          bodyAlign: getComputedStyle(card.querySelector("p")!).textAlign,
         })),
       );
-    for (const rowStart of [0, 3]) {
-      expect(
-        new Set(
-          stepAlignment
-            .slice(rowStart, rowStart + 3)
-            .map(({ headingTop }) => headingTop),
-        ).size,
-      ).toBe(1);
-      expect(
-        new Set(
-          stepAlignment
-            .slice(rowStart, rowStart + 3)
-            .map(({ bodyTop }) => bodyTop),
-        ).size,
-      ).toBe(1);
-    }
+    expect(
+      new Set(stepAlignment.map(({ numberLeft }) => numberLeft)).size,
+    ).toBe(1);
+    expect(
+      stepAlignment.every(
+        ({ headingAlign, bodyAlign }) =>
+          headingAlign === "left" && bodyAlign === "left",
+      ),
+    ).toBe(true);
     const contact = page.getByTestId("location-card");
     await expect(contact.getByText("Otevírací doba")).toHaveCount(1);
     await expect(contact.getByText(/Křížkova 424\/23/i)).toBeVisible();
@@ -297,8 +289,30 @@ test.describe("Public site", () => {
     expect(Math.abs(closingHeading!.x - spaceHeading!.x)).toBeLessThanOrEqual(
       1,
     );
-    expect(closingGap).toBeGreaterThanOrEqual(39);
-    expect(closingGap).toBeLessThanOrEqual(41);
+    expect(closingGap).toBeGreaterThanOrEqual(40);
+    const closingContainer = await closingCta
+      .locator(":scope > div")
+      .boundingBox();
+    expect(closingContainer).not.toBeNull();
+    const closingPaddingRight = await closingCta
+      .locator(":scope > div")
+      .evaluate((element) =>
+        Number.parseFloat(getComputedStyle(element).paddingRight),
+      );
+    expect(
+      Math.abs(
+        closingButton!.x +
+          closingButton!.width -
+          (closingContainer!.x + closingContainer!.width - closingPaddingRight),
+      ),
+    ).toBeLessThanOrEqual(1);
+    const heroAvailability = page.locator(
+      'section[aria-labelledby="hero-availability-title"]',
+    );
+    await expect(heroAvailability.getByText(/\/ 75 minut/i)).toHaveCount(0);
+    await expect(heroAvailability.getByText(/každý 10\. vstup/i)).toHaveCount(
+      0,
+    );
     const pricingCard = page.getByTestId("pricing-card");
     await expect(
       pricingCard.getByText("Jednorázový vstup", { exact: true }),
@@ -420,6 +434,58 @@ test.describe("Public site", () => {
       () => document.documentElement.scrollWidth - window.innerWidth,
     );
     expect(overflow).toBeLessThanOrEqual(1);
+    const mobileStepLayout = await page
+      .locator("#jak-to-funguje li")
+      .evaluateAll((steps) =>
+        steps.map((step) => ({
+          numberLeft: Math.round(
+            step.querySelector("span")!.getBoundingClientRect().left,
+          ),
+          bodyAlign: getComputedStyle(step.querySelector("p")!).textAlign,
+        })),
+      );
+    expect(
+      new Set(mobileStepLayout.map(({ numberLeft }) => numberLeft)).size,
+    ).toBe(1);
+    expect(
+      mobileStepLayout.every(({ bodyAlign }) => bodyAlign === "left"),
+    ).toBe(true);
+    const [footerMenu, footerContact] = await Promise.all([
+      page
+        .getByRole("contentinfo")
+        .getByRole("heading", { name: "Menu" })
+        .boundingBox(),
+      page
+        .getByRole("contentinfo")
+        .getByRole("heading", { name: "Kontakt" })
+        .boundingBox(),
+    ]);
+    expect(footerMenu).not.toBeNull();
+    expect(footerContact).not.toBeNull();
+    expect(Math.abs(footerMenu!.y - footerContact!.y)).toBeLessThanOrEqual(1);
+    const [mobileCta, mobileCtaContainer] = await Promise.all([
+      page
+        .locator("#pridej-se")
+        .getByRole("link", { name: /Rezervovat/i })
+        .boundingBox(),
+      page.locator("#pridej-se > div").boundingBox(),
+    ]);
+    expect(mobileCta).not.toBeNull();
+    expect(mobileCtaContainer).not.toBeNull();
+    const mobileCtaPaddingRight = await page
+      .locator("#pridej-se > div")
+      .evaluate((element) =>
+        Number.parseFloat(getComputedStyle(element).paddingRight),
+      );
+    expect(
+      Math.abs(
+        mobileCta!.x +
+          mobileCta!.width -
+          (mobileCtaContainer!.x +
+            mobileCtaContainer!.width -
+            mobileCtaPaddingRight),
+      ),
+    ).toBeLessThanOrEqual(1);
     await page.getByRole("button", { name: /Otevřít menu/i }).click();
     await expect(
       page.locator("#mobile-menu").getByRole("link", { name: "FAQ" }),

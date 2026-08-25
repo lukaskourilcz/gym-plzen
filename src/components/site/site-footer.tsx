@@ -10,12 +10,11 @@ import { PUBLIC_NAV } from "@/lib/config/navigation";
 import { CookieSettingsButton } from "@/components/site/cookie-settings-button";
 
 /*
- * 44px targets on touch, 28px from `lg` where the pointer is precise: a stacked
- * link list at 44px made the footer needlessly tall. 28px still clears the WCAG
- * 2.2 AA 24px target-size floor. Documented in docs/DESIGN_SYSTEM.md.
+ * Compact 36px rows on touch and 28px from `lg`: both stay above the WCAG 2.2
+ * AA 24px target-size floor while keeping the mobile footer short.
  */
 const footerLink =
-  "flex min-h-11 items-center text-sm text-ink-foreground/75 transition-colors hover:text-ink-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold lg:min-h-7";
+  "flex min-h-9 items-center text-sm leading-5 text-ink-foreground/75 transition-colors hover:text-ink-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold lg:min-h-7";
 
 export function SiteFooter({
   brand = "NAMASTÉ Private Gym",
@@ -77,7 +76,7 @@ export function SiteFooter({
             Soukromý prostor pro nerušený trénink v Plzni.
           </p>
         </div>
-        <div className="grid gap-8 sm:grid-cols-3 lg:gap-6">
+        <div className="grid grid-cols-2 gap-x-5 gap-y-7 sm:grid-cols-3 lg:gap-6">
           <div>
             <h2 className="text-sm font-extrabold">Menu</h2>
             <div className="mt-2 grid">
@@ -129,7 +128,7 @@ export function SiteFooter({
               ) : null}
             </div>
           </div>
-          <div>
+          <div className="col-span-2 sm:col-span-1">
             <h2 className="text-sm font-extrabold">Informace</h2>
             <div className="mt-2 grid">
               <Link href="/provozni-rad" className={footerLink}>
@@ -156,10 +155,9 @@ export function SiteFooter({
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`${label}, ${brand}`}
-                        /* Gold at rest (6.87:1 on ink, well past the 3:1 floor
-                           for a non-text glyph); hover lifts to cream so the
-                           state change is unmistakable. */
-                        className="grid size-11 place-items-center rounded-sm text-gold transition-colors hover:text-ink-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                        /* A subtle outlined circle gives every official brand
+                           silhouette the same visual weight. */
+                        className="grid size-11 place-items-center rounded-full border border-gold/45 bg-white/5 text-gold transition-colors hover:border-gold hover:bg-gold hover:text-gold-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
                       >
                         <Icon />
                       </a>
