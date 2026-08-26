@@ -58,5 +58,3 @@ export function Button({ className, variant, size, ...props }: ButtonProps) {
   }
   return <button className={classes} {...(props as ButtonAsButton)} />;
 }
-
-export { buttonVariants };

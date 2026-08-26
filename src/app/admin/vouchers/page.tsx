@@ -1,4 +1,5 @@
 import { vouchers } from "@/lib/services";
+import { requireAdmin } from "@/lib/auth/guards";
 import { formatDateTime, formatMoney } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
 import { StatCard } from "@/components/admin/stat-card";
@@ -30,6 +31,7 @@ function voucherState(row: vouchers.VoucherOverview, now: Date) {
 }
 
 export default async function VouchersPage() {
+  await requireAdmin();
   const rows = await vouchers.listVouchers().catch(() => []);
   const now = new Date();
   const redeemed = rows.reduce((sum, row) => sum + row.redeemedCount, 0);

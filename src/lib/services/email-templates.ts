@@ -16,9 +16,7 @@ import {
 import { getSetting, setSetting } from "./cms";
 
 /** Resolve the saved template, with a safe branded fallback on first use. */
-export async function getEmailTemplate(
-  id: EmailTemplateId,
-): Promise<EmailTemplate> {
+async function getEmailTemplate(id: EmailTemplateId): Promise<EmailTemplate> {
   const definition = getEmailTemplateDefinition(id);
   const saved = await getSetting<Partial<EmailTemplate>>(
     emailTemplateSettingKey(id),
@@ -107,11 +105,6 @@ export async function sendTemplateTest(params: {
     to: params.to,
     variables: TEST_VARIABLES,
   });
-}
-
-export function getEmailTemplatePreview(id: EmailTemplateId): EmailTemplate {
-  const definition = getEmailTemplateDefinition(id);
-  return renderEmailTemplateText(definition.fallback, TEST_VARIABLES);
 }
 
 export { isSupabaseAuthTemplateSyncConfigured };

@@ -15,7 +15,7 @@ import { getPipeline, markStepFailed, markStepSucceeded } from "./pipeline";
 /**
  * Fulfillment orchestrator : runs a confirmed reservation through the reliability
  * pipeline: (payment ✓) → code_created → code_delivered. Called after payment
- * confirmation (Stripe webhook / membership booking) and by the watchdog cron
+ * confirmation (Stripe webhook / free loyalty booking) and by the watchdog cron
  * to retry stuck reservations. Idempotent: it inspects existing state and only
  * does the work that remains.
  */
@@ -62,10 +62,10 @@ export async function fulfillReservation(reservationId: string): Promise<void> {
     existing.length === 0 || !codeReady || (codeReady && !deliveryDone);
 
   if (needsFreshCode && !deliveryDone) {
-    if (codeReady) {
+    if (existing.length > 0) {
       await Promise.allSettled(
         existing
-          .filter((code) => code.nukiAuthId)
+          .filter((code) => code.status !== "revoked")
           .map((code) => revokeAccessCode(code.id)),
       );
       codeReady = false;
@@ -75,7 +75,6 @@ export async function fulfillReservation(reservationId: string): Promise<void> {
         reservationId,
         startsAt: reservation.startsAt,
         endsAt: reservation.endsAt,
-        memberName: reservation.contactName,
       });
       plaintext = issued.plaintext;
       codeReady = issued.provisionedOnLock;
@@ -102,8 +101,8 @@ export async function fulfillReservation(reservationId: string): Promise<void> {
   }
 
   // Step: code_delivered : dispatch across channels. We can only deliver a
-  // freshly-generated plaintext (we never store it); on retries without a new
-  // code we treat delivery as already handled by the original run.
+  // freshly-generated plaintext (we never store it). If delivery fails, the
+  // next retry revokes this authorization and provisions a fresh code.
   if (plaintext) {
     const channels = reservation.userId
       ? await loadMemberChannels(reservation.userId)

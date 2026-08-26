@@ -7,36 +7,23 @@ Externí a klientské kroky. Manuální detaily viz [MANUAL_STEPS.md](./MANUAL_S
 `[imp:N]` = priorita 1–5, `[owner:me]` = externí krok, `[owner:ai]` = úkol pro
 AI po dodání podkladů. `[kind:K]` ∈ `setup` `deploy` `legal` `content` `decision`.
 
-- [ ] **Nahradit zástupný kontaktní e-mail**: v patičce a na webu je zatím `info@namastegym.cz` (zástupná hodnota pro layout). Přepsat na skutečný v administraci → Obsah webu (`contact.email`). `[imp:5]` `[owner:me]` `[time:5m]` `[kind:content]`
-- [ ] **Nahradit neplatný klíč Google mapy**: produkce 15. 8. 2026 vrací `InvalidKeyMapError`; nasazená hodnota není Googlem rozpoznána jako API klíč. V Google Cloud → Credentials zkopírovat skutečnou hodnotu API key (obvykle začíná `AIza`), zapnout billing a Maps JavaScript API, nastavit HTTP referrery `https://namastegym.cz/*` a `https://www.namastegym.cz/*`, uložit ve Vercelu jako `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` pro Production a znovu nasadit. Volitelný vlastní Map ID patří samostatně do `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID`. Do té doby web použije bezpečný Google embed se standardním markerem. `[imp:4]` `[owner:me]` `[time:15m]` `[kind:setup]`
-- [ ] **Povolit synchronizaci Auth e-mailů z administrace**: vytvořit Supabase Personal Access Token, uložit ho ve Vercelu jako `SUPABASE_MANAGEMENT_API_TOKEN` pro Production a Preview a nasadit novou verzi. Poté administrace → E-maily propisuje šablony „Potvrzení registrace“ a „Obnova hesla“ do Supabase Auth. Přesný postup je v §7 [MANUAL_STEPS.md](./MANUAL_STEPS.md#7-supabase-auth-smtp--registrace-a-obnova-hesla). `[imp:5]` `[owner:me]` `[time:10m]` `[kind:setup]`
-- [ ] **Ostrý test e-mailového workflow**: vytvořit novou testovací registraci, provést reset hesla a z administrace odeslat test všech pěti šablon. V Resend Logs ověřit doručení, český text, logo a sender. `[imp:5]` `[owner:me]` `[time:20m]` `[kind:setup]`
-- [x] **Text obchodních podmínek**: dodané VOP s účinností od 17. 8. 2026 jsou zveřejněné na `/obchodni-podminky` a propojené s rezervací i patičkou. `[imp:5]` `[owner:me]` `[time:1h]` `[kind:legal]`
-- [ ] **Migrace 0007 v dalších prostředích**: `drizzle/0007_reservation_consents.sql` přidává do tabulky `reservation` sloupce `rules_accepted_at` a `terms_accepted_at`. Na nakonfigurované databázi je už aplikovaná; pokud existuje další prostředí (staging, druhý Supabase projekt), spustit ji i tam, jinak se rezervace neuloží. `[imp:5]` `[owner:me]` `[time:10m]` `[kind:deploy]`
-- [ ] **Ostrý test rezervace bez registrace**: po zapojení Stripe live projít celý host checkout (vyplnit údaje, zaplatit, ověřit doručení potvrzení a přístupového kódu na e-mail i telefon zadaný ve formuláři) a zkontrolovat, že se v administraci rezervace zobrazuje bez účtu. `[imp:4]` `[owner:me]` `[time:30m]` `[kind:setup]`
-- [ ] **Fotografie jednotlivých zón**: dodat snímky pro dlaždice na `/vybaveni` (silová, kardio, strečink, dětský koutek, lednice, zázemí). Zatím se zobrazuje značková výplň s lotosem. `[imp:3]` `[owner:me]` `[time:30m]` `[kind:content]`
-- [ ] **Značka české přírodní kosmetiky**: v textu kroku „Před odchodem“ byla v podkladu vynechaná („od značky …“). Dokud ji nedodáte, web uvádí jen „česká přírodní kosmetika“ bez názvu. `[imp:2]` `[owner:me]` `[time:5m]` `[kind:content]`
-- [ ] **Stripe webhook**: zaregistrovat endpoint v Stripe Dashboardu (test i live), zkopírovat signing secret do `STRIPE_WEBHOOK_SECRET`. `[imp:4]` `[owner:me]` `[time:20m]` `[kind:setup]`
-- [ ] **Zernio (WhatsApp) provisioning**: propojit Meta účet, registrovat WABA, verifikovat phone number, nechat schválit template `access_code`. Poté vyžádat GO na rewrite `src/lib/integrations/whatsapp.ts` z Meta Graph na Zernio. `[imp:4]` `[owner:me]` `[time:1h]` `[kind:setup]`
-- [ ] **Nuki: fyzický zámek** (čeká na nákup): doplnit `NUKI_SMARTLOCK_ID`, vygenerovat `NUKI_WEBHOOK_SECRET`, fyzicky ověřit vytvoření/expiraci/revokaci kódu. `[imp:4]` `[owner:me]` `[time:2h]` `[kind:setup]`
-- [ ] **Přihlášení přes Google v Safari**: klientka hlásí, že se přesměrování nedokončí. Kód už chybu nezametá — nepovedený návrat končí na `/login` s českou hláškou. Zbývá ověřit v Supabase → Authentication → URL Configuration, že `Site URL` i `Redirect URLs` obsahují **přesně tu doménu, na které web běží**, včetně varianty s `www` i bez ní, a že sedí s `NEXT_PUBLIC_APP_URL` ve Vercelu. Nesoulad hostitelů je nejčastější příčina: cookie s PKCE ověřovatelem se pak s návratem nepošle. Po úpravě zkusit přihlášení v Safari znovu a poslat případnou hlášku. `[imp:4]` `[owner:me]` `[time:20m]` `[kind:setup]`
-- [ ] **Navazující nastavení vlastní domény**: veřejný web již běží na vlastní doméně. Před ostrým provozem ještě potvrdit `NEXT_PUBLIC_APP_URL`, `Site URL` v Supabase, Stripe webhook URL a Nuki webhook URL. `[imp:4]` `[owner:me]` `[time:30m]` `[kind:setup]`
-- [ ] **Plné E2E proti testovacím službám**: po připojení Stripe test / Nuki / Resend / WhatsApp spustit Playwright suite s mutačním povolením. `[imp:2]` `[owner:ai]` `[time:1h]` `[kind:deploy]`
-
-## Demo účty (Supabase Auth, live DB)
-
-Přihlašovací stránka je záměrně nezobrazuje.
-
-- administrace: `admin@namaste.demo`, heslo `namaste2026`
-- klient: `klient@namaste.demo`, heslo `namaste2026`
-
-Volitelný lokální cookie-based demo mód (produkce automaticky vypne):
-
-```dotenv
-DEMO_AUTH_ENABLED="true"
-DEMO_AUTH_SECRET="nahodny-retezec-alespon-32-znaku"
-BOOKING_PREVIEW_FIXTURE="true"
-```
+- [ ] **Odstranit demo identity z produkčního Supabase** — v Auth i `profiles` smazat účty `admin@namaste.demo` a `klient@namaste.demo`, pokud existují. Aplikace je po auditu mimo podepsaný lokální demo režim odmítá, ale produkční sdílené účty nesmí zůstat aktivní. `[imp:5]` `[owner:me]` `[time:10m]` `[kind:setup]`
+- [ ] **Schválit a sjednotit právní texty** — klientka nebo právník musí potvrdit kapacitu (VOP 4, FAQ 5, Provozní řád 6 osob), první telefon (`…557` vs. `…355`), storno vs. změnu termínu, umístění lékárničky a zda se mají opravit původní překlepy a sledovací parametr v odkazu ČOI. Do potvrzení se dodané VOP nemění. `[imp:5]` `[owner:me]` `[time:45m]` `[kind:legal]`
+- [ ] **Schválit privacy provozní údaje** — potvrdit dohodu společných správců dle čl. 26 GDPR, dobu uchování kamerových záznamů, správce kamer, GA4 retention, skutečně aktivní Sentry/GoSMS a zda Google Maps načítat až po kliknutí. `[imp:5]` `[owner:me]` `[time:45m]` `[kind:legal]`
+- [ ] **Aplikovat a ověřit všechny migrace** — v každém cílovém prostředí spustit sled `0000` až `0009` na čisté/testovací databázi a poté `npm run db:migrate`; zvlášť ověřit RLS, no-overlap constraint, consent sloupce, rescheduling, vouchery a newsletter. `[imp:5]` `[owner:me]` `[time:30m]` `[kind:deploy]`
+- [ ] **Povolit synchronizaci Auth e-mailů z administrace** — vytvořit Supabase Personal Access Token, uložit ho jako `SUPABASE_MANAGEMENT_API_TOKEN` pro Production a Preview a nasadit. Postup je v [MANUAL_STEPS.md §7](./MANUAL_STEPS.md#7-supabase-auth-smtp-a-šablony-z-administrace). `[imp:5]` `[owner:me]` `[time:10m]` `[kind:setup]`
+- [ ] **Ostrý test e-mailového workflow** — nová registrace, reset hesla a test všech pěti šablon; v Resend Logs ověřit doručení, český text, logo a sender. `[imp:5]` `[owner:me]` `[time:20m]` `[kind:setup]`
+- [ ] **Nahradit zástupný kontaktní e-mail** — v administraci → Obsah webu změnit `contact.email` z `info@namastegym.cz` na potvrzenou adresu a promítnout ji i do schválených právních dokumentů. `[imp:5]` `[owner:me]` `[time:10m]` `[kind:content]`
+- [ ] **Nahradit neplatný klíč Google mapy** — vytvořit platný Maps JavaScript API key s billingem a HTTP referrery pro obě varianty domény, uložit `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` a znovu nasadit. Do té doby funguje bezpečný embed fallback. `[imp:4]` `[owner:me]` `[time:15m]` `[kind:setup]`
+- [ ] **Zaregistrovat Stripe webhook** — pro test i live nastavit `/api/webhooks/stripe`, vybrat čtyři Checkout události z runbooku a uložit odpovídající `STRIPE_WEBHOOK_SECRET`. `[imp:4]` `[owner:me]` `[time:20m]` `[kind:setup]`
+- [ ] **Fyzicky ověřit Nuki** — po nákupu doplnit Smart Lock ID a webhook secret; ověřit vytvoření, potvrzení v API, otevření, expiraci a revokaci PINu i retry po simulovaném selhání. `[imp:4]` `[owner:me]` `[time:2h]` `[kind:setup]`
+- [ ] **Dokončit WhatsApp provisioning** — propojit Meta/WABA přes Zernio, verifikovat číslo a schválit šablonu `access_code`; pak rozhodnout, zda ponechat přímý Meta adapter, nebo schválit jeho přepis na Zernio. `[imp:4]` `[owner:me]` `[time:1h]` `[kind:decision]`
+- [ ] **Ostrý host checkout** — zaplatit rezervaci bez registrace a ověřit Stripe webhook, potvrzení, e-mail/telefon, administraci, expiraci opuštěného Checkoutu a nemožnost potvrdit nesprávnou částku či měnu. `[imp:4]` `[owner:me]` `[time:45m]` `[kind:setup]`
+- [ ] **Přihlášení přes Google v Safari** — sjednotit `NEXT_PUBLIC_APP_URL`, Supabase Site URL a Redirect URLs pro `www` i holou doménu; potom znovu projít PKCE redirect v Safari. `[imp:4]` `[owner:me]` `[time:20m]` `[kind:setup]`
+- [ ] **Fotografie jednotlivých zón** — dodat snímky pro silovou, kardio a strečink zónu, dětský koutek, lednici a zázemí. `[imp:3]` `[owner:me]` `[time:30m]` `[kind:content]`
+- [ ] **Značka české přírodní kosmetiky** — dodat chybějící název, nebo potvrdit obecné znění bez značky. `[imp:2]` `[owner:me]` `[time:5m]` `[kind:content]`
+- [ ] **Plné E2E proti testovacím službám** — po připojení testovacího Supabase, Stripe, Nuki, Resend a WhatsApp spustit Playwright suite s explicitním mutačním povolením. `[imp:2]` `[owner:ai]` `[time:1h]` `[kind:deploy]`
+- [ ] **Povýšit vývojový toolchain po upstream opravách** — úplný `npm audit` eviduje dev-only advisories v transitivech ESLint (`brace-expansion`, `js-yaml`) a Drizzle Kit (`esbuild`), pro které současný kompatibilní strom nenabízí opravu. Produkční strom `npm audit --omit=dev` je čistý; po vydání kompatibilních verzí aktualizovat lockfile a znovu ověřit lint i migrace. `[imp:2]` `[owner:ai]` `[time:30m]` `[kind:deploy]`
 
 ## Co do repozitáře nepatří
 

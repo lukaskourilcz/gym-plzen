@@ -1,4 +1,5 @@
 import { entryLog } from "@/lib/services";
+import { requireAdmin } from "@/lib/auth/guards";
 import { formatDateTime } from "@/lib/helpers/format";
 import { withDemoFallback } from "@/lib/demo/dummy";
 import { DemoBanner } from "@/components/admin/demo-banner";
@@ -17,6 +18,7 @@ export const dynamic = "force-dynamic";
 
 /** Actual unlocks read from the Nuki lock (synced by webhook + cron). */
 export default async function EntryLogPage() {
+  await requireAdmin();
   const { rows, demo } = await withDemoFallback(
     entryLog.listRecentEntries(200),
     (d) => d.entries,

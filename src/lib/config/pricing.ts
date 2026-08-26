@@ -12,8 +12,6 @@
 /** Default price of a single entry, in the smallest currency unit (haléř). */
 export const DEFAULT_ENTRY_PRICE_CENTS = 29_000; // 290 Kč
 
-export const ENTRY_CURRENCY = "czk";
-
 /**
  * Loyalty cadence: every `FREE_ENTRY_EVERY`-th entry is free. With the default
  * of 10, entries 1–9 are paid and entry 10 is free, then the cycle repeats.

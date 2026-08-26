@@ -1,4 +1,5 @@
 import { emailTemplates } from "@/lib/services";
+import { requireAdmin } from "@/lib/auth/guards";
 import {
   EMAIL_TEMPLATE_DEFINITIONS,
   type EmailTemplate,
@@ -19,6 +20,7 @@ export const dynamic = "force-dynamic";
 
 /** Transactional e-mail copy, preview and delivery diagnostics for operators. */
 export default async function EmailsPage() {
+  await requireAdmin();
   const templates = await emailTemplates
     .getAllEmailTemplates()
     .catch(

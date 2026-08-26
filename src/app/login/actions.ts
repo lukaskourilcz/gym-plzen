@@ -6,6 +6,7 @@ import {
   clearDemoAdminSession,
   createDemoAdminSession,
   createDemoCustomerSession,
+  isDemoIdentityEmail,
 } from "@/lib/auth/demo";
 import { createClient } from "@/lib/supabase/server";
 import { safeInternalPath } from "@/lib/security/redirects";
@@ -40,6 +41,11 @@ export async function authenticateAction(input: unknown): Promise<AuthResult> {
     ) {
       return { ok: true, destination: "/account" };
     }
+    if (isDemoIdentityEmail(parsed.data.email)) {
+      return { ok: false, error: "E-mail nebo heslo není správné." };
+    }
+  } else if (isDemoIdentityEmail(parsed.data.email)) {
+    return { ok: false, error: "Registraci teď nelze dokončit." };
   }
 
   const requestHeaders = await headers();

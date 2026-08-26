@@ -1,4 +1,5 @@
 import { alerts } from "@/lib/services";
+import { requireAdmin } from "@/lib/auth/guards";
 import { formatDateTime } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
 import {
@@ -15,6 +16,7 @@ export const dynamic = "force-dynamic";
 
 /** Operational alerts history : failures pushed to the WhatsApp group. */
 export default async function AlertsPage() {
+  await requireAdmin();
   const rows = await alerts.listRecentAlerts(100).catch(() => []);
 
   return (

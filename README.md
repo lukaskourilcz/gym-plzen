@@ -15,16 +15,13 @@ přihlášení se v produkci nezapnou.
 Veřejný web používá klientské logo, provoz 5:00–23:45, 75minutové vstupy,
 adresu Plzeň - Roudná, bílou cenovou kartu, klientské FAQ a kontaktní blok s
 mapou. Instagram používá potvrzený profil `@namaste_plzen`. Telefon, e-mail a
-Facebook jsou zatím výslovně zástupné hodnoty, dokud klient nedodá finální
-údaje.
+Facebook jsou potvrzené; `info@namastegym.cz` zůstává zástupný e-mail do
+potvrzení provozovatelkami.
 
-Nezávislý finální UX audit dává **GO pro klientskou prezentaci** a **NO-GO pro
-produkci**, dokud nejsou připojené a ověřené externí služby a schválené právní
-texty. Podrobnosti a stav všech nálezů jsou v
-[docs/UX_AUDIT.md](./docs/UX_AUDIT.md).
-
-Pro další práci začni v [SESSION_HANDOFF.md](./SESSION_HANDOFF.md). Externí
-nastavení a chybějící klientské podklady jsou v [NEEDED.md](./NEEDED.md).
+Kód prošel produkčním buildem, lintem, typovou kontrolou, unit testy,
+dependency auditem a kontrolou dead code. Ostrý provoz stále vyžaduje fyzické a
+externí ověření Supabase, Stripe, Nuki a doručovacích kanálů a schválení
+rozporných právních údajů. Aktuální checklist je v [NEEDED.md](./NEEDED.md).
 
 ## Hlavní části
 
@@ -54,7 +51,7 @@ nastavení a chybějící klientské podklady jsou v [NEEDED.md](./NEEDED.md).
 | Vstup     | Nuki Web API                                            |
 | Zprávy    | Resend, WhatsApp Business, volitelně GoSMS              |
 | Dohled    | Sentry a Vercel Cron                                    |
-| Testy     | Node test runner přes `tsx`, Playwright                 |
+| Testy     | Node test runner s `tsx` loaderem, Playwright           |
 
 ## Požadavky
 
@@ -65,7 +62,7 @@ nastavení a chybějící klientské podklady jsou v [NEEDED.md](./NEEDED.md).
 ## Lokální spuštění
 
 ```bash
-npm install
+npm ci
 cp .env.example .env.local
 npm run dev
 ```
@@ -93,11 +90,12 @@ poskytovatele je nutné nejprve povolit v Supabase a nastavit jim callback URL.
 ```bash
 npm run format:check
 npm run lint
+npm run deadcode
 npm run typecheck
 npm test
 npm run build
-npm audit --audit-level=high
-npm audit --omit=dev
+npm audit --omit=dev --audit-level=high
+npm audit --audit-level=high # navíc zkontroluje vývojový toolchain
 ```
 
 E2E režimy a ochrana proti nechtěným zápisům do vzdálené databáze jsou popsány
@@ -117,12 +115,9 @@ Podrobnosti jsou v [.claude/skills/gym-architecture/SKILL.md](./.claude/skills/g
 
 ## Dokumentace
 
-- [SESSION_HANDOFF.md](./SESSION_HANDOFF.md): přesný checkpoint pro dalšího agenta.
 - [NEEDED.md](./NEEDED.md): externí závislosti a ruční setup.
+- [MANUAL_STEPS.md](./MANUAL_STEPS.md): produkční runbook pro externí konzole.
 - [docs/DESIGN_SYSTEM.md](./docs/DESIGN_SYSTEM.md): závazný vizuální systém.
-- [docs/INSPIRATIONS.md](./docs/INSPIRATIONS.md): historická rešerše konkurence.
-- [docs/TOOLING.md](./docs/TOOLING.md): rozhodnutí o nástrojích a balíčcích.
-- [docs/UX_AUDIT.md](./docs/UX_AUDIT.md): nezávislý UX audit a stav nálezů.
 - [CLAUDE.md](./CLAUDE.md): pravidla pro další vývoj.
 
 ## Důležitá bezpečnostní pravidla
@@ -131,5 +126,8 @@ Podrobnosti jsou v [.claude/skills/gym-architecture/SKILL.md](./.claude/skills/g
 - Prohlížeč nikdy nedostává Supabase secret key.
 - Veřejný Realtime poslouchá jen PII-free tabulku `availability_signal`.
 - Cena, trvání, člen, dostupnost a vlastnictví rezervace se ověřují na serveru.
+- Každá admin stránka autorizuje roli před načtením dat; samotný layout není
+  bezpečnostní hranice.
+- Známé lokální demo identity se nikdy nepředávají do produkčního Supabase Auth.
 - Migraci `drizzle/0003_security_and_realtime.sql` neaplikuj do projektu,
   dokud není ověřeno, že daný Supabase projekt skutečně patří této aplikaci.

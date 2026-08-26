@@ -16,7 +16,9 @@ Every integration module:
 
 - Reads secrets only through `@/lib/env`: add new vars to BOTH the `serverSchema`
   in `src/lib/env.ts` AND `.env.example` AND `NEEDED.md`.
-- Exposes `is<Service>Configured(): boolean` using `hasEnv(...)`.
+- Uses `is<Service>Configured(): boolean` with `hasEnv(...)` when the adapter
+  needs a graceful unconfigured path. Keep it private unless another module
+  actually consumes it.
 - Creates its SDK client **lazily** (cache in a module-level variable) via
   `requireEnv(...)`, so the app boots even when the service is not configured.
 - Uses the shared `httpRequest` helper (`@/lib/helpers/http`) for raw REST calls.

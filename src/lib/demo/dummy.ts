@@ -151,7 +151,7 @@ const STATUSES: Reservation["status"][] = [
 const HOURS = [6, 7, 9, 12, 13, 16, 17, 18, 19, 20];
 
 /** Build demo members (list view shape) over the Supabase `profiles` model. */
-export function buildDemoMembers(
+function buildDemoMembers(
   users: DummyUser[],
   now = new Date(),
 ): MemberWithProfile[] {
@@ -188,7 +188,7 @@ export function buildDemoMembers(
 }
 
 /** Build demo reservations spread across the recent past and near future. */
-export function buildDemoReservations(
+function buildDemoReservations(
   users: DummyUser[],
   now = new Date(),
 ): Reservation[] {
@@ -232,9 +232,7 @@ export function buildDemoReservations(
 }
 
 /** Demo message deliveries derived from reservations. */
-export function buildDemoMessages(
-  reservations: Reservation[],
-): MessageDelivery[] {
+function buildDemoMessages(reservations: Reservation[]): MessageDelivery[] {
   const channels: MessageDelivery["channel"][] = ["email", "whatsapp"];
   const out: MessageDelivery[] = [];
   reservations.slice(0, 25).forEach((r, i) => {
@@ -264,7 +262,7 @@ export function buildDemoMessages(
 }
 
 /** Demo entry-log (Nuki unlocks) for completed reservations. */
-export function buildDemoEntries(reservations: Reservation[]): EntryLog[] {
+function buildDemoEntries(reservations: Reservation[]): EntryLog[] {
   return reservations
     .filter((r) => r.status === "completed")
     .slice(0, 30)
@@ -283,10 +281,7 @@ export function buildDemoEntries(reservations: Reservation[]): EntryLog[] {
 }
 
 /** Demo stats computed from demo reservations (same aggregator as live). */
-export function buildDemoStats(
-  reservations: Reservation[],
-  now = new Date(),
-): Stats {
+function buildDemoStats(reservations: Reservation[], now = new Date()): Stats {
   return aggregateStats(
     reservations.map((r) => ({ startsAt: r.startsAt, status: r.status })),
     now,

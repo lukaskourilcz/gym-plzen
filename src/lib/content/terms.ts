@@ -309,12 +309,12 @@ jiné jednání, které může způsobit závažnou škodu nebo újmu.
 
 21.8. Tyto VOP nabývají účinnosti dne 17. 8. 2026.`;
 
-export interface TermsSubitem {
+interface TermsSubitem {
   marker: string | null;
   text: string;
 }
 
-export interface TermsClause {
+interface TermsClause {
   number: string;
   text: string;
   subitems: TermsSubitem[];

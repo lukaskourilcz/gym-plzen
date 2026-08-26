@@ -45,7 +45,7 @@ export function formatDate(
 }
 
 /** Format only the time, e.g. "15:00". */
-export function formatTime(
+function formatTime(
   date: Date,
   locale = DEFAULT_LOCALE,
   timeZone = DEFAULT_TZ,

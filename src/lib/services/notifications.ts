@@ -23,7 +23,7 @@ import { sendTransactionalEmail } from "./email-templates";
  * `messageDelivery` row so the admin can see per-channel status.
  */
 
-export type NotifyChannel = "email" | "whatsapp" | "sms";
+type NotifyChannel = "email" | "whatsapp" | "sms";
 
 interface RecordParams {
   userId: string | null;

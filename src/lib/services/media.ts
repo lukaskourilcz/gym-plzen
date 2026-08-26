@@ -1,4 +1,3 @@
-import { desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { mediaAsset } from "@/lib/db/schema";
 import type { MediaAsset } from "@/lib/db/types";
@@ -148,21 +147,4 @@ export async function uploadAsset(input: {
     .returning();
   if (!row) throw new Error("Media record could not be persisted.");
   return row;
-}
-
-export async function listAssets(limit = 200): Promise<MediaAsset[]> {
-  return db
-    .select()
-    .from(mediaAsset)
-    .orderBy(desc(mediaAsset.createdAt))
-    .limit(limit);
-}
-
-export async function getAsset(id: string): Promise<MediaAsset | null> {
-  const [row] = await db
-    .select()
-    .from(mediaAsset)
-    .where(eq(mediaAsset.id, id))
-    .limit(1);
-  return row ?? null;
 }

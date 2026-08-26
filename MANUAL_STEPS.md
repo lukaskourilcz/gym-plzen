@@ -53,17 +53,24 @@ Public (Sensitive OFF):
 
 - `NEXT_PUBLIC_APP_URL` = `https://www.namastegym.cz`
 - `NEXT_PUBLIC_DEFAULT_LOCALE` = `cs`
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `NEXT_PUBLIC_OAUTH_PROVIDERS` = `google`
+- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, volitelně `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID`
 - `NEXT_PUBLIC_SENTRY_DSN`
 
 Server-only (Sensitive ON):
 
-- `STRIPE_WEBHOOK_SECRET` (viz §3)
+- `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_SECRET_KEY`
+- `SUPABASE_MANAGEMENT_API_TOKEN` (viz §7)
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (viz §3)
+- `RESEND_API_KEY`, `RESEND_FROM_EMAIL`
+- `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`,
+  `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_APP_SECRET`
+- `NUKI_API_TOKEN`, `NUKI_SMARTLOCK_ID`, `NUKI_WEBHOOK_SECRET`
 - `SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`
 - `GOSMS_CLIENT_ID`, `GOSMS_CLIENT_SECRET`, `GOSMS_CHANNEL`
 - `CRON_SECRET` = vygeneruj `openssl rand -hex 32`
-- `ALERT_WHATSAPP_RECIPIENTS`
-- Nuki webhook secret a Zernio konfigurace až budou (viz §4, §5)
+- `ALERT_WHATSAPP_RECIPIENTS`, `UPTIMEROBOT_HEARTBEAT_URL`
 
 `DEMO_AUTH_ENABLED` a `BOOKING_PREVIEW_FIXTURE` do produkce **nedávat**.
 
@@ -85,15 +92,16 @@ runtime i `vercel env pull` je dostanou normálně.
 vrátí `200` na `checkout.session.completed`; testovací Checkout dojde na success URL
 a rezervace přejde do `confirmed`.
 
-`.env.local` drží LIVE Stripe klíče. Doporučené uspořádání:
-`.env.local` + Vercel Preview = `sk_test_...` / `pk_test_...`,
-Vercel Production = `sk_live_...` / `pk_live_...`.
+Lokální vývoj a Vercel Preview používají pouze Stripe test klíče. Live secret
+patří výhradně do Vercel Production; hosted Checkout nepotřebuje publishable key
+v prohlížeči.
 
 ---
 
-## 4. Zernio (WhatsApp gateway)
+## 4. WhatsApp / plánovaný Zernio gateway
 
-Zernio je REST vrstva nad Meta WhatsApp Business API. Pod tím jede standardní
+Aktuální adapter volá přímo Meta Graph API. Zernio je plánovaná REST vrstva nad
+Meta WhatsApp Business API. Pod tím jede standardní
 WABA, takže Meta setup (ověření podniku, phone verifikace, template approval)
 se stejně dělá — Zernio to sdružuje do jednoho dashboardu.
 
@@ -120,12 +128,12 @@ Kód zadejte na klávesnici u dveří v čase rezervace.
 
 Odeslat k review. Schválení trvá typicky 1–24 h (může být 1–7 dní).
 
-### 4c. Rewrite adapteru (vyžaduje GO)
+### 4c. Případný rewrite adapteru (vyžaduje GO)
 
 `src/lib/integrations/whatsapp.ts` pořád volá přímo Meta Graph API. Po dokončení
 §4a a §4b řekni **GO** a přepíšu adapter na Zernio (`POST /broadcasts/create-broadcast`),
-plus odstraním nepoužívané `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`,
-`WHATSAPP_BUSINESS_ACCOUNT_ID`, `WHATSAPP_APP_SECRET`.
+plus odstraním přímé Meta proměnné `WHATSAPP_ACCESS_TOKEN`,
+`WHATSAPP_PHONE_NUMBER_ID` a `WHATSAPP_APP_SECRET`.
 
 **Ověření celého §4:** vytvořím rezervaci → `message_delivery` obsahuje řádek
 `channel='whatsapp'`, `status='sent'`, Zernio dashboard ukazuje odchozí broadcast,
@@ -139,12 +147,15 @@ klient dostane zprávu s kódem.
 
 Po pořízení zámku doplnit:
 
-- `NUKI_SMARTLOCK_ID` (číselné ID zámku z dashboardu).
+- `NUKI_API_TOKEN` a `NUKI_SMARTLOCK_ID` (číselné ID zámku z dashboardu).
 - `NUKI_WEBHOOK_SECRET` = `openssl rand -hex 32`; zapsat současně do Nuki webhook UI i do Vercelu (Sensitive, Production + Preview).
 - Webhook URL k zaregistrování na Nuki: `https://www.namastegym.cz/api/webhooks/nuki`.
 
-**Fyzicky ověřit:** admin vytvoří rezervaci → kód doručen → zámek otevře →
-po skončení kód přestane platit → ruční revocation zafunguje.
+**Fyzicky ověřit:** admin vytvoří rezervaci → API potvrdí vytvořenou Keypad
+autorizaci → kód dorazí → zámek otevře → po skončení kód přestane platit →
+ruční revokace zafunguje. Zahrnout i retry po simulovaném 204 bez vytvořené
+autorizace; aplikace zákazníkovi neposílá PIN, dokud jej zpětné načtení Nuki
+nepotvrdí.
 
 ---
 

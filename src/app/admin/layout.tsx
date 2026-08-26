@@ -5,8 +5,9 @@ import { AdminNav } from "@/components/admin/admin-nav";
 import { BrandLogo } from "@/components/site/brand";
 
 /**
- * Admin shell. `requireAdmin()` guards every route under /admin at the layout
- * level, so individual pages can assume an authenticated admin.
+ * Admin shell. Pages repeat the guard before reading data because App Router
+ * layouts and pages may render in parallel; the layout check alone must not be
+ * treated as a data-access boundary.
  */
 export default async function AdminLayout({
   children,

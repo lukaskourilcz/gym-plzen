@@ -7,6 +7,7 @@ import {
   Dumbbell,
   Info,
 } from "lucide-react";
+import { requireAdmin } from "@/lib/auth/guards";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,7 +35,8 @@ const swatches = [
   ["Uhlová", "#2E2E2E", "bg-charcoal text-charcoal-foreground"],
 ] as const;
 
-export default function DesignSystemPage() {
+export default async function DesignSystemPage() {
+  await requireAdmin();
   return (
     <div>
       <PageHeader

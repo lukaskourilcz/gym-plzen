@@ -7,6 +7,7 @@ import {
   DEMO_CUSTOMER_ID,
   hasDemoAdminSession,
   hasDemoCustomerSession,
+  isDemoIdentityEmail,
 } from "@/lib/auth/demo";
 
 /**
@@ -16,7 +17,7 @@ import {
  * use `assertAdmin` (throws instead of redirecting).
  */
 
-export const ADMIN_ROLE = "admin";
+const ADMIN_ROLE = "admin";
 
 export interface SessionUser {
   id: string;
@@ -52,6 +53,10 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
+  if (isDemoIdentityEmail(user.email ?? "")) {
+    await supabase.auth.signOut();
+    return null;
+  }
 
   const fullName =
     (user.user_metadata?.full_name as string | undefined) ?? null;
@@ -75,9 +80,7 @@ export async function getSession(): Promise<{ user: SessionUser } | null> {
   return user ? { user } : null;
 }
 
-export function isAdmin(
-  user: Pick<SessionUser, "role"> | null | undefined,
-): boolean {
+function isAdmin(user: Pick<SessionUser, "role"> | null | undefined): boolean {
   return user?.role === ADMIN_ROLE;
 }
 

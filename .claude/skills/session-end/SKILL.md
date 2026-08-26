@@ -21,6 +21,8 @@ Run before **ending** an agentic session on this repo.
 
 ## Git workflow (every session)
 
-- **Commit frequently** in small, coherent steps — never batch a whole session into one commit.
-- **At the end of every session, push and merge to `main`** so the change redeploys immediately (this project auto-deploys from `main` on Vercel).
-- **Delete the merged / old branch** (local and remote) after merging, to keep the repo clean. Never leave stale branches behind.
+- Commit coherent changes on a feature branch and open a pull request.
+- Never merge or push directly to `main` without explicit owner approval:
+  `main` automatically deploys to production.
+- Merge only after required checks pass and the owner understands remaining
+  production blockers in `NEEDED.md`.

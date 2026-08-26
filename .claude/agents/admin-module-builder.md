@@ -35,8 +35,9 @@ invent new conventions.
    `@/components/admin/use-action-form` (React Hook Form + Zod), with `Field`,
    `FormFeedback`, `SubmitButton` from `@/components/admin/form-controls`. Register
    number inputs with `{ valueAsNumber: true }`.
-6. **Page**: `src/app/admin/<domain>/page.tsx`. Server Component: fetch via the
-   service, render a table + the form. Add a nav entry in
+6. **Page**: `src/app/admin/<domain>/page.tsx`. Server Component: call
+   `requireAdmin()` before reading any data, then fetch via the service and
+   render a table + the form. Add a nav entry in
    `src/components/admin/admin-nav.tsx` and place it in the correct group.
 
 ## Rules
@@ -44,7 +45,8 @@ invent new conventions.
 - Reuse helpers (`@/lib/helpers/*`) for anything repeated (formatting, dates,
   ids). If you write the same logic twice, extract a helper.
 - All user-facing strings are Czech, matching the existing pages.
-- Admin routes are already guarded by the layout's `requireAdmin()`; still call
+- App Router can render a page in parallel with its layout. Call
+  `requireAdmin()` in every admin page before fetching data, and still call
   `assertAdmin` inside each action.
 - After writing files, run `npx tsc --noEmit` and fix all type errors.
 - If you change the schema, run `npx drizzle-kit generate --name <change>` and

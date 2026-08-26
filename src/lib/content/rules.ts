@@ -99,7 +99,7 @@ export const DEFAULT_RULES_BODY = `1. Všeobecná ustanovení a definice
 
 9.2. Tento provozní řád se řídí právním řádem České republiky, zejména zákonem č. 89/2012 Sb., občanský zákoník, v platném znění. Provozovatel si vyhrazuje právo tento řád kdykoliv jednostranně změnit.`;
 
-export interface RuleClause {
+interface RuleClause {
   number: string;
   text: string;
 }

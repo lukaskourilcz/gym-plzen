@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requireAdmin } from "@/lib/auth/guards";
 import { reservations, alerts, messages } from "@/lib/services";
 import { formatDateTime, formatStatus } from "@/lib/helpers/format";
 import { loadDemoData } from "@/lib/demo/dummy";
@@ -22,6 +23,7 @@ export const dynamic = "force-dynamic";
  * unresolved alerts, and recent message deliveries.
  */
 export default async function AdminDashboard() {
+  await requireAdmin();
   const [liveReservations, recentAlerts, liveMessages] = await Promise.all([
     reservations.listRecent(8).catch(() => []),
     alerts.listRecentAlerts(8).catch(() => []),

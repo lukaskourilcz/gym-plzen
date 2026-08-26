@@ -1,4 +1,5 @@
 import { schedule } from "@/lib/services";
+import { requireAdmin } from "@/lib/auth/guards";
 import { addMinutes } from "@/lib/helpers/datetime";
 import { formatDateTime } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
@@ -28,6 +29,7 @@ export const dynamic = "force-dynamic";
 
 /** Weekly opening hours + one-off blocked slots (maintenance, holidays). */
 export default async function SchedulePage() {
+  await requireAdmin();
   const now = new Date();
   const [hours, blocks, showerMinutes] = await Promise.all([
     schedule.listOpeningHours().catch(() => []),

@@ -36,7 +36,7 @@ export interface LoyaltyStatus {
 }
 
 /** Count a member's entries that count toward loyalty. */
-export async function countEntries(userId: string): Promise<number> {
+async function countEntries(userId: string): Promise<number> {
   const [row] = await db
     .select({ value: count() })
     .from(reservation)

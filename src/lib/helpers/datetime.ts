@@ -4,9 +4,9 @@
  * minute-of-day offsets. Display formatting lives in ./format.ts.
  */
 
-export const MINUTE_MS = 60_000;
-export const PRAGUE_TIME_ZONE = "Europe/Prague";
-export const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const MINUTE_MS = 60_000;
+const PRAGUE_TIME_ZONE = "Europe/Prague";
+const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Two [start, end) intervals overlap iff aStart < bEnd && bStart < aEnd. */
 export function intervalsOverlap(
@@ -95,17 +95,6 @@ export function addDaysToDateKey(dateKey: string, days: number): string {
   return value.toISOString().slice(0, 10);
 }
 
-/** Difference in whole calendar days between date keys. */
-export function daysBetweenDateKeys(start: string, end: string): number {
-  if (!isDateKey(start) || !isDateKey(end))
-    throw new Error("Invalid date key.");
-  const toUtc = (key: string) => {
-    const [year, month, day] = key.split("-").map(Number);
-    return Date.UTC(year!, month! - 1, day!);
-  };
-  return Math.round((toUtc(end) - toUtc(start)) / (24 * 60 * MINUTE_MS));
-}
-
 /** Convert a Prague wall-clock date and minute-of-day to an absolute instant. */
 export function localDateTimeToDate(
   dateKey: string,
@@ -178,9 +167,4 @@ export function monthGrid(monthKey: string): MonthGridDay[] {
     const dateKey = addDaysToDateKey(gridStart, index);
     return { dateKey, inMonth: dateKey.startsWith(monthKey) };
   });
-}
-
-/** True when `date` is strictly in the future relative to now. */
-export function isFuture(date: Date): boolean {
-  return date.getTime() > Date.now();
 }

@@ -9,17 +9,6 @@ import type { MessageDelivery } from "@/lib/db/types";
  * provider-webhook status updates.
  */
 
-/** All delivery attempts for a reservation, newest first. */
-export async function listForReservation(
-  reservationId: string,
-): Promise<MessageDelivery[]> {
-  return db
-    .select()
-    .from(messageDelivery)
-    .where(eq(messageDelivery.reservationId, reservationId))
-    .orderBy(desc(messageDelivery.createdAt));
-}
-
 /** Recent deliveries across all reservations (admin overview). */
 export async function listRecent(limit = 200): Promise<MessageDelivery[]> {
   return db

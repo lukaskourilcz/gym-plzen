@@ -27,7 +27,7 @@ export function normalizeVoucherCode(code: string): string {
   return code.trim().replace(/\s+/g, "").toUpperCase();
 }
 
-export function generateVoucherCode(): string {
+function generateVoucherCode(): string {
   const bytes = randomBytes(10);
   let value = "NAMASTE-";
   for (let index = 0; index < 8; index += 1) {

@@ -15,7 +15,7 @@ import { sendTextMessage } from "@/lib/integrations/whatsapp";
  * unresolved are collapsed into the existing row instead of spamming the group.
  */
 
-export type AlertSeverity = SystemAlert["severity"];
+type AlertSeverity = SystemAlert["severity"];
 
 export interface RaiseAlertParams {
   severity?: AlertSeverity;

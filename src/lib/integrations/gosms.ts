@@ -16,7 +16,7 @@ const SEND_URL = "https://app.gosms.cz/api/v1/messages";
 
 let tokenCache: { token: string; expiresAt: number } | null = null;
 
-export function isGoSmsConfigured(): boolean {
+function isGoSmsConfigured(): boolean {
   return hasEnv("GOSMS_CLIENT_ID", "GOSMS_CLIENT_SECRET");
 }
 

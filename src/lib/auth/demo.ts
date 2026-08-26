@@ -4,13 +4,19 @@ import { cookies } from "next/headers";
 import { isDemoAuthEnabled } from "./demo-policy";
 
 export const DEMO_ADMIN_EMAIL = "admin@namaste.demo";
-export const DEMO_ADMIN_PASSWORD = "namaste2026";
+const DEMO_ADMIN_PASSWORD = "namaste2026";
 export const DEMO_CUSTOMER_EMAIL = "klient@namaste.demo";
-export const DEMO_CUSTOMER_PASSWORD = "namaste2026";
+const DEMO_CUSTOMER_PASSWORD = "namaste2026";
 export const DEMO_CUSTOMER_ID = "00000000-0000-0000-0000-000000000002";
 const DEMO_ADMIN_COOKIE = "namaste_demo_admin";
 const DEMO_CUSTOMER_COOKIE = "namaste_demo_customer";
 const DEV_SIGNING_SECRET = "namaste-local-demo-cookie-signing-secret-v2";
+
+/** Reserved fixtures must never fall through to a real Supabase login. */
+export function isDemoIdentityEmail(value: string): boolean {
+  const email = value.trim().toLowerCase();
+  return email === DEMO_ADMIN_EMAIL || email === DEMO_CUSTOMER_EMAIL;
+}
 
 function sign(role: "admin" | "customer", expiresAt: number) {
   const payload = `${role}.${expiresAt}`;
@@ -75,7 +81,7 @@ async function createDemoSession(
     {
       httpOnly: true,
       sameSite: "strict",
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
       path: "/",
       maxAge: 8 * 60 * 60,
     },

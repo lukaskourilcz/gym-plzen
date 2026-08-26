@@ -15,7 +15,7 @@ import { isWithinBookingHorizon, resolveSlotFromHours } from "./slots";
 import { fulfillReservation } from "./fulfillment";
 
 /** VOP 8.1 and 8.5: the request must arrive at least 24 hours in advance. */
-export const RESCHEDULE_CUTOFF_HOURS = 24;
+const RESCHEDULE_CUTOFF_HOURS = 24;
 export const MAX_CUSTOMER_RESCHEDULES = 1;
 const RESCHEDULE_CUTOFF_MS = RESCHEDULE_CUTOFF_HOURS * 60 * 60 * 1_000;
 

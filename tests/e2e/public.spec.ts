@@ -1,6 +1,19 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Public site", () => {
+  test("unauthenticated admin response never contains protected page data", async ({
+    request,
+  }) => {
+    const response = await request.get("/admin", { maxRedirects: 0 });
+    const body = await response.text();
+
+    // App Router may stream a redirect with status 200. The redirect is safe
+    // only if the page itself stopped before reading or serialising admin data.
+    expect(body).toContain("/login?next=%2Fadmin");
+    expect(body).not.toContain("Ilustrační data.");
+    expect(body).not.toContain("Poslední rezervace");
+  });
+
   test("operating rules render as nine navigable sections", async ({
     page,
   }) => {

@@ -1,4 +1,5 @@
 import { messages } from "@/lib/services";
+import { requireAdmin } from "@/lib/auth/guards";
 import { formatDateTime, formatStatus } from "@/lib/helpers/format";
 import { withDemoFallback } from "@/lib/demo/dummy";
 import { DemoBanner } from "@/components/admin/demo-banner";
@@ -17,6 +18,7 @@ export const dynamic = "force-dynamic";
 
 /** Per-channel delivery status for every outbound message. */
 export default async function MessagesPage() {
+  await requireAdmin();
   const { rows, demo } = await withDemoFallback(
     messages.listRecent(200),
     (d) => d.messages,

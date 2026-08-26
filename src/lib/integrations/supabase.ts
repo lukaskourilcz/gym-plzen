@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
-import { publicEnv, supabasePublicKey } from "@/lib/public-env";
+import { publicEnv } from "@/lib/public-env";
 
 /**
  * Server-side Supabase client. We use Supabase for two things beyond the raw
@@ -21,12 +21,8 @@ function serverSecretKey(): string | null {
   return env.SUPABASE_SECRET_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY ?? null;
 }
 
-export function isSupabaseConfigured(): boolean {
-  return Boolean(publicEnv.NEXT_PUBLIC_SUPABASE_URL && serverSecretKey());
-}
-
 /** Server-only client with the secret key (full access : storage, admin). */
-export function supabaseAdmin(): SupabaseClient {
+function supabaseAdmin(): SupabaseClient {
   if (serviceClient) return serviceClient;
   const key = serverSecretKey();
   const url = publicEnv.NEXT_PUBLIC_SUPABASE_URL;
@@ -63,9 +59,4 @@ export function publicMediaUrl(storagePath: string): string {
   const bucket = env.SUPABASE_STORAGE_BUCKET;
   return supabaseAdmin().storage.from(bucket).getPublicUrl(storagePath).data
     .publicUrl;
-}
-
-/** True when the browser has what it needs for realtime (URL + public key). */
-export function isSupabaseRealtimeConfigured(): boolean {
-  return Boolean(publicEnv.NEXT_PUBLIC_SUPABASE_URL && supabasePublicKey);
 }

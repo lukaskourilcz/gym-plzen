@@ -10,7 +10,7 @@ import { logger } from "@/lib/helpers/logger";
 
 let cached: Resend | null = null;
 
-export function isResendConfigured(): boolean {
+function isResendConfigured(): boolean {
   return hasEnv("RESEND_API_KEY", "RESEND_FROM_EMAIL");
 }
 

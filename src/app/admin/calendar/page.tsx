@@ -1,4 +1,5 @@
 import type { EventInput } from "@fullcalendar/core";
+import { requireAdmin } from "@/lib/auth/guards";
 import { availability, schedule } from "@/lib/services";
 import { addMinutes } from "@/lib/helpers/datetime";
 import { PageHeader } from "@/components/admin/page-header";
@@ -19,6 +20,7 @@ export const dynamic = "force-dynamic";
  * add a block (e.g. the daily cleaning window).
  */
 export default async function CalendarPage() {
+  await requireAdmin();
   const now = new Date();
   const rangeStart = addMinutes(now, -14 * 24 * 60);
   const rangeEnd = addMinutes(now, 60 * 24 * 60);

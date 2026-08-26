@@ -29,18 +29,21 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Fire-and-forget heartbeat to UptimeRobot. Never blocks the watchdog or
-  // fails the request; if the cron itself throws before reaching this line,
-  // UptimeRobot's grace period expires and the alert fires — that's the point.
+  // Await the heartbeat so a serverless runtime cannot freeze the request
+  // before the network call leaves the process. A short timeout keeps provider
+  // downtime from holding the watchdog open.
   if (env.UPTIMEROBOT_HEARTBEAT_URL) {
-    fetch(env.UPTIMEROBOT_HEARTBEAT_URL, {
-      method: "GET",
-      cache: "no-store",
-    }).catch((e) =>
+    try {
+      await fetch(env.UPTIMEROBOT_HEARTBEAT_URL, {
+        method: "GET",
+        cache: "no-store",
+        signal: AbortSignal.timeout(3_000),
+      });
+    } catch (e) {
       logger.warn("uptimerobot heartbeat failed", {
         error: e instanceof Error ? e.message : "unknown",
-      }),
-    );
+      });
+    }
   }
 
   return NextResponse.json({

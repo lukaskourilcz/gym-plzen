@@ -1,4 +1,5 @@
 import { getStats, type Bucket } from "@/lib/services/stats";
+import { requireAdmin } from "@/lib/auth/guards";
 import { loadDemoData } from "@/lib/demo/dummy";
 import { DemoBanner } from "@/components/admin/demo-banner";
 import { PageHeader } from "@/components/admin/page-header";
@@ -13,6 +14,7 @@ export const dynamic = "force-dynamic";
  * weekdays and hours, and the monthly trend. Lightweight inline bar charts.
  */
 export default async function StatisticsPage() {
+  await requireAdmin();
   let stats = await getStats();
   const demo = stats.total === 0;
   if (demo) stats = (await loadDemoData()).stats;

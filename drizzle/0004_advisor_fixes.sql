@@ -7,4 +7,12 @@ ALTER EXTENSION btree_gist SET SCHEMA extensions;
 
 REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM anon, authenticated, PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.touch_availability_signal() FROM anon, authenticated, PUBLIC;
-REVOKE EXECUTE ON FUNCTION public.rls_auto_enable() FROM anon, authenticated, PUBLIC;
+DO $$
+BEGIN
+  -- Some existing Supabase projects have this advisor helper, while a clean
+  -- database created solely from the tracked migrations does not.
+  IF to_regprocedure('public.rls_auto_enable()') IS NOT NULL THEN
+    REVOKE EXECUTE ON FUNCTION public.rls_auto_enable() FROM anon, authenticated, PUBLIC;
+  END IF;
+END
+$$;

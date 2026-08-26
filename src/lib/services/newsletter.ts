@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { desc } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { newsletterSubscriber } from "@/lib/db/schema";
 import type { NewsletterSubscriber } from "@/lib/db/types";
@@ -22,14 +22,6 @@ export async function subscribe(
         updatedAt: now,
       },
     });
-}
-
-export async function unsubscribe(rawEmail: string): Promise<void> {
-  const now = new Date();
-  await db
-    .update(newsletterSubscriber)
-    .set({ status: "unsubscribed", unsubscribedAt: now, updatedAt: now })
-    .where(eq(newsletterSubscriber.email, rawEmail.trim().toLowerCase()));
 }
 
 export async function listSubscribers(

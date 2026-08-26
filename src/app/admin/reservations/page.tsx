@@ -1,4 +1,5 @@
 import { reservations } from "@/lib/services";
+import { requireAdmin } from "@/lib/auth/guards";
 import {
   formatDateTime,
   formatMoney,
@@ -24,6 +25,7 @@ export const dynamic = "force-dynamic";
 
 /** Reservations admin: manual booking form + a list of recent reservations. */
 export default async function ReservationsPage() {
+  await requireAdmin();
   const { rows, demo } = await withDemoFallback(
     reservations.listRecent(100),
     (d) => d.reservations,

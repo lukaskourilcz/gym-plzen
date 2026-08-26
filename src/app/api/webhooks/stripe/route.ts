@@ -17,8 +17,8 @@ import {
 
 /**
  * Stripe webhook. Verifies the signature, dedupes by event id, and mirrors
- * payment/subscription state into our tables. On a successful one-off payment
- * for a reservation it kicks off fulfillment (code → delivery).
+ * one-off payment state into our tables. On a successful reservation payment
+ * it kicks off fulfillment (code → delivery).
  *
  * The raw body is required for signature verification, so this route reads
  * `request.text()` and must not use a parsed-body middleware.
@@ -38,12 +38,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  const { isNew } = await recordWebhookEvent({
+  const claim = await recordWebhookEvent({
     provider: "stripe",
     eventId: event.id,
     payload: { type: event.type },
   });
-  if (!isNew) return NextResponse.json({ received: true, duplicate: true });
+  if (!claim.isNew) {
+    if (claim.processed) {
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+    // Another request owns the claim but has not committed success yet. A
+    // retry is safer than acknowledging an event that may still fail.
+    return NextResponse.json({ error: "handler_in_progress" }, { status: 409 });
+  }
 
   try {
     await handleStripeEvent(event);
@@ -65,44 +72,70 @@ async function handleStripeEvent(event: Stripe.Event): Promise<void> {
       const session = event.data.object as Stripe.Checkout.Session;
       if (session.payment_status !== "paid") break;
       const reservationId = session.metadata?.reservationId;
+      if (!reservationId) {
+        logger.debug("Ignoring Checkout session without reservation metadata", {
+          checkoutSessionId: session.id,
+        });
+        break;
+      }
+      if (session.mode !== "payment") {
+        throw new Error("Reservation checkout must use one-off payment mode.");
+      }
       // Guest checkouts carry no `userId`, and their reservation has no owner.
       // Comparing both sides as nullable keeps the invariant intact: the
       // reservation must belong to whoever the session says paid for it.
       const userId = session.metadata?.userId ?? null;
-      if (reservationId) {
-        const reservation = await reservations.getReservation(reservationId);
-        if (!reservation || (reservation.userId ?? null) !== userId) {
-          throw new Error("Checkout ownership mismatch.");
-        }
+      const [reservation, pendingPayment] = await Promise.all([
+        reservations.getReservation(reservationId),
+        memberships.getPaymentByCheckoutSessionId(session.id),
+      ]);
+      if (!reservation || (reservation.userId ?? null) !== userId) {
+        throw new Error("Checkout ownership mismatch.");
+      }
+      const currency = session.currency?.toLowerCase();
+      if (
+        reservation.priceCents == null ||
+        session.amount_total !== reservation.priceCents ||
+        currency !== reservation.currency.toLowerCase()
+      ) {
+        throw new Error("Checkout amount or currency mismatch.");
+      }
+      if (
+        !pendingPayment ||
+        pendingPayment.reservationId !== reservationId ||
+        (pendingPayment.userId ?? null) !== userId ||
+        pendingPayment.type !== "one_off" ||
+        pendingPayment.amountCents !== reservation.priceCents ||
+        pendingPayment.currency.toLowerCase() !== currency
+      ) {
+        throw new Error("Checkout does not match the pending payment record.");
       }
       await memberships.recordPayment({
         userId,
-        reservationId: reservationId ?? null,
-        type: session.mode === "subscription" ? "subscription" : "one_off",
+        reservationId,
+        type: "one_off",
         status: "succeeded",
-        amountCents: session.amount_total ?? 0,
-        currency: session.currency ?? "czk",
+        amountCents: reservation.priceCents,
+        currency,
         stripePaymentIntentId:
           typeof session.payment_intent === "string"
             ? session.payment_intent
             : session.payment_intent?.id,
         stripeCheckoutSessionId: session.id,
       });
-      if (reservationId) {
-        const confirmed = await reservations.confirmReservation(reservationId);
-        if (!confirmed) {
-          await alerts.raiseAlert({
-            severity: "critical",
-            title: "Zaplacenou rezervaci nelze potvrdit",
-            body: "Zkontrolujte rezervaci a případně vraťte platbu zákazníkovi.",
-            dedupeKey: `paid-reservation-conflict:${reservationId}`,
-            context: { reservationId, stripeCheckoutSessionId: session.id },
-          });
-          break;
-        }
-        await vouchers.redeemForReservation(reservationId);
-        await fulfillment.fulfillReservation(reservationId);
+      const confirmed = await reservations.confirmReservation(reservationId);
+      if (!confirmed) {
+        await alerts.raiseAlert({
+          severity: "critical",
+          title: "Zaplacenou rezervaci nelze potvrdit",
+          body: "Zkontrolujte rezervaci a případně vraťte platbu zákazníkovi.",
+          dedupeKey: `paid-reservation-conflict:${reservationId}`,
+          context: { reservationId, stripeCheckoutSessionId: session.id },
+        });
+        break;
       }
+      await vouchers.redeemForReservation(reservationId);
+      await fulfillment.fulfillReservation(reservationId);
       break;
     }
 
@@ -127,56 +160,7 @@ async function handleStripeEvent(event: Stripe.Event): Promise<void> {
       break;
     }
 
-    case "customer.subscription.created":
-    case "customer.subscription.updated":
-    case "customer.subscription.deleted": {
-      const sub = event.data.object as Stripe.Subscription;
-      const userId = (sub.metadata?.userId ?? "") || null;
-      if (userId) {
-        await memberships.upsertMembershipFromStripe({
-          userId,
-          stripeSubscriptionId: sub.id,
-          status: mapSubscriptionStatus(sub.status),
-          currentPeriodStart: toDate(sub.items.data[0]?.current_period_start),
-          currentPeriodEnd: toDate(sub.items.data[0]?.current_period_end),
-          cancelAtPeriodEnd: sub.cancel_at_period_end,
-        });
-      }
-      break;
-    }
-
-    case "invoice.payment_failed": {
-      const invoice = event.data.object as Stripe.Invoice;
-      logger.warn("Stripe invoice payment failed", { invoiceId: invoice.id });
-      break;
-    }
-
     default:
       logger.debug("Unhandled Stripe event", { type: event.type });
   }
-}
-
-/** Map Stripe subscription status to our membership status enum. */
-function mapSubscriptionStatus(
-  status: Stripe.Subscription.Status,
-): "trialing" | "active" | "past_due" | "canceled" | "incomplete" | "paused" {
-  switch (status) {
-    case "trialing":
-      return "trialing";
-    case "active":
-      return "active";
-    case "past_due":
-    case "unpaid":
-      return "past_due";
-    case "canceled":
-      return "canceled";
-    case "paused":
-      return "paused";
-    default:
-      return "incomplete";
-  }
-}
-
-function toDate(unixSeconds: number | null | undefined): Date | null {
-  return typeof unixSeconds === "number" ? new Date(unixSeconds * 1000) : null;
 }

@@ -15,7 +15,7 @@ import { logger } from "@/lib/helpers/logger";
 
 const GRAPH_VERSION = "v21.0";
 
-export function isWhatsAppConfigured(): boolean {
+function isWhatsAppConfigured(): boolean {
   return hasEnv("WHATSAPP_ACCESS_TOKEN", "WHATSAPP_PHONE_NUMBER_ID");
 }
 

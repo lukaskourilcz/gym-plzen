@@ -10,10 +10,16 @@ import {
  * Server-only (imports node:crypto).
  */
 
-/** Generate a numeric entry code of `digits` length (default 6), zero-padded. */
-export function generateNumericCode(digits = 6): string {
-  const max = 10 ** digits;
-  return randomInt(0, max).toString().padStart(digits, "0");
+/**
+ * Generate a Nuki-compatible six-digit Keypad PIN. Nuki accepts digits 1–9
+ * only and reserves the `12` prefix.
+ */
+export function generateNukiKeypadCode(): string {
+  let code: string;
+  do {
+    code = Array.from({ length: 6 }, () => randomInt(1, 10)).join("");
+  } while (code.startsWith("12"));
+  return code;
 }
 
 /** One-way hash of an access code for storage (we never need the plaintext back). */

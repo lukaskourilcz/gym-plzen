@@ -108,7 +108,7 @@ export async function deleteBlockedSlot(id: string): Promise<void> {
 // ── Closing time that already has bookings ───────────────────────────────────
 
 /** Active (pending/confirmed) reservations overlapping a time range. */
-export async function findOverlappingReservations(
+async function findOverlappingReservations(
   start: Date,
   end: Date,
 ): Promise<Reservation[]> {

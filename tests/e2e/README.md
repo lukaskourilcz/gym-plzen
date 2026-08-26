@@ -59,24 +59,9 @@ ignorované Gitem.
 Pokud prostředí používá vlastní Chromium, nastav `PW_CHROMIUM_PATH`. Jinak použij
 `npx playwright install chromium`.
 
-## Stav checkpointu 2026-08-01
+## Interpretace výsledků
 
-- Lokální demo a veřejný balík: **10 passed, 0 failed**.
-- FAQ regresní kontrola ověřuje všech 20 klientských položek a otevření první
-  odpovědi.
-- Produkční skip navigation stress test: **5/5 passed**.
-- Mobilní 44px cíl zpětného odkazu na loginu: **3/3** v nezávislém review.
-- Produkční veřejný smoke test bez databáze: **8 passed, 1 expected skipped**.
-  Homepage test navíc kontroluje, že metadata odkazují na nový PNG favicon s
-  oficiální klientskou lotusovou značkou.
-  Přeskočený scénář vyžaduje živou dostupnost a produkce ji správně
-  nenahrazuje fikcí.
-- Produkční Node 22 build prošel. Poslední Lighthouse checkpoint z 23. 7. 2026:
-  performance 94, accessibility 100, best practices 100 a SEO 100.
-- Poslední změny administrace, FAQ a CTA prošly `format:check`, lintem,
-  TypeScriptem, 20 unit testy a produkčním buildem. Nevyžadovaly změnu
-  vzdáleného mutačního E2E scénáře.
-- Vzdálené mutační testy nebyly spuštěné, protože nakonfigurovaný Supabase
-  projekt nebyl potvrzený jako projekt této aplikace.
-- Aktuální blokátory a další kroky jsou v kořenovém `SESSION_HANDOFF.md` a
-  `NEEDED.md`.
+Výsledky konkrétního běhu patří do CI nebo aktuálního pull requestu, ne do této
+dokumentace. Přeskočené scénáře vždy zkontroluj: část z nich očekává živou
+dostupnost a část vyžaduje explicitně povolený testovací Supabase projekt.
+Aktuální externí blokátory jsou v kořenovém [NEEDED.md](../../NEEDED.md).

@@ -1,6 +1,20 @@
+import { and, count, eq, inArray } from "drizzle-orm";
+import { db } from "@/lib/db";
+import {
+  profiles,
+  reservation as reservationTable,
+  reservationPipeline,
+  siteSetting,
+} from "@/lib/db/schema";
+import type { Reservation } from "@/lib/db/types";
 import { publicEnv } from "@/lib/public-env";
 import { ActionError } from "@/lib/helpers/action";
 import { dateKeyInTimeZone } from "@/lib/helpers/datetime";
+import {
+  DEFAULT_ENTRY_PRICE_CENTS,
+  ENTRY_PRICE_SETTING_KEY,
+  FREE_ENTRY_EVERY,
+} from "@/lib/config/pricing";
 import {
   isStripeConfigured,
   ensureStripeCustomer,
@@ -16,7 +30,7 @@ import {
   releaseExpiredPendingReservations,
   updateReservationPrice,
 } from "./reservations";
-import { getEntryPriceCents, priceForNextEntry } from "./loyalty";
+import { getEntryPriceCents } from "./loyalty";
 import { getMember, setStripeCustomerId } from "./members";
 import { recordPayment } from "./memberships";
 import { fulfillReservation } from "./fulfillment";
@@ -122,21 +136,26 @@ export async function startBooking(params: {
     termsAcceptedAt: params.details.acceptedAt,
   };
 
-  // Loyalty is counted against an account, so a guest always pays.
-  const { priceCents: originalPriceCents, isFree } = params.userId
-    ? await priceForNextEntry(params.userId)
+  // A member's loyalty decision and reservation insert share a row lock. Two
+  // parallel requests therefore cannot both claim the same tenth free entry.
+  const memberReservation = params.userId
+    ? await createMemberReservationWithLoyalty({
+        userId: params.userId,
+        startsAt,
+        endsAt,
+        contact,
+      })
+    : null;
+  const { priceCents: originalPriceCents, isFree } = memberReservation
+    ? {
+        priceCents: memberReservation.reservation.priceCents ?? 0,
+        isFree: memberReservation.isFree,
+      }
     : { priceCents: await getEntryPriceCents(), isFree: false };
 
   // Free loyalty entry : no payment needed.
   if (isFree) {
-    const reservation = await createReservation({
-      userId: params.userId,
-      startsAt,
-      endsAt,
-      status: "confirmed",
-      ...contact,
-      priceCents: 0,
-    });
+    const reservation = memberReservation!.reservation;
     await fulfillReservation(reservation.id);
     return { kind: "free", reservationId: reservation.id };
   }
@@ -148,14 +167,16 @@ export async function startBooking(params: {
     );
   }
 
-  const reservation = await createReservation({
-    userId: params.userId,
-    startsAt,
-    endsAt,
-    status: "pending",
-    ...contact,
-    priceCents: originalPriceCents,
-  });
+  const reservation =
+    memberReservation?.reservation ??
+    (await createReservation({
+      userId: null,
+      startsAt,
+      endsAt,
+      status: "pending",
+      ...contact,
+      priceCents: originalPriceCents,
+    }));
 
   let priceCents = originalPriceCents;
   const voucherCode = params.voucherCode?.trim();
@@ -253,6 +274,93 @@ export async function startBooking(params: {
     reservationId: reservation.id,
     priceCents,
   };
+}
+
+async function createMemberReservationWithLoyalty(params: {
+  userId: string;
+  startsAt: Date;
+  endsAt: Date;
+  contact: {
+    contactName: string;
+    contactEmail: string;
+    contactPhone: string;
+    rulesAcceptedAt: Date;
+    termsAcceptedAt: Date;
+  };
+}): Promise<{ reservation: Reservation; isFree: boolean }> {
+  try {
+    return await db.transaction(async (tx) => {
+      const [profile] = await tx
+        .select({ id: profiles.id })
+        .from(profiles)
+        .where(eq(profiles.id, params.userId))
+        .for("update")
+        .limit(1);
+      if (!profile) throw new ActionError("Účet nenalezen.");
+
+      const [[entryCount], [priceSetting]] = await Promise.all([
+        tx
+          .select({ value: count() })
+          .from(reservationTable)
+          .where(
+            and(
+              eq(reservationTable.userId, params.userId),
+              inArray(reservationTable.status, ["confirmed", "completed"]),
+            ),
+          ),
+        tx
+          .select({ value: siteSetting.value })
+          .from(siteSetting)
+          .where(eq(siteSetting.key, ENTRY_PRICE_SETTING_KEY))
+          .limit(1),
+      ]);
+      const totalEntries = Number(entryCount?.value ?? 0);
+      const isFree = totalEntries % FREE_ENTRY_EVERY === FREE_ENTRY_EVERY - 1;
+      const configuredPrice = priceSetting?.value;
+      const priceCents = isFree
+        ? 0
+        : typeof configuredPrice === "number" && configuredPrice >= 0
+          ? configuredPrice
+          : DEFAULT_ENTRY_PRICE_CENTS;
+
+      const [created] = await tx
+        .insert(reservationTable)
+        .values({
+          userId: params.userId,
+          startsAt: params.startsAt,
+          endsAt: params.endsAt,
+          status: isFree ? "confirmed" : "pending",
+          ...params.contact,
+          priceCents,
+        })
+        .returning();
+      if (!created) {
+        throw new ActionError("Rezervaci se nepodařilo vytvořit.");
+      }
+
+      if (isFree) {
+        await tx.insert(reservationPipeline).values(
+          ["payment", "code_created", "code_delivered"].map((step) => ({
+            reservationId: created.id,
+            step: step as "payment" | "code_created" | "code_delivered",
+            nextRetryAt: new Date(),
+          })),
+        );
+      }
+      return { reservation: created, isFree };
+    });
+  } catch (error) {
+    const code =
+      typeof error === "object" && error !== null && "code" in error
+        ? String(error.code)
+        : "";
+    if (code === "23P01") {
+      throw new ActionError(
+        "Tento termín právě rezervoval jiný zákazník. Vyberte prosím jiný čas.",
+      );
+    }
+    throw error;
+  }
 }
 
 /**

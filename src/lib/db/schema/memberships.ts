@@ -13,8 +13,8 @@ import { reservation } from "./reservations";
 import { membershipStatus, paymentStatus, paymentType } from "./enums";
 
 /**
- * A membership plan is an admin-editable product (name, price, Stripe price id).
- * Members subscribe to a plan; the subscription state is mirrored from Stripe.
+ * Legacy subscription tables retained so existing databases and migrations
+ * remain compatible. The application no longer creates or manages plans.
  */
 export const membershipPlan = pgTable("membership_plan", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -34,7 +34,7 @@ export const membershipPlan = pgTable("membership_plan", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-/** A member's subscription to a plan, kept in sync via Stripe webhooks. */
+/** Legacy subscription rows; not used by the one-off-entry application flow. */
 export const membership = pgTable(
   "membership",
   {
@@ -58,8 +58,8 @@ export const membership = pgTable(
 );
 
 /**
- * A payment record : either a one-off session payment or a subscription
- * invoice. Card data never touches our system; we only mirror Stripe state.
+ * A reservation payment record. Card data never touches our system; we mirror
+ * only Stripe Checkout identifiers and payment state.
  */
 export const payment = pgTable(
   "payment",

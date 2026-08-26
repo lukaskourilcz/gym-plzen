@@ -65,7 +65,7 @@ function publicInstagram(value?: string | null) {
 }
 
 /** Derive WhatsApp exclusively from the primary public Czech phone. */
-export function publicWhatsApp(phone?: string | null) {
+function publicWhatsApp(phone?: string | null) {
   let digits = phone?.replace(/\D/g, "") ?? "";
   if (digits.startsWith("00")) digits = digits.slice(2);
   if (/^\d{9}$/.test(digits)) digits = `420${digits}`;

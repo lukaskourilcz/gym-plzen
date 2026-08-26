@@ -1,4 +1,5 @@
 import { newsletter } from "@/lib/services";
+import { requireAdmin } from "@/lib/auth/guards";
 import { formatDateTime } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
 import { StatCard } from "@/components/admin/stat-card";
@@ -16,6 +17,7 @@ export const metadata = { title: "Odběratelé novinek" };
 export const dynamic = "force-dynamic";
 
 export default async function NewsletterPage() {
+  await requireAdmin();
   const rows = await newsletter.listSubscribers().catch(() => []);
   const active = rows.filter((row) => row.status === "subscribed").length;
   return (

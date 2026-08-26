@@ -1,4 +1,5 @@
 import { cms } from "@/lib/services";
+import { requireAdmin } from "@/lib/auth/guards";
 import {
   DEFAULT_SMS_ACCESS_TEMPLATE,
   HERO_IMAGE_ALT_KEY,
@@ -33,6 +34,7 @@ export const dynamic = "force-dynamic";
 
 /** Configure the front-end assets (logo, terms PDF) and message templates. */
 export default async function SettingsPage() {
+  await requireAdmin();
   const [
     logoUrl,
     termsUrl,

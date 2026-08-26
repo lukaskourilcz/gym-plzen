@@ -1,15 +1,13 @@
+import "server-only";
 import { z } from "zod";
 
 /**
  * Centralised, type-safe access to SERVER environment variables.
  *
  * IMPORTANT: this module validates server-only secrets at import time, so it
- * must never be imported from a client component (it would throw in the browser
- * where those vars are absent). Client code imports `publicEnv` from
- * `@/lib/public-env` instead; it is re-exported here only for server convenience.
+ * must never be imported from a client component. Client code imports
+ * `publicEnv` from `@/lib/public-env` instead.
  */
-
-export { publicEnv } from "./public-env";
 
 const serverSchema = z.object({
   NODE_ENV: z
@@ -28,10 +26,8 @@ const serverSchema = z.object({
   SUPABASE_SECRET_KEY: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   SUPABASE_STORAGE_BUCKET: z.string().default("cms-media"),
-  // @supabase/server reads these aliases directly for API/Edge handlers.
+  // Optional alias used by the Supabase Management API integration.
   SUPABASE_URL: z.string().url().optional(),
-  SUPABASE_PUBLISHABLE_KEY: z.string().optional(),
-  SUPABASE_JWKS_URL: z.string().url().optional(),
   // Server-only Personal Access Token used solely to keep the hosted Supabase
   // Auth e-mail templates in sync with the admin editor. Never expose it.
   SUPABASE_MANAGEMENT_API_TOKEN: z.string().optional(),
@@ -44,7 +40,6 @@ const serverSchema = z.object({
 
   WHATSAPP_ACCESS_TOKEN: z.string().optional(),
   WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
-  WHATSAPP_BUSINESS_ACCOUNT_ID: z.string().optional(),
   WHATSAPP_VERIFY_TOKEN: z.string().optional(),
   WHATSAPP_APP_SECRET: z.string().optional(),
 

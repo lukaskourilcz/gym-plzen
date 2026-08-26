@@ -1,7 +1,6 @@
 # Project instructions
 
-Read `SESSION_HANDOFF.md` first when it exists. Then read
-`.claude/skills/gym-architecture/SKILL.md` before changing application code.
+Read `.claude/skills/gym-architecture/SKILL.md` before changing application code.
 For every non-trivial UI change, also read `docs/DESIGN_SYSTEM.md` and
 `.claude/rules/design-system.md`.
 
@@ -17,6 +16,8 @@ primitives before adding anything new.
 All customer-facing copy is Czech. Do not invent business facts, contact data,
 equipment, policies, opening hours, availability, reviews, or guarantees. Never
 commit secrets or local environment files.
+Operator-supplied legal copy must not be edited without explicit approval;
+track factual conflicts in `NEEDED.md` instead.
 
 Use Node.js 22. Before finishing, run relevant format check, lint, typecheck,
 tests, dependency audit, and production build.
@@ -38,8 +39,10 @@ This repo follows a shared markdown contract (see the `session-start`,
 At session start, check `NEEDED.md` for `[owner:ai]` tasks that can now be done;
 at session end, update `NEEDED.md` (finished + newly-needed owner items).
 
-## Git workflow (every session)
+## Git workflow
 
-- **Commit frequently** in small, coherent steps — never batch a whole session into one commit.
-- **At the end of every session, push and merge to `main`** so the change redeploys immediately (this project auto-deploys from `main` on Vercel).
-- **Delete the merged / old branch** (local and remote) after merging, to keep the repo clean. Never leave stale branches behind.
+- Commit coherent changes on a feature branch and open a pull request.
+- Never merge or push directly to `main` without explicit owner approval: `main`
+  automatically deploys to production.
+- Merge only after required checks pass and production blockers in `NEEDED.md`
+  are understood by the owner.

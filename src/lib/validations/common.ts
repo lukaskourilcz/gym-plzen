@@ -39,12 +39,6 @@ export const hhmmSchema = z
   .string()
   .regex(/^\d{1,2}:\d{2}$/, "Zadejte čas ve formátu HH:MM.");
 
-/** Non-negative integer amount in the smallest currency unit (haléř). */
-export const priceCentsSchema = z
-  .number({ invalid_type_error: "Zadejte číslo." })
-  .int("Cena musí být celé číslo.")
-  .nonnegative("Cena nesmí být záporná.");
-
 /** Optional email that also accepts an empty string (blank field). */
 export const optionalEmail = z.union([z.literal(""), emailSchema]).optional();
 

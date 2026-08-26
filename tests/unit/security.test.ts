@@ -5,6 +5,7 @@ import { PUBLIC_AVAILABILITY_TABLE } from "../../src/lib/config/realtime";
 import { safeInternalPath } from "../../src/lib/security/redirects";
 import { isBookingPreviewEnabled } from "../../src/lib/config/preview";
 import { redactForLogs } from "../../src/lib/helpers/logger";
+import { generateNukiKeypadCode } from "../../src/lib/helpers/crypto";
 
 test("authentication return target accepts only same-origin paths", () => {
   assert.equal(
@@ -51,6 +52,14 @@ test("fictional availability cannot be enabled in production", () => {
 test("public realtime subscribes only to the PII-free signal", () => {
   assert.equal(PUBLIC_AVAILABILITY_TABLE, "availability_signal");
   assert.notEqual(PUBLIC_AVAILABILITY_TABLE, "reservation");
+});
+
+test("generated entry codes always satisfy Nuki Keypad restrictions", () => {
+  for (let index = 0; index < 2_000; index += 1) {
+    const code = generateNukiKeypadCode();
+    assert.match(code, /^[1-9]{6}$/);
+    assert.equal(code.startsWith("12"), false);
+  }
 });
 
 test("log redaction hides phone numbers without corrupting timestamps", () => {

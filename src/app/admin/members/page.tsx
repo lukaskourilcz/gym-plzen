@@ -1,4 +1,5 @@
 import { members } from "@/lib/services";
+import { requireAdmin } from "@/lib/auth/guards";
 import { formatDateTime } from "@/lib/helpers/format";
 import { withDemoFallback } from "@/lib/demo/dummy";
 import { DemoBanner } from "@/components/admin/demo-banner";
@@ -18,6 +19,7 @@ export const dynamic = "force-dynamic";
 
 /** Members admin : every registered user with their editable profile. */
 export default async function MembersPage() {
+  await requireAdmin();
   const { rows, demo } = await withDemoFallback(
     members.listMembers(200),
     (d) => d.members,

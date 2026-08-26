@@ -8,15 +8,15 @@ import { webhookEvent } from "@/lib/db/schema";
  */
 
 /**
- * Record a provider event. Returns `false` when the event was already seen
- * (the caller should then no-op). Relies on the unique (provider, eventId)
- * index to make the check atomic.
+ * Atomically claim a provider event. Existing completed events are safe to
+ * acknowledge; an existing unprocessed claim must be retried rather than
+ * silently accepted while its first handler may still fail.
  */
 export async function recordWebhookEvent(params: {
   provider: string;
   eventId: string;
   payload?: unknown;
-}): Promise<{ isNew: boolean }> {
+}): Promise<{ isNew: boolean; processed: boolean }> {
   const inserted = await db
     .insert(webhookEvent)
     .values({
@@ -28,7 +28,19 @@ export async function recordWebhookEvent(params: {
     .onConflictDoNothing()
     .returning({ id: webhookEvent.id });
 
-  return { isNew: inserted.length > 0 };
+  if (inserted.length > 0) return { isNew: true, processed: false };
+
+  const [existing] = await db
+    .select({ processedAt: webhookEvent.processedAt })
+    .from(webhookEvent)
+    .where(
+      and(
+        eq(webhookEvent.provider, params.provider),
+        eq(webhookEvent.eventId, params.eventId),
+      ),
+    )
+    .limit(1);
+  return { isNew: false, processed: Boolean(existing?.processedAt) };
 }
 
 export async function markWebhookProcessed(provider: string, eventId: string) {

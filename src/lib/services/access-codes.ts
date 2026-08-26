@@ -2,10 +2,14 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { accessCode } from "@/lib/db/schema";
 import type { AccessCode } from "@/lib/db/types";
-import { generateNumericCode, hashCode } from "@/lib/helpers/crypto";
+import { generateNukiKeypadCode, hashCode } from "@/lib/helpers/crypto";
 import { addMinutes } from "@/lib/helpers/datetime";
 import { logger } from "@/lib/helpers/logger";
-import { createKeypadCode, deleteAuth } from "@/lib/integrations/nuki";
+import {
+  createKeypadCode,
+  deleteAuth,
+  findKeypadAuthIdByHash,
+} from "@/lib/integrations/nuki";
 import { CODE_LEAD_MINUTES } from "@/lib/config/schedule";
 import { getShowerMinutes } from "./schedule";
 
@@ -31,9 +35,8 @@ export async function issueAccessCode(params: {
   reservationId: string;
   startsAt: Date;
   endsAt: Date;
-  memberName?: string | null;
 }): Promise<IssueCodeResult> {
-  const plaintext = generateNumericCode(6);
+  const plaintext = generateNukiKeypadCode();
   // Code valid from a lead time before the slot until the end of the slot plus
   // the shower grace, so the member can shower after training.
   const showerMinutes = await getShowerMinutes();
@@ -55,9 +58,9 @@ export async function issueAccessCode(params: {
   if (!record) throw new Error("Failed to persist access code.");
 
   const lock = await createKeypadCode({
-    name: `Rez. ${params.reservationId.slice(0, 8)}${
-      params.memberName ? ` – ${params.memberName}` : ""
-    }`,
+    // Nuki limits Keypad authorization names to 20 characters. Keep the value
+    // deterministic and privacy-safe so it can also be recognized in its log.
+    name: `Rez ${params.reservationId.slice(0, 8)}`,
     code: Number(plaintext),
     allowedFrom: validFrom,
     allowedUntil: validUntil,
@@ -98,7 +101,9 @@ export async function revokeAccessCode(id: string): Promise<void> {
     .where(eq(accessCode.id, id))
     .limit(1);
   if (!row) return;
-  if (row.nukiAuthId) await deleteAuth(row.nukiAuthId);
+  const nukiAuthId =
+    row.nukiAuthId ?? (await findKeypadAuthIdByHash(row.codeHash));
+  if (nukiAuthId) await deleteAuth(nukiAuthId);
   await db
     .update(accessCode)
     .set({ status: "revoked", updatedAt: new Date() })

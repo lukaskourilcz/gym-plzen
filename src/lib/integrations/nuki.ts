@@ -1,5 +1,6 @@
 import { hasEnv, requireEnv } from "@/lib/env";
 import { httpRequest } from "@/lib/helpers/http";
+import { hashCode } from "@/lib/helpers/crypto";
 import { logger } from "@/lib/helpers/logger";
 
 /**
@@ -15,7 +16,7 @@ const API_BASE = "https://api.nuki.io";
 /** Nuki auth type for a keypad (numeric) code. */
 const NUKI_TYPE_KEYPAD = 13;
 
-export function isNukiConfigured(): boolean {
+function isNukiConfigured(): boolean {
   return hasEnv("NUKI_API_TOKEN", "NUKI_SMARTLOCK_ID");
 }
 
@@ -42,10 +43,46 @@ export interface CreateCodeResult {
   error?: string;
 }
 
+interface NukiKeypadAuthorization {
+  id: string | number;
+  code?: number;
+  type?: number;
+}
+
+async function listKeypadAuthorizations(): Promise<NukiKeypadAuthorization[]> {
+  return httpRequest<NukiKeypadAuthorization[]>(
+    `${API_BASE}/smartlock/${smartlockId()}/auth?types=${NUKI_TYPE_KEYPAD}`,
+    { headers: authHeader(), timeoutMs: 7_000, retries: 1 },
+  );
+}
+
+async function wait(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function resolveKeypadAuthId(
+  codeHash: string,
+  attempts = 3,
+): Promise<string | undefined> {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (attempt > 0) await wait(attempt * 750);
+    const authorizations = await listKeypadAuthorizations();
+    const match = authorizations.find(
+      (authorization) =>
+        authorization.type === NUKI_TYPE_KEYPAD &&
+        authorization.code != null &&
+        hashCode(String(authorization.code).padStart(6, "0")) === codeHash,
+    );
+    if (match) return String(match.id);
+  }
+  return undefined;
+}
+
 /**
  * Create a time-limited keypad code on the lock. Nuki expects the code as a
  * number and times as ISO strings; the window uses `allowedFromDate`/
- * `allowedUntilDate`.
+ * `allowedUntilDate`. A 204 response is only an acceptance signal, so the
+ * authorization is read back before the code is considered provisioned.
  */
 export async function createKeypadCode(
   params: CreateCodeParams,
@@ -55,34 +92,42 @@ export async function createKeypadCode(
     return { created: false, error: "nuki_not_configured" };
   }
   try {
-    const res = await httpRequest<{ id?: string } | unknown>(
-      `${API_BASE}/smartlock/${smartlockId()}/auth`,
-      {
-        method: "PUT",
-        headers: authHeader(),
-        retries: 2,
-        json: {
-          name: params.name,
-          type: NUKI_TYPE_KEYPAD,
-          code: params.code,
-          allowedFromDate: params.allowedFrom.toISOString(),
-          allowedUntilDate: params.allowedUntil.toISOString(),
-        },
+    await httpRequest(`${API_BASE}/smartlock/${smartlockId()}/auth`, {
+      method: "PUT",
+      headers: authHeader(),
+      retries: 2,
+      json: {
+        name: params.name,
+        type: NUKI_TYPE_KEYPAD,
+        code: params.code,
+        allowedFromDate: params.allowedFrom.toISOString(),
+        allowedUntilDate: params.allowedUntil.toISOString(),
+        allowedWeekDays: 0,
       },
-    );
-    // The PUT auth endpoint is asynchronous; the created auth id is resolved by
-    // listing auths or via callback. We return whatever id came back if any.
-    const id =
-      res && typeof res === "object" && "id" in res
-        ? String((res as { id: unknown }).id)
-        : undefined;
-    return { created: true, nukiAuthId: id };
+    });
+    const id = await resolveKeypadAuthId(hashCode(String(params.code)));
+    return id
+      ? { created: true, nukiAuthId: id }
+      : { created: false, error: "nuki_auth_not_confirmed" };
   } catch (e) {
     logger.error(e, { where: "nuki.createKeypadCode" });
     return {
       created: false,
       error: e instanceof Error ? e.message : "unknown",
     };
+  }
+}
+
+/** Resolve an authorization later when the asynchronous create was delayed. */
+export async function findKeypadAuthIdByHash(
+  codeHash: string,
+): Promise<string | undefined> {
+  if (!isNukiConfigured()) return undefined;
+  try {
+    return await resolveKeypadAuthId(codeHash, 1);
+  } catch (e) {
+    logger.error(e, { where: "nuki.findKeypadAuthIdByHash" });
+    return undefined;
   }
 }
 

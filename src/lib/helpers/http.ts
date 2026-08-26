@@ -5,7 +5,7 @@
  * modules stay tiny and consistent.
  */
 
-export class HttpError extends Error {
+class HttpError extends Error {
   constructor(
     message: string,
     readonly status: number,

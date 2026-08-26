@@ -1,4 +1,5 @@
 import { loyalty, members } from "@/lib/services";
+import { requireAdmin } from "@/lib/auth/guards";
 import { deriveLoyaltyStatus } from "@/lib/services/loyalty";
 import {
   DEFAULT_ENTRY_PRICE_CENTS,
@@ -27,6 +28,7 @@ export const dynamic = "force-dynamic";
  * Every Nth entry is free; this page sets the price and shows loyalty progress.
  */
 export default async function PricingPage() {
+  await requireAdmin();
   const [entryPriceCents, liveMembers] = await Promise.all([
     loyalty.getEntryPriceCents().catch(() => DEFAULT_ENTRY_PRICE_CENTS),
     members.listMembers(200).catch(() => []),

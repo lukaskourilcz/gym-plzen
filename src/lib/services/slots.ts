@@ -27,7 +27,7 @@ export interface Slot {
   booked: boolean;
 }
 
-export interface DaySlots {
+interface DaySlots {
   dateKey: string;
   slots: Slot[];
   isClosed: boolean;
