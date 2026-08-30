@@ -1,6 +1,10 @@
 import { cn } from "@/lib/utils";
 import { LotusMark } from "@/components/site/brand";
-import { pluralEntries, type LoyaltyStatus } from "@/lib/services/loyalty";
+import {
+  loyaltyFilledSegments,
+  pluralEntries,
+  type LoyaltyStatus,
+} from "@/lib/services/loyalty";
 
 /**
  * Customer-facing loyalty widget. Shows how many entries the member has and how
@@ -9,9 +13,8 @@ import { pluralEntries, type LoyaltyStatus } from "@/lib/services/loyalty";
  * the account page, so it uses the brand ink surface with gold progress.
  */
 export function LoyaltyWidget({ status }: { status: LoyaltyStatus }) {
-  const { positionInCycle, entriesUntilFree, cadence, nextEntryIsFree } =
-    status;
-  const filled = nextEntryIsFree ? cadence : positionInCycle;
+  const { entriesUntilFree, cadence, nextEntryIsFree } = status;
+  const filled = loyaltyFilledSegments(status);
 
   return (
     <div className="relative h-full overflow-hidden rounded-lg bg-ink p-8 text-ink-foreground sm:p-10">
@@ -43,7 +46,15 @@ export function LoyaltyWidget({ status }: { status: LoyaltyStatus }) {
           nic hlídat.
         </p>
 
-        <div className="mt-7 flex gap-2">
+        {/*
+         * Two presentations of the same number: the approved segment bar and
+         * the modern ring. Both are rendered and CSS reveals one, so the page
+         * stays variant-neutral for the cache. The hidden one is `display:
+         * none`, which also keeps it out of the accessibility tree.
+         *
+         * Both are decorative: the sentence above already states the status.
+         */}
+        <div data-loyalty="segments" className="mt-7 flex gap-2">
           {Array.from({ length: cadence }, (_, i) => (
             <span
               key={i}
@@ -55,6 +66,8 @@ export function LoyaltyWidget({ status }: { status: LoyaltyStatus }) {
             />
           ))}
         </div>
+
+        <LoyaltyRing filled={filled} cadence={cadence} />
 
         <div className="mt-7 grid gap-4 border-t border-white/12 pt-6 sm:grid-cols-2">
           <div>
@@ -71,6 +84,73 @@ export function LoyaltyWidget({ status }: { status: LoyaltyStatus }) {
               vstupů zdarma získáno
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Geometry of the modern progress ring. */
+const RING_SIZE = 132;
+const RING_STROKE = 10;
+const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+
+/**
+ * The modern variant's gold progress ring. Decorative: the sentence above the
+ * widget already carries the exact status, so this is hidden from assistive
+ * technology rather than repeating it as a second, clumsier announcement.
+ *
+ * The sweep animates from empty via a keyframe whose target is a custom
+ * property; the global reduced-motion rule collapses its duration, landing it
+ * on the final value straight away.
+ */
+function LoyaltyRing({ filled, cadence }: { filled: number; cadence: number }) {
+  const progress = cadence > 0 ? Math.min(filled / cadence, 1) : 0;
+  const offset = RING_CIRCUMFERENCE * (1 - progress);
+
+  return (
+    <div
+      data-loyalty="ring"
+      aria-hidden="true"
+      className="mt-7 w-[132px] shrink-0"
+    >
+      <div className="relative">
+        <svg
+          viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
+          className="size-[132px] -rotate-90"
+          role="presentation"
+        >
+          <circle
+            cx={RING_SIZE / 2}
+            cy={RING_SIZE / 2}
+            r={RING_RADIUS}
+            fill="none"
+            strokeWidth={RING_STROKE}
+            className="stroke-white/25"
+          />
+          <circle
+            cx={RING_SIZE / 2}
+            cy={RING_SIZE / 2}
+            r={RING_RADIUS}
+            fill="none"
+            strokeWidth={RING_STROKE}
+            strokeLinecap="round"
+            className="animate-[loyalty-ring_700ms_var(--ease-brand)_both] stroke-gold"
+            style={
+              {
+                strokeDasharray: RING_CIRCUMFERENCE,
+                strokeDashoffset: offset,
+                "--ring-circumference": `${RING_CIRCUMFERENCE}`,
+                "--ring-offset": `${offset}`,
+              } as React.CSSProperties
+            }
+          />
+        </svg>
+        <div className="absolute inset-0 grid place-items-center">
+          <span className="text-2xl font-extrabold tabular-nums text-gold">
+            {filled}/{cadence}
+          </span>
         </div>
       </div>
     </div>

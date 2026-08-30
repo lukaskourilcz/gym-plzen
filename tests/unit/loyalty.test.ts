@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   deriveLoyaltyStatus,
+  loyaltyFilledSegments,
   loyaltyProgressSentence,
   pluralEntries,
 } from "../../src/lib/services/loyalty";
@@ -98,4 +99,16 @@ test("an empty loyalty variable leaves no blank block in a guest confirmation", 
   });
   assert.match(member.body, /do vstupu zdarma zbývají 3 vstupy\./);
   assert.doesNotMatch(member.body, /\n\s*\n\s*\n/);
+});
+
+test("both progress presentations fill from the same rule", () => {
+  // The segment bar and the modern ring read this one number, so they cannot
+  // disagree about how far along a member is.
+  assert.equal(loyaltyFilledSegments(deriveLoyaltyStatus(0)), 0);
+  assert.equal(loyaltyFilledSegments(deriveLoyaltyStatus(6)), 6);
+  // Nine entries in, the reward is ready: the track reads full rather than 9.
+  assert.equal(loyaltyFilledSegments(deriveLoyaltyStatus(9)), 10);
+  // And a completed cycle starts the next one from empty.
+  assert.equal(loyaltyFilledSegments(deriveLoyaltyStatus(10)), 0);
+  assert.equal(loyaltyFilledSegments(deriveLoyaltyStatus(16)), 6);
 });

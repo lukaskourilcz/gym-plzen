@@ -130,6 +130,16 @@ export async function priceForNextEntry(
     : { priceCents: price, isFree: false };
 }
 
+/**
+ * How many of the cadence's steps read as complete. Shared by the classic
+ * segment bar and the modern ring so the two can never disagree: a member whose
+ * next entry is free sees a full track, which is the reward being ready rather
+ * than the cycle being over.
+ */
+export function loyaltyFilledSegments(status: LoyaltyStatus): number {
+  return status.nextEntryIsFree ? status.cadence : status.positionInCycle;
+}
+
 /** Czech pluralisation for "vstup" (1 / 2 to 4 / 5+). */
 export function pluralEntries(n: number): string {
   if (n === 1) return "vstup";

@@ -160,6 +160,37 @@
 }
 
 /*
+ * Loyalty progress has two presentations. Both are in the DOM so the markup is
+ * variant-neutral; `display: none` keeps the hidden one out of the
+ * accessibility tree as well as out of sight.
+ */
+[data-loyalty="ring"] {
+  display: none;
+}
+
+[data-design="modern"] [data-loyalty="ring"] {
+  display: block;
+}
+
+[data-design="modern"] [data-loyalty="segments"] {
+  display: none;
+}
+
+/*
+ * The ring sweeps in from empty. The target is a custom property so one
+ * keyframe serves every progress value; the reduced-motion rule above collapses
+ * the duration, which lands it on the final value immediately.
+ */
+@keyframes loyalty-ring {
+  from {
+    stroke-dashoffset: var(--ring-circumference);
+  }
+  to {
+    stroke-dashoffset: var(--ring-offset);
+  }
+}
+
+/*
  * Once the page has moved, the header separates itself from the content more
  * firmly. Its height deliberately does not change: `--header-h` is the single
  * source of truth for anchor offsets and the hero's reserved height, and a

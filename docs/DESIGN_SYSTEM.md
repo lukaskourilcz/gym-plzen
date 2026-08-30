@@ -107,6 +107,13 @@ Two constraints the modern rules must keep:
   for anchor scroll offsets and the hero's reserved height, so the scrolled state
   changes the border and elevation only.
 
+The loyalty widget is the reference for a genuinely different shape: the account
+page renders both the classic segment bar (`data-loyalty="segments"`) and the
+modern gold ring (`data-loyalty="ring"`), and CSS reveals one. Both are
+decorative and hidden from assistive technology, because the sentence above them
+already states the exact progress; both read their fill from the same
+`loyaltyFilledSegments` rule, so they cannot disagree.
+
 The switch itself sits in the header's right-hand cluster from `md` up and moves
 into the mobile menu below that: a content-driven breakpoint, because the brand
 lockup, booking button, account link and menu toggle already fill the bar at

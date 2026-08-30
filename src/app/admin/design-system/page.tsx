@@ -270,6 +270,13 @@ export default function DesignSystemPage() {
                 </table>
               </div>
               <p className="text-muted-foreground">
+                Kde se podoby liší tvarem, jsou v DOM obě a CSS jednu zobrazí:
+                věrnostní ukazatel v účtu je klasicky segmentový pás a v Moderní
+                zlatý prstenec. Skrytá podoba je{" "}
+                <code className="font-bold">display: none</code>, takže mizí i z
+                přístupnostního stromu.
+              </p>
+              <p className="text-muted-foreground">
                 Varianta je dočasná pomůcka pro srovnání s klientem. Po
                 schválení se Moderní stane výchozí a přepínač se odstraní.
               </p>
