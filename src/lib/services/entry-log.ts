@@ -1,4 +1,4 @@
-import { desc } from "drizzle-orm";
+import { and, desc, gte, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { entryLog } from "@/lib/db/schema";
 import type { EntryLog } from "@/lib/db/types";
@@ -66,4 +66,26 @@ export async function listRecentEntries(limit = 100): Promise<EntryLog[]> {
     .from(entryLog)
     .orderBy(desc(entryLog.occurredAt))
     .limit(limit);
+}
+
+/**
+ * Today's lock activity for the admin dashboard.
+ *
+ * The Nuki log records unlocks, not departures, so this answers "who came in
+ * and when" and never "who is inside right now".
+ */
+export async function listEntriesForDay(bounds: {
+  start: Date;
+  end: Date;
+}): Promise<EntryLog[]> {
+  return db
+    .select()
+    .from(entryLog)
+    .where(
+      and(
+        gte(entryLog.occurredAt, bounds.start),
+        lt(entryLog.occurredAt, bounds.end),
+      ),
+    )
+    .orderBy(desc(entryLog.occurredAt));
 }

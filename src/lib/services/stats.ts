@@ -1,7 +1,15 @@
-import { desc } from "drizzle-orm";
+import { and, desc, gte, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { reservation } from "@/lib/db/schema";
-import { dayOfWeek, minuteOfDay } from "@/lib/helpers/datetime";
+import type { Reservation } from "@/lib/db/types";
+import {
+  MINUTE_MS,
+  addDaysToDateKey,
+  dateKeyInTimeZone,
+  dayOfWeek,
+  localDateTimeToDate,
+  minuteOfDay,
+} from "@/lib/helpers/datetime";
 import { logger } from "@/lib/helpers/logger";
 
 /**
@@ -118,5 +126,113 @@ export function aggregateStats(
         : undefined,
     busiestHour:
       busiestHour && busiestHour.count > 0 ? busiestHour.label : undefined,
+  };
+}
+
+/** Statuses that represent a booking the gym is actually holding open. */
+const LIVE_STATUSES = new Set(["confirmed", "completed"]);
+
+export interface DayOverview {
+  /** Today's reservations in chronological order, cancellations included. */
+  reservations: Reservation[];
+  /** Money actually taken today. Free and membership entries are excluded. */
+  revenueCents: number;
+  /** Entries today that cost nothing: loyalty rewards or membership. */
+  freeEntries: number;
+  /** Rolling seven-day counts, so the operator sees a direction of travel. */
+  last7: number;
+  previous7: number;
+  cancelledLast7: number;
+  noShowLast7: number;
+}
+
+const EMPTY_DAY_OVERVIEW: DayOverview = {
+  reservations: [],
+  revenueCents: 0,
+  freeEntries: 0,
+  last7: 0,
+  previous7: 0,
+  cancelledLast7: 0,
+  noShowLast7: 0,
+};
+
+/** Prague midnight to midnight for the day the instant falls in. */
+export function pragueDayBounds(now: Date): { start: Date; end: Date } {
+  const key = dateKeyInTimeZone(now, TZ);
+  return {
+    start: localDateTimeToDate(key, 0, TZ),
+    end: localDateTimeToDate(addDaysToDateKey(key, 1), 0, TZ),
+  };
+}
+
+/**
+ * Everything the admin "Dnes" dashboard needs about one day, plus the two
+ * seven-day windows behind it. Resilient in the same way as `getStats`: an
+ * unavailable database yields an empty overview rather than a broken page.
+ */
+export async function getDayOverview(
+  now: Date = new Date(),
+): Promise<DayOverview> {
+  const { start, end } = pragueDayBounds(now);
+  const windowStart = new Date(start.getTime() - 13 * 24 * 60 * MINUTE_MS);
+
+  try {
+    const [today, window] = await Promise.all([
+      db
+        .select()
+        .from(reservation)
+        .where(
+          and(gte(reservation.startsAt, start), lt(reservation.startsAt, end)),
+        )
+        .orderBy(reservation.startsAt),
+      db
+        .select({
+          startsAt: reservation.startsAt,
+          status: reservation.status,
+        })
+        .from(reservation)
+        .where(
+          and(
+            gte(reservation.startsAt, windowStart),
+            lt(reservation.startsAt, end),
+          ),
+        ),
+    ]);
+    return aggregateDayOverview(today, window, now);
+  } catch (e) {
+    logger.warn("getDayOverview: empty (DB unavailable)", { error: String(e) });
+    return EMPTY_DAY_OVERVIEW;
+  }
+}
+
+/** Pure aggregation, so the numbers are testable without a database. */
+export function aggregateDayOverview(
+  today: Reservation[],
+  window: { startsAt: Date; status: string }[],
+  now: Date = new Date(),
+): DayOverview {
+  const { start, end } = pragueDayBounds(now);
+  const sevenAgo = new Date(start.getTime() - 6 * 24 * 60 * MINUTE_MS);
+  const fourteenAgo = new Date(start.getTime() - 13 * 24 * 60 * MINUTE_MS);
+
+  const live = today.filter((r) => LIVE_STATUSES.has(r.status));
+  const inLast7 = window.filter(
+    (r) => r.startsAt >= sevenAgo && r.startsAt < end,
+  );
+  const inPrevious7 = window.filter(
+    (r) => r.startsAt >= fourteenAgo && r.startsAt < sevenAgo,
+  );
+
+  return {
+    reservations: today,
+    // `null` means covered by a membership and `0` a loyalty reward: neither is
+    // revenue, and the tile's caption says so.
+    revenueCents: live.reduce((sum, r) => sum + (r.priceCents ?? 0), 0),
+    freeEntries: live.filter((r) => r.priceCents === null || r.priceCents === 0)
+      .length,
+    last7: inLast7.filter((r) => LIVE_STATUSES.has(r.status)).length,
+    previous7: inPrevious7.filter((r) => LIVE_STATUSES.has(r.status)).length,
+    cancelledLast7: inLast7.filter((r) => r.status === "cancelled").length,
+    noShowLast7: inLast7.filter((r) => r.status === "no_show").length,
   };
 }
