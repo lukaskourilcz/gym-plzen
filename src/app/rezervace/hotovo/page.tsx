@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { CheckCircle2, Clock3, TriangleAlert } from "lucide-react";
 import { getSession } from "@/lib/auth/guards";
-import { booking } from "@/lib/services";
+import { booking, loyalty } from "@/lib/services";
 import { footerProps, loadSiteContent } from "@/lib/content/site";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,18 @@ export default async function BookingDonePage({
       reservationId: params.reservation_id,
     }),
   ]);
+
+  /*
+   * Loyalty is members-only, and only worth showing once the reservation is
+   * actually confirmed : it is already counted by then, so the sentence reads
+   * "this was your Nth visit".
+   */
+  const loyaltySentence =
+    session && confirmation.state === "confirmed"
+      ? loyalty.loyaltyProgressSentence(
+          await loyalty.getLoyaltyStatus(session.user.id),
+        )
+      : "";
 
   const state = {
     confirmed: {
@@ -83,6 +95,11 @@ export default async function BookingDonePage({
               {state.title}
             </h1>
             <p className="mt-4 leading-7 text-muted-foreground">{state.body}</p>
+            {loyaltySentence ? (
+              <p className="mt-4 font-bold text-accent-foreground">
+                {loyaltySentence}
+              </p>
+            ) : null}
             {confirmation.state === "processing" ? (
               <Notice className="mt-7 text-left" role="status">
                 Stripe odešle konečný stav zabezpečeným webhookem.

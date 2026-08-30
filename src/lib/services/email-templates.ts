@@ -95,6 +95,7 @@ const TEST_VARIABLES: Record<string, string> = {
   duration: "75 minut",
   price: "290 Kč",
   reason: "Úprava provozní doby",
+  loyalty: "Tohle byla vaše 7. návštěva, do vstupu zdarma zbývají 3 vstupy.",
 };
 
 /** Send the selected template with explicit, clearly fictional test values. */

@@ -1,4 +1,4 @@
-import { members } from "@/lib/services";
+import { loyalty, members } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
 import { withDemoFallback } from "@/lib/demo/dummy";
 import { DemoBanner } from "@/components/admin/demo-banner";
@@ -23,6 +23,16 @@ export default async function MembersPage() {
     (d) => d.members,
   );
 
+  /*
+   * One grouped query for the whole page rather than a count per row. Demo data
+   * has no reservations to group, so the columns simply read zero there.
+   */
+  const entryCounts = demo
+    ? new Map<string, number>()
+    : await loyalty
+        .countEntriesForUsers(rows.map((member) => member.user.id))
+        .catch(() => new Map<string, number>());
+
   return (
     <div>
       <PageHeader title="Členové" />
@@ -35,22 +45,35 @@ export default async function MembersPage() {
             <TableHead>E-mail</TableHead>
             <TableHead>Telefon</TableHead>
             <TableHead>Registrace</TableHead>
+            <TableHead>Návštěvy</TableHead>
+            <TableHead>Do zdarma</TableHead>
             <TableHead>Role</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map(({ user, profile }) => (
-            <TableRow key={user.id}>
-              <TableCell>{user.name}</TableCell>
-              <TableCell>{user.email}</TableCell>
-              <TableCell>{profile?.phone ?? "Neuvedeno"}</TableCell>
-              <TableCell>{formatDateTime(user.createdAt)}</TableCell>
-              <TableCell>{user.role ?? "member"}</TableCell>
-            </TableRow>
-          ))}
+          {rows.map(({ user, profile }) => {
+            const status = loyalty.deriveLoyaltyStatus(
+              entryCounts.get(user.id) ?? 0,
+            );
+            return (
+              <TableRow key={user.id}>
+                <TableCell>{user.name}</TableCell>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>{profile?.phone ?? "Neuvedeno"}</TableCell>
+                <TableCell>{formatDateTime(user.createdAt)}</TableCell>
+                <TableCell>{status.totalEntries}</TableCell>
+                <TableCell>
+                  {status.nextEntryIsFree
+                    ? "další zdarma"
+                    : status.entriesUntilFree}
+                </TableCell>
+                <TableCell>{user.role ?? "member"}</TableCell>
+              </TableRow>
+            );
+          })}
           {rows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="text-muted-foreground">
+              <TableCell colSpan={7} className="text-muted-foreground">
                 Zatím žádní členové.
               </TableCell>
             </TableRow>

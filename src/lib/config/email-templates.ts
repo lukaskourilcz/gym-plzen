@@ -61,11 +61,11 @@ export const EMAIL_TEMPLATE_DEFINITIONS: readonly EmailTemplateDefinition[] = [
     label: "Potvrzení rezervace",
     description:
       "Odešle se po úspěšné platbě nebo při bezplatném věrnostním vstupu.",
-    variables: ["{name}", "{time}", "{duration}", "{price}"],
+    variables: ["{name}", "{time}", "{duration}", "{price}", "{loyalty}"],
     delivery: "application",
     fallback: {
       subject: "Potvrzení rezervace | NAMASTÉ Private Gym",
-      body: "Ahoj {name},\n\nvaše rezervace je potvrzená.\n\nTermín: {time}\nDélka: {duration}\nCena: {price}\n\nPřed začátkem rezervace vám pošleme osobní vstupní kód.\n\nNAMASTÉ Private Gym",
+      body: "Ahoj {name},\n\nvaše rezervace je potvrzená.\n\nTermín: {time}\nDélka: {duration}\nCena: {price}\n\n{loyalty}\n\nPřed začátkem rezervace vám pošleme osobní vstupní kód.\n\nNAMASTÉ Private Gym",
     },
   },
   {
@@ -116,6 +116,17 @@ export function isSupabaseAuthEmailTemplate(id: EmailTemplateId): boolean {
   return getEmailTemplateDefinition(id).delivery === "supabase_auth";
 }
 
+/**
+ * Collapse the gap a variable leaves behind when it resolves to nothing.
+ * `{loyalty}` is empty for guests, and without this their confirmation would
+ * carry a stray blank block where a member reads a sentence. Runs of two or
+ * more newlines become exactly one paragraph break; single newlines, which
+ * separate the reservation detail lines, are untouched.
+ */
+function collapseBlankParagraphs(value: string): string {
+  return value.replace(/[^\S\n]*\n(?:[^\S\n]*\n)+/g, "\n\n").trim();
+}
+
 /** Plain text only: template authoring never injects arbitrary HTML into mail. */
 export function renderEmailTemplateText(
   template: EmailTemplate,
@@ -125,7 +136,10 @@ export function renderEmailTemplateText(
     value.replace(/\{([a-z_]+)\}/g, (token, key: string) =>
       Object.hasOwn(variables, key) ? variables[key]! : token,
     );
-  return { subject: replace(template.subject), body: replace(template.body) };
+  return {
+    subject: replace(template.subject).trim(),
+    body: collapseBlankParagraphs(replace(template.body)),
+  };
 }
 
 function escapeEmailHtml(value: string): string {

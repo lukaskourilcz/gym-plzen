@@ -52,6 +52,9 @@ export type BookingConfirmation =
       reservationId: string;
       priceCents: number;
       currency: string;
+      /** Slot boundaries, so the page can offer a calendar entry. */
+      startsAt: Date;
+      endsAt: Date;
     }
   | { state: "processing"; reservationId: string }
   | { state: "invalid" };
@@ -289,6 +292,8 @@ export async function getBookingConfirmation(params: {
             reservationId,
             priceCents: session.amount_total ?? reservation.priceCents ?? 0,
             currency: session.currency ?? "czk",
+            startsAt: reservation.startsAt,
+            endsAt: reservation.endsAt,
           }
         : { state: "processing", reservationId };
     } catch {
@@ -317,6 +322,8 @@ export async function getBookingConfirmation(params: {
         reservationId: reservation.id,
         priceCents: 0,
         currency: "czk",
+        startsAt: reservation.startsAt,
+        endsAt: reservation.endsAt,
       };
     }
   }

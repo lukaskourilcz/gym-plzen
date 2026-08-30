@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { LotusMark } from "@/components/site/brand";
-import type { LoyaltyStatus } from "@/lib/services/loyalty";
+import { pluralEntries, type LoyaltyStatus } from "@/lib/services/loyalty";
 
 /**
  * Customer-facing loyalty widget. Shows how many entries the member has and how
@@ -75,11 +75,4 @@ export function LoyaltyWidget({ status }: { status: LoyaltyStatus }) {
       </div>
     </div>
   );
-}
-
-/** Czech pluralisation for "vstup" (1 / 2–4 / 5+). */
-function pluralEntries(n: number): string {
-  if (n === 1) return "vstup";
-  if (n >= 2 && n <= 4) return "vstupy";
-  return "vstupů";
 }

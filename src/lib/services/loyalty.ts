@@ -25,7 +25,7 @@ export interface LoyaltyStatus {
   totalEntries: number;
   /** Position within the current cycle: 0…FREE_ENTRY_EVERY-1. */
   positionInCycle: number;
-  /** Entries remaining until the next free one. 0 means the next entry is free. */
+  /** Entries the member still has to make to earn the next free one, 1 to N. */
   entriesUntilFree: number;
   /** Total free entries earned so far. */
   freeEntriesEarned: number;
@@ -49,6 +49,32 @@ export async function countEntries(userId: string): Promise<number> {
   return row?.value ?? 0;
 }
 
+/**
+ * Entry counts for many members at once. The admin member list needs a number
+ * per row, and one grouped query keeps that from turning into an N+1.
+ * Members with no counted entry are simply absent from the map.
+ */
+export async function countEntriesForUsers(
+  userIds: string[],
+): Promise<Map<string, number>> {
+  if (userIds.length === 0) return new Map();
+  const rows = await db
+    .select({ userId: reservation.userId, value: count() })
+    .from(reservation)
+    .where(
+      and(
+        inArray(reservation.userId, userIds),
+        inArray(reservation.status, [...COUNTED_STATUSES]),
+      ),
+    )
+    .groupBy(reservation.userId);
+  return new Map(
+    rows.flatMap((row) =>
+      row.userId ? [[row.userId, row.value] as const] : [],
+    ),
+  );
+}
+
 /** Compute the member's loyalty status from their entry count. */
 export async function getLoyaltyStatus(userId: string): Promise<LoyaltyStatus> {
   const totalEntries = await countEntries(userId);
@@ -61,8 +87,13 @@ export async function getLoyaltyStatus(userId: string): Promise<LoyaltyStatus> {
  */
 export function deriveLoyaltyStatus(totalEntries: number): LoyaltyStatus {
   const positionInCycle = totalEntries % FREE_ENTRY_EVERY;
-  const entriesUntilFree =
-    (FREE_ENTRY_EVERY - positionInCycle) % FREE_ENTRY_EVERY;
+  /*
+   * Counts the remaining entries *including* the free one, so it is never zero:
+   * right after a free entry the member is a full cadence away from the next.
+   * A modulo here would read "0 remaining" while the next entry costs full
+   * price.
+   */
+  const entriesUntilFree = FREE_ENTRY_EVERY - positionInCycle;
   return {
     totalEntries,
     positionInCycle,
@@ -97,4 +128,41 @@ export async function priceForNextEntry(
   return status.nextEntryIsFree
     ? { priceCents: 0, isFree: true }
     : { priceCents: price, isFree: false };
+}
+
+/** Czech pluralisation for "vstup" (1 / 2 to 4 / 5+). */
+export function pluralEntries(n: number): string {
+  if (n === 1) return "vstup";
+  if (n >= 2 && n <= 4) return "vstupy";
+  return "vstupů";
+}
+
+/**
+ * One Czech sentence about the member's loyalty progress, for the confirmation
+ * e-mail and the confirmation page. Returns an empty string when there is
+ * nothing truthful to say : a guest booking has no account to count against, so
+ * the surrounding template must collapse the empty paragraph.
+ *
+ * Call it with the status *after* the reservation being confirmed is counted.
+ */
+export function loyaltyProgressSentence(status: LoyaltyStatus): string {
+  const { totalEntries, positionInCycle, entriesUntilFree, cadence } = status;
+  if (totalEntries <= 0) return "";
+
+  const visit = `Tohle byla vaše ${totalEntries}. návštěva`;
+
+  // A completed cycle: this very entry was the free one.
+  if (positionInCycle === 0) {
+    return `${visit} a byla zdarma. Další vstup zdarma vás čeká po ${cadence} návštěvách.`;
+  }
+  if (status.nextEntryIsFree) {
+    return `${visit}. Příští vstup máte zdarma.`;
+  }
+  /*
+   * Czech agreement: the plural verb goes with 2 to 4, while 1 and the genitive
+   * plural from 5 up both take the singular ("zbývá 9 vstupů").
+   */
+  const verb =
+    entriesUntilFree >= 2 && entriesUntilFree <= 4 ? "zbývají" : "zbývá";
+  return `${visit}, do vstupu zdarma ${verb} ${entriesUntilFree} ${pluralEntries(entriesUntilFree)}.`;
 }

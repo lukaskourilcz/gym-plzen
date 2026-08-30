@@ -9,6 +9,7 @@ import {
 } from "@/lib/integrations/whatsapp";
 import { sendSms } from "@/lib/integrations/gosms";
 import { getSetting } from "./cms";
+import { getLoyaltyStatus, loyaltyProgressSentence } from "./loyalty";
 import {
   DEFAULT_SMS_ACCESS_TEMPLATE,
   SMS_ACCESS_TEMPLATE_KEY,
@@ -229,11 +230,22 @@ export async function sendReservationConfirmation(params: {
     .limit(1);
   if (alreadySent) return;
 
+  /*
+   * Loyalty is members-only: a guest booking has no account to count against,
+   * so the variable resolves to an empty string and the renderer collapses the
+   * paragraph. By the time fulfillment runs, this reservation is already
+   * confirmed, so the count includes it : "this was your Nth visit".
+   */
+  const loyalty = params.userId
+    ? loyaltyProgressSentence(await getLoyaltyStatus(params.userId))
+    : "";
+
   const result = await sendTransactionalEmail({
     id: "reservation_confirmation",
     to: params.email,
     variables: {
       name: params.name || "zákazníku",
+      loyalty,
       time: formatDateTime(params.startsAt),
       duration: `${Math.round(
         (params.endsAt.getTime() - params.startsAt.getTime()) / 60_000,
