@@ -160,6 +160,18 @@
 }
 
 /*
+ * The variant switch is an internal preview tool, not a visitor-facing control.
+ * It is hidden until this browser opens `/dev`, which stamps `data-preview`.
+ * Gating in CSS rather than on the server keeps the public pages ISR, and
+ * `display: none` also takes the control out of the tab order and the
+ * accessibility tree. The selector outranks the responsive display utilities on
+ * the same element, so no `!important` is needed.
+ */
+:root:not([data-preview="on"]) [data-preview-only] {
+  display: none;
+}
+
+/*
  * Loyalty progress has two presentations. Both are in the DOM so the markup is
  * variant-neutral; `display: none` keeps the hidden one out of the
  * accessibility tree as well as out of sight.

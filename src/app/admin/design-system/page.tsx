@@ -247,6 +247,15 @@ export default function DesignSystemPage() {
                 v <code className="font-bold">globals.css</code>. Žádné nové
                 barvy, gradienty ani jiné komponenty.
               </p>
+              <p className="text-muted-foreground">
+                Přepínač je interní nástroj a návštěvníci ho nevidí. Zobrazí se
+                jen prohlížeči, který otevřel{" "}
+                <code className="font-bold">/dev</code>; ta stránka nastaví
+                cookie <code className="font-bold">ns_preview</code> a skript
+                doplní <code className="font-bold">data-preview</code>, podle
+                kterého CSS odkryje prvky s{" "}
+                <code className="font-bold">data-preview-only</code>.
+              </p>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[34rem] text-left text-sm">
                   <thead>

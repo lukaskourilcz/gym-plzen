@@ -13,9 +13,11 @@ async function setVariant(
   variant: "classic" | "modern",
   baseURL: string,
 ) {
-  await page
-    .context()
-    .addCookies([{ name: "ns_design", value: variant, url: baseURL }]);
+  await page.context().addCookies([
+    { name: "ns_design", value: variant, url: baseURL },
+    // Unlock the switch too: the audit measures it, and a visitor never sees it.
+    { name: "ns_preview", value: "on", url: baseURL },
+  ]);
 }
 
 /**
@@ -141,7 +143,11 @@ test("classic typography is exactly what was approved, at every step", async ({
   }
 });
 
-test("the switch keeps AA contrast in both of its states", async ({ page }) => {
+test("the switch keeps AA contrast in both of its states", async ({
+  page,
+  baseURL,
+}) => {
+  await setVariant(page, "classic", baseURL!);
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/", { waitUntil: "domcontentloaded" });
 
@@ -239,6 +245,7 @@ test("reduced motion leaves the modern hover shift and ring inert", async ({
   const page = await context.newPage();
   await context.addCookies([
     { name: "ns_design", value: "modern", url: baseURL! },
+    { name: "ns_preview", value: "on", url: baseURL! },
   ]);
   await page.goto("/", { waitUntil: "domcontentloaded" });
 
@@ -255,7 +262,9 @@ test("reduced motion leaves the modern hover shift and ring inert", async ({
 
 test("the switch has a visible focus indicator and survives 200% zoom", async ({
   page,
+  baseURL,
 }) => {
+  await setVariant(page, "classic", baseURL!);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/", { waitUntil: "domcontentloaded" });
 

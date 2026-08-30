@@ -83,14 +83,18 @@ Pokud prostředí používá vlastní Chromium, nastav `PW_CHROMIUM_PATH`. Jinak
 
 ## 4. Varianty vzhledu a věrnostní ukazatel
 
-`design-variant.spec.ts` a `design-variant-audit.spec.ts` patří k produkčnímu
-smoke testu (režim 1): ověřují přepínání, persistenci, obě varianty na osmi
-šířkách, kontrast, focus, 200% zoom a reduced motion.
+`design-preview-gate.spec.ts`, `design-variant.spec.ts` a
+`design-variant-audit.spec.ts` patří k produkčnímu smoke testu (režim 1).
+Gate spec ověřuje, že běžný návštěvník přepínač nikde nevidí ani na něj
+nedosáhne klávesnicí a že ho odemkne až otevření `/dev`. Zbylé dva ověřují
+přepínání, persistenci, obě varianty na osmi šířkách, kontrast, focus, 200%
+zoom a reduced motion; obě si proto nastavují cookie `ns_preview`.
 
 ```bash
 npm run build
 PORT=3131 npm start
 E2E_PORT=3131 npx playwright test \
+  tests/e2e/design-preview-gate.spec.ts \
   tests/e2e/design-variant.spec.ts tests/e2e/design-variant-audit.spec.ts
 ```
 

@@ -108,11 +108,16 @@ export function SiteHeader({
         <div className="ml-auto flex items-center gap-2 lg:ml-0 lg:justify-self-end">
           {/*
            * Content-driven breakpoint: the brand lockup, booking button,
-           * account link and menu toggle already fill the bar at `sm`, so the
+           * account link and menu toggle already fill the bar at `md`, so the
            * switch only joins them from `md` up and lives in the mobile menu
            * below that. Showing it at `sm` overflows the row.
+           *
+           * The wrapper carries the preview gate so the switch keeps its own
+           * responsive display classes untouched.
            */}
-          <DesignVariantSwitch className="hidden md:flex" />
+          <div data-preview-only className="hidden md:flex">
+            <DesignVariantSwitch />
+          </div>
           {/* Visible at every width: on mobile the hero no longer carries a
               booking action of its own above the fold. */}
           <Button
@@ -175,7 +180,7 @@ export function SiteHeader({
             </Button>
           </div>
           {/* Only below `md`: from there up the header bar carries the switch. */}
-          <div className="mt-3 flex justify-center md:hidden">
+          <div data-preview-only className="mt-3 flex justify-center md:hidden">
             <DesignVariantSwitch />
           </div>
         </div>

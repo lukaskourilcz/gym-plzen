@@ -4,7 +4,9 @@ import {
   DEFAULT_DESIGN_VARIANT,
   DESIGN_VARIANT_INIT_SCRIPT,
   parseDesignVariant,
+  readDesignPreviewFromCookies,
   readDesignVariantFromCookies,
+  serialiseDesignPreviewCookie,
   serialiseDesignVariantCookie,
 } from "../../src/lib/config/design-variant";
 
@@ -45,9 +47,35 @@ test("the cookie is scoped site-wide and only Secure over https", () => {
   );
 });
 
+test("the switch stays locked until this browser has opened /dev", () => {
+  assert.equal(readDesignPreviewFromCookies("ns_preview=on"), true);
+  assert.equal(readDesignPreviewFromCookies("a=1; ns_preview=on; b=2"), true);
+  // Anything short of the exact unlock value leaves the control hidden.
+  assert.equal(readDesignPreviewFromCookies("ns_preview=off"), false);
+  assert.equal(readDesignPreviewFromCookies("ns_preview=ON"), false);
+  assert.equal(readDesignPreviewFromCookies("other_ns_preview=on"), false);
+  assert.equal(readDesignPreviewFromCookies(""), false);
+  assert.equal(readDesignPreviewFromCookies(null), false);
+});
+
+test("turning the preview off expires its cookie", () => {
+  assert.match(
+    serialiseDesignPreviewCookie(true, true),
+    /^ns_preview=on; path=\/; max-age=31536000; samesite=lax; secure$/,
+  );
+  assert.equal(
+    serialiseDesignPreviewCookie(false, false),
+    "ns_preview=; path=/; max-age=0; samesite=lax",
+  );
+});
+
 test("the inline script only ever stamps a known variant", () => {
   // It runs before hydration, so a stray value must never reach `data-design`.
   assert.match(DESIGN_VARIANT_INIT_SCRIPT, /\(classic\|modern\)/);
   assert.match(DESIGN_VARIANT_INIT_SCRIPT, /dataset\.design/);
   assert.match(DESIGN_VARIANT_INIT_SCRIPT, /catch/);
+  // It also decides the switch's visibility before paint, so the control never
+  // flashes into view for an ordinary visitor.
+  assert.match(DESIGN_VARIANT_INIT_SCRIPT, /dataset\.preview/);
+  assert.match(DESIGN_VARIANT_INIT_SCRIPT, /ns_preview=on/);
 });

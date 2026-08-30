@@ -6,8 +6,11 @@ Aktualizováno: 30. 8. 2026
 
 **Nové v této session (větev `claude/mobbing-feature-ideas-kens00`).** Veřejný
 web umí dvě varianty vzhledu: schválenou **Klasickou** a novou **Moderní**.
-Přepínač je vpravo nahoře v hlavičce (od `md` výš), na užších displejích v
-mobilním menu. Volba se ukládá do cookie `ns_design` a inline skript ji ještě
+Přepínač je **skrytý před návštěvníky**: odemkne se až otevřením
+`namastegym.cz/dev`, což nastaví cookie `ns_preview` jen v daném prohlížeči.
+Stránka `/dev` je `noindex`, mimo sitemapu i robots. Po odemčení je přepínač
+vpravo nahoře v hlavičce (od `md` výš), na užších displejích v mobilním menu;
+na `/dev` jde náhled zase vypnout. Volba se ukládá do cookie `ns_design` a inline skript ji ještě
 před vykreslením propíše jako `data-design` na `<html>`, takže se nikdy
 neprobliskne druhý vzhled a úvodní stránka si drží ISR. Rozdíly jsou výhradně v
 CSS pod `[data-design="modern"]`; klasický vzhled se nezměnil (e2e to ověřuje

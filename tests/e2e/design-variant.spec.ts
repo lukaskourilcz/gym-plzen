@@ -7,6 +7,13 @@ import { test, expect } from "@playwright/test";
  * and the CSS actually reacting to the attribute.
  */
 test.describe("Design variant switch", () => {
+  // The control is hidden until a browser opens /dev. These tests are about the
+  // switch itself, so they start from an unlocked browser.
+  test.beforeEach(async ({ context, baseURL }) => {
+    await context.addCookies([
+      { name: "ns_preview", value: "on", url: baseURL! },
+    ]);
+  });
   test("defaults to classic, switches, and survives reload and navigation", async ({
     page,
   }) => {

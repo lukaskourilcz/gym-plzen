@@ -114,10 +114,18 @@ decorative and hidden from assistive technology, because the sentence above them
 already states the exact progress; both read their fill from the same
 `loyaltyFilledSegments` rule, so they cannot disagree.
 
-The switch itself sits in the header's right-hand cluster from `md` up and moves
-into the mobile menu below that: a content-driven breakpoint, because the brand
-lockup, booking button, account link and menu toggle already fill the bar at
-`sm`. It is a native radio group, so arrow keys work and the group has one
+The switch is internal tooling and is hidden from visitors. It appears only for
+a browser that has opened `/dev`, which sets the `ns_preview` cookie; the same
+inline script stamps `data-preview="on"`, and CSS reveals anything marked
+`data-preview-only`. `display: none` keeps the hidden control out of the tab
+order and the accessibility tree, and gating in CSS rather than on the server is
+what lets the public pages stay ISR. `/dev` is `noindex` and excluded from both
+the sitemap and `robots.txt`.
+
+When unlocked, the switch sits in the header's right-hand cluster from `md` up
+and moves into the mobile menu below that: a content-driven breakpoint, because
+the brand lockup, booking button, account link and menu toggle already fill the
+bar at `sm`. It is a native radio group, so arrow keys work and the group has one
 accessible name. The administration does not use variants.
 
 ## Colour
