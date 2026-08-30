@@ -2,13 +2,18 @@ import type { Metadata } from "next";
 import { CheckCircle2, Clock3, TriangleAlert } from "lucide-react";
 import { getSession } from "@/lib/auth/guards";
 import { booking, loyalty } from "@/lib/services";
-import { footerProps, loadSiteContent } from "@/lib/content/site";
+import {
+  footerProps,
+  loadSiteContent,
+  publicAddress,
+} from "@/lib/content/site";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { BookingConversionTracker } from "@/components/site/booking-conversion-tracker";
+import { CalendarActions } from "@/components/site/calendar-actions";
 
 export const metadata: Metadata = {
   title: "Stav rezervace",
@@ -104,6 +109,16 @@ export default async function BookingDonePage({
               <Notice className="mt-7 text-left" role="status">
                 Stripe odešle konečný stav zabezpečeným webhookem.
               </Notice>
+            ) : null}
+            {confirmation.state === "confirmed" ? (
+              <CalendarActions
+                className="mt-7 justify-center"
+                reservationId={confirmation.reservationId}
+                startsAt={confirmation.startsAt}
+                endsAt={confirmation.endsAt}
+                address={publicAddress(content.get("contact.address"))}
+                sessionId={params.session_id}
+              />
             ) : null}
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               {session ? <Button href="/account">Můj účet</Button> : null}

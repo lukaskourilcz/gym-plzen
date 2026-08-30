@@ -8,7 +8,11 @@ import {
   type EmailTemplateId,
   renderEmailTemplateText,
 } from "@/lib/config/email-templates";
-import { sendEmail, type SendEmailResult } from "@/lib/integrations/resend";
+import {
+  sendEmail,
+  type EmailAttachment,
+  type SendEmailResult,
+} from "@/lib/integrations/resend";
 import {
   isSupabaseAuthTemplateSyncConfigured,
   syncSupabaseAuthEmailTemplate,
@@ -64,6 +68,7 @@ export async function sendTransactionalEmail(params: {
   id: EmailTemplateId;
   to: string;
   variables: Record<string, string>;
+  attachments?: EmailAttachment[];
 }): Promise<SendEmailResult> {
   const template = await getEmailTemplate(params.id);
   const rendered = renderEmailTemplateText(template, params.variables);
@@ -76,6 +81,7 @@ export async function sendTransactionalEmail(params: {
     to: params.to,
     subject: rendered.subject,
     text: rendered.body,
+    attachments: params.attachments,
     html: emailTextToHtml(
       rendered.body,
       definition.delivery === "supabase_auth"

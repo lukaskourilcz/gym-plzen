@@ -1,6 +1,10 @@
 import { requireUser } from "@/lib/auth/guards";
 import { loyalty, reservations, rescheduling } from "@/lib/services";
-import { footerProps, loadSiteContent } from "@/lib/content/site";
+import {
+  footerProps,
+  loadSiteContent,
+  publicAddress,
+} from "@/lib/content/site";
 import {
   formatDate,
   formatMoney,
@@ -17,6 +21,7 @@ import { SiteFooter } from "@/components/site/site-footer";
 import { DEMO_CUSTOMER_ID } from "@/lib/auth/demo";
 import { deriveLoyaltyStatus } from "@/lib/services/loyalty";
 import { SignOutButton } from "@/components/admin/sign-out-button";
+import { CalendarActions } from "@/components/site/calendar-actions";
 
 export const metadata = { title: "Můj účet" };
 
@@ -147,6 +152,16 @@ export default async function AccountPage({
                       </Button>
                     ) : null}
                   </div>
+                  {/* Demo reservations have no row behind them to authorise. */}
+                  {isDemoCustomer ? null : (
+                    <CalendarActions
+                      className="mt-3"
+                      reservationId={r.id}
+                      startsAt={r.startsAt}
+                      endsAt={r.endsAt}
+                      address={publicAddress(content.get("contact.address"))}
+                    />
+                  )}
                 </div>
               ))}
               {upcoming.length === 0 && (

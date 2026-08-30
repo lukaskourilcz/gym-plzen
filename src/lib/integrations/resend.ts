@@ -21,12 +21,19 @@ function client(): Resend {
   return cached;
 }
 
+/** A file sent with the message. `content` is base64, as Resend expects. */
+export interface EmailAttachment {
+  filename: string;
+  content: string;
+}
+
 export interface SendEmailParams {
   to: string | string[];
   subject: string;
   html: string;
   text?: string;
   replyTo?: string;
+  attachments?: EmailAttachment[];
 }
 
 export interface SendEmailResult {
@@ -55,6 +62,7 @@ export async function sendEmail(
       html: params.html,
       text: params.text,
       replyTo: params.replyTo,
+      attachments: params.attachments?.length ? params.attachments : undefined,
     });
     if (error) {
       logger.error(error, { where: "resend.sendEmail" });

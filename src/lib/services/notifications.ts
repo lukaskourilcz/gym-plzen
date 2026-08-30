@@ -8,8 +8,10 @@ import {
   sendTextMessage,
 } from "@/lib/integrations/whatsapp";
 import { sendSms } from "@/lib/integrations/gosms";
-import { getSetting } from "./cms";
+import { getSetting, getText } from "./cms";
 import { getLoyaltyStatus, loyaltyProgressSentence } from "./loyalty";
+import { buildIcs, reservationCalendarEvent } from "@/lib/helpers/ics";
+import { publicAddress } from "@/lib/content/site";
 import {
   DEFAULT_SMS_ACCESS_TEMPLATE,
   SMS_ACCESS_TEMPLATE_KEY,
@@ -240,9 +242,29 @@ export async function sendReservationConfirmation(params: {
     ? loyaltyProgressSentence(await getLoyaltyStatus(params.userId))
     : "";
 
+  /*
+   * The confirmation carries the slot as a calendar file, so it lands in the
+   * customer's calendar straight from the inbox. It holds the slot only: an
+   * access code must never travel into a synced calendar.
+   */
+  const ics = buildIcs(
+    reservationCalendarEvent({
+      reservationId: params.reservationId,
+      startsAt: params.startsAt,
+      endsAt: params.endsAt,
+      address: publicAddress(await getText("contact.address").catch(() => "")),
+    }),
+  );
+
   const result = await sendTransactionalEmail({
     id: "reservation_confirmation",
     to: params.email,
+    attachments: [
+      {
+        filename: "rezervace.ics",
+        content: Buffer.from(ics, "utf8").toString("base64"),
+      },
+    ],
     variables: {
       name: params.name || "zákazníku",
       loyalty,
