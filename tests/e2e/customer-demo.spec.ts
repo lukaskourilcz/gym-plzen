@@ -16,7 +16,8 @@ test("demo customer credentials open the customer account without Supabase", asy
   await expect(page.getByText("Nadcházející rezervace")).toBeVisible();
   await expect(
     page
-      .getByText(/\d{1,2}\. \d{1,2}\. \d{4} · \d{1,2}:00–\d{1,2}:\d{2}/)
+      // The range dash is flanked by non-breaking spaces, so match them loosely.
+      .getByText(/\d{1,2}\. \d{1,2}\. \d{4} · \d{1,2}:00\s*–\s*\d{1,2}:\d{2}/)
       .first(),
   ).toBeVisible();
 });

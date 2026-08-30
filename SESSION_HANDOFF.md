@@ -1,8 +1,31 @@
 # Předání session
 
-Aktualizováno: 1. 8. 2026
+Aktualizováno: 30. 8. 2026
 
 ## Stav
+
+**Nové v této session (větev `claude/mobbing-feature-ideas-kens00`).** Veřejný
+web umí dvě varianty vzhledu: schválenou **Klasickou** a novou **Moderní**.
+Přepínač je vpravo nahoře v hlavičce (od `md` výš), na užších displejích v
+mobilním menu. Volba se ukládá do cookie `ns_design` a inline skript ji ještě
+před vykreslením propíše jako `data-design` na `<html>`, takže se nikdy
+neprobliskne druhý vzhled a úvodní stránka si drží ISR. Rozdíly jsou výhradně v
+CSS pod `[data-design="modern"]`; klasický vzhled se nezměnil (e2e to ověřuje
+přesnými velikostmi 36/48/60 px). Varianta je dočasná pomůcka: po schválení se
+Moderní stane výchozí a přepínač se odstraní.
+
+Věrnostní program je vidět všude, kde dává smysl: v potvrzovacím e-mailu přes
+novou proměnnou `{loyalty}` (u hostů se prázdný odstavec zkolabuje), na stránce
+po rezervaci, ve sloupcích „Návštěvy“ a „Do zdarma“ v administraci → Členové a
+v účtu jako segmentový pás (Klasický) nebo zlatý prstenec (Moderní).
+
+Rezervaci lze přidat do kalendáře: `.ics` z autorizované route
+`/api/reservations/[id]/calendar.ics`, odkaz na Google Kalendář a stejná příloha
+v potvrzovacím e-mailu. Do kalendáře se nikdy nedostane vstupní kód.
+
+Administrace má místo obecného „Přehledu“ provozní stránku **Dnes**: dnešní
+program se stavy, dnešní tržba (počítá jen skutečně zaplacené vstupy), dnešní
+odemčení ze zámku, sedmidenní trend a feed toho, co vyžaduje pozornost.
 
 Klientská revize veřejného webu je implementovaná a připravená k prezentaci.
 Veřejný header používá přesné dodané logo v horizontálním uspořádání: lotus

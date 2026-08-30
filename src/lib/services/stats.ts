@@ -177,44 +177,38 @@ export async function getDayOverview(
   const windowStart = new Date(start.getTime() - 13 * 24 * 60 * MINUTE_MS);
 
   try {
-    const [today, window] = await Promise.all([
-      db
-        .select()
-        .from(reservation)
-        .where(
-          and(gte(reservation.startsAt, start), lt(reservation.startsAt, end)),
-        )
-        .orderBy(reservation.startsAt),
-      db
-        .select({
-          startsAt: reservation.startsAt,
-          status: reservation.status,
-        })
-        .from(reservation)
-        .where(
-          and(
-            gte(reservation.startsAt, windowStart),
-            lt(reservation.startsAt, end),
-          ),
+    // One query: the fourteen-day window already contains today, so the day is
+    // a filter over these rows rather than a second round trip.
+    const window = await db
+      .select()
+      .from(reservation)
+      .where(
+        and(
+          gte(reservation.startsAt, windowStart),
+          lt(reservation.startsAt, end),
         ),
-    ]);
-    return aggregateDayOverview(today, window, now);
+      )
+      .orderBy(reservation.startsAt);
+    return aggregateDayOverview(window, now);
   } catch (e) {
     logger.warn("getDayOverview: empty (DB unavailable)", { error: String(e) });
     return EMPTY_DAY_OVERVIEW;
   }
 }
 
-/** Pure aggregation, so the numbers are testable without a database. */
+/**
+ * Pure aggregation over the fourteen-day window, so the numbers are testable
+ * without a database. Rows are expected in chronological order.
+ */
 export function aggregateDayOverview(
-  today: Reservation[],
-  window: { startsAt: Date; status: string }[],
+  window: Reservation[],
   now: Date = new Date(),
 ): DayOverview {
   const { start, end } = pragueDayBounds(now);
   const sevenAgo = new Date(start.getTime() - 6 * 24 * 60 * MINUTE_MS);
   const fourteenAgo = new Date(start.getTime() - 13 * 24 * 60 * MINUTE_MS);
 
+  const today = window.filter((r) => r.startsAt >= start && r.startsAt < end);
   const live = today.filter((r) => LIVE_STATUSES.has(r.status));
   const inLast7 = window.filter(
     (r) => r.startsAt >= sevenAgo && r.startsAt < end,

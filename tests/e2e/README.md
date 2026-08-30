@@ -80,3 +80,23 @@ Pokud prostředí používá vlastní Chromium, nastav `PW_CHROMIUM_PATH`. Jinak
   projekt nebyl potvrzený jako projekt této aplikace.
 - Aktuální blokátory a další kroky jsou v kořenovém `SESSION_HANDOFF.md` a
   `NEEDED.md`.
+
+## 4. Varianty vzhledu a věrnostní ukazatel
+
+`design-variant.spec.ts` a `design-variant-audit.spec.ts` patří k produkčnímu
+smoke testu (režim 1): ověřují přepínání, persistenci, obě varianty na osmi
+šířkách, kontrast, focus, 200% zoom a reduced motion.
+
+```bash
+npm run build
+PORT=3131 npm start
+E2E_PORT=3131 npx playwright test \
+  tests/e2e/design-variant.spec.ts tests/e2e/design-variant-audit.spec.ts
+```
+
+`loyalty-variant.spec.ts` potřebuje demo přihlášení, takže patří do režimu 2
+(dev server s `DEMO_AUTH_ENABLED`).
+
+**Pozor:** nikdy nespouštěj `npm run build` proti běžícímu `npm start` ze
+stejného `.next`. Server pak servíruje HTML s hashe chunků, které už na disku
+nejsou, stránka se nezhydratuje a testy padají na zdánlivě nefunkčním JS.

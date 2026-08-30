@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   deriveLoyaltyStatus,
+  entriesRemainingPhrase,
   loyaltyFilledSegments,
   loyaltyProgressSentence,
   pluralEntries,
@@ -111,4 +112,13 @@ test("both progress presentations fill from the same rule", () => {
   // And a completed cycle starts the next one from empty.
   assert.equal(loyaltyFilledSegments(deriveLoyaltyStatus(10)), 0);
   assert.equal(loyaltyFilledSegments(deriveLoyaltyStatus(16)), 6);
+});
+
+test("the remaining-entries phrase agrees in Czech at every boundary", () => {
+  // One shared phrase behind the widget and the confirmation copy.
+  assert.equal(entriesRemainingPhrase(1), "zbývá 1 vstup");
+  assert.equal(entriesRemainingPhrase(2), "zbývají 2 vstupy");
+  assert.equal(entriesRemainingPhrase(4), "zbývají 4 vstupy");
+  assert.equal(entriesRemainingPhrase(5), "zbývá 5 vstupů");
+  assert.equal(entriesRemainingPhrase(10), "zbývá 10 vstupů");
 });

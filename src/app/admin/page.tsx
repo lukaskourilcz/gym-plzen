@@ -8,7 +8,7 @@ import {
   formatTime,
   formatTimeRange,
 } from "@/lib/helpers/format";
-import { pragueDayBounds } from "@/lib/services/stats";
+import { aggregateDayOverview, pragueDayBounds } from "@/lib/services/stats";
 import { loadDemoData } from "@/lib/demo/dummy";
 import { DemoBanner } from "@/components/admin/demo-banner";
 import { PageHeader } from "@/components/admin/page-header";
@@ -16,7 +16,7 @@ import { StatCard } from "@/components/admin/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 
-export const metadata = { title: "Přehled" };
+export const metadata = { title: "Dnes" };
 export const dynamic = "force-dynamic";
 
 const DAY_FORMAT = new Intl.DateTimeFormat("cs-CZ", {
@@ -44,16 +44,19 @@ export default async function AdminDashboard() {
       messages.listRecent(12).catch(() => []),
     ]);
 
-  // A showcase deployment runs without a database; fall back to the same
-  // deterministic demo data the other admin pages use.
+  /*
+   * A showcase deployment runs without a database; fall back to the same
+   * deterministic demo data the other admin pages use. The demo rows go through
+   * the very same aggregation, so the tiles and the seven-day figures can never
+   * show real zeroes beside illustrative rows.
+   */
   const demo =
     overview.reservations.length === 0 && recentMessages.length === 0;
   const demoData = demo ? await loadDemoData(now) : null;
-  const todaysReservations = demoData
-    ? demoData.reservations.filter(
-        (r) => r.startsAt >= bounds.start && r.startsAt < bounds.end,
-      )
-    : overview.reservations;
+  const day = demoData
+    ? aggregateDayOverview(demoData.reservations, now)
+    : overview;
+  const todaysReservations = day.reservations;
   const entries = demoData
     ? demoData.entries.filter(
         (e) => e.occurredAt >= bounds.start && e.occurredAt < bounds.end,
@@ -68,7 +71,7 @@ export default async function AdminDashboard() {
   );
   const openAlerts = recentAlerts.filter((a) => !a.resolvedAt);
   const failedMessages = messageRows.filter((m) => m.status === "failed");
-  const trend = overview.last7 - overview.previous7;
+  const trend = day.last7 - day.previous7;
 
   return (
     <div>
@@ -91,11 +94,11 @@ export default async function AdminDashboard() {
         />
         <StatCard
           label={
-            overview.freeEntries > 0
-              ? `Dnešní tržba · ${overview.freeEntries} bez platby`
+            day.freeEntries > 0
+              ? `Dnešní tržba · ${day.freeEntries} bez platby`
               : "Dnešní tržba"
           }
-          value={formatMoney(demo ? 0 : overview.revenueCents)}
+          value={formatMoney(day.revenueCents)}
         />
         <StatCard label="Neuzavřená upozornění" value={openAlerts.length} />
         <StatCard label="Nedoručené zprávy" value={failedMessages.length} />
@@ -186,7 +189,7 @@ export default async function AdminDashboard() {
               <div>
                 <dt className="text-muted-foreground">Rezervace</dt>
                 <dd className="mt-1 text-2xl font-bold">
-                  {overview.last7}{" "}
+                  {day.last7}{" "}
                   <span className="text-sm font-bold text-muted-foreground">
                     {trend === 0
                       ? "beze změny"
@@ -197,14 +200,12 @@ export default async function AdminDashboard() {
               <div>
                 <dt className="text-muted-foreground">Storna</dt>
                 <dd className="mt-1 text-2xl font-bold">
-                  {overview.cancelledLast7}
+                  {day.cancelledLast7}
                 </dd>
               </div>
               <div>
                 <dt className="text-muted-foreground">Nedorazili</dt>
-                <dd className="mt-1 text-2xl font-bold">
-                  {overview.noShowLast7}
-                </dd>
+                <dd className="mt-1 text-2xl font-bold">{day.noShowLast7}</dd>
               </div>
             </dl>
             <p className="mt-2 text-sm">

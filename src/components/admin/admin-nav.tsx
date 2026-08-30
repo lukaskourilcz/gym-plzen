@@ -28,7 +28,7 @@ const NAV_GROUPS = [
   {
     label: "Provoz",
     items: [
-      ["/admin", "Přehled", Home],
+      ["/admin", "Dnes", Home],
       ["/admin/calendar", "Kalendář", CalendarDays],
       ["/admin/reservations", "Rezervace", ListChecks],
       ["/admin/schedule", "Otevírací doba a bloky", Clock3],

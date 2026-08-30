@@ -148,6 +148,18 @@ export function pluralEntries(n: number): string {
 }
 
 /**
+ * "zbývá 1 vstup" / "zbývají 3 vstupy" / "zbývá 9 vstupů".
+ *
+ * Czech agreement: the plural verb goes with 2 to 4, while 1 and the genitive
+ * plural from 5 up both take the singular. Shared so the widget and the
+ * confirmation copy cannot disagree about it.
+ */
+export function entriesRemainingPhrase(n: number): string {
+  const verb = n >= 2 && n <= 4 ? "zbývají" : "zbývá";
+  return `${verb} ${n} ${pluralEntries(n)}`;
+}
+
+/**
  * One Czech sentence about the member's loyalty progress, for the confirmation
  * e-mail and the confirmation page. Returns an empty string when there is
  * nothing truthful to say : a guest booking has no account to count against, so
@@ -168,11 +180,5 @@ export function loyaltyProgressSentence(status: LoyaltyStatus): string {
   if (status.nextEntryIsFree) {
     return `${visit}. Příští vstup máte zdarma.`;
   }
-  /*
-   * Czech agreement: the plural verb goes with 2 to 4, while 1 and the genitive
-   * plural from 5 up both take the singular ("zbývá 9 vstupů").
-   */
-  const verb =
-    entriesUntilFree >= 2 && entriesUntilFree <= 4 ? "zbývají" : "zbývá";
-  return `${visit}, do vstupu zdarma ${verb} ${entriesUntilFree} ${pluralEntries(entriesUntilFree)}.`;
+  return `${visit}, do vstupu zdarma ${entriesRemainingPhrase(entriesUntilFree)}.`;
 }

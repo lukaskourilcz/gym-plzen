@@ -26,7 +26,7 @@ function futureSlot(hour: number): { start: string; end: string; date: Date } {
 }
 
 const ADMIN_PAGES: { path: string; heading: RegExp }[] = [
-  { path: "/admin", heading: /Přehled/i },
+  { path: "/admin", heading: /Dnes/i },
   { path: "/admin/calendar", heading: /Kalendář/i },
   { path: "/admin/reservations", heading: /Rezervace/i },
   { path: "/admin/schedule", heading: /Otevírací doba/i },

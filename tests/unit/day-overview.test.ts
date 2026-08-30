@@ -63,7 +63,7 @@ test("revenue counts paid entries only and free ones are reported apart", () => 
     }),
   ];
 
-  const overview = aggregateDayOverview(today, [], NOW);
+  const overview = aggregateDayOverview(today, NOW);
   assert.equal(overview.revenueCents, 58000);
   assert.equal(overview.freeEntries, 2);
   assert.equal(overview.reservations.length, 5);
@@ -86,7 +86,7 @@ test("the seven-day windows do not overlap and exclude cancellations", () => {
     day(4, "no_show"),
   ];
 
-  const overview = aggregateDayOverview([], window, NOW);
+  const overview = aggregateDayOverview(window, NOW);
   assert.equal(overview.last7, 3);
   assert.equal(overview.previous7, 2);
   assert.equal(overview.cancelledLast7, 1);
@@ -94,7 +94,7 @@ test("the seven-day windows do not overlap and exclude cancellations", () => {
 });
 
 test("an empty day reports zeroes rather than failing", () => {
-  const overview = aggregateDayOverview([], [], NOW);
+  const overview = aggregateDayOverview([], NOW);
   assert.deepEqual(
     {
       revenueCents: overview.revenueCents,

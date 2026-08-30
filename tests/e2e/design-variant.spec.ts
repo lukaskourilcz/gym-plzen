@@ -23,13 +23,21 @@ test.describe("Design variant switch", () => {
       );
     const classicSpacing = await spacing();
 
+    // Click the label, as a visitor does: the radio itself is visually hidden
+    // and the label is what carries the 44px target.
     await page
       .getByTestId("design-variant-switch")
       .first()
-      .getByRole("radio", { name: "Moderní" })
-      .check();
+      .getByText("Moderní", { exact: true })
+      .click();
 
     await expect(html).toHaveAttribute("data-design", "modern");
+    await expect(
+      page
+        .getByTestId("design-variant-switch")
+        .first()
+        .getByRole("radio", { name: "Moderní" }),
+    ).toBeChecked();
     expect(await spacing()).not.toBe(classicSpacing);
 
     // Persisted in the cookie, so the choice outlives the page instance.
@@ -47,8 +55,8 @@ test.describe("Design variant switch", () => {
     await page
       .getByTestId("design-variant-switch")
       .first()
-      .getByRole("radio", { name: "Klasický" })
-      .check();
+      .getByText("Klasický", { exact: true })
+      .click();
     await expect(html).toHaveAttribute("data-design", "classic");
   });
 

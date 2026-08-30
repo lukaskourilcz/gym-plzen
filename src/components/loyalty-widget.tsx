@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils";
 import { LotusMark } from "@/components/site/brand";
 import {
+  entriesRemainingPhrase,
   loyaltyFilledSegments,
-  pluralEntries,
   type LoyaltyStatus,
 } from "@/lib/services/loyalty";
 
@@ -33,9 +33,9 @@ export function LoyaltyWidget({ status }: { status: LoyaltyStatus }) {
           </p>
         ) : (
           <p className="mt-4 text-3xl font-extrabold leading-tight sm:text-4xl">
-            Do vstupu zdarma zbývá{" "}
+            Do vstupu zdarma{" "}
             <strong className="text-gold">
-              {entriesUntilFree} {pluralEntries(entriesUntilFree)}
+              {entriesRemainingPhrase(entriesUntilFree)}
             </strong>
             .
           </p>

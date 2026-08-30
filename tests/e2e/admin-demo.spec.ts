@@ -9,7 +9,11 @@ test("demo credentials open the admin dashboard without Supabase", async ({
   await page.getByRole("button", { name: "Přihlásit se", exact: true }).click();
 
   await expect(page).toHaveURL(/\/admin$/);
-  await expect(page.getByRole("heading", { name: "Přehled" })).toBeVisible();
+  // The dashboard composes several queries, and in demo mode there is no
+  // database behind them: every one has to time out before the page resolves.
+  await expect(page.getByRole("heading", { name: "Dnes" })).toBeVisible({
+    timeout: 60_000,
+  });
   await expect(
     page.getByRole("link", { name: "Rezervace", exact: true }),
   ).toBeVisible();

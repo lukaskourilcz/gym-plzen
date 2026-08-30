@@ -41,6 +41,6 @@ test.describe("Auth", () => {
     await page.getByLabel(/Heslo/i).fill("password123");
     await page.getByRole("button", { name: /Přihlásit se/i }).click();
     await expect(page).toHaveURL(/\/admin/);
-    await expect(page.getByRole("heading", { name: /Přehled/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Dnes/i })).toBeVisible();
   });
 });
