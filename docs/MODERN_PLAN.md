@@ -138,23 +138,23 @@ sekce „Varianta Moderní“.
 8. **Admin:** bez varianty, ale „Dnes“ přebírá stavové čipy a klidnější
    tabulky v rámci stávajících admin komponent.
 
-## Návrh GitHub issues (pořadí a závislosti)
+## GitHub issues (založeno 30. 8. 2026)
 
-| #   | Issue                                                           | Závisí na | Odhad |
-| --- | --------------------------------------------------------------- | --------- | ----- |
-| 1   | Infrastruktura přepínače vzhledu (0) + dokumentace + e2e        | —         | S/M   |
-| 2   | Věrnost: e-mail `{loyalty}`, hotovo řádek, admin sloupce (A1–3) | —         | M     |
-| 3   | Přidat do kalendáře: ICS route, UI, příloha e-mailu (B)         | —         | M     |
-| 4   | Administrace „Dnes“ (C)                                         | —         | M/L   |
-| 5   | Moderní balíček veřejného webu (D1–D6)                          | 1         | L     |
-| 6   | Věrnostní prstenec v Moderní (A4/D7)                            | 1, 2      | S     |
-| 7   | Průřezová verifikace obou variant + aktualizace dokumentace     | 1–6       | M     |
+| Issue                                                       | Obsah                                                           | Závisí na | Odhad |
+| ----------------------------------------------------------- | --------------------------------------------------------------- | --------- | ----- |
+| [#26](https://github.com/lukaskourilcz/gym-plzen/issues/26) | Infrastruktura přepínače vzhledu (0) + dokumentace + e2e        | —         | S/M   |
+| [#27](https://github.com/lukaskourilcz/gym-plzen/issues/27) | Věrnost: e-mail `{loyalty}`, hotovo řádek, admin sloupce (A1–3) | —         | M     |
+| [#28](https://github.com/lukaskourilcz/gym-plzen/issues/28) | Přidat do kalendáře: ICS route, UI, příloha e-mailu (B)         | —         | M     |
+| [#29](https://github.com/lukaskourilcz/gym-plzen/issues/29) | Administrace „Dnes“ (C)                                         | —         | M/L   |
+| [#30](https://github.com/lukaskourilcz/gym-plzen/issues/30) | Moderní balíček veřejného webu (D1–D6)                          | #26       | L     |
+| [#31](https://github.com/lukaskourilcz/gym-plzen/issues/31) | Věrnostní prstenec v Moderní (A4/D7)                            | #26       | S     |
+| [#32](https://github.com/lukaskourilcz/gym-plzen/issues/32) | Průřezová verifikace obou variant + aktualizace dokumentace     | #26–#31   | M     |
 
-Issue 7 = Playwright přes obě varianty (320–1728 px, klávesnice, reduced
-motion), axe AA, design-system reviewer, aktualizace `SESSION_HANDOFF.md`.
-Každé issue ponese soubory, akceptační kritéria a checklist ověření
-(`format:check`, `lint`, `typecheck`, `test`, `build` + pravidla
-`.claude/rules/design-system.md`).
+Issue [#32](https://github.com/lukaskourilcz/gym-plzen/issues/32) = Playwright
+přes obě varianty (320–1728 px, klávesnice, reduced motion), axe AA,
+design-system reviewer, aktualizace `SESSION_HANDOFF.md`. Každé issue nese
+soubory, akceptační kritéria a checklist ověření (`format:check`, `lint`,
+`typecheck`, `test`, `build` + pravidla `.claude/rules/design-system.md`).
 
 ## Rizika a mantinely
 
