@@ -52,6 +52,20 @@
   --charcoal-foreground: #f5f2ec;
   --elevation-sm: 0 1px 2px rgb(0 53 39 / 0.08);
   --elevation-md: 0 16px 40px -24px rgb(0 53 39 / 0.4);
+
+  /*
+   * Design-variant tokens. These carry the approved classic values; the
+   * `[data-design="modern"]` block below is the ONLY place that changes them.
+   * Components consume them through arbitrary values, e.g.
+   * `text-[length:var(--display-1)]`, so one stylesheet serves both variants
+   * and the server-rendered HTML stays variant-neutral (public pages are ISR).
+   */
+  --display-1: clamp(2.25rem, 5.5vw, 3.75rem); /* 36 to 60px */
+  --display-2: clamp(1.875rem, 4.5vw, 3rem); /* 30 to 48px */
+  --section-space: 5rem; /* matches py-20 */
+  --section-space-lg: 6rem; /* matches sm:py-24 */
+  --eyebrow-rule: 0px; /* gold rule under section eyebrows */
+  --header-lift: 0px; /* extra hero breathing room */
 }
 
 .dark {
@@ -71,6 +85,20 @@
   --border: #333c37;
   --input: #333c37;
   --ring: #7fae97;
+}
+
+/*
+ * Variant "Moderní": a bolder editorial reading of the same brand. Only the
+ * tokens above may be redefined here. No new colours, no gradients, no glow.
+ * Documented in docs/DESIGN_SYSTEM.md and rendered at /admin/design-system.
+ */
+[data-design="modern"] {
+  --display-1: clamp(2.5rem, 7vw, 4.5rem); /* up to 72px */
+  --display-2: clamp(2rem, 5vw, 3.5rem); /* up to 56px */
+  --section-space: 5.5rem;
+  --section-space-lg: 7.5rem; /* 120px */
+  --eyebrow-rule: 2px;
+  --header-lift: 1.5rem;
 }
 
 @theme inline {

@@ -14,10 +14,22 @@ export function Container({
   );
 }
 
-/** A vertical page section with consistent spacing and an optional id anchor. */
+/**
+ * A vertical page section with consistent spacing and an optional id anchor.
+ * Spacing comes from the design-variant tokens, whose classic values are the
+ * approved `py-20 sm:py-24`; the modern variant breathes wider.
+ */
 export function Section({
   className,
   ...props
 }: React.HTMLAttributes<HTMLElement>) {
-  return <section className={cn("py-20 sm:py-24", className)} {...props} />;
+  return (
+    <section
+      className={cn(
+        "py-[var(--section-space)] sm:py-[var(--section-space-lg)]",
+        className,
+      )}
+      {...props}
+    />
+  );
 }

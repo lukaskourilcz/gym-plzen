@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/site/brand";
 import { cn } from "@/lib/utils";
 import { PUBLIC_NAV } from "@/lib/config/navigation";
+import { DesignVariantSwitch } from "@/components/site/design-variant-switch";
 
 /** Public navigation: lotus plus wordmark on the left, booking action first. */
 export function SiteHeader({
@@ -80,6 +81,13 @@ export function SiteHeader({
         </nav>
 
         <div className="ml-auto flex items-center gap-2 lg:ml-0 lg:justify-self-end">
+          {/*
+           * Content-driven breakpoint: the brand lockup, booking button,
+           * account link and menu toggle already fill the bar at `sm`, so the
+           * switch only joins them from `md` up and lives in the mobile menu
+           * below that. Showing it at `sm` overflows the row.
+           */}
+          <DesignVariantSwitch className="hidden md:flex" />
           {/* Visible at every width: on mobile the hero no longer carries a
               booking action of its own above the fold. */}
           <Button
@@ -140,6 +148,10 @@ export function SiteHeader({
             <Button href={accountHref} variant="outline" className="w-full">
               {accountLabel}
             </Button>
+          </div>
+          {/* Only below `md`: from there up the header bar carries the switch. */}
+          <div className="mt-3 flex justify-center md:hidden">
+            <DesignVariantSwitch />
           </div>
         </div>
       </div>

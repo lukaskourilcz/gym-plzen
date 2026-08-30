@@ -34,6 +34,16 @@ const swatches = [
   ["Uhlová", "#2E2E2E", "bg-charcoal text-charcoal-foreground"],
 ] as const;
 
+/** Mirrors the `[data-design="modern"]` block in globals.css. */
+const designVariantTokens = [
+  ["--display-1", "36 to 60px", "40 to 72px"],
+  ["--display-2", "30 to 48px", "32 to 56px"],
+  ["--section-space", "80px", "88px"],
+  ["--section-space-lg", "96px", "120px"],
+  ["--eyebrow-rule", "0px", "2px"],
+  ["--header-lift", "0px", "24px"],
+] as const;
+
 export default function DesignSystemPage() {
   return (
     <div>
@@ -207,6 +217,64 @@ export default function DesignSystemPage() {
               </div>
             </div>
           </div>
+        </section>
+
+        <section aria-labelledby="kit-variants">
+          <h2 id="kit-variants" className="mb-4 text-xl font-extrabold">
+            Designové varianty
+          </h2>
+          <Card>
+            <CardHeader>
+              <CardTitle>Klasický a Moderní</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 text-sm">
+              <p className="text-muted-foreground">
+                Veřejný web umí dvě varianty vzhledu. Volba se ukládá do cookie{" "}
+                <code className="font-bold">ns_design</code> a ještě před
+                vykreslením ji inline skript propíše jako{" "}
+                <code className="font-bold">data-design</code> na{" "}
+                <code className="font-bold">&lt;html&gt;</code>. Servrované HTML
+                proto zůstává pro obě varianty stejné a úvodní stránka si drží
+                ISR. Přepínač je vpravo nahoře v hlavičce, na užších displejích
+                v mobilním menu. Administrace variantu nepoužívá.
+              </p>
+              <p className="text-muted-foreground">
+                Rozdíly smí vzniknout <strong>jen</strong> předefinováním těchto
+                tokenů v bloku{" "}
+                <code className="font-bold">
+                  [data-design=&quot;modern&quot;]
+                </code>{" "}
+                v <code className="font-bold">globals.css</code>. Žádné nové
+                barvy, gradienty ani jiné komponenty.
+              </p>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[34rem] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="py-2 pr-4 font-extrabold">Token</th>
+                      <th className="py-2 pr-4 font-extrabold">Klasický</th>
+                      <th className="py-2 font-extrabold">Moderní</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-muted-foreground">
+                    {designVariantTokens.map(([token, classic, modern]) => (
+                      <tr key={token} className="border-b border-border/60">
+                        <td className="py-2 pr-4 font-bold text-foreground">
+                          {token}
+                        </td>
+                        <td className="py-2 pr-4">{classic}</td>
+                        <td className="py-2">{modern}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-muted-foreground">
+                Varianta je dočasná pomůcka pro srovnání s klientem. Po
+                schválení se Moderní stane výchozí a přepínač se odstraní.
+              </p>
+            </CardContent>
+          </Card>
         </section>
 
         <section aria-labelledby="kit-colors">

@@ -56,6 +56,41 @@ marketing language, or an unnecessary call to action in every section.
 - On dark surfaces use the monochrome inverse treatment. Do not recolour
   individual parts of the supplied artwork.
 
+## Design variants
+
+The public site ships two looks: `classic`, the approved appearance, and
+`modern`, a bolder editorial reading of the same brand. The choice is a preview
+aid for comparing them with the client, not a user preference: once `modern` is
+approved it becomes the default and the switch is removed.
+
+- The variant lives in the `ns_design` cookie and is stamped on `<html>` as
+  `data-design` by a small inline script in the root layout, before first paint.
+- Rendered HTML is identical for both variants. The homepage is ISR
+  (`revalidate = 60`), so nothing may read the cookie on the server for a public
+  page; doing so would silently turn the route dynamic.
+- Every difference is expressed by redefining the variant tokens below inside
+  the single `[data-design="modern"]` block in `globals.css`. Components consume
+  them through arbitrary values such as `text-[length:var(--display-1)]`. Do not
+  add colours, gradients, shadows, or component variants for `modern`, and do not
+  branch the DOM: where two presentations are genuinely different shapes, render
+  both and let CSS reveal one, keeping the hidden one out of the accessibility
+  tree with `display: none`.
+
+| Token                | Classic    | Modern     | Purpose                          |
+| -------------------- | ---------- | ---------- | -------------------------------- |
+| `--display-1`        | 36 to 60px | 40 to 72px | H1 display size                  |
+| `--display-2`        | 30 to 48px | 32 to 56px | H2 display size                  |
+| `--section-space`    | 80px       | 88px       | Section rhythm, small screens    |
+| `--section-space-lg` | 96px       | 120px      | Section rhythm, from `sm` up     |
+| `--eyebrow-rule`     | 0px        | 2px        | Gold rule under section eyebrows |
+| `--header-lift`      | 0px        | 24px       | Extra hero breathing room        |
+
+The switch itself sits in the header's right-hand cluster from `md` up and moves
+into the mobile menu below that: a content-driven breakpoint, because the brand
+lockup, booking button, account link and menu toggle already fill the bar at
+`sm`. It is a native radio group, so arrow keys work and the group has one
+accessible name. The administration does not use variants.
+
 ## Colour
 
 The client-approved palette is deep green `#004534` with ink `#003527`, gold
