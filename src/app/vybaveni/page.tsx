@@ -36,7 +36,10 @@ export default async function EquipmentPage() {
         <Section className="pt-14 sm:pt-20">
           <Container>
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[.16em] text-accent-foreground">
+              <p
+                data-eyebrow
+                className="text-xs font-extrabold uppercase tracking-[.16em] text-accent-foreground"
+              >
                 {content.get("equipment.eyebrow")}
               </p>
               <h1 className="mt-4 text-4xl font-extrabold tracking-[-.01em] sm:text-6xl">
@@ -64,6 +67,8 @@ export default async function EquipmentPage() {
               {zones.map((zone, index) => (
                 <li
                   key={zone.title}
+                  /* Gold titles are a modern touch, and only legible on ink. */
+                  data-zone={index % 2 === 0 ? "ink" : "soft"}
                   className={cn(
                     "grid overflow-hidden rounded-lg sm:grid-cols-2",
                     index % 2 === 0
@@ -72,7 +77,10 @@ export default async function EquipmentPage() {
                   )}
                 >
                   <div className="p-7">
-                    <h3 className="text-xl font-extrabold uppercase tracking-[.05em]">
+                    <h3
+                      data-zone-title
+                      className="text-xl font-extrabold uppercase tracking-[.05em]"
+                    >
                       {zone.title}
                     </h3>
                     <p className="mt-4 text-sm leading-6 opacity-85">

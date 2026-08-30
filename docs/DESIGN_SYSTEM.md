@@ -76,14 +76,36 @@ approved it becomes the default and the switch is removed.
   both and let CSS reveal one, keeping the hidden one out of the accessibility
   tree with `display: none`.
 
-| Token                | Classic    | Modern     | Purpose                          |
-| -------------------- | ---------- | ---------- | -------------------------------- |
-| `--display-1`        | 36 to 60px | 40 to 72px | H1 display size                  |
-| `--display-2`        | 30 to 48px | 32 to 56px | H2 display size                  |
-| `--section-space`    | 80px       | 88px       | Section rhythm, small screens    |
-| `--section-space-lg` | 96px       | 120px      | Section rhythm, from `sm` up     |
-| `--eyebrow-rule`     | 0px        | 2px        | Gold rule under section eyebrows |
-| `--header-lift`      | 0px        | 24px       | Extra hero breathing room        |
+| Token                | Classic           | Modern     | Purpose                       |
+| -------------------- | ----------------- | ---------- | ----------------------------- |
+| `--display-1`        | Tailwind 36/48/60 | 40 to 72px | H1 display size               |
+| `--display-2`        | Tailwind 30/36    | 32 to 48px | H2 display size               |
+| `--section-space`    | 80px              | 88px       | Section rhythm, small screens |
+| `--section-space-lg` | 96px              | 120px      | Section rhythm, from `sm` up  |
+| `--eyebrow-rule`     | 0px               | 2px        | Rule under a section eyebrow  |
+| `--header-lift`      | 0px               | 24px       | Extra hero breathing room     |
+
+Spacing tokens are consumed by `Section` in both variants, and their classic
+values are exactly the approved `py-20 sm:py-24`. The display tokens apply only
+under `[data-design="modern"]`, so classic typography keeps the stepped Tailwind
+sizes it was approved with and cannot drift.
+
+Markup opts in through `data-*` hooks, never through variant-specific classes:
+`data-display="1" | "2"` for display headings, `data-hero` for the hero padding,
+`data-eyebrow` for the rule, `data-fact-value` for the homepage figures,
+`data-zone="ink"` with `data-zone-title` for the equipment tiles, and
+`data-cta-arrow` for the 140ms hover shift. `data-scrolled` on the header drives
+a firmer bottom edge once the page moves.
+
+Two constraints the modern rules must keep:
+
+- **Gold is an ink-only accent.** The eyebrow rule uses `currentColor` and the
+  fact figures keep `foreground`, because gold on the cream background is about
+  1.9:1. Gold titles appear only on the ink equipment tiles, where they clear
+  7:1.
+- **The header height never changes.** `--header-h` is the single source of truth
+  for anchor scroll offsets and the hero's reserved height, so the scrolled state
+  changes the border and elevation only.
 
 The switch itself sits in the header's right-hand cluster from `md` up and moves
 into the mobile menu below that: a content-driven breakpoint, because the brand

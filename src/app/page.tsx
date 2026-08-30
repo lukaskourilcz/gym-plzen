@@ -177,9 +177,15 @@ export default async function HomePage() {
             aria-hidden="true"
             className="absolute inset-0 -z-10 bg-ink/88"
           />
-          <Container className="grid gap-12 py-14 lg:min-h-[calc(100svh-var(--header-h)-112px)] lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:content-center lg:items-center lg:gap-8 lg:py-8 xl:gap-12">
+          <Container
+            data-hero
+            className="grid gap-12 py-14 lg:min-h-[calc(100svh-var(--header-h)-112px)] lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:content-center lg:items-center lg:gap-8 lg:py-8 xl:gap-12"
+          >
             <div>
-              <h1 className="max-w-2xl whitespace-pre-line text-4xl font-extrabold leading-[1.1] tracking-[-.01em] sm:text-5xl lg:text-6xl">
+              <h1
+                data-display="1"
+                className="max-w-2xl whitespace-pre-line text-4xl font-extrabold leading-[1.1] tracking-[-.01em] sm:text-5xl lg:text-6xl"
+              >
                 {t("home.hero.title")}{" "}
                 <span className="text-gold">{t("home.hero.titleAccent")}</span>
               </h1>
@@ -230,7 +236,8 @@ export default async function HomePage() {
                */}
               <div className="mt-8 grid max-w-xl gap-3 sm:grid-cols-2 lg:hidden">
                 <Button href="/rezervace" size="lg" className="justify-center">
-                  {t("home.hero.primaryCta")} <ArrowRight aria-hidden="true" />
+                  {t("home.hero.primaryCta")}{" "}
+                  <ArrowRight data-cta-arrow aria-hidden="true" />
                 </Button>
                 <Button
                   href="/#jak-to-funguje"
@@ -277,7 +284,9 @@ export default async function HomePage() {
                   FACT_BORDERS[index],
                 )}
               >
-                <div className="text-lg font-extrabold">{item.value}</div>
+                <div data-fact-value className="text-lg font-extrabold">
+                  {item.value}
+                </div>
                 <div className="mt-1 text-sm text-muted-foreground">
                   {item.label}
                 </div>
@@ -318,7 +327,10 @@ export default async function HomePage() {
             className="scroll-mt-[var(--header-h)] py-16 lg:py-20"
           >
             <Container>
-              <h2 className="flex items-center justify-center gap-4 text-center text-3xl font-extrabold uppercase tracking-[.04em] text-ink-foreground sm:text-4xl">
+              <h2
+                data-display="2"
+                className="flex items-center justify-center gap-4 text-center text-3xl font-extrabold uppercase tracking-[.04em] text-ink-foreground sm:text-4xl"
+              >
                 <LotusMark
                   decorative
                   className="size-10 shrink-0 text-gold sm:size-12"
@@ -358,11 +370,17 @@ export default async function HomePage() {
                 against a tall column. */}
             <Container className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-stretch">
               <div>
-                <p className="text-xs font-extrabold uppercase tracking-[.16em] text-gold">
+                <p
+                  data-eyebrow
+                  className="text-xs font-extrabold uppercase tracking-[.16em] text-gold"
+                >
                   {t("home.pricing.eyebrow")}
                 </p>
                 {/* Three lines in the hero's format, the last one in gold. */}
-                <h2 className="mt-4 max-w-xl whitespace-pre-line text-3xl font-extrabold leading-[1.15] tracking-[-.01em] sm:text-4xl">
+                <h2
+                  data-display="2"
+                  className="mt-4 max-w-xl whitespace-pre-line text-3xl font-extrabold leading-[1.15] tracking-[-.01em] sm:text-4xl"
+                >
                   {`${t("home.pricing.title")}\n`}
                   <span className="text-gold">
                     {t("home.pricing.titleAccent")}
@@ -410,7 +428,8 @@ export default async function HomePage() {
                 </div>
                 <div className="px-7 py-7 text-center">
                   <Button href="/rezervace" size="lg" className="w-full">
-                    {t("home.pricing.button")} <ArrowRight aria-hidden="true" />
+                    {t("home.pricing.button")}{" "}
+                    <ArrowRight data-cta-arrow aria-hidden="true" />
                   </Button>
                 </div>
               </div>
@@ -468,7 +487,8 @@ export default async function HomePage() {
               size="lg"
               className="min-w-52 justify-center justify-self-end bg-gold text-gold-foreground hover:bg-gold/90"
             >
-              {t("home.cta.button")} <ArrowRight aria-hidden="true" />
+              {t("home.cta.button")}{" "}
+              <ArrowRight data-cta-arrow aria-hidden="true" />
             </Button>
           </Container>
         </Section>
@@ -565,7 +585,10 @@ function SectionHeading({
 }) {
   return (
     <div className={align === "center" ? "text-center" : ""}>
-      <p className="text-xs font-extrabold uppercase tracking-[.16em] text-accent-foreground">
+      <p
+        data-eyebrow
+        className="text-xs font-extrabold uppercase tracking-[.16em] text-accent-foreground"
+      >
         {eyebrow}
       </p>
       <h2 className="mt-3 text-3xl font-extrabold tracking-[-.01em] sm:text-5xl">

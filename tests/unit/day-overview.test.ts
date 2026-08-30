@@ -8,7 +8,10 @@ import type { Reservation } from "../../src/lib/db/types";
 
 /** A reservation row with only the fields the aggregation reads. */
 function reservation(
-  partial: Partial<Reservation> & { startsAt: Date; status: string },
+  partial: Partial<Reservation> & {
+    startsAt: Date;
+    status: Reservation["status"];
+  },
 ): Reservation {
   return {
     id: `r-${partial.startsAt.toISOString()}-${partial.status}`,
@@ -67,7 +70,7 @@ test("revenue counts paid entries only and free ones are reported apart", () => 
 });
 
 test("the seven-day windows do not overlap and exclude cancellations", () => {
-  const day = (offset: number, status = "confirmed") =>
+  const day = (offset: number, status: Reservation["status"] = "confirmed") =>
     reservation({
       startsAt: new Date(NOW.getTime() - offset * 24 * 60 * 60 * 1000),
       status,

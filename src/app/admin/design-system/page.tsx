@@ -36,8 +36,8 @@ const swatches = [
 
 /** Mirrors the `[data-design="modern"]` block in globals.css. */
 const designVariantTokens = [
-  ["--display-1", "36 to 60px", "40 to 72px"],
-  ["--display-2", "30 to 48px", "32 to 56px"],
+  ["--display-1", "Tailwind 36/48/60", "40 to 72px"],
+  ["--display-2", "Tailwind 30/36", "32 to 48px"],
   ["--section-space", "80px", "88px"],
   ["--section-space-lg", "96px", "120px"],
   ["--eyebrow-rule", "0px", "2px"],

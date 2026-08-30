@@ -88,17 +88,86 @@
 }
 
 /*
- * Variant "Moderní": a bolder editorial reading of the same brand. Only the
- * tokens above may be redefined here. No new colours, no gradients, no glow.
+ * Variant "Moderní": a bolder editorial reading of the same brand. No new
+ * colours, no gradients, no glow, no component variants : it redefines the
+ * tokens above and applies them through the `data-*` hooks below.
+ *
+ * Everything here is scoped to the attribute, so the approved classic look is
+ * literally untouched: its Tailwind steps still decide its typography.
  * Documented in docs/DESIGN_SYSTEM.md and rendered at /admin/design-system.
  */
 [data-design="modern"] {
   --display-1: clamp(2.5rem, 7vw, 4.5rem); /* up to 72px */
-  --display-2: clamp(2rem, 5vw, 3.5rem); /* up to 56px */
+  --display-2: clamp(2rem, 4.6vw, 3rem); /* up to 48px */
   --section-space: 5.5rem;
   --section-space-lg: 7.5rem; /* 120px */
   --eyebrow-rule: 2px;
   --header-lift: 1.5rem;
+}
+
+/* Editorial display sizes, one step above the classic scale. */
+[data-design="modern"] [data-display="1"] {
+  font-size: var(--display-1);
+  line-height: 1.04;
+}
+
+[data-design="modern"] [data-display="2"] {
+  font-size: var(--display-2);
+  line-height: 1.12;
+}
+
+/* More air around the hero, so the display type has room to land. */
+[data-design="modern"] [data-hero] {
+  padding-block: calc(3.5rem + var(--header-lift));
+}
+
+/*
+ * A short rule under a section eyebrow. `currentColor` rather than gold: the
+ * eyebrow already carries a colour chosen to pass on its own surface, and gold
+ * would fail contrast on the cream background.
+ */
+[data-design="modern"] [data-eyebrow]::after {
+  content: "";
+  display: block;
+  width: 2.5rem;
+  height: var(--eyebrow-rule);
+  margin-top: 0.75rem;
+  background: currentColor;
+}
+
+/* The four facts read as figures. Colour stays put: gold on cream fails AA. */
+[data-design="modern"] [data-fact-value] {
+  font-size: 1.625rem;
+  line-height: 1.15;
+}
+
+/* Gold titles, but only on the ink tiles where gold clears contrast. */
+[data-design="modern"] [data-zone="ink"] [data-zone-title] {
+  color: var(--gold);
+}
+
+/*
+ * Restrained hover motion. The global reduced-motion rule already collapses
+ * every transition duration, so this needs no media query of its own.
+ */
+[data-design="modern"] [data-cta-arrow] {
+  transition: translate 140ms var(--ease-brand);
+}
+
+[data-design="modern"] a:hover [data-cta-arrow],
+[data-design="modern"] button:hover [data-cta-arrow] {
+  translate: 2px 0;
+}
+
+/*
+ * Once the page has moved, the header separates itself from the content more
+ * firmly. Its height deliberately does not change: `--header-h` is the single
+ * source of truth for anchor offsets and the hero's reserved height, and a
+ * shrinking bar would leave every in-page anchor short.
+ */
+[data-design="modern"] header[data-scrolled="true"] {
+  border-bottom-width: 2px;
+  box-shadow: var(--elevation-sm);
 }
 
 @theme inline {

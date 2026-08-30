@@ -24,9 +24,31 @@ export function SiteHeader({
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [ready, setReady] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     setReady(true);
+  }, []);
+
+  /*
+   * Drives the modern variant's firmer separation once the page has moved.
+   * Passive and rAF-throttled: this runs on every scroll frame otherwise.
+   */
+  useEffect(() => {
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        setScrolled(window.scrollY > 8);
+      });
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, []);
 
   useEffect(() => {
@@ -41,7 +63,10 @@ export function SiteHeader({
   }, [open]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
+    <header
+      data-scrolled={scrolled ? "true" : "false"}
+      className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur"
+    >
       {/* Deliberately not inside `Container`: the brand sits in the very left
           corner and the actions in the very right one, at full viewport width. */}
       {/* Three tracks from `lg`: brand hard left, links centred, actions hard
