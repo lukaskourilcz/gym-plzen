@@ -64,6 +64,8 @@ export async function createSubscriptionCheckout(params: {
 }): Promise<Stripe.Checkout.Session> {
   return stripe().checkout.sessions.create({
     mode: "subscription",
+    // Czech customers, Czech payment page and Stripe receipt.
+    locale: "cs",
     customer: params.customerId,
     line_items: [{ price: params.priceId, quantity: 1 }],
     success_url: params.successUrl,
