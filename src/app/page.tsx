@@ -42,10 +42,14 @@ import {
 import { NewsletterSignup } from "@/components/site/newsletter-signup";
 import { IllustrativePhoto } from "@/components/site/illustrative-photo";
 
-const PUBLISHED_GYM_PHOTO =
-  "https://static.wixstatic.com/media/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg/v1/fill/w_1600,h_900,al_c,q_90,enc_avif,quality_auto/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg";
-/** Client-supplied interior shot, pinned behind the steps and pricing bands. */
-const SECTIONS_PHOTO = "/images/gym-interior.webp";
+const PUBLISHED_GYM_PHOTO = "/images/photos/hero.webp";
+const SECTIONS_PHOTO = "/images/photos/sections.webp";
+const GALLERY_PHOTOS = [
+  "/images/photos/gallery-1.webp",
+  "/images/photos/gallery-2.webp",
+  "/images/photos/gallery-3.webp",
+  "/images/photos/gallery-4.webp",
+] as const;
 /** Verified position of the entrance, used as the map's marker. */
 const GYM_POSITION = { lat: 49.7550669, lng: 13.3785039 } as const;
 const GYM_COORDINATES = `${GYM_POSITION.lat},${GYM_POSITION.lng}`;
@@ -475,7 +479,7 @@ export default async function HomePage() {
             />
             <div className="mt-8 grid gap-4 lg:h-[46svh] lg:grid-cols-[1.35fr_.65fr]">
               <IllustrativePhoto
-                src={content.galleryImageUrls[0] || PUBLISHED_GYM_PHOTO}
+                src={content.galleryImageUrls[0] || GALLERY_PHOTOS[0]}
                 alt={t("home.gallery.mainImageAlt")}
                 sizes="(max-width: 1023px) 100vw, 66vw"
                 illustrative={content.illustrativePhotos}
@@ -489,7 +493,10 @@ export default async function HomePage() {
                 ].map((label, index) => (
                   <IllustrativePhoto
                     key={label}
-                    src={content.galleryImageUrls[index + 1] ?? ""}
+                    src={
+                      content.galleryImageUrls[index + 1] ||
+                      GALLERY_PHOTOS[index + 1]!
+                    }
                     alt={label}
                     sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 34vw"
                     illustrative={content.illustrativePhotos}
