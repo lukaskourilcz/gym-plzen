@@ -1,8 +1,9 @@
-import { desc, eq } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
 import type { Profile } from "@/lib/db/types";
 import { toE164 } from "@/lib/helpers/phone";
+import { ActionError } from "@/lib/helpers/action";
 
 /**
  * Member service over the Supabase-Auth `profiles` table. Supabase owns
@@ -120,4 +121,48 @@ export async function getMember(
     .where(eq(profiles.id, userId))
     .limit(1);
   return row ? toMember(row) : null;
+}
+
+/** Roles a profile can hold. `admin` unlocks everything under /admin. */
+export type MemberRole = "member" | "admin";
+
+/** How many administrators exist right now. */
+export async function countAdmins(): Promise<number> {
+  const [row] = await db
+    .select({ value: count() })
+    .from(profiles)
+    .where(eq(profiles.role, "admin"));
+  return row?.value ?? 0;
+}
+
+/**
+ * Grant or revoke the administrator role.
+ *
+ * Refuses to remove the last administrator: locking everyone out of the
+ * administration would need database access to undo.
+ */
+export async function setRole(
+  userId: string,
+  role: MemberRole,
+): Promise<Profile> {
+  if (role !== "admin") {
+    const [target] = await db
+      .select({ role: profiles.role })
+      .from(profiles)
+      .where(eq(profiles.id, userId))
+      .limit(1);
+    if (target?.role === "admin" && (await countAdmins()) <= 1) {
+      throw new ActionError(
+        "Nelze odebrat posledního správce. Nejdřív nastavte jiného.",
+      );
+    }
+  }
+
+  const [updated] = await db
+    .update(profiles)
+    .set({ role, updatedAt: new Date() })
+    .where(eq(profiles.id, userId))
+    .returning();
+  if (!updated) throw new ActionError("Člena se nepodařilo najít.");
+  return updated;
 }

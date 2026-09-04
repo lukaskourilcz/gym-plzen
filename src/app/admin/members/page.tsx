@@ -12,6 +12,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { MemberForm } from "./member-form";
+import { MemberRoleForm } from "./member-role-form";
+import { Badge } from "@/components/ui/badge";
 
 export const metadata = { title: "Členové" };
 export const dynamic = "force-dynamic";
@@ -67,7 +69,11 @@ export default async function MembersPage() {
                     ? "další zdarma"
                     : status.entriesUntilFree}
                 </TableCell>
-                <TableCell>{user.role ?? "member"}</TableCell>
+                <TableCell>
+                  <Badge variant={user.role === "admin" ? "accent" : "muted"}>
+                    {user.role === "admin" ? "Správce" : "Člen"}
+                  </Badge>
+                </TableCell>
               </TableRow>
             );
           })}
@@ -94,6 +100,11 @@ export default async function MembersPage() {
               </summary>
               <div className="mt-3">
                 <MemberForm member={member} />
+                <MemberRoleForm
+                  userId={member.user.id}
+                  isAdmin={member.user.role === "admin"}
+                  name={member.user.name || member.user.email}
+                />
               </div>
             </details>
           ))}

@@ -99,15 +99,19 @@ export function SubmitButton({
   disabled = false,
   children = "Uložit",
   className,
+  variant,
 }: {
   isSubmitting: boolean;
   disabled?: boolean;
   children?: React.ReactNode;
   className?: string;
+  /** Secondary submits (an undo, a revoke) use the outline variant. */
+  variant?: React.ComponentProps<typeof Button>["variant"];
 }) {
   return (
     <Button
       type="submit"
+      variant={variant}
       disabled={disabled || isSubmitting}
       className={className}
     >

@@ -10,4 +10,11 @@ export const updateMemberSchema = z.object({
   note: optionalText(2000),
 });
 
+/** Grant or revoke the administrator role for one member. */
+export const setMemberRoleSchema = z.object({
+  userId: idSchema,
+  role: z.enum(["member", "admin"]),
+});
+
 export type UpdateMemberValues = z.infer<typeof updateMemberSchema>;
+export type SetMemberRoleValues = z.infer<typeof setMemberRoleSchema>;
