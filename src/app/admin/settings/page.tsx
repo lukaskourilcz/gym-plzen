@@ -1,4 +1,5 @@
 import { cms, slots } from "@/lib/services";
+import { loadSiteContent } from "@/lib/content/site";
 import { DEFAULT_BOOKING_HORIZON_DAYS } from "@/lib/config/schedule";
 import {
   DEFAULT_SMS_ACCESS_TEMPLATE,
@@ -26,6 +27,7 @@ import {
   BrandingForm,
   FileUploader,
   BookingHorizonForm,
+  SitePhotosForm,
   HeroCalendarForm,
   SmsTemplateForm,
 } from "./settings-forms";
@@ -44,6 +46,7 @@ export default async function SettingsPage() {
     smsTemplate,
     heroPreviewDays,
     bookingHorizonDays,
+    siteContent,
   ] = await Promise.all([
     cms.getSetting<string>(LOGO_URL_KEY).catch(() => null),
     cms.getSetting<string>(TERMS_URL_KEY).catch(() => null),
@@ -53,6 +56,7 @@ export default async function SettingsPage() {
     cms.getSetting<string>(SMS_ACCESS_TEMPLATE_KEY).catch(() => null),
     cms.getSetting<number>(HERO_PREVIEW_DAYS_KEY).catch(() => null),
     slots.getBookingHorizonDays().catch(() => DEFAULT_BOOKING_HORIZON_DAYS),
+    loadSiteContent(),
   ]);
 
   return (
@@ -91,6 +95,23 @@ export default async function SettingsPage() {
               previewDays={clampHeroPreviewDays(
                 heroPreviewDays ?? DEFAULT_HERO_PREVIEW_DAYS,
               )}
+            />
+          </CardContent>
+        </Card>
+
+        <Card className="max-w-2xl">
+          <CardHeader>
+            <CardTitle>Fotografie na webu</CardTitle>
+            <CardDescription>
+              Galerie na úvodní stránce a fotografie jednotlivých zón. Dokud
+              nemáte vlastní snímky, nechte zapnutý štítek „Ilustrační foto“.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SitePhotosForm
+              gallery={siteContent.galleryImageUrls}
+              zones={siteContent.zoneImageUrls}
+              illustrative={siteContent.illustrativePhotos}
             />
           </CardContent>
         </Card>

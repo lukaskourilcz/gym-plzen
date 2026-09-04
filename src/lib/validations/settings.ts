@@ -71,7 +71,20 @@ export const bookingHorizonSchema = z.object({
     .max(MAX_BOOKING_HORIZON_DAYS, `Nejvýše ${MAX_BOOKING_HORIZON_DAYS} dní.`),
 });
 
+/** Optional image URL, empty meaning "not supplied yet". */
+const optionalImageUrl = z
+  .union([z.literal(""), z.string().url("Neplatná URL.")])
+  .optional();
+
+/** Gallery, zone photographs and the illustrative-photo label. */
+export const sitePhotosSchema = z.object({
+  gallery: z.array(optionalImageUrl).length(4),
+  zones: z.array(optionalImageUrl).length(6),
+  illustrative: z.boolean(),
+});
+
 export type BrandingValues = z.infer<typeof brandingSchema>;
+export type SitePhotosValues = z.infer<typeof sitePhotosSchema>;
 export type BookingHorizonValues = z.infer<typeof bookingHorizonSchema>;
 export type SmsTemplateValues = z.infer<typeof smsTemplateSchema>;
 export type EmailTemplateValues = z.infer<typeof emailTemplateSchema>;

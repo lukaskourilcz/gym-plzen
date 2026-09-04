@@ -14,11 +14,14 @@ import {
   resolveEntryPrice,
 } from "@/lib/config/pricing";
 import {
+  GALLERY_IMAGE_URL_KEYS,
   HERO_IMAGE_ALT_KEY,
   HERO_IMAGE_URL_KEY,
+  ILLUSTRATIVE_PHOTOS_KEY,
   SECTIONS_IMAGE_URL_KEY,
   LOGO_URL_KEY,
   TERMS_URL_KEY,
+  zoneImageUrlKey,
 } from "@/lib/config/branding";
 import { DEFAULT_RULES_BODY, LEGACY_RULES_BODY } from "@/lib/content/rules";
 
@@ -286,6 +289,12 @@ export interface SiteContent {
   heroImageAlt: string;
   /** Photograph pinned behind the operating-steps and pricing bands. */
   sectionsImageUrl: string | null;
+  /** Homepage gallery tiles, in order; empty strings mean "not supplied yet". */
+  galleryImageUrls: string[];
+  /** Equipment zone photographs, indexed by zone number minus one. */
+  zoneImageUrls: string[];
+  /** Whether photographs are stock stand-ins and must be labelled as such. */
+  illustrativePhotos: boolean;
 }
 
 /** Props every public page hands to `SiteFooter`, derived from CMS content. */
@@ -316,6 +325,10 @@ export async function loadSiteContent(locale = "cs"): Promise<SiteContent> {
   let heroImageUrl: string | null = null;
   let heroImageAlt = "";
   let sectionsImageUrl: string | null = null;
+  const galleryImageUrls = GALLERY_IMAGE_URL_KEYS.map(() => "");
+  const zoneImageUrls = Array.from({ length: 6 }, () => "");
+  // Default on: the photographs in place today are stand-ins.
+  let illustrativePhotos = true;
 
   try {
     const rows = await db
@@ -353,6 +366,18 @@ export async function loadSiteContent(locale = "cs"): Promise<SiteContent> {
         heroImageAlt = s.value;
       if (s.key === SECTIONS_IMAGE_URL_KEY && typeof s.value === "string")
         sectionsImageUrl = s.value || null;
+      if (typeof s.value === "string") {
+        const galleryIndex = GALLERY_IMAGE_URL_KEYS.indexOf(
+          s.key as (typeof GALLERY_IMAGE_URL_KEYS)[number],
+        );
+        if (galleryIndex >= 0) galleryImageUrls[galleryIndex] = s.value;
+        for (let zone = 1; zone <= 6; zone += 1) {
+          if (s.key === zoneImageUrlKey(zone))
+            zoneImageUrls[zone - 1] = s.value;
+        }
+      }
+      if (s.key === ILLUSTRATIVE_PHOTOS_KEY && typeof s.value === "boolean")
+        illustrativePhotos = s.value;
     }
   } catch (e) {
     // DB not provisioned/reachable yet : fall back to defaults so the public
@@ -413,5 +438,8 @@ export async function loadSiteContent(locale = "cs"): Promise<SiteContent> {
     heroImageUrl,
     heroImageAlt,
     sectionsImageUrl,
+    galleryImageUrls,
+    zoneImageUrls,
+    illustrativePhotos,
   };
 }

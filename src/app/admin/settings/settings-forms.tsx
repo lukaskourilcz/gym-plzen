@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useActionForm } from "@/components/admin/use-action-form";
 import {
+  CheckboxField,
   Field,
   FormFeedback,
   SubmitButton,
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import {
   bookingHorizonSchema,
   brandingSchema,
+  sitePhotosSchema,
   heroPreviewSchema,
   smsTemplateSchema,
 } from "@/lib/validations/settings";
@@ -28,6 +30,7 @@ import {
 import {
   saveBookingHorizonAction,
   saveBrandingAction,
+  saveSitePhotosAction,
   saveHeroPreviewAction,
   saveSmsTemplateAction,
   uploadFileAction,
@@ -131,6 +134,95 @@ export function BrandingForm({
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={formState.isSubmitting}>
         Uložit branding
+      </SubmitButton>
+    </form>
+  );
+}
+
+/**
+ * Gallery and zone photographs, plus the switch that labels them illustrative.
+ * URLs come from the uploader below, exactly like the hero photograph.
+ */
+export function SitePhotosForm({
+  gallery,
+  zones,
+  illustrative,
+}: {
+  gallery: string[];
+  zones: string[];
+  illustrative: boolean;
+}) {
+  const { form, submit, serverError, success } = useActionForm({
+    schema: sitePhotosSchema,
+    action: saveSitePhotosAction,
+    successMessage: "Fotografie uloženy.",
+    defaultValues: {
+      gallery: [0, 1, 2, 3].map((index) => gallery[index] ?? ""),
+      zones: [0, 1, 2, 3, 4, 5].map((index) => zones[index] ?? ""),
+      illustrative,
+    },
+  });
+
+  return (
+    <form onSubmit={submit}>
+      <p className="mb-4 text-sm text-muted-foreground">
+        Nechte pole prázdné a na webu zůstane značková výplň. URL získáte
+        nahráním souboru níže.
+      </p>
+
+      <fieldset className="mb-6">
+        <legend className="mb-2 text-sm font-extrabold">
+          Galerie na úvodní stránce
+        </legend>
+        {[0, 1, 2, 3].map((index) => (
+          <Field
+            key={index}
+            name={`gallery.${index}`}
+            label={index === 0 ? "Hlavní fotografie" : `Dlaždice ${index + 1}`}
+            error={form.formState.errors.gallery?.[index]}
+          >
+            <Input
+              id={`gallery-${index}`}
+              type="url"
+              {...form.register(`gallery.${index}` as const)}
+            />
+          </Field>
+        ))}
+      </fieldset>
+
+      <fieldset className="mb-6">
+        <legend className="mb-2 text-sm font-extrabold">
+          Fotografie zón na stránce Vybavení
+        </legend>
+        {[0, 1, 2, 3, 4, 5].map((index) => (
+          <Field
+            key={index}
+            name={`zones.${index}`}
+            label={`Zóna ${index + 1}`}
+            error={form.formState.errors.zones?.[index]}
+          >
+            <Input
+              id={`zone-${index}`}
+              type="url"
+              {...form.register(`zones.${index}` as const)}
+            />
+          </Field>
+        ))}
+      </fieldset>
+
+      <CheckboxField
+        name="illustrative"
+        label="Označit fotografie jako ilustrační"
+        register={form.register("illustrative")}
+      />
+      <p className="mb-4 text-sm text-muted-foreground">
+        Dokud nejsou fotky z vašeho prostoru, web u nich zobrazí štítek
+        „Ilustrační foto“. Po nahrání vlastních snímků přepínač vypněte.
+      </p>
+
+      <FormFeedback error={serverError} success={success} />
+      <SubmitButton isSubmitting={form.formState.isSubmitting}>
+        Uložit fotografie
       </SubmitButton>
     </form>
   );

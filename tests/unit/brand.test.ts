@@ -67,3 +67,15 @@ test("the content rebrand leaves real addresses and handles intact", async () =>
   );
   assert.equal(rebrand("Beze změny"), "Beze změny");
 });
+
+test("illustrative photos are labelled and never claim to be the gym", async () => {
+  const fs = await import("node:fs/promises");
+  const component = await fs.readFile(
+    "src/components/site/illustrative-photo.tsx",
+    "utf8",
+  );
+  // While the pictures are stand-ins a visitor must be told so.
+  assert.match(component, /Ilustrační foto/);
+  // With no photograph at all the caller's placeholder is rendered instead.
+  assert.match(component, /if \(!src\) return/);
+});

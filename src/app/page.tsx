@@ -40,6 +40,7 @@ import {
   type HeroAvailabilityDay,
 } from "@/components/site/hero-availability";
 import { NewsletterSignup } from "@/components/site/newsletter-signup";
+import { IllustrativePhoto } from "@/components/site/illustrative-photo";
 
 const PUBLISHED_GYM_PHOTO =
   "https://static.wixstatic.com/media/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg/v1/fill/w_1600,h_900,al_c,q_90,enc_avif,quality_auto/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg";
@@ -473,22 +474,29 @@ export default async function HomePage() {
               align="left"
             />
             <div className="mt-8 grid gap-4 lg:h-[46svh] lg:grid-cols-[1.35fr_.65fr]">
-              <div className="relative min-h-[420px] overflow-hidden rounded-lg bg-muted lg:h-full lg:min-h-0">
-                <Image
-                  src={PUBLISHED_GYM_PHOTO}
-                  alt={t("home.gallery.mainImageAlt")}
-                  fill
-                  sizes="(max-width: 1023px) 100vw, 66vw"
-                  className="object-cover"
-                />
-              </div>
+              <IllustrativePhoto
+                src={content.galleryImageUrls[0] || PUBLISHED_GYM_PHOTO}
+                alt={t("home.gallery.mainImageAlt")}
+                sizes="(max-width: 1023px) 100vw, 66vw"
+                illustrative={content.illustrativePhotos}
+                className="min-h-[420px] rounded-lg bg-muted lg:h-full lg:min-h-0"
+              />
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 lg:grid-rows-3">
                 {[
                   t("home.gallery.image2"),
                   t("home.gallery.image3"),
                   t("home.gallery.image4"),
-                ].map((label) => (
-                  <GalleryPlaceholder key={label} label={label} />
+                ].map((label, index) => (
+                  <IllustrativePhoto
+                    key={label}
+                    src={content.galleryImageUrls[index + 1] ?? ""}
+                    alt={label}
+                    sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 34vw"
+                    illustrative={content.illustrativePhotos}
+                    className="min-h-44 rounded-md bg-muted lg:min-h-0"
+                  >
+                    <GalleryPlaceholder label={label} />
+                  </IllustrativePhoto>
                 ))}
               </div>
             </div>

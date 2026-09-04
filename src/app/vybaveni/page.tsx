@@ -9,6 +9,7 @@ import { Container, Section } from "@/components/ui/container";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { BrandMark } from "@/components/site/brand";
+import { IllustrativePhoto } from "@/components/site/illustrative-photo";
 import { cn } from "@/lib/utils";
 
 const PHOTO =
@@ -87,15 +88,26 @@ export default async function EquipmentPage() {
                       {zone.body}
                     </p>
                   </div>
-                  <div
-                    aria-hidden="true"
+                  <IllustrativePhoto
+                    src={content.zoneImageUrls[index] ?? ""}
+                    alt={zone.title}
+                    sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 25vw"
+                    illustrative={content.illustrativePhotos}
                     className={cn(
-                      "grid min-h-44 place-items-center",
+                      "min-h-44",
                       index % 2 === 0 ? "bg-ink-elevated" : "bg-sage",
                     )}
                   >
-                    <BrandMark decorative className="size-16 opacity-30" />
-                  </div>
+                    <div
+                      aria-hidden="true"
+                      className={cn(
+                        "grid min-h-44 place-items-center",
+                        index % 2 === 0 ? "bg-ink-elevated" : "bg-sage",
+                      )}
+                    >
+                      <BrandMark decorative className="size-16 opacity-30" />
+                    </div>
+                  </IllustrativePhoto>
                 </li>
               ))}
             </ul>

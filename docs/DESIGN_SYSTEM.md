@@ -396,6 +396,11 @@ The public booking flow is date first.
 ## Photography
 
 - Use only verified client photography. Do not generate or source a fake gym.
+- One documented exception, while the client has no photographs of their own:
+  stock stand-ins may be used if every one carries a visible "Ilustrační foto"
+  label (`IllustrativePhoto`, driven by `branding.illustrative_photos`) and its
+  alt text does not claim to show the gym. The operator turns the label off once
+  their own photographs replace them.
 - Hero art direction uses a wide real-space view, restrained contrast, and room
   for copy. Prefer a 16:10 desktop crop and 4:5 mobile crop.
 - Use `next/image`, explicit `sizes`, responsive aspect ratios, descriptive alt,

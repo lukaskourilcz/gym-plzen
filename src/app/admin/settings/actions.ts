@@ -13,7 +13,9 @@ import {
   type HeroPreviewValues,
   type SmsTemplateValues,
   bookingHorizonSchema,
+  sitePhotosSchema,
   type BookingHorizonValues,
+  type SitePhotosValues,
 } from "@/lib/validations/settings";
 import {
   HERO_IMAGE_ALT_KEY,
@@ -22,6 +24,9 @@ import {
   LOGO_URL_KEY,
   SMS_ACCESS_TEMPLATE_KEY,
   TERMS_URL_KEY,
+  GALLERY_IMAGE_URL_KEYS,
+  ILLUSTRATIVE_PHOTOS_KEY,
+  zoneImageUrlKey,
 } from "@/lib/config/branding";
 import { HERO_PREVIEW_DAYS_KEY, clampHeroPreviewDays } from "@/lib/config/hero";
 import {
@@ -113,6 +118,32 @@ export async function saveBookingHorizonAction(
   input: BookingHorizonValues,
 ): Promise<Result<unknown>> {
   return saveBookingHorizonImpl(input);
+}
+
+/** Gallery and zone photographs, plus the illustrative-photo label. */
+const saveSitePhotosImpl = defineAction({
+  schema: sitePhotosSchema,
+  authorize: assertAdmin,
+  handler: async ({ gallery, zones, illustrative }, admin) => {
+    await Promise.all([
+      ...GALLERY_IMAGE_URL_KEYS.map((key, index) =>
+        cms.setSetting(key, gallery[index] ?? "", admin.id),
+      ),
+      ...zones.map((url, index) =>
+        cms.setSetting(zoneImageUrlKey(index + 1), url ?? "", admin.id),
+      ),
+      cms.setSetting(ILLUSTRATIVE_PHOTOS_KEY, illustrative, admin.id),
+    ]);
+    revalidatePath("/admin/settings");
+    revalidatePath("/");
+    revalidatePath("/vybaveni");
+  },
+});
+
+export async function saveSitePhotosAction(
+  input: SitePhotosValues,
+): Promise<Result<unknown>> {
+  return saveSitePhotosImpl(input);
 }
 
 export async function saveHeroPreviewAction(
