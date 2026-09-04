@@ -74,7 +74,7 @@ const FACT_BORDERS = [
 export const metadata: Metadata = {
   title: "Soukromý gym v Plzni",
   description:
-    "NAMASTÉ Private Gym je soukromý prostor v Plzni. Vyberte termín online, zaplaťte bezpečně a obdržíte pokyny ke vstupu.",
+    "NAVI Private Gym je soukromý prostor v Plzni. Vyberte termín online, zaplaťte bezpečně a obdržíte pokyny ke vstupu.",
   alternates: { canonical: "/" },
 };
 export const revalidate = 60;
@@ -108,7 +108,7 @@ export default async function HomePage() {
   const mapsEmbedUrl = `https://www.google.com/maps?q=${GYM_COORDINATES}&ll=${GYM_COORDINATES}&z=17&output=embed`;
   const heroImageUrl = content.heroImageUrl || PUBLISHED_GYM_PHOTO;
   const heroImageAlt =
-    content.heroImageAlt || "Prostor NAMASTÉ Private Gym v Plzni";
+    content.heroImageAlt || "Prostor NAVI Private Gym v Plzni";
   const sectionsImageUrl = content.sectionsImageUrl || SECTIONS_PHOTO;
   const steps = STEP_KEYS.map(([titleKey, bodyKey]) => ({
     title: t(titleKey),
@@ -552,8 +552,7 @@ export default async function HomePage() {
             </blockquote>
             <div className="border-t border-white/15 pt-8 md:border-l md:border-t-0 md:pl-12 md:pt-0">
               <h2 className="text-2xl font-extrabold sm:text-3xl">
-                Chcete se dozvědět novinky ze světa Namasté Private Gym jako
-                první?
+                Chcete se dozvědět novinky ze světa NAVI Private Gym jako první?
               </h2>
               <p className="mt-3 text-sm text-ink-foreground/75">
                 Zanechte nám svou e-mailovou adresu.

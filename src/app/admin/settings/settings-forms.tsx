@@ -88,7 +88,7 @@ export function BrandingForm({
       >
         <Input
           id="heroImageUrl"
-          placeholder="https://…/namaste-prostor.jpg"
+          placeholder="https://…/navi-prostor.jpg"
           {...register("heroImageUrl")}
         />
       </Field>
@@ -118,7 +118,7 @@ export function BrandingForm({
       >
         <Input
           id="sectionsImageUrl"
-          placeholder="https://…/namaste-telocvicna.jpg"
+          placeholder="https://…/navi-telocvicna.jpg"
           {...register("sectionsImageUrl")}
         />
       </Field>

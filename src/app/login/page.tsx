@@ -16,7 +16,7 @@ export default function LoginPage() {
       <section className="relative hidden overflow-hidden bg-ink p-12 text-white lg:flex lg:flex-col lg:justify-between xl:p-14">
         <Link
           href="/"
-          aria-label="NAMASTÉ Private Gym, úvodní stránka"
+          aria-label="NAVI Private Gym, úvodní stránka"
           className="relative inline-flex min-h-11 items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
         >
           <BrandLockup inverse className="[&_img]:w-56" />
@@ -40,7 +40,7 @@ export default function LoginPage() {
             href="/"
             className="mb-10 inline-flex min-h-11 items-center gap-2 font-extrabold lg:hidden"
           >
-            ← NAMASTÉ Private Gym
+            ← NAVI Private Gym
           </Link>
           <h1 className="text-[28px] font-extrabold tracking-[-.01em]">
             Přihlášení

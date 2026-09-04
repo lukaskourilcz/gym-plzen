@@ -17,7 +17,7 @@ const footerLink =
   "flex min-h-9 items-center text-sm leading-5 text-ink-foreground/75 transition-colors hover:text-ink-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold lg:min-h-7";
 
 export function SiteFooter({
-  brand = "NAMASTÉ Private Gym",
+  brand = "NAVI Private Gym",
   email,
   phone,
   secondaryPhone,

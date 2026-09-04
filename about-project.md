@@ -1,4 +1,4 @@
-# NAMASTÉ Private Gym
+# NAVI Private Gym
 
 Rezervační a členský web pro samoobslužné soukromé fitness v plzeňské části
 Roudná.

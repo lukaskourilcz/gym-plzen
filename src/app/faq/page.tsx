@@ -10,7 +10,7 @@ import type { SiteContentKey } from "@/lib/content/site";
 export const metadata: Metadata = {
   title: "Často kladené otázky",
   description:
-    "Odpovědi k rezervaci, platbě, vstupu a poloze NAMASTÉ Private Gym.",
+    "Odpovědi k rezervaci, platbě, vstupu a poloze NAVI Private Gym.",
   alternates: { canonical: "/faq" },
 };
 

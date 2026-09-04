@@ -29,7 +29,7 @@ export function normalizeVoucherCode(code: string): string {
 
 export function generateVoucherCode(): string {
   const bytes = randomBytes(10);
-  let value = "NAMASTE-";
+  let value = "NAVI-";
   for (let index = 0; index < 8; index += 1) {
     value += CODE_ALPHABET[bytes[index]! % CODE_ALPHABET.length];
   }

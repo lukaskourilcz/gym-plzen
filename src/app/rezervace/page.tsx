@@ -23,8 +23,7 @@ import { BookingCalendar } from "./booking-calendar";
 
 export const metadata: Metadata = {
   title: "Rezervace soukromého gymu",
-  description:
-    "Vyberte datum a přesný čas rezervace NAMASTÉ Private Gym v Plzni.",
+  description: "Vyberte datum a přesný čas rezervace NAVI Private Gym v Plzni.",
   alternates: { canonical: "/rezervace" },
 };
 export const dynamic = "force-dynamic";

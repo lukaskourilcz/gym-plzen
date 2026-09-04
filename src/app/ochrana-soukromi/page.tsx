@@ -7,7 +7,7 @@ import { SiteFooter } from "@/components/site/site-footer";
 export const metadata: Metadata = {
   title: "Ochrana soukromí a osobních údajů",
   description:
-    "Zásady zpracování osobních údajů, používání cookies a přehled práv návštěvníků a klientů NAMASTÉ Private Gym.",
+    "Zásady zpracování osobních údajů, používání cookies a přehled práv návštěvníků a klientů NAVI Private Gym.",
   alternates: { canonical: "/ochrana-soukromi" },
 };
 
@@ -69,6 +69,7 @@ const link =
 
 export default async function PrivacyPage() {
   const content = await loadSiteContent();
+  const contactEmail = content.get("contact.email");
 
   return (
     <>
@@ -84,8 +85,8 @@ export default async function PrivacyPage() {
                 Zásady ochrany osobních údajů
               </h1>
               <p className="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">
-                Vysvětlujeme zde, jak NAMASTÉ zpracovává osobní údaje při
-                návštěvě webu, rezervaci a užívání samoobslužného studia.
+                Vysvětlujeme zde, jak NAVI zpracovává osobní údaje při návštěvě
+                webu, rezervaci a užívání samoobslužného studia.
               </p>
               <div className="mt-8 border-y border-border py-4 text-sm leading-6">
                 Platnost a účinnost od: 17. 8. 2026
@@ -123,8 +124,7 @@ export default async function PrivacyPage() {
             <article className="mt-10 min-w-0 lg:mt-0">
               <PolicySection id="spravci" number={1} title="Správci a kontakt">
                 <p>
-                  Správci osobních údajů pro společný provoz studia NAMASTÉ
-                  jsou:
+                  Správci osobních údajů pro společný provoz studia NAVI jsou:
                 </p>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <address className="not-italic rounded-lg border border-border bg-background p-5">
@@ -147,8 +147,8 @@ export default async function PrivacyPage() {
                   vystavující účetní a daňové doklady je Renáta Janoušková.
                   Otázky a žádosti týkající se osobních údajů můžete poslat na
                   společnou kontaktní adresu{" "}
-                  <a className={link} href="mailto:info@namastegym.cz">
-                    info@namastegym.cz
+                  <a className={link} href={`mailto:${contactEmail}`}>
+                    {contactEmail}
                   </a>
                   . Žádost můžete uplatnit vůči kterékoli ze správců.
                 </p>
@@ -178,8 +178,8 @@ export default async function PrivacyPage() {
                     <strong className={strong}>Platební a účetní údaje</strong>{" "}
                     – částka, měna, stav platby a identifikátory zákazníka,
                     platební relace, předplatného nebo dokladu. Údaje platební
-                    karty zadáváte přímo společnosti Stripe; NAMASTÉ je
-                    nezískává ani neukládá.
+                    karty zadáváte přímo společnosti Stripe; NAVI je nezískává
+                    ani neukládá.
                   </li>
                   <li>
                     <strong className={strong}>
@@ -523,7 +523,7 @@ export default async function PrivacyPage() {
                       načtení mapy prohlížeč komunikuje přímo se společností
                       Google, která získá zejména IP adresu, údaje o zařízení a
                       požadavku; mapě neposíláme vaše rezervační ani kontaktní
-                      údaje. Google a NAMASTÉ mohou být pro toto zpracování
+                      údaje. Google a NAVI mohou být pro toto zpracování
                       samostatnými správci. Použití Google Maps se řídí také{" "}
                       <a
                         className={link}
@@ -591,8 +591,8 @@ export default async function PrivacyPage() {
                 </ul>
                 <p>
                   Žádost pošlete na{" "}
-                  <a className={link} href="mailto:info@namastegym.cz">
-                    info@namastegym.cz
+                  <a className={link} href={`mailto:${contactEmail}`}>
+                    {contactEmail}
                   </a>
                   . Než jí vyhovíme, můžeme přiměřeně ověřit vaši totožnost.
                   Odpovíme bez zbytečného odkladu, nejpozději ve lhůtě podle
@@ -626,11 +626,10 @@ export default async function PrivacyPage() {
                   písemném souhlasu zákonného zástupce.
                 </p>
                 <p>
-                  NAMASTÉ neprovádí automatizované individuální rozhodování,
-                  které by pro vás mělo právní nebo obdobně významné účinky.
-                  Volitelné analytické a marketingové nástroje mohou vytvářet
-                  pseudonymní statistiky nebo publika podle pravidel svých
-                  poskytovatelů.
+                  NAVI neprovádí automatizované individuální rozhodování, které
+                  by pro vás mělo právní nebo obdobně významné účinky. Volitelné
+                  analytické a marketingové nástroje mohou vytvářet pseudonymní
+                  statistiky nebo publika podle pravidel svých poskytovatelů.
                 </p>
                 <p>
                   Tyto zásady můžeme měnit, zejména při změně služeb nebo

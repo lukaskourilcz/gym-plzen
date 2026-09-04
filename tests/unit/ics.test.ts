@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { siteHost } from "../../src/lib/helpers/site-url";
 import {
   buildIcs,
   googleCalendarUrl,
@@ -27,7 +28,7 @@ test("a reservation renders as a valid single-event calendar", () => {
 
   assert.match(ics, /^BEGIN:VCALENDAR\r\n/);
   assert.match(ics, /END:VCALENDAR\r\n$/);
-  assert.match(ics, /UID:res-1@namastegym\.cz\r\n/);
+  assert.ok(ics.includes(`UID:res-1@${siteHost()}\r\n`));
   assert.match(ics, /DTSTART:20260830T160000Z\r\n/);
   assert.match(ics, /DTEND:20260830T171500Z\r\n/);
   assert.match(ics, /DTSTAMP:20260801T090000Z\r\n/);
@@ -55,7 +56,7 @@ test("summer and winter reservations both keep their wall-clock hour", () => {
 
 test("special characters are escaped and long lines folded", () => {
   const ics = buildIcs({
-    uid: "res-2@namastegym.cz",
+    uid: `res-2@${siteHost()}`,
     start: new Date("2026-08-30T16:00:00.000Z"),
     end: new Date("2026-08-30T17:15:00.000Z"),
     summary: "Trénink; celý gym, jen pro vás",
@@ -77,7 +78,7 @@ test("special characters are escaped and long lines folded", () => {
 test("folding never splits a Czech character in half", () => {
   const description = "Dlouhý český popis s diakritikou ".repeat(5);
   const ics = buildIcs({
-    uid: "res-3@namastegym.cz",
+    uid: `res-3@${siteHost()}`,
     start: new Date("2026-08-30T16:00:00.000Z"),
     end: new Date("2026-08-30T17:15:00.000Z"),
     summary: "Trénink",
@@ -117,7 +118,7 @@ test("the calendar entry carries the slot only, never a code or contact detail",
   const text = unfold(buildIcs({ ...event, stamp: STAMP }));
   // The only "@" in the file belongs to the gym's own UID domain.
   assert.equal(text.match(/@/g)?.length, 1);
-  assert.match(text, /@namastegym\.cz/);
+  assert.ok(text.includes(`@${siteHost()}`));
   assert.doesNotMatch(text, /\+420/);
   // It says where the code comes from instead of carrying one.
   assert.match(text, /Vstupní kód vám pošleme e-mailem/);

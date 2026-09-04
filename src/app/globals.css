@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Canonical NAMASTE tokens. Keep this file aligned with docs/DESIGN_SYSTEM.md. */
+/* Canonical NAVI tokens. Keep this file aligned with docs/DESIGN_SYSTEM.md. */
 @custom-variant dark (&:is(.dark *));
 
 :root {

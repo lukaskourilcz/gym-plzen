@@ -25,8 +25,8 @@ test("e-mail HTML escapes editor text before rendering the branded shell", () =>
     actionLabel: "Pokračovat",
   });
 
-  assert.match(html, /NAMASTÉ PRIVATE GYM/);
-  assert.match(html, /namaste-logo\.png/);
+  assert.match(html, /NAVI PRIVATE GYM/);
+  assert.match(html, /navi-logo-email\.png/);
   assert.match(html, /href="https:\/\/example\.com\/action"/);
   assert.match(html, />Pokračovat</);
   assert.match(html, /Ahoj &lt;Klára&gt; &amp; tým/);

@@ -68,7 +68,7 @@ export default function DesignSystemPage() {
               </div>
               <div>
                 <p className="text-4xl font-extrabold tracking-[-0.01em]">
-                  Tvůj čas. Tvůj prostor. Tvoje Namasté.
+                  Tvůj čas. Tvůj prostor. Tvoje NAVI.
                 </p>
                 <p className="mt-4 text-2xl font-extrabold tracking-[-0.01em]">
                   Klidný prostor pro soustředěný trénink

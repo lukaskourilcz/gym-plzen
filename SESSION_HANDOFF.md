@@ -32,11 +32,11 @@ odemčení ze zámku, sedmidenní trend a feed toho, co vyžaduje pozornost.
 
 Klientská revize veřejného webu je implementovaná a připravená k prezentaci.
 Veřejný header používá přesné dodané logo v horizontálním uspořádání: lotus
-vlevo a wordmark `Namasté Private Gym` vpravo. Vertikální varianta zůstává na
+vlevo a wordmark `NAVI Private Gym` vpravo. Vertikální varianta zůstává na
 přihlášení a v patičce.
 
 Úvodní stránka odpovídá klientským poznámkám: širší navigace ve verzálkách,
-zlaté „Namasté.“ v hero, Plzeň - Roudná, otevírací doba 5:00–23:45,
+zlaté „NAVI.“ v hero, Plzeň - Roudná, otevírací doba 5:00–23:45,
 informační pás v prvním viewportu, vycentrované časy, každý 10. vstup zdarma,
 stejně velké kroky 01–06 a bílá cenová karta. Hero adresa a otevírací doba jsou
 vedle sebe se zarovnanými CTA pod nimi. Informační pás začíná
@@ -51,7 +51,7 @@ Favicon v `src/app/icon.png` používá stejný přesný klientský lotus ve zla
 barvě na tmavě zeleném podkladu. Starý ručně kreslený SVG favicon byl odstraněn.
 Mapa se načítá vycentrovaná pomocí souřadnic, takže Google automaticky
 nezobrazuje druhou informační kartu. Viditelný zůstává pouze vlastní přední
-karta NAMASTÉ a vlastní lotusový marker.
+karta NAVI a vlastní lotusový marker.
 Závěrečný zelený CTA pás je vlevo zarovnaný s okolním obsahem; na desktopu
 navazuje větší tlačítko Rezervovat, na mobilu se prvky řadí pod sebe vlevo.
 Pod nadpisem je zlatou linkou oddělený editovatelný citát.
@@ -61,7 +61,7 @@ věrnostní text ani poznámku o registračních poplatcích.
 V desktopovém hero je rezervační kalendář svisle vycentrovaný vůči celému
 hero layoutu.
 Resend doména `namastegym.cz` je ověřená a Vercel má nastavený serverový
-sender `Namasté Private Gym <noreply@namastegym.cz>`. Administrace →
+sender `NAVI Private Gym <noreply@namastegym.cz>`. Administrace →
 **E-maily** obsahuje pět editovatelných českých šablon: potvrzení registrace,
 obnovu hesla, potvrzení rezervace, vstupní kód a storno. Všechny mají stejné
 logo, náhled, proměnné a testovací odeslání na zadanou adresu. Potvrzení

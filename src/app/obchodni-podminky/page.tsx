@@ -14,7 +14,7 @@ import { SiteFooter } from "@/components/site/site-footer";
 export const metadata: Metadata = {
   title: "Všeobecné obchodní podmínky",
   description:
-    "Všeobecné obchodní podmínky samoobslužného studia NAMASTÉ Private Gym v Plzni.",
+    "Všeobecné obchodní podmínky samoobslužného studia NAVI Private Gym v Plzni.",
   alternates: { canonical: "/obchodni-podminky" },
 };
 

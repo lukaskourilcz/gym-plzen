@@ -12,7 +12,7 @@ import { SiteFooter } from "@/components/site/site-footer";
 export const metadata: Metadata = {
   title: "Provozní řád",
   description:
-    "Provozní řád a smluvní podmínky privátního studia NAMASTÉ Private Gym v Plzni.",
+    "Provozní řád a smluvní podmínky privátního studia NAVI Private Gym v Plzni.",
   alternates: { canonical: "/provozni-rad" },
 };
 

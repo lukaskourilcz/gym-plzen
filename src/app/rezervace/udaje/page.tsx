@@ -15,7 +15,7 @@ import { BookingDetailsForm } from "./booking-details-form";
 
 export const metadata: Metadata = {
   title: "Údaje k rezervaci",
-  description: "Vyplňte údaje k rezervaci NAMASTÉ Private Gym v Plzni.",
+  description: "Vyplňte údaje k rezervaci NAVI Private Gym v Plzni.",
   robots: { index: false, follow: false },
 };
 export const dynamic = "force-dynamic";

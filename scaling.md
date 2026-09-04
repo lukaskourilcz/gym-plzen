@@ -1,4 +1,4 @@
-# NAMASTÉ - náklady a škálování
+# NAVI - náklady a škálování
 
 Rezervační web na Vercelu se Supabase, Stripe, Nuki a Resendem. Technologický
 stack je v `about-project.md`; tento soubor řeší jen náklady a škálování.

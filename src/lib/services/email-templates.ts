@@ -17,6 +17,7 @@ import {
   isSupabaseAuthTemplateSyncConfigured,
   syncSupabaseAuthEmailTemplate,
 } from "@/lib/integrations/supabase-management";
+import { siteUrl } from "@/lib/helpers/site-url";
 import { getSetting, setSetting } from "./cms";
 
 /** Resolve the saved template, with a safe branded fallback on first use. */
@@ -75,8 +76,8 @@ export async function sendTransactionalEmail(params: {
   const definition = getEmailTemplateDefinition(params.id);
   const actionUrl =
     params.id === "signup_confirmation"
-      ? "https://www.namastegym.cz/login"
-      : "https://www.namastegym.cz/reset-password";
+      ? siteUrl("/login")
+      : siteUrl("/reset-password");
   return sendEmail({
     to: params.to,
     subject: rendered.subject,

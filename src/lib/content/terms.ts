@@ -1,11 +1,11 @@
 export const TERMS_TITLE = "VŠEOBECNÉ OBCHODNÍ PODMÍNKY";
-export const TERMS_SUBTITLE = "samoobslužného studia NAMASTÉ";
+export const TERMS_SUBTITLE = "samoobslužného studia NAVI";
 export const TERMS_EFFECTIVE_DATE = "17. 8. 2026";
 
 /** Approved operator-supplied copy, formatted as one clause per paragraph. */
 export const DEFAULT_TERMS_BODY = `1. ZÁKLADNÍ USTANOVENÍ A IDENTIFIKACE PROVOZOVATELEK
 
-1.1. Samoobslužné studio NAMASTÉ (dále jen „Studio“) společně provozují:
+1.1. Samoobslužné studio NAVI (dále jen „Studio“) společně provozují:
 Klára Bílková
 IČO: 22209417
 sídlo: 331 51, Jarov 68
@@ -33,7 +33,7 @@ web: [www.namastegym.cz](http://www.namastegym.cz/)
 
 2. CHARAKTER A ÚČEL STUDIA
 
-2.1. NAMASTÉ je samoobslužné studio určené zejména k individuálnímu cvičení a pohybovým aktivitám.
+2.1. NAVI je samoobslužné studio určené zejména k individuálnímu cvičení a pohybovým aktivitám.
 
 2.2. Předmětem služby je umožnění dočasného užívání prostor Studia, jeho vybavení a příslušenství v termínu a čase zvoleném Klientem prostřednictvím rezervačního systému.
 
@@ -279,7 +279,7 @@ jiné jednání, které může způsobit závažnou škodu nebo újmu.
 
 19.1. Osobní údaje Klientů jsou zpracovávány v souladu s platnými právními předpisy, zejména nařízením Evropského parlamentu a Rady (EU) 2016/679 (GDPR).
 
-19.2. Podrobnosti o zpracování osobních údajů jsou uvedeny v samostatných Zásadách zpracování osobních údajůdostupných na webových stránkách NAMASTÉ.
+19.2. Podrobnosti o zpracování osobních údajů jsou uvedeny v samostatných Zásadách zpracování osobních údajůdostupných na webových stránkách NAVI.
 
 19.3. Používání souborů cookies se řídí příslušnými informacemi dostupnými na webových stránkách.
 
@@ -301,11 +301,11 @@ jiné jednání, které může způsobit závažnou škodu nebo újmu.
 
 21.4. Poskytovatel je oprávněn VOP přiměřeně měnit nebo doplňovat. Pro konkrétní rezervaci je rozhodné znění VOP, se kterým Klient souhlasil při jejím vytvoření.
 
-21.5. Klient není oprávněn při používání webových stránek, rezervačního systému, vstupního systému nebo jiných elektronických služeb NAMASTÉ provádět činnosti směřující k narušení jejich bezpečnosti nebo funkčnosti.
+21.5. Klient není oprávněn při používání webových stránek, rezervačního systému, vstupního systému nebo jiných elektronických služeb NAVI provádět činnosti směřující k narušení jejich bezpečnosti nebo funkčnosti.
 
-21.6. Obsah webových stránek NAMASTÉ, zejména fotografie, grafika, texty a další autorská díla, nesmí být neoprávněně užíván v rozporu s právními předpisy.
+21.6. Obsah webových stránek NAVI, zejména fotografie, grafika, texty a další autorská díla, nesmí být neoprávněně užíván v rozporu s právními předpisy.
 
-21.7. Tyto VOP jsou dostupné na webových stránkách NAMASTÉ.
+21.7. Tyto VOP jsou dostupné na webových stránkách NAVI.
 
 21.8. Tyto VOP nabývají účinnosti dne 17. 8. 2026.`;
 

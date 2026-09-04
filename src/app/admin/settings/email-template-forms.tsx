@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { siteUrl } from "@/lib/helpers/site-url";
 import {
   EMAIL_TEMPLATE_DEFINITIONS,
   emailTextToHtml,
@@ -209,8 +210,8 @@ export function EmailTemplateForms({
                   ? {
                       actionUrl:
                         selectedId === "signup_confirmation"
-                          ? "https://www.namastegym.cz/login"
-                          : "https://www.namastegym.cz/reset-password",
+                          ? siteUrl("/login")
+                          : siteUrl("/reset-password"),
                       actionLabel: definition.actionLabel,
                     }
                   : undefined,

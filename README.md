@@ -1,4 +1,4 @@
-# NAMASTÉ Private Gym
+# NAVI Private Gym
 
 Web, rezervační systém, členský účet a administrace pro soukromý gym na adrese
 Křížkova 424/23, Plzeň - Roudná. Aplikace používá Next.js, Supabase, Stripe a

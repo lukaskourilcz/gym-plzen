@@ -1,7 +1,7 @@
-# NAMASTE design system
+# NAVI design system
 
 This document is the canonical visual and interaction specification for the
-NAMASTE Private Gym product. The live component reference is available to
+NAVI Private Gym product. The live component reference is available to
 administrators at `/admin/design-system`.
 
 ## Brand principles
@@ -39,7 +39,7 @@ marketing language, or an unnecessary call to action in every section.
 
 - The approved client artwork is
   `public/images/namaste-logo.png`: a transparent, tightly cropped derivative
-  of the supplied black lotus, `Namasté` wordmark and `PRIVATE GYM` descriptor.
+  of the supplied black lotus, `NAVI` wordmark and `PRIVATE GYM` descriptor.
 - `BrandLogo` keeps the supplied artwork but rearranges its two exact image
   parts for navigation: the client lotus sits left and the client wordmark sits
   right. The public version is about 180 CSS pixels wide; the admin shell uses

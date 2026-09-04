@@ -37,7 +37,7 @@ export default async function EmailsPage() {
     <div>
       <PageHeader
         title="E-maily"
-        description="České texty, náhledy a testy všech automatických e-mailů. Každý e-mail používá stejné logo NAMASTÉ."
+        description="České texty, náhledy a testy všech automatických e-mailů. Každý e-mail používá stejné logo NAVI."
       />
       <Card>
         <CardHeader>

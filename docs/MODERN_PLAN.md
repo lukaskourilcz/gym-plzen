@@ -78,7 +78,7 @@ e2e účtu, náhled e-mailu s `{loyalty}`.
 2. Route handler `GET /api/reservations/[id]/calendar.ics`: autorizace
    shodná s hotovo stránkou — vlastnictví přihlášeným uživatelem, nebo
    platné `session_id` (neuhodnutelné Stripe checkout id) v query; jinak 404. VEVENT v `Europe/Prague`: UID `<id>@namastegym.cz`, SUMMARY
-   „Trénink · NAMASTÉ Private Gym“, LOCATION veřejná adresa z CMS,
+   „Trénink · NAVI Private Gym“, LOCATION veřejná adresa z CMS,
    DESCRIPTION krátké pokyny. Vstupní kódy do kalendáře nikdy nepatří.
 3. UI: na `/rezervace/hotovo` (jen stav confirmed) akce „Přidat do
    kalendáře (.ics)“ a odkaz „Google Kalendář“

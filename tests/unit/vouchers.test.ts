@@ -7,7 +7,7 @@ import {
 
 describe("vouchers", () => {
   it("normalizes codes without changing their meaning", () => {
-    assert.equal(normalizeVoucherCode("  namaste- 2026 "), "NAMASTE-2026");
+    assert.equal(normalizeVoucherCode("  podzim- 2026 "), "PODZIM-2026");
   });
 
   it("calculates percentage discounts in minor currency units", () => {

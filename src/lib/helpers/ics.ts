@@ -1,3 +1,5 @@
+import { siteHost } from "@/lib/helpers/site-url";
+
 /**
  * Minimal iCalendar (RFC 5545) writer for a single reservation, plus the
  * equivalent Google Calendar template link.
@@ -73,7 +75,7 @@ export function buildIcs(event: CalendarEvent): string {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//NAMASTE Private Gym//Rezervace//CS",
+    "PRODID:-//NAVI Private Gym//Rezervace//CS",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",
@@ -112,7 +114,7 @@ export function googleCalendarUrl(
 }
 
 /** Czech copy for a reservation, shared by the .ics route and both pages. */
-export const RESERVATION_CALENDAR_SUMMARY = "Trénink · NAMASTÉ Private Gym";
+export const RESERVATION_CALENDAR_SUMMARY = "Trénink · NAVI Private Gym";
 
 /**
  * Map a reservation onto a calendar event. Deliberately carries no access code
@@ -127,13 +129,13 @@ export function reservationCalendarEvent(params: {
   stamp?: Date;
 }): CalendarEvent {
   return {
-    uid: `${params.reservationId}@namastegym.cz`,
+    uid: `${params.reservationId}@${siteHost()}`,
     start: params.startsAt,
     end: params.endsAt,
     summary: RESERVATION_CALENDAR_SUMMARY,
     location: params.address ?? undefined,
     description:
-      "Soukromý trénink v NAMASTÉ Private Gym. Vstupní kód vám pošleme e-mailem před začátkem rezervace.",
+      "Soukromý trénink v NAVI Private Gym. Vstupní kód vám pošleme e-mailem před začátkem rezervace.",
     stamp: params.stamp,
   };
 }

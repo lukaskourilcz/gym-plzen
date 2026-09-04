@@ -153,7 +153,7 @@ po skončení kód přestane platit → ruční revocation zafunguje.
 Doména `namastegym.cz` je v Resend ověřená a Vercel má nastavené
 `RESEND_API_KEY` a `RESEND_FROM_EMAIL` pro Production i Preview.
 
-- Sender: `Namasté Private Gym <noreply@namastegym.cz>`
+- Sender: `NAVI Private Gym <noreply@namastegym.cz>`
 - Šablony jsou v administraci → **E-maily**. Je zde náhled s ukázkovými daty,
   test na zadanou adresu a editace textu pro potvrzení registrace, obnovu
   hesla, potvrzení rezervace, vstupní kód a storno. Všechny používají stejné
@@ -178,7 +178,7 @@ Pokud by se SMTP nastavovalo znovu:
 1. Zapnout **Custom SMTP**.
 2. Vyplnit:
    - Sender email: `noreply@namastegym.cz`
-   - Sender name: `Namasté Private Gym`
+   - Sender name: `NAVI Private Gym`
    - Host: `smtp.resend.com`
    - Port: `465` (SSL / implicit TLS)
    - Username: `resend`

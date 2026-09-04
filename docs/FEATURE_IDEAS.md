@@ -19,7 +19,7 @@ Každé kritérium 1–5, součet max. 25:
 
 - **Přínos** — obchodní hodnota (rezervace, retence, provoz);
 - **Snadnost** — inverzní pracnost v této architektuře;
-- **Soulad** — sedí ke značce NAMASTÉ a design systému;
+- **Soulad** — sedí ke značce NAVI a design systému;
 - **Data** — funguje nad daty, která už systém má;
 - **Nezávislost** — nevyžaduje externí kroky ani rozhodnutí klienta.
 

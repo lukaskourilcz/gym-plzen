@@ -1,4 +1,4 @@
-# UX audit: NAMASTÉ Private Gym
+# UX audit: NAVI Private Gym
 
 Datum prvního průchodu: 23. 7. 2026
 
@@ -55,7 +55,7 @@ kontaktní údaje.
   barvě, délku a CTA. Neobsahuje text „Celý gym jen pro vás“, opakované
   věrnostní sdělení ani poznámku o registračních poplatcích.
 - Desktopový rezervační kalendář je svisle vycentrovaný v hero layoutu.
-- Hero zvýrazňuje „Namasté.“ zlatou barvou. Adresa a otevírací doba jsou ve
+- Hero zvýrazňuje „NAVI.“ zlatou barvou. Adresa a otevírací doba jsou ve
   společném zarovnaném řádku a CTA jsou pod nimi stejně široká.
 - Informační pás začíná samoobslužným fitness; karta dostupnosti zobrazuje
   cenu i délku 75 minut na první pohled.
@@ -224,7 +224,7 @@ kontaktní údaje.
 - Stav: **RESOLVED**
 - Skip link je první klávesnicový cíl, přeskočí na právě vykreslené `<main>` a
   prošel 5/5 opakovaných testů během streamingu. Footer odkazy, přepínač režimu
-  loginu i samostatný mobilní odkaz „← NAMASTÉ Private Gym“ mají nejméně 44px
+  loginu i samostatný mobilní odkaz „← NAVI Private Gym“ mají nejméně 44px
   hit area.
 - Mobilní odkaz na loginu byl nezávisle ověřen na 390 px třemi opakovanými
   Playwright běhy s přímou kontrolou bounding boxu: **3/3 passed**.

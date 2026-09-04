@@ -217,7 +217,7 @@ export async function startBooking(params: {
       customerEmail: customerId ? undefined : params.details.email,
       amountCents: priceCents,
       currency: "czk",
-      description: "Jednorázový vstup | NAMASTÉ Private Gym",
+      description: "Jednorázový vstup | NAVI Private Gym",
       successUrl: `${appUrl}/rezervace/hotovo?session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${appUrl}/rezervace?date=${dateKeyInTimeZone(startsAt)}&stav=zruseno`,
       // Guests carry no `userId`; the webhook matches an absent one against a

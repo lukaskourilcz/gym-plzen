@@ -16,7 +16,7 @@ const PHOTO =
 
 export const metadata: Metadata = {
   title: "Vybavení a prostor",
-  description: "Informace a fotografie prostoru NAMASTÉ Private Gym v Plzni.",
+  description: "Informace a fotografie prostoru NAVI Private Gym v Plzni.",
   alternates: { canonical: "/vybaveni" },
 };
 

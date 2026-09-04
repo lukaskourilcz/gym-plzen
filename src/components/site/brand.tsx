@@ -19,7 +19,7 @@ const LOTUS_MASK_STYLE = {
 
 export function LotusMark({
   className,
-  title = "NAMASTÉ",
+  title = "NAVI",
   decorative = false,
 }: {
   className?: string;

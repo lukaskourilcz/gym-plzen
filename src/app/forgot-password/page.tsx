@@ -14,7 +14,7 @@ export default function ForgotPasswordPage() {
       <section className="relative hidden bg-ink p-12 text-white lg:flex lg:flex-col lg:justify-between xl:p-14">
         <Link
           href="/"
-          aria-label="NAMASTÉ Private Gym, úvodní stránka"
+          aria-label="NAVI Private Gym, úvodní stránka"
           className="inline-flex min-h-11 items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
         >
           <BrandLockup inverse className="[&_img]:w-56" />
@@ -27,7 +27,7 @@ export default function ForgotPasswordPage() {
             Pošleme vám bezpečný odkaz pro nastavení nového hesla.
           </p>
         </div>
-        <div className="text-xs text-white/70">NAMASTÉ Private Gym</div>
+        <div className="text-xs text-white/70">NAVI Private Gym</div>
       </section>
       <section className="flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-[400px]">

@@ -12,7 +12,7 @@ import { DesignVariantSwitch } from "@/components/site/design-variant-switch";
 
 /** Public navigation: lotus plus wordmark on the left, booking action first. */
 export function SiteHeader({
-  brand = "NAMASTÉ Private Gym",
+  brand = "NAVI Private Gym",
   accountHref = "/login",
   accountLabel = "Přihlásit se",
 }: {

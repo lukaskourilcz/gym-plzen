@@ -83,10 +83,10 @@ export function publicWhatsApp(phone?: string | null) {
  */
 
 export const SITE_DEFAULTS = {
-  "brand.name": "NAMASTÉ Private Gym",
+  "brand.name": "NAVI Private Gym",
   "home.hero.badge": "Privátní fitness v Plzni",
   "home.hero.title": "Tvůj čas.\nTvůj prostor.\nTvoje",
-  "home.hero.titleAccent": "Namasté.",
+  "home.hero.titleAccent": "NAVI.",
   "home.hero.subtitle":
     "Rezervujte si celé samoobslužné fitness v Plzni jen pro sebe a svůj doprovod.",
   "home.hero.primaryCta": "Vybrat termín",
@@ -137,24 +137,24 @@ export const SITE_DEFAULTS = {
   "home.rules.title": "Provozní řád",
   "home.rules.body": DEFAULT_RULES_BODY,
   "home.gallery.title": "Podívejte se dovnitř",
-  "home.gallery.mainImageAlt": "Interiér NAMASTÉ Private Gym",
+  "home.gallery.mainImageAlt": "Interiér NAVI Private Gym",
   "home.gallery.image2": "Další pohled na prostor",
   "home.gallery.image3": "Detail tréninkové zóny",
   "home.gallery.image4": "Zázemí a vstup",
   "home.gallery.button": "Informace o vybavení",
   "home.contact.title": "Kontakt",
-  "home.contact.mapHeading": "NAMASTÉ Private Gym",
+  "home.contact.mapHeading": "NAVI Private Gym",
   "home.contact.hours": "Otevírací doba {hours}, každý den",
   "home.contact.mapsButton": "Otevřít v Mapách Google",
   "contact.address": PUBLIC_ADDRESS,
   "contact.phone": "+420 731 737 355",
   "contact.phoneSecondary": "+420 721 560 150",
-  "contact.email": "info@namastegym.cz",
+  "contact.email": "info@navigym.cz",
   "contact.facebook": "https://www.facebook.com/profile.php?id=61592125101750",
   "contact.instagram": "https://www.instagram.com/namaste_plzen/",
   "equipment.eyebrow": "Prostor",
   "equipment.title": "Vybavení a prostor",
-  "equipment.imageAlt": "Interiér NAMASTÉ Private Gym",
+  "equipment.imageAlt": "Interiér NAVI Private Gym",
   "equipment.zonesTitle": "Jednotlivé zóny",
   "equipment.zonesIntro":
     "Fotografie jednotlivých zón doplní provozovatel v administraci.",
@@ -216,7 +216,7 @@ export const SITE_DEFAULTS = {
   "faq.12.question": "Je možné rezervaci stornovat?",
   "faq.12.answer":
     "Ano. Bezplatné storno nebo změnu termínu lze provést nejpozději 24 hodin před začátkem rezervace.",
-  "faq.13.question": "Jaká je otevírací doba Namasté Private Gym?",
+  "faq.13.question": "Jaká je otevírací doba NAVI Private Gym?",
   "faq.13.answer": "Otevřeno máme každý den od 5:00 do 23:45.",
   "faq.14.question": "Jak je ve studiu řešena bezpečnost?",
   "faq.14.answer":
@@ -233,7 +233,7 @@ export const SITE_DEFAULTS = {
   "faq.18.question":
     "Jak často se prostor uklízí a co dělat, když najdu nepořádek?",
   "faq.18.answer":
-    "Prostor je pravidelně profesionálně uklízen. Pokud při příchodu zjistíte znečištění nebo poškození vybavení, ihned nás kontaktujte. Děkujeme, že nám pomáháte udržovat Namasté čisté.",
+    "Prostor je pravidelně profesionálně uklízen. Pokud při příchodu zjistíte znečištění nebo poškození vybavení, ihned nás kontaktujte. Děkujeme, že nám pomáháte udržovat prostor čistý.",
   "faq.19.question": "Mohu si ve studiu natáčet videa nebo fotografovat?",
   "faq.19.answer":
     "Ano. Budeme rádi, když své momenty z tréninku zaznamenáte a označíte nás na Instagramu jako @namaste_plzen.",
@@ -251,7 +251,7 @@ export const SITE_DEFAULTS = {
 const LEGACY_CONTENT_VALUES: Partial<
   Record<keyof typeof SITE_DEFAULTS, string>
 > = {
-  "home.hero.title": "Tvůj čas. Tvůj prostor. Tvoje Namasté.",
+  "home.hero.title": "Tvůj čas. Tvůj prostor. Tvoje NAVI.",
   "home.hero.subtitle":
     "Rezervujte si prémiové, soukromé, samoobslužné fitness v Plzni. Jen pro sebe a svůj doprovod.",
   "home.pricing.title": "Jednorázový vstup bez předplatného",

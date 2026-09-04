@@ -1,5 +1,5 @@
 -- Payment idempotency and privacy-safe public availability refresh.
--- Review and apply only to the dedicated NAMASTÉ Supabase project.
+-- Review and apply only to the dedicated NAVI Supabase project.
 
 CREATE UNIQUE INDEX IF NOT EXISTS "payment_checkout_session_uidx"
   ON "payment" ("stripe_checkout_session_id")
