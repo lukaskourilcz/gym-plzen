@@ -192,10 +192,77 @@ Mimo naši kontrolu a proto mimo termín: schválení WhatsApp šablony Metou,
 propagace DNS při stěhování domény, případná integrace Fakturoidu (po
 rozhodnutí).
 
-## GitHub issues
+## GitHub issues (založeno 4. 9. 2026)
 
-Doplní se po založení.
+| Issue                                                       | Obsah                                                       | Blokuje / závisí                   |
+| ----------------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------- |
+| [#33](https://github.com/lukaskourilcz/gym-plzen/issues/33) | A · název NAVI v kódu, e-mailech, ICS, Stripe, docs         | —                                  |
+| [#34](https://github.com/lukaskourilcz/gym-plzen/issues/34) | B · logo a znak kettlebell-N místo lotosu                   | vektor od klienta (dočasně raster) |
+| [#35](https://github.com/lukaskourilcz/gym-plzen/issues/35) | C · absolutní URL a kontakt z konfigurace, checklist domény | rozhodnutí o doméně (jen pro §10)  |
+| [#36](https://github.com/lukaskourilcz/gym-plzen/issues/36) | D · 289 Kč a říjnová akce 199 Kč podle data rezervace       | —                                  |
+| [#37](https://github.com/lukaskourilcz/gym-plzen/issues/37) | E · horizont rezervací nastavitelný                         | —                                  |
+| [#38](https://github.com/lukaskourilcz/gym-plzen/issues/38) | F · kalendář, mezera sekcí, tlačítko na střed               | —                                  |
+| [#39](https://github.com/lukaskourilcz/gym-plzen/issues/39) | G · obrázkové klíče, upload a štítek „Ilustrační foto“      | fotky dodá Lukáš                   |
+| [#40](https://github.com/lukaskourilcz/gym-plzen/issues/40) | H · správa rolí v Členech                                   | —                                  |
+| [#41](https://github.com/lukaskourilcz/gym-plzen/issues/41) | J · faktury (rozhodnutí)                                    | rozhodnutí klienta                 |
+| [#42](https://github.com/lukaskourilcz/gym-plzen/issues/42) | K · GA4 a Meta Pixel ID z env                               | ID dodá klient                     |
+| [#43](https://github.com/lukaskourilcz/gym-plzen/issues/43) | M · průřezové ověření, dokumentace, checklist na 11. 9.     | #33–#40, #42                       |
+
+Doporučené pořadí: #33 + #35 (stejné soubory) → #36 + #37 → #38, #42, #40 →
+#34 (raster hned, vektor po dodání) → #39 → #43. #41 až po rozhodnutí.
 
 ## Kickoff prompt pro implementaci
 
-Doplní se po založení issues (viz níže).
+Prompt pro implementační session (anglicky, ke zkopírování):
+
+```text
+Read CLAUDE.md, SESSION_HANDOFF.md, .claude/skills/gym-architecture/SKILL.md,
+docs/DESIGN_SYSTEM.md and .claude/rules/design-system.md first. Then read
+docs/NAVI_REBRAND_PLAN.md: it is the plan for this work and it links every
+GitHub issue with file paths, tasks and acceptance criteria.
+
+Goal: implement issues #33 to #40 and #42 in the lukaskourilcz/gym-plzen repo,
+then #43 (cross-cutting verification). Issue #41 (invoices) is blocked on a
+client decision: do not implement it; only add `locale: "cs"` to the Stripe
+Checkout session as part of #36 if it is not there yet.
+
+Order: #33 with #35 first (they touch the same files), then #36 and #37
+(pricing and horizon, the riskiest business logic: write the pure functions
+and their unit tests before wiring the UI), then #38, #42, #40, then #34, then
+#39, and #43 last. Commit per issue with "Closes #N" in the message; keep
+commits small and coherent.
+
+Hard rules:
+- Czech customer copy only. Never invent business facts, prices, contact
+  data, legal text or reviews. The VOP and house rules (src/lib/content/
+  terms.ts, rules.ts) are the client's legal texts: change only the brand
+  name where it is purely the operator's designation, and note the rest in
+  NEEDED.md.
+- Do not draw or approximate the logo. Use the files Lukáš puts in
+  public/images/ (navi-mark, navi-wordmark, navi-logo, navi-logo-light). If
+  only the 3D visualisation exists yet, wire everything against it and say so
+  in SESSION_HANDOFF.md so the swap is a file replacement later.
+- Do not generate photos; only build the CMS keys, upload and the
+  "Ilustrační foto" label (#39).
+- Keep the layered architecture (routes/actions → services → db/integrations),
+  React Hook Form + Zod for every form, defineAction + assertAdmin for admin
+  actions, semantic tokens only, 44px targets, Bitter + Lucide.
+- The homepage is ISR (revalidate 60): never read cookies or per-request
+  state on public pages. The design-variant switch mechanism stays as is.
+- Pricing rule (#36): the price is decided by the moment the reservation is
+  created, not by the slot date. Loyalty (every 10th entry free, members only)
+  keeps working inside the promo window. Rescheduling never re-prices.
+- Leave demo accounts (@namaste.demo) and cookie names alone.
+
+Before finishing each issue run npm run format:check, lint, typecheck, test
+and build; for UI issues also Playwright against a production build (never
+rebuild .next under a running server, see tests/e2e/README.md) at 320, 390,
+667 landscape, 768, 1024, 1280, 1440 and 1728 px, keyboard, focus, contrast,
+reduced motion, and both design variants (unlock the switch with the
+ns_preview cookie or by opening /dev).
+
+At the end: update SESSION_HANDOFF.md, NEEDED.md (tick what is done, list
+what still needs the client), merge to main per CLAUDE.md, and report what
+is deployed, what is blocked on the client, and anything you deviated from
+in the issues and why.
+```
