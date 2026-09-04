@@ -107,15 +107,18 @@ export function SiteHeader({
 
         <div className="ml-auto flex items-center gap-2 lg:ml-0 lg:justify-self-end">
           {/*
-           * Content-driven breakpoint: the brand lockup, booking button,
-           * account link and menu toggle already fill the bar at `md`, so the
-           * switch only joins them from `md` up and lives in the mobile menu
-           * below that. Showing it at `sm` overflows the row.
+           * Content-driven breakpoint. Measured at 1024px: brand 160 + centred
+           * nav 430 + this cluster 436 already exceeds the viewport, so the
+           * switch only joins the bar from `xl`, where it fits with room to
+           * spare. Below `lg` it lives in the mobile menu; between the two the
+           * operator flips the variant on /dev, which is the documented
+           * entrance anyway. A preview tool must never distort the layout it
+           * exists to preview.
            *
            * The wrapper carries the preview gate so the switch keeps its own
            * responsive display classes untouched.
            */}
-          <div data-preview-only className="hidden md:flex">
+          <div data-preview-only className="hidden xl:flex">
             <DesignVariantSwitch />
           </div>
           {/* Visible at every width: on mobile the hero no longer carries a
@@ -179,8 +182,8 @@ export function SiteHeader({
               {accountLabel}
             </Button>
           </div>
-          {/* Only below `md`: from there up the header bar carries the switch. */}
-          <div data-preview-only className="mt-3 flex justify-center md:hidden">
+          {/* The menu itself is `lg:hidden`, so this covers the phone widths. */}
+          <div data-preview-only className="mt-3 flex justify-center">
             <DesignVariantSwitch />
           </div>
         </div>

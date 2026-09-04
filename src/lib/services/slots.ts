@@ -54,10 +54,19 @@ export interface DayHours {
  * setting is missing or unusable.
  */
 export async function getBookingHorizonDays(): Promise<number> {
-  const stored = await getSetting<number>(BOOKING_HORIZON_SETTING_KEY);
-  return typeof stored === "number"
-    ? clampBookingHorizonDays(stored)
-    : DEFAULT_BOOKING_HORIZON_DAYS;
+  try {
+    const stored = await getSetting<number>(BOOKING_HORIZON_SETTING_KEY);
+    return typeof stored === "number"
+      ? clampBookingHorizonDays(stored)
+      : DEFAULT_BOOKING_HORIZON_DAYS;
+  } catch (e) {
+    // The booking page must still render on a deploy without a database, the
+    // same way site content falls back to its defaults.
+    logger.warn("getBookingHorizonDays: default (DB unavailable)", {
+      error: String(e),
+    });
+    return DEFAULT_BOOKING_HORIZON_DAYS;
+  }
 }
 
 export function buildDaySlots(

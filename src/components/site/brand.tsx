@@ -51,6 +51,7 @@ export function BrandMark({
       {...(decorative
         ? { "aria-hidden": true }
         : { role: "img", "aria-label": title })}
+      data-brand="mark"
       className={cn(
         "inline-block size-10 shrink-0 text-accent-foreground",
         className,
@@ -73,6 +74,7 @@ export function BrandLogo({
 }) {
   return (
     <span
+      data-brand="logo"
       className={cn(
         "inline-flex shrink-0 items-center gap-2 text-accent-foreground sm:gap-2.5",
         className,
@@ -112,6 +114,7 @@ export function BrandLogo({
 export function BrandLockup({ className }: { className?: string }) {
   return (
     <span
+      data-brand="lockup"
       className={cn(
         "inline-flex w-[150px] items-center text-accent-foreground",
         className,

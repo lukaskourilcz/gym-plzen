@@ -1,15 +1,53 @@
 # Předání session
 
-Aktualizováno: 30. 8. 2026
+Aktualizováno: 4. 9. 2026
 
 ## Stav
+
+**Rebrand na NAVI (4. 9. 2026).** Značka je přejmenovaná všude, kde ji vidí
+zákazník: web, metadata, JSON-LD, pět e-mailových šablon, příloha kalendáře,
+popis platby ve Stripe, administrace, testy i dokumentace. Uložené texty v
+databázi přepíše `npm run rebrand:navi` (nejdřív vypíše, co změní, pak s
+`--write`); je idempotentní a nesahá na doménu `namastegym.cz`, Instagram
+`@namaste_plzen` ani na právní znění. Kontaktní e-mail je nově
+`info@navigym.cz`.
+
+**Logo.** `BrandMark`, `BrandLogo` a `BrandLockup` kreslí dodaný znak
+(kettlebell s N) jako CSS masku obarvenou `currentColor`: na světlém podkladu
+zeleně, na ink zlatě. Dodané logo je zlaté a zlatá na krémovém pozadí má
+kontrast ~1,9:1, proto se tam nikdy nepoužívá. **PNG jsou siluety vytažené z
+3D vizualizace klienta** (`public/images/navi-logo-source.png`) — tvarem věrné,
+ale s měkkými hranami renderu. Až dodá vektory, stačí vyměnit `navi-mark.png`,
+`navi-wordmark.png`, `navi-logo.png` a `navi-logo-email.png` a přegenerovat
+`src/app/icon.png`; v kódu se nemění nic.
+
+**Ceny.** Standardní cena je 289 Kč. Akční okno se nastavuje v administraci →
+Vstupné a věrnost a řídí se **okamžikem vytvoření rezervace**, ne termínem: kdo
+rezervuje během akce, platí akční cenu i za termín o měsíce později.
+Věrnostní 10. vstup zdarma platí i uvnitř akce. Změna termínu cenu
+nepřepočítává. Texty s cenou používají zástupné `{price}`
+a `{pricePerPerson}`, takže nemohou zastarat.
+
+**Rozsah rezervací** už není napevno 60 dní: nastavuje se v administraci →
+Nastavení (7–365). Pro říjnovou akci doporučeno 130 dní.
+
+**Administrace.** V Členech lze udělit i odebrat roli správce (posledního
+správce systém odebrat nedovolí), v Nastavení přibyly fotografie galerie a zón
+se štítkem „Ilustrační foto“ a rozsah rezervací. Měřicí ID GA4 a Meta Pixelu se
+berou z env; bez nich se neuloží žádný skript a lišta souhlasu se nezobrazí.
+
+**Drobnosti z klientského e-mailu:** větší text v kalendáři, menší mezera mezi
+„Jak to funguje“ a „Ceníkem“, tlačítko v závěrečném pásu na mobilu na střed.
+
+**Přepínač vzhledu** se kvůli šířce hlavičky zobrazuje až od `xl`; pod `lg` je
+v mobilním menu, mezi tím se vzhled přepíná na `/dev`.
 
 **Nové v této session (větev `claude/mobbing-feature-ideas-kens00`).** Veřejný
 web umí dvě varianty vzhledu: schválenou **Klasickou** a novou **Moderní**.
 Přepínač je **skrytý před návštěvníky**: odemkne se až otevřením
 `namastegym.cz/dev`, což nastaví cookie `ns_preview` jen v daném prohlížeči.
 Stránka `/dev` je `noindex`, mimo sitemapu i robots. Po odemčení je přepínač
-vpravo nahoře v hlavičce (od `md` výš), na užších displejích v mobilním menu;
+vpravo nahoře v hlavičce (od `xl` výš), na užších displejích v mobilním menu;
 na `/dev` jde náhled zase vypnout. Volba se ukládá do cookie `ns_design` a inline skript ji ještě
 před vykreslením propíše jako `data-design` na `<html>`, takže se nikdy
 neprobliskne druhý vzhled a úvodní stránka si drží ISR. Rozdíly jsou výhradně v

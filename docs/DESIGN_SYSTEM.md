@@ -127,11 +127,13 @@ order and the accessibility tree, and gating in CSS rather than on the server is
 what lets the public pages stay ISR. `/dev` is `noindex` and excluded from both
 the sitemap and `robots.txt`.
 
-When unlocked, the switch sits in the header's right-hand cluster from `md` up
-and moves into the mobile menu below that: a content-driven breakpoint, because
-the brand lockup, booking button, account link and menu toggle already fill the
-bar at `sm`. It is a native radio group, so arrow keys work and the group has one
-accessible name. The administration does not use variants.
+When unlocked, the switch sits in the header's right-hand cluster from `xl` up
+and in the mobile menu below `lg`: a content-driven breakpoint, because at
+1024px the brand, the centred navigation and the action cluster already exceed
+the viewport. Between `lg` and `xl` the variant is flipped on `/dev`, which is
+the documented entrance in any case. A preview tool must never distort the
+layout it exists to preview. It is a native radio group, so arrow keys work and
+the group has one accessible name. The administration does not use variants.
 
 ## Colour
 

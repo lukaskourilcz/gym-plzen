@@ -8,11 +8,20 @@ Auth a administrační formuláře. Testy mají tři odlišné režimy.
 Produkční build bez databáze musí zobrazit transparentní nedostupný stav a nikdy
 fiktivní dostupnost.
 
+Měřicí ID se do buildu vkládají (`NEXT_PUBLIC_*`), a bez nich se lišta souhlasu
+vůbec nezobrazí. Testy, které lištu odklikávají, proto potřebují build s
+nastavenými ID:
+
 ```bash
-npm run build
+NEXT_PUBLIC_GA_MEASUREMENT_ID="G-E2ETEST000" \
+NEXT_PUBLIC_META_PIXEL_ID="1000000000000000" \
+  npm run build
 PORT=3131 npm start
 E2E_PORT=3131 npx playwright test tests/e2e/public.spec.ts
 ```
+
+Chování bez ID (žádný skript, žádná lišta) pokrývají unit testy v
+`tests/unit/analytics.test.ts`.
 
 ## 2. Lokální demo bez Supabase
 

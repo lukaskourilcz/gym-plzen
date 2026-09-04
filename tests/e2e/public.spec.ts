@@ -467,7 +467,10 @@ test.describe("Public site", () => {
       .first()
       .evaluate((brandBlock) => {
         const block = brandBlock.getBoundingClientRect();
-        const logo = brandBlock.querySelector("img")!.getBoundingClientRect();
+        // The brand renders as a masked span, not an <img>.
+        const logo = brandBlock
+          .querySelector('[data-brand="lockup"]')!
+          .getBoundingClientRect();
         const copy = brandBlock.querySelector("p")!;
         return {
           blockCenter: Math.round(block.left + block.width / 2),
@@ -521,13 +524,22 @@ test.describe("Public site", () => {
       .evaluate((element) =>
         Number.parseFloat(getComputedStyle(element).paddingRight),
       );
+    /*
+     * The client asked for this action to be centred on mobile; from `lg` it
+     * returns to the right edge. Compare centres inside the container's
+     * content box.
+     */
+    const mobileCtaPaddingLeft = await page
+      .locator("#pridej-se > div")
+      .evaluate((element) =>
+        Number.parseFloat(getComputedStyle(element).paddingLeft),
+      );
+    const contentLeft = mobileCtaContainer!.x + mobileCtaPaddingLeft;
+    const contentRight =
+      mobileCtaContainer!.x + mobileCtaContainer!.width - mobileCtaPaddingRight;
     expect(
       Math.abs(
-        mobileCta!.x +
-          mobileCta!.width -
-          (mobileCtaContainer!.x +
-            mobileCtaContainer!.width -
-            mobileCtaPaddingRight),
+        mobileCta!.x + mobileCta!.width / 2 - (contentLeft + contentRight) / 2,
       ),
     ).toBeLessThanOrEqual(1);
     await page.getByRole("button", { name: /Otevřít menu/i }).click();
@@ -597,6 +609,13 @@ test.describe("Public site", () => {
   test("public routes reflow without horizontal overflow at representative widths", async ({
     page,
   }) => {
+    /*
+     * Seven full page loads, each waiting on the externally hosted hero
+     * photograph. That lands within a second of the default limit, so the run
+     * would otherwise pass or fail on noise.
+     */
+    test.setTimeout(90_000);
+
     for (const width of [390, 667, 768, 1024, 1280, 1440, 1728]) {
       await page.setViewportSize({ width, height: width < 700 ? 760 : 900 });
       await page.goto(width % 2 === 0 ? "/rezervace" : "/", {

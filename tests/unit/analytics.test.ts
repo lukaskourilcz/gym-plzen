@@ -56,3 +56,21 @@ test("with no trackers configured there is no consent to ask for", async () => {
     /if \(!isAnalyticsConfigured && !isMarketingConfigured\)/,
   );
 });
+
+test("every public env key is also read statically", async () => {
+  // Next.js only inlines `process.env.NEXT_PUBLIC_*` when it is written out
+  // literally, so a key declared in the schema but missing from the parse call
+  // is silently always undefined in the browser.
+  const fs = await import("node:fs/promises");
+  const source = await fs.readFile("src/lib/public-env.ts", "utf8");
+  const declared = [...source.matchAll(/^\s{2}(NEXT_PUBLIC_\w+):/gm)].map(
+    (m) => m[1],
+  );
+  assert.ok(declared.length > 5);
+  for (const key of declared) {
+    assert.ok(
+      source.includes(`process.env.${key}`),
+      `${key} is declared but never read from process.env`,
+    );
+  }
+});

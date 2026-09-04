@@ -1,9 +1,17 @@
 import { expect, test } from "@playwright/test";
 
+/*
+ * Measurement ids are inlined at build time. This suite exercises the
+ * configured path, so build with the same values (see tests/e2e/README).
+ * The unconfigured path, where nothing loads and no consent is requested, is
+ * covered by tests/unit/analytics.test.ts.
+ */
+const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "G-E2ETEST000";
+const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID ?? "1000000000000000";
+
 const STORAGE_KEY = "namaste:tracking-consent-v2";
 const LEGACY_STORAGE_KEY = "namaste:analytics-consent-v1";
-const GOOGLE_TAG_SELECTOR =
-  'script[src="https://www.googletagmanager.com/gtag/js?id=G-6L9N41NKT8"]';
+const GOOGLE_TAG_SELECTOR = `script[src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"]`;
 const META_TAG_SELECTOR =
   'script[src="https://connect.facebook.net/en_US/fbevents.js"]';
 
@@ -104,7 +112,7 @@ test.describe("tracking consent", () => {
     await expect(page.locator(META_TAG_SELECTOR)).toHaveCount(1);
     await expect(page.locator(GOOGLE_TAG_SELECTOR)).toHaveCount(0);
     const metaQueue = await page.evaluate(() => window.fbq?.queue ?? []);
-    expect(metaQueue).toContainEqual(["init", "1816423579552231"]);
+    expect(metaQueue).toContainEqual(["init", PIXEL_ID]);
     expect(metaQueue).toContainEqual(["track", "PageView"]);
 
     await page.getByRole("button", { name: "Nastavení cookies" }).click();
