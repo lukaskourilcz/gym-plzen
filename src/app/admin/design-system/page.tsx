@@ -206,7 +206,7 @@ export default function DesignSystemPage() {
               </p>
               <div className="flex flex-1 flex-col justify-center border-b border-border px-6 py-10">
                 <p className="text-6xl font-extrabold leading-none tracking-[-.01em] text-gold">
-                  290 Kč
+                  289 Kč
                 </p>
                 <p className="mt-2 text-base font-bold uppercase tracking-[.1em] text-muted-foreground">
                   / 75 minut
@@ -337,7 +337,7 @@ export default function DesignSystemPage() {
                 Na tmavé ploše akcentuje jen zlatá:
               </span>
               <LotusMark decorative className="size-8 text-gold" />
-              <span className="text-2xl font-extrabold text-gold">290 Kč</span>
+              <span className="text-2xl font-extrabold text-gold">289 Kč</span>
               <span className="flex items-center gap-2 text-gold">
                 <FacebookIcon />
                 <InstagramIcon />

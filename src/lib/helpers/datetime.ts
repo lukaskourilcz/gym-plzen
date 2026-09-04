@@ -184,3 +184,34 @@ export function monthGrid(monthKey: string): MonthGridDay[] {
 export function isFuture(date: Date): boolean {
   return date.getTime() > Date.now();
 }
+
+/**
+ * Convert a `datetime-local` input value ("2026-10-01T00:00") to the instant it
+ * names in the gym's timezone. The input element carries no zone, so without
+ * this an administrator in another country would set a different moment than
+ * the one they typed.
+ */
+export function localInputToInstant(
+  value: string,
+  timeZone = PRAGUE_TIME_ZONE,
+): Date {
+  const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/.exec(value.trim());
+  if (!match) throw new Error("Invalid local date-time value.");
+  const [, dateKey, hours, minutes] = match;
+  return localDateTimeToDate(
+    dateKey!,
+    Number(hours) * 60 + Number(minutes),
+    timeZone,
+  );
+}
+
+/** The inverse, for pre-filling a `datetime-local` input from a stored instant. */
+export function instantToLocalInput(
+  date: Date,
+  timeZone = PRAGUE_TIME_ZONE,
+): string {
+  const minute = minuteOfDay(date, timeZone);
+  const hh = String(Math.floor(minute / 60)).padStart(2, "0");
+  const mm = String(minute % 60).padStart(2, "0");
+  return `${dateKeyInTimeZone(date, timeZone)}T${hh}:${mm}`;
+}

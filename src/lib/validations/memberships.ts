@@ -22,5 +22,61 @@ export const entryPriceSchema = z.object({
     .min(0, "Cena nesmí být záporná."),
 });
 
+/**
+ * A time-limited promotional price. Dates arrive as `datetime-local` strings
+ * and are converted to instants in the action, so the schema stays
+ * transform-free and can validate on both sides.
+ *
+ * Leaving every field empty clears the promotion, which is how an operator
+ * ends it early.
+ */
+export const promoPriceSchema = z
+  .object({
+    priceCzk: z
+      .number({ invalid_type_error: "Zadejte číslo." })
+      .positive("Akční cena musí být větší než nula.")
+      .optional(),
+    startsAt: optionalText(40),
+    endsAt: optionalText(40),
+  })
+  .superRefine((value, ctx) => {
+    const filled = [value.priceCzk != null, !!value.startsAt, !!value.endsAt];
+    if (!filled.some(Boolean)) return; // cleared: nothing to validate
+
+    if (value.priceCzk == null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["priceCzk"],
+        message: "Zadejte akční cenu, nebo vymažte celou akci.",
+      });
+    }
+    if (!value.startsAt) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["startsAt"],
+        message: "Zadejte začátek akce.",
+      });
+    }
+    if (!value.endsAt) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["endsAt"],
+        message: "Zadejte konec akce.",
+      });
+    }
+    if (
+      value.startsAt &&
+      value.endsAt &&
+      new Date(value.endsAt).getTime() <= new Date(value.startsAt).getTime()
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["endsAt"],
+        message: "Konec akce musí být po jejím začátku.",
+      });
+    }
+  });
+
 export type UpsertPlanValues = z.infer<typeof upsertPlanSchema>;
+export type PromoPriceValues = z.infer<typeof promoPriceSchema>;
 export type EntryPriceValues = z.infer<typeof entryPriceSchema>;

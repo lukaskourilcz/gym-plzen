@@ -18,6 +18,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EntryPriceForm } from "./entry-price-form";
+import { PromoPriceForm } from "./promo-price-form";
+import { instantToLocalInput } from "@/lib/helpers/datetime";
 
 export const metadata = { title: "Vstupné a věrnost" };
 export const dynamic = "force-dynamic";
@@ -27,10 +29,15 @@ export const dynamic = "force-dynamic";
  * Every Nth entry is free; this page sets the price and shows loyalty progress.
  */
 export default async function PricingPage() {
-  const [entryPriceCents, liveMembers] = await Promise.all([
-    loyalty.getEntryPriceCents().catch(() => DEFAULT_ENTRY_PRICE_CENTS),
-    members.listMembers(200).catch(() => []),
-  ]);
+  const [standardPriceCents, promo, entryPrice, liveMembers] =
+    await Promise.all([
+      loyalty
+        .getStandardEntryPriceCents()
+        .catch(() => DEFAULT_ENTRY_PRICE_CENTS),
+      loyalty.getPromoWindow().catch(() => null),
+      loyalty.getEntryPrice().catch(() => null),
+      members.listMembers(200).catch(() => []),
+    ]);
 
   const demo = liveMembers.length === 0;
   let withLoyalty: {
@@ -71,18 +78,48 @@ export default async function PricingPage() {
         </CardHeader>
         <CardContent>
           <p className="mb-4 text-sm text-muted-foreground">
-            Jednorázový vstup. Žádná měsíční předplatná. Aktuální cena:{" "}
+            Jednorázový vstup. Žádná měsíční předplatná. Standardní cena:{" "}
             <strong className="text-foreground">
-              {formatMoney(entryPriceCents)}
+              {formatMoney(standardPriceCents)}
             </strong>
+            {entryPrice?.isPromo ? (
+              <>
+                , zákazník teď platí{" "}
+                <strong className="text-foreground">
+                  {formatMoney(entryPrice.priceCents)}
+                </strong>
+              </>
+            ) : null}
             .
           </p>
-          <EntryPriceForm currentCzk={Math.round(entryPriceCents / 100)} />
+          <EntryPriceForm currentCzk={Math.round(standardPriceCents / 100)} />
           <p className="mt-4 text-sm text-muted-foreground">
             Věrnostní program: každý{" "}
             <strong className="text-foreground">{FREE_ENTRY_EVERY}.</strong>{" "}
-            vstup je zdarma. (Kadence: <code>src/lib/config/pricing.ts</code>.)
+            vstup je zdarma pro zákazníky s účtem. Rezervace bez registrace se
+            do věrnosti nepočítají. (Kadence:{" "}
+            <code>src/lib/config/pricing.ts</code>.)
           </p>
+        </CardContent>
+      </Card>
+
+      <Card className="mb-8 max-w-xl">
+        <CardHeader>
+          <CardTitle>Časově omezená akce</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <PromoPriceForm
+            currentPriceCzk={
+              promo ? Math.round(promo.priceCents / 100) : undefined
+            }
+            currentStartsAt={
+              promo ? instantToLocalInput(promo.startsAt) : undefined
+            }
+            currentEndsAt={
+              promo ? instantToLocalInput(promo.endsAt) : undefined
+            }
+            isRunning={Boolean(entryPrice?.isPromo)}
+          />
         </CardContent>
       </Card>
 

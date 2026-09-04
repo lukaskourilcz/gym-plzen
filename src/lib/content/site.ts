@@ -2,10 +2,16 @@ import { db } from "@/lib/db";
 import { contentBlock, siteSetting } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "@/lib/helpers/logger";
+import { formatMoney } from "@/lib/helpers/format";
 import {
   DEFAULT_ENTRY_PRICE_CENTS,
   ENTRY_PRICE_SETTING_KEY,
   FREE_ENTRY_EVERY,
+  GYM_CAPACITY,
+  PROMO_ENDS_AT_SETTING_KEY,
+  PROMO_PRICE_SETTING_KEY,
+  PROMO_STARTS_AT_SETTING_KEY,
+  resolveEntryPrice,
 } from "@/lib/config/pricing";
 import {
   HERO_IMAGE_ALT_KEY,
@@ -123,6 +129,8 @@ export const SITE_DEFAULTS = {
   // Three lines in the hero's format, the last one carrying the gold accent.
   "home.pricing.title": "Bez závazků.\nBez předplatného.",
   "home.pricing.titleAccent": "Bez měsíčních plateb.",
+  "home.pricing.promoNote":
+    "Akční cena platí pro rezervace vytvořené během akce, i na termíny v dalších měsících.",
   "home.pricing.feature1": "Soukromé využití prostoru během rezervace",
   "home.pricing.feature2": "Platba online kartou",
   "home.pricing.feature3": "Pokyny ke vstupu po potvrzení rezervace",
@@ -200,7 +208,7 @@ export const SITE_DEFAULTS = {
     "Nebudou. Celý prostor je ve vašem časovém okně rezervován exkluzivně pro vás a váš doprovod. Nikdo cizí se v prostoru pohybovat nebude. Maximální kapacita je 5 osob včetně dětí.",
   "faq.7.question": "Budu platit více, když do studia nepůjdu sám nebo sama?",
   "faq.7.answer":
-    "Ne. Cena je jednotná a bez příplatků. Za 75 minut zaplatíte 290 Kč, a to až pro 5 osob. Při návštěvě v pěti vychází rezervace jednoho člověka na 58 Kč.",
+    "Ne. Cena je jednotná a bez příplatků. Za 75 minut zaplatíte {price}, a to až pro 5 osob. Při návštěvě v pěti vychází rezervace jednoho člověka na {pricePerPerson}.",
   "faq.8.question": "Jak se dostanu dovnitř? Bude na místě recepce?",
   "faq.8.answer":
     "Fungujeme jako plně samoobslužné studio, takže u nás klasickou recepci nenajdete. Před rezervovaným časem obdržíte číselný kód. Zadáte ho u vstupu a dveře se automaticky odemknou.",
@@ -263,7 +271,14 @@ export type SiteContentKey = keyof typeof SITE_DEFAULTS;
 
 export interface SiteContent {
   get: (key: SiteContentKey) => string;
+  /** What an entry costs right now, promotion included. */
   entryPriceCents: number;
+  /** The price outside the promotion, so the site can show both. */
+  standardEntryPriceCents: number;
+  /** True while a promotional window is running. */
+  isPromoPrice: boolean;
+  /** End of the running promotion, for the note under the price. */
+  promoEndsAt: Date | null;
   freeEntryEvery: number;
   logoUrl: string | null;
   termsUrl: string | null;
@@ -292,7 +307,10 @@ export function footerProps(content: SiteContent) {
 /** Load all public content once (overlay CMS values on defaults). Never throws. */
 export async function loadSiteContent(locale = "cs"): Promise<SiteContent> {
   const values: Record<string, string> = { ...SITE_DEFAULTS };
-  let entryPriceCents = DEFAULT_ENTRY_PRICE_CENTS;
+  let standardEntryPriceCents = DEFAULT_ENTRY_PRICE_CENTS;
+  let promoPriceCents: number | null = null;
+  let promoStartsAt: string | null = null;
+  let promoEndsAtRaw: string | null = null;
   let logoUrl: string | null = null;
   let termsUrl: string | null = null;
   let heroImageUrl: string | null = null;
@@ -318,7 +336,13 @@ export async function loadSiteContent(locale = "cs"): Promise<SiteContent> {
       .from(siteSetting);
     for (const s of settings) {
       if (s.key === ENTRY_PRICE_SETTING_KEY && typeof s.value === "number")
-        entryPriceCents = s.value;
+        standardEntryPriceCents = s.value;
+      if (s.key === PROMO_PRICE_SETTING_KEY && typeof s.value === "number")
+        promoPriceCents = s.value;
+      if (s.key === PROMO_STARTS_AT_SETTING_KEY && typeof s.value === "string")
+        promoStartsAt = s.value || null;
+      if (s.key === PROMO_ENDS_AT_SETTING_KEY && typeof s.value === "string")
+        promoEndsAtRaw = s.value || null;
       if (s.key === LOGO_URL_KEY && typeof s.value === "string")
         logoUrl = s.value || null;
       if (s.key === TERMS_URL_KEY && typeof s.value === "string")
@@ -338,9 +362,51 @@ export async function loadSiteContent(locale = "cs"): Promise<SiteContent> {
     });
   }
 
+  /*
+   * The promotion is decided by the moment the page is rendered, which is also
+   * the moment a visitor would book. The homepage is ISR with a 60s window, so
+   * the price flips within a minute of the window opening or closing.
+   */
+  const toInstant = (value: string | null) => {
+    if (!value) return null;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+  const promoStart = toInstant(promoStartsAt);
+  const promoEnd = toInstant(promoEndsAtRaw);
+  const price = resolveEntryPrice({
+    standardPriceCents: standardEntryPriceCents,
+    promo:
+      promoPriceCents !== null && promoStart && promoEnd
+        ? {
+            priceCents: promoPriceCents,
+            startsAt: promoStart,
+            endsAt: promoEnd,
+          }
+        : null,
+    at: new Date(),
+  });
+
+  /*
+   * Prices live in one place. Copy refers to them as `{price}` and
+   * `{pricePerPerson}` so an operator never has to remember which sentences
+   * mention a number when the price changes.
+   */
+  const priceLabel = formatMoney(price.priceCents);
+  const perPersonLabel = formatMoney(
+    Math.round(price.priceCents / GYM_CAPACITY),
+  );
+  const fillPrices = (value: string) =>
+    value
+      .replaceAll("{price}", priceLabel)
+      .replaceAll("{pricePerPerson}", perPersonLabel);
+
   return {
-    get: (key) => values[key] ?? SITE_DEFAULTS[key] ?? "",
-    entryPriceCents,
+    get: (key) => fillPrices(values[key] ?? SITE_DEFAULTS[key] ?? ""),
+    entryPriceCents: price.priceCents,
+    standardEntryPriceCents: price.standardPriceCents,
+    isPromoPrice: price.isPromo,
+    promoEndsAt: price.promoEndsAt ?? null,
     freeEntryEvery: FREE_ENTRY_EVERY,
     logoUrl,
     termsUrl,

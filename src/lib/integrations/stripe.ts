@@ -89,6 +89,8 @@ export async function createOneOffCheckout(params: {
 }): Promise<Stripe.Checkout.Session> {
   return stripe().checkout.sessions.create({
     mode: "payment",
+    // Czech customers, Czech payment page and Stripe receipt.
+    locale: "cs",
     customer: params.customerId,
     customer_email: params.customerId ? undefined : params.customerEmail,
     line_items: [

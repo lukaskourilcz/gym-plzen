@@ -216,7 +216,7 @@ export function buildDemoReservations(
       contactName: fullName(u),
       contactEmail: u.email,
       contactPhone: u.phone,
-      priceCents: n % 10 === 9 ? 0 : 29000,
+      priceCents: n % 10 === 9 ? 0 : 28900,
       currency: "czk",
       rulesAcceptedAt: addMinutes(startsAt, -60 * 24),
       termsAcceptedAt: addMinutes(startsAt, -60 * 24),

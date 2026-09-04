@@ -9,6 +9,7 @@ import {
 } from "@/lib/content/site";
 import { cn } from "@/lib/utils";
 import {
+  formatDate,
   formatMoney,
   formatTimeRange,
   minutesToHHmm,
@@ -97,6 +98,14 @@ export default async function HomePage() {
   const t = content.get;
   const brand = t("brand.name");
   const price = formatMoney(content.entryPriceCents);
+  /*
+   * The promotion is keyed to when a visitor books, so the note says exactly
+   * that. The end date is appended from the configured window rather than
+   * written into the copy, where it would go stale.
+   */
+  const promoNote = content.promoEndsAt
+    ? `${t("home.pricing.promoNote")} Akce platí do ${formatDate(content.promoEndsAt)}.`
+    : t("home.pricing.promoNote");
   const address = publicAddress(t("contact.address"));
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(PUBLIC_MAP_QUERY)}`;
   /*
@@ -425,6 +434,20 @@ export default async function HomePage() {
                       / {DEFAULT_SLOT_MINUTES} minut
                     </span>
                   </div>
+                  {/*
+                   * During a promotion the standard price stays visible, so the
+                   * saving is a fact the visitor can check rather than a claim.
+                   */}
+                  {content.isPromoPrice && (
+                    <p className="mt-4 text-sm font-bold text-muted-foreground">
+                      <span className="line-through">
+                        {formatMoney(content.standardEntryPriceCents)}
+                      </span>{" "}
+                      <span className="text-accent-foreground">
+                        {promoNote}
+                      </span>
+                    </p>
+                  )}
                 </div>
                 <div className="px-7 py-7 text-center">
                   <Button href="/rezervace" size="lg" className="w-full">

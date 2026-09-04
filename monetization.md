@@ -1,7 +1,7 @@
 # NAVI - monetizace
 
 Web prodává jednorázové rezervace soukromého fitness. Aktuální obchodní model
-nemá předplatné: 290 Kč za 75 minut a každý 10. vstup zdarma registrovanému
+nemá předplatné: 289 Kč za 75 minut a každý 10. vstup zdarma registrovanému
 klientovi.
 
 | Možnost                                 | Pravděpodobnost | Role                       | Poznámka                                               |
