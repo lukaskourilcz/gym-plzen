@@ -86,7 +86,9 @@ test("illustrative photos are labelled and never claim to be the gym", async () 
     "utf8",
   );
   // While the pictures are stand-ins a visitor must be told so.
-  assert.match(component, /Ilustrační foto/);
+  assert.match(component, /aria-label="Ilustrační foto"/);
+  assert.match(component, /role="tooltip"/);
+  assert.match(component, /<Info/);
   // With no photograph at all the caller's placeholder is rendered instead.
   assert.match(component, /if \(!src\) return/);
 });
