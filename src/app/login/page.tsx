@@ -19,7 +19,7 @@ export default function LoginPage() {
           aria-label="NAVI Private Gym, úvodní stránka"
           className="relative inline-flex min-h-11 items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
         >
-          <BrandLockup inverse className="[&_img]:w-56" />
+          <BrandLockup className="w-56 text-gold" />
         </Link>
         <div className="relative">
           <div className="text-[40px] font-extrabold leading-[1.1] tracking-[-.01em]">

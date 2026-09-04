@@ -555,7 +555,7 @@ test.describe("Public site", () => {
     const firstFaqMark = firstFaqItem.locator(
       "summary > span > span[aria-hidden='true']",
     );
-    await expect(firstFaqMark).toHaveCSS("mask-image", /namaste-lotus\.png/);
+    await expect(firstFaqMark).toHaveCSS("mask-image", /navi-mark\.png/);
     await firstFaqItem.locator("summary").click();
     await expect
       .poll(() =>

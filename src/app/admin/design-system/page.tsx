@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Notice } from "@/components/ui/notice";
-import { BrandLockup, BrandLogo, LotusMark } from "@/components/site/brand";
+import { BrandLockup, BrandLogo, BrandMark } from "@/components/site/brand";
 import {
   FacebookIcon,
   InstagramIcon,
@@ -60,11 +60,17 @@ export default function DesignSystemPage() {
           <Card>
             <CardContent className="grid gap-8 p-6 lg:grid-cols-2">
               <div className="flex flex-wrap items-center gap-8">
-                <LotusMark className="size-14 text-accent-foreground" />
+                <BrandMark className="size-14" />
                 <BrandLogo />
                 <span className="rounded-lg bg-ink p-6">
-                  <BrandLockup inverse />
+                  <BrandLockup className="w-32 text-gold" />
                 </span>
+                <p className="max-w-xs text-sm text-muted-foreground">
+                  Značka se kreslí jako maska obarvená{" "}
+                  <code className="font-bold">currentColor</code>: na světlém
+                  podkladu zelená, na ink zlatá. Zlatá na krémovém pozadí má
+                  kontrast jen ~1,9:1, proto se tam nikdy nepoužívá.
+                </p>
               </div>
               <div>
                 <p className="text-4xl font-extrabold tracking-[-0.01em]">
@@ -116,7 +122,7 @@ export default function DesignSystemPage() {
           <div className="grid gap-5 xl:grid-cols-2">
             <div className="rounded-lg bg-ink p-6">
               <h3 className="flex items-center gap-3 text-lg font-extrabold uppercase tracking-[.04em] text-ink-foreground">
-                <LotusMark decorative className="size-8 shrink-0 text-gold" />
+                <BrandMark decorative className="size-8 shrink-0 text-gold" />
                 Jak to u nás funguje
               </h3>
               <div className="mt-4 grid gap-px overflow-hidden rounded-lg bg-white/20 sm:grid-cols-2">
@@ -160,7 +166,7 @@ export default function DesignSystemPage() {
                   </p>
                 </div>
                 <div className="grid min-h-32 place-items-center bg-ink-elevated">
-                  <LotusMark decorative className="size-14 opacity-30" />
+                  <BrandMark decorative className="size-14 opacity-30" />
                 </div>
               </div>
 
@@ -170,7 +176,7 @@ export default function DesignSystemPage() {
                 </h3>
                 <details className="group border-y border-border py-1">
                   <summary className="flex min-h-16 cursor-pointer list-none items-center gap-4 py-3 font-extrabold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                    <LotusMark
+                    <BrandMark
                       decorative
                       className="size-7 shrink-0 text-muted-foreground transition-[rotate,color] duration-[320ms] ease-brand-spring group-open:rotate-90 group-open:text-accent-foreground"
                     />
@@ -336,7 +342,7 @@ export default function DesignSystemPage() {
               <span className="text-sm font-bold">
                 Na tmavé ploše akcentuje jen zlatá:
               </span>
-              <LotusMark decorative className="size-8 text-gold" />
+              <BrandMark decorative className="size-8 text-gold" />
               <span className="text-2xl font-extrabold text-gold">289 Kč</span>
               <span className="flex items-center gap-2 text-gold">
                 <FacebookIcon />

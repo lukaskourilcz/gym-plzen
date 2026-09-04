@@ -24,7 +24,7 @@ export default async function AdminLayout({
             aria-label="NAVI Private Gym, administrace"
             className="flex items-center gap-3 px-2.5 py-1"
           >
-            <BrandLogo inverse compact />
+            <BrandLogo compact className="text-gold" />
             <span className="text-[11px] font-medium text-white/55">
               Administrace
             </span>

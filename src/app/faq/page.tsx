@@ -4,7 +4,7 @@ import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
-import { LotusMark } from "@/components/site/brand";
+import { BrandMark } from "@/components/site/brand";
 import type { SiteContentKey } from "@/lib/content/site";
 
 export const metadata: Metadata = {
@@ -50,7 +50,7 @@ export default async function FaqPage() {
                       aria-hidden="true"
                       className="relative grid size-7 shrink-0 place-items-center"
                     >
-                      <LotusMark
+                      <BrandMark
                         decorative
                         className="absolute size-7 text-muted-foreground transition-[opacity,scale,color] duration-[220ms] ease-out group-open:scale-75 group-open:opacity-0 motion-safe:group-hover:text-accent-foreground"
                       />

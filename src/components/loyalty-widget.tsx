@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { LotusMark } from "@/components/site/brand";
+import { BrandMark } from "@/components/site/brand";
 import {
   entriesRemainingPhrase,
   loyaltyFilledSegments,
@@ -18,7 +18,7 @@ export function LoyaltyWidget({ status }: { status: LoyaltyStatus }) {
 
   return (
     <div className="relative h-full overflow-hidden rounded-lg bg-ink p-8 text-ink-foreground sm:p-10">
-      <LotusMark
+      <BrandMark
         decorative
         className="pointer-events-none absolute -right-6 -top-6 size-40 text-gold opacity-10"
       />

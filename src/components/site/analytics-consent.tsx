@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import {
   CONSENT_STORAGE_KEY,
   GOOGLE_ANALYTICS_ID,
+  isAnalyticsConfigured,
+  isMarketingConfigured,
   LEGACY_ANALYTICS_CONSENT_STORAGE_KEY,
   OPEN_COOKIE_SETTINGS_EVENT,
   type ConsentPreferences,
@@ -189,6 +191,11 @@ export function AnalyticsConsentManager() {
     [preferences],
   );
 
+  /*
+   * Nothing to consent to when no measurement id is configured: asking for
+   * permission to run trackers that do not exist would be misleading.
+   */
+  if (!isAnalyticsConfigured && !isMarketingConfigured) return null;
   if (!hydrated || (!settingsOpen && preferences !== null)) return null;
 
   return (
@@ -216,44 +223,48 @@ export function AnalyticsConsentManager() {
 
       <fieldset className="mt-5 grid gap-3 sm:grid-cols-2">
         <legend className="sr-only">Volitelné kategorie měření</legend>
-        <label className="flex min-h-20 cursor-pointer gap-3 rounded-md border border-white/20 p-4">
-          <input
-            type="checkbox"
-            checked={draft.analytics}
-            onChange={(event) =>
-              setDraft((current) => ({
-                ...current,
-                analytics: event.target.checked,
-              }))
-            }
-            className="mt-1 size-5 shrink-0 accent-[var(--color-gold)]"
-          />
-          <span>
-            <span className="block font-extrabold">Analytika</span>
-            <span className="mt-1 block text-xs leading-5 text-ink-foreground/75">
-              Google Analytics nám pomáhá chápat návštěvnost a používání webu.
+        {isAnalyticsConfigured && (
+          <label className="flex min-h-20 cursor-pointer gap-3 rounded-md border border-white/20 p-4">
+            <input
+              type="checkbox"
+              checked={draft.analytics}
+              onChange={(event) =>
+                setDraft((current) => ({
+                  ...current,
+                  analytics: event.target.checked,
+                }))
+              }
+              className="mt-1 size-5 shrink-0 accent-[var(--color-gold)]"
+            />
+            <span>
+              <span className="block font-extrabold">Analytika</span>
+              <span className="mt-1 block text-xs leading-5 text-ink-foreground/75">
+                Google Analytics nám pomáhá chápat návštěvnost a používání webu.
+              </span>
             </span>
-          </span>
-        </label>
-        <label className="flex min-h-20 cursor-pointer gap-3 rounded-md border border-white/20 p-4">
-          <input
-            type="checkbox"
-            checked={draft.marketing}
-            onChange={(event) =>
-              setDraft((current) => ({
-                ...current,
-                marketing: event.target.checked,
-              }))
-            }
-            className="mt-1 size-5 shrink-0 accent-[var(--color-gold)]"
-          />
-          <span>
-            <span className="block font-extrabold">Marketing</span>
-            <span className="mt-1 block text-xs leading-5 text-ink-foreground/75">
-              Meta Pixel měří výkon reklam na Facebooku a Instagramu.
+          </label>
+        )}
+        {isMarketingConfigured && (
+          <label className="flex min-h-20 cursor-pointer gap-3 rounded-md border border-white/20 p-4">
+            <input
+              type="checkbox"
+              checked={draft.marketing}
+              onChange={(event) =>
+                setDraft((current) => ({
+                  ...current,
+                  marketing: event.target.checked,
+                }))
+              }
+              className="mt-1 size-5 shrink-0 accent-[var(--color-gold)]"
+            />
+            <span>
+              <span className="block font-extrabold">Marketing</span>
+              <span className="mt-1 block text-xs leading-5 text-ink-foreground/75">
+                Meta Pixel měří výkon reklam na Facebooku a Instagramu.
+              </span>
             </span>
-          </span>
-        </label>
+          </label>
+        )}
       </fieldset>
 
       <div className="mt-5 grid gap-2 min-[560px]:grid-cols-3">

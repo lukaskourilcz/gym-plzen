@@ -32,7 +32,7 @@ import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
-import { LotusMark } from "@/components/site/brand";
+import { BrandMark } from "@/components/site/brand";
 import { LocationMap } from "@/components/site/location-map";
 import { publicEnv } from "@/lib/public-env";
 import {
@@ -342,7 +342,7 @@ export default async function HomePage() {
                 data-display="2"
                 className="flex items-center justify-center gap-4 text-center text-3xl font-extrabold uppercase tracking-[.04em] text-ink-foreground sm:text-4xl"
               >
-                <LotusMark
+                <BrandMark
                   decorative
                   className="size-10 shrink-0 text-gold sm:size-12"
                 />
@@ -555,7 +555,7 @@ export default async function HomePage() {
         <section className="bg-ink text-ink-foreground">
           <Container className="grid gap-10 py-12 md:grid-cols-2 md:items-center md:gap-12 lg:py-14">
             <blockquote className="flex items-center gap-5 text-base leading-7 text-ink-foreground/80 md:justify-self-center">
-              <LotusMark
+              <BrandMark
                 decorative
                 className="mt-1 size-14 shrink-0 text-gold sm:size-16"
               />

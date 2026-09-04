@@ -1,8 +1,15 @@
 "use client";
 
-import { OPEN_COOKIE_SETTINGS_EVENT } from "@/lib/config/analytics";
+import {
+  isAnalyticsConfigured,
+  isMarketingConfigured,
+  OPEN_COOKIE_SETTINGS_EVENT,
+} from "@/lib/config/analytics";
 
 export function CookieSettingsButton({ className }: { className?: string }) {
+  // With no tracker configured there is no consent to reopen.
+  if (!isAnalyticsConfigured && !isMarketingConfigured) return null;
+
   return (
     <button
       type="button"

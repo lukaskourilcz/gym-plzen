@@ -8,7 +8,7 @@ import {
 import { Container, Section } from "@/components/ui/container";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
-import { LotusMark } from "@/components/site/brand";
+import { BrandMark } from "@/components/site/brand";
 import { cn } from "@/lib/utils";
 
 const PHOTO =
@@ -94,7 +94,7 @@ export default async function EquipmentPage() {
                       index % 2 === 0 ? "bg-ink-elevated" : "bg-sage",
                     )}
                   >
-                    <LotusMark decorative className="size-16 opacity-30" />
+                    <BrandMark decorative className="size-16 opacity-30" />
                   </div>
                 </li>
               ))}

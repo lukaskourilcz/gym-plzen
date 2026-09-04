@@ -29,10 +29,10 @@ function configureLoader(apiKey: string, mapId: string) {
   configuredApiKey = apiKey;
 }
 
-/** Build the approved gold lotus marker; its bottom tip is the map coordinate. */
-function createLotusMarker() {
+/** Build the gold NAVI marker; its bottom edge sits on the map coordinate. */
+function createBrandMarker() {
   const marker = document.createElement("span");
-  marker.dataset.testid = "lotus-map-marker";
+  marker.dataset.testid = "brand-map-marker";
   marker.setAttribute("aria-hidden", "true");
   marker.className = "pointer-events-none flex flex-col items-center";
 
@@ -40,17 +40,17 @@ function createLotusMarker() {
   disc.className =
     "grid size-16 place-items-center rounded-full bg-ink shadow-md ring-4 ring-white/75";
 
-  const lotus = document.createElement("span");
-  lotus.className = "block size-9 bg-gold";
-  lotus.style.maskImage = 'url("/images/namaste-lotus.png")';
-  lotus.style.maskPosition = "center";
-  lotus.style.maskRepeat = "no-repeat";
-  lotus.style.maskSize = "contain";
-  lotus.style.webkitMaskImage = 'url("/images/namaste-lotus.png")';
-  lotus.style.webkitMaskPosition = "center";
-  lotus.style.webkitMaskRepeat = "no-repeat";
-  lotus.style.webkitMaskSize = "contain";
-  disc.append(lotus);
+  const mark = document.createElement("span");
+  mark.className = "block size-9 bg-gold";
+  mark.style.maskImage = 'url("/images/navi-mark.png")';
+  mark.style.maskPosition = "center";
+  mark.style.maskRepeat = "no-repeat";
+  mark.style.maskSize = "contain";
+  mark.style.webkitMaskImage = 'url("/images/navi-mark.png")';
+  mark.style.webkitMaskPosition = "center";
+  mark.style.webkitMaskRepeat = "no-repeat";
+  mark.style.webkitMaskSize = "contain";
+  disc.append(mark);
 
   const tip = document.createElement("span");
   tip.className =
@@ -144,7 +144,7 @@ export function LocationMap({
           anchorLeft: "-50%",
           anchorTop: "-100%",
         });
-        marker.append(createLotusMarker());
+        marker.append(createBrandMarker());
         setReady(true);
       })
       .catch(() => {

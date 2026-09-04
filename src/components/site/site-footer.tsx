@@ -88,7 +88,7 @@ export function SiteFooter({
     <footer className="border-t border-white/10 bg-ink text-ink-foreground">
       <Container className="grid gap-10 py-12 md:grid-cols-[1fr_2fr] lg:py-10">
         <div className="text-center md:text-left">
-          <BrandLockup inverse className="items-start text-left" />
+          <BrandLockup className="items-start text-left text-gold" />
           <p className="mt-6 text-xs leading-6 text-ink-foreground/75">
             © {year} {brand}
             <br />

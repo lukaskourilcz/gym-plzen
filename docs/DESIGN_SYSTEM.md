@@ -17,44 +17,49 @@ marketing language, or an unnecessary call to action in every section.
 
 ## Logo system
 
-### Lotus symbol
+### Brand mark
 
-- `LotusMark` uses the exact client-supplied five-petal lotus silhouette from
-  `public/images/namaste-lotus.png`. It is a supporting interface motif, not the
-  primary brand lockup.
-- The browser icon is `src/app/icon.png`, generated directly from that same
-  supplied silhouette in `gold` on an `ink` background. Do not redraw or
-  approximate the lotus for favicons.
-- Minimum digital size is 32 by 32 CSS pixels.
-- Clear space is at least one quarter of the symbol width on every side.
-- Use `accent-foreground` green on light surfaces and `gold` on ink surfaces.
-  Do not place it on noisy photography without a solid backing surface.
+- `BrandMark` renders the client-supplied NAVI symbol: a kettlebell whose
+  outline becomes the letter N. It is a supporting interface motif, not the
+  primary lockup.
+- The artwork ships as an alpha silhouette (`public/images/navi-mark.png`) and
+  is drawn as a CSS mask tinted with `currentColor`. The supplied logo is gold,
+  which sits at roughly 1.9:1 on the cream background, so the surface picks the
+  treatment: `accent-foreground` green on light, `gold` on ink (7:1). Never
+  place gold artwork on a light surface.
+- The browser icon is `src/app/icon.png`, the same silhouette in `gold` on
+  `ink`. Do not redraw or approximate the symbol for favicons.
+- Minimum digital size is 32 by 32 CSS pixels. Clear space is at least one
+  quarter of the symbol width on every side.
 - Pass `decorative` when adjacent text already names the brand, so the symbol
   is hidden from assistive technology instead of announcing a second name.
-- Do not rotate, stretch, recolour arbitrarily, or combine the symbol with an
-  unrelated fitness icon. The FAQ toggle may crossfade and scale between the
-  lotus and an accessible visual question mark to communicate open state.
+- Do not rotate, stretch, recolour beyond the two documented treatments, or
+  combine the symbol with an unrelated fitness icon. The FAQ toggle may
+  crossfade and scale between the mark and an accessible question mark to
+  communicate open state.
 
 ### Full logo
 
-- The approved client artwork is
-  `public/images/namaste-logo.png`: a transparent, tightly cropped derivative
-  of the supplied black lotus, `NAVI` wordmark and `PRIVATE GYM` descriptor.
-- `BrandLogo` keeps the supplied artwork but rearranges its two exact image
-  parts for navigation: the client lotus sits left and the client wordmark sits
-  right. The public version is about 180 CSS pixels wide; the admin shell uses
-  the compact variant. Below 380 CSS pixels the wordmark is hidden and the lotus
-  carries the brand alone, because the header also holds a permanent booking
-  button there. Shrinking the wordmark instead would reduce the `PRIVATE GYM`
-  descriptor to an illegible smear; the lotus never drops below its 32px floor.
-- `BrandLockup` renders the same approved artwork at 190 CSS pixels in the
-  footer and at larger sizes on authentication surfaces. The footer centers the
-  full brand block and its supporting copy on mobile, then aligns it left from
-  the tablet layout upward.
-- Keep its aspect ratio, clear space and full wordmark. Do not rebuild it with
-  another font or replace it with the supporting `LotusMark`.
-- On dark surfaces use the monochrome inverse treatment. Do not recolour
-  individual parts of the supplied artwork.
+- `BrandLogo` is the navigation lockup: the symbol left, the `NAVI` wordmark
+  with its `PRIVATE GYM` descriptor right, both masks so the pair takes one
+  colour. About 150 CSS pixels wide in the public header; the admin shell uses
+  the compact variant in gold on its ink rail. Below 380 CSS pixels the wordmark
+  is hidden and the symbol carries the brand alone, because the header also
+  holds a permanent booking button there.
+- `BrandLockup` renders the full stacked artwork at 150 CSS pixels in the footer
+  and larger on authentication surfaces, in gold on those ink surfaces. Size it
+  through the wrapper (`className="w-56"`), which the inner artwork fills.
+- Keep the aspect ratio, clear space and full wordmark. Do not rebuild it with
+  another font or replace it with the supporting `BrandMark`.
+
+### Asset provenance
+
+The current PNGs are silhouettes extracted from the client's 3D brand
+visualisation (`public/images/navi-logo-source.png`), which is the only artwork
+supplied so far. They are faithful in shape but carry the render's soft edges.
+When the client delivers vectors, replace `navi-mark.png`, `navi-wordmark.png`,
+`navi-logo.png` and the flat-colour `navi-logo-email.png` (e-mail clients ignore
+CSS masks) and regenerate `src/app/icon.png`; no component changes are needed.
 
 ## Design variants
 
@@ -257,7 +262,7 @@ se`, and `Uložit`.
 
 ## Icons
 
-- Approved library: Lucide React plus the client-supplied lotus mark. Lucide no
+- Approved library: Lucide React plus the client-supplied NAVI mark. Lucide no
   longer ships brand icons, so Facebook, Instagram and WhatsApp use code-owned
   official filled silhouettes in `components/site/social-icons.tsx`. Do not add
   a third-party brand icon pack.
@@ -302,7 +307,7 @@ parallel or transactional:
   for the strip to be visible in the initial viewport.
 - **Zone tiles** (`/vybaveni`): a two-column grid alternating `ink` and
   `sage-soft`, each tile split into a copy half and a media half. The media half
-  carries a decorative lotus until the operator supplies a zone photograph.
+  carries the decorative brand mark until the operator supplies a zone photograph.
 
 `sage` is a large-text-only surface. `sage-foreground` on it is 4.56:1, which
 clears AA for body copy by a hair; never put anything smaller than a section
@@ -318,7 +323,7 @@ The contact block above the map is a single
 left-aligned stack under its heading: confirmed public address, e-mail and
 telephone, without card borders or vertical dividers. The map itself carries a
 white address overlay so the location remains readable before and after the map
-loads. The gold lotus is an Advanced Marker positioned at the verified entrance
+loads. The gold brand mark is an Advanced Marker positioned at the verified entrance
 coordinates inside Google Maps, so it remains fixed to the address while the
 visitor zooms or pans. Never draw it as an overlay above an iframe: an overlay
 only lines up at the initial view and then drifts. When the Maps JavaScript API
@@ -404,7 +409,7 @@ The public booking flow is date first.
 - Standard duration: 140ms for controls and 220ms for panels.
 - Easing: `cubic-bezier(.2,.8,.2,1)`, exposed as the `ease-brand` utility. Use
   the token rather than repeating the literal.
-- One exception: the FAQ lotus crossfades into a question mark when a question
+- One exception: the FAQ brand mark crossfades into a question mark when a question
   opens. It runs at 220ms with a restrained scale transition, a gentle
   overshoot reserved for this single brand mark. Do not reuse that easing for
   ordinary controls, and do not add a third easing token.

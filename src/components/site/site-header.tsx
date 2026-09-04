@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { PUBLIC_NAV } from "@/lib/config/navigation";
 import { DesignVariantSwitch } from "@/components/site/design-variant-switch";
 
-/** Public navigation: lotus plus wordmark on the left, booking action first. */
+/** Public navigation: brand mark plus wordmark on the left, booking action first. */
 export function SiteHeader({
   brand = "NAVI Private Gym",
   accountHref = "/login",

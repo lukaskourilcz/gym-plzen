@@ -1,23 +1,42 @@
-import Image from "next/image";
 import type { CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 
-const BRAND_ASSET = "/images/namaste-logo.png";
-const BRAND_LOTUS_ASSET = "/images/namaste-lotus.png";
-const BRAND_WORDMARK_ASSET = "/images/namaste-wordmark.png";
-const LOTUS_MASK_STYLE = {
-  backgroundColor: "currentColor",
-  WebkitMaskImage: `url("${BRAND_LOTUS_ASSET}")`,
-  WebkitMaskPosition: "center",
-  WebkitMaskRepeat: "no-repeat",
-  WebkitMaskSize: "contain",
-  maskImage: `url("${BRAND_LOTUS_ASSET}")`,
-  maskPosition: "center",
-  maskRepeat: "no-repeat",
-  maskSize: "contain",
-} satisfies CSSProperties;
+/**
+ * Brand artwork.
+ *
+ * The supplied NAVI artwork is gold, which reads at roughly 1.9:1 on the cream
+ * page background. Every part is therefore rendered as a CSS mask tinted with
+ * `currentColor`, so a surface picks the treatment the design system requires:
+ * `accent-foreground` green on light, `gold` on ink. The silhouettes are the
+ * client's own artwork; nothing here redraws it.
+ */
+const BRAND_MARK_ASSET = "/images/navi-mark.png";
+const BRAND_WORDMARK_ASSET = "/images/navi-wordmark.png";
+const BRAND_LOCKUP_ASSET = "/images/navi-logo.png";
 
-export function LotusMark({
+function maskStyle(asset: string): CSSProperties {
+  return {
+    backgroundColor: "currentColor",
+    WebkitMaskImage: `url("${asset}")`,
+    WebkitMaskPosition: "center",
+    WebkitMaskRepeat: "no-repeat",
+    WebkitMaskSize: "contain",
+    maskImage: `url("${asset}")`,
+    maskPosition: "center",
+    maskRepeat: "no-repeat",
+    maskSize: "contain",
+  };
+}
+
+const MARK_STYLE = maskStyle(BRAND_MARK_ASSET);
+const WORDMARK_STYLE = maskStyle(BRAND_WORDMARK_ASSET);
+const LOCKUP_STYLE = maskStyle(BRAND_LOCKUP_ASSET);
+
+/**
+ * The kettlebell-and-N symbol on its own: a supporting interface motif, not
+ * the primary lockup. Never smaller than 32 CSS pixels.
+ */
+export function BrandMark({
   className,
   title = "NAVI",
   decorative = false,
@@ -32,88 +51,76 @@ export function LotusMark({
       {...(decorative
         ? { "aria-hidden": true }
         : { role: "img", "aria-label": title })}
-      className={cn("inline-block size-10 shrink-0", className)}
-      style={LOTUS_MASK_STYLE}
+      className={cn(
+        "inline-block size-10 shrink-0 text-accent-foreground",
+        className,
+      )}
+      style={MARK_STYLE}
     />
   );
 }
 
+/**
+ * Navigation lockup: the symbol beside the wordmark. Both are masks, so the
+ * whole logo takes the colour of its surface.
+ */
 export function BrandLogo({
   className,
-  inverse = false,
   compact = false,
 }: {
   className?: string;
-  inverse?: boolean;
   compact?: boolean;
 }) {
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center gap-2 sm:gap-2.5",
+        "inline-flex shrink-0 items-center gap-2 text-accent-foreground sm:gap-2.5",
         className,
       )}
     >
-      <Image
-        src={BRAND_LOTUS_ASSET}
-        alt=""
-        width={460}
-        height={289}
-        priority
+      {/* 377x486 artwork: 34px wide is 44px tall, clearing the 32px floor. */}
+      <span
+        aria-hidden
         className={cn(
-          "h-auto object-contain",
-          // The artwork is 460x289, so 52px wide is 32.7px tall: the smallest
-          // the lotus may go. It never steps below this.
-          compact ? "w-10" : "w-[52px] sm:w-[54px]",
-          inverse && "brightness-0 invert",
+          "block aspect-[377/486]",
+          compact ? "w-[26px]" : "w-[30px] sm:w-[34px]",
         )}
+        style={MARK_STYLE}
       />
-      <Image
-        src={BRAND_WORDMARK_ASSET}
-        alt=""
-        width={712}
-        height={241}
-        priority
+      {/*
+       * The header carries a permanent booking button, and below 380px the
+       * lockup, the button and the menu toggle cannot all fit. The wordmark
+       * drops out there rather than shrinking `PRIVATE GYM` to a smear; the
+       * symbol carries the brand alone at those widths.
+       */}
+      <span
+        aria-hidden
         className={cn(
-          "h-auto object-contain",
-          /*
-           * The header carries a permanent booking button now, and below 380px
-           * the full lockup, the button and the menu toggle cannot all fit. The
-           * wordmark drops out there rather than shrinking to a size where the
-           * `PRIVATE GYM` descriptor is a grey smear; the lotus carries the
-           * brand alone on those widths. Every common phone is 390 or wider and
-           * keeps the whole lockup.
-           */
+          "block aspect-[638/203]",
           compact ? "w-[76px]" : "w-[100px] max-[379px]:hidden sm:w-[116px]",
-          inverse && "brightness-0 invert",
         )}
+        style={WORDMARK_STYLE}
       />
     </span>
   );
 }
 
 /**
- * Full client-supplied lockup. Used where the brand is the primary element of
- * the surface (footer and authentication) rather than a navigation item.
+ * The full stacked lockup, used where the brand is the primary element of the
+ * surface (footer, authentication) rather than a navigation item.
  */
-export function BrandLockup({
-  className,
-  inverse = false,
-}: {
-  className?: string;
-  inverse?: boolean;
-}) {
+export function BrandLockup({ className }: { className?: string }) {
   return (
-    <span className={cn("inline-flex items-center", className)}>
-      <Image
-        src={BRAND_ASSET}
-        alt=""
-        width={720}
-        height={536}
-        className={cn(
-          "h-auto w-[190px] object-contain",
-          inverse && "brightness-0 invert",
-        )}
+    <span
+      className={cn(
+        "inline-flex w-[150px] items-center text-accent-foreground",
+        className,
+      )}
+    >
+      <span
+        aria-hidden
+        className="block aspect-[638/756] w-full"
+        style={LOCKUP_STYLE}
       />
     </span>
   );

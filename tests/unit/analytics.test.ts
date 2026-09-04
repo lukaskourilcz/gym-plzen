@@ -34,3 +34,25 @@ test("no measurement id is baked into the source", async () => {
   assert.doesNotMatch(source, /"G-[A-Z0-9]{6,}"/);
   assert.doesNotMatch(source, /"\d{15,}"/);
 });
+
+test("with no trackers configured there is no consent to ask for", async () => {
+  const fs = await import("node:fs/promises");
+  const consent = await fs.readFile(
+    "src/components/site/analytics-consent.tsx",
+    "utf8",
+  );
+  const button = await fs.readFile(
+    "src/components/site/cookie-settings-button.tsx",
+    "utf8",
+  );
+  // Asking permission to run trackers that do not exist would be misleading,
+  // so both the bar and its footer link stand down.
+  assert.match(
+    consent,
+    /if \(!isAnalyticsConfigured && !isMarketingConfigured\)/,
+  );
+  assert.match(
+    button,
+    /if \(!isAnalyticsConfigured && !isMarketingConfigured\)/,
+  );
+});
