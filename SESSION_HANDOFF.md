@@ -39,8 +39,24 @@ berou z env; bez nich se neuloží žádný skript a lišta souhlasu se nezobraz
 **Drobnosti z klientského e-mailu:** větší text v kalendáři, menší mezera mezi
 „Jak to funguje“ a „Ceníkem“, tlačítko v závěrečném pásu na mobilu na střed.
 
-**Přepínač vzhledu** se kvůli šířce hlavičky zobrazuje až od `xl`; pod `lg` je
-v mobilním menu, mezi tím se vzhled přepíná na `/dev`.
+**Přepínač vzhledu** je nově **jen na stránce `/dev`** a nikde jinde se
+nevykresluje : v hlavičce ani v mobilním menu, v žádné šířce. Volba zapíše
+cookie `ns_design` a vzhled se propíše na celý web; samotné ovládání ale
+zůstane na `/dev`. Je to strukturální záruka (hlavička komponentu vůbec
+neimportuje, hlídá to unit test), ne CSS pravidlo, které by šlo přebít.
+
+**Doklady o zaplacení.** Po potvrzené platbě se vystaví číslovaný doklad
+a odejde e-mailem v PDF. Vystavovatel je předvyplněný podle čl. 1.2 VOP
+(Renáta Janoušková, IČO 29619998) : zkontrolovat v administraci → Nastavení
+a branding → Fakturační údaje, doplnit DIČ a sazbu, pokud je studio plátcem
+DPH, a **zaškrtnout automatické odesílání** (výchozí je vypnuto). Čísla jdou
+po sobě v rámci roku (`2026-0001`), na jednu rezervaci nejvýš jeden doklad,
+věrnostní vstup zdarma doklad nedostane. Přehled, stažení PDF a „Poslat
+znovu“ jsou v administraci → Doklady. Vyžaduje migraci
+`drizzle/0010_billing_documents.sql`.
+
+**Zadání pro ilustrační fotky** (dvanáct míst, rozměry, texty pro ChatGPT)
+jsou v [docs/PHOTO_PROMPTS.md](./docs/PHOTO_PROMPTS.md).
 
 **Nové v této session (větev `claude/mobbing-feature-ideas-kens00`).** Veřejný
 web umí dvě varianty vzhledu: schválenou **Klasickou** a novou **Moderní**.
