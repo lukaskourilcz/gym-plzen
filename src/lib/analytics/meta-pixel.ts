@@ -53,6 +53,8 @@ function ensureFbq(): MetaPixelFunction {
 
 /** Start the browser pixel only after explicit marketing consent. */
 export function startMetaPixel(pathname: string) {
+  // No pixel ID configured: nothing to start.
+  if (!META_PIXEL_ID) return;
   if (!marketingAllowed()) return;
   const fbq = ensureFbq();
 

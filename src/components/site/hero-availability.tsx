@@ -144,7 +144,7 @@ export function HeroAvailability({
                       <span className="text-xs font-extrabold">
                         {slot.label}
                       </span>
-                      <span className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
+                      <span className="mt-0.5 text-xs font-semibold text-muted-foreground">
                         {slot.price}
                       </span>
                     </Link>

@@ -333,7 +333,9 @@ export default async function HomePage() {
 
           <Section
             id="jak-to-funguje"
-            className="scroll-mt-[var(--header-h)] py-16 lg:py-20"
+            /* Paired with the pricing band below: the two read as one block,
+               so the seam between them is tighter than a section boundary. */
+            className="scroll-mt-[var(--header-h)] pb-8 pt-16 lg:pb-10 lg:pt-20"
           >
             <Container>
               <h2
@@ -372,7 +374,7 @@ export default async function HomePage() {
 
           <Section
             id="cenik"
-            className="scroll-mt-[var(--header-h)] py-16 text-ink-foreground lg:py-20"
+            className="scroll-mt-[var(--header-h)] pb-16 pt-8 text-ink-foreground lg:pb-20 lg:pt-10"
           >
             {/* `items-stretch`: the card is sized to the copy beside it so the
                 band reads as one block rather than a short card floating
@@ -508,7 +510,7 @@ export default async function HomePage() {
             <Button
               href="/rezervace"
               size="lg"
-              className="min-w-52 justify-center justify-self-end bg-gold text-gold-foreground hover:bg-gold/90"
+              className="min-w-52 justify-center justify-self-center bg-gold text-gold-foreground hover:bg-gold/90 lg:justify-self-end"
             >
               {t("home.cta.button")}{" "}
               <ArrowRight data-cta-arrow aria-hidden="true" />

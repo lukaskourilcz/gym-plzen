@@ -11,3 +11,26 @@ test("tracking preferences require both explicit boolean categories", () => {
   assert.equal(parseConsentPreferences('{"analytics":true}'), null);
   assert.equal(parseConsentPreferences("not-json"), null);
 });
+
+test("a tracker with no configured id is disabled rather than half-started", async () => {
+  const {
+    GOOGLE_ANALYTICS_ID,
+    META_PIXEL_ID,
+    isAnalyticsConfigured,
+    isMarketingConfigured,
+  } = await import("../../src/lib/config/analytics");
+
+  // This test process sets neither id, which is the "no account yet" state.
+  assert.equal(GOOGLE_ANALYTICS_ID, null);
+  assert.equal(META_PIXEL_ID, null);
+  assert.equal(isAnalyticsConfigured, false);
+  assert.equal(isMarketingConfigured, false);
+});
+
+test("no measurement id is baked into the source", async () => {
+  const fs = await import("node:fs/promises");
+  const source = await fs.readFile("src/lib/config/analytics.ts", "utf8");
+  // Real GA4 and Meta ids must live in the environment, not the repository.
+  assert.doesNotMatch(source, /"G-[A-Z0-9]{6,}"/);
+  assert.doesNotMatch(source, /"\d{15,}"/);
+});

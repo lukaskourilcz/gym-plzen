@@ -55,6 +55,8 @@ function googleConsentState(analyticsStorage: "granted" | "denied") {
  * Advertising storage and signals stay disabled even after analytics consent.
  */
 function startGoogleAnalytics() {
+  // No measurement ID configured: nothing to start.
+  if (!GOOGLE_ANALYTICS_ID) return;
   const gtag = ensureGtag();
 
   if (analyticsStarted || document.getElementById(GOOGLE_TAG_SCRIPT_ID)) {

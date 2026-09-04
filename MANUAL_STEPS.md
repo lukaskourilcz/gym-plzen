@@ -72,6 +72,17 @@ runtime i `vercel env pull` je dostanou normálně.
 
 ---
 
+### Analytika (GA4 a Meta Pixel)
+
+Měřicí ID nejsou v kódu. Ve Vercelu nastav pro Production i Preview:
+
+- `NEXT_PUBLIC_GA_MEASUREMENT_ID` — GA4 Measurement ID (`G-…`) nové property NAVI.
+- `NEXT_PUBLIC_META_PIXEL_ID` — Meta Pixel / Dataset ID.
+
+Bez hodnoty se příslušný skript vůbec nenačte a lišta souhlasu danou kategorii
+nenabídne. Google Merchant Center se pro rezervace fitness nepoužívá; místo něj
+Firemní profil na Googlu a konverze GA4 → Google Ads.
+
 ## 3. Stripe webhook
 
 **Kde:** <https://dashboard.stripe.com/webhooks> (a Test-mode analog).

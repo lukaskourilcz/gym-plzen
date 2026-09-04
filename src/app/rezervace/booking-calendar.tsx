@@ -218,7 +218,7 @@ export function BookingCalendar({
                   <div
                     key={day}
                     role="columnheader"
-                    className="py-2 text-center text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground"
+                    className="py-2 text-center text-xs font-extrabold uppercase tracking-wider text-muted-foreground"
                   >
                     {day}
                   </div>
@@ -250,7 +250,7 @@ export function BookingCalendar({
                           year: "numeric",
                         });
                         const cellClass = cn(
-                          "relative flex aspect-square min-h-11 min-w-0 items-center justify-center rounded-sm border text-base font-bold outline-none transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:text-lg",
+                          "relative flex aspect-square min-h-11 min-w-0 items-center justify-center rounded-sm border text-lg font-bold outline-none transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:text-xl",
                           !cell.inMonth && "invisible",
                           cell.inMonth && "border-transparent",
                           (isPast || outsideHorizon) &&
@@ -314,7 +314,7 @@ export function BookingCalendar({
                   </div>
                 ))}
               </div>
-              <div className="mt-4 border-t border-border pt-4 text-xs text-muted-foreground">
+              <div className="mt-4 border-t border-border pt-4 text-sm text-muted-foreground">
                 <span>Rezervovat lze nejvýše 60 dní dopředu.</span>
               </div>
             </div>
@@ -378,11 +378,11 @@ export function BookingCalendar({
               >
                 <span className="text-left">
                   <span className="block font-extrabold">{slot.label}</span>
-                  <span className="mt-0.5 block text-xs font-medium text-muted-foreground">
+                  <span className="mt-0.5 block text-sm font-medium text-muted-foreground">
                     {slot.durationMinutes} min · {price}
                   </span>
                 </span>
-                <span className="text-xs font-extrabold text-accent-foreground">
+                <span className="text-sm font-extrabold text-accent-foreground">
                   Vybrat
                 </span>
               </Button>

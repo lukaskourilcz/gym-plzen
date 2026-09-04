@@ -18,6 +18,13 @@ const publicSchema = z.object({
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().optional(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
   NEXT_PUBLIC_OAUTH_PROVIDERS: z.string().optional(),
+  /*
+   * Measurement IDs. Unset means the corresponding script is never loaded and
+   * its consent category is not offered, which is the correct state for a
+   * deployment that has no analytics account yet.
+   */
+  NEXT_PUBLIC_GA_MEASUREMENT_ID: z.string().optional(),
+  NEXT_PUBLIC_META_PIXEL_ID: z.string().optional(),
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().optional(),
   NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID: z.string().optional(),
