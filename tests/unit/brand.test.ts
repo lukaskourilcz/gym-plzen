@@ -14,18 +14,27 @@ import { RESERVATION_CALENDAR_SUMMARY } from "../../src/lib/helpers/ics";
  */
 const OLD_BRAND = /namast[eé](?!gym\.cz)/i;
 
-/**
- * Social handles name real external accounts the client owns. Renaming them
- * here would point customers at profiles that may not exist, so they stay
- * until the client confirms the new ones (see NEEDED.md).
- */
-const SOCIAL_HANDLE = /namaste_plzen/i;
-
 test("no customer-facing default still carries the old brand", () => {
+  // The social handles used to be excepted here, because they named real
+  // accounts with no NAVI successor yet. The client has since confirmed both,
+  // so nothing is excepted any more but the domain.
   for (const [key, value] of Object.entries(SITE_DEFAULTS)) {
-    const text = String(value).replace(SOCIAL_HANDLE, "");
-    assert.doesNotMatch(text, OLD_BRAND, `SITE_DEFAULTS.${key}`);
+    assert.doesNotMatch(String(value), OLD_BRAND, `SITE_DEFAULTS.${key}`);
   }
+});
+
+test("the site links to the confirmed NAVI profiles", () => {
+  assert.equal(
+    SITE_DEFAULTS["contact.instagram"],
+    "https://www.instagram.com/navi_plzen/",
+  );
+  assert.equal(
+    SITE_DEFAULTS["contact.facebook"],
+    "https://www.facebook.com/profile.php?id=61594273731288",
+  );
+  // The share link the client sent carries an igsi tracking token; publishing
+  // it would put a share token on every page for no benefit.
+  assert.doesNotMatch(SITE_DEFAULTS["contact.instagram"], /igsi=/);
 });
 
 test("every e-mail template fallback is branded NAVI", () => {
@@ -63,7 +72,9 @@ test("the content rebrand leaves real addresses and handles intact", async () =>
   // The domain and the Instagram handle point at real places.
   assert.equal(
     rebrand("Napište na info@namastegym.cz nebo @namaste_plzen, tým NAMASTÉ."),
-    "Napište na info@namastegym.cz nebo @namaste_plzen, tým NAVI.",
+    // The domain is still the client's decision so it passes through; the
+    // handle now has a confirmed successor, so it is rewritten.
+    "Napište na info@namastegym.cz nebo @navi_plzen, tým NAVI.",
   );
   assert.equal(rebrand("Beze změny"), "Beze změny");
 });

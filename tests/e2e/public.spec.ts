@@ -268,11 +268,11 @@ test.describe("Public site", () => {
       page.getByRole("link", { name: /Facebook, NAVI Private Gym/i }),
     ).toHaveAttribute(
       "href",
-      "https://www.facebook.com/profile.php?id=61592125101750",
+      "https://www.facebook.com/profile.php?id=61594273731288",
     );
     await expect(
       page.getByRole("link", { name: /Instagram, NAVI Private Gym/i }),
-    ).toHaveAttribute("href", "https://www.instagram.com/namaste_plzen/");
+    ).toHaveAttribute("href", "https://www.instagram.com/navi_plzen/");
     // `q` is what makes Google draw its own marker, so it stays on the address
     // when the visitor zooms or pans.
     await expect(page.getByTestId("location-map")).toHaveAttribute(

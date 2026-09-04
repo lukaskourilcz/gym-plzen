@@ -52,24 +52,30 @@ export function publicPhone(value?: string | null) {
   return phone;
 }
 
-/** Replace the old seeded placeholder with the confirmed Facebook profile. */
+/**
+ * Profiles the site must never link to any more: the seeded placeholders, and
+ * the NAMASTÉ-era accounts the client replaced at the rebrand. A stored value
+ * normally wins over the default, but not when it points at a profile that has
+ * been retired : that would send customers to a dead page.
+ */
+const RETIRED_PROFILE =
+  /^(https:\/\/(www\.)?(facebook|instagram)\.com\/?|https:\/\/www\.facebook\.com\/profile\.php\?id=61592125101750|https:\/\/www\.instagram\.com\/namaste_plzen\/?)$/i;
+
+/** Replace a placeholder or retired profile with the confirmed Facebook page. */
 function publicFacebook(value?: string | null) {
   const facebook = value?.trim();
-  if (
-    !facebook ||
-    facebook === "https://facebook.com" ||
-    facebook === "https://www.facebook.com"
-  ) {
+  if (!facebook || RETIRED_PROFILE.test(facebook)) {
     return SITE_DEFAULTS["contact.facebook"];
   }
   return facebook;
 }
 
-/** Replace the old seeded placeholder with the profile confirmed by the client. */
+/** Replace a placeholder or retired profile with the confirmed Instagram. */
 function publicInstagram(value?: string | null) {
   const instagram = value?.trim();
-  if (!instagram || instagram === "https://instagram.com")
+  if (!instagram || RETIRED_PROFILE.test(instagram)) {
     return SITE_DEFAULTS["contact.instagram"];
+  }
   return instagram;
 }
 
@@ -161,8 +167,8 @@ export const SITE_DEFAULTS = {
   "contact.phone": "+420 731 737 355",
   "contact.phoneSecondary": "+420 721 560 150",
   "contact.email": "info@navigym.cz",
-  "contact.facebook": "https://www.facebook.com/profile.php?id=61592125101750",
-  "contact.instagram": "https://www.instagram.com/namaste_plzen/",
+  "contact.facebook": "https://www.facebook.com/profile.php?id=61594273731288",
+  "contact.instagram": "https://www.instagram.com/navi_plzen/",
   "equipment.eyebrow": "Prostor",
   "equipment.title": "Vybavení a prostor",
   "equipment.imageAlt": "Interiér NAVI Private Gym",
@@ -247,7 +253,7 @@ export const SITE_DEFAULTS = {
     "Prostor je pravidelně profesionálně uklízen. Pokud při příchodu zjistíte znečištění nebo poškození vybavení, ihned nás kontaktujte. Děkujeme, že nám pomáháte udržovat prostor čistý.",
   "faq.19.question": "Mohu si ve studiu natáčet videa nebo fotografovat?",
   "faq.19.answer":
-    "Ano. Budeme rádi, když své momenty z tréninku zaznamenáte a označíte nás na Instagramu jako @namaste_plzen.",
+    "Ano. Budeme rádi, když své momenty z tréninku zaznamenáte a označíte nás na Instagramu jako @navi_plzen.",
   "faq.20.question": "Je možné si ke cvičení pustit vlastní hudbu?",
   "faq.20.answer":
     "Ano. Ve studiu je reproduktor, ke kterému se připojíte přes Bluetooth. Protože jsou nad studiem byty, pouštějte hudbu ohleduplně. Od 22:00 do 6:00 je používání reproduktoru kvůli nočnímu klidu zakázáno.",

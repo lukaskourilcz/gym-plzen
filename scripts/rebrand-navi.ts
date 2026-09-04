@@ -20,6 +20,16 @@ import { contentBlock, siteSetting } from "../src/lib/db/schema";
 
 /** Longest first, so a full lockup never degrades into the bare word. */
 const PHRASES: ReadonlyArray<readonly [string, string]> = [
+  /*
+   * The social accounts, as the client confirmed them at the rebrand. First in
+   * the list so no bare-word rule can reach inside a handle or a profile URL
+   * and leave something like "NAVI_plzen" behind.
+   */
+  ["namaste_plzen", "navi_plzen"],
+  [
+    "https://www.facebook.com/profile.php?id=61592125101750",
+    "https://www.facebook.com/profile.php?id=61594273731288",
+  ],
   ["NAMASTÉ PRIVATE GYM", "NAVI PRIVATE GYM"],
   ["NAMASTE PRIVATE GYM", "NAVI PRIVATE GYM"],
   ["NAMASTÉ Private Gym", "NAVI Private Gym"],
@@ -33,10 +43,13 @@ const PHRASES: ReadonlyArray<readonly [string, string]> = [
 ];
 
 /**
- * Addresses and handles that merely contain the old string. They point at real
- * places, so a blind replace would send customers somewhere that may not exist.
+ * Addresses that merely contain the old string and point at a real place, so a
+ * blind replace would send customers somewhere that may not exist. The domain
+ * is still the client's decision (see NEEDED.md), so it passes through
+ * untouched; the social handle no longer belongs here, because the client has
+ * confirmed its NAVI successor and PHRASES now maps it.
  */
-const PROTECTED = /namastegym\.cz|namaste_plzen/gi;
+const PROTECTED = /namastegym\.cz/gi;
 
 function rebrandSegment(value: string): string {
   let next = value;
