@@ -12,8 +12,15 @@ import { BrandMark } from "@/components/site/brand";
 import { IllustrativePhoto } from "@/components/site/illustrative-photo";
 import { cn } from "@/lib/utils";
 
-const PHOTO =
-  "https://static.wixstatic.com/media/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg/v1/fill/w_1600,h_900,al_c,q_90,enc_avif,quality_auto/7bc428_dabb1d2f234245e0ac56794a83548bbf~mv2.jpeg";
+const PHOTO = "/images/photos/hero.webp";
+const ZONE_PHOTOS = [
+  "/images/photos/zone-1.webp",
+  "/images/photos/zone-2.webp",
+  "/images/photos/zone-3.webp",
+  "/images/photos/zone-4.webp",
+  "/images/photos/zone-5.webp",
+  "/images/photos/zone-6.webp",
+] as const;
 
 export const metadata: Metadata = {
   title: "Vybavení a prostor",
@@ -89,7 +96,7 @@ export default async function EquipmentPage() {
                     </p>
                   </div>
                   <IllustrativePhoto
-                    src={content.zoneImageUrls[index] ?? ""}
+                    src={content.zoneImageUrls[index] || ZONE_PHOTOS[index]!}
                     alt={zone.title}
                     sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 25vw"
                     illustrative={content.illustrativePhotos}
