@@ -11,7 +11,11 @@ import type { Reservation } from "@/lib/db/types";
 import { dateKeyInTimeZone, dayOfWeek } from "@/lib/helpers/datetime";
 import { ActionError } from "@/lib/helpers/action";
 import { logger } from "@/lib/helpers/logger";
-import { isWithinBookingHorizon, resolveSlotFromHours } from "./slots";
+import {
+  getBookingHorizonDays,
+  isWithinBookingHorizon,
+  resolveSlotFromHours,
+} from "./slots";
 import { fulfillReservation } from "./fulfillment";
 
 /** VOP 8.1 and 8.5: the request must arrive at least 24 hours in advance. */
@@ -89,8 +93,12 @@ export async function rescheduleReservation(
     throw new ActionError("Vyberte platný budoucí termín.");
   }
   const targetDateKey = dateKeyInTimeZone(input.startsAt);
-  if (!isWithinBookingHorizon(targetDateKey, now)) {
-    throw new ActionError("Termín lze vybrat nejvýše 60 dní dopředu.");
+  const horizonDays = await getBookingHorizonDays();
+  if (!isWithinBookingHorizon(targetDateKey, now, horizonDays)) {
+    // The message quotes the configured horizon rather than a fixed 60 days.
+    throw new ActionError(
+      `Termín lze vybrat nejvýše ${horizonDays} dní dopředu.`,
+    );
   }
 
   let updated: Reservation;

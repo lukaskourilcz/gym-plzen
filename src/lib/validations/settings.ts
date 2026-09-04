@@ -4,6 +4,10 @@ import {
   MAX_HERO_PREVIEW_DAYS,
   MIN_HERO_PREVIEW_DAYS,
 } from "@/lib/config/hero";
+import {
+  MAX_BOOKING_HORIZON_DAYS,
+  MIN_BOOKING_HORIZON_DAYS,
+} from "@/lib/config/schedule";
 import { EMAIL_TEMPLATE_IDS } from "@/lib/config/email-templates";
 
 /** Branding assets: logo + terms PDF, provided as URLs (from the uploader or pasted). */
@@ -58,7 +62,17 @@ export const heroPreviewSchema = z.object({
     .max(MAX_HERO_PREVIEW_DAYS, `Nejvýše ${MAX_HERO_PREVIEW_DAYS} dní.`),
 });
 
+/** How far ahead visitors may book, in days including today. */
+export const bookingHorizonSchema = z.object({
+  horizonDays: z
+    .number({ invalid_type_error: "Zadejte číslo." })
+    .int("Zadejte celé číslo.")
+    .min(MIN_BOOKING_HORIZON_DAYS, `Nejméně ${MIN_BOOKING_HORIZON_DAYS} dní.`)
+    .max(MAX_BOOKING_HORIZON_DAYS, `Nejvýše ${MAX_BOOKING_HORIZON_DAYS} dní.`),
+});
+
 export type BrandingValues = z.infer<typeof brandingSchema>;
+export type BookingHorizonValues = z.infer<typeof bookingHorizonSchema>;
 export type SmsTemplateValues = z.infer<typeof smsTemplateSchema>;
 export type EmailTemplateValues = z.infer<typeof emailTemplateSchema>;
 export type EmailTemplateTestValues = z.infer<typeof emailTemplateTestSchema>;

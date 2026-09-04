@@ -12,7 +12,7 @@ import {
 import { formatDate, formatTimeRange } from "@/lib/helpers/format";
 import { reservations, rescheduling } from "@/lib/services";
 import {
-  BOOKING_HORIZON_DAYS,
+  getBookingHorizonDays,
   getSlotsForRange,
   isWithinBookingHorizon,
 } from "@/lib/services/slots";
@@ -60,13 +60,15 @@ export default async function ReschedulePage({
     now,
   );
   const todayKey = dateKeyInTimeZone(now);
-  const maxDateKey = addDaysToDateKey(todayKey, BOOKING_HORIZON_DAYS);
+  // Resolved once per request: the operator can change the horizon.
+  const horizonDays = await getBookingHorizonDays();
+  const maxDateKey = addDaysToDateKey(todayKey, horizonDays);
   const requestedDate =
     typeof query.date === "string" && isDateKey(query.date) ? query.date : null;
   const requestedMonth =
     typeof query.month === "string" ? query.month : undefined;
   const monthKey =
-    requestedDate && isWithinBookingHorizon(requestedDate, now)
+    requestedDate && isWithinBookingHorizon(requestedDate, now, horizonDays)
       ? requestedDate.slice(0, 7)
       : validMonth(requestedMonth) &&
           requestedMonth >= todayKey.slice(0, 7) &&
@@ -76,7 +78,7 @@ export default async function ReschedulePage({
   const selectedDateKey =
     requestedDate &&
     requestedDate.startsWith(monthKey) &&
-    isWithinBookingHorizon(requestedDate, now)
+    isWithinBookingHorizon(requestedDate, now, horizonDays)
       ? requestedDate
       : monthKey === todayKey.slice(0, 7)
         ? todayKey

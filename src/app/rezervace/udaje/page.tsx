@@ -45,13 +45,16 @@ export default async function BookingDetailsPage({
   const startsAt = params.start ? new Date(params.start) : null;
   if (!startsAt || Number.isNaN(startsAt.getTime())) redirect("/rezervace");
 
-  const resolved = await slots.resolveBookableSlot(startsAt);
+  const [resolved, horizonDays] = await Promise.all([
+    slots.resolveBookableSlot(startsAt),
+    slots.getBookingHorizonDays(),
+  ]);
   const dateKey = dateKeyInTimeZone(startsAt);
   // An expired link or a slot outside the horizon goes back to the calendar on
   // the day it was pointing at, rather than dead-ending here.
   if (
     !resolved ||
-    !slots.isWithinBookingHorizon(dateKey) ||
+    !slots.isWithinBookingHorizon(dateKey, new Date(), horizonDays) ||
     startsAt.getTime() <= Date.now()
   ) {
     redirect(`/rezervace?date=${dateKey}`);

@@ -25,3 +25,27 @@ export const DEFAULT_SHOWER_MINUTES = 15;
 
 /** Admin setting key overriding the shower grace. */
 export const SHOWER_MINUTES_SETTING_KEY = "schedule.shower_minutes";
+
+/**
+ * How far ahead a visitor may book, in days including today.
+ *
+ * Configurable because a promotion can need a longer horizon than everyday
+ * operation: an October promotion that must reach January needs about 130 days,
+ * while the everyday default is 60.
+ */
+export const BOOKING_HORIZON_SETTING_KEY = "booking.horizon_days";
+
+export const DEFAULT_BOOKING_HORIZON_DAYS = 60;
+
+/** Allowed range: a week at minimum, a year at most. */
+export const MIN_BOOKING_HORIZON_DAYS = 7;
+export const MAX_BOOKING_HORIZON_DAYS = 365;
+
+/** Clamp any stored or typed value into the supported range. */
+export function clampBookingHorizonDays(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_BOOKING_HORIZON_DAYS;
+  return Math.min(
+    MAX_BOOKING_HORIZON_DAYS,
+    Math.max(MIN_BOOKING_HORIZON_DAYS, Math.round(value)),
+  );
+}

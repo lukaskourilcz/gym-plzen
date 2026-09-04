@@ -20,7 +20,11 @@ import { getEntryPriceCents, priceForNextEntry } from "./loyalty";
 import { getMember, setStripeCustomerId } from "./members";
 import { recordPayment } from "./memberships";
 import { fulfillReservation } from "./fulfillment";
-import { isWithinBookingHorizon, resolveBookableSlot } from "./slots";
+import {
+  getBookingHorizonDays,
+  isWithinBookingHorizon,
+  resolveBookableSlot,
+} from "./slots";
 import {
   claimVoucher,
   hasRedeemedForReservation,
@@ -96,7 +100,15 @@ export async function startBooking(params: {
   await releaseExpiredPendingReservations();
   const startsAt = params.startsAt;
   const resolved = await resolveBookableSlot(startsAt);
-  if (!resolved || !isWithinBookingHorizon(dateKeyInTimeZone(startsAt))) {
+  const horizonDays = await getBookingHorizonDays();
+  if (
+    !resolved ||
+    !isWithinBookingHorizon(
+      dateKeyInTimeZone(startsAt),
+      new Date(),
+      horizonDays,
+    )
+  ) {
     throw new ActionError("Vybraný termín není platný.");
   }
   const endsAt = resolved.endsAt;

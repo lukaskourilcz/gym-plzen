@@ -1,4 +1,5 @@
-import { cms } from "@/lib/services";
+import { cms, slots } from "@/lib/services";
+import { DEFAULT_BOOKING_HORIZON_DAYS } from "@/lib/config/schedule";
 import {
   DEFAULT_SMS_ACCESS_TEMPLATE,
   HERO_IMAGE_ALT_KEY,
@@ -24,6 +25,7 @@ import {
 import {
   BrandingForm,
   FileUploader,
+  BookingHorizonForm,
   HeroCalendarForm,
   SmsTemplateForm,
 } from "./settings-forms";
@@ -41,6 +43,7 @@ export default async function SettingsPage() {
     sectionsImageUrl,
     smsTemplate,
     heroPreviewDays,
+    bookingHorizonDays,
   ] = await Promise.all([
     cms.getSetting<string>(LOGO_URL_KEY).catch(() => null),
     cms.getSetting<string>(TERMS_URL_KEY).catch(() => null),
@@ -49,6 +52,7 @@ export default async function SettingsPage() {
     cms.getSetting<string>(SECTIONS_IMAGE_URL_KEY).catch(() => null),
     cms.getSetting<string>(SMS_ACCESS_TEMPLATE_KEY).catch(() => null),
     cms.getSetting<number>(HERO_PREVIEW_DAYS_KEY).catch(() => null),
+    slots.getBookingHorizonDays().catch(() => DEFAULT_BOOKING_HORIZON_DAYS),
   ]);
 
   return (
@@ -88,6 +92,18 @@ export default async function SettingsPage() {
                 heroPreviewDays ?? DEFAULT_HERO_PREVIEW_DAYS,
               )}
             />
+          </CardContent>
+        </Card>
+
+        <Card className="max-w-2xl">
+          <CardHeader>
+            <CardTitle>Rozsah rezervací</CardTitle>
+            <CardDescription>
+              Jak daleko dopředu si zákazník může rezervovat termín.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BookingHorizonForm horizonDays={bookingHorizonDays} />
           </CardContent>
         </Card>
 

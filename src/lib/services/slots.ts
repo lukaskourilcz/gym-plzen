@@ -13,10 +13,14 @@ import {
 import { logger } from "@/lib/helpers/logger";
 import { isBookingPreviewEnabled } from "@/lib/config/preview";
 import {
+  BOOKING_HORIZON_SETTING_KEY,
+  clampBookingHorizonDays,
+  DEFAULT_BOOKING_HORIZON_DAYS,
   DEFAULT_CLOSE_MINUTE,
   DEFAULT_OPEN_MINUTE,
   DEFAULT_SLOT_MINUTES,
 } from "@/lib/config/schedule";
+import { getSetting } from "./cms";
 import { releaseExpiredPendingReservations } from "./reservations";
 
 export interface Slot {
@@ -45,7 +49,16 @@ export interface DayHours {
   isClosed: boolean;
 }
 
-export const BOOKING_HORIZON_DAYS = 60;
+/**
+ * Read the configured booking horizon, falling back to the default when the
+ * setting is missing or unusable.
+ */
+export async function getBookingHorizonDays(): Promise<number> {
+  const stored = await getSetting<number>(BOOKING_HORIZON_SETTING_KEY);
+  return typeof stored === "number"
+    ? clampBookingHorizonDays(stored)
+    : DEFAULT_BOOKING_HORIZON_DAYS;
+}
 
 export function buildDaySlots(
   dateKey: string,
@@ -209,12 +222,15 @@ export async function resolveBookableSlot(startsAt: Date) {
   });
 }
 
+/**
+ * Pure horizon check. The horizon is passed in rather than read here so the
+ * rule stays synchronous and testable; callers resolve it once per request.
+ */
 export function isWithinBookingHorizon(
   dateKey: string,
   now = new Date(),
+  horizonDays = DEFAULT_BOOKING_HORIZON_DAYS,
 ): boolean {
   const today = dateKeyInTimeZone(now);
-  return (
-    dateKey >= today && dateKey <= addDaysToDateKey(today, BOOKING_HORIZON_DAYS)
-  );
+  return dateKey >= today && dateKey <= addDaysToDateKey(today, horizonDays);
 }

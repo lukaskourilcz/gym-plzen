@@ -12,6 +12,8 @@ import {
   type BrandingValues,
   type HeroPreviewValues,
   type SmsTemplateValues,
+  bookingHorizonSchema,
+  type BookingHorizonValues,
 } from "@/lib/validations/settings";
 import {
   HERO_IMAGE_ALT_KEY,
@@ -22,6 +24,10 @@ import {
   TERMS_URL_KEY,
 } from "@/lib/config/branding";
 import { HERO_PREVIEW_DAYS_KEY, clampHeroPreviewDays } from "@/lib/config/hero";
+import {
+  BOOKING_HORIZON_SETTING_KEY,
+  clampBookingHorizonDays,
+} from "@/lib/config/schedule";
 import { cms, media } from "@/lib/services";
 import { publicMediaUrl } from "@/lib/integrations/supabase";
 import { logger } from "@/lib/helpers/logger";
@@ -86,6 +92,27 @@ export async function saveBrandingAction(
   input: BrandingValues,
 ): Promise<Result<unknown>> {
   return saveBrandingImpl(input);
+}
+
+/** How far ahead visitors may book. Raised for a promotion, lowered after. */
+const saveBookingHorizonImpl = defineAction({
+  schema: bookingHorizonSchema,
+  authorize: assertAdmin,
+  handler: async ({ horizonDays }, admin) => {
+    await cms.setSetting(
+      BOOKING_HORIZON_SETTING_KEY,
+      clampBookingHorizonDays(horizonDays),
+      admin.id,
+    );
+    revalidatePath("/admin/settings");
+    revalidatePath("/rezervace");
+  },
+});
+
+export async function saveBookingHorizonAction(
+  input: BookingHorizonValues,
+): Promise<Result<unknown>> {
+  return saveBookingHorizonImpl(input);
 }
 
 export async function saveHeroPreviewAction(

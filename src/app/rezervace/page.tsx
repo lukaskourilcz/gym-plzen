@@ -10,7 +10,7 @@ import {
   monthGrid,
 } from "@/lib/helpers/datetime";
 import {
-  BOOKING_HORIZON_DAYS,
+  getBookingHorizonDays,
   getSlotsForRange,
   isWithinBookingHorizon,
 } from "@/lib/services/slots";
@@ -42,7 +42,9 @@ export default async function BookingPage({
   const params = await searchParams;
   const now = new Date();
   const todayKey = dateKeyInTimeZone(now);
-  const maxDateKey = addDaysToDateKey(todayKey, BOOKING_HORIZON_DAYS);
+  // Resolved once per request: the operator can change the horizon.
+  const horizonDays = await getBookingHorizonDays();
+  const maxDateKey = addDaysToDateKey(todayKey, horizonDays);
   const requestedDate =
     typeof params.date === "string" && isDateKey(params.date)
       ? params.date
@@ -50,7 +52,7 @@ export default async function BookingPage({
   const requestedMonth =
     typeof params.month === "string" ? params.month : undefined;
   const monthKey =
-    requestedDate && isWithinBookingHorizon(requestedDate, now)
+    requestedDate && isWithinBookingHorizon(requestedDate, now, horizonDays)
       ? requestedDate.slice(0, 7)
       : validMonth(requestedMonth) &&
           requestedMonth >= todayKey.slice(0, 7) &&
@@ -65,7 +67,7 @@ export default async function BookingPage({
   const selectedDateKey =
     requestedDate &&
     requestedDate.startsWith(monthKey) &&
-    isWithinBookingHorizon(requestedDate, now)
+    isWithinBookingHorizon(requestedDate, now, horizonDays)
       ? requestedDate
       : monthKey === todayKey.slice(0, 7)
         ? todayKey
