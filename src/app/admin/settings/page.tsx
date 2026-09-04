@@ -1,4 +1,4 @@
-import { cms, slots } from "@/lib/services";
+import { cms, invoices, slots } from "@/lib/services";
 import { loadSiteContent } from "@/lib/content/site";
 import { DEFAULT_BOOKING_HORIZON_DAYS } from "@/lib/config/schedule";
 import {
@@ -24,6 +24,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import {
+  BillingProfileForm,
   BrandingForm,
   FileUploader,
   BookingHorizonForm,
@@ -47,6 +48,7 @@ export default async function SettingsPage() {
     heroPreviewDays,
     bookingHorizonDays,
     siteContent,
+    billing,
   ] = await Promise.all([
     cms.getSetting<string>(LOGO_URL_KEY).catch(() => null),
     cms.getSetting<string>(TERMS_URL_KEY).catch(() => null),
@@ -57,6 +59,7 @@ export default async function SettingsPage() {
     cms.getSetting<number>(HERO_PREVIEW_DAYS_KEY).catch(() => null),
     slots.getBookingHorizonDays().catch(() => DEFAULT_BOOKING_HORIZON_DAYS),
     loadSiteContent(),
+    invoices.getBillingReadiness(),
   ]);
 
   return (
@@ -125,6 +128,25 @@ export default async function SettingsPage() {
           </CardHeader>
           <CardContent>
             <BookingHorizonForm horizonDays={bookingHorizonDays} />
+          </CardContent>
+        </Card>
+
+        <Card className="max-w-2xl">
+          <CardHeader>
+            <CardTitle>Fakturační údaje</CardTitle>
+            <CardDescription>
+              Údaje, které se tisknou na doklad o zaplacení. Předvyplněné jsou
+              podle vašich obchodních podmínek; zkontrolujte je a doplňte DIČ a
+              sazbu, pokud jste plátcem DPH. Vystavené doklady najdete v sekci
+              Doklady.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BillingProfileForm
+              profile={billing.profile}
+              sendDocuments={billing.sendingEnabled}
+              missing={billing.missing}
+            />
           </CardContent>
         </Card>
 

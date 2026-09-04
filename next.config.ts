@@ -19,6 +19,16 @@ const contentSecurityPolicy = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  /*
+   * Payment documents embed Bitter so their Czech diacritics survive (the
+   * standard PDF fonts are WinAnsi and have no ě, š, č, ř, ž or ů). The files
+   * are read at runtime through a path built from `process.cwd()`, which the
+   * build-time tracer cannot see, so they are listed explicitly or the server
+   * bundle ships without them.
+   */
+  outputFileTracingIncludes: {
+    "/**": ["./src/lib/pdf/fonts/**"],
+  },
   experimental: {
     // Server Actions bodies can carry image/file uploads for the CMS.
     serverActions: {

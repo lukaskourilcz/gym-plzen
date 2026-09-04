@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
+  billingProfileSchema,
   bookingHorizonSchema,
   brandingSchema,
   sitePhotosSchema,
@@ -28,6 +29,11 @@ import {
   MIN_BOOKING_HORIZON_DAYS,
 } from "@/lib/config/schedule";
 import {
+  MAX_VAT_RATE_PERCENT,
+  type BillingProfile,
+} from "@/lib/config/billing";
+import {
+  saveBillingProfileAction,
   saveBookingHorizonAction,
   saveBrandingAction,
   saveSitePhotosAction,
@@ -393,6 +399,138 @@ export function FileUploader() {
           Zkopírujte URL do pole výše (logo / podmínky).
         </p>
       )}
+    </form>
+  );
+}
+
+/**
+ * The operator's billing details and the switch that starts sending payment
+ * documents. `missing` is what the profile still lacks : shown here rather
+ * than only failing silently at payment time, because the operator needs to
+ * know before a customer does that no document went out.
+ */
+export function BillingProfileForm({
+  profile,
+  sendDocuments,
+  missing,
+}: {
+  profile: BillingProfile;
+  sendDocuments: boolean;
+  missing: string[];
+}) {
+  const { form, submit, serverError, success } = useActionForm({
+    schema: billingProfileSchema,
+    action: saveBillingProfileAction,
+    successMessage: "Fakturační údaje uloženy.",
+    defaultValues: { ...profile, sendDocuments },
+  });
+
+  return (
+    <form onSubmit={submit} className="max-w-2xl">
+      <p className="mb-5 rounded-md border border-border bg-muted p-4 text-sm leading-6">
+        {missing.length > 0 ? (
+          <>
+            Doklady se zatím nevystavují. Chybí:{" "}
+            <strong>{missing.join(", ")}</strong>. Systém údaje nikdy nedoplní
+            za vás : doklad s vymyšleným IČO by byl horší než žádný.
+          </>
+        ) : (
+          <>
+            Předvyplněno podle článku 1.2 vašich obchodních podmínek, kde je
+            jako osoba vystavující účetní a daňové doklady uvedena{" "}
+            <strong>Renáta Janoušková</strong>. Zkontrolujte údaje a případně
+            upravte : co uložíte tady, má přednost.
+          </>
+        )}
+      </p>
+
+      <Field
+        name="legalName"
+        label="Název firmy"
+        error={form.formState.errors.legalName}
+      >
+        <Input id="legalName" {...form.register("legalName")} />
+      </Field>
+      <Field
+        name="street"
+        label="Ulice a číslo"
+        error={form.formState.errors.street}
+      >
+        <Input id="street" {...form.register("street")} />
+      </Field>
+      <div className="grid gap-x-5 sm:grid-cols-[1fr_2fr]">
+        <Field name="zip" label="PSČ" error={form.formState.errors.zip}>
+          <Input id="zip" {...form.register("zip")} />
+        </Field>
+        <Field name="city" label="Město" error={form.formState.errors.city}>
+          <Input id="city" {...form.register("city")} />
+        </Field>
+      </div>
+      <div className="grid gap-x-5 sm:grid-cols-2">
+        <Field name="ico" label="IČO" error={form.formState.errors.ico}>
+          <Input id="ico" inputMode="numeric" {...form.register("ico")} />
+        </Field>
+        <Field
+          name="dic"
+          label="DIČ (jen plátce DPH)"
+          error={form.formState.errors.dic}
+        >
+          <Input id="dic" {...form.register("dic")} />
+        </Field>
+      </div>
+      <Field
+        name="vatRatePercent"
+        label="Sazba DPH v %"
+        error={form.formState.errors.vatRatePercent}
+      >
+        <Input
+          id="vatRatePercent"
+          type="number"
+          min={0}
+          max={MAX_VAT_RATE_PERCENT}
+          step={1}
+          className="max-w-32"
+          {...form.register("vatRatePercent", { valueAsNumber: true })}
+        />
+      </Field>
+      <p className="mb-4 text-sm text-muted-foreground">
+        Nechte <strong>0</strong>, pokud nejste plátcem DPH: doklad pak uvede
+        jednu částku a větu „Neplátce DPH“ a žádné rozpady daně si nevymýšlí.
+      </p>
+      <Field
+        name="bankAccount"
+        label="Číslo účtu (nepovinné)"
+        error={form.formState.errors.bankAccount}
+      >
+        <Input id="bankAccount" {...form.register("bankAccount")} />
+      </Field>
+      <Field
+        name="registryNote"
+        label="Zápis v rejstříku (nepovinné)"
+        error={form.formState.errors.registryNote}
+      >
+        <Textarea
+          id="registryNote"
+          rows={2}
+          {...form.register("registryNote")}
+        />
+      </Field>
+
+      <CheckboxField
+        name="sendDocuments"
+        label="Po zaplacení automaticky poslat doklad e-mailem"
+        register={form.register("sendDocuments")}
+      />
+      <p className="mb-4 text-sm text-muted-foreground">
+        Doklad se vystaví jednou pro každou zaplacenou rezervaci a odejde v
+        příloze potvrzovacího e-mailu. Věrnostní vstup zdarma doklad nedostane :
+        nulový doklad není doklad o platbě.
+      </p>
+
+      <FormFeedback error={serverError} success={success} />
+      <SubmitButton isSubmitting={form.formState.isSubmitting}>
+        Uložit fakturační údaje
+      </SubmitButton>
     </form>
   );
 }

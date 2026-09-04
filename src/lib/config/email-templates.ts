@@ -12,6 +12,7 @@ export const EMAIL_TEMPLATE_IDS = [
   "reservation_confirmation",
   "access_code",
   "reservation_cancellation",
+  "payment_document",
 ] as const;
 
 export type EmailTemplateId = (typeof EMAIL_TEMPLATE_IDS)[number];
@@ -80,6 +81,18 @@ export const EMAIL_TEMPLATE_DEFINITIONS: readonly EmailTemplateDefinition[] = [
     fallback: {
       subject: "Váš vstupní kód | NAVI Private Gym",
       body: "Ahoj {name},\n\nvaše rezervace je dnes {time}.\n\nVstupní kód: {code}\n\nKód zadejte na klávesnici u dveří v čase vaší rezervace. Kód je osobní a platí pouze pro tento termín.\n\nNAVI Private Gym",
+    },
+  },
+  {
+    id: "payment_document",
+    label: "Doklad o zaplacení",
+    description:
+      "Odešle se po zaplacení, s dokladem v příloze. Odesílání se zapíná v Nastavení → Fakturační údaje a vyžaduje vyplněné údaje firmy.",
+    variables: ["{name}", "{number}", "{amount}", "{date}"],
+    delivery: "application",
+    fallback: {
+      subject: "Doklad o zaplacení {number} | NAVI Private Gym",
+      body: "Dobrý den, {name},\n\nv příloze posíláme doklad o zaplacení č. {number} ze dne {date} na částku {amount}.\n\nDoklad je uhrazený, neplaťte ho prosím znovu. Uschovejte si ho pro svou evidenci.\n\nNAVI Private Gym",
     },
   },
   {

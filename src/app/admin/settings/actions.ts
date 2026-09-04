@@ -13,8 +13,10 @@ import {
   type HeroPreviewValues,
   type SmsTemplateValues,
   bookingHorizonSchema,
+  billingProfileSchema,
   sitePhotosSchema,
   type BookingHorizonValues,
+  type BillingProfileValues,
   type SitePhotosValues,
 } from "@/lib/validations/settings";
 import {
@@ -33,7 +35,7 @@ import {
   BOOKING_HORIZON_SETTING_KEY,
   clampBookingHorizonDays,
 } from "@/lib/config/schedule";
-import { cms, media } from "@/lib/services";
+import { cms, invoices, media } from "@/lib/services";
 import { publicMediaUrl } from "@/lib/integrations/supabase";
 import { logger } from "@/lib/helpers/logger";
 
@@ -201,4 +203,35 @@ export async function uploadFileAction(
         : "Nahrání selhalo. Zkontrolujte, že je nastaveno úložiště Supabase (viz NEEDED.md).";
     return { ok: false, error: message };
   }
+}
+
+/**
+ * The operator's billing details, plus the switch that turns automatic sending
+ * on. Saving with the switch on but a field missing is not an error : the
+ * settings page lists what is still needed, and the issuing service simply
+ * does not issue until the profile is complete.
+ */
+const saveBillingProfileImpl = defineAction({
+  schema: billingProfileSchema,
+  authorize: assertAdmin,
+  handler: async (input, admin) => {
+    const { sendDocuments, ...profile } = input;
+    await invoices.saveBillingProfile(
+      {
+        ...profile,
+        bankAccount: profile.bankAccount ?? "",
+        registryNote: profile.registryNote ?? "",
+      },
+      admin.id,
+    );
+    await invoices.setSendingEnabled(sendDocuments, admin.id);
+    revalidatePath("/admin/settings");
+    revalidatePath("/admin/doklady");
+  },
+});
+
+export async function saveBillingProfileAction(
+  input: BillingProfileValues,
+): Promise<Result<unknown>> {
+  return saveBillingProfileImpl(input);
 }

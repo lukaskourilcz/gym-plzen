@@ -11,6 +11,7 @@ import {
   sendReservationConfirmation,
 } from "./notifications";
 import { getPipeline, markStepFailed, markStepSucceeded } from "./pipeline";
+import { issueAndSend } from "./invoices";
 
 /**
  * Fulfillment orchestrator : runs a confirmed reservation through the reliability
@@ -47,6 +48,27 @@ export async function fulfillReservation(reservationId: string): Promise<void> {
       where: "fulfillment.sendReservationConfirmation",
       reservationId,
     });
+  }
+
+  // The payment document is an accounting convenience and is issued at most
+  // once per reservation. Like the confirmation it must never hold back the
+  // entry code, so every failure is logged and swallowed here.
+  try {
+    const outcome = await issueAndSend({
+      reservationId,
+      userId: reservation.userId ?? null,
+      customerName: reservation.contactName,
+      customerEmail: reservation.contactEmail,
+      totalCents: reservation.priceCents,
+      startsAt: reservation.startsAt,
+    });
+    if (!outcome.issued && outcome.reason === "profile_incomplete") {
+      logger.warn("payment document skipped: billing profile incomplete", {
+        reservationId,
+      });
+    }
+  } catch (error) {
+    logger.error(error, { where: "fulfillment.issueAndSend", reservationId });
   }
 
   // Step: code_created : issue a code + provision it on the lock (once).

@@ -31,3 +31,4 @@ export * as emailTemplates from "./email-templates";
 export * as entryLog from "./entry-log";
 export * as vouchers from "./vouchers";
 export * as newsletter from "./newsletter";
+export * as invoices from "./invoices";
