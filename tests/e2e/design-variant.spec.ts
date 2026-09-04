@@ -5,19 +5,15 @@ import { test, expect } from "@playwright/test";
  * `data-design` attribute stamped before first paint. These tests pin the two
  * things that would silently break it: persistence across reload/navigation,
  * and the CSS actually reacting to the attribute.
+ *
+ * The control lives on `/dev` alone, so that is where the tests operate it.
+ * Its absence from every other page is covered by design-preview-gate.spec.ts.
  */
 test.describe("Design variant switch", () => {
-  // The control is hidden until a browser opens /dev. These tests are about the
-  // switch itself, so they start from an unlocked browser.
-  test.beforeEach(async ({ context, baseURL }) => {
-    await context.addCookies([
-      { name: "ns_preview", value: "on", url: baseURL! },
-    ]);
-  });
   test("defaults to classic, switches, and survives reload and navigation", async ({
     page,
   }) => {
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("/dev", { waitUntil: "domcontentloaded" });
 
     const html = page.locator("html");
     await expect(html).toHaveAttribute("data-design", "classic");
@@ -30,20 +26,18 @@ test.describe("Design variant switch", () => {
       );
     const classicSpacing = await spacing();
 
-    // Click the label, as a visitor does: the radio itself is visually hidden
-    // and the label is what carries the 44px target.
+    // Click the label, as the operator does: the radio itself is visually
+    // hidden and the label is what carries the 44px target.
     await page
       .getByTestId("design-variant-switch")
-      .first()
       .getByText("Moderní", { exact: true })
       .click();
 
     await expect(html).toHaveAttribute("data-design", "modern");
     await expect(
-      page
-        .getByTestId("design-variant-switch")
-        .first()
-        .getByRole("radio", { name: "Moderní" }),
+      page.getByTestId("design-variant-switch").getByRole("radio", {
+        name: "Moderní",
+      }),
     ).toBeChecked();
     expect(await spacing()).not.toBe(classicSpacing);
 
@@ -56,12 +50,13 @@ test.describe("Design variant switch", () => {
     await page.reload({ waitUntil: "commit" });
     await expect(html).toHaveAttribute("data-design", "modern");
 
+    // And it carries onto the public pages, which no longer show the control.
     await page.goto("/faq", { waitUntil: "commit" });
     await expect(html).toHaveAttribute("data-design", "modern");
 
+    await page.goto("/dev", { waitUntil: "domcontentloaded" });
     await page
       .getByTestId("design-variant-switch")
-      .first()
       .getByText("Klasický", { exact: true })
       .click();
     await expect(html).toHaveAttribute("data-design", "classic");
@@ -70,9 +65,9 @@ test.describe("Design variant switch", () => {
   test("is a labelled radio group reachable and operable by keyboard", async ({
     page,
   }) => {
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("/dev", { waitUntil: "domcontentloaded" });
 
-    const group = page.getByTestId("design-variant-switch").first();
+    const group = page.getByTestId("design-variant-switch");
     await expect(group).toBeVisible();
     await expect(group.getByRole("radio")).toHaveCount(2);
 
@@ -94,17 +89,15 @@ test.describe("Design variant switch", () => {
     expect(labelBox?.height ?? 0).toBeGreaterThanOrEqual(44);
   });
 
-  test("does not appear twice at any width", async ({ page }) => {
+  test("appears exactly once on /dev at any width", async ({ page }) => {
     for (const width of [320, 390, 768, 1024, 1440]) {
       await page.setViewportSize({ width, height: width < 700 ? 760 : 900 });
-      await page.goto("/", { waitUntil: "domcontentloaded" });
+      await page.goto("/dev", { waitUntil: "domcontentloaded" });
 
-      const visible = page
-        .getByTestId("design-variant-switch")
-        .filter({ visible: true });
-      // Below `md` it lives in the (closed) mobile menu, above it in the bar.
-      const count = await visible.count();
-      expect(count, `width ${width}`).toBeLessThanOrEqual(1);
+      await expect(
+        page.getByTestId("design-variant-switch").filter({ visible: true }),
+        `width ${width}`,
+      ).toHaveCount(1);
 
       expect(
         await page.evaluate(

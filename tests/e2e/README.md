@@ -97,7 +97,7 @@ Pokud prostředí používá vlastní Chromium, nastav `PW_CHROMIUM_PATH`. Jinak
 Gate spec ověřuje, že běžný návštěvník přepínač nikde nevidí ani na něj
 nedosáhne klávesnicí a že ho odemkne až otevření `/dev`. Zbylé dva ověřují
 přepínání, persistenci, obě varianty na osmi šířkách, kontrast, focus, 200%
-zoom a reduced motion; obě si proto nastavují cookie `ns_preview`.
+zoom a reduced motion; obě si proto nastavují cookie `ns_design`.
 
 ```bash
 npm run build

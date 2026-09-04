@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/site/brand";
 import { cn } from "@/lib/utils";
 import { PUBLIC_NAV } from "@/lib/config/navigation";
-import { DesignVariantSwitch } from "@/components/site/design-variant-switch";
 
 /** Public navigation: brand mark plus wordmark on the left, booking action first. */
 export function SiteHeader({
@@ -106,21 +105,6 @@ export function SiteHeader({
         </nav>
 
         <div className="ml-auto flex items-center gap-2 lg:ml-0 lg:justify-self-end">
-          {/*
-           * Content-driven breakpoint. Measured at 1024px: brand 160 + centred
-           * nav 430 + this cluster 436 already exceeds the viewport, so the
-           * switch only joins the bar from `xl`, where it fits with room to
-           * spare. Below `lg` it lives in the mobile menu; between the two the
-           * operator flips the variant on /dev, which is the documented
-           * entrance anyway. A preview tool must never distort the layout it
-           * exists to preview.
-           *
-           * The wrapper carries the preview gate so the switch keeps its own
-           * responsive display classes untouched.
-           */}
-          <div data-preview-only className="hidden xl:flex">
-            <DesignVariantSwitch />
-          </div>
           {/* Visible at every width: on mobile the hero no longer carries a
               booking action of its own above the fold. */}
           <Button
@@ -181,10 +165,6 @@ export function SiteHeader({
             <Button href={accountHref} variant="outline" className="w-full">
               {accountLabel}
             </Button>
-          </div>
-          {/* The menu itself is `lg:hidden`, so this covers the phone widths. */}
-          <div data-preview-only className="mt-3 flex justify-center">
-            <DesignVariantSwitch />
           </div>
         </div>
       </div>

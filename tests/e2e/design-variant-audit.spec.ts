@@ -14,9 +14,8 @@ async function setVariant(
   baseURL: string,
 ) {
   await page.context().addCookies([
+    // The cookie alone carries the look; the switch itself is only on /dev.
     { name: "ns_design", value: variant, url: baseURL },
-    // Unlock the switch too: the audit measures it, and a visitor never sees it.
-    { name: "ns_preview", value: "on", url: baseURL },
   ]);
 }
 
@@ -149,7 +148,8 @@ test("the switch keeps AA contrast in both of its states", async ({
 }) => {
   await setVariant(page, "classic", baseURL!);
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  // The switch lives on /dev alone, so that is the surface it is read against.
+  await page.goto("/dev", { waitUntil: "domcontentloaded" });
 
   const readColours = () =>
     page.evaluate((readerSource) => {
@@ -245,7 +245,6 @@ test("reduced motion leaves the modern hover shift and ring inert", async ({
   const page = await context.newPage();
   await context.addCookies([
     { name: "ns_design", value: "modern", url: baseURL! },
-    { name: "ns_preview", value: "on", url: baseURL! },
   ]);
   await page.goto("/", { waitUntil: "domcontentloaded" });
 
@@ -266,7 +265,7 @@ test("the switch has a visible focus indicator and survives 200% zoom", async ({
 }) => {
   await setVariant(page, "classic", baseURL!);
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.goto("/dev", { waitUntil: "domcontentloaded" });
 
   const group = page.getByTestId("design-variant-switch").first();
   await group.getByRole("radio", { name: "Klasický" }).focus();
@@ -289,7 +288,7 @@ test("the switch has a visible focus indicator and survives 200% zoom", async ({
 
   // 200% zoom is emulated by halving the viewport at the same layout width.
   await page.setViewportSize({ width: 720, height: 450 });
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.goto("/dev", { waitUntil: "domcontentloaded" });
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - window.innerWidth,
   );

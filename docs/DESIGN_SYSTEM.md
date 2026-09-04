@@ -119,21 +119,20 @@ decorative and hidden from assistive technology, because the sentence above them
 already states the exact progress; both read their fill from the same
 `loyaltyFilledSegments` rule, so they cannot disagree.
 
-The switch is internal tooling and is hidden from visitors. It appears only for
-a browser that has opened `/dev`, which sets the `ns_preview` cookie; the same
-inline script stamps `data-preview="on"`, and CSS reveals anything marked
-`data-preview-only`. `display: none` keeps the hidden control out of the tab
-order and the accessibility tree, and gating in CSS rather than on the server is
-what lets the public pages stay ISR. `/dev` is `noindex` and excluded from both
-the sitemap and `robots.txt`.
+The switch is internal tooling and lives on `/dev` alone : it is rendered on
+that page and nowhere else, so no visitor can meet it at any width, in the
+header or in the mobile menu. That is a structural guarantee rather than a CSS
+rule, which is what a change in specificity or a stray utility could otherwise
+defeat; a unit test asserts the header does not import the control.
 
-When unlocked, the switch sits in the header's right-hand cluster from `xl` up
-and in the mobile menu below `lg`: a content-driven breakpoint, because at
-1024px the brand, the centred navigation and the action cluster already exceed
-the viewport. Between `lg` and `xl` the variant is flipped on `/dev`, which is
-the documented entrance in any case. A preview tool must never distort the
-layout it exists to preview. It is a native radio group, so arrow keys work and
-the group has one accessible name. The administration does not use variants.
+Choosing a look there writes the `ns_design` cookie, and the pre-paint inline
+script stamps `data-design` on `<html>`, which is what carries the variant
+across the rest of the site. Keeping the choice in a cookie read on the client,
+rather than on the server, is what lets the public pages stay ISR. `/dev` is
+`noindex` and excluded from both the sitemap and `robots.txt`.
+
+The control is a native radio group, so arrow keys work and the group has one
+accessible name. The administration does not use variants.
 
 ## Colour
 

@@ -241,8 +241,8 @@ export default function DesignSystemPage() {
                 <code className="font-bold">data-design</code> na{" "}
                 <code className="font-bold">&lt;html&gt;</code>. Servrované HTML
                 proto zůstává pro obě varianty stejné a úvodní stránka si drží
-                ISR. Přepínač je vpravo nahoře v hlavičce, na užších displejích
-                v mobilním menu. Administrace variantu nepoužívá.
+                ISR. Přepínač je jen na stránce /dev. Administrace variantu
+                nepoužívá.
               </p>
               <p className="text-muted-foreground">
                 Rozdíly smí vzniknout <strong>jen</strong> předefinováním těchto
@@ -254,13 +254,13 @@ export default function DesignSystemPage() {
                 barvy, gradienty ani jiné komponenty.
               </p>
               <p className="text-muted-foreground">
-                Přepínač je interní nástroj a návštěvníci ho nevidí. Zobrazí se
-                jen prohlížeči, který otevřel{" "}
-                <code className="font-bold">/dev</code>; ta stránka nastaví
-                cookie <code className="font-bold">ns_preview</code> a skript
-                doplní <code className="font-bold">data-preview</code>, podle
-                kterého CSS odkryje prvky s{" "}
-                <code className="font-bold">data-preview-only</code>.
+                Přepínač je interní nástroj a je jen na stránce{" "}
+                <code className="font-bold">/dev</code> : nikde jinde se
+                nevykresluje, takže na něj návštěvník nemůže narazit. Volba
+                zapíše cookie <code className="font-bold">ns_design</code> a
+                skript před vykreslením doplní{" "}
+                <code className="font-bold">data-design</code>, podle kterého se
+                řídí vzhled zbytku webu.
               </p>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[34rem] text-left text-sm">
