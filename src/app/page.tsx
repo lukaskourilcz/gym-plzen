@@ -189,7 +189,7 @@ export default async function HomePage() {
           {/* Solid brand veil: white hero copy must stay legible over any photo. */}
           <div
             aria-hidden="true"
-            className="absolute inset-0 -z-10 bg-ink/88"
+            className="absolute inset-0 -z-10 bg-ink/60"
           />
           <Container
             data-hero

@@ -169,8 +169,9 @@ never `primary`, which would disappear. Dark surfaces use `ink` or `charcoal`
 rather than one-off near-black values. Text opacity on ink must preserve WCAG
 2.2 AA contrast; keep body copy at 75 percent or higher.
 
-A hero photograph carries a solid ink veil so white copy stays above 4.5:1 on
-any frame of the image. Do not lighten the veil below 78 percent.
+The current hero photograph carries a 60 percent ink veil so more of the room
+remains visible. Recheck that white copy stays above 4.5:1 whenever the image is
+replaced or its art direction changes.
 
 The operating-steps and pricing bands share one pinned photograph behind an
 `ink/82` veil: the image lives in an `absolute inset-0` track and is
