@@ -11,19 +11,26 @@ import {
 import { EMAIL_TEMPLATE_IDS } from "@/lib/config/email-templates";
 import { MAX_VAT_RATE_PERCENT } from "@/lib/config/billing";
 
+const imageUrl = z
+  .string()
+  .max(2_048, "URL je příliš dlouhá.")
+  .refine(
+    (value) =>
+      value === "" ||
+      /^\/images\/[a-z0-9/_-]+\.(?:avif|gif|jpe?g|png|webp)$/i.test(value) ||
+      z.string().url().safeParse(value).success,
+    "Neplatná URL obrázku.",
+  );
+
 /** Branding assets: logo + terms PDF, provided as URLs (from the uploader or pasted). */
 export const brandingSchema = z.object({
-  logoUrl: z.union([z.literal(""), z.string().url("Neplatná URL.")]).optional(),
+  logoUrl: imageUrl.optional(),
   termsUrl: z
     .union([z.literal(""), z.string().url("Neplatná URL.")])
     .optional(),
-  heroImageUrl: z
-    .union([z.literal(""), z.string().url("Neplatná URL.")])
-    .optional(),
+  heroImageUrl: imageUrl.optional(),
   heroImageAlt: optionalText(180),
-  sectionsImageUrl: z
-    .union([z.literal(""), z.string().url("Neplatná URL.")])
-    .optional(),
+  sectionsImageUrl: imageUrl.optional(),
 });
 
 /** SMS access-code template (placeholders {code}, {time}). */
@@ -73,9 +80,7 @@ export const bookingHorizonSchema = z.object({
 });
 
 /** Optional image URL, empty meaning "not supplied yet". */
-const optionalImageUrl = z
-  .union([z.literal(""), z.string().url("Neplatná URL.")])
-  .optional();
+const optionalImageUrl = imageUrl.optional();
 
 /** Gallery, zone photographs and the illustrative-photo label. */
 export const sitePhotosSchema = z.object({

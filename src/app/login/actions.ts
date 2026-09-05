@@ -12,6 +12,10 @@ import { safeInternalPath } from "@/lib/security/redirects";
 import { takeRateLimit } from "@/lib/security/rate-limit";
 import { publicEnv } from "@/lib/public-env";
 import { passwordResetRequestSchema } from "@/lib/validations/auth";
+import {
+  isProductionDeployment,
+  isReservedDemoEmail,
+} from "@/lib/auth/demo-policy";
 
 const inputSchema = z.object({
   mode: z.enum(["signin", "signup"]),
@@ -31,6 +35,9 @@ export async function authenticateAction(input: unknown): Promise<AuthResult> {
     return { ok: false, error: "Zkontrolujte zadané údaje." };
 
   const destination = safeInternalPath(parsed.data.next);
+  if (isProductionDeployment() && isReservedDemoEmail(parsed.data.email)) {
+    return { ok: false, error: "E-mail nebo heslo není správné." };
+  }
   if (parsed.data.mode === "signin") {
     if (await createDemoAdminSession(parsed.data.email, parsed.data.password)) {
       return { ok: true, destination: "/admin" };

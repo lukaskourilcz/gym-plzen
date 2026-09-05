@@ -22,6 +22,10 @@ import {
   LOGO_URL_KEY,
   TERMS_URL_KEY,
   zoneImageUrlKey,
+  DEFAULT_GALLERY_IMAGE_URLS,
+  DEFAULT_HERO_IMAGE_URL,
+  DEFAULT_SECTIONS_IMAGE_URL,
+  DEFAULT_ZONE_IMAGE_URLS,
 } from "@/lib/config/branding";
 import { DEFAULT_RULES_BODY, LEGACY_RULES_BODY } from "@/lib/content/rules";
 import { rebrand } from "@/lib/content/rebrand";
@@ -55,7 +59,7 @@ export function publicPhone(value?: string | null) {
 
 /**
  * Profiles the site must never link to any more: the seeded placeholders, and
- * the NAMASTÉ-era accounts the client replaced at the rebrand. A stored value
+ * the previous-brand accounts the client replaced at the rebrand. A stored value
  * normally wins over the default, but not when it points at a profile that has
  * been retired : that would send customers to a dead page.
  */
@@ -320,8 +324,11 @@ export function footerProps(content: SiteContent) {
   };
 }
 
-/** Load all public content once (overlay CMS values on defaults). Never throws. */
-export async function loadSiteContent(locale = "cs"): Promise<SiteContent> {
+/** Load public content once, with a resilient fallback outside strict admin reads. */
+export async function loadSiteContent(
+  locale = "cs",
+  options: { strict?: boolean; defaultsOnly?: boolean } = {},
+): Promise<SiteContent> {
   const values: Record<string, string> = { ...SITE_DEFAULTS };
   let standardEntryPriceCents = DEFAULT_ENTRY_PRICE_CENTS;
   let promoPriceCents: number | null = null;
@@ -329,69 +336,76 @@ export async function loadSiteContent(locale = "cs"): Promise<SiteContent> {
   let promoEndsAtRaw: string | null = null;
   let logoUrl: string | null = null;
   let termsUrl: string | null = null;
-  let heroImageUrl: string | null = null;
+  let heroImageUrl: string | null = DEFAULT_HERO_IMAGE_URL;
   let heroImageAlt = "";
-  let sectionsImageUrl: string | null = null;
-  const galleryImageUrls = GALLERY_IMAGE_URL_KEYS.map(() => "");
-  const zoneImageUrls = Array.from({ length: 6 }, () => "");
+  let sectionsImageUrl: string | null = DEFAULT_SECTIONS_IMAGE_URL;
+  const galleryImageUrls: string[] = [...DEFAULT_GALLERY_IMAGE_URLS];
+  const zoneImageUrls: string[] = [...DEFAULT_ZONE_IMAGE_URLS];
   // Default on: the photographs in place today are stand-ins.
   let illustrativePhotos = true;
 
-  try {
-    const rows = await db
-      .select({ key: contentBlock.key, valueText: contentBlock.valueText })
-      .from(contentBlock)
-      .where(eq(contentBlock.locale, locale));
-    for (const row of rows) {
-      if (
-        row.valueText != null &&
-        row.valueText !== "" &&
-        LEGACY_CONTENT_VALUES[row.key as SiteContentKey] !== row.valueText
-      )
-        values[row.key] = rebrand(row.valueText);
-    }
-
-    const settings = await db
-      .select({ key: siteSetting.key, value: siteSetting.value })
-      .from(siteSetting);
-    for (const s of settings) {
-      if (s.key === ENTRY_PRICE_SETTING_KEY && typeof s.value === "number")
-        standardEntryPriceCents = s.value;
-      if (s.key === PROMO_PRICE_SETTING_KEY && typeof s.value === "number")
-        promoPriceCents = s.value;
-      if (s.key === PROMO_STARTS_AT_SETTING_KEY && typeof s.value === "string")
-        promoStartsAt = s.value || null;
-      if (s.key === PROMO_ENDS_AT_SETTING_KEY && typeof s.value === "string")
-        promoEndsAtRaw = s.value || null;
-      if (s.key === LOGO_URL_KEY && typeof s.value === "string")
-        logoUrl = s.value || null;
-      if (s.key === TERMS_URL_KEY && typeof s.value === "string")
-        termsUrl = s.value || null;
-      if (s.key === HERO_IMAGE_URL_KEY && typeof s.value === "string")
-        heroImageUrl = s.value || null;
-      if (s.key === HERO_IMAGE_ALT_KEY && typeof s.value === "string")
-        heroImageAlt = rebrand(s.value);
-      if (s.key === SECTIONS_IMAGE_URL_KEY && typeof s.value === "string")
-        sectionsImageUrl = s.value || null;
-      if (typeof s.value === "string") {
-        const galleryIndex = GALLERY_IMAGE_URL_KEYS.indexOf(
-          s.key as (typeof GALLERY_IMAGE_URL_KEYS)[number],
-        );
-        if (galleryIndex >= 0) galleryImageUrls[galleryIndex] = s.value;
-        for (let zone = 1; zone <= 6; zone += 1) {
-          if (s.key === zoneImageUrlKey(zone))
-            zoneImageUrls[zone - 1] = s.value;
-        }
+  if (!options.defaultsOnly) {
+    try {
+      const rows = await db
+        .select({ key: contentBlock.key, valueText: contentBlock.valueText })
+        .from(contentBlock)
+        .where(eq(contentBlock.locale, locale));
+      for (const row of rows) {
+        if (
+          row.valueText != null &&
+          row.valueText !== "" &&
+          LEGACY_CONTENT_VALUES[row.key as SiteContentKey] !== row.valueText
+        )
+          values[row.key] = rebrand(row.valueText);
       }
-      if (s.key === ILLUSTRATIVE_PHOTOS_KEY && typeof s.value === "boolean")
-        illustrativePhotos = s.value;
+
+      const settings = await db
+        .select({ key: siteSetting.key, value: siteSetting.value })
+        .from(siteSetting);
+      for (const s of settings) {
+        if (s.key === ENTRY_PRICE_SETTING_KEY && typeof s.value === "number")
+          standardEntryPriceCents = s.value;
+        if (s.key === PROMO_PRICE_SETTING_KEY && typeof s.value === "number")
+          promoPriceCents = s.value;
+        if (
+          s.key === PROMO_STARTS_AT_SETTING_KEY &&
+          typeof s.value === "string"
+        )
+          promoStartsAt = s.value || null;
+        if (s.key === PROMO_ENDS_AT_SETTING_KEY && typeof s.value === "string")
+          promoEndsAtRaw = s.value || null;
+        if (s.key === LOGO_URL_KEY && typeof s.value === "string")
+          logoUrl = s.value || null;
+        if (s.key === TERMS_URL_KEY && typeof s.value === "string")
+          termsUrl = s.value || null;
+        if (s.key === HERO_IMAGE_URL_KEY && typeof s.value === "string")
+          heroImageUrl = s.value || DEFAULT_HERO_IMAGE_URL;
+        if (s.key === HERO_IMAGE_ALT_KEY && typeof s.value === "string")
+          heroImageAlt = rebrand(s.value);
+        if (s.key === SECTIONS_IMAGE_URL_KEY && typeof s.value === "string")
+          sectionsImageUrl = s.value || DEFAULT_SECTIONS_IMAGE_URL;
+        if (typeof s.value === "string") {
+          const galleryIndex = GALLERY_IMAGE_URL_KEYS.indexOf(
+            s.key as (typeof GALLERY_IMAGE_URL_KEYS)[number],
+          );
+          if (galleryIndex >= 0 && s.value)
+            galleryImageUrls[galleryIndex] = s.value;
+          for (let zone = 1; zone <= 6; zone += 1) {
+            if (s.key === zoneImageUrlKey(zone) && s.value)
+              zoneImageUrls[zone - 1] = s.value;
+          }
+        }
+        if (s.key === ILLUSTRATIVE_PHOTOS_KEY && typeof s.value === "boolean")
+          illustrativePhotos = s.value;
+      }
+    } catch (e) {
+      if (options.strict) throw e;
+      // DB not provisioned/reachable yet : fall back to defaults so the public
+      // site still renders on a fresh deploy.
+      logger.warn("loadSiteContent: using defaults (DB unavailable)", {
+        error: String(e),
+      });
     }
-  } catch (e) {
-    // DB not provisioned/reachable yet : fall back to defaults so the public
-    // site still renders on a fresh deploy.
-    logger.warn("loadSiteContent: using defaults (DB unavailable)", {
-      error: String(e),
-    });
   }
 
   /*

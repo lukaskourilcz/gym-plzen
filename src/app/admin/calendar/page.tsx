@@ -9,6 +9,7 @@ import {
   DEFAULT_OPEN_MINUTE,
 } from "@/lib/config/schedule";
 import { minutesToHHmm } from "@/lib/helpers/format";
+import { hasDemoAdminSession } from "@/lib/auth/demo";
 
 export const metadata = { title: "Kalendář" };
 export const dynamic = "force-dynamic";
@@ -22,12 +23,13 @@ export default async function CalendarPage() {
   const now = new Date();
   const rangeStart = addMinutes(now, -14 * 24 * 60);
   const rangeEnd = addMinutes(now, 60 * 24 * 60);
-  const [{ reservations, blocks }, openingHours] = await Promise.all([
-    availability
-      .listCalendarEntries(rangeStart, rangeEnd)
-      .catch(() => ({ reservations: [], blocks: [] })),
-    schedule.listOpeningHours().catch(() => []),
-  ]);
+  const demo = await hasDemoAdminSession();
+  const [{ reservations, blocks }, openingHours] = demo
+    ? [{ reservations: [], blocks: [] }, []]
+    : await Promise.all([
+        availability.listCalendarEntries(rangeStart, rangeEnd),
+        schedule.listOpeningHours(),
+      ]);
   const activeDays = openingHours.filter((day) => day.isClosed !== 1);
   const openMinute =
     activeDays.length > 0

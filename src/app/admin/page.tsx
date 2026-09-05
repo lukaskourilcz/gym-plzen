@@ -10,11 +10,11 @@ import {
 } from "@/lib/helpers/format";
 import { aggregateDayOverview, pragueDayBounds } from "@/lib/services/stats";
 import { loadDemoData } from "@/lib/demo/dummy";
-import { DemoBanner } from "@/components/admin/demo-banner";
 import { PageHeader } from "@/components/admin/page-header";
 import { StatCard } from "@/components/admin/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { hasDemoAdminSession } from "@/lib/auth/demo";
 
 export const metadata = { title: "Dnes" };
 export const dynamic = "force-dynamic";
@@ -35,24 +35,19 @@ const DAY_FORMAT = new Intl.DateTimeFormat("cs-CZ", {
 export default async function AdminDashboard() {
   const now = new Date();
   const bounds = pragueDayBounds(now);
-
-  const [overview, todaysEntries, recentAlerts, recentMessages] =
-    await Promise.all([
-      stats.getDayOverview(now),
-      entryLog.listEntriesForDay(bounds).catch(() => []),
-      alerts.listRecentAlerts(8).catch(() => []),
-      messages.listRecent(12).catch(() => []),
-    ]);
-
-  /*
-   * A showcase deployment runs without a database; fall back to the same
-   * deterministic demo data the other admin pages use. The demo rows go through
-   * the very same aggregation, so the tiles and the seven-day figures can never
-   * show real zeroes beside illustrative rows.
-   */
-  const demo =
-    overview.reservations.length === 0 && recentMessages.length === 0;
+  const demo = await hasDemoAdminSession();
   const demoData = demo ? await loadDemoData(now) : null;
+  const [overview, todaysEntries, recentAlerts, recentMessages] = demo
+    ? [aggregateDayOverview(demoData!.reservations, now), [], [], []]
+    : await Promise.all([
+        stats.getDayOverview(now),
+        entryLog.listEntriesForDay(bounds),
+        alerts.listRecentAlerts(8),
+        messages.listRecent(12),
+      ]);
+
+  // Empty live tables are shown honestly. Fixtures belong only to local demo
+  // sessions, never to a quiet production day.
   const day = demoData
     ? aggregateDayOverview(demoData.reservations, now)
     : overview;
@@ -79,8 +74,6 @@ export default async function AdminDashboard() {
         title="Dnes"
         description={capitalise(DAY_FORMAT.format(now))}
       />
-      {demo && <DemoBanner />}
-
       <div className="mb-8 flex flex-wrap gap-4">
         <StatCard
           label={

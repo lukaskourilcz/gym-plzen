@@ -16,12 +16,13 @@ import {
   OpeningHoursRow,
   ShowerMinutesForm,
 } from "./schedule-forms";
-import { DEFAULT_SHOWER_MINUTES } from "@/lib/config/schedule";
 import {
   DEFAULT_CLOSE_MINUTE,
   DEFAULT_OPEN_MINUTE,
+  DEFAULT_SHOWER_MINUTES,
 } from "@/lib/config/schedule";
 import { minutesToHHmm } from "@/lib/helpers/format";
+import { hasDemoAdminSession } from "@/lib/auth/demo";
 
 export const metadata = { title: "Otevírací doba a bloky" };
 export const dynamic = "force-dynamic";
@@ -29,13 +30,14 @@ export const dynamic = "force-dynamic";
 /** Weekly opening hours + one-off blocked slots (maintenance, holidays). */
 export default async function SchedulePage() {
   const now = new Date();
-  const [hours, blocks, showerMinutes] = await Promise.all([
-    schedule.listOpeningHours().catch(() => []),
-    schedule
-      .listBlockedSlots(now, addMinutes(now, 60 * 24 * 90))
-      .catch(() => []),
-    schedule.getShowerMinutes().catch(() => DEFAULT_SHOWER_MINUTES),
-  ]);
+  const demo = await hasDemoAdminSession();
+  const [hours, blocks, showerMinutes] = demo
+    ? [[], [], DEFAULT_SHOWER_MINUTES]
+    : await Promise.all([
+        schedule.listOpeningHours(),
+        schedule.listBlockedSlots(now, addMinutes(now, 60 * 24 * 90)),
+        schedule.getShowerMinutes(),
+      ]);
   const byDay = new Map(hours.map((h) => [h.dayOfWeek, h]));
 
   return (
@@ -48,8 +50,7 @@ export default async function SchedulePage() {
           Časová okna navazují na sebe od otevírací doby (např. 05:00–06:15,
           06:15–07:30). Výchozí provoz je denně{" "}
           {minutesToHHmm(DEFAULT_OPEN_MINUTE)} až{" "}
-          {minutesToHHmm(DEFAULT_CLOSE_MINUTE)} po 75 minutách. Před ostrým
-          provozem musí časy potvrdit provozovatel.
+          {minutesToHHmm(DEFAULT_CLOSE_MINUTE)} po 75 minutách.
         </p>
         {Array.from({ length: 7 }, (_, day) => (
           <OpeningHoursRow key={day} dayOfWeek={day} hours={byDay.get(day)} />

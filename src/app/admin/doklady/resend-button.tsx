@@ -17,7 +17,10 @@ export function ResendDocumentButton({
   number: string;
 }) {
   const [pending, start] = useTransition();
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{
+    text: string;
+    isError: boolean;
+  } | null>(null);
 
   return (
     <span className="inline-flex items-center gap-2">
@@ -29,15 +32,25 @@ export function ResendDocumentButton({
         onClick={() =>
           start(async () => {
             const result = await resendDocumentAction({ id });
-            setMessage(result.ok ? `Doklad ${number} odeslán.` : result.error);
+            setMessage({
+              text: result.ok ? `Doklad ${number} odeslán.` : result.error,
+              isError: !result.ok,
+            });
           })
         }
       >
         {pending ? "Odesílám…" : "Poslat znovu"}
       </Button>
       {message && (
-        <span role="status" className="text-xs text-muted-foreground">
-          {message}
+        <span
+          role={message.isError ? "alert" : "status"}
+          className={
+            message.isError
+              ? "text-xs text-destructive"
+              : "text-xs text-muted-foreground"
+          }
+        >
+          {message.text}
         </span>
       )}
     </span>

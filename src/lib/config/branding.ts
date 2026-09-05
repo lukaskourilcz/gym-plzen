@@ -10,6 +10,24 @@ export const HERO_IMAGE_ALT_KEY = "branding.hero_image_alt";
 /** Photograph pinned behind the operating-steps and pricing bands. */
 export const SECTIONS_IMAGE_URL_KEY = "branding.sections_image_url";
 
+/** Built-in illustrative assets committed with the application. */
+export const DEFAULT_HERO_IMAGE_URL = "/images/photos/hero.webp";
+export const DEFAULT_SECTIONS_IMAGE_URL = "/images/photos/sections.webp";
+export const DEFAULT_GALLERY_IMAGE_URLS = [
+  "/images/photos/gallery-1.webp",
+  "/images/photos/gallery-2.webp",
+  "/images/photos/gallery-3.webp",
+  "/images/photos/gallery-4.webp",
+] as const;
+export const DEFAULT_ZONE_IMAGE_URLS = [
+  "/images/photos/zone-1.webp",
+  "/images/photos/zone-2.webp",
+  "/images/photos/zone-3.webp",
+  "/images/photos/zone-4.webp",
+  "/images/photos/zone-5.webp",
+  "/images/photos/zone-6.webp",
+] as const;
+
 /**
  * Gallery tiles on the homepage and the six equipment zone tiles. Each holds a
  * URL; the alt text stays in the CMS beside the rest of the copy.
@@ -27,8 +45,8 @@ export function zoneImageUrlKey(zoneNumber: number): string {
 
 /**
  * Whether photographs on the site are stock stand-ins rather than the gym
- * itself. While true each one carries a visible "Ilustrační foto" label, so a
- * visitor is never led to believe they are looking at the real space.
+ * itself. While true each one carries an info icon whose tooltip says
+ * "Ilustrační foto", so it cannot be mistaken for the real space.
  * The operator turns it off once their own photographs are uploaded.
  */
 export const ILLUSTRATIVE_PHOTOS_KEY = "branding.illustrative_photos";
@@ -36,7 +54,7 @@ export const ILLUSTRATIVE_PHOTOS_KEY = "branding.illustrative_photos";
 /** SMS access-code template. Placeholders: {code}, {time}. */
 export const SMS_ACCESS_TEMPLATE_KEY = "messages.sms_access_code";
 export const DEFAULT_SMS_ACCESS_TEMPLATE =
-  "Vstupni kod: {code} ({time}). Gym Plzen";
+  "Vstupní kód: {code} ({time}). NAVI Private Gym";
 
 /** Substitute {code}/{time} placeholders in a message template. */
 export function renderTemplate(

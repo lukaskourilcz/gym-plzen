@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { VoucherForm } from "./voucher-form";
 import { VoucherStatusButton } from "./voucher-status-button";
+import { hasDemoAdminSession } from "@/lib/auth/demo";
 
 export const metadata = { title: "Vouchery" };
 export const dynamic = "force-dynamic";
@@ -30,7 +31,8 @@ function voucherState(row: vouchers.VoucherOverview, now: Date) {
 }
 
 export default async function VouchersPage() {
-  const rows = await vouchers.listVouchers().catch(() => []);
+  const demo = await hasDemoAdminSession();
+  const rows = demo ? [] : await vouchers.listVouchers();
   const now = new Date();
   const redeemed = rows.reduce((sum, row) => sum + row.redeemedCount, 0);
   const active = rows.filter(

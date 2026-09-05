@@ -101,9 +101,7 @@ export default function DesignSystemPage() {
               >
                 <span>
                   Menu administrace
-                  <span className="ml-2 font-medium text-white/60">
-                    Přehled
-                  </span>
+                  <span className="ml-2 font-medium text-white/60">Dnes</span>
                 </span>
                 <ChevronDown aria-hidden="true" className="size-4" />
               </button>

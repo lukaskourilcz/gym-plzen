@@ -1,7 +1,6 @@
 import { messages } from "@/lib/services";
 import { formatDateTime, formatStatus } from "@/lib/helpers/format";
 import { withDemoFallback } from "@/lib/demo/dummy";
-import { DemoBanner } from "@/components/admin/demo-banner";
 import { PageHeader } from "@/components/admin/page-header";
 import {
   Table,
@@ -11,15 +10,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { hasDemoAdminSession } from "@/lib/auth/demo";
 
 export const metadata = { title: "Doručené zprávy" };
 export const dynamic = "force-dynamic";
 
 /** Per-channel delivery status for every outbound message. */
 export default async function MessagesPage() {
-  const { rows, demo } = await withDemoFallback(
+  const demoEnabled = await hasDemoAdminSession();
+  const { rows } = await withDemoFallback(
     messages.listRecent(200),
     (d) => d.messages,
+    demoEnabled,
   );
 
   return (
@@ -28,7 +30,6 @@ export default async function MessagesPage() {
         title="Doručené zprávy"
         description="U každé rezervace vidíte, zda kód dorazil (e-mail / WhatsApp / SMS). Stav aktualizují webhooky providerů."
       />
-      {demo && <DemoBanner />}
       <Table>
         <TableHeader>
           <TableRow>

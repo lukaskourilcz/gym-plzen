@@ -33,9 +33,11 @@ export function BookingCalendar({
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   async function onSelect(sel: DateSelectArg) {
     if (busy) return;
+    setActionError(null);
     const label = `${sel.start.toLocaleString("cs-CZ")} – ${sel.end.toLocaleTimeString("cs-CZ")}`;
     if (!window.confirm(`Blokovat tento čas pro úklid?\n${label}`)) {
       sel.view.calendar.unselect();
@@ -51,37 +53,44 @@ export function BookingCalendar({
     setBusy(false);
     sel.view.calendar.unselect();
     if (result.ok) router.refresh();
-    else window.alert(result.error ?? "Blok se nepodařilo vytvořit.");
+    else setActionError(result.error ?? "Blok se nepodařilo vytvořit.");
   }
 
   return (
-    <FullCalendar
-      plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
-      initialView="timeGridWeek"
-      locale={csLocale}
-      firstDay={1}
-      headerToolbar={{
-        left: "prev,next today",
-        center: "title",
-        right: "timeGridWeek,timeGridDay,dayGridMonth",
-      }}
-      slotMinTime={`${minutesToHHmm(openMinute)}:00`}
-      slotMaxTime={`${minutesToHHmm(closeMinute)}:00`}
-      slotDuration="01:00:00"
-      snapDuration="01:00:00"
-      allDaySlot={false}
-      nowIndicator
-      selectable
-      selectMirror
-      select={onSelect}
-      height="auto"
-      expandRows
-      businessHours={{
-        daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
-        startTime: minutesToHHmm(openMinute),
-        endTime: minutesToHHmm(closeMinute),
-      }}
-      events={events}
-    />
+    <>
+      <FullCalendar
+        plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
+        initialView="timeGridWeek"
+        locale={csLocale}
+        firstDay={1}
+        headerToolbar={{
+          left: "prev,next today",
+          center: "title",
+          right: "timeGridWeek,timeGridDay,dayGridMonth",
+        }}
+        slotMinTime={`${minutesToHHmm(openMinute)}:00`}
+        slotMaxTime={`${minutesToHHmm(closeMinute)}:00`}
+        slotDuration="01:00:00"
+        snapDuration="01:00:00"
+        allDaySlot={false}
+        nowIndicator
+        selectable={!busy}
+        selectMirror
+        select={onSelect}
+        height="auto"
+        expandRows
+        businessHours={{
+          daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+          startTime: minutesToHHmm(openMinute),
+          endTime: minutesToHHmm(closeMinute),
+        }}
+        events={events}
+      />
+      {actionError ? (
+        <p role="alert" className="mt-3 text-sm text-destructive">
+          {actionError}
+        </p>
+      ) : null}
+    </>
   );
 }

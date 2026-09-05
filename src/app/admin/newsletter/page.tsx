@@ -11,12 +11,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { hasDemoAdminSession } from "@/lib/auth/demo";
 
 export const metadata = { title: "Odběratelé novinek" };
 export const dynamic = "force-dynamic";
 
 export default async function NewsletterPage() {
-  const rows = await newsletter.listSubscribers().catch(() => []);
+  const demo = await hasDemoAdminSession();
+  const rows = demo ? [] : await newsletter.listSubscribers();
   const active = rows.filter((row) => row.status === "subscribed").length;
   return (
     <div>

@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth/guards";
 import { SignOutButton } from "@/components/admin/sign-out-button";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { BrandLogo } from "@/components/site/brand";
+import { DemoBanner } from "@/components/admin/demo-banner";
 
 /**
  * Admin shell. `requireAdmin()` guards every route under /admin at the layout
@@ -49,6 +50,7 @@ export default async function AdminLayout({
         tabIndex={-1}
         className="mx-auto w-full max-w-[1164px] p-4 sm:p-6 lg:ml-[248px] lg:w-[calc(100%_-_248px)] lg:px-8 lg:pb-12 lg:pt-7"
       >
+        {admin.isDemo ? <DemoBanner /> : null}
         {children}
       </main>
     </div>

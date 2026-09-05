@@ -41,15 +41,11 @@ import {
 } from "@/components/site/hero-availability";
 import { NewsletterSignup } from "@/components/site/newsletter-signup";
 import { IllustrativePhoto } from "@/components/site/illustrative-photo";
-
-const PUBLISHED_GYM_PHOTO = "/images/photos/hero.webp";
-const SECTIONS_PHOTO = "/images/photos/sections.webp";
-const GALLERY_PHOTOS = [
-  "/images/photos/gallery-1.webp",
-  "/images/photos/gallery-2.webp",
-  "/images/photos/gallery-3.webp",
-  "/images/photos/gallery-4.webp",
-] as const;
+import {
+  DEFAULT_GALLERY_IMAGE_URLS,
+  DEFAULT_HERO_IMAGE_URL,
+  DEFAULT_SECTIONS_IMAGE_URL,
+} from "@/lib/config/branding";
 /** Verified position of the entrance, used as the map's marker. */
 const GYM_POSITION = { lat: 49.7550669, lng: 13.3785039 } as const;
 const GYM_COORDINATES = `${GYM_POSITION.lat},${GYM_POSITION.lng}`;
@@ -120,10 +116,11 @@ export default async function HomePage() {
    * visitor moves the map.
    */
   const mapsEmbedUrl = `https://www.google.com/maps?q=${GYM_COORDINATES}&ll=${GYM_COORDINATES}&z=17&output=embed`;
-  const heroImageUrl = content.heroImageUrl || PUBLISHED_GYM_PHOTO;
+  const heroImageUrl = content.heroImageUrl || DEFAULT_HERO_IMAGE_URL;
   const heroImageAlt =
     content.heroImageAlt || "Prostor NAVI Private Gym v Plzni";
-  const sectionsImageUrl = content.sectionsImageUrl || SECTIONS_PHOTO;
+  const sectionsImageUrl =
+    content.sectionsImageUrl || DEFAULT_SECTIONS_IMAGE_URL;
   const steps = STEP_KEYS.map(([titleKey, bodyKey]) => ({
     title: t(titleKey),
     body: t(bodyKey),
@@ -479,7 +476,9 @@ export default async function HomePage() {
             />
             <div className="mt-8 grid gap-4 lg:h-[46svh] lg:grid-cols-[1.35fr_.65fr]">
               <IllustrativePhoto
-                src={content.galleryImageUrls[0] || GALLERY_PHOTOS[0]}
+                src={
+                  content.galleryImageUrls[0] || DEFAULT_GALLERY_IMAGE_URLS[0]
+                }
                 alt={t("home.gallery.mainImageAlt")}
                 sizes="(max-width: 1023px) 100vw, 66vw"
                 illustrative={content.illustrativePhotos}
@@ -495,7 +494,7 @@ export default async function HomePage() {
                     key={label}
                     src={
                       content.galleryImageUrls[index + 1] ||
-                      GALLERY_PHOTOS[index + 1]!
+                      DEFAULT_GALLERY_IMAGE_URLS[index + 1]!
                     }
                     alt={label}
                     sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 34vw"

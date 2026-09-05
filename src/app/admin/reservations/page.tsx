@@ -5,7 +5,6 @@ import {
   formatStatus,
 } from "@/lib/helpers/format";
 import { withDemoFallback } from "@/lib/demo/dummy";
-import { DemoBanner } from "@/components/admin/demo-banner";
 import { PageHeader } from "@/components/admin/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -18,22 +17,23 @@ import {
 } from "@/components/ui/table";
 import { ReservationForm } from "./reservation-form";
 import { CancelButton } from "./cancel-button";
+import { hasDemoAdminSession } from "@/lib/auth/demo";
 
 export const metadata = { title: "Rezervace" };
 export const dynamic = "force-dynamic";
 
 /** Reservations admin: manual booking form + a list of recent reservations. */
 export default async function ReservationsPage() {
+  const demoEnabled = await hasDemoAdminSession();
   const { rows, demo } = await withDemoFallback(
     reservations.listRecent(100),
     (d) => d.reservations,
+    demoEnabled,
   );
 
   return (
     <div>
       <PageHeader title="Rezervace" />
-      {demo && <DemoBanner />}
-
       <Card className="mb-8 max-w-lg">
         <CardHeader>
           <CardTitle>Nová rezervace (ručně)</CardTitle>

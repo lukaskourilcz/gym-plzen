@@ -1,6 +1,6 @@
-import { and, desc, eq, gte, lt } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { reservation } from "@/lib/db/schema";
+import { payment, reservation } from "@/lib/db/schema";
 import type { NewReservation, Reservation } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
 import { checkAvailability } from "./availability";
@@ -145,19 +145,44 @@ export async function releaseExpiredPendingReservations(
   holdMinutes = 32,
 ): Promise<number> {
   const cutoff = pendingHoldCutoff(now, holdMinutes);
-  const released = await db
-    .update(reservation)
-    .set({
-      status: "cancelled",
-      cancelledAt: now,
-      cancelReason: "checkout_expired",
-      updatedAt: now,
-    })
-    .where(
-      and(eq(reservation.status, "pending"), lt(reservation.createdAt, cutoff)),
-    )
-    .returning({ id: reservation.id });
-  return released.length;
+  return db.transaction(async (tx) => {
+    const released = await tx
+      .update(reservation)
+      .set({
+        status: "cancelled",
+        cancelledAt: now,
+        cancelReason: "checkout_expired",
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(reservation.status, "pending"),
+          lt(reservation.createdAt, cutoff),
+        ),
+      )
+      .returning({ id: reservation.id });
+
+    if (released.length > 0) {
+      await tx
+        .update(payment)
+        .set({
+          status: "failed",
+          failureReason: "checkout_expired",
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(payment.status, "pending"),
+            inArray(
+              payment.reservationId,
+              released.map((row) => row.id),
+            ),
+          ),
+        );
+    }
+
+    return released.length;
+  });
 }
 
 export function pendingHoldCutoff(now: Date, holdMinutes = 32): Date {

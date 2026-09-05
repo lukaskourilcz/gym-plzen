@@ -9,13 +9,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { hasDemoAdminSession } from "@/lib/auth/demo";
 
 export const metadata = { title: "Upozornění" };
 export const dynamic = "force-dynamic";
 
 /** Operational alerts history : failures pushed to the WhatsApp group. */
 export default async function AlertsPage() {
-  const rows = await alerts.listRecentAlerts(100).catch(() => []);
+  const demo = await hasDemoAdminSession();
+  const rows = demo ? [] : await alerts.listRecentAlerts(100);
 
   return (
     <div>

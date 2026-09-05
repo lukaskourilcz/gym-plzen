@@ -25,7 +25,9 @@ export function CancelButton({ reservationId }: { reservationId: string }) {
         Zrušit
       </Button>
       {serverError && (
-        <span className="text-xs text-destructive">{serverError}</span>
+        <span role="alert" className="text-xs text-destructive">
+          {serverError}
+        </span>
       )}
     </form>
   );

@@ -13,25 +13,24 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { EmailTemplateForms } from "../settings/email-template-forms";
+import { hasDemoAdminSession } from "@/lib/auth/demo";
 
 export const metadata = { title: "E-maily" };
 export const dynamic = "force-dynamic";
 
 /** Transactional e-mail copy, preview and delivery diagnostics for operators. */
 export default async function EmailsPage() {
-  const templates = await emailTemplates
-    .getAllEmailTemplates()
-    .catch(
-      () =>
-        Object.fromEntries(
-          EMAIL_TEMPLATE_DEFINITIONS.map((template) => [
-            template.id,
-            template.fallback,
-          ]),
-        ) as Record<EmailTemplateId, EmailTemplate>,
-    );
+  const demo = await hasDemoAdminSession();
+  const templates = demo
+    ? (Object.fromEntries(
+        EMAIL_TEMPLATE_DEFINITIONS.map((template) => [
+          template.id,
+          template.fallback,
+        ]),
+      ) as Record<EmailTemplateId, EmailTemplate>)
+    : await emailTemplates.getAllEmailTemplates();
   const supabaseAuthSyncConfigured =
-    emailTemplates.isSupabaseAuthTemplateSyncConfigured();
+    !demo && emailTemplates.isSupabaseAuthTemplateSyncConfigured();
 
   return (
     <div>

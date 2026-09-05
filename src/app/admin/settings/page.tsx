@@ -1,6 +1,5 @@
 import { cms, invoices, slots } from "@/lib/services";
 import { loadSiteContent } from "@/lib/content/site";
-import { DEFAULT_BOOKING_HORIZON_DAYS } from "@/lib/config/schedule";
 import {
   DEFAULT_SMS_ACCESS_TEMPLATE,
   HERO_IMAGE_ALT_KEY,
@@ -9,7 +8,16 @@ import {
   LOGO_URL_KEY,
   SMS_ACCESS_TEMPLATE_KEY,
   TERMS_URL_KEY,
+  DEFAULT_HERO_IMAGE_URL,
+  DEFAULT_SECTIONS_IMAGE_URL,
+  DEFAULT_GALLERY_IMAGE_URLS,
+  DEFAULT_ZONE_IMAGE_URLS,
 } from "@/lib/config/branding";
+import { DEFAULT_BOOKING_HORIZON_DAYS } from "@/lib/config/schedule";
+import {
+  DEFAULT_BILLING_PROFILE,
+  missingBillingFields,
+} from "@/lib/config/billing";
 import {
   DEFAULT_HERO_PREVIEW_DAYS,
   HERO_PREVIEW_DAYS_KEY,
@@ -32,12 +40,14 @@ import {
   HeroCalendarForm,
   SmsTemplateForm,
 } from "./settings-forms";
+import { hasDemoAdminSession } from "@/lib/auth/demo";
 
 export const metadata = { title: "Nastavení a branding" };
 export const dynamic = "force-dynamic";
 
 /** Configure the front-end assets (logo, terms PDF) and message templates. */
 export default async function SettingsPage() {
+  const demo = await hasDemoAdminSession();
   const [
     logoUrl,
     termsUrl,
@@ -49,18 +59,40 @@ export default async function SettingsPage() {
     bookingHorizonDays,
     siteContent,
     billing,
-  ] = await Promise.all([
-    cms.getSetting<string>(LOGO_URL_KEY).catch(() => null),
-    cms.getSetting<string>(TERMS_URL_KEY).catch(() => null),
-    cms.getSetting<string>(HERO_IMAGE_URL_KEY).catch(() => null),
-    cms.getSetting<string>(HERO_IMAGE_ALT_KEY).catch(() => null),
-    cms.getSetting<string>(SECTIONS_IMAGE_URL_KEY).catch(() => null),
-    cms.getSetting<string>(SMS_ACCESS_TEMPLATE_KEY).catch(() => null),
-    cms.getSetting<number>(HERO_PREVIEW_DAYS_KEY).catch(() => null),
-    slots.getBookingHorizonDays().catch(() => DEFAULT_BOOKING_HORIZON_DAYS),
-    loadSiteContent(),
-    invoices.getBillingReadiness(),
-  ]);
+  ] = demo
+    ? [
+        null,
+        null,
+        DEFAULT_HERO_IMAGE_URL,
+        "Ilustrační fotografie soukromého fitness",
+        DEFAULT_SECTIONS_IMAGE_URL,
+        DEFAULT_SMS_ACCESS_TEMPLATE,
+        DEFAULT_HERO_PREVIEW_DAYS,
+        DEFAULT_BOOKING_HORIZON_DAYS,
+        {
+          galleryImageUrls: [...DEFAULT_GALLERY_IMAGE_URLS],
+          zoneImageUrls: [...DEFAULT_ZONE_IMAGE_URLS],
+          illustrativePhotos: true,
+        },
+        {
+          profile: DEFAULT_BILLING_PROFILE,
+          missing: missingBillingFields(DEFAULT_BILLING_PROFILE),
+          ready: false,
+          sendingEnabled: false,
+        },
+      ]
+    : await Promise.all([
+        cms.getSetting<string>(LOGO_URL_KEY),
+        cms.getSetting<string>(TERMS_URL_KEY),
+        cms.getSetting<string>(HERO_IMAGE_URL_KEY),
+        cms.getSetting<string>(HERO_IMAGE_ALT_KEY),
+        cms.getSetting<string>(SECTIONS_IMAGE_URL_KEY),
+        cms.getSetting<string>(SMS_ACCESS_TEMPLATE_KEY),
+        cms.getSetting<number>(HERO_PREVIEW_DAYS_KEY),
+        slots.getBookingHorizonDays(),
+        loadSiteContent("cs", { strict: true }),
+        invoices.getBillingReadiness(),
+      ]);
 
   return (
     <div>
@@ -78,9 +110,9 @@ export default async function SettingsPage() {
             <BrandingForm
               logoUrl={logoUrl ?? ""}
               termsUrl={termsUrl ?? ""}
-              heroImageUrl={heroImageUrl ?? ""}
+              heroImageUrl={heroImageUrl || DEFAULT_HERO_IMAGE_URL}
               heroImageAlt={heroImageAlt ?? ""}
-              sectionsImageUrl={sectionsImageUrl ?? ""}
+              sectionsImageUrl={sectionsImageUrl || DEFAULT_SECTIONS_IMAGE_URL}
             />
           </CardContent>
         </Card>
@@ -107,7 +139,8 @@ export default async function SettingsPage() {
             <CardTitle>Fotografie na webu</CardTitle>
             <CardDescription>
               Galerie na úvodní stránce a fotografie jednotlivých zón. Dokud
-              nemáte vlastní snímky, nechte zapnutý štítek „Ilustrační foto“.
+              nemáte vlastní snímky, nechte zapnutou informační ikonu
+              „Ilustrační foto“.
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -1,7 +1,6 @@
 import { loyalty, members } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
 import { withDemoFallback } from "@/lib/demo/dummy";
-import { DemoBanner } from "@/components/admin/demo-banner";
 import { PageHeader } from "@/components/admin/page-header";
 import {
   Table,
@@ -14,15 +13,18 @@ import {
 import { MemberForm } from "./member-form";
 import { MemberRoleForm } from "./member-role-form";
 import { Badge } from "@/components/ui/badge";
+import { hasDemoAdminSession } from "@/lib/auth/demo";
 
 export const metadata = { title: "Členové" };
 export const dynamic = "force-dynamic";
 
 /** Members admin : every registered user with their editable profile. */
 export default async function MembersPage() {
+  const demoEnabled = await hasDemoAdminSession();
   const { rows, demo } = await withDemoFallback(
     members.listMembers(200),
     (d) => d.members,
+    demoEnabled,
   );
 
   /*
@@ -31,15 +33,11 @@ export default async function MembersPage() {
    */
   const entryCounts = demo
     ? new Map<string, number>()
-    : await loyalty
-        .countEntriesForUsers(rows.map((member) => member.user.id))
-        .catch(() => new Map<string, number>());
+    : await loyalty.countEntriesForUsers(rows.map((member) => member.user.id));
 
   return (
     <div>
       <PageHeader title="Členové" />
-      {demo && <DemoBanner />}
-
       <Table>
         <TableHeader>
           <TableRow>

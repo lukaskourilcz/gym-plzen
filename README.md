@@ -14,9 +14,8 @@ přihlášení se v produkci nezapnou.
 
 Veřejný web používá klientské logo, provoz 5:00–23:45, 75minutové vstupy,
 adresu Plzeň - Roudná, bílou cenovou kartu, klientské FAQ a kontaktní blok s
-mapou. Instagram používá potvrzený profil `@namaste_plzen`. Telefon, e-mail a
-Facebook jsou zatím výslovně zástupné hodnoty, dokud klient nedodá finální
-údaje.
+mapou. Instagram používá potvrzený profil `@navi_plzen`. Telefon, e-mail a
+Facebook jsou v produkčním CMS doplněné potvrzenými hodnotami.
 
 Nezávislý finální UX audit dává **GO pro klientskou prezentaci** a **NO-GO pro
 produkci**, dokud nejsou připojené a ověřené externí služby a schválené právní

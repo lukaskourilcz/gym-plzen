@@ -11,16 +11,10 @@ import { SiteFooter } from "@/components/site/site-footer";
 import { BrandMark } from "@/components/site/brand";
 import { IllustrativePhoto } from "@/components/site/illustrative-photo";
 import { cn } from "@/lib/utils";
-
-const PHOTO = "/images/photos/hero.webp";
-const ZONE_PHOTOS = [
-  "/images/photos/zone-1.webp",
-  "/images/photos/zone-2.webp",
-  "/images/photos/zone-3.webp",
-  "/images/photos/zone-4.webp",
-  "/images/photos/zone-5.webp",
-  "/images/photos/zone-6.webp",
-] as const;
+import {
+  DEFAULT_HERO_IMAGE_URL,
+  DEFAULT_ZONE_IMAGE_URLS,
+} from "@/lib/config/branding";
 
 export const metadata: Metadata = {
   title: "Vybavení a prostor",
@@ -56,7 +50,7 @@ export default async function EquipmentPage() {
             </div>
             <div className="relative mt-12 aspect-[16/9] overflow-hidden rounded-lg bg-muted">
               <Image
-                src={PHOTO}
+                src={DEFAULT_HERO_IMAGE_URL}
                 alt={content.get("equipment.imageAlt")}
                 fill
                 priority
@@ -96,7 +90,10 @@ export default async function EquipmentPage() {
                     </p>
                   </div>
                   <IllustrativePhoto
-                    src={content.zoneImageUrls[index] || ZONE_PHOTOS[index]!}
+                    src={
+                      content.zoneImageUrls[index] ||
+                      DEFAULT_ZONE_IMAGE_URLS[index]!
+                    }
                     alt={zone.title}
                     sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 25vw"
                     illustrative={content.illustrativePhotos}

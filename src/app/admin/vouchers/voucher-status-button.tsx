@@ -39,7 +39,11 @@ export function VoucherStatusButton({
       >
         {pending ? "Ukládám…" : isActive ? "Deaktivovat" : "Aktivovat"}
       </Button>
-      {error ? <p className="mt-1 text-xs text-destructive">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="mt-1 text-xs text-destructive">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

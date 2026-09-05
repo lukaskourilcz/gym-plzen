@@ -222,8 +222,9 @@ export function SitePhotosForm({
         register={form.register("illustrative")}
       />
       <p className="mb-4 text-sm text-muted-foreground">
-        Dokud nejsou fotky z vašeho prostoru, web u nich zobrazí štítek
-        „Ilustrační foto“. Po nahrání vlastních snímků přepínač vypněte.
+        Dokud nejsou fotky z vašeho prostoru, web u nich zobrazí informační
+        ikonu s textem „Ilustrační foto“. Po nahrání vlastních snímků přepínač
+        vypněte.
       </p>
 
       <FormFeedback error={serverError} success={success} />
@@ -383,7 +384,11 @@ export function FileUploader() {
       <Button type="submit" disabled={pending}>
         {pending ? "Nahrávám…" : "Nahrát soubor"}
       </Button>
-      {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-1 text-xs text-destructive">
+          {error}
+        </p>
+      )}
       {url && (
         <p className="mt-2 break-all text-sm font-medium text-accent-foreground">
           Nahráno. URL:{" "}

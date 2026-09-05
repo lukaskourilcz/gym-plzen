@@ -8,6 +8,10 @@ import {
   hasDemoAdminSession,
   hasDemoCustomerSession,
 } from "@/lib/auth/demo";
+import {
+  isProductionDeployment,
+  isReservedDemoEmail,
+} from "@/lib/auth/demo-policy";
 
 /**
  * Authentication guards over **Supabase Auth**. `getSessionUser()` reads the
@@ -23,6 +27,7 @@ export interface SessionUser {
   email: string;
   name: string;
   role: string;
+  isDemo: boolean;
 }
 
 /** The current user (verified via Supabase), or null when signed out. */
@@ -33,6 +38,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       email: DEMO_ADMIN_EMAIL,
       name: "Demo administrátor",
       role: ADMIN_ROLE,
+      isDemo: true,
     };
   }
 
@@ -42,6 +48,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       email: DEMO_CUSTOMER_EMAIL,
       name: "Klára Nováková",
       role: "member",
+      isDemo: true,
     };
   }
 
@@ -52,6 +59,11 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
+
+  // The fixture credentials are intentionally committed for local previews.
+  // A mistakenly created live Auth user with either address must never gain
+  // access to customer data or the production administration.
+  if (isProductionDeployment() && isReservedDemoEmail(user.email)) return null;
 
   const fullName =
     (user.user_metadata?.full_name as string | undefined) ?? null;
@@ -66,6 +78,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     email: user.email ?? "",
     name: profile.fullName ?? fullName ?? user.email ?? "",
     role: profile.role,
+    isDemo: false,
   };
 }
 
@@ -99,7 +112,7 @@ export async function requireAdmin(): Promise<SessionUser> {
 /** Assert admin access inside a server action (throws instead of redirecting). */
 export async function assertAdmin(): Promise<SessionUser> {
   const user = await getSessionUser();
-  if (!user || !isAdmin(user)) {
+  if (!user || !isAdmin(user) || user.isDemo) {
     throw new Error("Unauthorized: administrator access required.");
   }
   return user;

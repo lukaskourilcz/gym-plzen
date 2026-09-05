@@ -1,15 +1,38 @@
 # Předání session
 
-Aktualizováno: 4. 9. 2026
+Aktualizováno: 5. 9. 2026
 
 ## Stav
+
+**Produkční audit administrace (5. 9. 2026).** Prošlo se všech 17
+administrátorských obrazovek bez chyb v konzoli. Produkční CMS je doplněný na
+122 českých hodnot včetně kontaktu, provozního řádu a všech 12 ilustračních
+fotografií. Cena je sjednocená na 289 Kč. Dvanáct plateb visících po
+expirovaném checkoutu bylo označeno jako neúspěšné a dvě prošlé slevy byly
+deaktivované. Uvolňování expirovaných rezervací nyní aktualizuje i související
+platbu. Prázdný ostrý provoz už nikdy nedoplňuje fiktivní členy, rezervace ani
+zprávy; výpadek databáze se zobrazí jako chyba s možností opakovat načtení.
+Migrace 0011 doplnila všech 15 chybějících indexů cizích klíčů a databázový
+Performance Advisor už tento nález nehlásí.
+
+**Bezpečnost demo režimu.** Rezervované demo identity jsou v produkci
+odmítnuté při přihlášení i při serverové kontrole oprávnění. Lokální demo
+zůstává pro vývoj, je jasně označené a jeho serverové akce nemohou zapisovat.
+Před předáním musí provozovatel založit a ověřit skutečný správcovský účet;
+po handoffu je třeba demo identity odstranit ze Supabase Auth. Další externí
+blokátory a doporučení jsou průběžně vedené v `NEEDED.md`.
+
+**Dokumenty a sestavení.** `iconv-lite` je explicitní produkční závislost,
+aby generování faktur/PDF nebylo závislé na náhodném zanoření balíčků. Build,
+typová kontrola, lint a unit testy jsou součástí finálního ověření tohoto
+release.
 
 **Rebrand na NAVI (4. 9. 2026).** Značka je přejmenovaná všude, kde ji vidí
 zákazník: web, metadata, JSON-LD, pět e-mailových šablon, příloha kalendáře,
 popis platby ve Stripe, administrace, testy i dokumentace. Uložené texty v
 databázi přepíše `npm run rebrand:navi` (nejdřív vypíše, co změní, pak s
-`--write`); je idempotentní a nesahá na doménu `namastegym.cz`, Instagram
-`@namaste_plzen` ani na právní znění. Kontaktní e-mail je nově
+`--write`); je idempotentní a nesahá na doménu `namastegym.cz` ani na právní
+znění. Starý Instagram přepisuje na `@navi_plzen`. Kontaktní e-mail je nově
 `info@navigym.cz`.
 
 **Logo.** `BrandMark`, `BrandLogo` a `BrandLockup` kreslí dodaný znak
@@ -52,8 +75,8 @@ a branding → Fakturační údaje, doplnit DIČ a sazbu, pokud je studio plátc
 DPH, a **zaškrtnout automatické odesílání** (výchozí je vypnuto). Čísla jdou
 po sobě v rámci roku (`2026-0001`), na jednu rezervaci nejvýš jeden doklad,
 věrnostní vstup zdarma doklad nedostane. Přehled, stažení PDF a „Poslat
-znovu“ jsou v administraci → Doklady. Vyžaduje migraci
-`drizzle/0010_billing_documents.sql`.
+znovu“ jsou v administraci → Doklady. Migrace
+`drizzle/0010_billing_documents.sql` je v produkčním schématu ověřená.
 
 **Doména.** Web běží na **`https://www.navigym.cz`** (Vercel; `navigym.cz`
 přesměrovává 308 na `www`). Přepnuté je DNS, `NEXT_PUBLIC_APP_URL` i Supabase
@@ -63,13 +86,14 @@ SEO drží pohromadě, než se z něj udělá 301. Zbývá přepsat **Stripe a N
 webhooky** a **referrery klíče Google mapy**; e-maily zatím odcházejí
 z `noreply@namastegym.cz`, protože v Resendu je ověřená stará doména.
 
-**Zadání pro ilustrační fotky** (dvanáct míst, rozměry, texty pro ChatGPT)
-jsou v [docs/PHOTO_PROMPTS.md](./docs/PHOTO_PROMPTS.md).
+**Ilustrační fotky** jsou hotové pro všech dvanáct míst a uložené v
+`public/images/photos`. Produkční CMS používá stejné cesty a web je značí
+malou informační ikonou s vlastním tooltipem.
 
 **Nové v této session (větev `claude/mobbing-feature-ideas-kens00`).** Veřejný
 web umí dvě varianty vzhledu: schválenou **Klasickou** a novou **Moderní**.
 Přepínač je **skrytý před návštěvníky**: odemkne se až otevřením
-`namastegym.cz/dev`, což nastaví cookie `ns_preview` jen v daném prohlížeči.
+`www.navigym.cz/dev`, což nastaví cookie `ns_preview` jen v daném prohlížeči.
 Stránka `/dev` je `noindex`, mimo sitemapu i robots. Po odemčení je přepínač
 vpravo nahoře v hlavičce (od `xl` výš), na užších displejích v mobilním menu;
 na `/dev` jde náhled zase vypnout. Volba se ukládá do cookie `ns_design` a inline skript ji ještě
@@ -158,14 +182,14 @@ zjednodušený editor obsahu.
 - otevírací doba: každý den 5:00–23:45;
 - slot: 75 minut;
 - kapacita: až 5 osob včetně dětí;
-- cena: 290 Kč za rezervaci, každý 10. vstup zdarma;
-- Instagram: `@namaste_plzen`;
+- cena: 289 Kč za rezervaci, každý 10. vstup zdarma;
+- Instagram: `@navi_plzen`;
 - logo: zdroj od klienta, odvozené transparentní soubory jsou v
-  `public/images/namaste-logo.png`, `namaste-lotus.png` a
-  `namaste-wordmark.png`.
+  `public/images/navi-logo.png`, `navi-mark.png` a `navi-wordmark.png`.
 
-Nepoužívat telefon, e-mail ani další kontakty z Wix šablony. Aktuální telefon,
-e-mail a Facebook jsou stále zástupné hodnoty a jsou vedené v `NEEDED.md`.
+Nepoužívat telefon, e-mail ani další kontakty z Wix šablony. Produkční CMS
+obsahuje potvrzený e-mail `info@navigym.cz`, telefon, adresu a aktuální odkazy
+na Instagram a Facebook.
 
 ## Demo
 
@@ -173,11 +197,8 @@ Lokální demo vyžaduje `DEMO_AUTH_ENABLED=true`,
 `DEMO_AUTH_SECRET` dlouhý alespoň 32 znaků a volitelně
 `BOOKING_PREVIEW_FIXTURE=true`.
 
-- administrace: `admin@namaste.demo` / `namaste2026`;
-- klientský účet: `klient@namaste.demo` / `namaste2026`.
-
-Přihlašovací stránka tyto údaje vizuálně neprozrazuje. Demo režim se v produkci
-automaticky vypne.
+Přihlašovací stránka demo údaje nezobrazuje. Demo režim se v produkci
+automaticky vypne a rezervované demo identity jsou odmítnuté i na serveru.
 
 ## Poslední ověření
 
@@ -186,17 +207,17 @@ Vše běželo na Node 22:
 - `npm run format:check`: prošlo;
 - `npm run lint`: prošlo;
 - `npm run typecheck`: prošlo;
-- `npm test`: 20 passed;
-- lokální demo a veřejné Playwright scénáře: 10 passed;
+- `npm test`: 95 passed;
+- lokální admin Playwright: přihlášení, mobilní menu a všech 17
+  administrátorských rout prošlo bez browser exception nebo error boundary;
 - produkční veřejný smoke test bez databáze: 8 passed, 1 očekávaně skipped;
 - produkční skip-link stress test: 5/5 passed;
 - `npm run build`: prošlo bez `DATABASE_URL`, nedostupná DB správně přepne web
   na bezpečný fallback;
-- `npm audit --omit=dev`: 0 zranitelností;
-- plný `npm audit --audit-level=high`: 13 vývojových nálezů (9 high,
-  4 moderate) v tranzitivních závislostech ESLint a Drizzle Kit. Automatická
-  oprava vyžaduje breaking downgrade nebo upgrade, proto nebyl použit
-  `npm audit fix --force`.
+- `npm audit --omit=dev`: 2 moderate nálezy v PostCSS přes Next.js;
+- plný `npm audit`: 6 moderate, 0 high a 0 critical. Dostupná automatická
+  oprava přechází na Next.js 16.3.4, proto nebyl bez samostatného regresního
+  auditu použit `npm audit fix --force`.
 
 Vizuálně byly ověřeny desktop 1440 × 900 a mobil 390 × 844. Responzivní měření
 proběhlo od 320 do 1728 px bez horizontálního overflow. Mobilní menu, login,
@@ -207,13 +228,15 @@ FAQ accordion, focus, Escape a reduced motion mají regresní pokrytí.
 Úkoly vyžadující klienta nebo externí služby jsou v
 [NEEDED.md](./NEEDED.md). Nejdůležitější jsou:
 
-1. skutečný telefon a e-mail;
-2. skutečná Facebook URL;
-3. schválené právní texty a provozní řád;
-4. finální fotografie jednotlivých zón;
-5. `SUPABASE_MANAGEMENT_API_TOKEN`, ostré ověření registrace a všech pěti
-   e-mailových šablon v Resend Logs;
-6. potvrzený Supabase projekt a ostré ověření Stripe a Nuki.
+1. skutečný správcovský účet a odstranění produkčních demo identit;
+2. právní potvrzení VOP a provozního řádu;
+3. ověření schránky `info@navigym.cz`, domény v Resendu a ostrého e-mailového
+   workflow;
+4. oprava Google Maps klíče, zapnutí GA4/Meta a přepnutí webhooků Stripe/Nuki;
+5. kontrola fakturačních údajů a ostrý test platby, dokladu i kalendářové
+   přílohy;
+6. potvrzení zbývajícího aktivního voucheru, ochrana proti uniklým heslům a
+   srovnání historie migrací 0006–0010.
 
 Desktopové i mobilní veřejné menu je ve verzálkách; desktopové položky jsou
 roztažené přes samostatný široký středový prostor headeru.

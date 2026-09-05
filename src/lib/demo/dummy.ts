@@ -202,7 +202,7 @@ export function buildDemoReservations(
     day.setDate(day.getDate() + d);
     day.setHours(hour, 0, 0, 0);
     const startsAt = day;
-    const endsAt = addMinutes(startsAt, 60);
+    const endsAt = addMinutes(startsAt, 75);
     const isPast = startsAt.getTime() < now.getTime();
     let status = STATUSES[n % STATUSES.length]!;
     if (!isPast && (status === "completed" || status === "no_show"))
@@ -294,29 +294,29 @@ export function buildDemoStats(
 }
 
 /**
- * Show demo data when a real query comes back empty. Returns the live rows plus
- * `demo: false` when there is real data, or the demo rows plus `demo: true`
- * otherwise : so a page reads `const { rows, demo } = await withDemoFallback(...)`
- * instead of repeating the empty-check everywhere.
+ * Use local fixtures only for an explicitly authenticated local demo session.
+ * An empty production table is a valid operational state and must stay empty;
+ * silently replacing it with fictional customers would make the admin unsafe.
  */
 export async function withDemoFallback<T>(
   live: T[] | Promise<T[]>,
   pick: (demo: Awaited<ReturnType<typeof loadDemoData>>) => T[],
+  demoEnabled: boolean,
 ): Promise<{ rows: T[]; demo: boolean }> {
-  let rows: T[] = [];
+  let rows: T[];
   try {
     rows = await live;
-  } catch {
-    // A showcase deployment intentionally runs without a database.
+  } catch (error) {
+    if (!demoEnabled) throw error;
+    rows = [];
   }
-  if (rows.length > 0) return { rows, demo: false };
+  if (!demoEnabled) return { rows, demo: false };
   const data = await loadDemoData();
   return { rows: pick(data), demo: true };
 }
 
 /**
- * One-shot demo dataset. Call from a page when the real query is empty, then
- * render the returned collections with a demo banner.
+ * One-shot local demo dataset. Call only for a verified local demo session.
  */
 export async function loadDemoData(now = new Date()) {
   const users = await fetchDemoUsers(15);

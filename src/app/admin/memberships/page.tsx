@@ -6,7 +6,6 @@ import {
 } from "@/lib/config/pricing";
 import { formatMoney } from "@/lib/helpers/format";
 import { loadDemoData } from "@/lib/demo/dummy";
-import { DemoBanner } from "@/components/admin/demo-banner";
 import { PageHeader } from "@/components/admin/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -20,6 +19,7 @@ import {
 import { EntryPriceForm } from "./entry-price-form";
 import { PromoPriceForm } from "./promo-price-form";
 import { instantToLocalInput } from "@/lib/helpers/datetime";
+import { hasDemoAdminSession } from "@/lib/auth/demo";
 
 export const metadata = { title: "Vstupné a věrnost" };
 export const dynamic = "force-dynamic";
@@ -29,17 +29,15 @@ export const dynamic = "force-dynamic";
  * Every Nth entry is free; this page sets the price and shows loyalty progress.
  */
 export default async function PricingPage() {
-  const [standardPriceCents, promo, entryPrice, liveMembers] =
-    await Promise.all([
-      loyalty
-        .getStandardEntryPriceCents()
-        .catch(() => DEFAULT_ENTRY_PRICE_CENTS),
-      loyalty.getPromoWindow().catch(() => null),
-      loyalty.getEntryPrice().catch(() => null),
-      members.listMembers(200).catch(() => []),
-    ]);
-
-  const demo = liveMembers.length === 0;
+  const demo = await hasDemoAdminSession();
+  const [standardPriceCents, promo, entryPrice, liveMembers] = demo
+    ? [DEFAULT_ENTRY_PRICE_CENTS, null, null, []]
+    : await Promise.all([
+        loyalty.getStandardEntryPriceCents(),
+        loyalty.getPromoWindow(),
+        loyalty.getEntryPrice(),
+        members.listMembers(200),
+      ]);
   let withLoyalty: {
     member: (typeof liveMembers)[number];
     status: ReturnType<typeof deriveLoyaltyStatus>;
@@ -70,8 +68,6 @@ export default async function PricingPage() {
   return (
     <div>
       <PageHeader title="Vstupné a věrnost" />
-      {demo && <DemoBanner />}
-
       <Card className="mb-8 max-w-xl">
         <CardHeader>
           <CardTitle>Cena vstupného</CardTitle>

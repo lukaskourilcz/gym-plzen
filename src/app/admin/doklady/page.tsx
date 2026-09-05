@@ -10,6 +10,11 @@ import {
 } from "@/components/ui/card";
 import { formatDateTime } from "@/lib/helpers/format";
 import { ResendDocumentButton } from "./resend-button";
+import { hasDemoAdminSession } from "@/lib/auth/demo";
+import {
+  DEFAULT_BILLING_PROFILE,
+  missingBillingFields,
+} from "@/lib/config/billing";
 
 export const metadata = { title: "Doklady" };
 export const dynamic = "force-dynamic";
@@ -23,10 +28,21 @@ function czk(cents: number, decimals: boolean): string {
 
 /** Issued payment documents: what went out, to whom, and when. */
 export default async function DocumentsPage() {
-  const [rows, billing] = await Promise.all([
-    invoices.listInvoices().catch(() => []),
-    invoices.getBillingReadiness(),
-  ]);
+  const demo = await hasDemoAdminSession();
+  const [rows, billing] = demo
+    ? [
+        [],
+        {
+          profile: DEFAULT_BILLING_PROFILE,
+          missing: missingBillingFields(DEFAULT_BILLING_PROFILE),
+          ready: false,
+          sendingEnabled: false,
+        },
+      ]
+    : await Promise.all([
+        invoices.listInvoices(),
+        invoices.getBillingReadiness(),
+      ]);
 
   return (
     <div>

@@ -10,14 +10,12 @@ import {
   localDateTimeToDate,
   minuteOfDay,
 } from "@/lib/helpers/datetime";
-import { logger } from "@/lib/helpers/logger";
 
 /**
  * Statistics service : aggregates reservations into insights for the admin
  * (sessions per weekday, most frequent hours, monthly trend, status mix).
  * Aggregation is done in JS over a bounded fetch so weekday/hour buckets are
- * computed in the gym's local timezone without SQL timezone pitfalls. Resilient:
- * returns empty stats if the DB is unavailable.
+ * computed in the gym's local timezone without SQL timezone pitfalls.
  */
 
 export interface Bucket {
@@ -43,16 +41,11 @@ const WEEKDAY_LABELS = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
 const TZ = "Europe/Prague";
 
 export async function getStats(now: Date = new Date()): Promise<Stats> {
-  let rows: { startsAt: Date; status: string }[] = [];
-  try {
-    rows = await db
-      .select({ startsAt: reservation.startsAt, status: reservation.status })
-      .from(reservation)
-      .orderBy(desc(reservation.startsAt))
-      .limit(5000);
-  } catch (e) {
-    logger.warn("getStats: empty (DB unavailable)", { error: String(e) });
-  }
+  const rows = await db
+    .select({ startsAt: reservation.startsAt, status: reservation.status })
+    .from(reservation)
+    .orderBy(desc(reservation.startsAt))
+    .limit(5000);
 
   return aggregateStats(rows, now);
 }
@@ -146,16 +139,6 @@ export interface DayOverview {
   noShowLast7: number;
 }
 
-const EMPTY_DAY_OVERVIEW: DayOverview = {
-  reservations: [],
-  revenueCents: 0,
-  freeEntries: 0,
-  last7: 0,
-  previous7: 0,
-  cancelledLast7: 0,
-  noShowLast7: 0,
-};
-
 /** Prague midnight to midnight for the day the instant falls in. */
 export function pragueDayBounds(now: Date): { start: Date; end: Date } {
   const key = dateKeyInTimeZone(now, TZ);
@@ -167,8 +150,8 @@ export function pragueDayBounds(now: Date): { start: Date; end: Date } {
 
 /**
  * Everything the admin "Dnes" dashboard needs about one day, plus the two
- * seven-day windows behind it. Resilient in the same way as `getStats`: an
- * unavailable database yields an empty overview rather than a broken page.
+ * seven-day windows behind it. Database failures intentionally propagate to
+ * the admin error boundary instead of being misreported as a quiet day.
  */
 export async function getDayOverview(
   now: Date = new Date(),
@@ -176,24 +159,19 @@ export async function getDayOverview(
   const { start, end } = pragueDayBounds(now);
   const windowStart = new Date(start.getTime() - 13 * 24 * 60 * MINUTE_MS);
 
-  try {
-    // One query: the fourteen-day window already contains today, so the day is
-    // a filter over these rows rather than a second round trip.
-    const window = await db
-      .select()
-      .from(reservation)
-      .where(
-        and(
-          gte(reservation.startsAt, windowStart),
-          lt(reservation.startsAt, end),
-        ),
-      )
-      .orderBy(reservation.startsAt);
-    return aggregateDayOverview(window, now);
-  } catch (e) {
-    logger.warn("getDayOverview: empty (DB unavailable)", { error: String(e) });
-    return EMPTY_DAY_OVERVIEW;
-  }
+  // One query: the fourteen-day window already contains today, so the day is
+  // a filter over these rows rather than a second round trip.
+  const window = await db
+    .select()
+    .from(reservation)
+    .where(
+      and(
+        gte(reservation.startsAt, windowStart),
+        lt(reservation.startsAt, end),
+      ),
+    )
+    .orderBy(reservation.startsAt);
+  return aggregateDayOverview(window, now);
 }
 
 /**

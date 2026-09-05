@@ -10,7 +10,7 @@ description: >-
 # gym-plzen architecture
 
 A single-occupancy gym booking system: visitors book one-at-a-time training
-slots, pay one-time entry (290 Kč, every 10th free for members: no
+slots, pay one-time entry (289 Kč, every 10th free for members: no
 subscriptions), and receive a time-limited Nuki keypad code over
 email/WhatsApp. An account is optional. An admin CMS ("redakční systém")
 manages content, reservations, members, pricing, and monitors reliability.

@@ -1,6 +1,6 @@
 # Design-system rule
 
-`docs/DESIGN_SYSTEM.md` is the canonical source for the NAMASTE visual system.
+`docs/DESIGN_SYSTEM.md` is the canonical source for the NAVI visual system.
 
 For every non-trivial UI change:
 

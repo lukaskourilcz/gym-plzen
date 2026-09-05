@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isDemoAuthEnabled } from "../../src/lib/auth/demo-policy";
+import {
+  isDemoAuthEnabled,
+  isProductionDeployment,
+  isReservedDemoEmail,
+} from "../../src/lib/auth/demo-policy";
 import { PUBLIC_AVAILABILITY_TABLE } from "../../src/lib/config/realtime";
 import { safeInternalPath } from "../../src/lib/security/redirects";
 import { isBookingPreviewEnabled } from "../../src/lib/config/preview";
@@ -27,6 +31,19 @@ test("demo authentication cannot be enabled in production", () => {
   );
   assert.equal(
     isDemoAuthEnabled({ NODE_ENV: "development", DEMO_AUTH_ENABLED: "false" }),
+    false,
+  );
+});
+
+test("committed demo identities are reserved away from production auth", () => {
+  assert.equal(isReservedDemoEmail(" ADMIN@NAMASTE.DEMO "), true);
+  assert.equal(isReservedDemoEmail("owner@navigym.cz"), false);
+  assert.equal(isProductionDeployment({ VERCEL_ENV: "production" }), true);
+  assert.equal(
+    isProductionDeployment({
+      NODE_ENV: "development",
+      VERCEL_ENV: "preview",
+    }),
     false,
   );
 });

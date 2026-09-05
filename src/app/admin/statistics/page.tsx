@@ -1,9 +1,9 @@
 import { getStats, type Bucket } from "@/lib/services/stats";
 import { loadDemoData } from "@/lib/demo/dummy";
-import { DemoBanner } from "@/components/admin/demo-banner";
 import { PageHeader } from "@/components/admin/page-header";
 import { StatCard } from "@/components/admin/stat-card";
 import { Card, CardContent } from "@/components/ui/card";
+import { hasDemoAdminSession } from "@/lib/auth/demo";
 
 export const metadata = { title: "Statistiky" };
 export const dynamic = "force-dynamic";
@@ -13,15 +13,12 @@ export const dynamic = "force-dynamic";
  * weekdays and hours, and the monthly trend. Lightweight inline bar charts.
  */
 export default async function StatisticsPage() {
-  let stats = await getStats();
-  const demo = stats.total === 0;
-  if (demo) stats = (await loadDemoData()).stats;
+  const demo = await hasDemoAdminSession();
+  const stats = demo ? (await loadDemoData()).stats : await getStats();
 
   return (
     <div>
       <PageHeader title="Statistiky" />
-      {demo && <DemoBanner />}
-
       <div className="mb-8 flex flex-wrap gap-4">
         <StatCard label="Rezervací celkem" value={stats.total} />
         <StatCard label="Za posledních 30 dní" value={stats.last30} />
