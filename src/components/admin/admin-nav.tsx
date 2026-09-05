@@ -24,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isNavigationItemActive } from "@/lib/navigation";
 
 const NAV_GROUPS = [
   {
@@ -65,17 +66,14 @@ const NAV_GROUPS = [
   },
 ] as const;
 
-function isActive(pathname: string, href: string) {
-  return href === "/admin" ? pathname === href : pathname.startsWith(href);
-}
-
 export function AdminNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const activeLabel = NAV_GROUPS.reduce<string | undefined>(
     (label, group) =>
-      label ?? group.items.find(([href]) => isActive(pathname, href))?.[1],
+      label ??
+      group.items.find(([href]) => isNavigationItemActive(pathname, href))?.[1],
     undefined,
   );
 
@@ -132,7 +130,7 @@ export function AdminNav() {
             </div>
             <div className="grid gap-px">
               {group.items.map(([href, label, Icon]) => {
-                const active = isActive(pathname, href);
+                const active = isNavigationItemActive(pathname, href);
                 return (
                   <Link
                     key={href}
