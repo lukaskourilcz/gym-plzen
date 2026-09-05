@@ -28,3 +28,16 @@ test("skeleton motion is restrained and removable", async () => {
   assert.match(styles, /@keyframes skeleton-pulse/);
   assert.match(styles, /opacity: 0\.72/);
 });
+
+test("unknown routes never invent a generic page skeleton", async () => {
+  await Promise.all(
+    ["src/app/loading.tsx", "src/app/admin/loading.tsx"].map((path) =>
+      assert.rejects(readFile(path, "utf8"), { code: "ENOENT" }),
+    ),
+  );
+
+  const loginForm = await readFile("src/app/login/login-form.tsx", "utf8");
+
+  assert.match(loginForm, /Přihlašuji…/);
+  assert.match(loginForm, /formState\.isSubmitting \|\| isNavigating/);
+});

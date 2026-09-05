@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -89,6 +89,7 @@ export function LoginForm({
   const [notice, setNotice] = useState<string | null>(null);
   const [oauthPending, setOauthPending] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [isNavigating, startNavigation] = useTransition();
 
   useEffect(() => {
     setReady(true);
@@ -126,8 +127,10 @@ export function LoginForm({
         "Účet je připravený. Dokončete registraci přes odkaz v e-mailu.",
       );
     } else {
-      router.push(result.destination ?? next);
-      router.refresh();
+      startNavigation(() => {
+        router.push(result.destination ?? next);
+        router.refresh();
+      });
     }
   });
 
@@ -216,8 +219,9 @@ export function LoginForm({
 
         <FormFeedback error={serverError} success={notice} />
         <SubmitButton
-          isSubmitting={formState.isSubmitting}
+          isSubmitting={formState.isSubmitting || isNavigating}
           disabled={!ready}
+          pendingLabel={mode === "signin" ? "Přihlašuji…" : "Registruji…"}
           className="h-[50px] w-full"
         >
           {mode === "signin" ? "Přihlásit se" : "Zaregistrovat se"}

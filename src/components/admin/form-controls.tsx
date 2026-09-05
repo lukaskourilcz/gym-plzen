@@ -98,12 +98,14 @@ export function SubmitButton({
   isSubmitting,
   disabled = false,
   children = "Uložit",
+  pendingLabel = "Ukládám…",
   className,
   variant,
 }: {
   isSubmitting: boolean;
   disabled?: boolean;
   children?: React.ReactNode;
+  pendingLabel?: React.ReactNode;
   className?: string;
   /** Secondary submits (an undo, a revoke) use the outline variant. */
   variant?: React.ComponentProps<typeof Button>["variant"];
@@ -115,7 +117,7 @@ export function SubmitButton({
       disabled={disabled || isSubmitting}
       className={className}
     >
-      {isSubmitting ? "Ukládám…" : children}
+      {isSubmitting ? pendingLabel : children}
     </Button>
   );
 }

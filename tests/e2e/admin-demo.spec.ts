@@ -14,6 +14,47 @@ async function loginAsDemoAdmin(page: import("@playwright/test").Page) {
   await expect(page).toHaveURL(/\/admin$/, { timeout: 180_000 });
 }
 
+for (const viewport of [
+  { name: "desktop", width: 1440, height: 900 },
+  { name: "mobile", width: 390, height: 844 },
+]) {
+  test(`the ${viewport.name} login stays contextual while admin loads`, async ({
+    page,
+  }) => {
+    test.setTimeout(240_000);
+    await page.setViewportSize(viewport);
+    await page.route(/\/admin(?:\?.*)?$/, async (route) => {
+      if (
+        route.request().method() === "GET" &&
+        route.request().headers().rsc === "1"
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 800));
+      }
+      await route.continue();
+    });
+
+    await page.goto("/login?next=%2Fadmin", {
+      waitUntil: "load",
+      timeout: 60_000,
+    });
+    await page.getByLabel("E-mail").fill("admin@namaste.demo");
+    await page.getByLabel("Heslo").fill("namaste2026");
+    await page.waitForTimeout(500);
+    await page
+      .getByRole("button", { name: "Přihlásit se", exact: true })
+      .click();
+
+    await expect(
+      page.getByRole("button", { name: "Přihlašuji…", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Přihlášení" }),
+    ).toBeVisible();
+    await expect(page.locator('[class*="skeleton-pulse"]')).toHaveCount(0);
+    await expect(page).toHaveURL(/\/admin$/, { timeout: 180_000 });
+  });
+}
+
 test("demo credentials open the admin dashboard without Supabase", async ({
   page,
 }) => {
