@@ -174,7 +174,7 @@ remains visible. Recheck that white copy stays above 4.5:1 whenever the image is
 replaced or its art direction changes.
 
 The operating-steps and pricing bands share one pinned photograph behind an
-`ink/82` veil: the image lives in an `absolute inset-0` track and is
+`ink/60` veil, matching the hero: the image lives in an `absolute inset-0` track and is
 `sticky top-0 h-svh` inside it, so it holds still while both bands scroll over
 it. That track must not carry `overflow-hidden`, which would make it the
 scrollport and stop the child pinning. Prefer this over
@@ -421,6 +421,8 @@ The public booking flow is date first.
   overshoot reserved for this single brand mark. Do not reuse that easing for
   ordinary controls, and do not add a third easing token.
 - Motion explains state changes; it is not decoration.
+- Skeletons mirror the final route geometry and use one slow, low-contrast
+  pulse. Never substitute a generic large rectangle for structured content.
 - Honour `prefers-reduced-motion`. Information must not depend on animation.
 
 ## Accessibility

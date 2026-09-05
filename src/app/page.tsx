@@ -331,8 +331,8 @@ export default async function HomePage() {
                 sizes="100vw"
                 className="object-cover"
               />
-              {/* Green veil: white copy and the sage tone read over any frame. */}
-              <div className="absolute inset-0 bg-ink/82" />
+              {/* Match the hero veil so the shared room photograph stays visible. */}
+              <div className="absolute inset-0 bg-ink/60" />
             </div>
           </div>
 

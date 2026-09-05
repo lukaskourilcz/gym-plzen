@@ -190,6 +190,17 @@
   }
 }
 
+/* One low-contrast rhythm keeps grouped loading shapes calm and synchronized. */
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 /*
  * Once the page has moved, the header separates itself from the content more
  * firmly. Its height deliberately does not change: `--header-h` is the single
