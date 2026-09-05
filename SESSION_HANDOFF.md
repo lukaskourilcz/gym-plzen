@@ -55,6 +55,14 @@ věrnostní vstup zdarma doklad nedostane. Přehled, stažení PDF a „Poslat
 znovu“ jsou v administraci → Doklady. Vyžaduje migraci
 `drizzle/0010_billing_documents.sql`.
 
+**Doména.** Web běží na **`https://www.navigym.cz`** (Vercel; `navigym.cz`
+přesměrovává 308 na `www`). Přepnuté je DNS, `NEXT_PUBLIC_APP_URL` i Supabase
+Auth, takže sitemap, robots i `canonical` uvádějí novou doménu. `namastegym.cz`
+zatím servíruje stejný web souběžně, ale posílá `canonical` na novou doménu, což
+SEO drží pohromadě, než se z něj udělá 301. Zbývá přepsat **Stripe a Nuki
+webhooky** a **referrery klíče Google mapy**; e-maily zatím odcházejí
+z `noreply@namastegym.cz`, protože v Resendu je ověřená stará doména.
+
 **Zadání pro ilustrační fotky** (dvanáct míst, rozměry, texty pro ChatGPT)
 jsou v [docs/PHOTO_PROMPTS.md](./docs/PHOTO_PROMPTS.md).
 

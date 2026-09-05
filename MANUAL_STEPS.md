@@ -1,8 +1,11 @@
 # Manuální kroky
 
 Kroky, které vyžadují Dashboard, externí konzoli nebo fyzické ověření.
-Produkční web běží na `https://www.namastegym.cz`. Při změně domény vždy
-aktualizujte také Supabase Auth URL, Stripe webhook a Nuki webhook.
+Produkční web běží na **`https://www.navigym.cz`** (od 5. 9. 2026).
+`namastegym.cz` zatím servíruje stejný web souběžně, než se z něj udělá 301.
+
+Při změně domény vždy aktualizujte také Supabase Auth URL, Stripe webhook,
+Nuki webhook a referrery klíče Google mapy.
 
 Supabase project ref: **`rkmunagymohxtclymacm`**
 Supabase project URL: **`https://rkmunagymohxtclymacm.supabase.co`**
@@ -27,13 +30,14 @@ Providers → Email:
 
 URL Configuration → Site URL:
 
-- `https://www.namastegym.cz`
+- `https://www.navigym.cz`
 
 URL Configuration → Redirect URLs:
 
 - `http://localhost:3000/**`
 - `https://*.vercel.app/**`
-- `https://www.namastegym.cz/**`
+- `https://www.navigym.cz/**`
+- `https://www.namastegym.cz/**` (dokud stará doména běží)
 
 **Ověření:** `POST /login` s platným e-mailem vrátí `Zkontrolujte e-mail`;
 v Auth logu vidíš `user_created` a `magic_link_sent`.
@@ -51,7 +55,7 @@ Přenést z `.env.local` do Vercel Production + Preview:
 
 Public (Sensitive OFF):
 
-- `NEXT_PUBLIC_APP_URL` = `https://www.namastegym.cz`
+- `NEXT_PUBLIC_APP_URL` = `https://www.navigym.cz`
 - `NEXT_PUBLIC_DEFAULT_LOCALE` = `cs`
 - `NEXT_PUBLIC_OAUTH_PROVIDERS` = `google`
 - `NEXT_PUBLIC_SENTRY_DSN`
@@ -87,12 +91,13 @@ Firemní profil na Googlu a konverze GA4 → Google Ads.
 
 **Kde:** <https://dashboard.stripe.com/webhooks> (a Test-mode analog).
 
-- **Endpoint URL:** `https://www.namastegym.cz/api/webhooks/stripe`
+- **Endpoint URL:** `https://www.navigym.cz/api/webhooks/stripe`
+  (na starém endpointu `namastegym.cz` zatím zůstává; **čeká na přepnutí**, viz NEEDED.md)
 - **Události:** `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`
 - **Signing secret** (`whsec_...`) → do Vercel Production jako `STRIPE_WEBHOOK_SECRET` (Sensitive).
   Založ analog i pro Test mode, jeho secret nastav do Vercel Preview.
 
-**Ověření:** `stripe listen --forward-to https://www.namastegym.cz/api/webhooks/stripe`
+**Ověření:** `stripe listen --forward-to https://www.navigym.cz/api/webhooks/stripe`
 vrátí `200` na `checkout.session.completed`; testovací Checkout dojde na success URL
 a rezervace přejde do `confirmed`.
 
@@ -152,7 +157,8 @@ Po pořízení zámku doplnit:
 
 - `NUKI_SMARTLOCK_ID` (číselné ID zámku z dashboardu).
 - `NUKI_WEBHOOK_SECRET` = `openssl rand -hex 32`; zapsat současně do Nuki webhook UI i do Vercelu (Sensitive, Production + Preview).
-- Webhook URL k zaregistrování na Nuki: `https://www.namastegym.cz/api/webhooks/nuki`.
+- Webhook URL k zaregistrování na Nuki: `https://www.navigym.cz/api/webhooks/nuki`
+  (**čeká na přepnutí**, viz NEEDED.md).
 
 **Fyzicky ověřit:** admin vytvoří rezervaci → kód doručen → zámek otevře →
 po skončení kód přestane platit → ruční revocation zafunguje.
@@ -161,8 +167,10 @@ po skončení kód přestane platit → ruční revocation zafunguje.
 
 ## 6. Resend — odchozí aplikační e-maily
 
-Doména `namastegym.cz` je v Resend ověřená a Vercel má nastavené
-`RESEND_API_KEY` a `RESEND_FROM_EMAIL` pro Production i Preview.
+V Resend je ověřená doména `namastegym.cz` (nikoli `navigym.cz`), a Vercel má
+nastavené `RESEND_API_KEY` a `RESEND_FROM_EMAIL` pro Production i Preview.
+Odesílatel proto zatím zůstává na staré doméně — odesílání z `@navigym.cz`
+vyžaduje nejdřív ověření té domény v Resendu (DNS záznamy), viz NEEDED.md.
 
 - Sender: `NAVI Private Gym <noreply@namastegym.cz>`
 - Šablony jsou v administraci → **E-maily**. Je zde náhled s ukázkovými daty,
@@ -221,7 +229,7 @@ Pokud by se SMTP nastavovalo znovu:
 
 ## 8. Uptime a cron heartbeat monitoring
 
-- UptimeRobot check na `https://www.namastegym.cz/`.
+- UptimeRobot check na `https://www.navigym.cz/`.
 - Cron heartbeat monitor pro `/api/cron/watchdog` (nebo přes `UPTIMEROBOT_HEARTBEAT_URL`,
   který cron pinguje po úspěšném běhu — env je nastavené v `.env.local`).
 
