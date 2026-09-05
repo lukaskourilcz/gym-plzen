@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
-import { contentBlock, siteSetting } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { contentBlock, pricingPeriod, siteSetting } from "@/lib/db/schema";
+import { and, eq, gt, lte } from "drizzle-orm";
 import { logger } from "@/lib/helpers/logger";
 import { formatMoney } from "@/lib/helpers/format";
 import {
@@ -8,9 +8,6 @@ import {
   ENTRY_PRICE_SETTING_KEY,
   FREE_ENTRY_EVERY,
   GYM_CAPACITY,
-  PROMO_ENDS_AT_SETTING_KEY,
-  PROMO_PRICE_SETTING_KEY,
-  PROMO_STARTS_AT_SETTING_KEY,
   resolveEntryPrice,
 } from "@/lib/config/pricing";
 import {
@@ -331,9 +328,12 @@ export async function loadSiteContent(
 ): Promise<SiteContent> {
   const values: Record<string, string> = { ...SITE_DEFAULTS };
   let standardEntryPriceCents = DEFAULT_ENTRY_PRICE_CENTS;
-  let promoPriceCents: number | null = null;
-  let promoStartsAt: string | null = null;
-  let promoEndsAtRaw: string | null = null;
+  let activePricingPeriod: {
+    name: string;
+    priceCents: number;
+    startsAt: Date;
+    endsAt: Date;
+  } | null = null;
   let logoUrl: string | null = null;
   let termsUrl: string | null = null;
   let heroImageUrl: string | null = DEFAULT_HERO_IMAGE_URL;
@@ -343,13 +343,34 @@ export async function loadSiteContent(
   const zoneImageUrls: string[] = [...DEFAULT_ZONE_IMAGE_URLS];
   // Default on: the photographs in place today are stand-ins.
   let illustrativePhotos = true;
+  const now = new Date();
 
   if (!options.defaultsOnly) {
     try {
-      const rows = await db
-        .select({ key: contentBlock.key, valueText: contentBlock.valueText })
-        .from(contentBlock)
-        .where(eq(contentBlock.locale, locale));
+      const [rows, settings, currentPeriods] = await Promise.all([
+        db
+          .select({ key: contentBlock.key, valueText: contentBlock.valueText })
+          .from(contentBlock)
+          .where(eq(contentBlock.locale, locale)),
+        db
+          .select({ key: siteSetting.key, value: siteSetting.value })
+          .from(siteSetting),
+        db
+          .select({
+            name: pricingPeriod.name,
+            priceCents: pricingPeriod.priceCents,
+            startsAt: pricingPeriod.startsAt,
+            endsAt: pricingPeriod.endsAt,
+          })
+          .from(pricingPeriod)
+          .where(
+            and(
+              lte(pricingPeriod.startsAt, now),
+              gt(pricingPeriod.endsAt, now),
+            ),
+          )
+          .limit(1),
+      ]);
       for (const row of rows) {
         if (
           row.valueText != null &&
@@ -359,21 +380,9 @@ export async function loadSiteContent(
           values[row.key] = rebrand(row.valueText);
       }
 
-      const settings = await db
-        .select({ key: siteSetting.key, value: siteSetting.value })
-        .from(siteSetting);
       for (const s of settings) {
         if (s.key === ENTRY_PRICE_SETTING_KEY && typeof s.value === "number")
           standardEntryPriceCents = s.value;
-        if (s.key === PROMO_PRICE_SETTING_KEY && typeof s.value === "number")
-          promoPriceCents = s.value;
-        if (
-          s.key === PROMO_STARTS_AT_SETTING_KEY &&
-          typeof s.value === "string"
-        )
-          promoStartsAt = s.value || null;
-        if (s.key === PROMO_ENDS_AT_SETTING_KEY && typeof s.value === "string")
-          promoEndsAtRaw = s.value || null;
         if (s.key === LOGO_URL_KEY && typeof s.value === "string")
           logoUrl = s.value || null;
         if (s.key === TERMS_URL_KEY && typeof s.value === "string")
@@ -398,6 +407,7 @@ export async function loadSiteContent(
         if (s.key === ILLUSTRATIVE_PHOTOS_KEY && typeof s.value === "boolean")
           illustrativePhotos = s.value;
       }
+      activePricingPeriod = currentPeriods[0] ?? null;
     } catch (e) {
       if (options.strict) throw e;
       // DB not provisioned/reachable yet : fall back to defaults so the public
@@ -413,24 +423,10 @@ export async function loadSiteContent(
    * the moment a visitor would book. The homepage is ISR with a 60s window, so
    * the price flips within a minute of the window opening or closing.
    */
-  const toInstant = (value: string | null) => {
-    if (!value) return null;
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
-  };
-  const promoStart = toInstant(promoStartsAt);
-  const promoEnd = toInstant(promoEndsAtRaw);
   const price = resolveEntryPrice({
     standardPriceCents: standardEntryPriceCents,
-    promo:
-      promoPriceCents !== null && promoStart && promoEnd
-        ? {
-            priceCents: promoPriceCents,
-            startsAt: promoStart,
-            endsAt: promoEnd,
-          }
-        : null,
-    at: new Date(),
+    periods: activePricingPeriod ? [activePricingPeriod] : [],
+    at: now,
   });
 
   /*

@@ -5,14 +5,11 @@ import {
   DEFAULT_ENTRY_PRICE_CENTS,
   ENTRY_PRICE_SETTING_KEY,
   FREE_ENTRY_EVERY,
-  PROMO_ENDS_AT_SETTING_KEY,
-  PROMO_PRICE_SETTING_KEY,
-  PROMO_STARTS_AT_SETTING_KEY,
   resolveEntryPrice,
   type EntryPrice,
-  type PromoWindow,
 } from "@/lib/config/pricing";
 import { getSetting } from "./cms";
+import { getActivePricingPeriod } from "./pricing-periods";
 
 /**
  * Loyalty & entry-pricing service.
@@ -120,28 +117,8 @@ export async function getStandardEntryPriceCents(): Promise<number> {
     : DEFAULT_ENTRY_PRICE_CENTS;
 }
 
-/** Parse a stored ISO timestamp, ignoring anything unusable. */
-function readInstant(value: unknown): Date | null {
-  if (typeof value !== "string" || value.trim() === "") return null;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-/** The promotional window an administrator configured, if it is complete. */
-export async function getPromoWindow(): Promise<PromoWindow | null> {
-  const [priceCents, startsAt, endsAt] = await Promise.all([
-    getSetting<number>(PROMO_PRICE_SETTING_KEY),
-    getSetting<string>(PROMO_STARTS_AT_SETTING_KEY),
-    getSetting<string>(PROMO_ENDS_AT_SETTING_KEY),
-  ]);
-  const start = readInstant(startsAt);
-  const end = readInstant(endsAt);
-  if (typeof priceCents !== "number" || !start || !end) return null;
-  return { priceCents, startsAt: start, endsAt: end };
-}
-
 /**
- * What an entry costs at a given moment, with the promotion applied.
+ * What an entry costs at a given moment, with a scheduled period applied.
  *
  * `at` is the moment the customer is booking, never the slot they book: a
  * reservation created during the promotion keeps the promotional price even
@@ -150,11 +127,15 @@ export async function getPromoWindow(): Promise<PromoWindow | null> {
 export async function getEntryPrice(
   at: Date = new Date(),
 ): Promise<EntryPrice> {
-  const [standardPriceCents, promo] = await Promise.all([
+  const [standardPriceCents, period] = await Promise.all([
     getStandardEntryPriceCents(),
-    getPromoWindow(),
+    getActivePricingPeriod(at),
   ]);
-  return resolveEntryPrice({ standardPriceCents, promo, at });
+  return resolveEntryPrice({
+    standardPriceCents,
+    periods: period ? [period] : [],
+    at,
+  });
 }
 
 /** The price a customer pays right now. */

@@ -22,19 +22,23 @@ import { Button } from "@/components/ui/button";
  */
 export function Field({
   name,
+  controlId,
   label,
   error,
   children,
 }: {
   name: string;
+  /** Override when two forms on one page use the same field name. */
+  controlId?: string;
   label: string;
   error?: FieldError;
   children: React.ReactNode;
 }) {
-  const errorId = `${name}-error`;
+  const resolvedId = controlId ?? name;
+  const errorId = `${resolvedId}-error`;
   return (
     <div className="mb-4">
-      <Label htmlFor={name}>{label}</Label>
+      <Label htmlFor={resolvedId}>{label}</Label>
       {error?.message
         ? describeControl(children, { errorId, invalid: true })
         : children}

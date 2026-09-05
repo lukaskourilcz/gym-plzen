@@ -5,19 +5,23 @@ import { assertAdmin } from "@/lib/auth/guards";
 import { defineAction } from "@/lib/helpers/action";
 import type { Result } from "@/lib/helpers/result";
 import {
+  deletePricingPeriodSchema,
   entryPriceSchema,
-  promoPriceSchema,
+  pricingPeriodSchema,
   type EntryPriceValues,
-  type PromoPriceValues,
+  type PricingPeriodValues,
 } from "@/lib/validations/memberships";
+import { ENTRY_PRICE_SETTING_KEY } from "@/lib/config/pricing";
 import {
-  ENTRY_PRICE_SETTING_KEY,
-  PROMO_ENDS_AT_SETTING_KEY,
-  PROMO_PRICE_SETTING_KEY,
-  PROMO_STARTS_AT_SETTING_KEY,
-} from "@/lib/config/pricing";
-import { cms } from "@/lib/services";
-import { localInputToInstant } from "@/lib/helpers/datetime";
+  BOOKING_HORIZON_SETTING_KEY,
+  clampBookingHorizonDays,
+} from "@/lib/config/schedule";
+import { cms, pricingPeriods } from "@/lib/services";
+import { addDaysToDateKey, localDateTimeToDate } from "@/lib/helpers/datetime";
+import {
+  bookingHorizonSchema,
+  type BookingHorizonValues,
+} from "@/lib/validations/settings";
 
 /**
  * Pricing admin action. The gym sells a single one-time entry (no
@@ -34,6 +38,8 @@ const setEntryPriceImpl = defineAction({
       admin.id,
     );
     revalidatePath("/admin/memberships");
+    revalidatePath("/");
+    revalidatePath("/rezervace");
   },
 });
 
@@ -43,43 +49,70 @@ export async function setEntryPriceAction(
   return setEntryPriceImpl(input);
 }
 
-/**
- * Set or clear the promotional window.
- *
- * The form sends `datetime-local` strings, which carry no zone. The server
- * interprets them in the gym's timezone, so "1. 10. 00:00" means Prague
- * midnight regardless of where the administrator is sitting.
- */
-const setPromoPriceImpl = defineAction({
-  schema: promoPriceSchema,
+/** Keep the bookable future range beside the price periods it enables. */
+const saveBookingHorizonImpl = defineAction({
+  schema: bookingHorizonSchema,
   authorize: assertAdmin,
-  handler: async ({ priceCzk, startsAt, endsAt }, admin) => {
-    const clearing = priceCzk == null || !startsAt || !endsAt;
-    await Promise.all([
-      cms.setSetting(
-        PROMO_PRICE_SETTING_KEY,
-        clearing ? null : Math.round(priceCzk * 100),
-        admin.id,
-      ),
-      cms.setSetting(
-        PROMO_STARTS_AT_SETTING_KEY,
-        clearing ? "" : localInputToInstant(startsAt).toISOString(),
-        admin.id,
-      ),
-      cms.setSetting(
-        PROMO_ENDS_AT_SETTING_KEY,
-        clearing ? "" : localInputToInstant(endsAt).toISOString(),
-        admin.id,
-      ),
-    ]);
+  handler: async ({ horizonDays }, admin) => {
+    await cms.setSetting(
+      BOOKING_HORIZON_SETTING_KEY,
+      clampBookingHorizonDays(horizonDays),
+      admin.id,
+    );
     revalidatePath("/admin/memberships");
-    // The public price is rendered from this setting.
-    revalidatePath("/");
+    revalidatePath("/rezervace");
   },
 });
 
-export async function setPromoPriceAction(
-  input: PromoPriceValues,
+export async function saveBookingHorizonAction(
+  input: BookingHorizonValues,
 ): Promise<Result<unknown>> {
-  return setPromoPriceImpl(input);
+  return saveBookingHorizonImpl(input);
+}
+
+/**
+ * Insert or edit a price period.
+ *
+ * Form dates are inclusive Prague calendar days. Persistence uses a half-open
+ * [start, end) range, with the exclusive end at midnight after the last day.
+ */
+const savePricingPeriodImpl = defineAction({
+  schema: pricingPeriodSchema,
+  authorize: assertAdmin,
+  handler: async ({ id, name, priceCzk, startsOn, endsOn }, admin) => {
+    await pricingPeriods.savePricingPeriod({
+      id,
+      name,
+      priceCents: Math.round(priceCzk * 100),
+      startsAt: localDateTimeToDate(startsOn, 0),
+      endsAt: localDateTimeToDate(addDaysToDateKey(endsOn, 1), 0),
+      adminId: admin.id,
+    });
+    revalidatePath("/admin/memberships");
+    revalidatePath("/");
+    revalidatePath("/rezervace");
+  },
+});
+
+export async function savePricingPeriodAction(
+  input: PricingPeriodValues,
+): Promise<Result<unknown>> {
+  return savePricingPeriodImpl(input);
+}
+
+const deletePricingPeriodImpl = defineAction({
+  schema: deletePricingPeriodSchema,
+  authorize: assertAdmin,
+  handler: async ({ id }) => {
+    await pricingPeriods.deletePricingPeriod(id);
+    revalidatePath("/admin/memberships");
+    revalidatePath("/");
+    revalidatePath("/rezervace");
+  },
+});
+
+export async function deletePricingPeriodAction(input: {
+  id: string;
+}): Promise<Result<unknown>> {
+  return deletePricingPeriodImpl(input);
 }

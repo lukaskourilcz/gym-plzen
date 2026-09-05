@@ -18,6 +18,8 @@ export type OpeningHours = InferSelectModel<typeof s.openingHours>;
 
 export type MembershipPlan = InferSelectModel<typeof s.membershipPlan>;
 export type NewMembershipPlan = InferInsertModel<typeof s.membershipPlan>;
+export type PricingPeriod = InferSelectModel<typeof s.pricingPeriod>;
+export type NewPricingPeriod = InferInsertModel<typeof s.pricingPeriod>;
 export type Membership = InferSelectModel<typeof s.membership>;
 export type Payment = InferSelectModel<typeof s.payment>;
 export type NewPayment = InferInsertModel<typeof s.payment>;

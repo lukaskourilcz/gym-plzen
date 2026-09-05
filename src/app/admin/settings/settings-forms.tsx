@@ -14,7 +14,6 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
   billingProfileSchema,
-  bookingHorizonSchema,
   brandingSchema,
   sitePhotosSchema,
   heroPreviewSchema,
@@ -25,16 +24,11 @@ import {
   MIN_HERO_PREVIEW_DAYS,
 } from "@/lib/config/hero";
 import {
-  MAX_BOOKING_HORIZON_DAYS,
-  MIN_BOOKING_HORIZON_DAYS,
-} from "@/lib/config/schedule";
-import {
   MAX_VAT_RATE_PERCENT,
   type BillingProfile,
 } from "@/lib/config/billing";
 import {
   saveBillingProfileAction,
-  saveBookingHorizonAction,
   saveBrandingAction,
   saveSitePhotosAction,
   saveHeroPreviewAction,
@@ -230,47 +224,6 @@ export function SitePhotosForm({
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={form.formState.isSubmitting}>
         Uložit fotografie
-      </SubmitButton>
-    </form>
-  );
-}
-
-/**
- * How far ahead visitors may book. Separate from the hero preview above: this
- * one decides what the reservation calendar offers at all.
- */
-export function BookingHorizonForm({ horizonDays }: { horizonDays: number }) {
-  const { form, submit, serverError, success } = useActionForm({
-    schema: bookingHorizonSchema,
-    action: saveBookingHorizonAction,
-    successMessage: "Rozsah rezervací uložen.",
-    defaultValues: { horizonDays },
-  });
-
-  return (
-    <form onSubmit={submit} className="max-w-xs">
-      <Field
-        name="horizonDays"
-        label="Kolik dní dopředu lze rezervovat"
-        error={form.formState.errors.horizonDays}
-      >
-        <Input
-          id="horizonDays"
-          type="number"
-          min={MIN_BOOKING_HORIZON_DAYS}
-          max={MAX_BOOKING_HORIZON_DAYS}
-          step={1}
-          {...form.register("horizonDays", { valueAsNumber: true })}
-        />
-      </Field>
-      <p className="mb-4 text-sm text-muted-foreground">
-        Běžně 60 dní. Pro akci, která má dosáhnout na pozdější měsíce, zvyšte:
-        například 130 dní pokryje z října celý leden. Cenu akce nastavíte v{" "}
-        <strong>Vstupné a věrnost</strong>.
-      </p>
-      <FormFeedback error={serverError} success={success} />
-      <SubmitButton isSubmitting={form.formState.isSubmitting}>
-        Uložit rozsah
       </SubmitButton>
     </form>
   );

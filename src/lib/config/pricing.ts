@@ -26,28 +26,29 @@ export const GYM_CAPACITY = 5;
  */
 export const FREE_ENTRY_EVERY = 10;
 
-/** Site-setting key under which the admin-overridable entry price is stored. */
+/** Site-setting key under which the admin-overridable fallback price is stored. */
 export const ENTRY_PRICE_SETTING_KEY = "pricing.entry_price_cents";
 
 /**
- * A time-limited promotional price, set from the administration.
+ * A time-limited price, set from the administration.
  *
- * The window is checked against the moment a reservation is *created*, not the
+ * The period is checked against the moment a reservation is *created*, not the
  * slot it books: someone who books in October during the promotion pays the
  * promotional price even for a January slot. Loyalty is unaffected, so every
  * tenth entry stays free inside the window too.
  */
-export const PROMO_PRICE_SETTING_KEY = "pricing.promo.price_cents";
-export const PROMO_STARTS_AT_SETTING_KEY = "pricing.promo.starts_at";
-export const PROMO_ENDS_AT_SETTING_KEY = "pricing.promo.ends_at";
-
-export interface PromoWindow {
+export interface PricingWindow {
+  id?: string;
+  name?: string;
   priceCents: number;
   /** Inclusive start, as an absolute instant. */
   startsAt: Date;
-  /** Inclusive end, as an absolute instant. */
+  /** Exclusive end, as an absolute instant. */
   endsAt: Date;
 }
+
+/** Backwards-compatible type name used by older pricing tests and scripts. */
+export type PromoWindow = PricingWindow;
 
 export interface EntryPrice {
   /** What the customer pays right now. */
@@ -58,6 +59,8 @@ export interface EntryPrice {
   isPromo: boolean;
   /** When the running promotion ends, for the note on the site. */
   promoEndsAt?: Date;
+  /** Admin label of the price period that matched. */
+  periodName?: string;
 }
 
 /**
@@ -70,25 +73,33 @@ export interface EntryPrice {
  */
 export function resolveEntryPrice(params: {
   standardPriceCents: number;
+  periods?: readonly PricingWindow[];
+  /** Compatibility input for callers that still provide a single period. */
   promo?: PromoWindow | null;
   at: Date;
 }): EntryPrice {
-  const { standardPriceCents, promo, at } = params;
-  const usable =
-    promo &&
-    promo.priceCents > 0 &&
-    promo.endsAt.getTime() > promo.startsAt.getTime();
+  const { standardPriceCents, at } = params;
+  const periods = [
+    ...(params.periods ?? []),
+    ...(params.promo ? [params.promo] : []),
+  ];
+  const active = periods.find(
+    (period) =>
+      period.priceCents > 0 &&
+      period.endsAt.getTime() > period.startsAt.getTime() &&
+      at.getTime() >= period.startsAt.getTime() &&
+      at.getTime() < period.endsAt.getTime(),
+  );
 
-  if (
-    usable &&
-    at.getTime() >= promo.startsAt.getTime() &&
-    at.getTime() <= promo.endsAt.getTime()
-  ) {
+  if (active) {
     return {
-      priceCents: promo.priceCents,
+      priceCents: active.priceCents,
       standardPriceCents,
       isPromo: true,
-      promoEndsAt: promo.endsAt,
+      // Periods are [start, end); expose the last included instant so the
+      // public note says “do 31. 10.” rather than “do 1. 11.”.
+      promoEndsAt: new Date(active.endsAt.getTime() - 1),
+      periodName: active.name,
     };
   }
 

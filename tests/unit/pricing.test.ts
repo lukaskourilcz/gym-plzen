@@ -6,6 +6,7 @@ import {
   type PromoWindow,
 } from "../../src/lib/config/pricing";
 import { localDateTimeToDate } from "../../src/lib/helpers/datetime";
+import { pricingPeriodSchema } from "../../src/lib/validations/memberships";
 
 const STANDARD = DEFAULT_ENTRY_PRICE_CENTS;
 
@@ -15,8 +16,9 @@ const STANDARD = DEFAULT_ENTRY_PRICE_CENTS;
  */
 const OCTOBER: PromoWindow = {
   priceCents: 19_900,
+  name: "Říjnová akce",
   startsAt: localDateTimeToDate("2026-10-01", 0),
-  endsAt: new Date(localDateTimeToDate("2026-11-01", 0).getTime() - 1),
+  endsAt: localDateTimeToDate("2026-11-01", 0),
 };
 
 const at = (dateKey: string, minute = 12 * 60) =>
@@ -56,7 +58,11 @@ test("the promotion applies inside its window and nowhere else", () => {
   assert.equal(during.priceCents, 19_900);
   assert.equal(during.standardPriceCents, STANDARD);
   assert.equal(during.isPromo, true);
-  assert.equal(during.promoEndsAt?.toISOString(), OCTOBER.endsAt.toISOString());
+  assert.equal(
+    during.promoEndsAt?.toISOString(),
+    new Date(OCTOBER.endsAt.getTime() - 1).toISOString(),
+  );
+  assert.equal(during.periodName, "Říjnová akce");
 
   // 1 November is back to the standard price, which is what the client asked
   // for: "od listopadu 289 Kč".
@@ -69,7 +75,7 @@ test("the promotion applies inside its window and nowhere else", () => {
   assert.equal(after.isPromo, false);
 });
 
-test("the window boundaries are Prague midnight, both inclusive ends", () => {
+test("the window uses Prague calendar days and an exclusive end", () => {
   // The first instant of 1 October in Prague is already the promotion.
   const opening = resolveEntryPrice({
     standardPriceCents: STANDARD,
@@ -89,13 +95,58 @@ test("the window boundaries are Prague midnight, both inclusive ends", () => {
   // October crosses the end of summer time (25 October 2026), so the window is
   // measured as absolute instants rather than wall-clock offsets.
   assert.equal(OCTOBER.startsAt.toISOString(), "2026-09-30T22:00:00.000Z");
-  assert.equal(OCTOBER.endsAt.toISOString(), "2026-10-31T22:59:59.999Z");
+  assert.equal(OCTOBER.endsAt.toISOString(), "2026-10-31T23:00:00.000Z");
   const afterDstSwitch = resolveEntryPrice({
     standardPriceCents: STANDARD,
     promo: OCTOBER,
     at: at("2026-10-26"),
   });
   assert.equal(afterDstSwitch.isPromo, true);
+});
+
+test("multiple scheduled periods resolve independently", () => {
+  const december: PromoWindow = {
+    name: "Prosincová cena",
+    priceCents: 24_900,
+    startsAt: localDateTimeToDate("2026-12-01", 0),
+    endsAt: localDateTimeToDate("2027-01-01", 0),
+  };
+  const result = resolveEntryPrice({
+    standardPriceCents: STANDARD,
+    periods: [OCTOBER, december],
+    at: at("2026-12-15"),
+  });
+  assert.equal(result.priceCents, 24_900);
+  assert.equal(result.periodName, "Prosincová cena");
+});
+
+test("admin price periods accept inclusive days and reject ambiguous input", () => {
+  const sameDay = pricingPeriodSchema.safeParse({
+    name: "Jednodenní akce",
+    priceCzk: 199,
+    startsOn: "2026-10-01",
+    endsOn: "2026-10-01",
+  });
+  assert.equal(sameDay.success, true);
+
+  assert.equal(
+    pricingPeriodSchema.safeParse({
+      name: "Obrácené období",
+      priceCzk: 199,
+      startsOn: "2026-10-02",
+      endsOn: "2026-10-01",
+    }).success,
+    false,
+  );
+  assert.equal(
+    pricingPeriodSchema.safeParse({
+      name: "Neplatné datum",
+      priceCzk: 199.5,
+      startsOn: "2026-02-30",
+      endsOn: "2026-03-01",
+    }).success,
+    false,
+  );
 });
 
 test("a misconfigured window is ignored rather than trusted", () => {

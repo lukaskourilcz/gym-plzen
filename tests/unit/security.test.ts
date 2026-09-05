@@ -83,6 +83,21 @@ test("public realtime subscribes only to the PII-free signal", () => {
   assert.notEqual(PUBLIC_AVAILABILITY_TABLE, "reservation");
 });
 
+test("pricing periods are private and cannot overlap", async () => {
+  const source = await import("node:fs/promises").then((fs) =>
+    fs.readFile("drizzle/0012_pricing_periods.sql", "utf8"),
+  );
+  assert.match(source, /pricing_period_no_overlap\s+EXCLUDE USING gist/i);
+  assert.match(
+    source,
+    /ALTER TABLE public\.pricing_period ENABLE ROW LEVEL SECURITY/i,
+  );
+  assert.match(
+    source,
+    /REVOKE ALL ON public\.pricing_period FROM anon, authenticated/i,
+  );
+});
+
 test("log redaction hides phone numbers without corrupting timestamps", () => {
   const timestamp = "2026-07-22T20:38:57.588Z";
   assert.equal(redactForLogs(timestamp), timestamp);

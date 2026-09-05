@@ -1,4 +1,4 @@
-import { cms, invoices, slots } from "@/lib/services";
+import { cms, invoices } from "@/lib/services";
 import { loadSiteContent } from "@/lib/content/site";
 import {
   DEFAULT_SMS_ACCESS_TEMPLATE,
@@ -13,7 +13,6 @@ import {
   DEFAULT_GALLERY_IMAGE_URLS,
   DEFAULT_ZONE_IMAGE_URLS,
 } from "@/lib/config/branding";
-import { DEFAULT_BOOKING_HORIZON_DAYS } from "@/lib/config/schedule";
 import {
   DEFAULT_BILLING_PROFILE,
   missingBillingFields,
@@ -35,7 +34,6 @@ import {
   BillingProfileForm,
   BrandingForm,
   FileUploader,
-  BookingHorizonForm,
   SitePhotosForm,
   HeroCalendarForm,
   SmsTemplateForm,
@@ -56,7 +54,6 @@ export default async function SettingsPage() {
     sectionsImageUrl,
     smsTemplate,
     heroPreviewDays,
-    bookingHorizonDays,
     siteContent,
     billing,
   ] = demo
@@ -68,7 +65,6 @@ export default async function SettingsPage() {
         DEFAULT_SECTIONS_IMAGE_URL,
         DEFAULT_SMS_ACCESS_TEMPLATE,
         DEFAULT_HERO_PREVIEW_DAYS,
-        DEFAULT_BOOKING_HORIZON_DAYS,
         {
           galleryImageUrls: [...DEFAULT_GALLERY_IMAGE_URLS],
           zoneImageUrls: [...DEFAULT_ZONE_IMAGE_URLS],
@@ -89,7 +85,6 @@ export default async function SettingsPage() {
         cms.getSetting<string>(SECTIONS_IMAGE_URL_KEY),
         cms.getSetting<string>(SMS_ACCESS_TEMPLATE_KEY),
         cms.getSetting<number>(HERO_PREVIEW_DAYS_KEY),
-        slots.getBookingHorizonDays(),
         loadSiteContent("cs", { strict: true }),
         invoices.getBillingReadiness(),
       ]);
@@ -149,18 +144,6 @@ export default async function SettingsPage() {
               zones={siteContent.zoneImageUrls}
               illustrative={siteContent.illustrativePhotos}
             />
-          </CardContent>
-        </Card>
-
-        <Card className="max-w-2xl">
-          <CardHeader>
-            <CardTitle>Rozsah rezervací</CardTitle>
-            <CardDescription>
-              Jak daleko dopředu si zákazník může rezervovat termín.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <BookingHorizonForm horizonDays={bookingHorizonDays} />
           </CardContent>
         </Card>
 

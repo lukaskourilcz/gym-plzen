@@ -1,5 +1,6 @@
 import {
   boolean,
+  check,
   index,
   integer,
   pgTable,
@@ -8,9 +9,44 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { profiles } from "./members";
 import { reservation } from "./reservations";
 import { membershipStatus, paymentStatus, paymentType } from "./enums";
+
+/**
+ * A price selected by the moment the customer creates a reservation.
+ *
+ * `endsAt` is exclusive. The database migration also adds a GiST exclusion
+ * constraint, so two periods can never overlap even when two administrators
+ * save at the same time.
+ */
+export const pricingPeriod = pgTable(
+  "pricing_period",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: text("name").notNull(),
+    priceCents: integer("price_cents").notNull(),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+    createdByAdminId: uuid("created_by_admin_id").references(
+      () => profiles.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    check("pricing_period_price_positive", sql`${t.priceCents} > 0`),
+    check("pricing_period_valid_range", sql`${t.endsAt} > ${t.startsAt}`),
+    index("pricing_period_starts_at_idx").on(t.startsAt),
+    index("pricing_period_created_by_admin_idx").on(t.createdByAdminId),
+  ],
+);
 
 /**
  * A membership plan is an admin-editable product (name, price, Stripe price id).

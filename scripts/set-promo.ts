@@ -3,14 +3,9 @@ import {
   BOOKING_HORIZON_SETTING_KEY,
   clampBookingHorizonDays,
 } from "@/lib/config/schedule";
-import {
-  PROMO_ENDS_AT_SETTING_KEY,
-  PROMO_PRICE_SETTING_KEY,
-  PROMO_STARTS_AT_SETTING_KEY,
-  resolveEntryPrice,
-} from "@/lib/config/pricing";
-import { localInputToInstant } from "@/lib/helpers/datetime";
-import { cms, loyalty, slots } from "@/lib/services";
+import { resolveEntryPrice } from "@/lib/config/pricing";
+import { addDaysToDateKey, localDateTimeToDate } from "@/lib/helpers/datetime";
+import { cms, loyalty, pricingPeriods, slots } from "@/lib/services";
 
 /**
  * Configure the promotional window and the booking horizon from the command
@@ -25,10 +20,11 @@ import { cms, loyalty, slots } from "@/lib/services";
  *
  *   npm run set-promo                 # dry run
  *   npm run set-promo -- --write
- *   npm run set-promo -- --write --price=199 --from=2026-10-01 --to=2026-10-31 --horizon=130
+ *   npm run set-promo -- --write --name="Říjnová akce" --price=199 --from=2026-10-01 --to=2026-10-31 --horizon=130
  */
 
 const DEFAULTS = {
+  name: "Říjnová akce",
   price: 199,
   from: "2026-10-01",
   to: "2026-10-31",
@@ -55,6 +51,7 @@ function pragueLabel(date: Date): string {
 async function main() {
   const write = process.argv.includes("--write");
 
+  const name = arg("name") ?? DEFAULTS.name;
   const price = Number(arg("price") ?? DEFAULTS.price);
   const fromDay = arg("from") ?? DEFAULTS.from;
   const toDay = arg("to") ?? DEFAULTS.to;
@@ -67,13 +64,12 @@ async function main() {
   }
 
   /*
-   * The window is inclusive of its last day, so it ends at 23:59 rather than
-   * midnight : a booking made late on the 31st is still in the promotion.
-   * Both ends are Prague local time, which is what the administration's form
-   * also stores, so October's end-of-DST is handled for us.
+   * Store a half-open range ending at midnight after the final selected day.
+   * A booking made late on the 31st still qualifies, adjacent periods can meet
+   * cleanly at midnight, and October's end-of-DST is handled in Prague time.
    */
-  const startsAt = localInputToInstant(`${fromDay}T00:00`);
-  const endsAt = localInputToInstant(`${toDay}T23:59`);
+  const startsAt = localDateTimeToDate(fromDay, 0);
+  const endsAt = localDateTimeToDate(addDaysToDateKey(toDay, 1), 0);
   if (endsAt.getTime() <= startsAt.getTime()) {
     throw new Error("--to must be after --from.");
   }
@@ -82,13 +78,13 @@ async function main() {
   const standard = await loyalty.getStandardEntryPriceCents();
 
   console.log(
-    "Akce:",
+    `${name}:`,
     czk(priceCents),
     "(standardní cena",
     czk(standard) + ")",
   );
   console.log("  od: ", pragueLabel(startsAt));
-  console.log("  do: ", pragueLabel(endsAt));
+  console.log("  do: ", pragueLabel(new Date(endsAt.getTime() - 1)));
   console.log("Rozsah rezervací:", horizon, "dní");
   console.log("  (současný:", (await slots.getBookingHorizonDays()) + " dní)");
 
@@ -97,28 +93,38 @@ async function main() {
     process.exit(0);
   }
 
-  await cms.setSetting(PROMO_PRICE_SETTING_KEY, priceCents);
-  await cms.setSetting(PROMO_STARTS_AT_SETTING_KEY, startsAt.toISOString());
-  await cms.setSetting(PROMO_ENDS_AT_SETTING_KEY, endsAt.toISOString());
+  const existing = (await pricingPeriods.listPricingPeriods()).find(
+    (period) =>
+      period.name === name ||
+      (period.startsAt < endsAt && startsAt < period.endsAt),
+  );
+  await pricingPeriods.savePricingPeriod({
+    id: existing?.id,
+    name,
+    priceCents,
+    startsAt,
+    endsAt,
+    adminId: null,
+  });
   await cms.setSetting(BOOKING_HORIZON_SETTING_KEY, horizon);
 
   // Read back through the same code the site uses, so the check is the rule
   // itself rather than a restatement of what was just written.
-  const promo = await loyalty.getPromoWindow();
+  const promo = await pricingPeriods.getActivePricingPeriod(startsAt);
   const savedHorizon = await slots.getBookingHorizonDays();
   if (!promo) throw new Error("Promo window did not save.");
 
   const probes: [string, Date][] = [
     ["den před akcí   ", new Date(startsAt.getTime() - 60_000)],
     ["první den akce   ", startsAt],
-    ["poslední minuta  ", endsAt],
-    ["po konci akce    ", new Date(endsAt.getTime() + 60_000)],
+    ["poslední minuta  ", new Date(endsAt.getTime() - 60_000)],
+    ["po konci akce    ", endsAt],
   ];
   console.log("\nUloženo. Cena podle okamžiku rezervace:");
   for (const [label, at] of probes) {
     const resolved = resolveEntryPrice({
       standardPriceCents: standard,
-      promo,
+      periods: [promo],
       at,
     });
     console.log(`  ${label} ${pragueLabel(at)} → ${czk(resolved.priceCents)}`);
