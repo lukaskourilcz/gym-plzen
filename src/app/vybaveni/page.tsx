@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import {
   footerProps,
   loadSiteContent,
@@ -48,16 +47,14 @@ export default async function EquipmentPage() {
                 {content.get("equipment.title")}
               </h1>
             </div>
-            <div className="relative mt-12 aspect-[16/9] overflow-hidden rounded-lg bg-muted">
-              <Image
-                src={DEFAULT_HERO_IMAGE_URL}
-                alt={content.get("equipment.imageAlt")}
-                fill
-                priority
-                sizes="100vw"
-                className="object-cover"
-              />
-            </div>
+            <IllustrativePhoto
+              src={DEFAULT_HERO_IMAGE_URL}
+              alt={content.get("equipment.imageAlt")}
+              priority
+              sizes="100vw"
+              illustrative={content.illustrativePhotos}
+              className="mt-12 aspect-[16/9] rounded-lg bg-muted"
+            />
 
             <h2 className="mt-16 text-3xl font-extrabold tracking-[-.01em] sm:text-4xl">
               {content.get("equipment.zonesTitle")}
