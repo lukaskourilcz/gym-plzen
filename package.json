@@ -21,6 +21,7 @@
     "db:seed": "tsx scripts/seed.ts",
     "set-admin": "tsx scripts/set-admin.ts",
     "rebrand:navi": "tsx scripts/rebrand-navi.ts",
+    "set-promo": "tsx scripts/set-promo.ts",
     "test": "tsx --test tests/unit/*.test.ts",
     "test:e2e": "playwright test"
   },
