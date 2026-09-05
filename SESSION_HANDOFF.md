@@ -135,9 +135,9 @@ mají v každém řádku společnou výšku a navazující text začíná pod ni
 pětilistou značku; ve FAQ se lotos při otevření plynule změní na otazník.
 Favicon v `src/app/icon.png` používá stejný přesný klientský lotus ve zlaté
 barvě na tmavě zeleném podkladu. Starý ručně kreslený SVG favicon byl odstraněn.
-Mapa se načítá vycentrovaná pomocí souřadnic, takže Google automaticky
-nezobrazuje druhou informační kartu. Viditelný zůstává pouze vlastní přední
-karta NAVI a vlastní lotusový marker.
+Mapa se načítá vycentrovaná pomocí souřadnic a vlastní přední karta NAVI zůstává
+nad ní. Dokud není ve Vercelu platný Google API klíč i Map ID, používá se bez
+chyb standardní embed; vlastní lotusový marker se zapne až s oběma hodnotami.
 Závěrečný zelený CTA pás je vlevo zarovnaný s okolním obsahem; na desktopu
 navazuje větší tlačítko Rezervovat, na mobilu se prvky řadí pod sebe vlevo.
 Pod nadpisem je zlatou linkou oddělený editovatelný citát.

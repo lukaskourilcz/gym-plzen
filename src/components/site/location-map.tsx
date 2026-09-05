@@ -10,7 +10,6 @@ declare global {
   }
 }
 
-const FALLBACK_MAP_ID = "DEMO_MAP_ID";
 let configuredApiKey: string | null = null;
 
 function configureLoader(apiKey: string, mapId: string) {
@@ -78,9 +77,13 @@ export function LocationMap({
   const [shouldLoad, setShouldLoad] = useState(false);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
+  // Advanced markers require a real Map ID. Until both Google credentials are
+  // configured, keep the reliable embed and do not load a script that can only
+  // fail (and pollute the production console with an authentication error).
+  const canLoadEnhancedMap = Boolean(apiKey && mapId);
 
   useEffect(() => {
-    if (!apiKey || !sectionRef.current) return;
+    if (!canLoadEnhancedMap || !sectionRef.current) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry?.isIntersecting) return;
@@ -91,12 +94,18 @@ export function LocationMap({
     );
     observer.observe(sectionRef.current);
     return () => observer.disconnect();
-  }, [apiKey]);
+  }, [canLoadEnhancedMap]);
 
   useEffect(() => {
-    if (!apiKey || !shouldLoad || !mapElementRef.current) return;
+    if (
+      !apiKey ||
+      !mapId ||
+      !canLoadEnhancedMap ||
+      !shouldLoad ||
+      !mapElementRef.current
+    )
+      return;
     const container = mapElementRef.current;
-    const resolvedMapId = mapId || FALLBACK_MAP_ID;
     let cancelled = false;
     let map: google.maps.Map | null = null;
     let marker: google.maps.marker.AdvancedMarkerElement | null = null;
@@ -115,7 +124,7 @@ export function LocationMap({
     window.gm_authFailure = handleAuthFailure;
 
     try {
-      configureLoader(apiKey, resolvedMapId);
+      configureLoader(apiKey, mapId);
     } catch {
       if (window.gm_authFailure === handleAuthFailure) {
         window.gm_authFailure = previousAuthFailure;
@@ -130,7 +139,7 @@ export function LocationMap({
         map = new Map(container, {
           center: position,
           zoom: 17,
-          mapId: resolvedMapId,
+          mapId,
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: true,
@@ -160,7 +169,7 @@ export function LocationMap({
       map?.unbindAll();
       container.replaceChildren();
     };
-  }, [address, apiKey, mapId, position, shouldLoad]);
+  }, [address, apiKey, canLoadEnhancedMap, mapId, position, shouldLoad]);
 
   return (
     <div ref={sectionRef} className="absolute inset-0">
@@ -175,7 +184,7 @@ export function LocationMap({
         allowFullScreen
         referrerPolicy="no-referrer-when-downgrade"
       />
-      {apiKey && !failed ? (
+      {canLoadEnhancedMap && !failed ? (
         <div
           ref={mapElementRef}
           data-testid="location-map-canvas"
