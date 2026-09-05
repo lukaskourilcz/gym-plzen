@@ -8,7 +8,11 @@ import {
   createDemoCustomerSession,
 } from "@/lib/auth/demo";
 import { createClient } from "@/lib/supabase/server";
-import { safeInternalPath } from "@/lib/security/redirects";
+import {
+  postLoginDestination,
+  safeInternalPath,
+} from "@/lib/security/redirects";
+import { members } from "@/lib/services";
 import { takeRateLimit } from "@/lib/security/rate-limit";
 import { publicEnv } from "@/lib/public-env";
 import { passwordResetRequestSchema } from "@/lib/validations/auth";
@@ -66,12 +70,16 @@ export async function authenticateAction(input: unknown): Promise<AuthResult> {
   }
 
   if (parsed.data.mode === "signin") {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: parsed.data.email,
       password: parsed.data.password,
     });
     if (error) return { ok: false, error: "E-mail nebo heslo není správné." };
-    return { ok: true, destination };
+    const member = await members.getMember(data.user.id);
+    return {
+      ok: true,
+      destination: postLoginDestination(destination, member?.user.role),
+    };
   }
 
   if (!parsed.data.name?.trim()) return { ok: false, error: "Zadejte jméno." };

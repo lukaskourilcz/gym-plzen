@@ -19,3 +19,14 @@ export function safeInternalPath(
     return fallback;
   }
 }
+
+/** Send administrators to their workspace when login has no specific return target. */
+export function postLoginDestination(
+  value: string | null | undefined,
+  role: string | null | undefined,
+) {
+  const destination = safeInternalPath(value);
+  return role === "admin" && destination === "/account"
+    ? "/admin"
+    : destination;
+}

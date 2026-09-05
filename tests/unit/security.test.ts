@@ -6,7 +6,10 @@ import {
   isReservedDemoEmail,
 } from "../../src/lib/auth/demo-policy";
 import { PUBLIC_AVAILABILITY_TABLE } from "../../src/lib/config/realtime";
-import { safeInternalPath } from "../../src/lib/security/redirects";
+import {
+  postLoginDestination,
+  safeInternalPath,
+} from "../../src/lib/security/redirects";
 import { isBookingPreviewEnabled } from "../../src/lib/config/preview";
 import { redactForLogs } from "../../src/lib/helpers/logger";
 
@@ -18,6 +21,16 @@ test("authentication return target accepts only same-origin paths", () => {
   assert.equal(safeInternalPath("https://evil.example"), "/account");
   assert.equal(safeInternalPath("//evil.example/path"), "/account");
   assert.equal(safeInternalPath("/ok\\evil"), "/account");
+});
+
+test("administrators land in the admin workspace after a default login", () => {
+  assert.equal(postLoginDestination(undefined, "admin"), "/admin");
+  assert.equal(postLoginDestination("/account", "admin"), "/admin");
+  assert.equal(
+    postLoginDestination("/rezervace?date=2026-09-05", "admin"),
+    "/rezervace?date=2026-09-05",
+  );
+  assert.equal(postLoginDestination(undefined, "member"), "/account");
 });
 
 test("demo authentication cannot be enabled in production", () => {
