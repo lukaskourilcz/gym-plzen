@@ -11,7 +11,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob: https://static.wixstatic.com https://*.supabase.co https://www.facebook.com https://www.google-analytics.com https://*.google-analytics.com https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.ggpht.com https://*.googleusercontent.com",
-  "connect-src 'self' data: blob: https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://*.ingest.sentry.io https://www.facebook.com https://www.google-analytics.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://*.googleapis.com https://*.google.com https://*.gstatic.com",
+  "connect-src 'self' data: blob: https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://www.facebook.com https://www.google-analytics.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://*.googleapis.com https://*.google.com https://*.gstatic.com",
   "frame-src https://*.google.com https://maps.google.com https://js.stripe.com https://hooks.stripe.com",
   "worker-src 'self' blob:",
   "upgrade-insecure-requests",
