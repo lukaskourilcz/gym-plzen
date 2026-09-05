@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -32,8 +32,33 @@ export function BookingCalendar({
   closeMinute?: number;
 }) {
   const router = useRouter();
+  const calendarRef = useRef<FullCalendar>(null);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  /*
+   * A seven-column time grid is useful on tablets and desktops, but each day
+   * becomes too narrow to scan or tap on a phone. Start compact screens in a
+   * day view and keep the view appropriate when the device rotates. A visitor
+   * can still choose another view afterwards; this only reacts to a breakpoint
+   * change, not to their explicit calendar choice.
+   */
+  useEffect(() => {
+    const compact = window.matchMedia("(max-width: 639px)");
+    const syncView = () => {
+      const calendar = calendarRef.current?.getApi();
+      if (!calendar) return;
+      if (compact.matches && calendar.view.type === "timeGridWeek") {
+        calendar.changeView("timeGridDay");
+      } else if (!compact.matches && calendar.view.type === "timeGridDay") {
+        calendar.changeView("timeGridWeek");
+      }
+    };
+
+    syncView();
+    compact.addEventListener("change", syncView);
+    return () => compact.removeEventListener("change", syncView);
+  }, []);
 
   async function onSelect(sel: DateSelectArg) {
     if (busy) return;
@@ -57,8 +82,9 @@ export function BookingCalendar({
   }
 
   return (
-    <>
+    <div className="admin-booking-calendar">
       <FullCalendar
+        ref={calendarRef}
         plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
         initialView="timeGridWeek"
         locale={csLocale}
@@ -91,6 +117,6 @@ export function BookingCalendar({
           {actionError}
         </p>
       ) : null}
-    </>
+    </div>
   );
 }

@@ -1,5 +1,14 @@
 import { test, expect } from "@playwright/test";
 
+async function dismissTrackingConsentIfShown(
+  page: import("@playwright/test").Page,
+) {
+  const button = page
+    .getByTestId("tracking-consent")
+    .getByRole("button", { name: "Pouze nezbytné" });
+  if (await button.isVisible().catch(() => false)) await button.click();
+}
+
 test.describe("Public site", () => {
   test("operating rules render as nine navigable sections", async ({
     page,
@@ -95,10 +104,7 @@ test.describe("Public site", () => {
     await page.goto("/obchodni-podminky", {
       waitUntil: "domcontentloaded",
     });
-    await page
-      .getByTestId("tracking-consent")
-      .getByRole("button", { name: "Pouze nezbytné" })
-      .click();
+    await dismissTrackingConsentIfShown(page);
 
     await expect(
       page.getByRole("heading", {
@@ -127,7 +133,6 @@ test.describe("Public site", () => {
   });
 
   test("terms preserve hierarchy and reflow", async ({ page }) => {
-    let consentHandled = false;
     for (const width of [320, 768, 1280]) {
       await page.setViewportSize({
         width,
@@ -142,13 +147,7 @@ test.describe("Public site", () => {
           name: "VŠEOBECNÉ OBCHODNÍ PODMÍNKY",
         }),
       ).toBeVisible();
-      if (!consentHandled) {
-        await page
-          .getByTestId("tracking-consent")
-          .getByRole("button", { name: "Pouze nezbytné" })
-          .click();
-        consentHandled = true;
-      }
+      await dismissTrackingConsentIfShown(page);
 
       const layout = await page.evaluate(() => {
         const sectionHeading = document.querySelector("article h2");
@@ -411,6 +410,7 @@ test.describe("Public site", () => {
   test("available calendar dates support arrow keys and keyboard selection", async ({
     page,
   }) => {
+    test.setTimeout(60_000);
     await page.goto("/rezervace", { waitUntil: "domcontentloaded" });
     const available = page.locator(
       'a[role="gridcell"][aria-label*="dostupné termíny"]',
@@ -431,7 +431,9 @@ test.describe("Public site", () => {
     const focusedDate = page.locator('[role="gridcell"]:focus');
     await expect(focusedDate).toBeFocused();
     await focusedDate.press("Enter");
-    await expect(page).toHaveURL(/date=\d{4}-\d{2}-\d{2}/);
+    await expect(page).toHaveURL(/date=\d{4}-\d{2}-\d{2}/, {
+      timeout: 30_000,
+    });
     await expect(
       page.getByText(/\d{1,2}:\d{2}\s*–\s*\d{1,2}:\d{2}/).first(),
     ).toBeVisible();

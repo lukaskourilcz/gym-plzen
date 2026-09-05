@@ -351,3 +351,53 @@ summary {
     transition-duration: 0.01ms !important;
   }
 }
+
+/*
+ * FullCalendar's desktop toolbar has three wide groups on one row. On a phone
+ * they overlap and force the date title into a narrow vertical strip. Stack
+ * the title and controls deliberately, and keep every action at the 44px touch
+ * target used throughout the rest of the product.
+ */
+.admin-booking-calendar .fc .fc-button {
+  min-height: 44px;
+}
+
+@media (max-width: 639px) {
+  .admin-booking-calendar .fc .fc-header-toolbar {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .admin-booking-calendar .fc .fc-toolbar-chunk {
+    min-width: 0;
+  }
+
+  .admin-booking-calendar .fc .fc-toolbar-chunk:nth-child(1) {
+    grid-row: 2;
+  }
+
+  .admin-booking-calendar .fc .fc-toolbar-chunk:nth-child(2) {
+    grid-row: 1;
+  }
+
+  .admin-booking-calendar .fc .fc-toolbar-chunk:nth-child(3) {
+    grid-row: 3;
+  }
+
+  .admin-booking-calendar .fc .fc-toolbar-title {
+    font-size: 1.375rem;
+    line-height: 1.2;
+    text-align: left;
+  }
+
+  .admin-booking-calendar .fc .fc-toolbar-chunk:nth-child(3) .fc-button-group {
+    display: flex;
+    width: 100%;
+  }
+
+  .admin-booking-calendar .fc .fc-toolbar-chunk:nth-child(3) .fc-button {
+    flex: 1 1 0;
+  }
+}

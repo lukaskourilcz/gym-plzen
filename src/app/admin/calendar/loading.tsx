@@ -11,23 +11,39 @@ export default function AdminCalendarLoading() {
       </div>
 
       <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex gap-2">
+        <div className="grid gap-3 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+          <Skeleton className="h-7 w-44 sm:order-2 sm:justify-self-center" />
+          <div className="order-2 flex gap-2 sm:order-1">
             <Skeleton className="h-10 w-10" />
             <Skeleton className="h-10 w-10" />
             <Skeleton className="h-10 w-16" />
           </div>
-          <Skeleton className="h-7 w-44" />
-          <div className="flex gap-1">
-            <Skeleton className="h-10 w-16" />
-            <Skeleton className="h-10 w-16" />
-            <Skeleton className="h-10 w-16" />
+          <div className="order-3 grid grid-cols-3 gap-1 sm:flex">
+            <Skeleton className="h-10 w-full sm:w-16" />
+            <Skeleton className="h-10 w-full sm:w-16" />
+            <Skeleton className="h-10 w-full sm:w-16" />
           </div>
         </div>
 
         <div
           aria-hidden="true"
-          className="mt-4 animate-[skeleton-pulse_2.2s_ease-in-out_infinite] overflow-hidden rounded-sm border border-border motion-reduce:animate-none"
+          className="mt-4 animate-[skeleton-pulse_2.2s_ease-in-out_infinite] overflow-hidden rounded-sm border border-border motion-reduce:animate-none sm:hidden"
+        >
+          <div className="grid grid-cols-[3.5rem_1fr] bg-muted/40">
+            <div className="h-11 border-b border-r border-border bg-muted/70" />
+            <div className="h-11 border-b border-border bg-muted/70" />
+          </div>
+          {Array.from({ length: 10 }, (_, row) => (
+            <div key={row} className="grid grid-cols-[3.5rem_1fr]">
+              <div className="h-16 border-b border-r border-border bg-card" />
+              <div className="h-16 border-b border-border bg-card" />
+            </div>
+          ))}
+        </div>
+
+        <div
+          aria-hidden="true"
+          className="mt-4 hidden animate-[skeleton-pulse_2.2s_ease-in-out_infinite] overflow-hidden rounded-sm border border-border motion-reduce:animate-none sm:block"
         >
           <div className="grid grid-cols-[3.5rem_repeat(7,minmax(4rem,1fr))] bg-muted/40">
             {Array.from({ length: 8 }, (_, index) => (
