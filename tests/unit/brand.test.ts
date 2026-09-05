@@ -60,6 +60,17 @@ test("the brand name itself is the new one", () => {
   assert.equal(SITE_DEFAULTS["contact.email"], "info@navigym.cz");
 });
 
+test("legacy CMS brand text cannot leak back into public output", async () => {
+  const { rebrand } = await import("../../src/lib/content/rebrand");
+
+  assert.equal(
+    rebrand("© 2026 NAMASTÉ Private Gym"),
+    "© 2026 NAVI Private Gym",
+  );
+  assert.equal(rebrand("namaste / Namasté / NAMASTE"), "NAVI / NAVI / NAVI");
+  assert.equal(rebrand("https://namastegym.cz"), "https://namastegym.cz");
+});
+
 test("the content rebrand leaves real addresses and handles intact", async () => {
   const { rebrand } = await import("../../scripts/rebrand-navi");
 

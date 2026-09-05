@@ -17,57 +17,9 @@ import { fileURLToPath } from "node:url";
 import { eq, like, or } from "drizzle-orm";
 import { db } from "../src/lib/db";
 import { contentBlock, siteSetting } from "../src/lib/db/schema";
+import { rebrand } from "../src/lib/content/rebrand";
 
-/** Longest first, so a full lockup never degrades into the bare word. */
-const PHRASES: ReadonlyArray<readonly [string, string]> = [
-  /*
-   * The social accounts, as the client confirmed them at the rebrand. First in
-   * the list so no bare-word rule can reach inside a handle or a profile URL
-   * and leave something like "NAVI_plzen" behind.
-   */
-  ["namaste_plzen", "navi_plzen"],
-  [
-    "https://www.facebook.com/profile.php?id=61592125101750",
-    "https://www.facebook.com/profile.php?id=61594273731288",
-  ],
-  ["NAMASTÉ PRIVATE GYM", "NAVI PRIVATE GYM"],
-  ["NAMASTE PRIVATE GYM", "NAVI PRIVATE GYM"],
-  ["NAMASTÉ Private Gym", "NAVI Private Gym"],
-  ["NAMASTE Private Gym", "NAVI Private Gym"],
-  ["Namasté Private Gym", "NAVI Private Gym"],
-  ["Namaste Private Gym", "NAVI Private Gym"],
-  ["NAMASTÉ", "NAVI"],
-  ["NAMASTE", "NAVI"],
-  ["Namasté", "NAVI"],
-  ["Namaste", "NAVI"],
-];
-
-/**
- * Addresses that merely contain the old string and point at a real place, so a
- * blind replace would send customers somewhere that may not exist. The domain
- * is still the client's decision (see NEEDED.md), so it passes through
- * untouched; the social handle no longer belongs here, because the client has
- * confirmed its NAVI successor and PHRASES now maps it.
- */
-const PROTECTED = /namastegym\.cz/gi;
-
-function rebrandSegment(value: string): string {
-  let next = value;
-  for (const [from, to] of PHRASES) next = next.replaceAll(from, to);
-  return next;
-}
-
-/** Rebrand everything except the protected addresses, which pass through. */
-export function rebrand(value: string): string {
-  let result = "";
-  let cursor = 0;
-  for (const match of value.matchAll(PROTECTED)) {
-    result += rebrandSegment(value.slice(cursor, match.index));
-    result += match[0];
-    cursor = match.index + match[0].length;
-  }
-  return result + rebrandSegment(value.slice(cursor));
-}
+export { rebrand } from "../src/lib/content/rebrand";
 
 async function main() {
   const write = process.argv.includes("--write");

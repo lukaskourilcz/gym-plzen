@@ -18,6 +18,7 @@ import {
   syncSupabaseAuthEmailTemplate,
 } from "@/lib/integrations/supabase-management";
 import { siteUrl } from "@/lib/helpers/site-url";
+import { rebrand } from "@/lib/content/rebrand";
 import { getSetting, setSetting } from "./cms";
 
 /** Resolve the saved template, with a safe branded fallback on first use. */
@@ -29,8 +30,8 @@ export async function getEmailTemplate(
     emailTemplateSettingKey(id),
   );
   return {
-    subject: saved?.subject?.trim() || definition.fallback.subject,
-    body: saved?.body?.trim() || definition.fallback.body,
+    subject: rebrand(saved?.subject?.trim() || definition.fallback.subject),
+    body: rebrand(saved?.body?.trim() || definition.fallback.body),
   };
 }
 
@@ -51,16 +52,20 @@ export async function saveEmailTemplate(params: {
   body: string;
   updatedByAdminId: string;
 }): Promise<{ supabaseSynced?: boolean }> {
+  const template = {
+    subject: rebrand(params.subject.trim()),
+    body: rebrand(params.body.trim()),
+  };
   await setSetting(
     emailTemplateSettingKey(params.id),
-    { subject: params.subject.trim(), body: params.body.trim() },
+    template,
     params.updatedByAdminId,
   );
   if (!isSupabaseAuthEmailTemplate(params.id)) return {};
 
   const sync = await syncSupabaseAuthEmailTemplate({
     id: params.id,
-    template: { subject: params.subject.trim(), body: params.body.trim() },
+    template,
   });
   return { supabaseSynced: sync.synced };
 }

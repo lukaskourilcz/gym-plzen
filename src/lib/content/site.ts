@@ -24,6 +24,7 @@ import {
   zoneImageUrlKey,
 } from "@/lib/config/branding";
 import { DEFAULT_RULES_BODY, LEGACY_RULES_BODY } from "@/lib/content/rules";
+import { rebrand } from "@/lib/content/rebrand";
 
 export const PUBLIC_ADDRESS = "Křížkova 424/23, 301 00 Plzeň - Roudná";
 export const PUBLIC_MAP_QUERY = "Křížkova 424/23, 301 00 Plzeň";
@@ -347,7 +348,7 @@ export async function loadSiteContent(locale = "cs"): Promise<SiteContent> {
         row.valueText !== "" &&
         LEGACY_CONTENT_VALUES[row.key as SiteContentKey] !== row.valueText
       )
-        values[row.key] = row.valueText;
+        values[row.key] = rebrand(row.valueText);
     }
 
     const settings = await db
@@ -369,7 +370,7 @@ export async function loadSiteContent(locale = "cs"): Promise<SiteContent> {
       if (s.key === HERO_IMAGE_URL_KEY && typeof s.value === "string")
         heroImageUrl = s.value || null;
       if (s.key === HERO_IMAGE_ALT_KEY && typeof s.value === "string")
-        heroImageAlt = s.value;
+        heroImageAlt = rebrand(s.value);
       if (s.key === SECTIONS_IMAGE_URL_KEY && typeof s.value === "string")
         sectionsImageUrl = s.value || null;
       if (typeof s.value === "string") {
@@ -433,7 +434,7 @@ export async function loadSiteContent(locale = "cs"): Promise<SiteContent> {
       .replaceAll("{pricePerPerson}", perPersonLabel);
 
   return {
-    get: (key) => fillPrices(values[key] ?? SITE_DEFAULTS[key] ?? ""),
+    get: (key) => rebrand(fillPrices(values[key] ?? SITE_DEFAULTS[key] ?? "")),
     entryPriceCents: price.priceCents,
     standardEntryPriceCents: price.standardPriceCents,
     isPromoPrice: price.isPromo,
