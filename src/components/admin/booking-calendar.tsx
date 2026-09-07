@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import FullCalendar from "@fullcalendar/react";
+import luxonPlugin from "@fullcalendar/luxon3";
+import { loadCalendarAction } from "@/app/admin/calendar/actions";
+import type { OpeningHours } from "@/lib/db/types";
+import { PRAGUE_TIME_ZONE } from "@/lib/helpers/datetime";
+import { formatDateTime, formatTime } from "@/lib/helpers/format";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
@@ -18,21 +23,25 @@ import {
 /**
  * Admin operational calendar (FullCalendar, MIT). Week view with reservations
  * as solid events and blocks (e.g. cleaning) as
- * background events. Drag-select an empty range to create a block (used for the
+ * labelled events. Drag-select an empty range to create a block (used for the
  * cleaning window ~13:00). Correctness (overlap) is enforced server-side; this
  * is the visual operations view.
  */
 export function BookingCalendar({
-  events,
+  refreshedAt,
+  openingHours,
   openMinute = DEFAULT_OPEN_MINUTE,
   closeMinute = DEFAULT_CLOSE_MINUTE,
 }: {
-  events: EventInput[];
+  refreshedAt: number;
+  openingHours: OpeningHours[];
   openMinute?: number;
   closeMinute?: number;
 }) {
   const router = useRouter();
   const calendarRef = useRef<FullCalendar>(null);
+  const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -60,32 +69,79 @@ export function BookingCalendar({
     return () => compact.removeEventListener("change", syncView);
   }, []);
 
+  const loadEvents = useCallback(
+    (
+      range: { start: Date; end: Date },
+      success: (events: EventInput[]) => void,
+      failure: (error: Error) => void,
+    ) => {
+      setLoaded(false);
+      void loadCalendarAction({
+        start: range.start.toISOString(),
+        end: range.end.toISOString(),
+      })
+        .then((result) => {
+          if (!result.ok) {
+            failure(new Error("Calendar unavailable"));
+            setActionError("Kalendář se nepodařilo načíst. Obnovte stránku.");
+            return;
+          }
+          setActionError(null);
+          setLoaded(true);
+          success(result.data ?? []);
+        })
+        .catch(() => {
+          setActionError("Kalendář se nepodařilo načíst. Obnovte stránku.");
+          failure(new Error("Calendar unavailable"));
+        });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    calendarRef.current?.getApi().refetchEvents();
+  }, [refreshedAt]);
+
   async function onSelect(sel: DateSelectArg) {
-    if (busy) return;
+    if (busy || loading || !loaded) return;
     setActionError(null);
-    const label = `${sel.start.toLocaleString("cs-CZ")} – ${sel.end.toLocaleTimeString("cs-CZ")}`;
+    const label = `${formatDateTime(sel.start)} – ${formatTime(sel.end)}`;
     if (!window.confirm(`Blokovat tento čas pro úklid?\n${label}`)) {
       sel.view.calendar.unselect();
       return;
     }
     setBusy(true);
-    const result = await createBlockedSlotAction({
-      startsAt: sel.start.toISOString(),
-      endsAt: sel.end.toISOString(),
-      reason: "maintenance",
-      note: "Úklid",
-    });
-    setBusy(false);
-    sel.view.calendar.unselect();
-    if (result.ok) router.refresh();
-    else setActionError(result.error ?? "Blok se nepodařilo vytvořit.");
+    try {
+      const result = await createBlockedSlotAction({
+        startsAt: sel.start.toISOString(),
+        endsAt: sel.end.toISOString(),
+        reason: "maintenance",
+        note: "Úklid",
+      });
+      if (result.ok) {
+        sel.view.calendar.refetchEvents();
+        router.refresh();
+      } else setActionError(result.error ?? "Blok se nepodařilo vytvořit.");
+    } catch {
+      setActionError("Blok se nepodařilo vytvořit. Zkuste to znovu.");
+    } finally {
+      setBusy(false);
+      sel.view.calendar.unselect();
+    }
   }
 
   return (
-    <div className="admin-booking-calendar">
+    <div className="admin-booking-calendar" aria-busy={loading || busy}>
+      {loading ? <p role="status" className="mb-3 text-sm text-muted-foreground">Načítám rezervace…</p> : null}
       <FullCalendar
         ref={calendarRef}
-        plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
+        plugins={[
+          timeGridPlugin,
+          dayGridPlugin,
+          interactionPlugin,
+          luxonPlugin,
+        ]}
+        timeZone={PRAGUE_TIME_ZONE}
         initialView="timeGridWeek"
         locale={csLocale}
         firstDay={1}
@@ -97,20 +153,23 @@ export function BookingCalendar({
         slotMinTime={`${minutesToHHmm(openMinute)}:00`}
         slotMaxTime={`${minutesToHHmm(closeMinute)}:00`}
         slotDuration="01:00:00"
-        snapDuration="01:00:00"
+        snapDuration="00:15:00"
         allDaySlot={false}
         nowIndicator
-        selectable={!busy}
+        loading={setLoading}
+        selectable={!busy && !loading && loaded}
         selectMirror
         select={onSelect}
         height="auto"
         expandRows
-        businessHours={{
-          daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
-          startTime: minutesToHHmm(openMinute),
-          endTime: minutesToHHmm(closeMinute),
-        }}
-        events={events}
+        businessHours={openingHours
+          .filter((day) => !day.isClosed)
+          .map((day) => ({
+            daysOfWeek: [day.dayOfWeek],
+            startTime: minutesToHHmm(day.openMinute),
+            endTime: minutesToHHmm(day.closeMinute),
+          }))}
+        events={loadEvents}
       />
       {actionError ? (
         <p role="alert" className="mt-3 text-sm text-destructive">

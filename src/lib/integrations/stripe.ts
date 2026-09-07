@@ -21,6 +21,8 @@ export function stripe(): Stripe {
   // then uses the version bundled with this library, avoiding drift.
   cached = new Stripe(STRIPE_SECRET_KEY, {
     appInfo: { name: "gym-plzen" },
+    timeout: 15_000,
+    maxNetworkRetries: 1,
   });
   return cached;
 }
@@ -91,6 +93,7 @@ export async function createOneOffCheckout(params: {
 }): Promise<Stripe.Checkout.Session> {
   return stripe().checkout.sessions.create({
     mode: "payment",
+    payment_method_types: ["card"],
     // Czech customers, Czech payment page and Stripe receipt.
     locale: "cs",
     customer: params.customerId,

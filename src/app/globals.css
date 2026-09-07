@@ -362,7 +362,11 @@ summary {
   min-height: 44px;
 }
 
-@media (max-width: 639px) {
+.admin-booking-calendar {
+  container-type: inline-size;
+}
+
+@container (max-width: 760px) {
   .admin-booking-calendar .fc .fc-header-toolbar {
     display: grid;
     grid-template-columns: 1fr;

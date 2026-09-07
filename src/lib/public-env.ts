@@ -32,7 +32,7 @@ const publicSchema = z.object({
 });
 
 function parsePublic() {
-  const result = publicSchema.safeParse({
+  const source = {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_DEFAULT_LOCALE: process.env.NEXT_PUBLIC_DEFAULT_LOCALE,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -48,14 +48,14 @@ function parsePublic() {
       process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
     NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID,
     NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
-  });
-  // Public env is non-secret and has defaults; never hard-fail the client on it.
-  return result.success
-    ? result.data
-    : publicSchema.parse({
-        NEXT_PUBLIC_APP_URL: undefined,
-        NEXT_PUBLIC_DEFAULT_LOCALE: undefined,
-      });
+  };
+  const result = publicSchema.safeParse(Object.fromEntries(
+    Object.entries(source).map(([key, value]) => [key, value?.trim() || undefined]),
+  ));
+  if (!result.success) {
+    throw new Error(`Invalid public environment: ${result.error.issues.map((issue) => issue.path.join(".")).join(", ")}`);
+  }
+  return result.data;
 }
 
 export const publicEnv = parsePublic();

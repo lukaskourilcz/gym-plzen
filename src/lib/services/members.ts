@@ -1,5 +1,5 @@
-import { count, desc, eq } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { count, desc, eq, sql } from "drizzle-orm";
+import { db, type Database, type Transaction } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
 import type { Profile } from "@/lib/db/types";
 import { toE164 } from "@/lib/helpers/phone";
@@ -127,8 +127,8 @@ export async function getMember(
 export type MemberRole = "member" | "admin";
 
 /** How many administrators exist right now. */
-export async function countAdmins(): Promise<number> {
-  const [row] = await db
+export async function countAdmins(database: Database | Transaction = db): Promise<number> {
+  const [row] = await database
     .select({ value: count() })
     .from(profiles)
     .where(eq(profiles.role, "admin"));
@@ -145,24 +145,27 @@ export async function setRole(
   userId: string,
   role: MemberRole,
 ): Promise<Profile> {
+  return db.transaction(async (tx) => {
+  await tx.execute(sql`select pg_advisory_xact_lock(721834002)`);
   if (role !== "admin") {
-    const [target] = await db
+    const [target] = await tx
       .select({ role: profiles.role })
       .from(profiles)
       .where(eq(profiles.id, userId))
       .limit(1);
-    if (target?.role === "admin" && (await countAdmins()) <= 1) {
+    if (target?.role === "admin" && (await countAdmins(tx)) <= 1) {
       throw new ActionError(
         "Nelze odebrat posledního správce. Nejdřív nastavte jiného.",
       );
     }
   }
 
-  const [updated] = await db
+  const [updated] = await tx
     .update(profiles)
     .set({ role, updatedAt: new Date() })
     .where(eq(profiles.id, userId))
     .returning();
   if (!updated) throw new ActionError("Člena se nepodařilo najít.");
   return updated;
+  });
 }

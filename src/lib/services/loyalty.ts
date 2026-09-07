@@ -1,5 +1,5 @@
 import { and, count, eq, inArray } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { db, type Database, type Transaction } from "@/lib/db";
 import { reservation } from "@/lib/db/schema";
 import {
   DEFAULT_ENTRY_PRICE_CENTS,
@@ -39,8 +39,11 @@ export interface LoyaltyStatus {
 }
 
 /** Count a member's entries that count toward loyalty. */
-export async function countEntries(userId: string): Promise<number> {
-  const [row] = await db
+export async function countEntries(
+  userId: string,
+  database: Database | Transaction = db,
+): Promise<number> {
+  const [row] = await database
     .select({ value: count() })
     .from(reservation)
     .where(

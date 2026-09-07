@@ -58,6 +58,14 @@ export function BookingCalendar({
     selectedDay?.slots.filter((slot) => slot.available) ?? [];
   const currentMonth = todayKey.slice(0, 7);
   const maxMonth = maxDateKey.slice(0, 7);
+  const pendingGridFocus = useRef(false);
+  const tabStopDate = selectedDateKey ?? grid.find((cell) => cell.inMonth && cell.dateKey >= todayKey && cell.dateKey <= maxDateKey)?.dateKey;
+  useEffect(() => {
+    if (pendingGridFocus.current && tabStopDate) {
+      gridRef.current?.querySelector<HTMLElement>(`[data-date="${tabStopDate}"]`)?.focus();
+      pendingGridFocus.current = false;
+    }
+  }, [monthKey, tabStopDate]);
   const previousSelectedDate = useRef(selectedDateKey);
 
   useEffect(() => {
@@ -117,6 +125,7 @@ export function BookingCalendar({
       event.preventDefault();
       const targetMonth = moveMonth(event.key === "PageUp" ? -1 : 1);
       if (targetMonth < currentMonth || targetMonth > maxMonth) return;
+      pendingGridFocus.current = true;
       router.push(
         buildHref({
           month: targetMonth,
@@ -292,12 +301,7 @@ export function BookingCalendar({
                               cell.dateKey === todayKey ? "date" : undefined
                             }
                             aria-label={ariaLabel}
-                            tabIndex={
-                              selected ||
-                              (!selectedDateKey && cell.dateKey === todayKey)
-                                ? 0
-                                : -1
-                            }
+                            tabIndex={cell.dateKey === tabStopDate ? 0 : -1}
                             onKeyDown={(event) =>
                               onDateKeyDown(event, cell.dateKey)
                             }
@@ -315,7 +319,7 @@ export function BookingCalendar({
                 ))}
               </div>
               <div className="mt-4 border-t border-border pt-4 text-sm text-muted-foreground">
-                <span>Rezervovat lze nejvýše 60 dní dopředu.</span>
+                <span>Rezervovat lze do {displayDate(maxDateKey, { day: "numeric", month: "long", year: "numeric" })}.</span>
               </div>
             </div>
           </>

@@ -1,8 +1,13 @@
-import { and, eq, gt, gte, lt, lte, ne, or, type SQL } from "drizzle-orm";
+import { and, eq, gt, lt, ne, or, type SQL } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
-import { db } from "@/lib/db";
+import { db, type Database, type Transaction } from "@/lib/db";
 import { blockedSlot, openingHours, reservation } from "@/lib/db/schema";
-import { dayOfWeek, minuteOfDay, minutesBetween } from "@/lib/helpers/datetime";
+import {
+  dateKeyInTimeZone,
+  dayOfWeek,
+  minuteOfDay,
+  minutesBetween,
+} from "@/lib/helpers/datetime";
 
 /**
  * Availability rules for the single-occupancy gym. A requested [start, end)
@@ -44,9 +49,10 @@ function overlaps(
 async function isWithinOpeningHours(
   startsAt: Date,
   endsAt: Date,
+  database: Database | Transaction = db,
 ): Promise<boolean> {
   const dow = dayOfWeek(startsAt);
-  const [hours] = await db
+  const [hours] = await database
     .select()
     .from(openingHours)
     .where(eq(openingHours.dayOfWeek, dow))
@@ -57,7 +63,11 @@ async function isWithinOpeningHours(
   const startMin = minuteOfDay(startsAt);
   const endMin = minuteOfDay(endsAt);
   // Reject windows that cross midnight for simplicity (sessions are short).
-  if (endMin <= startMin) return false;
+  if (
+    dateKeyInTimeZone(startsAt) !== dateKeyInTimeZone(endsAt) ||
+    endMin <= startMin
+  )
+    return false;
   return startMin >= hours.openMinute && endMin <= hours.closeMinute;
 }
 
@@ -68,17 +78,25 @@ async function isWithinOpeningHours(
 export async function checkAvailability(
   startsAt: Date,
   endsAt: Date,
-  opts: { excludeReservationId?: string } = {},
+  opts: {
+    excludeReservationId?: string;
+    database?: Database | Transaction;
+  } = {},
 ): Promise<AvailabilityResult> {
-  if (minutesBetween(startsAt, endsAt) <= 0) {
+  const database = opts.database ?? db;
+  if (
+    !Number.isFinite(startsAt.getTime()) ||
+    !Number.isFinite(endsAt.getTime()) ||
+    minutesBetween(startsAt, endsAt) <= 0
+  ) {
     return { available: false, reason: "invalid_range" };
   }
 
-  if (!(await isWithinOpeningHours(startsAt, endsAt))) {
+  if (!(await isWithinOpeningHours(startsAt, endsAt, database))) {
     return { available: false, reason: "closed" };
   }
 
-  const reservationConflict = await db
+  const reservationConflict = await database
     .select({ id: reservation.id })
     .from(reservation)
     .where(
@@ -96,7 +114,7 @@ export async function checkAvailability(
     return { available: false, reason: "overlap_reservation" };
   }
 
-  const blockConflict = await db
+  const blockConflict = await database
     .select({ id: blockedSlot.id })
     .from(blockedSlot)
     .where(overlaps(blockedSlot.startsAt, blockedSlot.endsAt, startsAt, endsAt))
@@ -116,8 +134,8 @@ export async function listCalendarEntries(rangeStart: Date, rangeEnd: Date) {
     .from(reservation)
     .where(
       and(
-        gte(reservation.startsAt, rangeStart),
-        lte(reservation.startsAt, rangeEnd),
+        lt(reservation.startsAt, rangeEnd),
+        gt(reservation.endsAt, rangeStart),
       ),
     );
 
@@ -126,8 +144,8 @@ export async function listCalendarEntries(rangeStart: Date, rangeEnd: Date) {
     .from(blockedSlot)
     .where(
       and(
-        gte(blockedSlot.startsAt, rangeStart),
-        lte(blockedSlot.startsAt, rangeEnd),
+        lt(blockedSlot.startsAt, rangeEnd),
+        gt(blockedSlot.endsAt, rangeStart),
       ),
     );
 

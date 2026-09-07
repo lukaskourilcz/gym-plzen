@@ -1,4 +1,4 @@
-import { schedule } from "@/lib/services";
+import { schedule, slots } from "@/lib/services";
 import { addMinutes } from "@/lib/helpers/datetime";
 import { formatDateTime } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
@@ -31,11 +31,15 @@ export const dynamic = "force-dynamic";
 export default async function SchedulePage() {
   const now = new Date();
   const demo = await hasDemoAdminSession();
+  const horizon = await slots.getBookingHorizonDays();
   const [hours, blocks, showerMinutes] = demo
     ? [[], [], DEFAULT_SHOWER_MINUTES]
     : await Promise.all([
         schedule.listOpeningHours(),
-        schedule.listBlockedSlots(now, addMinutes(now, 60 * 24 * 90)),
+        schedule.listBlockedSlots(
+          now,
+          addMinutes(now, 60 * 24 * (horizon + 1)),
+        ),
         schedule.getShowerMinutes(),
       ]);
   const byDay = new Map(hours.map((h) => [h.dayOfWeek, h]));
@@ -69,6 +73,10 @@ export default async function SchedulePage() {
 
       <section className="mt-8">
         <h2 className="mb-3 text-lg font-semibold">Blokované termíny</h2>
+        <p className="mb-3 text-sm text-muted-foreground">
+          Blokace nepřepíše existující rezervace. Ty nejdříve zrušte v přehledu
+          rezervací a vyřešte případné vrácení platby.
+        </p>
         <BlockedSlotForm />
 
         <div className="mt-4">
@@ -87,7 +95,16 @@ export default async function SchedulePage() {
                 <TableRow key={b.id}>
                   <TableCell>{formatDateTime(b.startsAt)}</TableCell>
                   <TableCell>{formatDateTime(b.endsAt)}</TableCell>
-                  <TableCell>{b.reason}</TableCell>
+                  <TableCell>
+                    {
+                      {
+                        maintenance: "Údržba",
+                        holiday: "Dovolená",
+                        private_event: "Soukromá akce",
+                        other: "Ostatní",
+                      }[b.reason]
+                    }
+                  </TableCell>
                   <TableCell>{b.note ?? "Bez poznámky"}</TableCell>
                   <TableCell>
                     <DeleteBlockButton id={b.id} />

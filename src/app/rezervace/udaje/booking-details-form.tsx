@@ -156,7 +156,7 @@ export function BookingDetailsForm({
         />
       </Field>
       <p className="-mt-2 text-xs text-muted-foreground">
-        Na e-mail a telefon vám pošleme potvrzení a kód ke vstupu.
+        Potvrzení a kód ke vstupu vám pošleme e-mailem.
       </p>
 
       {entryPriceCents > 0 ? (

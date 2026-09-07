@@ -202,7 +202,14 @@ export function resolveSlotFromHours(
   startsAt: Date,
   hours: DayHours,
 ): { startsAt: Date; endsAt: Date; durationMinutes: number } | null {
-  if (hours.isClosed || hours.slotMinutes <= 0) return null;
+  if (
+    !Number.isFinite(startsAt.getTime()) ||
+    startsAt.getUTCSeconds() !== 0 ||
+    startsAt.getUTCMilliseconds() !== 0 ||
+    hours.isClosed ||
+    hours.slotMinutes <= 0
+  )
+    return null;
   const startMinute = minuteOfDay(startsAt);
   const aligned =
     startMinute >= hours.openMinute &&

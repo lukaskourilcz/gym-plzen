@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { adminDateTimeToInstant } from "@/lib/helpers/datetime";
 
 /**
  * Reusable primitive schemas shared across forms.
@@ -27,17 +28,27 @@ export const phoneSchema = z
 /**
  * A datetime as produced by an `<input type="datetime-local">` or an ISO
  * string. Validated (parseable) but kept as a string; the handler calls
- * `new Date(...)`.
+ * `adminDateTimeToInstant(...)`.
  */
 export const dateTimeStringSchema = z
   .string()
   .min(1, "Zadejte datum a čas.")
-  .refine((s) => !Number.isNaN(Date.parse(s)), "Neplatné datum.");
+  .refine((s) => {
+    try {
+      adminDateTimeToInstant(s);
+      return true;
+    } catch {
+      return false;
+    }
+  }, "Neplatné datum nebo čas.");
 
 /** "HH:mm" time-of-day string (kept as string; handler converts to minutes). */
 export const hhmmSchema = z
   .string()
-  .regex(/^\d{1,2}:\d{2}$/, "Zadejte čas ve formátu HH:MM.");
+  .regex(
+    /^(?:[01]\d|2[0-3]):[0-5]\d$/,
+    "Zadejte platný čas ve formátu HH:MM.",
+  );
 
 /** Non-negative integer amount in the smallest currency unit (haléř). */
 export const priceCentsSchema = z
@@ -54,4 +65,12 @@ export const optionalPhone = z.union([z.literal(""), phoneSchema]).optional();
 /** Optional free text (empty string allowed). */
 export function optionalText(max = 1000) {
   return z.string().max(max).optional();
+}
+
+/** Public slot selections must carry an explicit offset. */
+export const slotInstantSchema = z.string().datetime({ offset: true, message: "Neplatný termín." });
+
+export function increasingDateTimeRange(start: string, end: string): boolean {
+  try { return adminDateTimeToInstant(end) > adminDateTimeToInstant(start); }
+  catch { return false; }
 }

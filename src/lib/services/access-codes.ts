@@ -2,10 +2,10 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { accessCode } from "@/lib/db/schema";
 import type { AccessCode } from "@/lib/db/types";
-import { generateNumericCode, hashCode } from "@/lib/helpers/crypto";
+import { generateKeypadCode, hashCode } from "@/lib/helpers/crypto";
 import { addMinutes } from "@/lib/helpers/datetime";
 import { logger } from "@/lib/helpers/logger";
-import { createKeypadCode, deleteAuth } from "@/lib/integrations/nuki";
+import { createKeypadCode, keypadCodeName, revokeKeypadCode } from "@/lib/integrations/nuki";
 import { CODE_LEAD_MINUTES } from "@/lib/config/schedule";
 import { getShowerMinutes } from "./schedule";
 
@@ -33,7 +33,7 @@ export async function issueAccessCode(params: {
   endsAt: Date;
   memberName?: string | null;
 }): Promise<IssueCodeResult> {
-  const plaintext = generateNumericCode(6);
+  const plaintext = generateKeypadCode();
   // Code valid from a lead time before the slot until the end of the slot plus
   // the shower grace, so the member can shower after training.
   const showerMinutes = await getShowerMinutes();
@@ -55,9 +55,7 @@ export async function issueAccessCode(params: {
   if (!record) throw new Error("Failed to persist access code.");
 
   const lock = await createKeypadCode({
-    name: `Rez. ${params.reservationId.slice(0, 8)}${
-      params.memberName ? ` – ${params.memberName}` : ""
-    }`,
+    name: keypadCodeName(record.id),
     code: Number(plaintext),
     allowedFrom: validFrom,
     allowedUntil: validUntil,
@@ -78,6 +76,7 @@ export async function issueAccessCode(params: {
       .set({
         status: "failed",
         failureReason: lock.error,
+        nukiAuthId: lock.nukiAuthId,
         updatedAt: new Date(),
       })
       .where(eq(accessCode.id, record.id));
@@ -98,7 +97,12 @@ export async function revokeAccessCode(id: string): Promise<void> {
     .where(eq(accessCode.id, id))
     .limit(1);
   if (!row) return;
-  if (row.nukiAuthId) await deleteAuth(row.nukiAuthId);
+  if (row.status === "revoked") return;
+  if (row.failureReason !== "nuki_not_configured" && !(await revokeKeypadCode({
+    nukiAuthId: row.nukiAuthId, name: keypadCodeName(row.id),
+  }))) {
+    throw new Error("Nuki did not confirm access-code revocation.");
+  }
   await db
     .update(accessCode)
     .set({ status: "revoked", updatedAt: new Date() })

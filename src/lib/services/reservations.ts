@@ -1,7 +1,12 @@
-import { and, desc, eq, gte, inArray, lt } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { payment, reservation } from "@/lib/db/schema";
+import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import { db, type Transaction } from "@/lib/db";
+import { payment, reservation, reservationPipeline } from "@/lib/db/schema";
 import type { NewReservation, Reservation } from "@/lib/db/types";
+import { databaseErrorCode } from "@/lib/helpers/database-error";
+import { withReservationOperation } from "./reservation-operations";
+import { releaseForReservation } from "./vouchers";
+import { raiseAlert } from "./alerts";
+import { sendReservationClosure } from "./notifications";
 import { ActionError } from "@/lib/helpers/action";
 import { checkAvailability } from "./availability";
 import { initPipeline } from "./pipeline";
@@ -45,8 +50,16 @@ export interface CreateReservationInput {
  */
 export async function createReservation(
   input: CreateReservationInput,
+  tx?: Transaction,
 ): Promise<Reservation> {
-  const availability = await checkAvailability(input.startsAt, input.endsAt);
+  if (!tx)
+    return db.transaction((transaction) =>
+      createReservation(input, transaction),
+    );
+  await tx.execute(sql`select pg_advisory_xact_lock_shared(721834001)`);
+  const availability = await checkAvailability(input.startsAt, input.endsAt, {
+    database: tx,
+  });
   if (!availability.available) {
     throw new ActionError(
       AVAILABILITY_MESSAGES[availability.reason ?? "invalid_range"] ??
@@ -70,12 +83,9 @@ export async function createReservation(
 
   let created: Reservation | undefined;
   try {
-    [created] = await db.insert(reservation).values(values).returning();
+    [created] = await tx.insert(reservation).values(values).returning();
   } catch (error) {
-    const code =
-      typeof error === "object" && error !== null && "code" in error
-        ? String(error.code)
-        : "";
+    const code = databaseErrorCode(error);
     if (code === "23P01") {
       throw new ActionError(
         "Tento termín právě rezervoval jiný zákazník. Vyberte prosím jiný čas.",
@@ -86,7 +96,7 @@ export async function createReservation(
   if (!created) throw new ActionError("Rezervaci se nepodařilo vytvořit.");
 
   if (created.status === "confirmed") {
-    await initPipeline(created.id);
+    await initPipeline(created.id, tx);
   }
 
   return created;
@@ -94,17 +104,23 @@ export async function createReservation(
 
 /** Mark a reservation as confirmed (e.g. after successful payment) and kick off the pipeline. */
 export async function confirmReservation(id: string): Promise<boolean> {
-  const [updated] = await db
-    .update(reservation)
-    .set({ status: "confirmed", updatedAt: new Date() })
-    .where(and(eq(reservation.id, id), eq(reservation.status, "pending")))
-    .returning();
-  if (updated) {
-    await initPipeline(id);
-    return true;
-  }
-  const existing = await getReservation(id);
-  return existing?.status === "confirmed";
+  return db.transaction(async (tx) => {
+    const [existing] = await tx.select().from(reservation).where(eq(reservation.id, id)).limit(1);
+    if (existing?.userId)
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtext(${`loyalty:${existing.userId}`}))`,
+      );
+    const [updated] = await tx
+      .update(reservation)
+      .set({ status: "confirmed", updatedAt: new Date() })
+      .where(and(eq(reservation.id, id), eq(reservation.status, "pending")))
+      .returning();
+    if (updated || existing?.status === "confirmed") {
+      await initPipeline(id, tx);
+      return true;
+    }
+    return false;
+  });
 }
 
 /** Persist the server-calculated price after an optional voucher claim. */
@@ -126,17 +142,73 @@ export async function cancelReservation(params: {
   reason?: string;
   byAdminId?: string;
 }): Promise<void> {
-  await db
-    .update(reservation)
-    .set({
-      status: "cancelled",
-      cancelledAt: new Date(),
-      cancelReason: params.reason ?? null,
-      updatedAt: new Date(),
-    })
-    .where(eq(reservation.id, params.id));
-  const codes = await listCodesForReservation(params.id);
-  await Promise.allSettled(codes.map((code) => revokeAccessCode(code.id)));
+  return withReservationOperation(params.id, async () => {
+    const current = await getReservation(params.id);
+    if (!current) throw new ActionError("Rezervace nebyla nalezena.");
+    await db.transaction(async (tx) => {
+      await tx
+        .update(reservation)
+        .set({
+          status: "cancelled",
+          cancelledAt: new Date(),
+          cancelReason: params.reason ?? null,
+          updatedAt: new Date(),
+        })
+        .where(eq(reservation.id, params.id));
+      await tx
+        .delete(reservationPipeline)
+        .where(eq(reservationPipeline.reservationId, params.id));
+    });
+    await releaseForReservation(params.id);
+    const codes = await listCodesForReservation(params.id);
+    const revocations = await Promise.allSettled(
+      codes.map((code) => revokeAccessCode(code.id)),
+    );
+    const revocationFailed = revocations.some(
+      (result) => result.status === "rejected",
+    );
+    if (revocationFailed)
+      await raiseAlert({
+        severity: "critical",
+        dedupeKey: `revocation:${params.id}`,
+        title: "Zrušená rezervace má neodvolaný vstupní kód",
+        body: "Zkontrolujte zámek. Opakujte storno po obnovení připojení.",
+        context: { reservationId: params.id },
+      });
+    if (params.byAdminId && current.status !== "cancelled") {
+      await sendReservationClosure({
+        userId: current.userId,
+        reservationId: current.id,
+        name: current.contactName,
+        startsAt: current.startsAt,
+        email: current.contactEmail,
+        phone: current.contactPhone,
+        reason: params.reason,
+      });
+      const [paid] = await db
+        .select({ id: payment.id })
+        .from(payment)
+        .where(
+          and(
+            eq(payment.reservationId, params.id),
+            eq(payment.status, "succeeded"),
+          ),
+        )
+        .limit(1);
+      if (paid)
+        await raiseAlert({
+          severity: "warning",
+          dedupeKey: `refund:${params.id}`,
+          title: "Storno zaplacené rezervace: zkontrolujte vrácení platby",
+          body: "Storno samo nevrací platbu ve Stripe.",
+          context: { reservationId: params.id },
+        });
+    }
+    if (revocationFailed)
+      throw new ActionError(
+        "Rezervace je zrušená, ale vstupní kód se nepodařilo odvolat. Zkontrolujte zámek a opakujte storno.",
+      );
+  });
 }
 
 /** Release stale Checkout holds so abandoned payments cannot block the gym. */

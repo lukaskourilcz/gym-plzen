@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   dateTimeStringSchema,
+  increasingDateTimeRange,
   hhmmSchema,
   optionalText,
   uuidSchema,
@@ -16,7 +17,7 @@ export const openingHoursSchema = z.object({
   close: hhmmSchema,
   slotMinutes: z.number().int().min(15).max(240),
   isClosed: z.boolean(),
-});
+}).refine((value) => value.isClosed || value.close > value.open, { path: ["close"], message: "Zavírací čas musí být po otevíracím čase." });
 
 export const createBlockedSlotSchema = z
   .object({
@@ -25,7 +26,7 @@ export const createBlockedSlotSchema = z
     reason: z.enum(["maintenance", "holiday", "private_event", "other"]),
     note: optionalText(300),
   })
-  .refine((v) => Date.parse(v.endsAt) > Date.parse(v.startsAt), {
+  .refine((v) => increasingDateTimeRange(v.startsAt, v.endsAt), {
     message: "Konec musí být po začátku.",
     path: ["endsAt"],
   });

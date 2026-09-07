@@ -1,4 +1,4 @@
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { membership, membershipPlan, payment } from "@/lib/db/schema";
 import type { Membership, MembershipPlan, Payment } from "@/lib/db/types";
@@ -174,11 +174,23 @@ export async function recordPayment(input: {
         .onConflictDoUpdate({
           target: payment.stripeCheckoutSessionId,
           set: values,
+          setWhere:
+            input.status === "pending"
+              ? inArray(payment.status, ["pending"])
+              : ne(payment.status, "refunded"),
         })
         .returning()
     : await query.onConflictDoNothing().returning();
-  if (!row) throw new Error("Payment record could not be persisted.");
-  return row;
+  if (row) return row;
+  if (input.stripeCheckoutSessionId) {
+    const [existing] = await db
+      .select()
+      .from(payment)
+      .where(eq(payment.stripeCheckoutSessionId, input.stripeCheckoutSessionId))
+      .limit(1);
+    if (existing) return existing;
+  }
+  throw new Error("Payment record could not be persisted.");
 }
 
 export async function markCheckoutPaymentFailed(
@@ -188,5 +200,10 @@ export async function markCheckoutPaymentFailed(
   await db
     .update(payment)
     .set({ status: "failed", failureReason, updatedAt: new Date() })
-    .where(eq(payment.stripeCheckoutSessionId, checkoutSessionId));
+    .where(
+      and(
+        eq(payment.stripeCheckoutSessionId, checkoutSessionId),
+        inArray(payment.status, ["pending", "processing"]),
+      ),
+    );
 }

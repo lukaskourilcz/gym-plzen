@@ -38,11 +38,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  const { isNew } = await recordWebhookEvent({
+  const { isNew, processing } = await recordWebhookEvent({
     provider: "stripe",
     eventId: event.id,
     payload: { type: event.type },
   });
+  if (processing)
+    return NextResponse.json({ error: "processing" }, { status: 503 });
   if (!isNew) return NextResponse.json({ received: true, duplicate: true });
 
   try {
@@ -73,6 +75,13 @@ async function handleStripeEvent(event: Stripe.Event): Promise<void> {
         const reservation = await reservations.getReservation(reservationId);
         if (!reservation || (reservation.userId ?? null) !== userId) {
           throw new Error("Checkout ownership mismatch.");
+        }
+        if (
+          session.mode !== "payment" ||
+          session.amount_total !== reservation.priceCents ||
+          session.currency !== reservation.currency
+        ) {
+          throw new Error("Checkout amount or currency mismatch.");
         }
       }
       await memberships.recordPayment({
@@ -180,3 +189,5 @@ function mapSubscriptionStatus(
 function toDate(unixSeconds: number | null | undefined): Date | null {
   return typeof unixSeconds === "number" ? new Date(unixSeconds * 1000) : null;
 }
+
+export const maxDuration = 300;

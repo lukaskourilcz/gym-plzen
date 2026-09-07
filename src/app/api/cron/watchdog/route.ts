@@ -50,3 +50,5 @@ export async function GET(request: NextRequest) {
     processed,
   });
 }
+
+export const maxDuration = 300;

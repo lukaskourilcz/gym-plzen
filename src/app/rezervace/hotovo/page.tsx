@@ -56,7 +56,7 @@ export default async function BookingDonePage({
       title: "Rezervace je potvrzená",
       body: session
         ? "Termín najdete ve svém účtu. Pokyny ke vstupu obdržíte před návštěvou."
-        : "Potvrzení jsme poslali na váš e-mail. Pokyny ke vstupu obdržíte před návštěvou e-mailem a SMS.",
+        : "Potvrzení a pokyny ke vstupu obdržíte e-mailem.",
     },
     processing: {
       icon: Clock3,

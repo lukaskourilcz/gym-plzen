@@ -1,5 +1,6 @@
 "use server";
 
+import { adminDateTimeToInstant } from "@/lib/helpers/datetime";
 import { revalidatePath } from "next/cache";
 import { assertAdmin } from "@/lib/auth/guards";
 import { defineAction } from "@/lib/helpers/action";
@@ -24,8 +25,12 @@ const createVoucherImpl = defineAction({
           ? input.value
           : Math.round(input.value * 100),
       maxRedemptions: input.maxRedemptions,
-      validFrom: input.validFrom ? new Date(input.validFrom) : null,
-      validUntil: input.validUntil ? new Date(input.validUntil) : null,
+      validFrom: input.validFrom
+        ? adminDateTimeToInstant(input.validFrom)
+        : null,
+      validUntil: input.validUntil
+        ? adminDateTimeToInstant(input.validUntil)
+        : null,
       createdByAdminId: admin.id,
     });
     revalidatePath("/admin/vouchers");

@@ -1,6 +1,4 @@
-import type { EventInput } from "@fullcalendar/core";
-import { availability, schedule } from "@/lib/services";
-import { addMinutes } from "@/lib/helpers/datetime";
+import { schedule } from "@/lib/services";
 import { PageHeader } from "@/components/admin/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookingCalendar } from "@/components/admin/booking-calendar";
@@ -20,16 +18,8 @@ export const dynamic = "force-dynamic";
  * add a block (e.g. the daily cleaning window).
  */
 export default async function CalendarPage() {
-  const now = new Date();
-  const rangeStart = addMinutes(now, -14 * 24 * 60);
-  const rangeEnd = addMinutes(now, 60 * 24 * 60);
   const demo = await hasDemoAdminSession();
-  const [{ reservations, blocks }, openingHours] = demo
-    ? [{ reservations: [], blocks: [] }, []]
-    : await Promise.all([
-        availability.listCalendarEntries(rangeStart, rangeEnd),
-        schedule.listOpeningHours(),
-      ]);
+  const openingHours = demo ? [] : await schedule.listOpeningHours();
   const activeDays = openingHours.filter((day) => day.isClosed !== 1);
   const openMinute =
     activeDays.length > 0
@@ -40,27 +30,6 @@ export default async function CalendarPage() {
       ? Math.max(...activeDays.map((day) => day.closeMinute))
       : DEFAULT_CLOSE_MINUTE;
 
-  const events: EventInput[] = [
-    ...reservations
-      .filter((r) => r.status !== "cancelled")
-      .map((r) => ({
-        id: r.id,
-        title: r.contactName ?? r.contactEmail ?? "Rezervace",
-        start: r.startsAt.toISOString(),
-        end: r.endsAt.toISOString(),
-        backgroundColor: r.status === "confirmed" ? "#16a34a" : "#f59e0b",
-        borderColor: "transparent",
-      })),
-    ...blocks.map((b) => ({
-      id: b.id,
-      title: b.note ?? "Blok",
-      start: b.startsAt.toISOString(),
-      end: b.endsAt.toISOString(),
-      display: "background" as const,
-      backgroundColor: "#94a3b8",
-    })),
-  ];
-
   return (
     <div>
       <PageHeader
@@ -70,7 +39,8 @@ export default async function CalendarPage() {
       <Card>
         <CardContent className="p-3">
           <BookingCalendar
-            events={events}
+            refreshedAt={Date.now()}
+            openingHours={openingHours}
             openMinute={openMinute}
             closeMinute={closeMinute}
           />

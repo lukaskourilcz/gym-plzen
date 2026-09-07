@@ -1,7 +1,9 @@
 import { z } from "zod";
 import {
   dateTimeStringSchema,
+  increasingDateTimeRange,
   idSchema,
+  slotInstantSchema,
   optionalEmail,
   optionalPhone,
   optionalText,
@@ -18,7 +20,7 @@ export const createReservationSchema = z
     contactPhone: optionalPhone,
     priceCents: z.number().int().nonnegative().optional(),
   })
-  .refine((v) => Date.parse(v.endsAt) > Date.parse(v.startsAt), {
+  .refine((v) => increasingDateTimeRange(v.startsAt, v.endsAt), {
     message: "Konec musí být po začátku.",
     path: ["endsAt"],
   });
@@ -30,7 +32,7 @@ export const cancelReservationSchema = z.object({
 
 export const rescheduleReservationSchema = z.object({
   reservationId: z.string().uuid(),
-  startsAt: dateTimeStringSchema,
+  startsAt: slotInstantSchema,
 });
 
 export type CreateReservationValues = z.infer<typeof createReservationSchema>;

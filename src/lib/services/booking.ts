@@ -1,4 +1,7 @@
+import { sql } from "drizzle-orm";
+import { db } from "@/lib/db";
 import { publicEnv } from "@/lib/public-env";
+import { logger } from "@/lib/helpers/logger";
 import { ActionError } from "@/lib/helpers/action";
 import { dateKeyInTimeZone } from "@/lib/helpers/datetime";
 import {
@@ -16,7 +19,11 @@ import {
   releaseExpiredPendingReservations,
   updateReservationPrice,
 } from "./reservations";
-import { getEntryPriceCents, priceForNextEntry } from "./loyalty";
+import {
+  getEntryPriceCents,
+  countEntries,
+  deriveLoyaltyStatus,
+} from "./loyalty";
 import { getMember, setStripeCustomerId } from "./members";
 import { recordPayment } from "./memberships";
 import { fulfillReservation } from "./fulfillment";
@@ -137,40 +144,40 @@ export async function startBooking(params: {
     termsAcceptedAt: params.details.acceptedAt,
   };
 
-  // Loyalty is counted against an account, so a guest always pays.
-  const { priceCents: originalPriceCents, isFree } = params.userId
-    ? await priceForNextEntry(params.userId)
-    : { priceCents: await getEntryPriceCents(), isFree: false };
-
-  // Free loyalty entry : no payment needed.
+  const entryPriceCents = await getEntryPriceCents();
+  const { reservation, originalPriceCents, isFree } = await db.transaction(
+    async (tx) => {
+      if (params.userId)
+        await tx.execute(
+          sql`select pg_advisory_xact_lock(hashtext(${`loyalty:${params.userId}`}))`,
+        );
+      const isFree = params.userId
+        ? deriveLoyaltyStatus(await countEntries(params.userId, tx))
+            .nextEntryIsFree
+        : false;
+      if (!isFree && !isStripeConfigured())
+        throw new ActionError(
+          "Platby zatím nejsou nastavené. Zkuste to prosím později.",
+        );
+      const originalPriceCents = isFree ? 0 : entryPriceCents;
+      const reservation = await createReservation(
+        {
+          userId: params.userId,
+          startsAt,
+          endsAt,
+          status: isFree ? "confirmed" : "pending",
+          ...contact,
+          priceCents: originalPriceCents,
+        },
+        tx,
+      );
+      return { reservation, originalPriceCents, isFree };
+    },
+  );
   if (isFree) {
-    const reservation = await createReservation({
-      userId: params.userId,
-      startsAt,
-      endsAt,
-      status: "confirmed",
-      ...contact,
-      priceCents: 0,
-    });
-    await fulfillReservation(reservation.id);
+    await fulfillReservation(reservation.id).catch((error) => logger.error(error, { where: "booking.fulfillment", reservationId: reservation.id }));
     return { kind: "free", reservationId: reservation.id };
   }
-
-  // Paid entry : requires Stripe.
-  if (!isStripeConfigured()) {
-    throw new ActionError(
-      "Platby zatím nejsou nastavené. Zkuste to prosím později.",
-    );
-  }
-
-  const reservation = await createReservation({
-    userId: params.userId,
-    startsAt,
-    endsAt,
-    status: "pending",
-    ...contact,
-    priceCents: originalPriceCents,
-  });
 
   let priceCents = originalPriceCents;
   const voucherCode = params.voucherCode?.trim();
@@ -202,7 +209,7 @@ export async function startBooking(params: {
       throw new ActionError("Rezervaci se nepodařilo potvrdit.");
     }
     await redeemForReservation(reservation.id);
-    await fulfillReservation(reservation.id);
+    await fulfillReservation(reservation.id).catch((error) => logger.error(error, { where: "booking.fulfillment", reservationId: reservation.id }));
     return { kind: "free", reservationId: reservation.id };
   }
 
@@ -238,9 +245,19 @@ export async function startBooking(params: {
         reservationId: reservation.id,
         ...(params.userId ? { userId: params.userId } : {}),
       },
-      expiresAt: new Date(Date.now() + 31 * 60 * 1000),
+      expiresAt: new Date(reservation.createdAt.getTime() + 31 * 60 * 1000),
+    });
+
+    if (!session.url) throw new ActionError("Nepodařilo se zahájit platbu.");
+    await recordPayment({
+      userId: params.userId, reservationId: reservation.id, type: "one_off",
+      status: "pending", amountCents: priceCents, currency: "czk",
+      stripeCheckoutSessionId: session.id,
     });
   } catch (error) {
+    if (session) await stripe().checkout.sessions.expire(session.id).catch((expireError) =>
+      logger.error(expireError, { where: "booking.expireFailedCheckout", reservationId: reservation.id }),
+    );
     await Promise.allSettled([
       releaseForReservation(reservation.id),
       cancelReservation({ id: reservation.id, reason: "checkout_failed" }),
@@ -248,20 +265,6 @@ export async function startBooking(params: {
     throw error;
   }
 
-  // Record a pending payment linked to the reservation (webhook marks it paid).
-  await recordPayment({
-    userId: params.userId,
-    reservationId: reservation.id,
-    type: "one_off",
-    status: "pending",
-    amountCents: priceCents,
-    currency: "czk",
-    stripeCheckoutSessionId: session.id,
-  });
-
-  if (!session.url) {
-    throw new ActionError("Nepodařilo se zahájit platbu.");
-  }
   return {
     kind: "checkout",
     url: session.url,

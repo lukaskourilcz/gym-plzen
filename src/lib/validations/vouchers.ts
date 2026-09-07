@@ -1,13 +1,7 @@
 import { z } from "zod";
-import { uuidSchema } from "./common";
+import { uuidSchema, dateTimeStringSchema, increasingDateTimeRange } from "./common";
 
-const optionalDateTime = z
-  .string()
-  .optional()
-  .refine(
-    (value) => !value || !Number.isNaN(Date.parse(value)),
-    "Zadejte platné datum a čas.",
-  );
+const optionalDateTime = z.union([z.literal(""), dateTimeStringSchema]).optional();
 
 export const createVoucherSchema = z
   .object({
@@ -42,7 +36,7 @@ export const createVoucherSchema = z
     if (
       value.validFrom &&
       value.validUntil &&
-      new Date(value.validUntil) <= new Date(value.validFrom)
+      !increasingDateTimeRange(value.validFrom, value.validUntil)
     ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,

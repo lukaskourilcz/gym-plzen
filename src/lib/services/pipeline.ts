@@ -1,6 +1,6 @@
-import { and, eq, isNull, lte, or } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { reservationPipeline } from "@/lib/db/schema";
+import { and, eq, gt, isNull, lte, or } from "drizzle-orm";
+import { db, type Database, type Transaction } from "@/lib/db";
+import { reservationPipeline, reservation } from "@/lib/db/schema";
 import type { ReservationPipeline } from "@/lib/db/types";
 import { addMinutes } from "@/lib/helpers/datetime";
 import { logger, redactForLogs } from "@/lib/helpers/logger";
@@ -18,8 +18,11 @@ export type PipelineStep = (typeof STEPS)[number];
 const MAX_ATTEMPTS = 5;
 
 /** Create the pipeline rows for a reservation (idempotent). */
-export async function initPipeline(reservationId: string): Promise<void> {
-  await db
+export async function initPipeline(
+  reservationId: string,
+  database: Database | Transaction = db,
+): Promise<void> {
+  await database
     .insert(reservationPipeline)
     .values(
       STEPS.map((step) => ({ reservationId, step, nextRetryAt: new Date() })),
@@ -107,10 +110,16 @@ export async function markStepFailed(
 /** Steps that are due for a retry now (consumed by the watchdog cron). */
 export async function dueForRetry(limit = 50): Promise<ReservationPipeline[]> {
   return db
-    .select()
+    .select({ pipeline: reservationPipeline })
     .from(reservationPipeline)
+    .innerJoin(
+      reservation,
+      eq(reservation.id, reservationPipeline.reservationId),
+    )
     .where(
       and(
+        eq(reservation.status, "confirmed"),
+        gt(reservation.endsAt, new Date()),
         or(
           eq(reservationPipeline.status, "retrying"),
           eq(reservationPipeline.status, "pending"),
@@ -121,7 +130,8 @@ export async function dueForRetry(limit = 50): Promise<ReservationPipeline[]> {
         ),
       ),
     )
-    .limit(limit);
+    .limit(limit)
+    .then((rows) => rows.map((row) => row.pipeline));
 }
 
 /** Full pipeline state for one reservation (admin drill-down). */

@@ -195,7 +195,9 @@ export function localInputToInstant(
   value: string,
   timeZone = PRAGUE_TIME_ZONE,
 ): Date {
-  const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/.exec(value.trim());
+  const match = /^(\d{4}-\d{2}-\d{2})T([01]\d|2[0-3]):([0-5]\d)$/.exec(
+    value.trim(),
+  );
   if (!match) throw new Error("Invalid local date-time value.");
   const [, dateKey, hours, minutes] = match;
   return localDateTimeToDate(
@@ -203,6 +205,17 @@ export function localInputToInstant(
     Number(hours) * 60 + Number(minutes),
     timeZone,
   );
+}
+
+/** Admin inputs use Prague wall time; calendar selections already carry a zone. */
+export function adminDateTimeToInstant(value: string): Date {
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))
+    return localInputToInstant(value);
+  if (!isDateKey(value.slice(0, 10)) || !/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,3})?)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/.test(value))
+    throw new Error("Invalid date-time zone.");
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) throw new Error("Invalid date-time.");
+  return date;
 }
 
 /** The inverse, for pre-filling a `datetime-local` input from a stored instant. */

@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { webhookEvent } from "@/lib/db/schema";
 
@@ -16,7 +16,7 @@ export async function recordWebhookEvent(params: {
   provider: string;
   eventId: string;
   payload?: unknown;
-}): Promise<{ isNew: boolean }> {
+}): Promise<{ isNew: boolean; processing?: boolean }> {
   const inserted = await db
     .insert(webhookEvent)
     .values({
@@ -25,10 +25,28 @@ export async function recordWebhookEvent(params: {
       payload: params.payload,
       processedAt: null,
     })
-    .onConflictDoNothing()
+    .onConflictDoUpdate({
+      target: [webhookEvent.provider, webhookEvent.eventId],
+      set: { createdAt: new Date() },
+      setWhere: and(
+        isNull(webhookEvent.processedAt),
+        lt(webhookEvent.createdAt, new Date(Date.now() - 10 * 60_000)),
+      ),
+    })
     .returning({ id: webhookEvent.id });
 
-  return { isNew: inserted.length > 0 };
+  if (inserted.length > 0) return { isNew: true };
+  const [existing] = await db
+    .select({ processedAt: webhookEvent.processedAt })
+    .from(webhookEvent)
+    .where(
+      and(
+        eq(webhookEvent.provider, params.provider),
+        eq(webhookEvent.eventId, params.eventId),
+      ),
+    )
+    .limit(1);
+  return { isNew: false, processing: !existing?.processedAt };
 }
 
 export async function markWebhookProcessed(provider: string, eventId: string) {

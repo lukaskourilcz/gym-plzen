@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { dateTimeStringSchema, emailSchema, phoneSchema } from "./common";
+import { slotInstantSchema, emailSchema, phoneSchema } from "./common";
 
 /**
  * Public booking details. One schema covers both visitors: a guest fills it in
@@ -19,7 +19,7 @@ const consentSchema = z.literal(true, {
 });
 
 export const bookingDetailsSchema = z.object({
-  startsAt: dateTimeStringSchema,
+  startsAt: slotInstantSchema,
   firstName: z.string().min(1, "Zadejte jméno.").max(60),
   lastName: z.string().min(1, "Zadejte příjmení.").max(60),
   email: emailSchema,
@@ -29,7 +29,7 @@ export const bookingDetailsSchema = z.object({
 });
 
 export const voucherQuoteSchema = z.object({
-  startsAt: dateTimeStringSchema,
+  startsAt: slotInstantSchema,
   code: z.string().min(1, "Zadejte kód voucheru.").max(64),
 });
 

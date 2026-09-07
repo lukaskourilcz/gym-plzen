@@ -1,3 +1,4 @@
+import { RealtimeRefresher } from "@/components/realtime-refresher";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/guards";
 import { SignOutButton } from "@/components/admin/sign-out-button";
@@ -18,6 +19,7 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen bg-secondary/35 lg:flex">
+      <RealtimeRefresher />
       <aside className="border-b border-white/10 bg-ink px-4 py-3 text-white lg:fixed lg:inset-y-0 lg:flex lg:w-[248px] lg:flex-col lg:border-r lg:border-b-0 lg:px-3.5 lg:py-5">
         <div className="flex items-center justify-between gap-4">
           <Link
@@ -56,3 +58,5 @@ export default async function AdminLayout({
     </div>
   );
 }
+
+export const maxDuration = 300;

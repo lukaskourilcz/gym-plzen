@@ -1,5 +1,6 @@
 "use server";
 
+import { adminDateTimeToInstant } from "@/lib/helpers/datetime";
 import { revalidatePath } from "next/cache";
 import { assertAdmin } from "@/lib/auth/guards";
 import { defineAction } from "@/lib/helpers/action";
@@ -24,8 +25,8 @@ const createImpl = defineAction({
   handler: async (input, admin) => {
     const reservation = await reservations.createReservation({
       userId: input.userId || null,
-      startsAt: new Date(input.startsAt),
-      endsAt: new Date(input.endsAt),
+      startsAt: adminDateTimeToInstant(input.startsAt),
+      endsAt: adminDateTimeToInstant(input.endsAt),
       contactName: input.contactName || null,
       contactEmail: input.contactEmail || null,
       contactPhone: input.contactPhone || null,
@@ -35,7 +36,7 @@ const createImpl = defineAction({
     });
     // Provision + deliver the access code straight away.
     await fulfillment.fulfillReservation(reservation.id);
-    revalidatePath("/admin/reservations");
+    revalidatePath("/", "layout");
   },
 });
 
@@ -48,7 +49,7 @@ const cancelImpl = defineAction({
       reason: input.reason || undefined,
       byAdminId: admin.id,
     });
-    revalidatePath("/admin/reservations");
+    revalidatePath("/", "layout");
   },
 });
 

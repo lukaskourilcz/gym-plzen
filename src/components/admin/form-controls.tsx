@@ -137,7 +137,7 @@ export function CheckboxField({
   register: React.InputHTMLAttributes<HTMLInputElement>;
 }) {
   return (
-    <label className="mb-2.5 flex items-center gap-2 text-sm">
+    <label className="mb-2.5 flex min-h-11 items-center gap-2 text-sm">
       <input
         id={name}
         type="checkbox"

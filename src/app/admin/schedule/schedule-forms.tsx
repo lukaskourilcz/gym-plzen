@@ -8,7 +8,6 @@ import {
 } from "@/components/admin/form-controls";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { minutesToHHmm } from "@/lib/helpers/format";
 import {
@@ -70,25 +69,27 @@ export function OpeningHoursRow({
       />
       <div className="w-20 pb-2 font-medium">{DAY_NAMES[dayOfWeek]}</div>
       <div>
-        <Label htmlFor={`open-${dayOfWeek}`}>Otevřeno</Label>
+        <Field name="open" controlId={`open-${dayOfWeek}`} label="Otevřeno" error={formState.errors.open}>
         <Input
           id={`open-${dayOfWeek}`}
           type="time"
           className="w-32"
           {...register("open")}
         />
+        </Field>
       </div>
       <div>
-        <Label htmlFor={`close-${dayOfWeek}`}>Zavřeno</Label>
+        <Field name="close" controlId={`close-${dayOfWeek}`} label="Zavřeno" error={formState.errors.close}>
         <Input
           id={`close-${dayOfWeek}`}
           type="time"
           className="w-32"
           {...register("close")}
         />
+        </Field>
       </div>
       <div>
-        <Label htmlFor={`slot-${dayOfWeek}`}>Slot (min)</Label>
+        <Field name="slotMinutes" controlId={`slot-${dayOfWeek}`} label="Slot (min)" error={formState.errors.slotMinutes}>
         <Input
           id={`slot-${dayOfWeek}`}
           type="number"
@@ -97,8 +98,9 @@ export function OpeningHoursRow({
           className="w-24"
           {...register("slotMinutes", { valueAsNumber: true })}
         />
+        </Field>
       </div>
-      <label className="flex items-center gap-2 pb-2 text-sm">
+      <label className="flex min-h-11 items-center gap-2 pb-2 text-sm">
         <input
           type="checkbox"
           className="size-4 accent-[var(--color-primary)]"
@@ -139,9 +141,9 @@ export function BlockedSlotForm() {
       <Field name="reason" label="Důvod" error={errors.reason}>
         <Select id="reason" {...register("reason")}>
           <option value="maintenance">Údržba</option>
-          <option value="holiday">Svátek</option>
+          <option value="holiday">Dovolená</option>
           <option value="private_event">Soukromá akce</option>
-          <option value="other">Jiné</option>
+          <option value="other">Ostatní</option>
         </Select>
       </Field>
       <Field name="note" label="Poznámka" error={errors.note}>
@@ -186,7 +188,7 @@ export function ShowerMinutesForm({ current }: { current: number }) {
 
 /** Delete control for a blocked slot. */
 export function DeleteBlockButton({ id }: { id: string }) {
-  const { form, submit } = useActionForm({
+  const { form, submit, serverError } = useActionForm({
     schema: deleteBlockedSlotSchema,
     action: deleteBlockedSlotAction,
     defaultValues: { id },
@@ -202,6 +204,7 @@ export function DeleteBlockButton({ id }: { id: string }) {
       >
         Odstranit
       </Button>
+      <FormFeedback error={serverError} />
     </form>
   );
 }

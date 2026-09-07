@@ -1,3 +1,4 @@
+import { withReservationOperation } from "./reservation-operations";
 import { logger } from "@/lib/helpers/logger";
 import { getReservation } from "./reservations";
 import {
@@ -22,11 +23,20 @@ import { issueAndSend } from "./invoices";
  */
 
 export async function fulfillReservation(reservationId: string): Promise<void> {
+  return withReservationOperation(reservationId, () =>
+    fulfillLocked(reservationId),
+  );
+}
+
+async function fulfillLocked(reservationId: string): Promise<void> {
   const reservation = await getReservation(reservationId);
   if (!reservation) {
     logger.warn("fulfillReservation: reservation not found", { reservationId });
     return;
   }
+
+  if (reservation.status !== "confirmed" || reservation.endsAt <= new Date())
+    return;
 
   // Step: payment : reaching here means it's confirmed/paid.
   await markStepSucceeded(reservationId, "payment");
@@ -78,21 +88,21 @@ export async function fulfillReservation(reservationId: string): Promise<void> {
     (step) => step.step === "code_delivered" && step.status === "succeeded",
   );
   let plaintext: string | null = null;
-  let codeReady = existing.some((c) => c.status !== "failed" && c.nukiAuthId);
+  let codeReady = existing.some(
+    (c) => ["scheduled", "active", "used"].includes(c.status) && c.nukiAuthId,
+  );
 
   const needsFreshCode =
     existing.length === 0 || !codeReady || (codeReady && !deliveryDone);
 
   if (needsFreshCode && !deliveryDone) {
-    if (codeReady) {
-      await Promise.allSettled(
-        existing
-          .filter((code) => code.nukiAuthId)
-          .map((code) => revokeAccessCode(code.id)),
-      );
-      codeReady = false;
-    }
     try {
+      // Every unresolved attempt must be revoked too: a timed-out create can
+      // finish at Nuki after this process has stopped waiting for it.
+      for (const code of existing.filter((code) => code.status !== "revoked")) {
+        await revokeAccessCode(code.id);
+      }
+      codeReady = false;
       const issued = await issueAccessCode({
         reservationId,
         startsAt: reservation.startsAt,

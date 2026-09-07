@@ -1,5 +1,6 @@
 "use server";
 
+import { adminDateTimeToInstant } from "@/lib/helpers/datetime";
 import { revalidatePath } from "next/cache";
 import { assertAdmin } from "@/lib/auth/guards";
 import { defineAction } from "@/lib/helpers/action";
@@ -13,7 +14,7 @@ import {
   type CreateBlockedSlotValues,
   type OpeningHoursValues,
 } from "@/lib/validations/schedule";
-import { schedule, notifications, members } from "@/lib/services";
+import { schedule } from "@/lib/services";
 
 /** Save opening hours for one weekday (converts "HH:mm" → minutes). */
 const saveOpeningHoursImpl = defineAction({
@@ -27,7 +28,7 @@ const saveOpeningHoursImpl = defineAction({
       slotMinutes: input.slotMinutes,
       isClosed: input.isClosed,
     });
-    revalidatePath("/admin/schedule");
+    revalidatePath("/", "layout");
   },
 });
 
@@ -36,8 +37,8 @@ const createBlockedSlotImpl = defineAction({
   schema: createBlockedSlotSchema,
   authorize: assertAdmin,
   handler: async (input, admin) => {
-    const start = new Date(input.startsAt);
-    const end = new Date(input.endsAt);
+    const start = adminDateTimeToInstant(input.startsAt);
+    const end = adminDateTimeToInstant(input.endsAt);
     await schedule.createBlockedSlot({
       startsAt: start,
       endsAt: end,
@@ -46,27 +47,7 @@ const createBlockedSlotImpl = defineAction({
       createdByAdminId: admin.id,
     });
 
-    // Closing a slot that already has bookings: cancel them and notify members.
-    const affected = await schedule.cancelOverlappingReservations(
-      start,
-      end,
-      input.note || "Termín byl uzavřen provozovatelem.",
-    );
-    for (const r of affected) {
-      const channels = r.userId ? await members.getMember(r.userId) : null;
-      await notifications.sendReservationClosure({
-        userId: r.userId ?? null,
-        reservationId: r.id,
-        name: r.contactName,
-        startsAt: r.startsAt,
-        email: r.contactEmail ?? channels?.user.email ?? null,
-        phone: r.contactPhone ?? channels?.profile?.phone ?? null,
-        notifyByWhatsapp: channels?.profile?.notifyByWhatsapp ?? true,
-        reason: input.note || undefined,
-      });
-    }
-
-    revalidatePath("/admin/schedule");
+    revalidatePath("/", "layout");
     revalidatePath("/admin/calendar");
   },
 });
@@ -76,7 +57,7 @@ const deleteBlockedSlotImpl = defineAction({
   authorize: assertAdmin,
   handler: async (input) => {
     await schedule.deleteBlockedSlot(input.id);
-    revalidatePath("/admin/schedule");
+    revalidatePath("/", "layout");
   },
 });
 
@@ -86,7 +67,7 @@ const saveShowerMinutesImpl = defineAction({
   authorize: assertAdmin,
   handler: async (input, admin) => {
     await schedule.setShowerMinutes(input.showerMinutes, admin.id);
-    revalidatePath("/admin/schedule");
+    revalidatePath("/", "layout");
   },
 });
 

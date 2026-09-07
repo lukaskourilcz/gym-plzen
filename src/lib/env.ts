@@ -80,7 +80,9 @@ function parse<T extends z.ZodTypeAny>(schema: T, source: unknown): z.infer<T> {
 }
 
 /** Server-only environment. Never import this from a client component. */
-export const env = parse(serverSchema, process.env);
+export const env = parse(serverSchema, Object.fromEntries(
+  Object.entries(process.env).map(([key, value]) => [key, value?.trim() || undefined]),
+));
 
 type ServerEnv = typeof env;
 

@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, gte, lt, lte, or } from "drizzle-orm";
+import { and, asc, eq, gt, lt, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   blockedSlot,
@@ -6,10 +6,11 @@ import {
   reservation,
   siteSetting,
 } from "@/lib/db/schema";
-import type { BlockedSlot, OpeningHours, Reservation } from "@/lib/db/types";
+import type { BlockedSlot, OpeningHours } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
 import {
   DEFAULT_SHOWER_MINUTES,
+  DEFAULT_SLOT_MINUTES,
   SHOWER_MINUTES_SETTING_KEY,
 } from "@/lib/config/schedule";
 
@@ -35,14 +36,16 @@ export async function setOpeningHours(input: {
   if (input.closeMinute <= input.openMinute && !input.isClosed) {
     throw new ActionError("Zavírací čas musí být po otevíracím čase.");
   }
+  return db.transaction(async (tx) => {
+  await tx.execute(sql`select pg_advisory_xact_lock(721834001)`);
   const now = new Date();
-  const [row] = await db
+  const [row] = await tx
     .insert(openingHours)
     .values({
       dayOfWeek: input.dayOfWeek,
       openMinute: input.openMinute,
       closeMinute: input.closeMinute,
-      slotMinutes: input.slotMinutes ?? 60,
+      slotMinutes: input.slotMinutes ?? DEFAULT_SLOT_MINUTES,
       isClosed: input.isClosed ? 1 : 0,
       updatedAt: now,
     })
@@ -51,13 +54,14 @@ export async function setOpeningHours(input: {
       set: {
         openMinute: input.openMinute,
         closeMinute: input.closeMinute,
-        slotMinutes: input.slotMinutes ?? 60,
+        slotMinutes: input.slotMinutes ?? DEFAULT_SLOT_MINUTES,
         isClosed: input.isClosed ? 1 : 0,
         updatedAt: now,
       },
     })
     .returning();
   return row!;
+  });
 }
 
 // ── Blocked slots ────────────────────────────────────────────────────────────
@@ -71,8 +75,8 @@ export async function listBlockedSlots(
     .from(blockedSlot)
     .where(
       and(
-        gte(blockedSlot.startsAt, rangeStart),
-        lte(blockedSlot.startsAt, rangeEnd),
+        lt(blockedSlot.startsAt, rangeEnd),
+        gt(blockedSlot.endsAt, rangeStart),
       ),
     )
     .orderBy(asc(blockedSlot.startsAt));
@@ -88,71 +92,33 @@ export async function createBlockedSlot(input: {
   if (input.endsAt <= input.startsAt) {
     throw new ActionError("Konec bloku musí být po jeho začátku.");
   }
-  const [row] = await db
-    .insert(blockedSlot)
-    .values({
-      startsAt: input.startsAt,
-      endsAt: input.endsAt,
-      reason: input.reason ?? "other",
-      note: input.note ?? null,
-      createdByAdminId: input.createdByAdminId ?? null,
-    })
-    .returning();
-  return row!;
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(721834001)`);
+    const [conflict] = await tx
+      .select({ id: reservation.id })
+      .from(reservation)
+      .where(
+        and(
+          lt(reservation.startsAt, input.endsAt),
+          gt(reservation.endsAt, input.startsAt),
+          or(
+            eq(reservation.status, "pending"),
+            eq(reservation.status, "confirmed"),
+          ),
+        ),
+      )
+      .limit(1);
+    if (conflict)
+      throw new ActionError(
+        "Čas obsahuje rezervaci. Nejdříve ji zrušte v přehledu rezervací a vyřešte případné vrácení platby.",
+      );
+    const [row] = await tx.insert(blockedSlot).values(input).returning();
+    return row!;
+  });
 }
 
 export async function deleteBlockedSlot(id: string): Promise<void> {
   await db.delete(blockedSlot).where(eq(blockedSlot.id, id));
-}
-
-// ── Closing time that already has bookings ───────────────────────────────────
-
-/** Active (pending/confirmed) reservations overlapping a time range. */
-export async function findOverlappingReservations(
-  start: Date,
-  end: Date,
-): Promise<Reservation[]> {
-  return db
-    .select()
-    .from(reservation)
-    .where(
-      and(
-        // start < otherEnd AND end > otherStart, using operators so Dates bind.
-        lt(reservation.startsAt, end),
-        gt(reservation.endsAt, start),
-        or(
-          eq(reservation.status, "pending"),
-          eq(reservation.status, "confirmed"),
-        ),
-      ),
-    );
-}
-
-/**
- * Cancel every active reservation overlapping a range (used when the admin
- * closes a day/time that already has bookings) and return the cancelled rows so
- * the caller can notify each affected member.
- */
-export async function cancelOverlappingReservations(
-  start: Date,
-  end: Date,
-  reason: string,
-): Promise<Reservation[]> {
-  const affected = await findOverlappingReservations(start, end);
-  if (affected.length === 0) return [];
-  const now = new Date();
-  for (const r of affected) {
-    await db
-      .update(reservation)
-      .set({
-        status: "cancelled",
-        cancelledAt: now,
-        cancelReason: reason,
-        updatedAt: now,
-      })
-      .where(eq(reservation.id, r.id));
-  }
-  return affected;
 }
 
 // ── Shower grace (admin-configurable) ────────────────────────────────────────
