@@ -5,7 +5,11 @@ import type { AccessCode } from "@/lib/db/types";
 import { generateKeypadCode, hashCode } from "@/lib/helpers/crypto";
 import { addMinutes } from "@/lib/helpers/datetime";
 import { logger } from "@/lib/helpers/logger";
-import { createKeypadCode, keypadCodeName, revokeKeypadCode } from "@/lib/integrations/nuki";
+import {
+  createKeypadCode,
+  keypadCodeName,
+  revokeKeypadCode,
+} from "@/lib/integrations/nuki";
 import { CODE_LEAD_MINUTES } from "@/lib/config/schedule";
 import { getShowerMinutes } from "./schedule";
 
@@ -98,9 +102,13 @@ export async function revokeAccessCode(id: string): Promise<void> {
     .limit(1);
   if (!row) return;
   if (row.status === "revoked") return;
-  if (row.failureReason !== "nuki_not_configured" && !(await revokeKeypadCode({
-    nukiAuthId: row.nukiAuthId, name: keypadCodeName(row.id),
-  }))) {
+  if (
+    row.failureReason !== "nuki_not_configured" &&
+    !(await revokeKeypadCode({
+      nukiAuthId: row.nukiAuthId,
+      name: keypadCodeName(row.id),
+    }))
+  ) {
     throw new Error("Nuki did not confirm access-code revocation.");
   }
   await db

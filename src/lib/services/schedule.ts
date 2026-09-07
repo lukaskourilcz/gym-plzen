@@ -37,30 +37,30 @@ export async function setOpeningHours(input: {
     throw new ActionError("Zavírací čas musí být po otevíracím čase.");
   }
   return db.transaction(async (tx) => {
-  await tx.execute(sql`select pg_advisory_xact_lock(721834001)`);
-  const now = new Date();
-  const [row] = await tx
-    .insert(openingHours)
-    .values({
-      dayOfWeek: input.dayOfWeek,
-      openMinute: input.openMinute,
-      closeMinute: input.closeMinute,
-      slotMinutes: input.slotMinutes ?? DEFAULT_SLOT_MINUTES,
-      isClosed: input.isClosed ? 1 : 0,
-      updatedAt: now,
-    })
-    .onConflictDoUpdate({
-      target: openingHours.dayOfWeek,
-      set: {
+    await tx.execute(sql`select pg_advisory_xact_lock(721834001)`);
+    const now = new Date();
+    const [row] = await tx
+      .insert(openingHours)
+      .values({
+        dayOfWeek: input.dayOfWeek,
         openMinute: input.openMinute,
         closeMinute: input.closeMinute,
         slotMinutes: input.slotMinutes ?? DEFAULT_SLOT_MINUTES,
         isClosed: input.isClosed ? 1 : 0,
         updatedAt: now,
-      },
-    })
-    .returning();
-  return row!;
+      })
+      .onConflictDoUpdate({
+        target: openingHours.dayOfWeek,
+        set: {
+          openMinute: input.openMinute,
+          closeMinute: input.closeMinute,
+          slotMinutes: input.slotMinutes ?? DEFAULT_SLOT_MINUTES,
+          isClosed: input.isClosed ? 1 : 0,
+          updatedAt: now,
+        },
+      })
+      .returning();
+    return row!;
   });
 }
 

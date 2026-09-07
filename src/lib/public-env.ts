@@ -49,11 +49,18 @@ function parsePublic() {
     NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID,
     NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
   };
-  const result = publicSchema.safeParse(Object.fromEntries(
-    Object.entries(source).map(([key, value]) => [key, value?.trim() || undefined]),
-  ));
+  const result = publicSchema.safeParse(
+    Object.fromEntries(
+      Object.entries(source).map(([key, value]) => [
+        key,
+        value?.trim() || undefined,
+      ]),
+    ),
+  );
   if (!result.success) {
-    throw new Error(`Invalid public environment: ${result.error.issues.map((issue) => issue.path.join(".")).join(", ")}`);
+    throw new Error(
+      `Invalid public environment: ${result.error.issues.map((issue) => issue.path.join(".")).join(", ")}`,
+    );
   }
   return result.data;
 }

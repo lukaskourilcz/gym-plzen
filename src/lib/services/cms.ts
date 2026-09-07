@@ -1,7 +1,7 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { contentBlock, page, siteSetting } from "@/lib/db/schema";
-import type { ContentBlock, Page } from "@/lib/db/types";
+import { contentBlock, siteSetting } from "@/lib/db/schema";
+import type { ContentBlock } from "@/lib/db/types";
 import { publicEnv } from "@/lib/public-env";
 
 /**
@@ -34,42 +34,6 @@ export async function getBlock(
     .where(and(eq(contentBlock.key, key), eq(contentBlock.locale, locale)))
     .limit(1);
   return row ?? null;
-}
-
-/** Read every block in a group (e.g. all "home.*" blocks) for the editor. */
-export async function getBlocksByGroup(
-  groupName: string,
-  locale = DEFAULT_LOCALE,
-): Promise<ContentBlock[]> {
-  return db
-    .select()
-    .from(contentBlock)
-    .where(
-      and(
-        eq(contentBlock.groupName, groupName),
-        eq(contentBlock.locale, locale),
-      ),
-    )
-    .orderBy(asc(contentBlock.sortOrder));
-}
-
-/** All blocks (admin index), ordered by group then sort order. */
-export async function listBlocks(
-  locale = DEFAULT_LOCALE,
-): Promise<ContentBlock[]> {
-  return (
-    db
-      .select()
-      .from(contentBlock)
-      .where(eq(contentBlock.locale, locale))
-      // `key` is the final tiebreaker so ordering is deterministic when several
-      // blocks share a group and sortOrder.
-      .orderBy(
-        asc(contentBlock.groupName),
-        asc(contentBlock.sortOrder),
-        asc(contentBlock.key),
-      )
-  );
 }
 
 /**
@@ -121,21 +85,6 @@ export async function upsertBlock(input: {
     })
     .returning();
   return row!;
-}
-
-// ── Pages ───────────────────────────────────────────────────────────────────
-
-export async function getPage(slug: string): Promise<Page | null> {
-  const [row] = await db
-    .select()
-    .from(page)
-    .where(eq(page.slug, slug))
-    .limit(1);
-  return row ?? null;
-}
-
-export async function listPages(): Promise<Page[]> {
-  return db.select().from(page).orderBy(asc(page.sortOrder));
 }
 
 // ── Site settings (global key/value) ────────────────────────────────────────

@@ -1,12 +1,18 @@
-import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gt, gte, inArray, lt, ne, sql } from "drizzle-orm";
 import { db, type Transaction } from "@/lib/db";
-import { payment, reservation, reservationPipeline } from "@/lib/db/schema";
+import {
+  accessCode,
+  payment,
+  reservation,
+  reservationPipeline,
+} from "@/lib/db/schema";
 import type { NewReservation, Reservation } from "@/lib/db/types";
 import { databaseErrorCode } from "@/lib/helpers/database-error";
 import { withReservationOperation } from "./reservation-operations";
 import { releaseForReservation } from "./vouchers";
 import { raiseAlert } from "./alerts";
 import { sendReservationClosure } from "./notifications";
+import { logger } from "@/lib/helpers/logger";
 import { ActionError } from "@/lib/helpers/action";
 import { checkAvailability } from "./availability";
 import { initPipeline } from "./pipeline";
@@ -105,11 +111,21 @@ export async function createReservation(
 /** Mark a reservation as confirmed (e.g. after successful payment) and kick off the pipeline. */
 export async function confirmReservation(id: string): Promise<boolean> {
   return db.transaction(async (tx) => {
-    const [existing] = await tx.select().from(reservation).where(eq(reservation.id, id)).limit(1);
-    if (existing?.userId)
+    const [snapshot] = await tx
+      .select()
+      .from(reservation)
+      .where(eq(reservation.id, id))
+      .limit(1);
+    if (snapshot?.userId)
       await tx.execute(
-        sql`select pg_advisory_xact_lock(hashtext(${`loyalty:${existing.userId}`}))`,
+        sql`select pg_advisory_xact_lock(hashtext(${`loyalty:${snapshot.userId}`}))`,
       );
+    const [existing] = await tx
+      .select()
+      .from(reservation)
+      .where(eq(reservation.id, id))
+      .for("update")
+      .limit(1);
     const [updated] = await tx
       .update(reservation)
       .set({ status: "confirmed", updatedAt: new Date() })
@@ -141,24 +157,41 @@ export async function cancelReservation(params: {
   id: string;
   reason?: string;
   byAdminId?: string;
+  onlyIfPending?: boolean;
 }): Promise<void> {
   return withReservationOperation(params.id, async () => {
     const current = await getReservation(params.id);
     if (!current) throw new ActionError("Rezervace nebyla nalezena.");
-    await db.transaction(async (tx) => {
-      await tx
+    if (params.onlyIfPending && current.status !== "pending") return;
+    const cancelled = await db.transaction(async (tx) => {
+      if (current.userId)
+        await tx.execute(
+          sql`select pg_advisory_xact_lock(hashtext(${`loyalty:${current.userId}`}))`,
+        );
+      const [updated] = await tx
         .update(reservation)
         .set({
           status: "cancelled",
-          cancelledAt: new Date(),
-          cancelReason: params.reason ?? null,
+          cancelledAt: current.cancelledAt ?? new Date(),
+          cancelReason: params.reason ?? current.cancelReason,
           updatedAt: new Date(),
         })
-        .where(eq(reservation.id, params.id));
+        .where(
+          and(
+            eq(reservation.id, params.id),
+            params.onlyIfPending
+              ? eq(reservation.status, "pending")
+              : undefined,
+          ),
+        )
+        .returning({ id: reservation.id });
+      if (!updated) return false;
       await tx
         .delete(reservationPipeline)
         .where(eq(reservationPipeline.reservationId, params.id));
+      return true;
     });
+    if (!cancelled) return;
     await releaseForReservation(params.id);
     const codes = await listCodesForReservation(params.id);
     const revocations = await Promise.allSettled(
@@ -184,7 +217,12 @@ export async function cancelReservation(params: {
         email: current.contactEmail,
         phone: current.contactPhone,
         reason: params.reason,
-      });
+      }).catch((error) =>
+        logger.error(error, {
+          where: "cancellation.notification",
+          reservationId: params.id,
+        }),
+      );
       const [paid] = await db
         .select({ id: payment.id })
         .from(payment)
@@ -295,4 +333,23 @@ export async function listRecent(limit = 100): Promise<Reservation[]> {
     .from(reservation)
     .orderBy(desc(reservation.startsAt))
     .limit(limit);
+}
+
+/** Retry cancellation cleanup after a temporarily unreachable lock. */
+export async function cancellationsAwaitingRevocation(
+  limit = 5,
+): Promise<string[]> {
+  const rows = await db
+    .selectDistinct({ id: reservation.id })
+    .from(reservation)
+    .innerJoin(accessCode, eq(accessCode.reservationId, reservation.id))
+    .where(
+      and(
+        eq(reservation.status, "cancelled"),
+        ne(accessCode.status, "revoked"),
+        gt(accessCode.validUntil, new Date()),
+      ),
+    )
+    .limit(limit);
+  return rows.map((row) => row.id);
 }

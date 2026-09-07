@@ -308,11 +308,3 @@ export async function getInvoice(id: string): Promise<Invoice | null> {
     .limit(1);
   return row ?? null;
 }
-
-export async function listInvoicesForUser(userId: string): Promise<Invoice[]> {
-  return db
-    .select()
-    .from(invoice)
-    .where(eq(invoice.userId, userId))
-    .orderBy(desc(invoice.issuedAt));
-}

@@ -73,6 +73,8 @@ const nextConfig: NextConfig = {
 // safe to keep enabled in every environment. See NEEDED.md for setup.
 export default withSentryConfig(nextConfig, {
   silent: !process.env.CI,
+  telemetry: false,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   webpack: { treeshake: { removeDebugLogging: true } },

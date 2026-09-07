@@ -1,4 +1,5 @@
-import { and, eq, gt, isNull, lte, or } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
+import { and, eq, gt, isNull, lte, notExists, or } from "drizzle-orm";
 import { db, type Database, type Transaction } from "@/lib/db";
 import { reservationPipeline, reservation } from "@/lib/db/schema";
 import type { ReservationPipeline } from "@/lib/db/types";
@@ -109,6 +110,7 @@ export async function markStepFailed(
 
 /** Steps that are due for a retry now (consumed by the watchdog cron). */
 export async function dueForRetry(limit = 50): Promise<ReservationPipeline[]> {
+  const blockedStep = alias(reservationPipeline, "blocked_step");
   return db
     .select({ pipeline: reservationPipeline })
     .from(reservationPipeline)
@@ -120,6 +122,23 @@ export async function dueForRetry(limit = 50): Promise<ReservationPipeline[]> {
       and(
         eq(reservation.status, "confirmed"),
         gt(reservation.endsAt, new Date()),
+        notExists(
+          db
+            .select({ id: blockedStep.id })
+            .from(blockedStep)
+            .where(
+              and(
+                eq(blockedStep.reservationId, reservation.id),
+                or(
+                  eq(blockedStep.status, "failed"),
+                  and(
+                    eq(blockedStep.status, "retrying"),
+                    gt(blockedStep.nextRetryAt, new Date()),
+                  ),
+                ),
+              ),
+            ),
+        ),
         or(
           eq(reservationPipeline.status, "retrying"),
           eq(reservationPipeline.status, "pending"),

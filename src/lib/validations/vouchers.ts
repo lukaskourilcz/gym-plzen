@@ -1,7 +1,13 @@
 import { z } from "zod";
-import { uuidSchema, dateTimeStringSchema, increasingDateTimeRange } from "./common";
+import {
+  uuidSchema,
+  dateTimeStringSchema,
+  increasingDateTimeRange,
+} from "./common";
 
-const optionalDateTime = z.union([z.literal(""), dateTimeStringSchema]).optional();
+const optionalDateTime = z
+  .union([z.literal(""), dateTimeStringSchema])
+  .optional();
 
 export const createVoucherSchema = z
   .object({

@@ -211,7 +211,12 @@ export function localInputToInstant(
 export function adminDateTimeToInstant(value: string): Date {
   if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))
     return localInputToInstant(value);
-  if (!isDateKey(value.slice(0, 10)) || !/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,3})?)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/.test(value))
+  if (
+    !isDateKey(value.slice(0, 10)) ||
+    !/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,3})?)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/.test(
+      value,
+    )
+  )
     throw new Error("Invalid date-time zone.");
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) throw new Error("Invalid date-time.");

@@ -11,8 +11,3 @@ export function groupBy<T>(
     return acc;
   }, {});
 }
-
-/** Sum a numeric field across items. */
-export function sumBy<T>(items: T[], value: (item: T) => number): number {
-  return items.reduce((total, item) => total + value(item), 0);
-}

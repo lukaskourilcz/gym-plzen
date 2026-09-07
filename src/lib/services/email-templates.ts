@@ -122,9 +122,4 @@ export async function sendTemplateTest(params: {
   });
 }
 
-export function getEmailTemplatePreview(id: EmailTemplateId): EmailTemplate {
-  const definition = getEmailTemplateDefinition(id);
-  return renderEmailTemplateText(definition.fallback, TEST_VARIABLES);
-}
-
 export { isSupabaseAuthTemplateSyncConfigured };

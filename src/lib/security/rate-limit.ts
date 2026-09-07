@@ -5,6 +5,8 @@ interface WindowRecord {
   resetsAt: number;
 }
 const windows = new Map<string, WindowRecord>();
+const MAX_WINDOWS = 10_000;
+let nextCleanupAt = 0;
 
 /**
  * Small process-local backstop for server actions. Supabase/Stripe rate limits
@@ -19,7 +21,13 @@ export function takeRateLimit(
     .update(`${scope}:${identifier}`)
     .digest("hex");
   const now = Date.now();
+  if (now >= nextCleanupAt || windows.size >= MAX_WINDOWS) {
+    for (const [storedKey, record] of windows)
+      if (record.resetsAt <= now) windows.delete(storedKey);
+    nextCleanupAt = now + 60_000;
+  }
   const current = windows.get(key);
+  if (!current && windows.size >= MAX_WINDOWS) return false;
   if (!current || current.resetsAt <= now) {
     windows.set(key, { count: 1, resetsAt: now + options.windowMs });
     return true;

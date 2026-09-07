@@ -11,13 +11,18 @@ import {
  * Opening hours for one weekday. Times are validated as "HH:mm" strings; the
  * action converts them to minutes-from-midnight before saving.
  */
-export const openingHoursSchema = z.object({
-  dayOfWeek: z.number().int().min(0).max(6),
-  open: hhmmSchema,
-  close: hhmmSchema,
-  slotMinutes: z.number().int().min(15).max(240),
-  isClosed: z.boolean(),
-}).refine((value) => value.isClosed || value.close > value.open, { path: ["close"], message: "Zavírací čas musí být po otevíracím čase." });
+export const openingHoursSchema = z
+  .object({
+    dayOfWeek: z.number().int().min(0).max(6),
+    open: hhmmSchema,
+    close: hhmmSchema,
+    slotMinutes: z.number().int().min(15).max(240),
+    isClosed: z.boolean(),
+  })
+  .refine((value) => value.isClosed || value.close > value.open, {
+    path: ["close"],
+    message: "Zavírací čas musí být po otevíracím čase.",
+  });
 
 export const createBlockedSlotSchema = z
   .object({

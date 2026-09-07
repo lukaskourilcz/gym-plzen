@@ -109,10 +109,6 @@ export const EMAIL_TEMPLATE_DEFINITIONS: readonly EmailTemplateDefinition[] = [
   },
 ];
 
-export function isEmailTemplateId(value: string): value is EmailTemplateId {
-  return (EMAIL_TEMPLATE_IDS as readonly string[]).includes(value);
-}
-
 export function emailTemplateSettingKey(id: EmailTemplateId): string {
   return `messages.email.${id}`;
 }

@@ -56,28 +56,6 @@ export async function ensureStripeCustomer(params: {
   return customer.id;
 }
 
-/** Create a Checkout session for a subscription to a plan's Stripe price. */
-export async function createSubscriptionCheckout(params: {
-  customerId: string;
-  priceId: string;
-  successUrl: string;
-  cancelUrl: string;
-  metadata?: Record<string, string>;
-}): Promise<Stripe.Checkout.Session> {
-  return stripe().checkout.sessions.create({
-    mode: "subscription",
-    // Czech customers, Czech payment page and Stripe receipt.
-    locale: "cs",
-    customer: params.customerId,
-    line_items: [{ price: params.priceId, quantity: 1 }],
-    success_url: params.successUrl,
-    cancel_url: params.cancelUrl,
-    metadata: params.metadata,
-    // Enable Apple Pay / Google Pay automatically alongside cards.
-    payment_method_types: ["card"],
-  });
-}
-
 /** Create a Checkout session for a one-off single-session payment. */
 export async function createOneOffCheckout(params: {
   customerId?: string;

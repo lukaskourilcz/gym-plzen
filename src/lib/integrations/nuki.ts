@@ -69,18 +69,27 @@ async function listKeypadAuths(): Promise<NukiAuth[]> {
 export async function createKeypadCode(
   params: CreateCodeParams,
 ): Promise<CreateCodeResult> {
-  if (!isNukiConfigured()) return { created: false, error: "nuki_not_configured" };
-  if (!/^[1-9]{6}$/.test(String(params.code)) || String(params.code).startsWith("12") ||
-      params.name.length > 20 || params.allowedUntil <= params.allowedFrom) {
+  if (!isNukiConfigured())
+    return { created: false, error: "nuki_not_configured" };
+  if (
+    !/^[1-9]{6}$/.test(String(params.code)) ||
+    String(params.code).startsWith("12") ||
+    params.name.length > 20 ||
+    params.allowedUntil <= params.allowedFrom
+  ) {
     return { created: false, error: "invalid_keypad_code" };
   }
   try {
     // Do not blindly retry a mutation after a lost response. The persisted,
     // unique name lets the next pipeline attempt find and revoke an orphan.
     await httpRequest(`${API_BASE}/smartlock/${smartlockId()}/auth`, {
-      method: "PUT", headers: authHeader(), timeoutMs: 5_000,
+      method: "PUT",
+      headers: authHeader(),
+      timeoutMs: 5_000,
       json: {
-        name: params.name, type: NUKI_TYPE_KEYPAD, code: params.code,
+        name: params.name,
+        type: NUKI_TYPE_KEYPAD,
+        code: params.code,
         remoteAllowed: false,
         allowedFromDate: params.allowedFrom.toISOString(),
         allowedUntilDate: params.allowedUntil.toISOString(),
@@ -88,11 +97,25 @@ export async function createKeypadCode(
     });
     for (let attempt = 0; attempt < 5; attempt++) {
       if (attempt) await new Promise((resolve) => setTimeout(resolve, 1_000));
-      const auth = (await listKeypadAuths()).find((item) => item.name === params.name);
-      if (auth?.error) return { created: false, nukiAuthId: auth.id, error: "nuki_operation_failed" };
-      if (auth && !auth.operationId && auth.enabled && auth.type === NUKI_TYPE_KEYPAD &&
-          Date.parse(auth.allowedFromDate ?? "") === params.allowedFrom.getTime() &&
-          Date.parse(auth.allowedUntilDate ?? "") === params.allowedUntil.getTime()) {
+      const auth = (await listKeypadAuths()).find(
+        (item) => item.name === params.name,
+      );
+      if (auth?.error)
+        return {
+          created: false,
+          nukiAuthId: auth.id,
+          error: "nuki_operation_failed",
+        };
+      if (
+        auth &&
+        !auth.operationId &&
+        auth.enabled &&
+        auth.type === NUKI_TYPE_KEYPAD &&
+        Date.parse(auth.allowedFromDate ?? "") ===
+          params.allowedFrom.getTime() &&
+        Date.parse(auth.allowedUntilDate ?? "") ===
+          params.allowedUntil.getTime()
+      ) {
         return { created: true, nukiAuthId: auth.id };
       }
     }
@@ -111,7 +134,9 @@ export async function revokeKeypadCode(params: {
   if (!isNukiConfigured()) return false;
   try {
     const auths = await listKeypadAuths();
-    const matches = auths.filter((item) => item.id === params.nukiAuthId || item.name === params.name);
+    const matches = auths.filter(
+      (item) => item.id === params.nukiAuthId || item.name === params.name,
+    );
     if (!matches.length) {
       // An unresolved create can still be queued. Absence without a known ID
       // is ambiguous, so require operator reconciliation instead of guessing
@@ -120,14 +145,22 @@ export async function revokeKeypadCode(params: {
     }
     if (matches.some((item) => item.operationId)) return false;
     for (const auth of matches) {
-      await httpRequest(`${API_BASE}/smartlock/${smartlockId()}/auth/${encodeURIComponent(auth.id)}`, {
-        method: "DELETE", headers: authHeader(), timeoutMs: 5_000,
-      });
+      await httpRequest(
+        `${API_BASE}/smartlock/${smartlockId()}/auth/${encodeURIComponent(auth.id)}`,
+        {
+          method: "DELETE",
+          headers: authHeader(),
+          timeoutMs: 5_000,
+        },
+      );
     }
     for (let attempt = 0; attempt < 5; attempt++) {
       if (attempt) await new Promise((resolve) => setTimeout(resolve, 1_000));
       const remaining = await listKeypadAuths();
-      if (!remaining.some((item) => matches.some((match) => match.id === item.id))) return true;
+      if (
+        !remaining.some((item) => matches.some((match) => match.id === item.id))
+      )
+        return true;
     }
     return false;
   } catch (error) {

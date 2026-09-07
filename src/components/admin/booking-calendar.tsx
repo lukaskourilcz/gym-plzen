@@ -132,7 +132,11 @@ export function BookingCalendar({
 
   return (
     <div className="admin-booking-calendar" aria-busy={loading || busy}>
-      {loading ? <p role="status" className="mb-3 text-sm text-muted-foreground">Načítám rezervace…</p> : null}
+      {loading ? (
+        <p role="status" className="mb-3 text-sm text-muted-foreground">
+          Načítám rezervace…
+        </p>
+      ) : null}
       <FullCalendar
         ref={calendarRef}
         plugins={[

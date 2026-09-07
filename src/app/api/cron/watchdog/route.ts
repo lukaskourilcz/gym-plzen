@@ -15,12 +15,22 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  const deadline = Date.now() + 240_000;
   const released = await reservations.releaseExpiredPendingReservations();
-  const due = await pipeline.dueForRetry(50);
+  for (const id of await reservations.cancellationsAwaitingRevocation()) {
+    if (Date.now() >= deadline) break;
+    try {
+      await reservations.cancelReservation({ id });
+    } catch (error) {
+      logger.error(error, { where: "cron.revoke", reservationId: id });
+    }
+  }
+  const due = await pipeline.dueForRetry(15);
   const reservationIds = [...new Set(due.map((d) => d.reservationId))];
 
   let processed = 0;
   for (const id of reservationIds) {
+    if (Date.now() >= deadline) break;
     try {
       await fulfillment.fulfillReservation(id);
       processed++;
@@ -29,13 +39,14 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Fire-and-forget heartbeat to UptimeRobot. Never blocks the watchdog or
+  // Await the bounded heartbeat so serverless shutdown cannot discard it. It never
   // fails the request; if the cron itself throws before reaching this line,
   // UptimeRobot's grace period expires and the alert fires — that's the point.
   if (env.UPTIMEROBOT_HEARTBEAT_URL) {
-    fetch(env.UPTIMEROBOT_HEARTBEAT_URL, {
+    await fetch(env.UPTIMEROBOT_HEARTBEAT_URL, {
       method: "GET",
       cache: "no-store",
+      signal: AbortSignal.timeout(5_000),
     }).catch((e) =>
       logger.warn("uptimerobot heartbeat failed", {
         error: e instanceof Error ? e.message : "unknown",

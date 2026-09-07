@@ -121,7 +121,6 @@ async function handleStripeEvent(event: Stripe.Event): Promise<void> {
       await memberships.markCheckoutPaymentFailed(session.id, event.type);
       const reservationId = session.metadata?.reservationId;
       if (reservationId) {
-        await vouchers.releaseForReservation(reservationId);
         const reservation = await reservations.getReservation(reservationId);
         if (
           reservation?.status === "pending" &&
@@ -130,6 +129,7 @@ async function handleStripeEvent(event: Stripe.Event): Promise<void> {
           await reservations.cancelReservation({
             id: reservationId,
             reason: event.type,
+            onlyIfPending: true,
           });
         }
       }

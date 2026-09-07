@@ -33,8 +33,3 @@ export function toE164(
   if (!/^\d{8,15}$/.test(digits)) return null;
   return `+${digits}`;
 }
-
-/** True when a string is already a valid E.164 number. */
-export function isE164(value: string): boolean {
-  return /^\+\d{8,15}$/.test(value);
-}

@@ -59,10 +59,17 @@ export function BookingCalendar({
   const currentMonth = todayKey.slice(0, 7);
   const maxMonth = maxDateKey.slice(0, 7);
   const pendingGridFocus = useRef(false);
-  const tabStopDate = selectedDateKey ?? grid.find((cell) => cell.inMonth && cell.dateKey >= todayKey && cell.dateKey <= maxDateKey)?.dateKey;
+  const tabStopDate =
+    selectedDateKey ??
+    grid.find(
+      (cell) =>
+        cell.inMonth && cell.dateKey >= todayKey && cell.dateKey <= maxDateKey,
+    )?.dateKey;
   useEffect(() => {
     if (pendingGridFocus.current && tabStopDate) {
-      gridRef.current?.querySelector<HTMLElement>(`[data-date="${tabStopDate}"]`)?.focus();
+      gridRef.current
+        ?.querySelector<HTMLElement>(`[data-date="${tabStopDate}"]`)
+        ?.focus();
       pendingGridFocus.current = false;
     }
   }, [monthKey, tabStopDate]);
@@ -220,9 +227,9 @@ export function BookingCalendar({
               ref={gridRef}
               role="grid"
               aria-label={`Kalendář, ${displayDate(`${monthKey}-01`, { month: "long", year: "numeric" })}`}
-              className="mt-6 rounded-lg border border-border bg-card p-2 shadow-sm sm:p-4"
+              className="-mx-4 mt-6 rounded-lg border border-border bg-card p-0 shadow-sm sm:mx-0 sm:p-4"
             >
-              <div role="row" className="grid grid-cols-7 gap-1">
+              <div role="row" className="grid grid-cols-7 gap-0 sm:gap-1">
                 {weekdays.map((day) => (
                   <div
                     key={day}
@@ -238,7 +245,7 @@ export function BookingCalendar({
                   <div
                     key={weekIndex}
                     role="row"
-                    className="grid grid-cols-7 gap-1"
+                    className="grid grid-cols-7 gap-0 sm:gap-1"
                   >
                     {grid
                       .slice(weekIndex * 7, weekIndex * 7 + 7)
@@ -318,8 +325,16 @@ export function BookingCalendar({
                   </div>
                 ))}
               </div>
-              <div className="mt-4 border-t border-border pt-4 text-sm text-muted-foreground">
-                <span>Rezervovat lze do {displayDate(maxDateKey, { day: "numeric", month: "long", year: "numeric" })}.</span>
+              <div className="mt-4 border-t border-border px-2 py-4 text-sm sm:px-0 sm:pb-0 text-muted-foreground">
+                <span>
+                  Rezervovat lze do{" "}
+                  {displayDate(maxDateKey, {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                  .
+                </span>
               </div>
             </div>
           </>

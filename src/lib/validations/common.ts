@@ -45,10 +45,7 @@ export const dateTimeStringSchema = z
 /** "HH:mm" time-of-day string (kept as string; handler converts to minutes). */
 export const hhmmSchema = z
   .string()
-  .regex(
-    /^(?:[01]\d|2[0-3]):[0-5]\d$/,
-    "Zadejte platný čas ve formátu HH:MM.",
-  );
+  .regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/, "Zadejte platný čas ve formátu HH:MM.");
 
 /** Non-negative integer amount in the smallest currency unit (haléř). */
 export const priceCentsSchema = z
@@ -68,9 +65,14 @@ export function optionalText(max = 1000) {
 }
 
 /** Public slot selections must carry an explicit offset. */
-export const slotInstantSchema = z.string().datetime({ offset: true, message: "Neplatný termín." });
+export const slotInstantSchema = z
+  .string()
+  .datetime({ offset: true, message: "Neplatný termín." });
 
 export function increasingDateTimeRange(start: string, end: string): boolean {
-  try { return adminDateTimeToInstant(end) > adminDateTimeToInstant(start); }
-  catch { return false; }
+  try {
+    return adminDateTimeToInstant(end) > adminDateTimeToInstant(start);
+  } catch {
+    return false;
+  }
 }

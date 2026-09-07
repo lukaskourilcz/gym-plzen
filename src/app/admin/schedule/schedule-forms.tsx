@@ -68,36 +68,51 @@ export function OpeningHoursRow({
         {...register("dayOfWeek", { valueAsNumber: true })}
       />
       <div className="w-20 pb-2 font-medium">{DAY_NAMES[dayOfWeek]}</div>
-      <div>
-        <Field name="open" controlId={`open-${dayOfWeek}`} label="Otevřeno" error={formState.errors.open}>
-        <Input
-          id={`open-${dayOfWeek}`}
-          type="time"
-          className="w-32"
-          {...register("open")}
-        />
+      <div className="[&>div]:mb-0">
+        <Field
+          name="open"
+          controlId={`open-${dayOfWeek}`}
+          label="Otevřeno"
+          error={formState.errors.open}
+        >
+          <Input
+            id={`open-${dayOfWeek}`}
+            type="time"
+            className="w-32"
+            {...register("open")}
+          />
         </Field>
       </div>
-      <div>
-        <Field name="close" controlId={`close-${dayOfWeek}`} label="Zavřeno" error={formState.errors.close}>
-        <Input
-          id={`close-${dayOfWeek}`}
-          type="time"
-          className="w-32"
-          {...register("close")}
-        />
+      <div className="[&>div]:mb-0">
+        <Field
+          name="close"
+          controlId={`close-${dayOfWeek}`}
+          label="Zavřeno"
+          error={formState.errors.close}
+        >
+          <Input
+            id={`close-${dayOfWeek}`}
+            type="time"
+            className="w-32"
+            {...register("close")}
+          />
         </Field>
       </div>
-      <div>
-        <Field name="slotMinutes" controlId={`slot-${dayOfWeek}`} label="Slot (min)" error={formState.errors.slotMinutes}>
-        <Input
-          id={`slot-${dayOfWeek}`}
-          type="number"
-          min={15}
-          step={15}
-          className="w-24"
-          {...register("slotMinutes", { valueAsNumber: true })}
-        />
+      <div className="[&>div]:mb-0">
+        <Field
+          name="slotMinutes"
+          controlId={`slot-${dayOfWeek}`}
+          label="Slot (min)"
+          error={formState.errors.slotMinutes}
+        >
+          <Input
+            id={`slot-${dayOfWeek}`}
+            type="number"
+            min={15}
+            step={15}
+            className="w-24"
+            {...register("slotMinutes", { valueAsNumber: true })}
+          />
         </Field>
       </div>
       <label className="flex min-h-11 items-center gap-2 pb-2 text-sm">

@@ -22,8 +22,3 @@ export function err<E = string>(
 ): Result<never, E> {
   return { ok: false, error, fieldErrors };
 }
-
-/** Narrowing helpers. */
-export function isOk<T, E>(r: Result<T, E>): r is { ok: true; data: T } {
-  return r.ok;
-}

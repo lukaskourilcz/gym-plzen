@@ -1,9 +1,10 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
+import { openingHours } from "@/lib/db/schema";
 import { publicEnv } from "@/lib/public-env";
 import { logger } from "@/lib/helpers/logger";
 import { ActionError } from "@/lib/helpers/action";
-import { dateKeyInTimeZone } from "@/lib/helpers/datetime";
+import { dateKeyInTimeZone, dayOfWeek } from "@/lib/helpers/datetime";
 import {
   isStripeConfigured,
   ensureStripeCustomer,
@@ -31,6 +32,7 @@ import {
   getBookingHorizonDays,
   isWithinBookingHorizon,
   resolveBookableSlot,
+  resolveSlotFromHours,
 } from "./slots";
 import {
   claimVoucher,
@@ -160,6 +162,20 @@ export async function startBooking(params: {
           "Platby zatím nejsou nastavené. Zkuste to prosím později.",
         );
       const originalPriceCents = isFree ? 0 : entryPriceCents;
+      await tx.execute(sql`select pg_advisory_xact_lock_shared(721834001)`);
+      const [hours] = await tx
+        .select()
+        .from(openingHours)
+        .where(eq(openingHours.dayOfWeek, dayOfWeek(startsAt)))
+        .limit(1);
+      const currentSlot = hours
+        ? resolveSlotFromHours(startsAt, {
+            ...hours,
+            isClosed: hours.isClosed === 1,
+          })
+        : null;
+      if (!currentSlot || currentSlot.endsAt.getTime() !== endsAt.getTime())
+        throw new ActionError("Rozvrh se změnil. Vyberte prosím termín znovu.");
       const reservation = await createReservation(
         {
           userId: params.userId,
@@ -175,7 +191,12 @@ export async function startBooking(params: {
     },
   );
   if (isFree) {
-    await fulfillReservation(reservation.id).catch((error) => logger.error(error, { where: "booking.fulfillment", reservationId: reservation.id }));
+    await fulfillReservation(reservation.id).catch((error) =>
+      logger.error(error, {
+        where: "booking.fulfillment",
+        reservationId: reservation.id,
+      }),
+    );
     return { kind: "free", reservationId: reservation.id };
   }
 
@@ -209,7 +230,12 @@ export async function startBooking(params: {
       throw new ActionError("Rezervaci se nepodařilo potvrdit.");
     }
     await redeemForReservation(reservation.id);
-    await fulfillReservation(reservation.id).catch((error) => logger.error(error, { where: "booking.fulfillment", reservationId: reservation.id }));
+    await fulfillReservation(reservation.id).catch((error) =>
+      logger.error(error, {
+        where: "booking.fulfillment",
+        reservationId: reservation.id,
+      }),
+    );
     return { kind: "free", reservationId: reservation.id };
   }
 
@@ -250,17 +276,31 @@ export async function startBooking(params: {
 
     if (!session.url) throw new ActionError("Nepodařilo se zahájit platbu.");
     await recordPayment({
-      userId: params.userId, reservationId: reservation.id, type: "one_off",
-      status: "pending", amountCents: priceCents, currency: "czk",
+      userId: params.userId,
+      reservationId: reservation.id,
+      type: "one_off",
+      status: "pending",
+      amountCents: priceCents,
+      currency: "czk",
       stripeCheckoutSessionId: session.id,
     });
   } catch (error) {
-    if (session) await stripe().checkout.sessions.expire(session.id).catch((expireError) =>
-      logger.error(expireError, { where: "booking.expireFailedCheckout", reservationId: reservation.id }),
-    );
+    if (session)
+      await stripe()
+        .checkout.sessions.expire(session.id)
+        .catch((expireError) =>
+          logger.error(expireError, {
+            where: "booking.expireFailedCheckout",
+            reservationId: reservation.id,
+          }),
+        );
     await Promise.allSettled([
       releaseForReservation(reservation.id),
-      cancelReservation({ id: reservation.id, reason: "checkout_failed" }),
+      cancelReservation({
+        id: reservation.id,
+        reason: "checkout_failed",
+        onlyIfPending: true,
+      }),
     ]);
     throw error;
   }

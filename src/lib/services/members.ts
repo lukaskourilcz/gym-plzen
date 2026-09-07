@@ -1,8 +1,9 @@
-import { count, desc, eq, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { db, type Database, type Transaction } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
 import type { Profile } from "@/lib/db/types";
 import { toE164 } from "@/lib/helpers/phone";
+import { isReservedDemoEmail } from "@/lib/auth/demo-policy";
 import { ActionError } from "@/lib/helpers/action";
 
 /**
@@ -127,12 +128,15 @@ export async function getMember(
 export type MemberRole = "member" | "admin";
 
 /** How many administrators exist right now. */
-export async function countAdmins(database: Database | Transaction = db): Promise<number> {
-  const [row] = await database
-    .select({ value: count() })
+export async function countAdmins(
+  database: Database | Transaction = db,
+): Promise<number> {
+  const rows = await database
+    .select({ email: profiles.email })
     .from(profiles)
     .where(eq(profiles.role, "admin"));
-  return row?.value ?? 0;
+  return rows.filter((row) => row.email && !isReservedDemoEmail(row.email))
+    .length;
 }
 
 /**
@@ -146,26 +150,30 @@ export async function setRole(
   role: MemberRole,
 ): Promise<Profile> {
   return db.transaction(async (tx) => {
-  await tx.execute(sql`select pg_advisory_xact_lock(721834002)`);
-  if (role !== "admin") {
-    const [target] = await tx
-      .select({ role: profiles.role })
-      .from(profiles)
-      .where(eq(profiles.id, userId))
-      .limit(1);
-    if (target?.role === "admin" && (await countAdmins(tx)) <= 1) {
-      throw new ActionError(
-        "Nelze odebrat posledního správce. Nejdřív nastavte jiného.",
-      );
+    await tx.execute(sql`select pg_advisory_xact_lock(721834002)`);
+    if (role !== "admin") {
+      const [target] = await tx
+        .select({ role: profiles.role, email: profiles.email })
+        .from(profiles)
+        .where(eq(profiles.id, userId))
+        .limit(1);
+      if (
+        target?.role === "admin" &&
+        !isReservedDemoEmail(target.email) &&
+        (await countAdmins(tx)) <= 1
+      ) {
+        throw new ActionError(
+          "Nelze odebrat posledního správce. Nejdřív nastavte jiného.",
+        );
+      }
     }
-  }
 
-  const [updated] = await tx
-    .update(profiles)
-    .set({ role, updatedAt: new Date() })
-    .where(eq(profiles.id, userId))
-    .returning();
-  if (!updated) throw new ActionError("Člena se nepodařilo najít.");
-  return updated;
+    const [updated] = await tx
+      .update(profiles)
+      .set({ role, updatedAt: new Date() })
+      .where(eq(profiles.id, userId))
+      .returning();
+    if (!updated) throw new ActionError("Člena se nepodařilo najít.");
+    return updated;
   });
 }

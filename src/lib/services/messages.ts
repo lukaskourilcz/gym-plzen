@@ -3,23 +3,6 @@ import { db } from "@/lib/db";
 import { messageDelivery } from "@/lib/db/schema";
 import type { MessageDelivery } from "@/lib/db/types";
 
-/**
- * Message-delivery queries for the administration's "přehled doručených zpráv".
- * Writing deliveries happens in notifications.ts; this module is read-side plus
- * provider-webhook status updates.
- */
-
-/** All delivery attempts for a reservation, newest first. */
-export async function listForReservation(
-  reservationId: string,
-): Promise<MessageDelivery[]> {
-  return db
-    .select()
-    .from(messageDelivery)
-    .where(eq(messageDelivery.reservationId, reservationId))
-    .orderBy(desc(messageDelivery.createdAt));
-}
-
 /** Recent deliveries across all reservations (admin overview). */
 export async function listRecent(limit = 200): Promise<MessageDelivery[]> {
   return db

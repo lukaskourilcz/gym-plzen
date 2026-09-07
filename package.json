@@ -23,7 +23,9 @@
     "rebrand:navi": "tsx scripts/rebrand-navi.ts",
     "set-promo": "tsx scripts/set-promo.ts",
     "test": "node --import tsx --test tests/unit/*.test.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:integration": "node --experimental-test-module-mocks --import tsx --test tests/integration/*.test.ts",
+    "check:production-env": "node --import tsx scripts/check-production-env.ts"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.21",

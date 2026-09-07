@@ -1,6 +1,10 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, gte } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { profiles, messageDelivery } from "@/lib/db/schema";
+import {
+  profiles,
+  messageDelivery,
+  reservationReschedule,
+} from "@/lib/db/schema";
 import type { MessageDelivery } from "@/lib/db/types";
 import { formatDateTime } from "@/lib/helpers/format";
 import {
@@ -218,6 +222,11 @@ export async function sendReservationConfirmation(params: {
 }): Promise<void> {
   if (!params.email) return;
 
+  const [revision] = await db
+    .select({ changedAt: reservationReschedule.changedAt })
+    .from(reservationReschedule)
+    .where(eq(reservationReschedule.reservationId, params.reservationId))
+    .limit(1);
   const [alreadySent] = await db
     .select({ id: messageDelivery.id })
     .from(messageDelivery)
@@ -227,6 +236,7 @@ export async function sendReservationConfirmation(params: {
         eq(messageDelivery.channel, "email"),
         eq(messageDelivery.kind, "reservation_confirmation"),
         eq(messageDelivery.status, "sent"),
+        revision ? gte(messageDelivery.sentAt, revision.changedAt) : undefined,
       ),
     )
     .limit(1);
@@ -252,6 +262,7 @@ export async function sendReservationConfirmation(params: {
       reservationId: params.reservationId,
       startsAt: params.startsAt,
       endsAt: params.endsAt,
+      sequence: revision ? 1 : 0,
       address: publicAddress(await getText("contact.address").catch(() => "")),
     }),
   );
@@ -274,7 +285,7 @@ export async function sendReservationConfirmation(params: {
       )} minut`,
       price:
         params.priceCents === 0
-          ? "zdarma (věrnostní vstup)"
+          ? "zdarma"
           : params.priceCents === null
             ? "v ceně členství"
             : `${Math.round(params.priceCents / 100)} Kč`,

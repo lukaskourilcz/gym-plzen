@@ -21,6 +21,7 @@ export interface CalendarEvent {
   url?: string;
   /** Injectable for tests; defaults to now. */
   stamp?: Date;
+  sequence?: number;
 }
 
 /** `20260830T160000Z` : the basic UTC form every calendar accepts. */
@@ -80,6 +81,7 @@ export function buildIcs(event: CalendarEvent): string {
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",
     `UID:${event.uid}`,
+    `SEQUENCE:${event.sequence ?? 0}`,
     `DTSTAMP:${toIcsUtc(event.stamp ?? new Date())}`,
     `DTSTART:${toIcsUtc(event.start)}`,
     `DTEND:${toIcsUtc(event.end)}`,
@@ -127,6 +129,7 @@ export function reservationCalendarEvent(params: {
   endsAt: Date;
   address?: string | null;
   stamp?: Date;
+  sequence?: number;
 }): CalendarEvent {
   return {
     uid: `${params.reservationId}@${siteHost()}`,
@@ -137,5 +140,6 @@ export function reservationCalendarEvent(params: {
     description:
       "Soukromý trénink v NAVI Private Gym. Vstupní kód vám pošleme e-mailem před začátkem rezervace.",
     stamp: params.stamp,
+    sequence: params.sequence,
   };
 }
