@@ -160,5 +160,3 @@ export default async function BookingPage({
     </>
   );
 }
-
-export const maxDuration = 300;

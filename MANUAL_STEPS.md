@@ -1,244 +1,108 @@
-# Manuální kroky
-
-Kroky, které vyžadují Dashboard, externí konzoli nebo fyzické ověření.
-Produkční web běží na **`https://www.navigym.cz`** (od 5. 9. 2026).
-`namastegym.cz` zatím servíruje stejný web souběžně, než se z něj udělá 301.
-
-Při změně domény vždy aktualizujte také Supabase Auth URL, Stripe webhook,
-Nuki webhook a referrery klíče Google mapy.
-
-Supabase project ref: **`rkmunagymohxtclymacm`**
-Supabase project URL: **`https://rkmunagymohxtclymacm.supabase.co`**
-
----
-
-## 1. Supabase Auth: Site URL a Redirect URLs
-
-**Kde:**
-
-1. <https://supabase.com/dashboard/project/rkmunagymohxtclymacm/auth/providers>
-2. <https://supabase.com/dashboard/project/rkmunagymohxtclymacm/auth/url-configuration>
-
-**Co nastavit:**
-
-Providers → Email:
-
-- Enable Email provider
-- Confirm email (produkce)
-- Confirm email change
-- Secure email change
-
-URL Configuration → Site URL:
-
-- `https://www.navigym.cz`
-
-URL Configuration → Redirect URLs:
-
-- `http://localhost:3000/**`
-- `https://*.vercel.app/**`
-- `https://www.navigym.cz/**`
-- `https://www.namastegym.cz/**` (dokud stará doména běží)
-
-**Ověření:** `POST /login` s platným e-mailem vrátí `Zkontrolujte e-mail`;
-v Auth logu vidíš `user_created` a `magic_link_sent`.
-
----
-
-## 2. Vercel: Node 22 a env variables
-
-**Node.js Version** — `https://vercel.com/<team>/gym-plzen/settings/general` → **22.x**.
-Bez toho Vercel spustí default runtime.
-
-**Environment Variables** — `https://vercel.com/<team>/gym-plzen/settings/environment-variables`.
-
-Přenést z `.env.local` do Vercel Production + Preview:
-
-Public (Sensitive OFF):
-
-- `NEXT_PUBLIC_APP_URL` = `https://www.navigym.cz`
-- `NEXT_PUBLIC_DEFAULT_LOCALE` = `cs`
-- `NEXT_PUBLIC_OAUTH_PROVIDERS` = `google`
-- `NEXT_PUBLIC_SENTRY_DSN`
-
-Server-only (Sensitive ON):
-
-- `STRIPE_WEBHOOK_SECRET` (viz §3)
-- `SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`
-- `GOSMS_CLIENT_ID`, `GOSMS_CLIENT_SECRET`, `GOSMS_CHANNEL`
-- `CRON_SECRET` = vygeneruj `openssl rand -hex 32`
-- `ALERT_WHATSAPP_RECIPIENTS`
-- Nuki webhook secret a Zernio konfigurace až budou (viz §4, §5)
-
-`DEMO_AUTH_ENABLED` a `BOOKING_PREVIEW_FIXTURE` do produkce **nedávat**.
-
-**Sensitive flag** chrání hodnoty před vyčtením v Dashboardu (screen-share);
-runtime i `vercel env pull` je dostanou normálně.
-
----
-
-### Analytika (GA4 a Meta Pixel)
-
-Měřicí ID nejsou v kódu. Ve Vercelu nastav pro Production i Preview:
-
-- `NEXT_PUBLIC_GA_MEASUREMENT_ID` — GA4 Measurement ID (`G-…`) nové property NAVI.
-- `NEXT_PUBLIC_META_PIXEL_ID` — Meta Pixel / Dataset ID.
-
-Bez hodnoty se příslušný skript vůbec nenačte a lišta souhlasu danou kategorii
-nenabídne. Google Merchant Center se pro rezervace fitness nepoužívá; místo něj
-Firemní profil na Googlu a konverze GA4 → Google Ads.
-
-## 3. Stripe webhook
-
-**Kde:** <https://dashboard.stripe.com/webhooks> (a Test-mode analog).
-
-- **Endpoint URL:** `https://www.navigym.cz/api/webhooks/stripe`
-  (na starém endpointu `namastegym.cz` zatím zůstává; **čeká na přepnutí**, viz NEEDED.md)
-- **Události:** `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`
-- **Signing secret** (`whsec_...`) → do Vercel Production jako `STRIPE_WEBHOOK_SECRET` (Sensitive).
-  Založ analog i pro Test mode, jeho secret nastav do Vercel Preview.
-
-**Ověření:** `stripe listen --forward-to https://www.navigym.cz/api/webhooks/stripe`
-vrátí `200` na `checkout.session.completed`; testovací Checkout dojde na success URL
-a rezervace přejde do `confirmed`.
-
-`.env.local` drží LIVE Stripe klíče. Doporučené uspořádání:
-`.env.local` + Vercel Preview = `sk_test_...` / `pk_test_...`,
-Vercel Production = `sk_live_...` / `pk_live_...`.
-
----
-
-## 4. Zernio (WhatsApp gateway)
-
-Zernio je REST vrstva nad Meta WhatsApp Business API. Pod tím jede standardní
-WABA, takže Meta setup (ověření podniku, phone verifikace, template approval)
-se stejně dělá — Zernio to sdružuje do jednoho dashboardu.
-
-### 4a. WABA a phone number
-
-**Kde:** <https://zernio.com/dashboard> → WhatsApp / Platforms.
-
-1. Propojit Meta účet přes Zernio `/connect/whatsapp` OAuth flow. Bez Meta Business účtu si ho nejdřív založit v <https://business.facebook.com/>.
-2. Registrovat WABA (spárovat existující nebo provisioning nové).
-3. Verifikovat phone number (SMS/hovor kód od Meta).
-4. Zkopírovat výsledné konfigurační hodnoty do prostředí (přesná jména proměnných dá §4c).
-
-### 4b. Template `access_code`
-
-Zernio dashboard → Templates (interně jde na Meta review).
-
-Jméno `access_code`, jazyk `cs`, kategorie `Utility`. Placeholders `{{1}}` (kód)
-a `{{2}}` (čas rezervace). Vzor:
-
-```
-Vaše rezervace na {{2}} je potvrzena. Vstupní kód: {{1}}
-Kód zadejte na klávesnici u dveří v čase rezervace.
-```
-
-Odeslat k review. Schválení trvá typicky 1–24 h (může být 1–7 dní).
-
-### 4c. Rewrite adapteru (vyžaduje GO)
-
-`src/lib/integrations/whatsapp.ts` pořád volá přímo Meta Graph API. Po dokončení
-§4a a §4b řekni **GO** a přepíšu adapter na Zernio (`POST /broadcasts/create-broadcast`),
-plus odstraním nepoužívané `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`,
-`WHATSAPP_BUSINESS_ACCOUNT_ID`, `WHATSAPP_APP_SECRET`.
-
-**Ověření celého §4:** vytvořím rezervaci → `message_delivery` obsahuje řádek
-`channel='whatsapp'`, `status='sent'`, Zernio dashboard ukazuje odchozí broadcast,
-klient dostane zprávu s kódem.
-
----
-
-## 5. Nuki (fyzický zámek) — čeká na nákup
-
-**Kde:** <https://web.nuki.io/>.
-
-Po pořízení zámku doplnit:
-
-- `NUKI_SMARTLOCK_ID` (číselné ID zámku z dashboardu).
-- `NUKI_WEBHOOK_SECRET` = `openssl rand -hex 32`; zapsat současně do Nuki webhook UI i do Vercelu (Sensitive, Production + Preview).
-- Webhook URL k zaregistrování na Nuki: `https://www.navigym.cz/api/webhooks/nuki`
-  (**čeká na přepnutí**, viz NEEDED.md).
-
-**Fyzicky ověřit:** admin vytvoří rezervaci → kód doručen → zámek otevře →
-po skončení kód přestane platit → ruční revocation zafunguje.
-
----
-
-## 6. Resend — odchozí aplikační e-maily
-
-V Resend je ověřená doména `namastegym.cz` (nikoli `navigym.cz`), a Vercel má
-nastavené `RESEND_API_KEY` a `RESEND_FROM_EMAIL` pro Production i Preview.
-Odesílatel proto zatím zůstává na staré doméně — odesílání z `@navigym.cz`
-vyžaduje nejdřív ověření té domény v Resendu (DNS záznamy), viz NEEDED.md.
-
-- Sender: `NAVI Private Gym <noreply@namastegym.cz>`
-- Šablony jsou v administraci → **E-maily**. Je zde náhled s ukázkovými daty,
-  test na zadanou adresu a editace textu pro potvrzení registrace, obnovu
-  hesla, potvrzení rezervace, vstupní kód a storno. Všechny používají stejné
-  logo a český značkový rámec.
-
-**Ověření:** přihlásit se jako administrátor, zadat vlastní adresu do
-„Odeslat test na“, kliknout na „Odeslat testovací e-mail“ a zkontrolovat
-Resend Logs. Odeslání se provádí pouze ze serveru; API klíč není v prohlížeči.
-
----
-
-## 7. Supabase Auth SMTP a šablony z administrace
-
-Custom SMTP přes Resend je nastavený a odkaz pro obnovu hesla byl ověřený.
-Aplikace obsahuje `/forgot-password` a `/reset-password`; registrační potvrzení
-i resetovací odkaz posílá Supabase Auth.
-
-**Kde:** <https://supabase.com/dashboard/project/rkmunagymohxtclymacm/auth/smtp>
-
-Pokud by se SMTP nastavovalo znovu:
-
-1. Zapnout **Custom SMTP**.
-2. Vyplnit:
-   - Sender email: `noreply@namastegym.cz`
-   - Sender name: `NAVI Private Gym`
-   - Host: `smtp.resend.com`
-   - Port: `465` (SSL / implicit TLS)
-   - Username: `resend`
-   - Password: stejný Resend API key jako `RESEND_API_KEY` ve Vercelu
-3. Uložit. Při vkládání API klíče jej nikam jinam nekopírovat a nikdy jej
-   necommitovat.
-
-### Zpřístupnění šablon v administraci
-
-1. Otevřít <https://supabase.com/dashboard/account/tokens> a vytvořit nový
-   **Personal Access Token** s oprávněním upravovat konfiguraci projektu.
-2. Ve Vercelu → Project → Settings → Environment Variables přidat
-   `SUPABASE_MANAGEMENT_API_TOKEN` pro **Production** i **Preview**.
-3. Uložit a spustit nový deployment.
-4. V administraci webu → **E-maily** upravit „Potvrzení registrace“ nebo
-   „Obnova hesla“ a uložit. Aplikace v bezpečném serverovém volání propíše
-   český předmět, text, logo a tlačítko s `{{ .ConfirmationURL }}` do
-   hostovaného Supabase Auth. Token se nikdy neposílá do prohlížeče.
-
-**Ověření:**
-
-1. V produkci se zaregistrovat na novou testovací adresu a potvrdit e-mail.
-2. Na `/forgot-password` požádat o obnovu a přes e-mail nastavit nové heslo.
-3. V administraci odeslat test každé z pěti šablon na vlastní adresu.
-4. V Resend Logs ověřit odesílatele `noreply@namastegym.cz`, české texty a
-   načtené logo.
-
----
-
-## 8. Uptime a cron heartbeat monitoring
-
-- UptimeRobot check na `https://www.navigym.cz/`.
-- Cron heartbeat monitor pro `/api/cron/watchdog` (nebo přes `UPTIMEROBOT_HEARTBEAT_URL`,
-  který cron pinguje po úspěšném běhu — env je nastavené v `.env.local`).
-
----
-
-## 9. Poznámky
-
-- `.env.local` a všechny výše uvedené klíče **nikdy** necommituj.
-- Po nastavení §1 a §2 proveď v prohlížeči úplný reálný test: registrace, magic-link,
-  přihlášení, rezervace, admin sekce vyžaduje admin roli.
-- Bezpečnostní hlavičky (CSP, HSTS, frame protection) jsou v kódu; ověř je
-  po produkčním deployi přes <https://securityheaders.com/>.
+# Manuální nastavení integrací
+
+Cílová doména: `https://www.navigym.cz`.
+Supabase project ref: `rkmunagymohxtclymacm`.
+Aktuální neověřené body jsou v [NEEDED.md](./NEEDED.md), přejímka v
+[produkčním checklistu](./docs/PRODUCTION_CHECKLIST.md).
+Tento dokument je návod, nikoli potvrzení aktuálního nastavení účtů.
+
+## 1. Vercel a prostředí
+
+1. Vybrat projekt a Node.js 22.x.
+2. Podle `.env.example` nastavit produkční proměnné; tajné hodnoty výhradně
+   na serveru. `NEXT_PUBLIC_*` se dostanou do prohlížeče.
+3. Production a Preview oddělit: preview má vlastní DB, Stripe test, testovací
+   schránky a zámek. Nekopírovat do něj automaticky všechny produkční klíče.
+4. Po změně veřejných env provést nový build. `NEXT_PUBLIC_APP_URL` musí být
+   správná HTTPS doména bez cesty. Demo flags do produkce nedávat.
+5. Spustit `npm run check:production-env` v bezpečném prostředí. Výsledek
+   dokládá jen přítomnost/tvar konfigurace, nikoli platnost u poskytovatele.
+
+Sentry build telemetrie je vypnutá. Upload source maps se zapne pouze s
+`SENTRY_AUTH_TOKEN`; runtime monitoring má samostatný DSN.
+
+## 2. Supabase Auth, DB a administrace
+
+V [Supabase URL Configuration](https://supabase.com/dashboard/project/rkmunagymohxtclymacm/auth/url-configuration):
+
+- Site URL nastavit na `https://www.navigym.cz`.
+- Povolit konkrétní callback adresy používané aplikací pro dané prostředí.
+  V produkci nepovolovat obecný wildcard pro všechny cizí `*.vercel.app` projekty.
+- Ověřit potvrzení e-mailu, bezpečnou změnu e-mailu a ochranu kompromitovaných hesel.
+- `NEXT_PUBLIC_OAUTH_PROVIDERS` vyplnit pouze poskytovateli, kteří jsou
+  skutečně nastavení a vyzkoušení v Supabase. Google login ověřit i v Safari.
+- `DATABASE_URL`, veřejný Supabase URL a serverové aliasy musí patřit stejné
+  databázi. Pro aplikaci použít transaction pooler s `prepare:false`, pro
+  migrace `DIRECT_URL`.
+- Vytvořit a ověřit skutečné správce; rezervované demo účty následně odstranit.
+- Před migracemi nejprve porovnat schéma a historii, zajistit zálohu a izolovaný staging.
+
+## 3. Stripe
+
+Ve [Stripe Dashboardu](https://dashboard.stripe.com/webhooks) ověřit:
+
+- Live endpoint `https://www.navigym.cz/api/webhooks/stripe` a jeho podpisový
+  secret v `STRIPE_WEBHOOK_SECRET`.
+- Události `checkout.session.completed`, `checkout.session.expired`,
+  `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`.
+  Nový checkout používá karetní platby; obsluha async událostí zůstává pro starší sessions.
+- Stripe secret odpovídá prostředí. `whsec_` z CLI listeneru není automaticky
+  podpisovým klíčem produkčního Dashboard endpointu.
+- Testovací platby směrovat na testovací endpoint a DB, nikoli produkci.
+- Zkontrolovat podpis, částku, měnu, stav rezervace a opakování události.
+  Zrušení rezervace v administraci **neprovádí refundaci**; tu musí obsluha
+  vyřídit ve Stripe a ověřit výsledek.
+
+## 4. Nuki
+
+V [Nuki Web](https://web.nuki.io/) ověřit token se správnými oprávněními,
+`NUKI_SMARTLOCK_ID` a webhook `/api/webhooks/nuki` s nakonfigurovaným secretem.
+
+Příkazy pro autorizace jsou asynchronní. Aplikace čeká na ověřitelný výsledek
+v seznamu autorizací; nepovažuje samotné HTTP 204 za úspěch. PIN je šest číslic
+1–9 bez počátečního 12. Název `NAVI-…` odpovídá ID řádku `access_code`.
+
+Fyzický test: kód před platností odmítnut → uvnitř časového okna odemkne →
+po konci + sprše odmítnut → ruční storno/přesun odvolá starý kód. Ověřit také
+offline zámek a ztracenou odpověď. Při nejasném stavu porovnat autorizace a DB,
+odstranit případný osiřelý kód a teprve pak obnovit pipeline. Nikdy neoznačit
+kód za odvolaný jen proto, že API neodpovědělo.
+
+Referenční rozhraní: [Nuki Web API](https://api.nuki.io/).
+
+## 5. Resend, SMTP a editace e-mailů
+
+1. Ověřit odesílací doménu v Resendu a odpovídající DNS záznamy.
+2. Nastavit `RESEND_API_KEY` a `RESEND_FROM_EMAIL` pro tuto doménu.
+3. V [Supabase SMTP](https://supabase.com/dashboard/project/rkmunagymohxtclymacm/auth/smtp)
+   nastavit vlastní SMTP podle aktuálních údajů Resendu. Sender musí být ověřený.
+4. Pro synchronizaci Auth šablon z administrace nastavit serverový
+   `SUPABASE_MANAGEMENT_API_TOKEN` s oprávněním konfigurovat příslušný projekt.
+   Staging token/URL nesmějí upravovat produkční Auth.
+5. V administraci → E-maily uložit a zkontrolovat registraci, reset, potvrzení
+   rezervace, vstupní kód a storno. Test posílat jen na předem určenou adresu.
+6. Projít skutečnou testovací registraci a reset. V doručené poště ověřit
+   sender, češtinu, logo a ICS přílohu původního/přesunutého termínu.
+
+## 6. WhatsApp, SMS a monitoring
+
+Adaptér `whatsapp.ts` používá přímo Meta Graph API. Vyžaduje konfiguraci
+`WHATSAPP_*`, schválenou utility šablonu `access_code` v češtině, telefonní ID,
+token a webhook ověření. Zernio je pouze dříve zvažovaná alternativa.
+GoSMS je volitelný kanál s `GOSMS_*`; neslibovat jej, dokud není ověřený.
+
+V `vercel.json` je watchdog každých 5 minut a synchronizace vstupů po 15 minutách.
+Ověřit podporu tarifu, `CRON_SECRET`, maximální délku běhu a provozní logy.
+Nastavit a otestovat externí heartbeat i skutečné příjemce kritických alertů.
+Záznam v administraci nenahrazuje funkční pohotovostní kontakt.
+
+## 7. Mapa, měření a obsah
+
+- Vlastní Maps marker vyžaduje klíč i Map ID, správné HTTP referrery pro NAVI,
+  zapnutou službu a billing. Bez těchto hodnot zůstává standardní embed.
+- GA4/Meta IDs jsou volitelné; při nastavení ověřit consent flow. Preview nemá
+  automaticky sbírat produkční analytiku.
+- Ověřit CMS kontakt, ceny, blokace, média a nahrazení ilustračních fotek.
+- V nastavení potvrdit fakturační údaje a DPH před zapnutím dokladů.
+- Při změně domény aktualizovat Auth callbacky, Stripe/Nuki webhooky,
+  Maps referrery, e-mailové odkazy a přesměrování staré domény.

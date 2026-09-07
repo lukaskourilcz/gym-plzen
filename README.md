@@ -17,10 +17,10 @@ adresu Plzeň - Roudná, bílou cenovou kartu, klientské FAQ a kontaktní blok 
 mapou. Instagram používá potvrzený profil `@navi_plzen`. Telefon, e-mail a
 Facebook jsou v produkčním CMS doplněné potvrzenými hodnotami.
 
-Nezávislý finální UX audit dává **GO pro klientskou prezentaci** a **NO-GO pro
-produkci**, dokud nejsou připojené a ověřené externí služby a schválené právní
-texty. Podrobnosti a stav všech nálezů jsou v
-[docs/UX_AUDIT.md](./docs/UX_AUDIT.md).
+Produkční audit z 7. 9. 2026: opravené rezervace, souběhy plateb, admin kalendář,
+časová pásma a životní cyklus vstupních kódů. **NO-GO pro ostré objednávky**,
+dokud neprojdou externí a vizuální kontroly v
+[produkčním checklistu](./docs/PRODUCTION_CHECKLIST.md).
 
 Pro další práci začni v [SESSION_HANDOFF.md](./SESSION_HANDOFF.md). Externí
 nastavení a chybějící klientské podklady jsou v [NEEDED.md](./NEEDED.md).
@@ -64,7 +64,7 @@ nastavení a chybějící klientské podklady jsou v [NEEDED.md](./NEEDED.md).
 ## Lokální spuštění
 
 ```bash
-npm install
+npm ci
 cp .env.example .env.local
 npm run dev
 ```
@@ -94,6 +94,7 @@ npm run format:check
 npm run lint
 npm run typecheck
 npm test
+npm run test:integration
 npm run build
 npm audit --audit-level=high
 npm audit --omit=dev
@@ -119,9 +120,8 @@ Podrobnosti jsou v [.claude/skills/gym-architecture/SKILL.md](./.claude/skills/g
 - [SESSION_HANDOFF.md](./SESSION_HANDOFF.md): přesný checkpoint pro dalšího agenta.
 - [NEEDED.md](./NEEDED.md): externí závislosti a ruční setup.
 - [docs/DESIGN_SYSTEM.md](./docs/DESIGN_SYSTEM.md): závazný vizuální systém.
-- [docs/INSPIRATIONS.md](./docs/INSPIRATIONS.md): historická rešerše konkurence.
-- [docs/TOOLING.md](./docs/TOOLING.md): rozhodnutí o nástrojích a balíčcích.
-- [docs/UX_AUDIT.md](./docs/UX_AUDIT.md): nezávislý UX audit a stav nálezů.
+- [docs/PRODUCTION_CHECKLIST.md](./docs/PRODUCTION_CHECKLIST.md): aktuální audit, důkazy a akceptační scénáře.
+- [MANUAL_STEPS.md](./MANUAL_STEPS.md): postup nastavení poskytovatelů.
 - [CLAUDE.md](./CLAUDE.md): pravidla pro další vývoj.
 
 ## Důležitá bezpečnostní pravidla

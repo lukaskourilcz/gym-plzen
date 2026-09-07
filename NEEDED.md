@@ -1,66 +1,46 @@
 # Co je potřeba dokončit mimo repozitář
 
-Externí a klientské kroky. Manuální detaily viz [MANUAL_STEPS.md](./MANUAL_STEPS.md).
+Aktualizováno 7. 9. 2026. Detail auditu, výsledky a přejímací scénáře:
+[docs/PRODUCTION_CHECKLIST.md](./docs/PRODUCTION_CHECKLIST.md).
+Postupy: [MANUAL_STEPS.md](./MANUAL_STEPS.md).
 
-## Přehled úkolů
+`[imp:N]` = priorita 1–5; vlastník `me` = provozovatel/vývojář s přístupy,
+`ai` = navazující implementace nebo ověření po dodání prostředí.
+Produkční projekt Supabase: `rkmunagymohxtclymacm`.
 
-`[imp:N]` = priorita 1–5, `[owner:me]` = externí krok, `[owner:ai]` = úkol pro
-AI po dodání podkladů. `[kind:K]` ∈ `setup` `deploy` `legal` `content` `decision`.
+## Před otevřením objednávek
 
-- [ ] **Ověřit schránku `info@navigym.cz`**: klient ji založil 4. 9.; kód ji už používá jako výchozí kontakt (web, patička, ochrana soukromí). Ověřit, že schránka přijímá poštu, a zkontrolovat hodnotu v administraci → Obsah webu. `[imp:5]` `[owner:me]` `[time:5m]` `[kind:content]`
-- [ ] **Logo NAVI ve vektoru**: web zatím používá siluety vytažené z dodané 3D vizualizace — tvarem věrné, ale s měkkými hranami renderu. Od klienta získat SVG/PDF znaku, wordmarku a lockupu a nahradit `public/images/navi-mark.png`, `navi-wordmark.png`, `navi-logo.png` a `navi-logo-email.png` (plochá zelená pro e-maily), pak přegenerovat `src/app/icon.png`. V kódu se nemění nic. `[imp:4]` `[owner:me]` `[time:1h]` `[kind:content]`
-- [x] **Profily na sociálních sítích**: dodány nové účty a nasazeny — Instagram [@navi_plzen](https://www.instagram.com/navi_plzen/) a Facebook [NAVI Private Gym Plzeň](https://www.facebook.com/profile.php?id=61594273731288). Staré NAMASTÉ profily už web neuvádí ani tehdy, kdyby zůstaly uložené v administraci. `[imp:4]` `[owner:me]` `[time:15m]` `[kind:content]`
-- [x] **Rozhodnout o doméně**: rozhodnuto a hotovo — web běží na `https://www.navigym.cz` (Vercel, A záznamy `216.150.1.1`; `navigym.cz` přesměrovává 308 na `www`). `NEXT_PUBLIC_APP_URL` i URL v Supabase Auth jsou přepnuté, sitemap, robots i canonical už uvádějí novou doménu. `[imp:5]` `[owner:me]` `[time:15m]` `[kind:decision]`
-- [ ] **Aktualizované VOP a provozní řád**: v textech je označení studia přejmenované na NAVI (je to obchodní jméno provozovatele), ale doména `www.namastegym.cz`, e-mail, subjekty a datum účinnosti zůstávají tak, jak je dodal klient. Nechat právně potvrdit a dodat konečné znění. `[imp:5]` `[owner:me]` `[time:1h]` `[kind:legal]`
-- [ ] **Potvrdit hero text**: nasazeno „Tvůj čas. Tvůj prostor. Tvoje NAVI.“ Jinou formulaci lze upravit v administraci → Obsah webu. `[imp:3]` `[owner:me]` `[time:5m]` `[kind:content]`
-- [ ] **GA4 a Meta Pixel pro NAVI**: nastavit ve Vercelu `NEXT_PUBLIC_GA_MEASUREMENT_ID` (nová GA4 property, nebo přejmenovaná stávající) a `NEXT_PUBLIC_META_PIXEL_ID`; bez hodnot se měření nenačte. Google Merchant Center se pro rezervace fitness nepoužívá; místo něj Firemní profil na Googlu a konverze GA4 → Google Ads. `[imp:4]` `[owner:me]` `[time:30m]` `[kind:setup]`
-- [ ] **Odesílatel e-mailů NAVI**: ve Vercelu změnit `RESEND_FROM_EMAIL` na `NAVI Private Gym <noreply@…>`; pro odesílání z `@navigym.cz` nejdřív ověřit doménu v Resendu (DNS záznamy) a stejně upravit SMTP sender v Supabase Auth. Do té doby zůstává doména `namastegym.cz` s novým jménem odesílatele. `[imp:4]` `[owner:me]` `[time:30m]` `[kind:setup]`
-- [ ] **Předat administraci do st 9. 9.**: nechat správkyně zaregistrovat se na webu, bezpečně ověřit jejich adresy a až poté jim přepnout roli na správce. Produkční demo identita je po bezpečnostním auditu v kódu zablokovaná, takže před předáním je nutné mít alespoň jeden skutečný správcovský účet. Zaškolit v Obsah webu, E-maily, Vstupné a věrnost (akce) a Nastavení (fotky, rozsah rezervací). `[imp:5]` `[owner:me]` `[time:45m]` `[kind:setup]`
-- [x] **Ilustrační fotografie**: vygenerováno a nasazeno všech 12 atmosférických snímků podle [docs/PHOTO_PROMPTS.md](./docs/PHOTO_PROMPTS.md): hero, fotka za sekcemi, čtyři dlaždice galerie a šest zón. Produkční CMS obsahuje jejich cesty a web je označuje malou informační ikonou s vlastním tooltipem „Ilustrační foto“. Po dodání skutečných fotografií je lze v administraci nahradit a příznak vypnout. `[imp:4]` `[owner:me]` `[time:2h]` `[kind:content]`
-- [ ] **Zkontrolovat fakturační údaje a zapnout doklady**: systém umí vystavit a e-mailem poslat doklad o zaplacení ke každé zaplacené rezervaci. Údaje jsou předvyplněné podle čl. 1.2 VOP (Renáta Janoušková, IČO 29619998, Úhlavská 546/2, 326 00 Plzeň - Doudlevce). V administraci → Nastavení a branding → **Fakturační údaje** je zkontrolovat, **pokud jste plátcem DPH doplnit DIČ a sazbu** (0 = neplátce; VOP o DPH nic neuvádí, proto je nastavena nula), případně doplnit číslo účtu a zápis v rejstříku, a zaškrtnout automatické odesílání. Doklady pak najdete v administraci → Doklady (stažení PDF, poslat znovu). Po zapnutí udělat zkušební platbu a zkontrolovat doklad i číslování. `[imp:4]` `[owner:me]` `[time:20m]` `[kind:setup]`
-- [x] **Migrace 0010 na produkci**: tabulky `invoice` a `document_counter` jsou v produkční databázi ověřené. `[imp:5]` `[owner:me]` `[time:10m]` `[kind:deploy]`
-- [ ] **Srovnat historii databázových migrací**: produkční schéma obsahuje změny 0006–0010, ale interní přehled Supabase eviduje jen 0000–0005. Před založením stagingu nebo obnovou databáze zkontrolovat a bezpečně doplnit historii přes Supabase CLI; neupravovat interní tabulku naslepo. `[imp:4]` `[owner:ai]` `[time:30m]` `[kind:deploy]`
-- [ ] **Zapnout ochranu proti uniklým heslům v Supabase Auth**: Security Advisor hlásí vypnutou kontrolu kompromitovaných hesel. Zapnout ji v Auth → Password security a ověřit registraci i změnu hesla. `[imp:4]` `[owner:me]` `[time:10m]` `[kind:setup]`
-- [ ] **Odstranit produkční demo uživatele**: po vytvoření a ověření skutečného správce smazat z Supabase Auth rezervované demo identity. Aplikace jim po tomto auditu v produkci přihlášení i administraci odmítá, ale v databázi nemají zůstat. `[imp:5]` `[owner:me]` `[time:10m]` `[kind:setup]`
-- [ ] **Potvrdit aktivní voucher**: v produkci zůstal aktivní časově neomezený voucher s pevnou slevou 100 Kč. Ověřit s provozovatelem, zda je zamýšlený; audit ho bez potvrzení nedeaktivoval. `[imp:3]` `[owner:me]` `[time:5m]` `[kind:decision]`
-- [ ] **Rozhodnout o účetním napojení**: doklady ze systému stačí většině provozů. Pokud účetní chce Fakturoid, je to samostatná integrace (účet, API klíč, 2–3 dny práce). Alternativa: měsíční export ze sekce Doklady. `[imp:2]` `[owner:me]` `[time:15m]` `[kind:decision]`
-- [ ] **Nastavit říjnovou akci a rozsah rezervací**: buď v administraci (→ Vstupné a věrnost akci 199 Kč od 1. 10. 2026 00:00 do 31. 10. 2026 23:59, → Nastavení rozsah 130 dní), nebo jedním příkazem proti produkční databázi: `npm run set-promo` (náhled) a `npm run set-promo -- --write`. Skript po zápisu přečte nastavení zpět a vypíše cenu pro několik okamžiků, takže je hned vidět, že to sedí. Standardní cena 289 Kč platí automaticky mimo okno. Před 1. 10. udělat zkušební rezervaci. `[imp:5]` `[owner:me]` `[time:15m]` `[kind:setup]`
-- [ ] **Opravit Google mapu s vlastním markerem**: produkce 5. 9. 2026 vrací `RefererNotAllowedMapError`; klíč nemá povolený web `https://www.navigym.cz` a chybí Map ID. V Google Cloud zapnout billing a Maps JavaScript API, nastavit HTTP referrery `https://navigym.cz/*` a `https://www.navigym.cz/*` (dokud tam stará doména běží, přidat i `https://namastegym.cz/*` a `https://www.namastegym.cz/*`) a uložit platný klíč ve Vercelu jako `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`. V Google Maps Platform vytvořit Map ID typu JavaScript a uložit ho jako `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID`. Pokročilá mapa s vlastním NAVI markerem se načte jen tehdy, když jsou přítomné obě hodnoty; do té doby web bez chyby používá bezpečný Google embed. `[imp:4]` `[owner:me]` `[time:20m]` `[kind:setup]`
-- [ ] **Povolit synchronizaci Auth e-mailů z administrace**: vytvořit Supabase Personal Access Token, uložit ho ve Vercelu jako `SUPABASE_MANAGEMENT_API_TOKEN` pro Production a Preview a nasadit novou verzi. Poté administrace → E-maily propisuje šablony „Potvrzení registrace“ a „Obnova hesla“ do Supabase Auth. Přesný postup je v §7 [MANUAL_STEPS.md](./MANUAL_STEPS.md#7-supabase-auth-smtp--registrace-a-obnova-hesla). `[imp:5]` `[owner:me]` `[time:10m]` `[kind:setup]`
-- [ ] **Ostrý test e-mailového workflow**: vytvořit novou testovací registraci, provést reset hesla a z administrace odeslat test všech pěti šablon. V Resend Logs ověřit doručení, český text, logo a sender. `[imp:5]` `[owner:me]` `[time:20m]` `[kind:setup]`
-- [x] **Text obchodních podmínek**: dodané VOP s účinností od 17. 8. 2026 jsou zveřejněné na `/obchodni-podminky` a propojené s rezervací i patičkou. `[imp:5]` `[owner:me]` `[time:1h]` `[kind:legal]`
-- [ ] **Migrace 0007 v dalších prostředích**: `drizzle/0007_reservation_consents.sql` přidává do tabulky `reservation` sloupce `rules_accepted_at` a `terms_accepted_at`. Na nakonfigurované databázi je už aplikovaná; pokud existuje další prostředí (staging, druhý Supabase projekt), spustit ji i tam, jinak se rezervace neuloží. `[imp:5]` `[owner:me]` `[time:10m]` `[kind:deploy]`
-- [ ] **Ostrý test rezervace bez registrace**: po zapojení Stripe live projít celý host checkout (vyplnit údaje, zaplatit, ověřit doručení potvrzení a přístupového kódu na e-mail i telefon zadaný ve formuláři) a zkontrolovat, že se v administraci rezervace zobrazuje bez účtu. `[imp:4]` `[owner:me]` `[time:30m]` `[kind:setup]`
-- [ ] **Fotografie jednotlivých zón**: dodat snímky pro dlaždice na `/vybaveni` (silová, kardio, strečink, dětský koutek, lednice, zázemí). Zatím se zobrazuje značková výplň se znakem NAVI, nebo ilustrační fotka, pokud ji nahrajete v administraci → Nastavení a branding. `[imp:3]` `[owner:me]` `[time:30m]` `[kind:content]`
-- [ ] **Značka české přírodní kosmetiky**: v textu kroku „Před odchodem“ byla v podkladu vynechaná („od značky …“). Dokud ji nedodáte, web uvádí jen „česká přírodní kosmetika“ bez názvu. `[imp:2]` `[owner:me]` `[time:5m]` `[kind:content]`
-- [ ] **Stripe webhook**: zaregistrovat endpoint v Stripe Dashboardu (test i live), zkopírovat signing secret do `STRIPE_WEBHOOK_SECRET`. `[imp:4]` `[owner:me]` `[time:20m]` `[kind:setup]`
-- [ ] **Zernio (WhatsApp) provisioning**: propojit Meta účet, registrovat WABA, verifikovat phone number, nechat schválit template `access_code`. Poté vyžádat GO na rewrite `src/lib/integrations/whatsapp.ts` z Meta Graph na Zernio. `[imp:4]` `[owner:me]` `[time:1h]` `[kind:setup]`
-- [ ] **Nuki: fyzický zámek** (čeká na nákup): doplnit `NUKI_SMARTLOCK_ID`, vygenerovat `NUKI_WEBHOOK_SECRET`, fyzicky ověřit vytvoření/expiraci/revokaci kódu. `[imp:4]` `[owner:me]` `[time:2h]` `[kind:setup]`
-- [ ] **Přihlášení přes Google v Safari**: klientka hlásila, že se přesměrování nedokončí. Nejčastější příčinou je nesoulad hostitelů mezi Supabase a `NEXT_PUBLIC_APP_URL` — obojí je teď srovnané na `https://www.navigym.cz`, takže **zbývá jen zkusit přihlášení v Safari znovu** a poslat případnou hlášku. Kód chybu nezametá: nepovedený návrat končí na `/login` s českou hláškou. `[imp:4]` `[owner:me]` `[time:10m]` `[kind:setup]`
-- [ ] **Dokončit přechod na navigym.cz**: hotové je DNS, `NEXT_PUBLIC_APP_URL` a Supabase Auth (Site URL i Redirect URLs). Zbývá: **Stripe webhook** a **Nuki webhook** přepsat na novou doménu, **referrery klíče Google mapy** (viz samostatný úkol) a nakonec **`namastegym.cz`** — dnes servíruje stejný web souběžně; než ho smažete, nastavit z něj 301 na `www.navigym.cz`. SEO zatím netrpí: stará doména už posílá `canonical` na novou. Pak přidat `navigym.cz` do Search Console. `[imp:4]` `[owner:me]` `[time:30m]` `[kind:setup]`
-- [ ] **Ostrý test přílohy kalendáře**: po zapojení Resend v ostrém provozu ověřit, že potvrzovací e-mail nese přílohu `rezervace.ics` a že se termín správně naimportuje do Google i Apple kalendáře (letní i zimní čas). `[imp:3]` `[owner:me]` `[time:15m]` `[kind:setup]`
-- [ ] **Posoudit variantu „Moderní“ a rozhodnout o výchozím vzhledu**: otevřít `www.navigym.cz/dev` (tím se přepínač odemkne jen ve vašem prohlížeči, návštěvníci ho nevidí) a projít úvodní stránku, Vybavení a účet v obou podobách. Po rozhodnutí nastavíme vybranou podobu jako výchozí a přepínač i stránku `/dev` odstraníme. `[imp:3]` `[owner:me]` `[time:20m]` `[kind:decision]`
-- [ ] **Smazat sloučené větve na GitHubu**: `claude/navi-rebrand` a `claude/mobbing-feature-ideas-kens00` jsou plně v `main`, ale mazání větví z tohoto prostředí neprojde přes proxy (běžný push funguje). Smazat je v GitHubu → Branches. Ostatní větve (`gym-plzen-hero-calendar-rgq7fl`, `gym-website-booking-plan-8u4t2n`, `needed-md-reorganize-vd0trv`, `preview-no-login-design-6lr2vm`, `codex/production-readiness-audit`) sloučené nejsou — nejdřív ověřit, jestli v nich něco nezůstalo. `[imp:2]` `[owner:me]` `[time:5m]` `[kind:deploy]`
-- [ ] **Aktualizovat Next.js kvůli postcss**: `npm audit --omit=dev` hlásí poslední dvě zranitelnosti (`postcss` ≤ 8.5.22) přes verzi Next.js. Ostatní byly opraveny; tato vyžaduje `next@16.3.4`, tedy hlavní verzi. Týká se sestavení, ne běhu webu u návštěvníků. Naplánovat samostatně s plným regresním testem. `[imp:2]` `[owner:ai]` `[time:2h]` `[kind:deploy]`
-- [ ] **Plné E2E proti testovacím službám**: po připojení Stripe test / Nuki / Resend / WhatsApp spustit Playwright suite s mutačním povolením. `[imp:2]` `[owner:ai]` `[time:1h]` `[kind:deploy]`
-- [x] **Vybrat funkce z Mobbin rešerše**: rozhodnuto. Staví se věrnostní progres, „Přidat do kalendáře“ (bez pozvánek hostů), administrace „Dnes“ a balíček moderního designu s přepínačem Klasický/Moderní; poukazy a hlídání termínu se nestaví. Plán: [docs/MODERN_PLAN.md](./docs/MODERN_PLAN.md). `[imp:3]` `[owner:me]` `[time:30m]` `[kind:decision]`
+- [ ] **Ověřit produkční env ve Vercelu** — audit nedostal dostupný tým/projekt a klíče neověřil. Spustit `npm run check:production-env` v bezpečném prostředí a potom skutečně ověřit integrace. Node 22, správná HTTPS doména, shoda Supabase projektu. `[imp:5]` `[owner:me]` `[time:30m]` `[kind:setup]`
+- [ ] **Stripe live a webhook** — správný live secret a podepsaný endpoint `https://www.navigym.cz/api/webhooks/stripe`; testovací prostředí musí mít vlastní Stripe test a DB. Projít nákup, expiraci, duplicitu a refundaci. `[imp:5]` `[owner:me]` `[time:30m]` `[kind:setup]`
+- [ ] **Nuki fyzický zámek** — doplnit/ověřit token, ID zámku a webhook secret; fyzicky vyzkoušet vytvoření, časové okno, přesun, expiraci, odvolání a výpadek. Historická poznámka o čekání na nákup nebyla znovu potvrzena. `[imp:5]` `[owner:me]` `[time:2h]` `[kind:setup]`
+- [ ] **E-maily a Auth SMTP** — ověřit doménu NAVI v Resendu, sender, doručení všech pěti šablon, PIN a ICS přílohu. `SUPABASE_MANAGEMENT_API_TOKEN` je nutný pro synchronizaci registrace/resetu z administrace. `[imp:5]` `[owner:me]` `[time:30m]` `[kind:setup]`
+- [ ] **Vizuální a kompletní E2E přejímka** — browser preview zde nenaběhlo. Projít mobil/tablet/desktop a scénáře z checklistu na izolovaných testovacích službách. Lokální databázové testy nenahrazují zámek ani browser. `[imp:5]` `[owner:ai]` `[time:2h]` `[kind:deploy]`
+- [ ] **Cron a provozní alerty** — ověřit watchdog po 5 min, entry log po 15 min, `CRON_SECRET`, podporu tarifu/300s timeoutu a skutečné doručení kritické výstrahy. Heartbeat nesmí být jen neověřená env hodnota. `[imp:5]` `[owner:me]` `[time:20m]` `[kind:setup]`
+- [ ] **Právní a refundové podmínky** — klient musí potvrdit rozdíly kapacity 4/6/5 osob, telefonu a storna/přesunu; doménu, kontakty a účinnost textů. Dodané VOP neměnit bez souhlasu, včetně překlepů. Storno v aplikaci automaticky nevrací platbu ve Stripe. `[imp:5]` `[owner:me]` `[time:1h]` `[kind:legal]`
+- [ ] **Předat skutečnou administraci** — databáze má 3 skutečné admin profily; ověřit přihlášení a zaškolit správkyně. Následně odstranit dvě rezervované demo identity v Supabase Auth. `[imp:5]` `[owner:me]` `[time:45m]` `[kind:setup]`
+- [ ] **Migrace, staging a záloha** — schéma obsahuje 0006–0010, historie Supabase nikoli. Bezpečně porovnat a sladit historii, ověřit obnovu/staging. Interní migrační tabulku neupravovat naslepo. `[imp:4]` `[owner:ai]` `[time:30m]` `[kind:deploy]`
+- [ ] **Ochrana hesel** — Supabase Security Advisor hlásí vypnutou ochranu proti uniklým heslům. Zapnout a otestovat registraci i změnu hesla. `[imp:4]` `[owner:me]` `[time:10m]` `[kind:setup]`
+- [ ] **Sdílené omezení požadavků** — ověřit WAF/rate limits pro login a objednávky. Aplikační limit je jen v paměti jedné instance. `[imp:4]` `[owner:me]` `[time:20m]` `[kind:setup]`
+- [ ] **Fakturační údaje a doklady** — provozovatel musí potvrdit předvyplněné údaje, DPH, zapnutí `billing.send_documents` a doklad z určené platby. Nevymýšlet DIČ ani účetní údaje. `[imp:4]` `[owner:me]` `[time:20m]` `[kind:setup]`
+- [ ] **Aktivní voucher** — potvrdit zamýšlenou pevnou slevu bez časového omezení. Audit existující voucher nedeaktivoval. `[imp:3]` `[owner:me]` `[time:5m]` `[kind:decision]`
 
-## Lokální demo režim
+- [ ] **Vývojové závislosti** — úplný npm audit má 4 moderate nálezy v drizzle-kit/esbuild; produkční závislosti jsou bez nálezu. Naplánovat kompatibilní aktualizaci migračních nástrojů bez vynuceného major upgradu. `[imp:2]` `[owner:ai]` `[time:30m]` `[kind:deploy]`
 
-Demo je určené výhradně pro lokální vývoj. Produkce ho automaticky vypne a
-rezervované demo identity odmítá i tehdy, pokud by stále existovaly v Supabase
-Auth. Lokální cookie-based režim se zapíná pouze neveřejnými env hodnotami:
+## Obsah a navazující nastavení
 
-```dotenv
-DEMO_AUTH_ENABLED="true"
-DEMO_AUTH_SECRET="nahodny-retezec-alespon-32-znaku"
-BOOKING_PREVIEW_FIXTURE="true"
-```
+- [ ] **Doména a kontakty** — ověřit doručitelnost `info@navigym.cz`, callbacky na `www.navigym.cz`, přesměrování staré domény a Search Console. Historický DNS stav není aktuálním ověřením. `[imp:4]` `[owner:me]` `[time:20m]` `[kind:setup]`
+- [ ] **Google mapa a Safari login** — ověřit referrery Maps klíče pro novou doménu, platný Map ID a Google přihlášení v Safari. Bez obou mapových hodnot funguje standardní embed. `[imp:4]` `[owner:me]` `[time:20m]` `[kind:setup]`
+- [ ] **Soukromí a volitelné služby** — potvrdit povinnosti společných správců, kamerovou retenci a správce, retenci GA4 a aktivní Sentry/GoSMS. GA4/Meta nastavit jen při požadovaném měření se souhlasem. `[imp:4]` `[owner:me]` `[time:30m]` `[kind:legal]`
+- [ ] **WhatsApp poskytovatel** — kód používá Meta Graph API a schválenou šablonu `access_code`. Historicky zvažované Zernio není zapojené; případný přechod je samostatná změna. `[imp:3]` `[owner:me]` `[time:30m]` `[kind:decision]`
+- [ ] **Logo a skutečné fotografie** — získat vektor loga a skutečné fotky zón. Ilustrační obrázky už existují a lze je nahradit v administraci. `[imp:3]` `[owner:me]` `[time:2h]` `[kind:content]`
+- [ ] **Zvolit výchozí vzhled** — posoudit varianty přes `/dev`; poté lze odstranit přepínač a druhou variantu. Obě jsou nyní funkční součástí produktu, ne dead code. `[imp:3]` `[owner:me]` `[time:20m]` `[kind:decision]`
+- [ ] **Drobné obsahové podklady** — potvrdit hero text a případnou značku české kosmetiky. Do té doby ponechat současné pravdivé znění. `[imp:2]` `[owner:me]` `[time:10m]` `[kind:content]`
 
-## Co do repozitáře nepatří
+Říjnová cena 199 Kč a horizont 130 dní jsou v živé databázi již nastavené;
+není třeba znovu spouštět historický nastavovací skript. Standardní cena je 289 Kč.
 
-- databázová hesla;
-- Supabase secret / service-role klíče;
-- Stripe, Nuki, WhatsApp, Resend, Sentry, GoSMS a cron secrets;
-- reálné exporty členů, plateb, logů nebo přístupových kódů;
-- lokální `.env.local`.
+## Bezpečné zacházení s konfigurací
+
+Tajné klíče, `.env.local`, osobní exporty a plaintext vstupních kódů necommitovat.
+Demo je pouze lokální; produkční kód ho vypíná a rezervované identity odmítá.
+Návody ani výstup preflight kontroly nemají obsahovat hodnoty tajných klíčů.

@@ -122,13 +122,11 @@ test("reservation lease rejects overlap, releases on failure and recovers a cras
     /simulated/,
   );
   await withReservationOperation(id, async () => {});
-  await database
-    .insert(schema.webhookEvent)
-    .values({
-      provider: "internal:reservation-operation",
-      eventId: id,
-      createdAt: new Date(Date.now() - 11 * 60_000),
-    });
+  await database.insert(schema.webhookEvent).values({
+    provider: "internal:reservation-operation",
+    eventId: id,
+    createdAt: new Date(Date.now() - 11 * 60_000),
+  });
   await withReservationOperation(id, async () => {});
   const left = await database
     .select()

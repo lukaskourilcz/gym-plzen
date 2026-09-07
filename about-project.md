@@ -16,6 +16,9 @@ obsahová i provozní administrace a věrnostní pravidlo každého 10. vstupu z
 - Tailwind CSS 4, Bitter, Lucide
 - Sentry, Vercel Analytics a Vercel Cron
 
+- FullCalendar 6 + Luxon: admin kalendář v Europe/Prague
+- Node test runner + PGlite: izolované databázové regresní testy
+
 ## Třetí strany / integrace
 
 - **Supabase** — databáze, autentizace a RLS; registrační a resetovací e-maily
@@ -27,3 +30,6 @@ obsahová i provozní administrace a věrnostní pravidlo každého 10. vstupu z
   provozních pokynů; Resend je poskytovatelem SMTP pro Supabase Auth.
 - **Sentry** — sledování chyb a výkonu.
 - **Vercel** — hosting, analytika a cron.
+
+Popis integrací vyjadřuje implementaci. Aktuální provozní ověření je v
+[produkčním checklistu](./docs/PRODUCTION_CHECKLIST.md).
