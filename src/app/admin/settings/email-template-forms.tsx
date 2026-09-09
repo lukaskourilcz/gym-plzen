@@ -35,6 +35,7 @@ const PREVIEW_VALUES: Record<string, string> = {
   duration: "75 minut",
   price: "289 Kč",
   reason: "Úprava provozní doby",
+  loyalty: "Tohle byla vaše 7. návštěva, do vstupu zdarma zbývají 3 vstupy.",
 };
 
 /** Edit, preview, and test every transactional template sent by this app. */
