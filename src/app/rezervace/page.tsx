@@ -148,6 +148,7 @@ export default async function BookingPage({
                 selectedDateKey={selectedDateKey}
                 todayKey={todayKey}
                 maxDateKey={maxDateKey}
+                horizonDays={horizonDays}
                 days={days}
                 source={availability.source}
                 price={price}

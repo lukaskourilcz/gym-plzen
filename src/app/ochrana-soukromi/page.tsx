@@ -434,7 +434,7 @@ export default async function PrivacyPage() {
                       </tr>
                       <tr>
                         <td className="p-4 align-top font-bold text-foreground">
-                          namaste:tracking-consent-v2
+                          navi:tracking-consent-v2
                         </td>
                         <td className="p-4 align-top">
                           Záznam volby Analytika / Marketing v localStorage

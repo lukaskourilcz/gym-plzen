@@ -20,10 +20,10 @@ Renáta Janoušková, IČO: 29619998, sídlo: Úhlavská 546/2, 326 00, Plzeň -
 (dále jen „Poskytovatel“).
 
 1.3. Kontaktní údaje Studia:
-Web: www.namastegym.cz
-E-mail: info@namastegym.cz
+Web: www.navigym.cz
+E-mail: info@navigym.cz
 telefon: +420 731 737 557 | +420 721 560 150
-web: [www.namastegym.cz](http://www.namastegym.cz/)
+web: [www.navigym.cz](https://www.navigym.cz/)
 
 1.4. Tyto všeobecné obchodní podmínky (dále jen „VOP“) upravují práva a povinnosti vznikající v souvislosti s rezervací a užíváním Studia.
 
@@ -47,7 +47,7 @@ web: [www.namastegym.cz](http://www.namastegym.cz/)
 
 3. REZERVACE A UZAVŘENÍ SMLOUVY
 
-3.1. Rezervaci Studia provádí Klient prostřednictvím elektronického rezervačního systému dostupného prostřednictvím webových stránek www.namastegym.cz, případně jiným způsobem umožněným Poskytovatelem.
+3.1. Rezervaci Studia provádí Klient prostřednictvím elektronického rezervačního systému dostupného prostřednictvím webových stránek www.navigym.cz, případně jiným způsobem umožněným Poskytovatelem.
 
 3.2. Klient při rezervaci zvolí zejména datum a dostupný časový blok a vyplní požadované kontaktní údaje.
 

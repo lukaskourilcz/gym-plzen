@@ -14,7 +14,9 @@ export const META_PIXEL_ID =
 export const isAnalyticsConfigured = Boolean(GOOGLE_ANALYTICS_ID);
 export const isMarketingConfigured = Boolean(META_PIXEL_ID);
 
-export const CONSENT_STORAGE_KEY = "namaste:tracking-consent-v2";
+export const CONSENT_STORAGE_KEY = "navi:tracking-consent-v2";
+export const LEGACY_TRACKING_CONSENT_STORAGE_KEY =
+  "namaste:tracking-consent-v2";
 export const LEGACY_ANALYTICS_CONSENT_STORAGE_KEY =
   "namaste:analytics-consent-v1";
 export const OPEN_COOKIE_SETTINGS_EVENT = "namaste:open-cookie-settings";

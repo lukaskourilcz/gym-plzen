@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   CONSENT_STORAGE_KEY,
+  LEGACY_TRACKING_CONSENT_STORAGE_KEY,
   GOOGLE_ANALYTICS_ID,
   isAnalyticsConfigured,
   isMarketingConfigured,
@@ -122,6 +123,20 @@ export function AnalyticsConsentManager() {
       saved = parseConsentPreferences(
         window.localStorage.getItem(CONSENT_STORAGE_KEY),
       );
+      if (!saved) {
+        saved = parseConsentPreferences(
+          window.localStorage.getItem(LEGACY_TRACKING_CONSENT_STORAGE_KEY),
+        );
+        if (saved) {
+          window.localStorage.setItem(
+            CONSENT_STORAGE_KEY,
+            JSON.stringify(saved),
+          );
+          window.localStorage.removeItem(
+            LEGACY_TRACKING_CONSENT_STORAGE_KEY,
+          );
+        }
+      }
       legacy = window.localStorage.getItem(
         LEGACY_ANALYTICS_CONSENT_STORAGE_KEY,
       );
@@ -166,6 +181,7 @@ export function AnalyticsConsentManager() {
           JSON.stringify(nextPreferences),
         );
         window.localStorage.removeItem(LEGACY_ANALYTICS_CONSENT_STORAGE_KEY);
+        window.localStorage.removeItem(LEGACY_TRACKING_CONSENT_STORAGE_KEY);
       } catch {
         // The in-memory choice still applies for the current page.
       }

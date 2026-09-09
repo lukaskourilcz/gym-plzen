@@ -51,9 +51,9 @@ test("manually wrapped identity details remain in their clause", () => {
 
   assert.match(firstSection?.clauses[0]?.text ?? "", /Klára Bílková/);
   assert.match(firstSection?.clauses[0]?.text ?? "", /Renáta Janoušková/);
-  assert.match(firstSection?.clauses[2]?.text ?? "", /info@namastegym\.cz/);
+  assert.match(firstSection?.clauses[2]?.text ?? "", /info@navigym\.cz/);
   assert.match(
     firstSection?.clauses[2]?.text ?? "",
-    /\[www\.namastegym\.cz\]\(http:\/\/www\.namastegym\.cz\/\)/,
+    /\[www\.navigym\.cz\]\(https:\/\/www\.navigym\.cz\/\)/,
   );
 });

@@ -35,6 +35,7 @@ export function BookingCalendar({
   selectedDateKey,
   todayKey,
   maxDateKey,
+  horizonDays,
   days,
   source,
   price,
@@ -43,6 +44,7 @@ export function BookingCalendar({
   selectedDateKey: string | null;
   todayKey: string;
   maxDateKey: string;
+  horizonDays: number;
   days: BookingDayView[];
   source: "live" | "preview" | "unavailable";
   price: string;
@@ -315,7 +317,9 @@ export function BookingCalendar({
                 ))}
               </div>
               <div className="mt-4 border-t border-border pt-4 text-sm text-muted-foreground">
-                <span>Rezervovat lze nejvýše 60 dní dopředu.</span>
+                <span>
+                  Rezervovat lze nejvýše {horizonDays} dní dopředu.
+                </span>
               </div>
             </div>
           </>

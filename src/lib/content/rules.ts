@@ -15,7 +15,7 @@ export const DEFAULT_RULES_BODY = `1. Všeobecná ustanovení a definice
 
 1.2. Každý nájemce a jeho doprovod (dále společně jako „uživatelé“) jsou povinni seznámit se s tímto provozním řádem před vstupem do studia. Zakoupením časového slotu (pronájmem studia) v rezervačním systému potvrzuje objednatel svůj plný souhlas s tímto provozním řádem a zavazuje se k jeho bezvýhradnému dodržování.
 
-1.3. Prostory studia a jeho vybavení slouží výhradně k soukromému, individuálnímu sportovnímu a relaxačnímu využití. Vstup do studia je samoobslužný, umožněný elektronickým systémem (pomocí přístupového kódu) výhradně po online úhradě časového slotu pronájmu na webových stránkách www.namastegym.cz.
+1.3. Prostory studia a jeho vybavení slouží výhradně k soukromému, individuálnímu sportovnímu a relaxačnímu využití. Vstup do studia je samoobslužný, umožněný elektronickým systémem (pomocí přístupového kódu) výhradně po online úhradě časového slotu pronájmu na webových stránkách www.navigym.cz.
 
 2. Podmínky rezervace, cenotvorba a kapacita
 
