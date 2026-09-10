@@ -72,6 +72,10 @@ const nextConfig: NextConfig = {
 // Sentry wrapping is a no-op when SENTRY_* env vars are absent, so this is
 // safe to keep enabled in every environment. See NEEDED.md for setup.
 export default withSentryConfig(nextConfig, {
+  // Builds must not send Sentry plugin telemetry. Source uploads require an
+  // explicitly configured authentication token in the build environment.
+  telemetry: false,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
   silent: !process.env.CI,
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
