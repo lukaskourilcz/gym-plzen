@@ -10,7 +10,7 @@ obsahová i provozní administrace a věrnostní pravidlo každého 10. vstupu z
 
 - Next.js 15 (App Router), React 19, TypeScript
 - Supabase (Postgres, Auth) + Drizzle migrace
-- Stripe (platby a webhooky)
+- Comgate REST 2.0 (platby a webhooky; připravené k aktivaci)
 - Nuki (chytrý zámek a vstupní kódy)
 - Resend + WhatsApp (notifikace a pokyny)
 - Tailwind CSS 4, Bitter, Lucide
@@ -21,7 +21,7 @@ obsahová i provozní administrace a věrnostní pravidlo každého 10. vstupu z
 - **Supabase** — databáze, autentizace a RLS; registrační a resetovací e-maily
   odesílá přes Resend SMTP. Jejich české šablony se z administrace
   synchronizují přes serverový Management API token.
-- **Stripe** — jednorázové platby za rezervace.
+- **Comgate** — jednorázové platby za rezervace.
 - **Nuki** — generování a ověření vstupních kódů.
 - **Resend / WhatsApp** — doručení pěti e-mailových šablon, vstupních kódů a
   provozních pokynů; Resend je poskytovatelem SMTP pro Supabase Auth.

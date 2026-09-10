@@ -1,3 +1,25 @@
+# Aktualizace 10. 9. 2026 — Comgate a placené rezervace
+
+Rozhodnutí klienta: brána je Comgate. Rezervace vyžaduje platbu; výběr termínu
+na měsíc dopředu není neplacená rezervace. Nuki se připojí přibližně za měsíc.
+
+Dodáno: odstranění Stripe SDK/adaptéru/webhooku, Comgate REST 2.0 bez klíčů,
+bezpečný návrat hosta, ověřování callbacku přes API, polling watchdogu,
+atomická věrnostní odměna, společný DB zámek operací rezervace a perzistentní
+intenty plateb/kódů. Neurčitý externí výsledek se neopakuje automaticky.
+V Supabase aplikována `comgate_reliability`, DB constraint/rollback testy prošly.
+Výchozí `booking.operations`: platby vypnuté, zámek vypnutý, počáteční datum prázdné.
+Veřejný CMS FAQ o platbě aktualizován. Staré DB reference ponechány pro audit.
+
+119 unit testů a produkční dependency audit prošly. Statické design review
+bez P0/P1, opravené texty CTA a přidané ověření čekající platby. Přihlášené UI,
+reálná platba, odemčení a doručování vyžadují řízené E2E s účty/službami.
+Aktivace: [COMGATE_SETUP](docs/COMGATE_SETUP.md). Aktuální nálezy:
+[produkční review](docs/PRODUCTION_REVIEW_2026-09-10.md) a [NEEDED](NEEDED.md).
+Starší části níže popisují historii, včetně již odstraněného poskytovatele plateb.
+
+---
+
 # Předání session
 
 Aktualizováno: 10. 9. 2026

@@ -4,7 +4,7 @@ Kroky, které vyžadují Dashboard, externí konzoli nebo fyzické ověření.
 Produkční web běží na **`https://www.navigym.cz`** (od 5. 9. 2026).
 `namastegym.cz` zatím servíruje stejný web souběžně, než se z něj udělá 301.
 
-Při změně domény vždy aktualizujte také Supabase Auth URL, Stripe webhook,
+Při změně domény vždy aktualizujte také Supabase Auth URL, Comgate webhook,
 Nuki webhook a referrery klíče Google mapy.
 
 Supabase project ref: **`rkmunagymohxtclymacm`**
@@ -62,7 +62,7 @@ Public (Sensitive OFF):
 
 Server-only (Sensitive ON):
 
-- `STRIPE_WEBHOOK_SECRET` (viz §3)
+- `COMGATE_MERCHANT_ID`, `COMGATE_SECRET`, `COMGATE_TEST_MODE` (viz §3)
 - `SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`
 - `GOSMS_CLIENT_ID`, `GOSMS_CLIENT_SECRET`, `GOSMS_CHANNEL`
 - `CRON_SECRET` = vygeneruj `openssl rand -hex 32`
@@ -87,23 +87,14 @@ Bez hodnoty se příslušný skript vůbec nenačte a lišta souhlasu danou kate
 nenabídne. Google Merchant Center se pro rezervace fitness nepoužívá; místo něj
 Firemní profil na Googlu a konverze GA4 → Google Ads.
 
-## 3. Stripe webhook
+## 3. Comgate platby
 
-**Kde:** <https://dashboard.stripe.com/webhooks> (a Test-mode analog).
-
-- **Endpoint URL:** `https://www.navigym.cz/api/webhooks/stripe`
-  (na starém endpointu `namastegym.cz` zatím zůstává; **čeká na přepnutí**, viz NEEDED.md)
-- **Události:** `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`
-- **Signing secret** (`whsec_...`) → do Vercel Production jako `STRIPE_WEBHOOK_SECRET` (Sensitive).
-  Založ analog i pro Test mode, jeho secret nastav do Vercel Preview.
-
-**Ověření:** `stripe listen --forward-to https://www.navigym.cz/api/webhooks/stripe`
-vrátí `200` na `checkout.session.completed`; testovací Checkout dojde na success URL
-a rezervace přejde do `confirmed`.
-
-`.env.local` drží LIVE Stripe klíče. Doporučené uspořádání:
-`.env.local` + Vercel Preview = `sk_test_...` / `pk_test_...`,
-Vercel Production = `sk_live_...` / `pk_live_...`.
+Postup v [docs/COMGATE_SETUP.md](docs/COMGATE_SETUP.md). Bez klíčů jsou platby vypnuté.
+Testy provádějte v odděleném Preview/stagingu; produkční Vercel odmítá testovací režim.
+Po ověření přístupů zapněte platby v administraci → Nastavení → Provoz rezervací.
+Zámek se zapíná samostatně až po fyzickém ověření. Rezervace vyžaduje úhradu;
+termín lze vybrat dopředu podle nastaveného kalendářního horizontu.
+Starý Stripe endpoint a nepoužívané Stripe proměnné odstraňte v externích konzolích.
 
 ---
 
