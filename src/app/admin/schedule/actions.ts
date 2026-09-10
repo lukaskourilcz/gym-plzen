@@ -61,7 +61,7 @@ const createBlockedSlotImpl = defineAction({
         startsAt: r.startsAt,
         email: r.contactEmail ?? channels?.user.email ?? null,
         phone: r.contactPhone ?? channels?.profile?.phone ?? null,
-        notifyByWhatsapp: channels?.profile?.notifyByWhatsapp ?? true,
+        notifyByWhatsapp: channels?.profile?.notifyByWhatsapp ?? false,
         reason: input.note || undefined,
       });
     }

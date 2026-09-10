@@ -1,3 +1,4 @@
+import { raiseAlert } from "./alerts";
 import { and, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { payment, reservation } from "@/lib/db/schema";
@@ -136,7 +137,18 @@ export async function cancelReservation(params: {
     })
     .where(eq(reservation.id, params.id));
   const codes = await listCodesForReservation(params.id);
-  await Promise.allSettled(codes.map((code) => revokeAccessCode(code.id)));
+  const revocations = await Promise.allSettled(
+    codes.map((code) => revokeAccessCode(code.id)),
+  );
+  if (revocations.some((result) => result.status === "rejected")) {
+    await raiseAlert({
+      severity: "critical",
+      dedupeKey: `code-revocation:${params.id}`,
+      title: "Vstupní kód zrušené rezervace se nepodařilo odebrat",
+      body: "Rezervace je zrušená, ale kód může být stále platný. Zkontrolujte zámek Nuki.",
+      context: { reservationId: params.id },
+    });
+  }
 }
 
 /** Release stale Checkout holds so abandoned payments cannot block the gym. */
@@ -210,7 +222,7 @@ export async function listUpcomingForUser(
       and(
         eq(reservation.userId, userId),
         eq(reservation.status, "confirmed"),
-        gte(reservation.startsAt, new Date()),
+        gte(reservation.endsAt, new Date()),
       ),
     )
     .orderBy(reservation.startsAt);

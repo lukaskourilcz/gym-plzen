@@ -1,3 +1,4 @@
+import { googleAvatarUrl } from "@/lib/helpers/profile";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ensureProfileForUser } from "@/lib/services/members";
@@ -28,6 +29,7 @@ export interface SessionUser {
   name: string;
   role: string;
   isDemo: boolean;
+  googleAvatarUrl?: string | null;
 }
 
 /** The current user (verified via Supabase), or null when signed out. */
@@ -79,6 +81,12 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     name: profile.fullName ?? fullName ?? user.email ?? "",
     role: profile.role,
     isDemo: false,
+    googleAvatarUrl: googleAvatarUrl(
+      user.identities?.find((identity) => identity.provider === "google")
+        ?.identity_data?.avatar_url ??
+        user.identities?.find((identity) => identity.provider === "google")
+          ?.identity_data?.picture,
+    ),
   };
 }
 

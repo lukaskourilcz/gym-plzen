@@ -1,3 +1,4 @@
+import { deliverySummary } from "@/lib/helpers/delivery";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { profiles, messageDelivery } from "@/lib/db/schema";
@@ -72,6 +73,7 @@ export interface AccessCodeMessageContext {
 
 export interface DispatchOutcome {
   anyDelivered: boolean;
+  emailDelivered: boolean;
   deliveries: MessageDelivery[];
 }
 
@@ -104,8 +106,8 @@ export async function dispatchAccessCode(
     );
   }
 
-  // WhatsApp : opt-in (default on) and requires a phone number.
-  if (ctx.notifyByWhatsapp !== false && ctx.phone) {
+  // WhatsApp : strictly opt-in and requires a phone number.
+  if (ctx.notifyByWhatsapp === true && ctx.phone) {
     const result = await sendTemplateMessage({
       to: ctx.phone,
       templateName: "access_code",
@@ -137,7 +139,7 @@ export async function dispatchAccessCode(
   }
 
   return {
-    anyDelivered: deliveries.some((d) => d.status === "sent"),
+    ...deliverySummary(deliveries),
     deliveries,
   };
 }
@@ -188,7 +190,7 @@ export async function sendReservationClosure(params: {
     );
   }
 
-  if (params.notifyByWhatsapp !== false && params.phone) {
+  if (params.notifyByWhatsapp === true && params.phone) {
     const result = await sendTextMessage({
       to: params.phone,
       body: `Vaše rezervace na ${when} byla zrušena${

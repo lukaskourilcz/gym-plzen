@@ -1,3 +1,4 @@
+import { CustomerAvatar } from "@/components/site/customer-avatar";
 import {
   AlertTriangle,
   CalendarDays,
@@ -53,6 +54,18 @@ export default function DesignSystemPage() {
       />
 
       <div className="grid gap-8">
+        <section aria-labelledby="kit-avatar">
+          <h2 id="kit-avatar" className="mb-4 text-xl font-extrabold">
+            Zákaznický avatar
+          </h2>
+          <div className="flex flex-wrap items-center gap-5">
+            <CustomerAvatar name="Klára Nováková" />
+            <p>
+              Fotka z Googlu nebo iniciály. Při nedostupné fotce se zobrazí
+              iniciály.
+            </p>
+          </div>
+        </section>
         <section aria-labelledby="kit-brand">
           <h2 id="kit-brand" className="mb-4 text-xl font-extrabold">
             Značka a typografie

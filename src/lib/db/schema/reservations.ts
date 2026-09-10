@@ -64,6 +64,11 @@ export const reservation = pgTable(
   (t) => [
     index("reservation_starts_at_idx").on(t.startsAt),
     index("reservation_user_idx").on(t.userId),
+    index("reservation_user_created_id_idx").on(
+      t.userId,
+      t.createdAt.desc(),
+      t.id.desc(),
+    ),
     index("reservation_status_idx").on(t.status),
     index("reservation_confirmed_user_starts_idx")
       .on(t.userId, t.startsAt)

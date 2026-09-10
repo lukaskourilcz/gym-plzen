@@ -97,8 +97,12 @@ export async function revokeAccessCode(id: string): Promise<void> {
     .from(accessCode)
     .where(eq(accessCode.id, id))
     .limit(1);
-  if (!row) return;
-  if (row.nukiAuthId) await deleteAuth(row.nukiAuthId);
+  if (!row || row.status === "revoked") return;
+  if (row.nukiAuthId && !(await deleteAuth(row.nukiAuthId))) {
+    throw new Error(
+      "Nuki code revocation failed; the code is still considered active.",
+    );
+  }
   await db
     .update(accessCode)
     .set({ status: "revoked", updatedAt: new Date() })

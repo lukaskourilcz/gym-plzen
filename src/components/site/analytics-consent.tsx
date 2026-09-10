@@ -132,9 +132,7 @@ export function AnalyticsConsentManager() {
             CONSENT_STORAGE_KEY,
             JSON.stringify(saved),
           );
-          window.localStorage.removeItem(
-            LEGACY_TRACKING_CONSENT_STORAGE_KEY,
-          );
+          window.localStorage.removeItem(LEGACY_TRACKING_CONSENT_STORAGE_KEY);
         }
       }
       legacy = window.localStorage.getItem(

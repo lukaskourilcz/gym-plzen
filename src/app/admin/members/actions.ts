@@ -26,6 +26,7 @@ const updateMemberImpl = defineAction({
       note: input.note || null,
     });
     revalidatePath("/admin/members");
+    revalidatePath("/account");
   },
 });
 
@@ -51,6 +52,7 @@ const setMemberRoleImpl = defineAction({
       role,
     });
     revalidatePath("/admin/members");
+    revalidatePath("/account");
   },
 });
 

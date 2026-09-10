@@ -19,6 +19,12 @@ export const profiles = pgTable("profiles", {
   // Mirrored from auth.users for convenient listing/joins.
   email: text("email"),
   fullName: text("full_name"),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  avatarSource: text("avatar_source")
+    .$type<"initials" | "google">()
+    .default("google")
+    .notNull(),
 
   // Authorization: "admin" unlocks the administration.
   role: text("role").default("member").notNull(),
@@ -31,7 +37,7 @@ export const profiles = pgTable("profiles", {
   stripeCustomerId: text("stripe_customer_id").unique(),
 
   // Notification channel preferences (email is always on).
-  notifyByWhatsapp: boolean("notify_by_whatsapp").default(true).notNull(),
+  notifyByWhatsapp: boolean("notify_by_whatsapp").default(false).notNull(),
   notifyBySms: boolean("notify_by_sms").default(false).notNull(),
 
   // GDPR : explicit, timestamped consents.

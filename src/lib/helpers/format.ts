@@ -72,6 +72,7 @@ const STATUS_LABELS: Record<string, string> = {
   pending: "Čeká na potvrzení",
   confirmed: "Potvrzená",
   completed: "Dokončená",
+  no_show: "Nevyužitá",
   cancelled: "Zrušená",
   failed: "Nedoručená",
   sent: "Odeslaná",

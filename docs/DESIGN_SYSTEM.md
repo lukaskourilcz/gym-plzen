@@ -456,3 +456,12 @@ document. If a new pattern is justified, add its semantic token or component,
 document it here, and add it to `/admin/design-system` in the same change. Run
 the reviewer in `.claude/agents/design-system-reviewer.md` for every non-trivial
 UI implementation.
+
+## Customer avatar
+
+`CustomerAvatar` uses an 80px circular `accent` surface with accessible
+`accent-foreground` initials. The circle is reserved for personal identity,
+not controls. A verified Google HTTPS image is optional; initials appear when
+the image is missing or fails. The wrapper has an image role and name, while
+its children are decorative. Selection uses labelled native radios in the
+customer profile. The rendered example is in `/admin/design-system`.

@@ -126,7 +126,7 @@ export const SITE_DEFAULTS = {
     "Ti přijde společně s potvrzením tvojí rezervace veškeré potřebné info ke vstupu do našeho gymu do e-mailu, který jsi zadal při rezervaci.",
   "home.about.step3.title": "Vstup do fitka",
   "home.about.step3.body":
-    "Před začátkem tvé rezervace ti přijde do e-mailu a SMS unikátní kód, který zadáš na klávesnici u vstupu do fitness a dveře se ti odemknou. Kód platí pouze v tvém vybraném časovém okně.",
+    "Před začátkem tvé rezervace ti přijde do e-mailu unikátní kód, který zadáš na klávesnici u vstupu do fitness a dveře se ti odemknou. Kód platí pouze v tvém vybraném časovém okně.",
   "home.about.step4.title": "Zacvič si",
   "home.about.step4.body":
     "Po celou dobu tvého tréninku můžeš prostory využívat plně dle svého uvážení. Veškeré stroje a pomůcky jsou ti k dispozici. Pokud si nevíš rady, využij našeho videopomocníka nebo oslov třeba našeho trenéra.",

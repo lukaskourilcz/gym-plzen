@@ -317,9 +317,7 @@ export function BookingCalendar({
                 ))}
               </div>
               <div className="mt-4 border-t border-border pt-4 text-sm text-muted-foreground">
-                <span>
-                  Rezervovat lze nejvýše {horizonDays} dní dopředu.
-                </span>
+                <span>Rezervovat lze nejvýše {horizonDays} dní dopředu.</span>
               </div>
             </div>
           </>

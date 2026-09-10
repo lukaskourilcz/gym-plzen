@@ -142,8 +142,8 @@ export default async function BookingDetailsPage({
                 startsAtISO={startsAt.toISOString()}
                 entryPriceCents={entryPriceCents}
                 defaultValues={{
-                  firstName: nameParts.firstName,
-                  lastName: nameParts.lastName,
+                  firstName: member?.profile?.firstName ?? nameParts.firstName,
+                  lastName: member?.profile?.lastName ?? nameParts.lastName,
                   email: member?.user.email ?? "",
                   phone: member?.profile?.phone ?? "",
                 }}

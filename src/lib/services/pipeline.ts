@@ -1,6 +1,6 @@
-import { and, eq, isNull, lte, or } from "drizzle-orm";
+import { and, eq, getTableColumns, gt, isNull, lte, or } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { reservationPipeline } from "@/lib/db/schema";
+import { reservation, reservationPipeline } from "@/lib/db/schema";
 import type { ReservationPipeline } from "@/lib/db/types";
 import { addMinutes } from "@/lib/helpers/datetime";
 import { logger, redactForLogs } from "@/lib/helpers/logger";
@@ -107,10 +107,16 @@ export async function markStepFailed(
 /** Steps that are due for a retry now (consumed by the watchdog cron). */
 export async function dueForRetry(limit = 50): Promise<ReservationPipeline[]> {
   return db
-    .select()
+    .select(getTableColumns(reservationPipeline))
     .from(reservationPipeline)
+    .innerJoin(
+      reservation,
+      eq(reservation.id, reservationPipeline.reservationId),
+    )
     .where(
       and(
+        eq(reservation.status, "confirmed"),
+        gt(reservation.endsAt, new Date()),
         or(
           eq(reservationPipeline.status, "retrying"),
           eq(reservationPipeline.status, "pending"),

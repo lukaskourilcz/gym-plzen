@@ -22,7 +22,7 @@ export function MemberForm({ member }: { member: MemberWithProfile }) {
     defaultValues: {
       userId: member.user.id,
       phone: p?.phone ?? "",
-      notifyByWhatsapp: p?.notifyByWhatsapp ?? true,
+      notifyByWhatsapp: p?.notifyByWhatsapp ?? false,
       notifyBySms: p?.notifyBySms ?? false,
       marketingConsent: p?.marketingConsent ?? false,
       note: p?.note ?? "",

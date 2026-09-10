@@ -125,6 +125,11 @@ export const payment = pgTable(
   (t) => [
     index("payment_user_idx").on(t.userId),
     index("payment_reservation_idx").on(t.reservationId),
+    index("payment_reservation_created_id_idx").on(
+      t.reservationId,
+      t.createdAt.desc(),
+      t.id.desc(),
+    ),
     uniqueIndex("payment_checkout_session_uidx").on(t.stripeCheckoutSessionId),
   ],
 );

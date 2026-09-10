@@ -46,7 +46,15 @@ export function useActionForm<S extends z.ZodTypeAny>(config: {
   const submit = form.handleSubmit(async (values) => {
     setServerError(null);
     setSuccess(null);
-    const result = await config.action(values);
+    let result: Result<unknown>;
+    try {
+      result = await config.action(values);
+    } catch {
+      setServerError(
+        "Spojení se přerušilo. Zkontrolujte připojení a zkuste to znovu.",
+      );
+      return;
+    }
     if (result.ok) {
       setSuccess(config.successMessage ?? "Uloženo.");
       if (config.resetOnSuccess) form.reset();

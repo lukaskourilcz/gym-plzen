@@ -23,7 +23,11 @@ import { issueAndSend } from "./invoices";
 
 export async function fulfillReservation(reservationId: string): Promise<void> {
   const reservation = await getReservation(reservationId);
-  if (!reservation) {
+  if (
+    !reservation ||
+    reservation.status !== "confirmed" ||
+    reservation.endsAt <= new Date()
+  ) {
     logger.warn("fulfillReservation: reservation not found", { reservationId });
     return;
   }
@@ -78,18 +82,28 @@ export async function fulfillReservation(reservationId: string): Promise<void> {
     (step) => step.step === "code_delivered" && step.status === "succeeded",
   );
   let plaintext: string | null = null;
-  let codeReady = existing.some((c) => c.status !== "failed" && c.nukiAuthId);
+  let codeReady = existing.some(
+    (c) => ["scheduled", "active", "used"].includes(c.status) && c.nukiAuthId,
+  );
 
   const needsFreshCode =
     existing.length === 0 || !codeReady || (codeReady && !deliveryDone);
 
   if (needsFreshCode && !deliveryDone) {
     if (codeReady) {
-      await Promise.allSettled(
+      const revocations = await Promise.allSettled(
         existing
-          .filter((code) => code.nukiAuthId)
+          .filter((code) => code.nukiAuthId && code.status !== "revoked")
           .map((code) => revokeAccessCode(code.id)),
       );
+      if (revocations.some((result) => result.status === "rejected")) {
+        await markStepFailed(
+          reservationId,
+          "code_created",
+          "Previous access code could not be revoked",
+        );
+        return;
+      }
       codeReady = false;
     }
     try {
@@ -137,18 +151,18 @@ export async function fulfillReservation(reservationId: string): Promise<void> {
       code: plaintext,
       startsAt: reservation.startsAt,
       email: reservation.contactEmail,
-      phone: reservation.contactPhone ?? channels?.phone ?? null,
-      notifyByWhatsapp: channels?.notifyByWhatsapp ?? true,
+      phone: channels ? channels.phone : reservation.contactPhone,
+      notifyByWhatsapp: channels?.notifyByWhatsapp ?? false,
       notifyBySms: channels?.notifyBySms ?? false,
     });
 
-    if (outcome.anyDelivered) {
+    if (outcome.emailDelivered) {
       await markStepSucceeded(reservationId, "code_delivered");
     } else {
       await markStepFailed(
         reservationId,
         "code_delivered",
-        "No channel delivered the access code",
+        "Mandatory email delivery failed",
       );
     }
   }
