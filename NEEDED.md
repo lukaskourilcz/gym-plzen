@@ -4,6 +4,14 @@ Externí a klientské kroky. Manuální detaily viz [MANUAL_STEPS.md](./MANUAL_S
 
 ## Přehled úkolů
 
+Aktuální technické nálezy, ověřený stav Supabase/Vercelu a meze testování:
+[audit z 10. 9. 2026](docs/PRODUCTION_REVIEW_2026-09-10.md).
+
+- [ ] **Uzavřít P1 nálezy před spuštěním**: souběh fulfillmentu, potvrzení instalace Nuki autorizace, obnova webhooku po pádu workeru a atomické čerpání věrnostního vstupu. Podrobnosti a podmínky ověření jsou v aktuálním auditu. `[imp:5]` `[owner:ai]` `[kind:deploy]`
+- [x] **Nový zákaznický profil a migrace**: profil, změna hesla, historie objednávek/PDF, jméno a příjmení pro nové nákupy, telefon a avatar; povinný e-mail a volitelný WhatsApp. Migrace `customer_profile` aplikována a ověřena 10. 9. 2026. `[imp:5]` `[owner:ai]` `[kind:deploy]`
+- [ ] **Ověřit nové karty účtu v prohlížeči**: skutečný zákaznický účet, mobil/desktop, uložení po reloadu, změna/reset hesla, Google avatar a izolace historie/PDF mezi dvěma účty. Lokální browser byl při auditu blokovaný. `[imp:5]` `[owner:ai]` `[kind:deploy]`
+- [ ] **Sjednotit Vercel Node runtime**: projekt uvádí 24.x, repo požaduje Node 22. Ověřit a sjednotit projekt/build/runtime; rovněž prověřit produkční env a skutečný běh cronů. `[imp:4]` `[owner:ai]` `[kind:setup]`
+
 `[imp:N]` = priorita 1–5, `[owner:me]` = externí krok, `[owner:ai]` = úkol pro
 AI po dodání podkladů. `[kind:K]` ∈ `setup` `deploy` `legal` `content` `decision`.
 
@@ -41,7 +49,7 @@ AI po dodání podkladů. `[kind:K]` ∈ `setup` `deploy` `legal` `content` `dec
 - [ ] **Ostrý test přílohy kalendáře**: po zapojení Resend v ostrém provozu ověřit, že potvrzovací e-mail nese přílohu `rezervace.ics` a že se termín správně naimportuje do Google i Apple kalendáře (letní i zimní čas). `[imp:3]` `[owner:me]` `[time:15m]` `[kind:setup]`
 - [ ] **Posoudit variantu „Moderní“ a rozhodnout o výchozím vzhledu**: otevřít `www.navigym.cz/dev` (tím se přepínač odemkne jen ve vašem prohlížeči, návštěvníci ho nevidí) a projít úvodní stránku, Vybavení a účet v obou podobách. Po rozhodnutí nastavíme vybranou podobu jako výchozí a přepínač i stránku `/dev` odstraníme. `[imp:3]` `[owner:me]` `[time:20m]` `[kind:decision]`
 - [ ] **Smazat sloučené větve na GitHubu**: `claude/navi-rebrand` a `claude/mobbing-feature-ideas-kens00` jsou plně v `main`, ale mazání větví z tohoto prostředí neprojde přes proxy (běžný push funguje). Smazat je v GitHubu → Branches. Ostatní větve (`gym-plzen-hero-calendar-rgq7fl`, `gym-website-booking-plan-8u4t2n`, `needed-md-reorganize-vd0trv`, `preview-no-login-design-6lr2vm`, `codex/production-readiness-audit`) sloučené nejsou — nejdřív ověřit, jestli v nich něco nezůstalo. `[imp:2]` `[owner:me]` `[time:5m]` `[kind:deploy]`
-- [ ] **Aktualizovat Next.js kvůli postcss**: `npm audit --omit=dev` hlásí poslední dvě zranitelnosti (`postcss` ≤ 8.5.22) přes verzi Next.js. Ostatní byly opraveny; tato vyžaduje `next@16.3.4`, tedy hlavní verzi. Týká se sestavení, ne běhu webu u návštěvníků. Naplánovat samostatně s plným regresním testem. `[imp:2]` `[owner:ai]` `[time:2h]` `[kind:deploy]`
+- [x] **Opravit zranitelnosti postcss a sharp**: 10. 9. 2026 aktualizovány overrides na `postcss@8.5.28` a `sharp@0.35.4`; `npm audit --omit=dev` je čistý a produkční build prošel. Přechod na hlavní verzi Next.js nebyl potřeba. `[imp:2]` `[owner:ai]` `[kind:deploy]`
 - [ ] **Plné E2E proti testovacím službám**: po připojení Stripe test / Nuki / Resend / WhatsApp spustit Playwright suite s mutačním povolením. `[imp:2]` `[owner:ai]` `[time:1h]` `[kind:deploy]`
 - [x] **Vybrat funkce z Mobbin rešerše**: rozhodnuto. Staví se věrnostní progres, „Přidat do kalendáře“ (bez pozvánek hostů), administrace „Dnes“ a balíček moderního designu s přepínačem Klasický/Moderní; poukazy a hlídání termínu se nestaví. Plán: [docs/MODERN_PLAN.md](./docs/MODERN_PLAN.md). `[imp:3]` `[owner:me]` `[time:30m]` `[kind:decision]`
 

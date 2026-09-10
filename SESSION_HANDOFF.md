@@ -1,8 +1,24 @@
 # Předání session
 
-Aktualizováno: 5. 9. 2026
+Aktualizováno: 10. 9. 2026
 
 ## Stav
+
+**Zákaznický profil a audit (10. 9. 2026).** Účet má profil, historii
+objednávek a budoucí rezervace. Ukládá jméno/příjmení, telefon, avatar
+Google/iniciály, dobrovolný WhatsApp a umožňuje změnu hesla. E-mailové kódy
+jsou povinné i v doručovací pipeline. Změna jména předvyplňuje nové nákupy;
+již vystavené doklady se nepřepisují. Aditivní migrace `customer_profile`
+je aplikovaná a ověřená v Supabase. Opravené závislosti mají nulový
+produkční npm audit; build, typy, lint a 108 unit testů prošly.
+
+**Spuštění zatím není schválené auditem.** Nalezená P1 rizika souběhu
+fulfillmentu a věrnostní odměny, obnovy webhooku po pádu procesu a potvrzení
+Nuki autorizace jsou v [aktuálním reportu](docs/PRODUCTION_REVIEW_2026-09-10.md).
+Chybí ověření produkčních env a placeného průchodu až po fyzické odemčení,
+profilových mutací a mobilního vzhledu v přihlášeném prohlížeči.
+Podrobnosti starších předání níže jsou historické; při rozporu má přednost
+report z 10. 9. 2026.
 
 **Produkční audit administrace (5. 9. 2026).** Prošlo se všech 17
 administrátorských obrazovek bez chyb v konzoli. Produkční CMS je doplněný na
