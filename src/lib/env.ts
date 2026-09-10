@@ -16,6 +16,8 @@ const serverSchema = z.object({
     .enum(["development", "test", "production"])
     .default("development"),
 
+  VERCEL_ENV: z.enum(["production", "preview", "development"]).optional(),
+
   // Optional during the build so the public site can deploy in demo mode.
   // Database-backed operations still require a real URL at runtime.
   DATABASE_URL: z.string().url().optional(),
@@ -36,8 +38,9 @@ const serverSchema = z.object({
   // Auth e-mail templates in sync with the admin editor. Never expose it.
   SUPABASE_MANAGEMENT_API_TOKEN: z.string().optional(),
 
-  STRIPE_SECRET_KEY: z.string().optional(),
-  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  COMGATE_MERCHANT_ID: z.string().optional(),
+  COMGATE_SECRET: z.string().optional(),
+  COMGATE_TEST_MODE: z.enum(["true", "false"]).default("true"),
 
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().optional(),
@@ -90,7 +93,7 @@ type ServerEnv = typeof env;
  * actionable error otherwise : pointing the operator at NEEDED.md.
  *
  * @example
- *   const { STRIPE_SECRET_KEY } = requireEnv("STRIPE_SECRET_KEY");
+ *   const { COMGATE_SECRET } = requireEnv("COMGATE_SECRET");
  */
 export function requireEnv<K extends keyof ServerEnv>(
   ...keys: K[]
