@@ -99,8 +99,7 @@ export function VoucherForm() {
         </Field>
       </div>
       <p className="mb-4 text-sm text-muted-foreground">
-        Sleva, po které zbývá méně než minimální platba Stripe 15 Kč, dokončí
-        rezervaci jako bezplatnou.
+        Rezervace je zdarma pouze tehdy, když sleva pokryje celou cenu.
       </p>
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={formState.isSubmitting}>

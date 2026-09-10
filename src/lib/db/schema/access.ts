@@ -1,4 +1,12 @@
-import { index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import {
+  uniqueIndex,
+  index,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { profiles } from "./members";
 import { reservation } from "./reservations";
 import { accessCodeStatus } from "./enums";
@@ -34,6 +42,9 @@ export const accessCode = pgTable(
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (t) => [
+    uniqueIndex("access_code_one_live_uidx")
+      .on(t.reservationId)
+      .where(sql`${t.status} not in ('revoked', 'expired')`),
     index("access_code_reservation_idx").on(t.reservationId),
     index("access_code_status_idx").on(t.status),
   ],

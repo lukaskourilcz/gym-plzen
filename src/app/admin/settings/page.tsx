@@ -1,3 +1,6 @@
+import { getOperations } from "@/lib/services/operations";
+import { DEFAULT_OPERATIONS } from "@/lib/config/operations";
+import { OperationsForm } from "./operations-form";
 import { cms, invoices } from "@/lib/services";
 import { loadSiteContent } from "@/lib/content/site";
 import {
@@ -46,6 +49,7 @@ export const dynamic = "force-dynamic";
 /** Configure the front-end assets (logo, terms PDF) and message templates. */
 export default async function SettingsPage() {
   const demo = await hasDemoAdminSession();
+  const operations = demo ? DEFAULT_OPERATIONS : await getOperations();
   const [
     logoUrl,
     termsUrl,
@@ -97,6 +101,17 @@ export default async function SettingsPage() {
       />
 
       <div className="grid gap-6">
+        <Card className="max-w-2xl">
+          <CardHeader>
+            <CardTitle>Rezervace, platby a vstup do studia</CardTitle>
+            <CardDescription>
+              Jednotlivé fáze spuštění lze zapínat nezávisle.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <OperationsForm values={operations} />
+          </CardContent>
+        </Card>
         <Card className="max-w-2xl">
           <CardHeader>
             <CardTitle>Logo a obchodní podmínky</CardTitle>

@@ -1,3 +1,6 @@
+import { withReservationLock } from "./operation-lock";
+import { getOperations } from "./operations";
+import { isDateOpenForBooking } from "@/lib/config/operations";
 import { and, eq, gt, inArray, lt, ne } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
@@ -88,6 +91,20 @@ export interface RescheduleReservationInput {
 export async function rescheduleReservation(
   input: RescheduleReservationInput,
 ): Promise<Reservation> {
+  return withReservationLock(input.reservationId, () =>
+    rescheduleLocked(input),
+  );
+}
+async function rescheduleLocked(
+  input: RescheduleReservationInput,
+): Promise<Reservation> {
+  if (
+    !isDateOpenForBooking(
+      dateKeyInTimeZone(input.startsAt),
+      await getOperations(),
+    )
+  )
+    throw new ActionError("Tento den zatím není možné rezervovat.");
   const now = input.now ?? new Date();
   if (Number.isNaN(input.startsAt.getTime()) || input.startsAt <= now) {
     throw new ActionError("Vyberte platný budoucí termín.");

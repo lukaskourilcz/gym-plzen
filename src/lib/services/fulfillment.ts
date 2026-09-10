@@ -1,3 +1,5 @@
+import { withReservationLock } from "./operation-lock";
+import { getOperations } from "./operations";
 import { logger } from "@/lib/helpers/logger";
 import { getReservation } from "./reservations";
 import {
@@ -16,12 +18,15 @@ import { issueAndSend } from "./invoices";
 /**
  * Fulfillment orchestrator : runs a confirmed reservation through the reliability
  * pipeline: (payment ✓) → code_created → code_delivered. Called after payment
- * confirmation (Stripe webhook / membership booking) and by the watchdog cron
+ * confirmation (Comgate webhook / membership booking) and by the watchdog cron
  * to retry stuck reservations. Idempotent: it inspects existing state and only
  * does the work that remains.
  */
 
 export async function fulfillReservation(reservationId: string): Promise<void> {
+  return withReservationLock(reservationId, () => fulfillLocked(reservationId));
+}
+async function fulfillLocked(reservationId: string): Promise<void> {
   const reservation = await getReservation(reservationId);
   if (
     !reservation ||
@@ -33,7 +38,8 @@ export async function fulfillReservation(reservationId: string): Promise<void> {
   }
 
   // Step: payment : reaching here means it's confirmed/paid.
-  await markStepSucceeded(reservationId, "payment");
+  // Keep this step pending until initial fulfillment finishes, so a crash
+  // after the payment commit is recoverable even while the lock is disabled.
 
   // Confirmation is useful operationally, but must never hold back the entry
   // code. Access-code delivery remains the reliability pipeline's invariant.
@@ -75,8 +81,21 @@ export async function fulfillReservation(reservationId: string): Promise<void> {
     logger.error(error, { where: "fulfillment.issueAndSend", reservationId });
   }
 
+  // The physical lock is a separately enabled phase. Paid reservations still
+  // receive their confirmation/document while lock work remains dormant.
+  await markStepSucceeded(reservationId, "payment");
+  if (!(await getOperations()).accessCodesEnabled) return;
+
   // Step: code_created : issue a code + provision it on the lock (once).
   const existing = await listCodesForReservation(reservationId);
+  if (existing.some((code) => code.failureReason === "provisioning_unknown")) {
+    await markStepFailed(
+      reservationId,
+      "code_created",
+      "Předchozí požadavek na zámek má neznámý výsledek. Ověřte autorizaci v Nuki; automaticky se další kód nevytvoří.",
+    );
+    return;
+  }
   const pipeline = await getPipeline(reservationId);
   const deliveryDone = pipeline.some(
     (step) => step.step === "code_delivered" && step.status === "succeeded",

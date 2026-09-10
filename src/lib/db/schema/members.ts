@@ -33,9 +33,6 @@ export const profiles = pgTable("profiles", {
   phone: text("phone"),
   phoneVerified: boolean("phone_verified").default(false).notNull(),
 
-  // Stripe customer handle (created lazily on first checkout).
-  stripeCustomerId: text("stripe_customer_id").unique(),
-
   // Notification channel preferences (email is always on).
   notifyByWhatsapp: boolean("notify_by_whatsapp").default(false).notNull(),
   notifyBySms: boolean("notify_by_sms").default(false).notNull(),

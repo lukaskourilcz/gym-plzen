@@ -231,7 +231,7 @@ export const SITE_DEFAULTS = {
     "Ihned zavolejte na telefonní číslo uvedené v kontaktech. Problém vyřešíme na dálku.",
   "faq.11.question": "Jaké jsou způsoby platby?",
   "faq.11.answer":
-    "Platba probíhá bezpečně online přes integrovanou platební bránu Stripe. Zaplatit můžete platební kartou, přes Google Pay nebo Apple Pay.",
+    "Rezervace je platná až po zaplacení. Online platby přes Comgate připravujeme; dostupné platební metody se zobrazí při úhradě.",
   "faq.12.question": "Je možné rezervaci stornovat?",
   "faq.12.answer":
     "Ano. Bezplatné storno nebo změnu termínu lze provést nejpozději 24 hodin před začátkem rezervace.",

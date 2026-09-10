@@ -65,14 +65,14 @@ export const systemAlert = pgTable(
 );
 
 /**
- * A generic idempotency ledger for inbound webhooks (Stripe, Nuki, WhatsApp).
+ * A generic idempotency ledger for inbound webhooks (Comgate, Nuki, WhatsApp).
  * We record each provider event id once so retried deliveries are no-ops.
  */
 export const webhookEvent = pgTable(
   "webhook_event",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    provider: text("provider").notNull(), // "stripe" | "nuki" | "whatsapp"
+    provider: text("provider").notNull(), // "comgate" | "nuki" | "whatsapp"
     eventId: text("event_id").notNull(),
     payload: jsonb("payload"),
     processedAt: timestamp("processed_at"),

@@ -9,8 +9,7 @@ export const dynamic = "force-dynamic";
  * The reservation as a calendar file.
  *
  * Authorisation mirrors the confirmation page exactly: either the caller is
- * signed in and owns the reservation, or they carry the unguessable Stripe
- * Checkout session id that identifies a guest booking. Anything else is a 404
+ * signed in and owns the reservation, or they carry the random confirmation token that identifies a guest booking. Anything else is a 404
  * rather than a 403, so the endpoint never confirms that an id exists.
  */
 export async function GET(
@@ -18,12 +17,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const sessionId =
-    new URL(request.url).searchParams.get("session_id") ?? undefined;
+  const token = new URL(request.url).searchParams.get("token") ?? undefined;
   const session = await getSession();
   const userId = session?.user.id ?? null;
 
-  const slot = await resolveConfirmedSlot({ id, userId, sessionId });
+  const slot = await resolveConfirmedSlot({ id, userId, token });
   if (!slot) return new Response("Not found", { status: 404 });
 
   const content = await loadSiteContent();
@@ -50,13 +48,13 @@ export async function GET(
 async function resolveConfirmedSlot(params: {
   id: string;
   userId: string | null;
-  sessionId?: string;
+  token?: string;
 }) {
   // Guest path (and the member's own redirect): the Checkout session, or a
   // free entry identified by its reservation id.
   const confirmation = await booking.getBookingConfirmation({
     userId: params.userId,
-    stripeSessionId: params.sessionId,
+    token: params.token,
     reservationId: params.id,
   });
   if (

@@ -178,7 +178,7 @@ export default async function PrivacyPage() {
                     <strong className={strong}>Platební a účetní údaje</strong>{" "}
                     – částka, měna, stav platby a identifikátory zákazníka,
                     platební relace, předplatného nebo dokladu. Údaje platební
-                    karty zadáváte přímo společnosti Stripe; NAVI je nezískává
+                    karty zadáváte přímo společnosti Comgate; NAVI je nezískává
                     ani neukládá.
                   </li>
                   <li>
@@ -204,8 +204,8 @@ export default async function PrivacyPage() {
                 </ul>
                 <p>
                   Údaje získáváme přímo od vás, při používání webu a studia a od
-                  zapojených poskytovatelů, například potvrzení platby od Stripe
-                  nebo událost od elektronického zámku Nuki.
+                  zapojených poskytovatelů, například potvrzení platby od
+                  Comgate nebo událost od elektronického zámku Nuki.
                 </p>
               </PolicySection>
 
@@ -331,7 +331,7 @@ export default async function PrivacyPage() {
                     (Vercel a Supabase),
                   </li>
                   <li>
-                    poskytovateli platební brány a zpracování plateb (Stripe),
+                    poskytovateli platební brány a zpracování plateb (Comgate),
                   </li>
                   <li>
                     poskytovatelům e-mailů, WhatsApp zpráv a volitelných SMS

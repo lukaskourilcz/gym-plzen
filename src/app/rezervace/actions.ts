@@ -14,19 +14,13 @@ import {
 import { booking, loyalty, vouchers } from "@/lib/services";
 import { takeRateLimit } from "@/lib/security/rate-limit";
 
-/**
- * Start checkout for a chosen slot from the booking details form. Open to
- * guests: a signed-in visitor books against their account (and their loyalty
- * counter), anyone else books on the contact details they just supplied.
- *
- * Returns either a Stripe checkout URL (paid entry) or a free-entry
- * confirmation, which the client uses to redirect. The Stripe webhook confirms
- * and fulfills on payment.
- */
+/** Validate contact details and start hosted checkout. */
 const startImpl = defineAction({
   schema: bookingDetailsSchema,
   authorize: getSession,
   handler: async (input, session) => {
+    if (session?.user.isDemo)
+      throw new ActionError("Demo rezervace se neukládají.");
     const requestHeaders = await headers();
     const source =
       requestHeaders.get("x-forwarded-for")?.split(",")[0] ?? "unknown";

@@ -16,7 +16,7 @@ export function CalendarActions({
   startsAt,
   endsAt,
   address,
-  sessionId,
+  token,
   className,
   size = "sm",
 }: {
@@ -25,7 +25,7 @@ export function CalendarActions({
   endsAt: Date;
   address?: string | null;
   /** Passed through so a guest keeps the same proof of access the page used. */
-  sessionId?: string;
+  token?: string;
   className?: string;
   size?: "sm" | "default";
 }) {
@@ -35,8 +35,8 @@ export function CalendarActions({
     endsAt,
     address,
   });
-  const icsHref = sessionId
-    ? `/api/reservations/${reservationId}/calendar.ics?session_id=${encodeURIComponent(sessionId)}`
+  const icsHref = token
+    ? `/api/reservations/${reservationId}/calendar.ics?token=${encodeURIComponent(token)}`
     : `/api/reservations/${reservationId}/calendar.ics`;
   const classes = cn(buttonVariants({ variant: "outline", size }));
 

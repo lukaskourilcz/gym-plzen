@@ -7,7 +7,7 @@ interface WindowRecord {
 const windows = new Map<string, WindowRecord>();
 
 /**
- * Small process-local backstop for server actions. Supabase/Stripe rate limits
+ * Small process-local backstop for server actions. Supabase/Comgate rate limits
  * and an edge/WAF limit remain authoritative in a multi-instance deployment.
  */
 export function takeRateLimit(

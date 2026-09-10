@@ -1,6 +1,7 @@
 import { raiseAlert } from "./alerts";
-import { and, desc, eq, gte, inArray, lt } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { and, desc, eq, gte, inArray, lt, notExists } from "drizzle-orm";
+import { db, type DatabaseExecutor } from "@/lib/db";
+import { withReservationLock } from "./operation-lock";
 import { payment, reservation } from "@/lib/db/schema";
 import type { NewReservation, Reservation } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
@@ -37,6 +38,8 @@ export interface CreateReservationInput {
   createdByAdminId?: string | null;
   /** Admin bookings and membership-covered bookings start confirmed. */
   status?: Reservation["status"];
+  confirmationTokenHash?: string;
+  loyaltyReward?: number;
 }
 
 /**
@@ -46,6 +49,7 @@ export interface CreateReservationInput {
  */
 export async function createReservation(
   input: CreateReservationInput,
+  executor: DatabaseExecutor = db,
 ): Promise<Reservation> {
   const availability = await checkAvailability(input.startsAt, input.endsAt);
   if (!availability.available) {
@@ -67,11 +71,13 @@ export async function createReservation(
     rulesAcceptedAt: input.rulesAcceptedAt ?? null,
     termsAcceptedAt: input.termsAcceptedAt ?? null,
     createdByAdminId: input.createdByAdminId ?? null,
+    confirmationTokenHash: input.confirmationTokenHash,
+    loyaltyReward: input.loyaltyReward,
   };
 
   let created: Reservation | undefined;
   try {
-    [created] = await db.insert(reservation).values(values).returning();
+    [created] = await executor.insert(reservation).values(values).returning();
   } catch (error) {
     const code =
       typeof error === "object" && error !== null && "code" in error
@@ -87,7 +93,7 @@ export async function createReservation(
   if (!created) throw new ActionError("Rezervaci se nepodařilo vytvořit.");
 
   if (created.status === "confirmed") {
-    await initPipeline(created.id);
+    await initPipeline(created.id, executor);
   }
 
   return created;
@@ -123,6 +129,14 @@ export async function updateReservationPrice(
 
 /** Cancel a reservation, recording who/why. */
 export async function cancelReservation(params: {
+  id: string;
+  reason?: string;
+  byAdminId?: string;
+}): Promise<void> {
+  return withReservationLock(params.id, () => cancelReservationLocked(params));
+}
+
+async function cancelReservationLocked(params: {
   id: string;
   reason?: string;
   byAdminId?: string;
@@ -169,6 +183,22 @@ export async function releaseExpiredPendingReservations(
       .where(
         and(
           eq(reservation.status, "pending"),
+          notExists(
+            db
+              .select({ id: payment.id })
+              .from(payment)
+              .where(
+                and(
+                  eq(payment.reservationId, reservation.id),
+                  eq(payment.provider, "comgate"),
+                  inArray(payment.status, [
+                    "pending",
+                    "processing",
+                    "succeeded",
+                  ]),
+                ),
+              ),
+          ),
           lt(reservation.createdAt, cutoff),
         ),
       )

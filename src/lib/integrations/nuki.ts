@@ -60,7 +60,7 @@ export async function createKeypadCode(
       {
         method: "PUT",
         headers: authHeader(),
-        retries: 2,
+        retries: 0,
         json: {
           name: params.name,
           type: NUKI_TYPE_KEYPAD,

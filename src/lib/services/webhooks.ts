@@ -2,55 +2,34 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { webhookEvent } from "@/lib/db/schema";
 
-/**
- * Webhook idempotency ledger. Providers retry deliveries, so every handler
- * records each event id once and skips events it has already processed.
- */
+export type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-/**
- * Record a provider event. Returns `false` when the event was already seen
- * (the caller should then no-op). Relies on the unique (provider, eventId)
- * index to make the check atomic.
- */
-export async function recordWebhookEvent(params: {
-  provider: string;
-  eventId: string;
-  payload?: unknown;
-}): Promise<{ isNew: boolean }> {
-  const inserted = await db
-    .insert(webhookEvent)
-    .values({
-      provider: params.provider,
-      eventId: params.eventId,
-      payload: params.payload,
-      processedAt: null,
-    })
-    .onConflictDoNothing()
-    .returning({ id: webhookEvent.id });
-
-  return { isNew: inserted.length > 0 };
-}
-
-export async function markWebhookProcessed(provider: string, eventId: string) {
-  await db
-    .update(webhookEvent)
-    .set({ processedAt: new Date() })
-    .where(
-      and(
-        eq(webhookEvent.provider, provider),
-        eq(webhookEvent.eventId, eventId),
-      ),
+/** Ledger and business writes commit together. A killed worker rolls both
+ * back; legacy unprocessed rows are reclaimed on the next delivery.
+ * Handler must contain DB writes only, using the supplied transaction.
+ * External calls belong before this transaction or in the durable pipeline. */
+export async function processWebhookEvent(
+  event: { provider: string; eventId: string; payload?: unknown },
+  handler: (tx: Transaction) => Promise<void>,
+): Promise<{ duplicate: boolean }> {
+  return db.transaction(async (tx) => {
+    await tx.insert(webhookEvent).values(event).onConflictDoNothing();
+    const predicate = and(
+      eq(webhookEvent.provider, event.provider),
+      eq(webhookEvent.eventId, event.eventId),
     );
-}
-
-/** Remove a failed claim so the provider retry can process the event again. */
-export async function releaseWebhookClaim(provider: string, eventId: string) {
-  await db
-    .delete(webhookEvent)
-    .where(
-      and(
-        eq(webhookEvent.provider, provider),
-        eq(webhookEvent.eventId, eventId),
-      ),
-    );
+    const [row] = await tx
+      .select()
+      .from(webhookEvent)
+      .where(predicate)
+      .for("update");
+    if (!row) throw new Error("Webhook ledger row missing");
+    if (row.processedAt) return { duplicate: true };
+    await handler(tx);
+    await tx
+      .update(webhookEvent)
+      .set({ processedAt: new Date() })
+      .where(predicate);
+    return { duplicate: false };
+  });
 }

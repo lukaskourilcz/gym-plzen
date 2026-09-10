@@ -9,8 +9,6 @@ export const upsertPlanSchema = z.object({
   priceCents: priceCentsSchema,
   currency: z.string().length(3).default("czk"),
   interval: z.enum(["week", "month", "year"]).default("month"),
-  stripePriceId: optionalText(200),
-  stripeProductId: optionalText(200),
   sessionsPerInterval: z.number().int().positive().optional(),
   isActive: z.boolean().default(true),
   sortOrder: z.number().int().default(0),

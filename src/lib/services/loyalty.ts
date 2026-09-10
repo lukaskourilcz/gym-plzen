@@ -1,5 +1,5 @@
-import { and, count, eq, inArray } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { and, count, eq, inArray, ne } from "drizzle-orm";
+import { db, type DatabaseExecutor } from "@/lib/db";
 import { reservation } from "@/lib/db/schema";
 import {
   DEFAULT_ENTRY_PRICE_CENTS,
@@ -39,8 +39,11 @@ export interface LoyaltyStatus {
 }
 
 /** Count a member's entries that count toward loyalty. */
-export async function countEntries(userId: string): Promise<number> {
-  const [row] = await db
+export async function countEntries(
+  userId: string,
+  executor: DatabaseExecutor = db,
+): Promise<number> {
+  const [row] = await executor
     .select({ value: count() })
     .from(reservation)
     .where(
@@ -81,7 +84,16 @@ export async function countEntriesForUsers(
 /** Compute the member's loyalty status from their entry count. */
 export async function getLoyaltyStatus(userId: string): Promise<LoyaltyStatus> {
   const totalEntries = await countEntries(userId);
-  return deriveLoyaltyStatus(totalEntries);
+  const status = deriveLoyaltyStatus(totalEntries);
+  if (
+    status.nextEntryIsFree &&
+    (await hasClaimedReward(
+      userId,
+      Math.floor(totalEntries / FREE_ENTRY_EVERY) + 1,
+    ))
+  )
+    status.nextEntryIsFree = false;
+  return status;
 }
 
 /**
@@ -214,4 +226,24 @@ export function loyaltyProgressSentence(status: LoyaltyStatus): string {
     return `${visit}. Příští vstup máte zdarma.`;
   }
   return `${visit}, do vstupu zdarma ${entriesRemainingPhrase(entriesUntilFree)}.`;
+}
+
+/** Active claim numbers prevent an older cancellation from reissuing a reward. */
+export async function hasClaimedReward(
+  userId: string,
+  reward: number,
+  executor: DatabaseExecutor = db,
+) {
+  const [row] = await executor
+    .select({ id: reservation.id })
+    .from(reservation)
+    .where(
+      and(
+        eq(reservation.userId, userId),
+        eq(reservation.loyaltyReward, reward),
+        ne(reservation.status, "cancelled"),
+      ),
+    )
+    .limit(1);
+  return Boolean(row);
 }

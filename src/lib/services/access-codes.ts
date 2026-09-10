@@ -1,3 +1,6 @@
+import { withReservationLock } from "./operation-lock";
+import { getOperations } from "./operations";
+import { getReservation } from "./reservations";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { accessCode } from "@/lib/db/schema";
@@ -33,6 +36,30 @@ export async function issueAccessCode(params: {
   endsAt: Date;
   memberName?: string | null;
 }): Promise<IssueCodeResult> {
+  return withReservationLock(params.reservationId, () =>
+    issueAccessCodeLocked(params),
+  );
+}
+async function issueAccessCodeLocked(params: {
+  reservationId: string;
+  startsAt: Date;
+  endsAt: Date;
+  memberName?: string | null;
+}): Promise<IssueCodeResult> {
+  const reservation = await getReservation(params.reservationId);
+  if (
+    !(await getOperations()).accessCodesEnabled ||
+    reservation?.status !== "confirmed" ||
+    reservation.endsAt <= new Date()
+  )
+    throw new Error(
+      "Access-code issuance is disabled or reservation is not eligible",
+    );
+  const existing = await listCodesForReservation(params.reservationId);
+  if (
+    existing.some((row) => row.status !== "revoked" && row.status !== "expired")
+  )
+    throw new Error("Existing access code must be reconciled or revoked first");
   const plaintext = generateNumericCode(6);
   // Code valid from a lead time before the slot until the end of the slot plus
   // the shower grace, so the member can shower after training.
@@ -48,7 +75,8 @@ export async function issueAccessCode(params: {
       codeLast2: plaintext.slice(-2),
       validFrom,
       validUntil,
-      status: "scheduled",
+      status: "failed",
+      failureReason: "provisioning_unknown",
     })
     .returning();
 
@@ -63,10 +91,15 @@ export async function issueAccessCode(params: {
     allowedUntil: validUntil,
   });
 
-  if (lock.created) {
+  if (lock.created && lock.nukiAuthId) {
     await db
       .update(accessCode)
-      .set({ nukiAuthId: lock.nukiAuthId, updatedAt: new Date() })
+      .set({
+        nukiAuthId: lock.nukiAuthId,
+        status: "scheduled",
+        failureReason: null,
+        updatedAt: new Date(),
+      })
       .where(eq(accessCode.id, record.id));
   } else {
     logger.warn("Nuki provisioning failed; code stored for retry", {
@@ -77,7 +110,7 @@ export async function issueAccessCode(params: {
       .update(accessCode)
       .set({
         status: "failed",
-        failureReason: lock.error,
+        failureReason: "provisioning_unknown",
         updatedAt: new Date(),
       })
       .where(eq(accessCode.id, record.id));
@@ -86,7 +119,7 @@ export async function issueAccessCode(params: {
   return {
     accessCode: record,
     plaintext,
-    provisionedOnLock: lock.created,
+    provisionedOnLock: Boolean(lock.created && lock.nukiAuthId),
   };
 }
 
@@ -98,6 +131,21 @@ export async function revokeAccessCode(id: string): Promise<void> {
     .where(eq(accessCode.id, id))
     .limit(1);
   if (!row || row.status === "revoked") return;
+  return withReservationLock(row.reservationId, () =>
+    revokeAccessCodeLocked(id),
+  );
+}
+async function revokeAccessCodeLocked(id: string): Promise<void> {
+  const [row] = await db
+    .select()
+    .from(accessCode)
+    .where(eq(accessCode.id, id))
+    .limit(1);
+  if (!row || row.status === "revoked") return;
+  if (row.failureReason === "provisioning_unknown" && !row.nukiAuthId)
+    throw new Error(
+      "Unknown Nuki authorization must be reconciled before revocation",
+    );
   if (row.nukiAuthId && !(await deleteAuth(row.nukiAuthId))) {
     throw new Error(
       "Nuki code revocation failed; the code is still considered active.",

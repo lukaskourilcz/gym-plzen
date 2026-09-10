@@ -1,3 +1,5 @@
+import { isComgateConfigured } from "@/lib/integrations/comgate";
+import { getOperations } from "@/lib/services/operations";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -60,6 +62,8 @@ export default async function BookingDetailsPage({
     redirect(`/rezervace?date=${dateKey}`);
   }
 
+  const operations = await getOperations();
+  const paymentsAvailable = operations.paymentsEnabled && isComgateConfigured();
   const [content, session, free] = await Promise.all([
     loadSiteContent(),
     getSession(),
@@ -124,9 +128,7 @@ export default async function BookingDetailsPage({
 
             {session ? null : (
               <Notice className="mt-6" role="status">
-                Rezervaci dokončíte i bez registrace. S účtem navíc uvidíte své
-                termíny na jednom místě a počítá se vám každý{" "}
-                {content.freeEntryEvery}. vstup zdarma.{" "}
+                {`Rezervaci dokončíte i bez registrace. S účtem se počítá každý ${content.freeEntryEvery}. vstup zdarma.`}{" "}
                 <Link
                   href={`/login?next=${encodeURIComponent(`/rezervace/udaje?start=${startsAt.toISOString()}`)}`}
                   className="font-bold text-accent-foreground underline"
@@ -137,8 +139,15 @@ export default async function BookingDetailsPage({
               </Notice>
             )}
 
+            {!paymentsAvailable && entryPriceCents > 0 ? (
+              <Notice className="mt-6">
+                Online platby se připravují. Můžete si vytvořit účet a
+                prohlédnout termíny. Rezervace bude platná až po úhradě.
+              </Notice>
+            ) : null}
             <div className="mt-8">
               <BookingDetailsForm
+                paymentsAvailable={paymentsAvailable}
                 startsAtISO={startsAt.toISOString()}
                 entryPriceCents={entryPriceCents}
                 defaultValues={{

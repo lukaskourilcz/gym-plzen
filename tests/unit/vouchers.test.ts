@@ -36,12 +36,12 @@ describe("vouchers", () => {
     assert.equal(quote.finalPriceCents, 0);
   });
 
-  it("turns sub-minimum CZK Stripe totals into a free reservation", () => {
+  it("preserves the exact positive amount after discount", () => {
     const quote = calculateVoucherQuote(
       { code: "ALMOST", kind: "fixed_amount", value: 28_000 },
       29_000,
     );
-    assert.equal(quote.discountCents, 29_000);
-    assert.equal(quote.finalPriceCents, 0);
+    assert.equal(quote.discountCents, 28_000);
+    assert.equal(quote.finalPriceCents, 1_000);
   });
 });

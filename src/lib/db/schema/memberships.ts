@@ -49,8 +49,8 @@ export const pricingPeriod = pgTable(
 );
 
 /**
- * A membership plan is an admin-editable product (name, price, Stripe price id).
- * Members subscribe to a plan; the subscription state is mirrored from Stripe.
+ * A membership plan is an admin-editable product (name and price).
+ * Members subscribe to a plan; the subscription state is recorded in payment history.
  */
 export const membershipPlan = pgTable("membership_plan", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -58,10 +58,8 @@ export const membershipPlan = pgTable("membership_plan", {
   description: text("description"),
   priceCents: integer("price_cents").notNull(),
   currency: text("currency").default("czk").notNull(),
-  // Billing interval as understood by Stripe ("month" | "week" | "year").
+  // Billing interval for a historical plan ("month" | "week" | "year").
   interval: text("interval").notNull().default("month"),
-  stripePriceId: text("stripe_price_id").unique(),
-  stripeProductId: text("stripe_product_id"),
   // Sessions included per interval; null = unlimited.
   sessionsPerInterval: integer("sessions_per_interval"),
   isActive: boolean("is_active").default(true).notNull(),
@@ -70,7 +68,7 @@ export const membershipPlan = pgTable("membership_plan", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-/** A member's subscription to a plan, kept in sync via Stripe webhooks. */
+/** A member's subscription to a plan, managed by the operator. */
 export const membership = pgTable(
   "membership",
   {
@@ -82,7 +80,6 @@ export const membership = pgTable(
       onDelete: "set null",
     }),
     status: membershipStatus("status").notNull().default("incomplete"),
-    stripeSubscriptionId: text("stripe_subscription_id").unique(),
     currentPeriodStart: timestamp("current_period_start"),
     currentPeriodEnd: timestamp("current_period_end"),
     cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false).notNull(),
@@ -95,7 +92,7 @@ export const membership = pgTable(
 
 /**
  * A payment record : either a one-off session payment or a subscription
- * invoice. Card data never touches our system; we only mirror Stripe state.
+ * invoice. Card data never touches our system; we only store provider references.
  */
 export const payment = pgTable(
   "payment",
@@ -114,15 +111,29 @@ export const payment = pgTable(
     status: paymentStatus("status").notNull().default("pending"),
     amountCents: integer("amount_cents").notNull(),
     currency: text("currency").default("czk").notNull(),
-    stripePaymentIntentId: text("stripe_payment_intent_id").unique(),
-    stripeInvoiceId: text("stripe_invoice_id"),
-    stripeCheckoutSessionId: text("stripe_checkout_session_id"),
+    provider: text("provider").notNull().default("legacy"),
+    providerPaymentId: text("provider_payment_id"),
+    providerMerchantId: text("provider_merchant_id"),
+    providerEnvironment: text("provider_environment"),
+    gatewayUrl: text("gateway_url"),
+    lastCheckedAt: timestamp("last_checked_at", { withTimezone: true }),
     failureReason: text("failure_reason"),
     paidAt: timestamp("paid_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (t) => [
+    uniqueIndex("payment_provider_id_uidx").on(t.provider, t.providerPaymentId),
+    uniqueIndex("payment_active_reservation_uidx")
+      .on(t.reservationId)
+      .where(
+        sql`${t.provider} = 'comgate' and ${t.status} in ('pending', 'processing', 'succeeded')`,
+      ),
+    index("payment_provider_check_idx").on(
+      t.provider,
+      t.status,
+      t.lastCheckedAt,
+    ),
     index("payment_user_idx").on(t.userId),
     index("payment_reservation_idx").on(t.reservationId),
     index("payment_reservation_created_id_idx").on(
@@ -130,6 +141,5 @@ export const payment = pgTable(
       t.createdAt.desc(),
       t.id.desc(),
     ),
-    uniqueIndex("payment_checkout_session_uidx").on(t.stripeCheckoutSessionId),
   ],
 );

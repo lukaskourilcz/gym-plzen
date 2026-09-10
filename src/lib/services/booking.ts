@@ -1,24 +1,26 @@
-import { publicEnv } from "@/lib/public-env";
+import { randomBytes } from "node:crypto";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { profiles } from "@/lib/db/schema";
+import { FREE_ENTRY_EVERY } from "@/lib/config/pricing";
+import { isDateOpenForBooking } from "@/lib/config/operations";
 import { ActionError } from "@/lib/helpers/action";
+import { hashCode, safeEqual } from "@/lib/helpers/crypto";
 import { dateKeyInTimeZone } from "@/lib/helpers/datetime";
+import { isComgateConfigured } from "@/lib/integrations/comgate";
 import {
-  isStripeConfigured,
-  ensureStripeCustomer,
-  createOneOffCheckout,
-  stripe,
-} from "@/lib/integrations/stripe";
-import { checkAvailability } from "./availability";
-import {
-  cancelReservation,
-  confirmReservation,
   createReservation,
   getReservation,
-  releaseExpiredPendingReservations,
+  cancelReservation,
+  confirmReservation,
   updateReservationPrice,
 } from "./reservations";
-import { getEntryPriceCents, priceForNextEntry } from "./loyalty";
-import { getMember, setStripeCustomerId } from "./members";
-import { recordPayment } from "./memberships";
+import {
+  countEntries,
+  deriveLoyaltyStatus,
+  getEntryPriceCents,
+  hasClaimedReward,
+} from "./loyalty";
 import { fulfillReservation } from "./fulfillment";
 import {
   getBookingHorizonDays,
@@ -27,317 +29,168 @@ import {
 } from "./slots";
 import {
   claimVoucher,
-  hasRedeemedForReservation,
   redeemForReservation,
   releaseForReservation,
 } from "./vouchers";
-
-/**
- * Booking service : turns a chosen slot into a reservation and either a Stripe
- * checkout (paid entry) or an immediate confirmation (free loyalty entry).
- *
- * The reservation is created as `pending` before checkout so the slot is held
- * (the DB exclusion constraint prevents anyone else taking it during payment);
- * the Stripe webhook confirms it and runs fulfillment on success.
- */
+import { getOperations } from "./operations";
+import { startReservationPayment, refreshReservationPayment } from "./payments";
 
 export type BookingOutcome =
-  | { kind: "free"; reservationId: string }
+  | { kind: "free" | "processing"; reservationId: string; token?: string }
   | {
       kind: "checkout";
       url: string;
       reservationId: string;
       priceCents: number;
     };
-
 export type BookingConfirmation =
   | {
       state: "confirmed";
       reservationId: string;
       priceCents: number;
       currency: string;
-      /** Slot boundaries, so the page can offer a calendar entry. */
       startsAt: Date;
       endsAt: Date;
     }
-  | { state: "processing"; reservationId: string }
+  | { state: "processing" | "cancelled"; reservationId: string }
   | { state: "invalid" };
-
-const AVAILABILITY_MESSAGES: Record<string, string> = {
-  closed: "Vybraný čas je mimo otevírací dobu.",
-  overlap_reservation: "Tento termín je již rezervovaný.",
-  overlap_block: "Tento termín je blokovaný.",
-  invalid_range: "Neplatný časový rozsah.",
-};
-
-/** Details every visitor supplies before paying, member or guest alike. */
 export interface BookingDetails {
   name: string;
   email: string;
-  /** E.164, already normalised by the action. */
   phone: string;
-  /** When the visitor ticked the house rules and the terms of business. */
   acceptedAt: Date;
 }
 
-/**
- * Start a booking at the window beginning `startsAt`.
- * - Free (loyalty) entry → creates a confirmed reservation, fulfills it,
- *   returns `{ kind: "free" }`.
- * - Paid entry → creates a pending reservation + a Stripe Checkout session,
- *   returns `{ kind: "checkout", url }`.
- *
- * `userId` is null for a guest booking. A guest pays the standard price and
- * receives their code on the contact details recorded here; loyalty (every
- * n-th entry free) needs an account to count against and stays members-only.
- */
 export async function startBooking(params: {
   userId: string | null;
   startsAt: Date;
   details: BookingDetails;
   voucherCode?: string;
 }): Promise<BookingOutcome> {
-  await releaseExpiredPendingReservations();
-  const startsAt = params.startsAt;
-  const resolved = await resolveBookableSlot(startsAt);
-  const horizonDays = await getBookingHorizonDays();
+  const operations = await getOperations();
+  const resolved = await resolveBookableSlot(params.startsAt);
+  const horizon = await getBookingHorizonDays();
+  const date = dateKeyInTimeZone(params.startsAt);
   if (
     !resolved ||
-    !isWithinBookingHorizon(
-      dateKeyInTimeZone(startsAt),
-      new Date(),
-      horizonDays,
-    )
-  ) {
-    throw new ActionError("Vybraný termín není platný.");
-  }
-  const endsAt = resolved.endsAt;
-
-  if (startsAt.getTime() <= Date.now()) {
-    throw new ActionError("Tento čas už nelze rezervovat.");
-  }
-
-  const availability = await checkAvailability(startsAt, endsAt);
-  if (!availability.available) {
-    throw new ActionError(
-      AVAILABILITY_MESSAGES[availability.reason ?? "invalid_range"]!,
+    params.startsAt <= new Date() ||
+    !isWithinBookingHorizon(date, new Date(), horizon) ||
+    !isDateOpenForBooking(date, operations)
+  )
+    throw new ActionError("Vybraný termín není dostupný pro rezervaci.");
+  const basePrice = await getEntryPriceCents();
+  const token = randomBytes(32).toString("hex");
+  // Price, reward claim and reservation commit atomically under one member row
+  // lock. No external HTTP call can hold this transaction open.
+  const reserved = await db.transaction(async (tx) => {
+    let reward: number | undefined;
+    if (params.userId) {
+      const [member] = await tx
+        .select({ id: profiles.id })
+        .from(profiles)
+        .where(eq(profiles.id, params.userId))
+        .for("update");
+      if (!member) throw new ActionError("Účet nebyl nalezen.");
+      const count = await countEntries(params.userId, tx);
+      const number = Math.floor(count / FREE_ENTRY_EVERY) + 1;
+      if (
+        deriveLoyaltyStatus(count).nextEntryIsFree &&
+        !(await hasClaimedReward(params.userId, number, tx))
+      )
+        reward = number;
+    }
+    if (!reward && (!operations.paymentsEnabled || !isComgateConfigured()))
+      throw new ActionError(
+        "Online platby teď nejsou dostupné. Zkuste to prosím později.",
+      );
+    return createReservation(
+      {
+        userId: params.userId,
+        startsAt: params.startsAt,
+        endsAt: resolved.endsAt,
+        contactName: params.details.name,
+        contactEmail: params.details.email,
+        contactPhone: params.details.phone,
+        rulesAcceptedAt: params.details.acceptedAt,
+        termsAcceptedAt: params.details.acceptedAt,
+        priceCents: reward ? 0 : basePrice,
+        status: reward ? "confirmed" : "pending",
+        confirmationTokenHash: hashCode(token),
+        loyaltyReward: reward,
+      },
+      tx,
     );
-  }
-
-  const member = params.userId ? await getMember(params.userId) : null;
-  if (params.userId && !member) throw new ActionError("Účet nenalezen.");
-
-  // The details typed into the booking form win over the profile: they are what
-  // the visitor just confirmed, and they are where the entry code will be sent.
-  const contact = {
-    contactName: params.details.name,
-    contactEmail: params.details.email,
-    contactPhone: params.details.phone,
-    rulesAcceptedAt: params.details.acceptedAt,
-    termsAcceptedAt: params.details.acceptedAt,
-  };
-
-  // Loyalty is counted against an account, so a guest always pays.
-  const { priceCents: originalPriceCents, isFree } = params.userId
-    ? await priceForNextEntry(params.userId)
-    : { priceCents: await getEntryPriceCents(), isFree: false };
-
-  // Free loyalty entry : no payment needed.
-  if (isFree) {
-    const reservation = await createReservation({
-      userId: params.userId,
-      startsAt,
-      endsAt,
-      status: "confirmed",
-      ...contact,
-      priceCents: 0,
-    });
-    await fulfillReservation(reservation.id);
-    return { kind: "free", reservationId: reservation.id };
-  }
-
-  // Paid entry : requires Stripe.
-  if (!isStripeConfigured()) {
-    throw new ActionError(
-      "Platby zatím nejsou nastavené. Zkuste to prosím později.",
-    );
-  }
-
-  const reservation = await createReservation({
-    userId: params.userId,
-    startsAt,
-    endsAt,
-    status: "pending",
-    ...contact,
-    priceCents: originalPriceCents,
   });
-
-  let priceCents = originalPriceCents;
-  const voucherCode = params.voucherCode?.trim();
-  if (voucherCode) {
+  if (reserved.status === "confirmed") {
+    await fulfillReservation(reserved.id);
+    return { kind: "free", reservationId: reserved.id, token };
+  }
+  let priceCents = basePrice;
+  if (params.voucherCode?.trim()) {
     try {
       const quote = await claimVoucher({
-        code: voucherCode,
-        reservationId: reservation.id,
-        originalPriceCents,
+        code: params.voucherCode,
+        reservationId: reserved.id,
+        originalPriceCents: basePrice,
+        reservedUntil: resolved.endsAt,
       });
       priceCents = quote.finalPriceCents;
-      await updateReservationPrice(reservation.id, priceCents);
+      await updateReservationPrice(reserved.id, priceCents);
     } catch (error) {
-      await Promise.allSettled([
-        releaseForReservation(reservation.id),
-        cancelReservation({
-          id: reservation.id,
-          reason: "voucher_rejected",
-        }),
-      ]);
+      await releaseForReservation(reserved.id);
+      await cancelReservation({ id: reserved.id, reason: "voucher_rejected" });
       throw error;
     }
   }
-
   if (priceCents === 0) {
-    const confirmed = await confirmReservation(reservation.id);
-    if (!confirmed) {
-      await releaseForReservation(reservation.id);
+    if (!(await confirmReservation(reserved.id)))
       throw new ActionError("Rezervaci se nepodařilo potvrdit.");
-    }
-    await redeemForReservation(reservation.id);
-    await fulfillReservation(reservation.id);
-    return { kind: "free", reservationId: reservation.id };
+    await redeemForReservation(reserved.id);
+    await fulfillReservation(reserved.id);
+    return { kind: "free", reservationId: reserved.id, token };
   }
-
-  // A guest has no Stripe customer to reuse; Checkout collects the receipt
-  // address from `customerEmail` instead.
-  let customerId: string | undefined;
-  let session;
-  try {
-    if (params.userId && member) {
-      customerId = await ensureStripeCustomer({
-        existingCustomerId: member.profile?.stripeCustomerId ?? null,
-        email: params.details.email,
-        name: params.details.name,
-        userId: params.userId,
-      });
-      if (customerId !== member.profile?.stripeCustomerId) {
-        await setStripeCustomerId(params.userId, customerId);
-      }
-    }
-
-    const appUrl = publicEnv.NEXT_PUBLIC_APP_URL;
-    session = await createOneOffCheckout({
-      customerId,
-      customerEmail: customerId ? undefined : params.details.email,
-      amountCents: priceCents,
-      currency: "czk",
-      description: "Jednorázový vstup | NAVI Private Gym",
-      successUrl: `${appUrl}/rezervace/hotovo?session_id={CHECKOUT_SESSION_ID}`,
-      cancelUrl: `${appUrl}/rezervace?date=${dateKeyInTimeZone(startsAt)}&stav=zruseno`,
-      // Guests carry no `userId`; the webhook matches an absent one against a
-      // reservation with no owner, so the ownership check still holds.
-      metadata: {
-        reservationId: reservation.id,
-        ...(params.userId ? { userId: params.userId } : {}),
-      },
-      expiresAt: new Date(Date.now() + 31 * 60 * 1000),
-    });
-  } catch (error) {
-    await Promise.allSettled([
-      releaseForReservation(reservation.id),
-      cancelReservation({ id: reservation.id, reason: "checkout_failed" }),
-    ]);
-    throw error;
-  }
-
-  // Record a pending payment linked to the reservation (webhook marks it paid).
-  await recordPayment({
+  return startReservationPayment({
+    reservationId: reserved.id,
     userId: params.userId,
-    reservationId: reservation.id,
-    type: "one_off",
-    status: "pending",
-    amountCents: priceCents,
-    currency: "czk",
-    stripeCheckoutSessionId: session.id,
+    token,
   });
-
-  if (!session.url) {
-    throw new ActionError("Nepodařilo se zahájit platbu.");
-  }
-  return {
-    kind: "checkout",
-    url: session.url,
-    reservationId: reservation.id,
-    priceCents,
-  };
 }
 
-/**
- * Verify success-page parameters against Stripe and reservation ownership.
- *
- * `userId` is null for a guest: the reservation has no owner either, and the
- * unguessable Checkout session id in the redirect is what stands in for one.
- */
+/** An account or a random 256-bit token proves access. Provider transaction IDs
+ * are never accepted as guest authentication. */
 export async function getBookingConfirmation(params: {
   userId: string | null;
-  stripeSessionId?: string;
   reservationId?: string;
+  token?: string;
 }): Promise<BookingConfirmation> {
-  if (params.stripeSessionId && isStripeConfigured()) {
-    try {
-      const session = await stripe().checkout.sessions.retrieve(
-        params.stripeSessionId,
-      );
-      const reservationId = session.metadata?.reservationId;
-      if (
-        !reservationId ||
-        (session.metadata?.userId ?? null) !== params.userId
-      ) {
-        return { state: "invalid" };
-      }
-      const reservation = await getReservation(reservationId);
-      if (!reservation || (reservation.userId ?? null) !== params.userId) {
-        return { state: "invalid" };
-      }
-      return session.payment_status === "paid" &&
-        reservation.status === "confirmed"
-        ? {
-            state: "confirmed",
-            reservationId,
-            priceCents: session.amount_total ?? reservation.priceCents ?? 0,
-            currency: session.currency ?? "czk",
-            startsAt: reservation.startsAt,
-            endsAt: reservation.endsAt,
-          }
-        : { state: "processing", reservationId };
-    } catch {
-      return { state: "invalid" };
-    }
+  if (!params.reservationId || !/^[0-9a-f-]{36}$/i.test(params.reservationId))
+    return { state: "invalid" };
+  let row = await getReservation(params.reservationId);
+  if (!row) return { state: "invalid" };
+  const owns = Boolean(params.userId) && row.userId === params.userId;
+  const provesToken =
+    !row.userId &&
+    Boolean(
+      params.token &&
+      row.confirmationTokenHash &&
+      safeEqual(hashCode(params.token), row.confirmationTokenHash),
+    );
+  if (!owns && !provesToken) return { state: "invalid" };
+  if (row.status === "pending") {
+    await refreshReservationPayment(row.id);
+    row = await getReservation(row.id);
+    if (!row) return { state: "invalid" };
   }
-
-  // Free loyalty entries skip Stripe entirely, so they are members-only and
-  // identified by the reservation id alone.
-  if (params.reservationId) {
-    const reservation = await getReservation(params.reservationId);
-    const ownedByCurrentUser =
-      Boolean(params.userId) && reservation?.userId === params.userId;
-    const freeVoucherGuest =
-      !params.userId &&
-      reservation?.userId == null &&
-      (await hasRedeemedForReservation(params.reservationId));
-    if (
-      reservation &&
-      (ownedByCurrentUser || freeVoucherGuest) &&
-      reservation.status === "confirmed" &&
-      reservation.priceCents === 0
-    ) {
-      return {
-        state: "confirmed",
-        reservationId: reservation.id,
-        priceCents: 0,
-        currency: "czk",
-        startsAt: reservation.startsAt,
-        endsAt: reservation.endsAt,
-      };
-    }
-  }
-  return { state: "invalid" };
+  if (row.status === "cancelled")
+    return { state: "cancelled", reservationId: row.id };
+  if (row.status === "confirmed" || row.status === "completed")
+    return {
+      state: "confirmed",
+      reservationId: row.id,
+      priceCents: row.priceCents ?? 0,
+      currency: row.currency,
+      startsAt: row.startsAt,
+      endsAt: row.endsAt,
+    };
+  return { state: "processing", reservationId: row.id };
 }

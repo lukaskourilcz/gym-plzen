@@ -5,7 +5,7 @@ import type { Membership, MembershipPlan, Payment } from "@/lib/db/types";
 
 /**
  * Membership & plan service. Plans are admin-managed products; memberships are
- * per-member subscriptions kept in sync from Stripe webhooks.
+ * historical per-member subscriptions.
  */
 
 // ── Plans ───────────────────────────────────────────────────────────────────
@@ -41,8 +41,6 @@ export async function upsertPlan(input: {
   priceCents: number;
   currency?: string;
   interval?: string;
-  stripePriceId?: string | null;
-  stripeProductId?: string | null;
   sessionsPerInterval?: number | null;
   isActive?: boolean;
   sortOrder?: number;
@@ -53,8 +51,6 @@ export async function upsertPlan(input: {
     priceCents: input.priceCents,
     currency: input.currency ?? "czk",
     interval: input.interval ?? "month",
-    stripePriceId: input.stripePriceId ?? null,
-    stripeProductId: input.stripeProductId ?? null,
     sessionsPerInterval: input.sessionsPerInterval ?? null,
     isActive: input.isActive ?? true,
     sortOrder: input.sortOrder ?? 0,
@@ -73,7 +69,7 @@ export async function upsertPlan(input: {
   return row!;
 }
 
-// ── Memberships (Stripe-synced) ──────────────────────────────────────────────
+// ── Historical memberships ──────────────────────────────────────────────
 
 /** The member's current active/trialing membership, if any. */
 export async function getActiveMembership(
@@ -94,44 +90,6 @@ export async function hasActiveMembership(userId: string): Promise<boolean> {
   return (await getActiveMembership(userId)) !== null;
 }
 
-/** Upsert a membership from a Stripe subscription (called by the webhook). */
-export async function upsertMembershipFromStripe(input: {
-  userId: string;
-  stripeSubscriptionId: string;
-  status: Membership["status"];
-  planId?: string | null;
-  currentPeriodStart?: Date | null;
-  currentPeriodEnd?: Date | null;
-  cancelAtPeriodEnd?: boolean;
-}): Promise<void> {
-  const now = new Date();
-  const existing = await db
-    .select({ id: membership.id })
-    .from(membership)
-    .where(eq(membership.stripeSubscriptionId, input.stripeSubscriptionId))
-    .limit(1);
-
-  const values = {
-    userId: input.userId,
-    planId: input.planId ?? null,
-    status: input.status,
-    stripeSubscriptionId: input.stripeSubscriptionId,
-    currentPeriodStart: input.currentPeriodStart ?? null,
-    currentPeriodEnd: input.currentPeriodEnd ?? null,
-    cancelAtPeriodEnd: input.cancelAtPeriodEnd ?? false,
-    updatedAt: now,
-  };
-
-  if (existing[0]) {
-    await db
-      .update(membership)
-      .set(values)
-      .where(eq(membership.id, existing[0].id));
-  } else {
-    await db.insert(membership).values(values);
-  }
-}
-
 // ── Payments (history) ───────────────────────────────────────────────────────
 
 export async function listPaymentsForUser(userId: string): Promise<Payment[]> {
@@ -140,53 +98,4 @@ export async function listPaymentsForUser(userId: string): Promise<Payment[]> {
     .from(payment)
     .where(eq(payment.userId, userId))
     .orderBy(desc(payment.createdAt));
-}
-
-export async function recordPayment(input: {
-  userId?: string | null;
-  reservationId?: string | null;
-  membershipId?: string | null;
-  type: Payment["type"];
-  status: Payment["status"];
-  amountCents: number;
-  currency?: string;
-  stripePaymentIntentId?: string | null;
-  stripeInvoiceId?: string | null;
-  stripeCheckoutSessionId?: string | null;
-}): Promise<Payment> {
-  const values = {
-    userId: input.userId ?? null,
-    reservationId: input.reservationId ?? null,
-    membershipId: input.membershipId ?? null,
-    type: input.type,
-    status: input.status,
-    amountCents: input.amountCents,
-    currency: input.currency ?? "czk",
-    stripePaymentIntentId: input.stripePaymentIntentId ?? null,
-    stripeInvoiceId: input.stripeInvoiceId ?? null,
-    stripeCheckoutSessionId: input.stripeCheckoutSessionId ?? null,
-    paidAt: input.status === "succeeded" ? new Date() : null,
-    updatedAt: new Date(),
-  };
-  const query = db.insert(payment).values(values);
-  const [row] = input.stripeCheckoutSessionId
-    ? await query
-        .onConflictDoUpdate({
-          target: payment.stripeCheckoutSessionId,
-          set: values,
-        })
-        .returning()
-    : await query.onConflictDoNothing().returning();
-  if (!row) throw new Error("Payment record could not be persisted.");
-  return row;
-}
-
-export async function markCheckoutPaymentFailed(
-  checkoutSessionId: string,
-  failureReason: string,
-) {
-  await db
-    .update(payment)
-    .set({ status: "failed", failureReason, updatedAt: new Date() })
-    .where(eq(payment.stripeCheckoutSessionId, checkoutSessionId));
 }

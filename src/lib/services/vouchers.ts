@@ -1,12 +1,11 @@
 import { randomBytes } from "node:crypto";
 import { and, asc, count, desc, eq, inArray, lt, sql } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { db, type DatabaseExecutor } from "@/lib/db";
 import { voucher, voucherRedemption } from "@/lib/db/schema";
 import type { Voucher } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
 
 const CHECKOUT_HOLD_MS = 35 * 60 * 1000;
-const STRIPE_MINIMUM_CZK_CENTS = 1_500;
 const CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 
 export interface VoucherQuote {
@@ -44,15 +43,8 @@ export function calculateVoucherQuote(
     row.kind === "percentage"
       ? Math.round((originalPriceCents * row.value) / 100)
       : row.value;
-  let discountCents = Math.min(originalPriceCents, requestedDiscount);
-  let finalPriceCents = Math.max(0, originalPriceCents - discountCents);
-
-  // Stripe's documented CZK minimum is 15 Kč. A voucher that leaves less is
-  // completed as a free reservation instead of creating an invalid payment.
-  if (finalPriceCents > 0 && finalPriceCents < STRIPE_MINIMUM_CZK_CENTS) {
-    discountCents = originalPriceCents;
-    finalPriceCents = 0;
-  }
+  const discountCents = Math.min(originalPriceCents, requestedDiscount);
+  const finalPriceCents = Math.max(0, originalPriceCents - discountCents);
 
   return {
     code: row.code,
@@ -130,6 +122,7 @@ export async function claimVoucher(params: {
   code: string;
   reservationId: string;
   originalPriceCents: number;
+  reservedUntil?: Date;
 }): Promise<VoucherQuote> {
   const code = normalizeVoucherCode(params.code);
   return db.transaction(async (tx) => {
@@ -173,15 +166,19 @@ export async function claimVoucher(params: {
       originalPriceCents: quote.originalPriceCents,
       discountCents: quote.discountCents,
       finalPriceCents: quote.finalPriceCents,
-      reservedUntil: new Date(now.getTime() + CHECKOUT_HOLD_MS),
+      reservedUntil:
+        params.reservedUntil ?? new Date(now.getTime() + CHECKOUT_HOLD_MS),
     });
     return quote;
   });
 }
 
-export async function redeemForReservation(reservationId: string) {
+export async function redeemForReservation(
+  reservationId: string,
+  executor: DatabaseExecutor = db,
+) {
   const now = new Date();
-  await db
+  await executor
     .update(voucherRedemption)
     .set({ status: "redeemed", redeemedAt: now, updatedAt: now })
     .where(
@@ -192,9 +189,12 @@ export async function redeemForReservation(reservationId: string) {
     );
 }
 
-export async function releaseForReservation(reservationId: string) {
+export async function releaseForReservation(
+  reservationId: string,
+  executor: DatabaseExecutor = db,
+) {
   const now = new Date();
-  await db
+  await executor
     .update(voucherRedemption)
     .set({ status: "released", releasedAt: now, updatedAt: now })
     .where(

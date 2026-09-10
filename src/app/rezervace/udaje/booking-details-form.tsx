@@ -25,10 +25,12 @@ import { quoteVoucherAction } from "../actions";
  * consent belongs to the reservation, not to the account.
  */
 export function BookingDetailsForm({
+  paymentsAvailable = true,
   startsAtISO,
   entryPriceCents,
   defaultValues,
 }: {
+  paymentsAvailable?: boolean;
   startsAtISO: string;
   entryPriceCents: number;
   defaultValues: {
@@ -64,6 +66,8 @@ export function BookingDetailsForm({
       },
     });
 
+  const effectivePriceCents = voucherQuote?.finalPriceCents ?? entryPriceCents;
+  const voucherUnavailable = !paymentsAvailable && entryPriceCents > 0;
   const voucherField = register("voucherCode");
 
   async function applyVoucher() {
@@ -105,7 +109,7 @@ export function BookingDetailsForm({
       return;
     }
     router.push(
-      `/rezervace/hotovo?reservation_id=${result.data.reservationId}`,
+      `/rezervace/hotovo?reservation_id=${result.data.reservationId}${result.data.token ? `&token=${result.data.token}` : ""}`,
     );
   });
 
@@ -191,7 +195,7 @@ export function BookingDetailsForm({
             <Button
               type="button"
               variant="outline"
-              disabled={voucherLoading}
+              disabled={voucherLoading || voucherUnavailable}
               onClick={() => void applyVoucher()}
               className="shrink-0"
             >
@@ -247,15 +251,24 @@ export function BookingDetailsForm({
       <Button
         type="submit"
         size="lg"
-        disabled={!ready || formState.isSubmitting}
+        disabled={
+          !ready ||
+          formState.isSubmitting ||
+          (!paymentsAvailable && entryPriceCents > 0)
+        }
         className="mt-6 w-full sm:w-auto"
       >
-        {formState.isSubmitting ? "Připravuji platbu…" : "Pokračovat k platbě"}{" "}
+        {formState.isSubmitting
+          ? "Ukládám rezervaci…"
+          : effectivePriceCents === 0
+            ? "Potvrdit vstup zdarma"
+            : "Pokračovat k platbě"}{" "}
         <ArrowRight aria-hidden="true" />
       </Button>
       <p className="mt-3 text-xs text-muted-foreground">
-        Termín vám držíme, dokud platbu nedokončíte nebo dokud platební relace
-        nevyprší.
+        {effectivePriceCents === 0
+          ? "Vstup zdarma je platný po potvrzení rezervace."
+          : "Rezervace je platná až po ověřené úhradě. Termín držíme pouze po dobu zpracování platby."}
       </p>
     </form>
   );

@@ -18,22 +18,22 @@ import { CalendarActions } from "@/components/site/calendar-actions";
 export const metadata: Metadata = {
   title: "Stav rezervace",
   robots: { index: false, follow: false },
+  referrer: "no-referrer",
 };
 export const dynamic = "force-dynamic";
 
 export default async function BookingDonePage({
   searchParams,
 }: {
-  searchParams: Promise<{ session_id?: string; reservation_id?: string }>;
+  searchParams: Promise<{ token?: string; reservation_id?: string }>;
 }) {
-  // No `requireUser`: a guest booking has no account to sign in to, and the
-  // unguessable Stripe session id in the redirect is what identifies it.
+  // Guests prove access with a random confirmation token.
   const [session, params] = await Promise.all([getSession(), searchParams]);
   const [content, confirmation] = await Promise.all([
     loadSiteContent(),
     booking.getBookingConfirmation({
       userId: session?.user.id ?? null,
-      stripeSessionId: params.session_id,
+      token: params.token,
       reservationId: params.reservation_id,
     }),
   ]);
@@ -57,6 +57,11 @@ export default async function BookingDonePage({
       body: session
         ? "Termín najdete ve svém účtu. Pokyny ke vstupu obdržíte před návštěvou."
         : "Potvrzení jsme poslali na váš e-mail. Pokyny ke vstupu obdržíte před návštěvou e-mailem.",
+    },
+    cancelled: {
+      icon: TriangleAlert,
+      title: "Rezervace byla zrušena",
+      body: "Tento termín už není potvrzený. Pokud jste platbu odeslali, kontaktujte nás a neopakujte ji.",
     },
     processing: {
       icon: Clock3,
@@ -107,7 +112,7 @@ export default async function BookingDonePage({
             ) : null}
             {confirmation.state === "processing" ? (
               <Notice className="mt-7 text-left" role="status">
-                Stripe odešle konečný stav zabezpečeným webhookem.
+                Stav platby průběžně ověřujeme. Platbu prosím neopakujte.
               </Notice>
             ) : null}
             {confirmation.state === "confirmed" ? (
@@ -117,10 +122,18 @@ export default async function BookingDonePage({
                 startsAt={confirmation.startsAt}
                 endsAt={confirmation.endsAt}
                 address={publicAddress(content.get("contact.address"))}
-                sessionId={params.session_id}
+                token={params.token}
               />
             ) : null}
             <div className="mt-8 flex flex-wrap justify-center gap-3">
+              {confirmation.state === "processing" ? (
+                <Button
+                  href={`/rezervace/hotovo?${new URLSearchParams({ reservation_id: confirmation.reservationId, ...(params.token ? { token: params.token } : {}) })}`}
+                  variant="outline"
+                >
+                  Ověřit stav platby
+                </Button>
+              ) : null}
               {session ? <Button href="/account">Můj účet</Button> : null}
               <Button
                 href="/rezervace"

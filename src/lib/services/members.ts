@@ -90,17 +90,6 @@ export async function updateProfile(
   return updated!;
 }
 
-/** Persist the member's Stripe customer id after first checkout. */
-export async function setStripeCustomerId(
-  userId: string,
-  stripeCustomerId: string,
-): Promise<void> {
-  await db
-    .update(profiles)
-    .set({ stripeCustomerId, updatedAt: new Date() })
-    .where(eq(profiles.id, userId));
-}
-
 /** List all members (admin members view). */
 export async function listMembers(limit = 200): Promise<MemberWithProfile[]> {
   const rows = await db

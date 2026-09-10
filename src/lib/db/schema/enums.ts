@@ -22,7 +22,7 @@ export const blockReason = pgEnum("block_reason", [
   "other",
 ]);
 
-/** Payment lifecycle mirrored from Stripe. */
+/** Payment lifecycle mirrored from Comgate. */
 export const paymentStatus = pgEnum("payment_status", [
   "pending",
   "processing",
@@ -37,7 +37,7 @@ export const paymentType = pgEnum("payment_type", [
   "one_off", // single card payment for one session
 ]);
 
-/** Membership subscription lifecycle mirrored from Stripe. */
+/** Membership subscription lifecycle mirrored from Comgate. */
 export const membershipStatus = pgEnum("membership_status", [
   "trialing",
   "active",

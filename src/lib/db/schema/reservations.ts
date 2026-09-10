@@ -32,6 +32,8 @@ export const reservation = pgTable(
     endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
 
     status: reservationStatus("status").notNull().default("pending"),
+    confirmationTokenHash: text("confirmation_token_hash"),
+    loyaltyReward: integer("loyalty_reward"),
 
     // Snapshot of contact details at booking time (denormalised on purpose so
     // history is preserved even if the member later edits their profile).
@@ -69,6 +71,11 @@ export const reservation = pgTable(
       t.createdAt.desc(),
       t.id.desc(),
     ),
+    uniqueIndex("reservation_loyalty_reward_uidx")
+      .on(t.userId, t.loyaltyReward)
+      .where(
+        sql`${t.loyaltyReward} is not null and ${t.status} <> 'cancelled'`,
+      ),
     index("reservation_status_idx").on(t.status),
     index("reservation_confirmed_user_starts_idx")
       .on(t.userId, t.startsAt)

@@ -21,6 +21,8 @@ import {
   DEFAULT_SLOT_MINUTES,
 } from "@/lib/config/schedule";
 import { getSetting } from "./cms";
+import { getOperations } from "./operations";
+import { isDateOpenForBooking } from "@/lib/config/operations";
 import { releaseExpiredPendingReservations } from "./reservations";
 
 export interface Slot {
@@ -110,6 +112,7 @@ export async function getSlotsForRange(
 
   try {
     await releaseExpiredPendingReservations(now);
+    const operations = await getOperations();
     const [hoursRows, reservations, blocks] = await Promise.all([
       db.select().from(openingHours),
       db
@@ -159,8 +162,14 @@ export async function getSlotsForRange(
       const hours = hoursByDay.get(dayOfWeek(midday));
       days.push({
         dateKey,
-        isClosed: !hours || hours.isClosed,
-        slots: hours ? buildDaySlots(dateKey, hours, busy, now) : [],
+        isClosed:
+          !hours ||
+          hours.isClosed ||
+          !isDateOpenForBooking(dateKey, operations),
+        slots:
+          hours && isDateOpenForBooking(dateKey, operations)
+            ? buildDaySlots(dateKey, hours, busy, now)
+            : [],
       });
     }
     return { days, source: "live" };
@@ -217,6 +226,8 @@ export function resolveSlotFromHours(
 }
 
 export async function resolveBookableSlot(startsAt: Date) {
+  if (!isDateOpenForBooking(dateKeyInTimeZone(startsAt), await getOperations()))
+    return null;
   const [hours] = await db
     .select()
     .from(openingHours)

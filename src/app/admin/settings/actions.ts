@@ -1,5 +1,7 @@
 "use server";
 
+import { operationsSchema, type Operations } from "@/lib/config/operations";
+import { saveOperations } from "@/lib/services/operations";
 import { revalidatePath } from "next/cache";
 import { assertAdmin } from "@/lib/auth/guards";
 import { defineAction } from "@/lib/helpers/action";
@@ -207,4 +209,23 @@ export async function saveBillingProfileAction(
   input: BillingProfileValues,
 ): Promise<Result<unknown>> {
   return saveBillingProfileImpl(input);
+}
+
+const saveOperationsImpl = defineAction({
+  schema: operationsSchema,
+  authorize: assertAdmin,
+  handler: async (input, admin) => {
+    await saveOperations(input, admin.id);
+    for (const path of [
+      "/admin/settings",
+      "/account",
+      "/rezervace",
+      "/rezervace/udaje",
+      "/",
+    ])
+      revalidatePath(path);
+  },
+});
+export async function saveOperationsAction(input: Operations) {
+  return saveOperationsImpl(input);
 }

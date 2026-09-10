@@ -1,3 +1,4 @@
+import { reconcilePendingPayments } from "@/lib/services/payments";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
 import { isAuthorizedCron } from "@/lib/helpers/cron";
@@ -10,11 +11,14 @@ import { pipeline, fulfillment, reservations } from "@/lib/services";
  * reservations. Exhausted steps have already raised an alert in the pipeline
  * service, so this route just drives the retries.
  */
+export const maxDuration = 300;
+
 export async function GET(request: NextRequest) {
   if (!isAuthorizedCron(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  const reconciledPayments = await reconcilePendingPayments();
   const released = await reservations.releaseExpiredPendingReservations();
   const due = await pipeline.dueForRetry(50);
   const reservationIds = [...new Set(due.map((d) => d.reservationId))];
@@ -45,6 +49,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     ok: true,
+    reconciledPayments,
     releasedPendingReservations: released,
     dueSteps: due.length,
     processed,

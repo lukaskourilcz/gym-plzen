@@ -43,7 +43,7 @@ export default async function VouchersPage() {
     <div>
       <PageHeader
         title="Vouchery"
-        description="Slevové kódy se ověřují při rezervaci a výsledná částka se předává přímo do Stripe Checkout."
+        description="Slevové kódy se ověřují při rezervaci a výsledná částka se předává platební bráně Comgate."
       />
       <div className="mb-8 flex flex-wrap gap-4">
         <StatCard label="Voucherů celkem" value={rows.length} />
