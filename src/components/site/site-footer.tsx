@@ -87,7 +87,7 @@ export function SiteFooter({
 
   return (
     <footer className="border-t border-white/10 bg-ink text-ink-foreground">
-      <Container className="grid gap-10 py-12 md:grid-cols-[1fr_2fr] lg:py-10">
+      <Container className="grid gap-x-10 gap-y-6 py-12 md:grid-cols-[1fr_2fr] lg:py-10">
         <div className="text-center md:text-left">
           <BrandLockup className="items-start text-left text-gold" />
           <p className="mt-6 text-xs leading-6 text-ink-foreground/75">
@@ -181,19 +181,18 @@ export function SiteFooter({
             </div>
           ) : null}
         </div>
-      </Container>
-      <Container className="border-t border-white/10 py-6">
-        <div className="flex flex-wrap items-center gap-x-8 gap-y-5">
+        <div className="flex items-center justify-center gap-5 md:col-span-2">
           <a
             href="https://www.comgate.eu/cs/platebni-brana"
             aria-label="Platební brána Comgate"
+            className="flex min-h-6 items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
           >
             <Image
               src="/cg-ithor.svg"
               width={259}
               height={60}
               alt="Comgate"
-              className="h-auto w-40"
+              className="h-auto w-20"
             />
           </a>
           <Image
@@ -201,25 +200,16 @@ export function SiteFooter({
             width={3385}
             height={2078}
             alt="Visa"
-            className="h-auto w-32"
+            className="h-auto w-16"
           />
           <Image
             src="/mc_symbol.svg"
             width={152}
             height={108}
             alt="Mastercard"
-            className="h-auto w-24"
+            className="h-auto w-10"
           />
         </div>
-        <p className="mt-3 text-xs leading-5 text-ink-foreground/75">
-          Platby kartami Visa a Mastercard připravujeme — čekají na aktivaci.{" "}
-          <Link
-            href="/doprava-a-platba"
-            className="underline underline-offset-4"
-          >
-            Informace o platbách
-          </Link>
-        </p>
       </Container>
     </footer>
   );
