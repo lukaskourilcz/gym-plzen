@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/site/brand";
 import { cn } from "@/lib/utils";
 import { PUBLIC_NAV } from "@/lib/config/navigation";
-import { OpeningBanner } from "@/components/site/opening-banner";
 
 /** Public navigation: brand mark plus wordmark on the left, booking action first. */
 export function SiteHeader({
@@ -64,7 +63,6 @@ export function SiteHeader({
 
   return (
     <>
-      <OpeningBanner />
       <header
         data-scrolled={scrolled ? "true" : "false"}
         className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur"

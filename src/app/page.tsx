@@ -31,6 +31,7 @@ import {
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site/site-header";
+import { OpeningBanner } from "@/components/site/opening-banner";
 import { SiteFooter } from "@/components/site/site-footer";
 import { BrandMark } from "@/components/site/brand";
 import { LocationMap } from "@/components/site/location-map";
@@ -261,11 +262,14 @@ export default async function HomePage() {
               </div>
             </div>
 
-            <HeroAvailability
-              days={previewDays}
-              source={availability.source}
-              nowMs={now.getTime()}
-            />
+            <div className="min-w-0 space-y-4">
+              <HeroAvailability
+                days={previewDays}
+                source={availability.source}
+                nowMs={now.getTime()}
+              />
+              <OpeningBanner />
+            </div>
           </Container>
         </section>
 
