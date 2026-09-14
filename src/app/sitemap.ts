@@ -10,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/vybaveni",
     "/provozni-rad",
     "/obchodni-podminky",
+    "/doprava-a-platba",
     "/ochrana-soukromi",
     "/login",
   ].map((path) => ({

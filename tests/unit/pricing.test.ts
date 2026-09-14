@@ -24,8 +24,8 @@ const OCTOBER: PromoWindow = {
 const at = (dateKey: string, minute = 12 * 60) =>
   localDateTimeToDate(dateKey, minute);
 
-test("the standard entry price is 289 Kč", () => {
-  assert.equal(STANDARD, 28_900);
+test("the standard entry price is 229 Kč", () => {
+  assert.equal(STANDARD, 22_900);
 });
 
 test("without a promotion the standard price always applies", () => {
@@ -65,7 +65,7 @@ test("the promotion applies inside its window and nowhere else", () => {
   assert.equal(during.periodName, "Říjnová akce");
 
   // 1 November is back to the standard price, which is what the client asked
-  // for: "od listopadu 289 Kč".
+  // for: "od listopadu 229 Kč".
   const after = resolveEntryPrice({
     standardPriceCents: STANDARD,
     promo: OCTOBER,

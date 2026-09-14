@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { createGoogleTag } from "@/lib/analytics/google-tag";
 import {
   CONSENT_STORAGE_KEY,
   LEGACY_TRACKING_CONSENT_STORAGE_KEY,
@@ -38,9 +39,7 @@ function ensureGtag() {
   window.dataLayer = window.dataLayer ?? [];
   window.gtag =
     window.gtag ??
-    function gtag(...args: unknown[]) {
-      window.dataLayer?.push(args);
-    };
+    createGoogleTag((command) => window.dataLayer?.push(command));
   return window.gtag;
 }
 

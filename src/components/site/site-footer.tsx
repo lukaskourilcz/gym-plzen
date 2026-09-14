@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Container } from "@/components/ui/container";
 import { BrandLockup } from "@/components/site/brand";
 import {
@@ -150,6 +151,9 @@ export function SiteFooter({
           <div>
             <h2 className="text-sm font-extrabold">Informace</h2>
             <div className="mt-2 grid">
+              <Link href="/doprava-a-platba" className={footerLink}>
+                Doprava a platba
+              </Link>
               <Link href="/provozni-rad" className={footerLink}>
                 Provozní řád
               </Link>
@@ -177,6 +181,45 @@ export function SiteFooter({
             </div>
           ) : null}
         </div>
+      </Container>
+      <Container className="border-t border-white/10 py-6">
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-5">
+          <a
+            href="https://www.comgate.eu/cs/platebni-brana"
+            aria-label="Platební brána Comgate"
+          >
+            <Image
+              src="/cg-ithor.svg"
+              width={259}
+              height={60}
+              alt="Comgate"
+              className="h-auto w-40"
+            />
+          </a>
+          <Image
+            src="/Visa_Brandmark_White_RGB_2021.svg"
+            width={3385}
+            height={2078}
+            alt="Visa"
+            className="h-auto w-32"
+          />
+          <Image
+            src="/mc_symbol.svg"
+            width={152}
+            height={108}
+            alt="Mastercard"
+            className="h-auto w-24"
+          />
+        </div>
+        <p className="mt-3 text-xs leading-5 text-ink-foreground/75">
+          Platby kartami Visa a Mastercard připravujeme — čekají na aktivaci.{" "}
+          <Link
+            href="/doprava-a-platba"
+            className="underline underline-offset-4"
+          >
+            Informace o platbách
+          </Link>
+        </p>
       </Container>
     </footer>
   );

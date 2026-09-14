@@ -10,7 +10,7 @@
  */
 
 /** Default price of a single entry, in the smallest currency unit (haléř). */
-export const DEFAULT_ENTRY_PRICE_CENTS = 28_900; // 289 Kč
+export const DEFAULT_ENTRY_PRICE_CENTS = 22_900; // 229 Kč
 
 export const ENTRY_CURRENCY = "czk";
 

@@ -143,7 +143,7 @@ export const SITE_DEFAULTS = {
   "home.pricing.promoNote":
     "Akční cena platí pro rezervace vytvořené během akce, i na termíny v dalších měsících.",
   "home.pricing.feature1": "Soukromé využití prostoru během rezervace",
-  "home.pricing.feature2": "Platba online kartou",
+  "home.pricing.feature2": "Online platba přes Comgate",
   "home.pricing.feature3": "Pokyny ke vstupu po potvrzení rezervace",
   "home.pricing.cardLabel": "Jednorázový vstup",
   "home.pricing.button": "Rezervovat trénink",
