@@ -8,6 +8,7 @@ import {
   isDateKey,
   minutesBetween,
   monthGrid,
+  localDateTimeToDate,
 } from "@/lib/helpers/datetime";
 import {
   getBookingHorizonDays,
@@ -20,6 +21,7 @@ import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { RealtimeRefresher } from "@/components/realtime-refresher";
 import { BookingCalendar } from "./booking-calendar";
+import { initialBookingDateKey } from "@/lib/config/booking-start";
 
 export const metadata: Metadata = {
   title: "Rezervace soukromého gymu",
@@ -42,6 +44,7 @@ export default async function BookingPage({
   const params = await searchParams;
   const now = new Date();
   const todayKey = dateKeyInTimeZone(now);
+  const initialDateKey = initialBookingDateKey(now);
   // Resolved once per request: the operator can change the horizon.
   const horizonDays = await getBookingHorizonDays();
   const maxDateKey = addDaysToDateKey(todayKey, horizonDays);
@@ -58,19 +61,18 @@ export default async function BookingPage({
           requestedMonth >= todayKey.slice(0, 7) &&
           requestedMonth <= maxDateKey.slice(0, 7)
         ? requestedMonth
-        : todayKey.slice(0, 7);
+        : initialDateKey.slice(0, 7);
   /*
-   * With no explicit date the page opens on today, so the visitor lands on a
-   * calendar that already shows times. Only the current month can fall back
-   * this way : on any other month today is not in the grid.
+   * Before launch, default to opening day; afterwards default to today.
+   * Keep explicit day/month navigation intact.
    */
   const selectedDateKey =
     requestedDate &&
     requestedDate.startsWith(monthKey) &&
     isWithinBookingHorizon(requestedDate, now, horizonDays)
       ? requestedDate
-      : monthKey === todayKey.slice(0, 7)
-        ? todayKey
+      : monthKey === initialDateKey.slice(0, 7)
+        ? initialDateKey
         : null;
   const grid = monthGrid(monthKey);
   const rangeStart = grid[0]!.dateKey;
@@ -78,7 +80,9 @@ export default async function BookingPage({
 
   const [availability, content, session] = await Promise.all([
     getSlotsForRange(rangeStart, rangeEnd, now),
-    loadSiteContent(),
+    loadSiteContent("cs", {
+      at: localDateTimeToDate(selectedDateKey ?? initialDateKey, 12 * 60),
+    }),
     getSession(),
   ]);
   const price = formatMoney(content.entryPriceCents);

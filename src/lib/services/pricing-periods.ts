@@ -9,7 +9,7 @@ export async function listPricingPeriods(): Promise<PricingPeriod[]> {
   return db.select().from(pricingPeriod).orderBy(asc(pricingPeriod.startsAt));
 }
 
-/** The one period that contains the booking moment. Overlap is DB-forbidden. */
+/** The period containing the visit start. Overlap is DB-forbidden. */
 export async function getActivePricingPeriod(
   at: Date = new Date(),
 ): Promise<PricingPeriod | null> {

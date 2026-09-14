@@ -73,8 +73,8 @@ export default async function BookingDetailsPage({
 
   const member = session ? await members.getMember(session.user.id) : null;
   const entryPriceCents = session
-    ? (await loyalty.priceForNextEntry(session.user.id)).priceCents
-    : await loyalty.getEntryPriceCents();
+    ? (await loyalty.priceForNextEntry(session.user.id, startsAt)).priceCents
+    : await loyalty.getEntryPriceCents(startsAt);
 
   const nameParts = splitName(member?.user.name ?? "");
   const slotLabel = formatTimeRange(startsAt, resolved.endsAt);

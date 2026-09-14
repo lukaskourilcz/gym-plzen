@@ -78,7 +78,7 @@ export async function startBooking(params: {
     !isDateOpenForBooking(date, operations)
   )
     throw new ActionError("Vybraný termín není dostupný pro rezervaci.");
-  const basePrice = await getEntryPriceCents();
+  const basePrice = await getEntryPriceCents(params.startsAt);
   const token = randomBytes(32).toString("hex");
   // Price, reward claim and reservation commit atomically under one member row
   // lock. No external HTTP call can hold this transaction open.

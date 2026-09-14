@@ -32,10 +32,8 @@ export const ENTRY_PRICE_SETTING_KEY = "pricing.entry_price_cents";
 /**
  * A time-limited price, set from the administration.
  *
- * The period is checked against the moment a reservation is *created*, not the
- * slot it books: someone who books in October during the promotion pays the
- * promotional price even for a January slot. Loyalty is unaffected, so every
- * tenth entry stays free inside the window too.
+ * The period is checked against the visit start, independent of purchase date.
+ * Loyalty is unaffected, so every tenth entry stays free inside the window too.
  */
 export interface PricingWindow {
   id?: string;

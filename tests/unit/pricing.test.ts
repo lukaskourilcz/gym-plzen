@@ -11,8 +11,7 @@ import { pricingPeriodSchema } from "../../src/lib/validations/memberships";
 const STANDARD = DEFAULT_ENTRY_PRICE_CENTS;
 
 /**
- * The October promotion the client asked for: 199 Kč for anything booked
- * between 1 October and the end of 31 October, Prague time.
+ * 199 Kč for visits between 1 October and the end of 31 October, Prague time.
  */
 const OCTOBER: PromoWindow = {
   priceCents: 19_900,
@@ -183,23 +182,39 @@ test("a promotion may raise the price as well as lower it", () => {
   assert.equal(raised.isPromo, true);
 });
 
-test("booking in October for a January slot keeps the promotional price", () => {
-  // The client's requirement in one case: the promotion follows the moment of
-  // booking, never the date of the slot.
-  const bookedInOctober = resolveEntryPrice({
+test("October visits cost 199 Kč regardless of purchase date; later visits cost 229 Kč", () => {
+  const octoberVisit = resolveEntryPrice({
     standardPriceCents: STANDARD,
     promo: OCTOBER,
     at: at("2026-10-20"),
   });
-  assert.equal(bookedInOctober.priceCents, 19_900);
+  assert.equal(octoberVisit.priceCents, 19_900);
 
-  // The same January slot booked in November costs the standard price.
-  const bookedInNovember = resolveEntryPrice({
+  const novemberVisit = resolveEntryPrice({
     standardPriceCents: STANDARD,
     promo: OCTOBER,
     at: at("2026-11-02"),
   });
-  assert.equal(bookedInNovember.priceCents, STANDARD);
+  assert.equal(novemberVisit.priceCents, STANDARD);
+  assert.equal(
+    resolveEntryPrice({
+      standardPriceCents: STANDARD,
+      promo: OCTOBER,
+      at: at("2026-12-15"),
+    }).priceCents,
+    22_900,
+  );
+});
+
+test("booking, details and voucher quotes all pass the visit date to pricing", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const booking = await readFile("src/lib/services/booking.ts", "utf8");
+  const details = await readFile("src/app/rezervace/udaje/page.tsx", "utf8");
+  const vouchers = await readFile("src/app/rezervace/actions.ts", "utf8");
+  assert.match(booking, /getEntryPriceCents\(params.startsAt\)/);
+  assert.match(details, /getEntryPriceCents\(startsAt\)/);
+  assert.match(details, /priceForNextEntry\(session.user.id, startsAt\)/);
+  assert.match(vouchers, /getEntryPriceCents\(new Date\(input.startsAt\)\)/);
 });
 
 test("rescheduling never re-prices a reservation", async () => {

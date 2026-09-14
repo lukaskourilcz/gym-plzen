@@ -81,8 +81,13 @@ const quoteVoucherImpl = defineAction({
       );
     }
     const priceCents = session
-      ? (await loyalty.priceForNextEntry(session.user.id)).priceCents
-      : await loyalty.getEntryPriceCents();
+      ? (
+          await loyalty.priceForNextEntry(
+            session.user.id,
+            new Date(input.startsAt),
+          )
+        ).priceCents
+      : await loyalty.getEntryPriceCents(new Date(input.startsAt));
     if (priceCents === 0) {
       throw new ActionError("Tento vstup už máte zdarma.");
     }

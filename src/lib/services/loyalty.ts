@@ -132,13 +132,10 @@ export async function getStandardEntryPriceCents(): Promise<number> {
 /**
  * What an entry costs at a given moment, with a scheduled period applied.
  *
- * `at` is the moment the customer is booking, never the slot they book: a
- * reservation created during the promotion keeps the promotional price even
- * for a slot months later.
+ * `at` is the visit start, not the purchase moment. All booking paths must
+ * supply it so a future October visit gets the October price in September.
  */
-export async function getEntryPrice(
-  at: Date = new Date(),
-): Promise<EntryPrice> {
+export async function getEntryPrice(at: Date): Promise<EntryPrice> {
   const [standardPriceCents, period] = await Promise.all([
     getStandardEntryPriceCents(),
     getActivePricingPeriod(at),
@@ -150,10 +147,8 @@ export async function getEntryPrice(
   });
 }
 
-/** The price a customer pays right now. */
-export async function getEntryPriceCents(
-  at: Date = new Date(),
-): Promise<number> {
+/** Price for the requested visit start. */
+export async function getEntryPriceCents(at: Date): Promise<number> {
   return (await getEntryPrice(at)).priceCents;
 }
 
@@ -163,7 +158,7 @@ export async function getEntryPriceCents(
  */
 export async function priceForNextEntry(
   userId: string,
-  at: Date = new Date(),
+  at: Date,
 ): Promise<{ priceCents: number; isFree: boolean }> {
   const [status, price] = await Promise.all([
     getLoyaltyStatus(userId),

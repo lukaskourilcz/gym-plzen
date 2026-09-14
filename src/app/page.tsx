@@ -16,6 +16,7 @@ import {
   RANGE_DASH,
 } from "@/lib/helpers/format";
 import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/helpers/datetime";
+import { initialBookingDateKey } from "@/lib/config/booking-start";
 import { getSlotsForRange } from "@/lib/services/slots";
 import { cms } from "@/lib/services";
 import {
@@ -85,6 +86,7 @@ export const revalidate = 60;
 export default async function HomePage() {
   const now = new Date();
   const today = dateKeyInTimeZone(now);
+  const previewStart = initialBookingDateKey(now);
   const [content, heroDaysSetting] = await Promise.all([
     loadSiteContent(),
     cms.getSetting<number>(HERO_PREVIEW_DAYS_KEY).catch(() => null),
@@ -93,20 +95,18 @@ export default async function HomePage() {
     heroDaysSetting ?? DEFAULT_HERO_PREVIEW_DAYS,
   );
   const availability = await getSlotsForRange(
-    today,
-    addDaysToDateKey(today, heroPreviewDays),
+    previewStart,
+    addDaysToDateKey(previewStart, heroPreviewDays),
     now,
   );
   const t = content.get;
   const brand = t("brand.name");
   const price = formatMoney(content.entryPriceCents);
   /*
-   * The promotion is keyed to when a visitor books, so the note says exactly
-   * that. The end date is appended from the configured window rather than
-   * written into the copy, where it would go stale.
+   * Promotions follow the visit date. Show the configured end to avoid stale copy.
    */
   const promoNote = content.promoEndsAt
-    ? `${t("home.pricing.promoNote")} Akce platí do ${formatDate(content.promoEndsAt)}.`
+    ? `Akční cena pro návštěvy do ${formatDate(content.promoEndsAt)}. Platí i při rezervaci předem.`
     : t("home.pricing.promoNote");
   const address = publicAddress(t("contact.address"));
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(PUBLIC_MAP_QUERY)}`;
@@ -149,27 +149,25 @@ export default async function HomePage() {
     },
     openingHours: `Mo-Su ${minutesToHHmm(DEFAULT_OPEN_MINUTE)}-${minutesToHHmm(DEFAULT_CLOSE_MINUTE)}`,
   };
-  const previewDays: HeroAvailabilityDay[] = availability.days.map(
-    (day, index) => ({
-      label:
-        index === 0
-          ? "Dnes"
-          : index === 1
-            ? "Zítra"
-            : new Intl.DateTimeFormat("cs-CZ", {
-                weekday: "long",
-                day: "numeric",
-                timeZone: "UTC",
-              }).format(new Date(`${day.dateKey}T12:00:00Z`)),
-      dateLabel: day.dateKey,
-      slots: day.slots.map((slot) => ({
-        label: formatTimeRange(slot.start, slot.end),
-        price,
-        startMs: slot.start.getTime(),
-        booked: slot.booked,
-      })),
-    }),
-  );
+  const previewDays: HeroAvailabilityDay[] = availability.days.map((day) => ({
+    label:
+      day.dateKey === today
+        ? "Dnes"
+        : day.dateKey === addDaysToDateKey(today, 1)
+          ? "Zítra"
+          : new Intl.DateTimeFormat("cs-CZ", {
+              weekday: "long",
+              day: "numeric",
+              timeZone: "UTC",
+            }).format(new Date(`${day.dateKey}T12:00:00Z`)),
+    dateLabel: day.dateKey,
+    slots: day.slots.map((slot) => ({
+      label: formatTimeRange(slot.start, slot.end),
+      price: formatMoney(content.entryPriceForDate(slot.start)),
+      startMs: slot.start.getTime(),
+      booked: slot.booked,
+    })),
+  }));
 
   return (
     <>

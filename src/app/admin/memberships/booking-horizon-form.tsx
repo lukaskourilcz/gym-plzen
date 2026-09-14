@@ -40,9 +40,8 @@ export function BookingHorizonForm({ horizonDays }: { horizonDays: number }) {
         />
       </Field>
       <p className="mb-4 text-sm text-muted-foreground">
-        Cena období se řídí okamžikem vytvoření rezervace. Tento limit určuje,
-        jak vzdálený termín si zákazník může vybrat. Pro říjnovou akci s termíny
-        až v lednu použijte alespoň 130 dní.
+        Cena období se řídí datem návštěvy. Tento limit určuje,
+        jak vzdálený termín si zákazník může vybrat.
       </p>
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={form.formState.isSubmitting}>
