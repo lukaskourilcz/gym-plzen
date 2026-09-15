@@ -4,6 +4,8 @@ import { Container, Section } from "@/components/ui/container";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { footerProps, loadSiteContent } from "@/lib/content/site";
+import { getOperations } from "@/lib/services/operations";
+import { isComgateConfigured } from "@/lib/integrations/comgate";
 
 export const metadata: Metadata = {
   title: "Doprava a platba",
@@ -16,7 +18,11 @@ const linkStyle =
   "font-bold underline underline-offset-4 hover:text-accent-foreground";
 
 export default async function PaymentInformationPage() {
-  const content = await loadSiteContent();
+  const [content, operations] = await Promise.all([
+    loadSiteContent(),
+    getOperations(),
+  ]);
+  const paymentsAvailable = operations.paymentsEnabled && isComgateConfigured();
   return (
     <>
       <SiteHeader brand={content.get("brand.name")} />
@@ -58,10 +64,9 @@ export default async function PaymentInformationPage() {
                   </a>
                 </p>
                 <p className="mt-4 rounded-md border border-border bg-card p-4">
-                  Online úhrady na našem webu právě dokončujeme. Bankovní
-                  tlačítka již Comgate aktivoval; jejich zpřístupnění v
-                  rezervacích čeká na dokončení propojení. Platby kartami Visa a
-                  Mastercard čekají na schválení a aktivaci.
+                  {paymentsAvailable
+                    ? "Rezervaci můžete zaplatit kartou Visa nebo Mastercard, bankovním převodem a na podporovaných zařízeních také přes Apple Pay nebo Google Pay. Dostupné možnosti uvidíte přímo v platební bráně."
+                    : "Online úhrady momentálně nejsou dostupné. Zkuste to prosím později."}
                 </p>
               </section>
               <section>
@@ -85,10 +90,10 @@ export default async function PaymentInformationPage() {
               </section>
               <section>
                 <h2 className="mb-3 text-2xl font-extrabold">
-                  Platba kartou — připravujeme
+                  Platba kartou
                 </h2>
                 <p>
-                  Po aktivaci zvolíte v bráně platbu kartou, zadáte číslo karty,
+                  V bráně zvolíte platbu kartou, zadáte číslo karty,
                   platnost a bezpečnostní kód a případně potvrdíte platbu u své
                   banky pomocí 3D Secure. Po návratu na web uvidíte stav
                   rezervace. Údaje o kartě na našem webu neukládáme.

@@ -1,3 +1,18 @@
+## Aktivace 15. 9. 2026
+
+- Produkční zdroj je `/Users/lukasbarsinbars/Documents/gym-plzen-launch`, commit před touto změnou `0d921b8`. Původní složka `gym-plzen` obsahuje starší kopii se Stripe a nesmí přepsat produkci.
+- Obchod `navigym.cz`, propojení `519958`, název `NAVI – web navigym.cz`: schválený a aktivní.
+- Uložené portálové URL: PAID/PENDING `https://www.navigym.cz/rezervace/hotovo`, CANCELLED `https://www.navigym.cz/rezervace?stav=zruseno`, PUSH `https://www.navigym.cz/api/webhooks/comgate`. Aplikace přepisuje návratové URL privátním odkazem konkrétní rezervace.
+- Uživatel výslovně schválil „Povolit všechny IP“ kvůli proměnlivým odchozím adresám Vercelu. HTTPS, tajné heslo, ověření stavu přes API a vazba na lokální platbu zůstávají povinné. Placené pevné IP nebyly objednány.
+- Vercel Production: `COMGATE_MERCHANT_ID`, `COMGATE_SECRET` a `COMGATE_TEST_MODE=false` uloženy jako serverové Secret proměnné. Preview neobsahuje produkční Comgate přístupy.
+- Ověření API `/v2.0/method.json`: aktivní karty, Apple Pay, Google Pay i české bankovní převody.
+- Produkční kontrolní transakce `PAZ7-ONDD-KTGY`, 1 Kč: založení přes existující adaptér, otevření brány, zrušení bez zaplacení a návrat do webu ověřeny. Interní platba `a202e1db-199c-4003-ae0f-e3e2e1f0367e` zůstává jako auditní záznam `failed/CANCELLED`, `paid_at=null`; kontrolní rezervace `71caa556-bb8d-4e38-aebf-e7bc743e0a94` byla od začátku zrušená, neblokovala slot a nemá právní souhlas ani vstupní kód.
+- Příchozí oznámení i opakovaný POST prošly; změněný deklarovaný stav PAID byl ignorován ve prospěch autoritativního CANCELLED z API. V databázi zůstává jediná webhook událost. Chybné heslo a testovací režim jsou odmítnuty HTTP 403.
+- `booking.operations.paymentsEnabled=true`; ostatní provozní nastavení zachována. `accessCodesEnabled=false` zůstává vypnuté do samostatného ověření fyzického zámku.
+- 11 testů Comgate a platebních stavů prošlo. Skutečné stržení a následné připsání platby nebylo provedeno; první kontrolní úhradu musí dokončit provozovatel.
+
+---
+
 # Comgate: příprava a aktivace plateb
 
 Ověřeno 10. 9. 2026. Integrace používá Comgate REST API 2.0 a přesměrování na hostovanou bránu. Bez přístupových údajů web funguje pro prezentaci a registrace; placené rezervace nejsou dostupné. Rezervace se potvrdí teprve po serverovém ověření zaplacení. Na produkčním Vercelu (`VERCEL_ENV=production`) aplikace testovací režim odmítá. Testovací prostředí musí mít samostatnou databázi.
@@ -13,7 +28,7 @@ V [Klientském portálu Comgate](https://portal.comgate.cz/) otevřete **Integra
 | `COMGATE_TEST_MODE`   | `true` pro simulaci, `false` pro skutečnou platbu; výchozí je `true` |
 | `NEXT_PUBLIC_APP_URL` | Kanonická HTTPS adresa webu, pro produkci `https://www.navigym.cz`   |
 
-API klíče zatím nejsou vyplněné. Do GitHubu ani do `NEXT_PUBLIC_*` proměnných heslo nepatří.
+Produkční API klíče byly doplněny 15. 9. 2026. Do GitHubu ani do `NEXT_PUBLIC_*` proměnných heslo nepatří.
 
 ## URL a ochrana přístupu
 
