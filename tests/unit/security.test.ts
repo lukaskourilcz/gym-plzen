@@ -106,3 +106,13 @@ test("log redaction hides phone numbers without corrupting timestamps", () => {
     "Kontakt [redacted-phone] nebo [redacted-phone]",
   );
 });
+
+test("errors reported to Sentry keep their class and stack but not the raw message", async () => {
+  const { scrubError } = await import("../../src/lib/helpers/logger");
+  const original = new TypeError("mail to jan.novak@example.com failed");
+  const scrubbed = scrubError(original, "mail to [redacted-email] failed");
+  assert.equal(scrubbed.name, "TypeError");
+  assert.equal(scrubbed.message, "mail to [redacted-email] failed");
+  assert.doesNotMatch(scrubbed.stack ?? "", /jan\.novak/);
+  assert.match(scrubbed.stack ?? "", /security\.test/);
+});
