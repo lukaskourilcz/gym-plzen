@@ -128,33 +128,6 @@ export async function findOverlappingReservations(
     );
 }
 
-/**
- * Cancel every active reservation overlapping a range (used when the admin
- * closes a day/time that already has bookings) and return the cancelled rows so
- * the caller can notify each affected member.
- */
-export async function cancelOverlappingReservations(
-  start: Date,
-  end: Date,
-  reason: string,
-): Promise<Reservation[]> {
-  const affected = await findOverlappingReservations(start, end);
-  if (affected.length === 0) return [];
-  const now = new Date();
-  for (const r of affected) {
-    await db
-      .update(reservation)
-      .set({
-        status: "cancelled",
-        cancelledAt: now,
-        cancelReason: reason,
-        updatedAt: now,
-      })
-      .where(eq(reservation.id, r.id));
-  }
-  return affected;
-}
-
 // ── Shower grace (admin-configurable) ────────────────────────────────────────
 
 /**

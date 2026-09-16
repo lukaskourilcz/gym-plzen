@@ -13,7 +13,7 @@ import {
   type CreateBlockedSlotValues,
   type OpeningHoursValues,
 } from "@/lib/validations/schedule";
-import { schedule, notifications, members } from "@/lib/services";
+import { schedule, notifications, members, reservations } from "@/lib/services";
 
 /** Save opening hours for one weekday (converts "HH:mm" → minutes). */
 const saveOpeningHoursImpl = defineAction({
@@ -46,12 +46,13 @@ const createBlockedSlotImpl = defineAction({
       createdByAdminId: admin.id,
     });
 
-    // Closing a slot that already has bookings: cancel them and notify members.
-    const affected = await schedule.cancelOverlappingReservations(
-      start,
-      end,
-      input.note || "Termín byl uzavřen provozovatelem.",
-    );
+    // Closing a slot that already has bookings: cancel them (full cancellation,
+    // voucher release, refund alert for paid ones) and notify each member.
+    const affected = await schedule.findOverlappingReservations(start, end);
+    await reservations.cancelReservationsForClosure(affected, {
+      reason: input.note || "Termín byl uzavřen provozovatelem.",
+      byAdminId: admin.id,
+    });
     for (const r of affected) {
       const channels = r.userId ? await members.getMember(r.userId) : null;
       await notifications.sendReservationClosure({
