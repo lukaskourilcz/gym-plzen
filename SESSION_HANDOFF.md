@@ -1,3 +1,40 @@
+# Nasazeno 16. 9. 2026 — review sloučeno do `main`
+
+Migrace `20260916100000_pipeline_step_unique.sql` je **aplikovaná v produkčním
+Supabase** (tabulka `reservation_pipeline` byla prázdná, index
+`reservation_pipeline_step_uidx` ověřený v `pg_indexes`), teprve poté se větev
+`claude/wizardly-mayer-5v3ihy` sloučila do `main` (merge commit `0e5b011`,
+`--no-ff`, bez konfliktů — `main` se mezitím nepohnul). Issues #46–#63 a #65 se
+zavřely automaticky; otevřené zůstávají #64 (Nuki, čeká na zámek) a #18.
+
+Znovu ověřeno na merge commitu proti lokálnímu Postgresu se seedem:
+format:check, lint, typecheck, 132 unit testů, `npm audit --omit=dev` (0 nálezů),
+produkční build a 17/17 veřejných e2e testů včetně „the first date selection on
+a fresh calendar always commits“. Build potvrdil i čísla z review: sdílený JS
+104 kB, `/rezervace` 143 kB, ISR `5m` na `/faq`, `/doprava-a-platba` a právních
+stránkách.
+
+Ověřeno přímo v produkci (`https://www.navigym.cz`): běží merge commit
+(`sentry-release=0e5b011d…`), `/faq` vrací `x-nextjs-prerender: 1` a
+`x-nextjs-stale-time: 300`, CSP už neobsahuje `'unsafe-eval'`, banner hlásí
+„OTEVÍRÁME 1. 10. • VSTUP 199 Kč PO CELÝ ŘÍJEN“ (budoucí čas odpovídá datu) a
+`/rezervace` posílá 42 buněk kalendáře bez jediného skeletonu, tedy odstraněné
+`loading.tsx` se propsalo.
+
+Dvě poznámky k postupu z minula. Za prvé: Vercel na ISR stránkách neposílá
+doslovné `s-maxage=300` — hodnotu si bere edge a prohlížeči vrací
+`max-age=0, must-revalidate` plus `x-nextjs-stale-time: 300`. Smoke test proto
+kontrolovat podle `x-nextjs-stale-time`, ne podle `s-maxage`. Za druhé: e2e test
+výběru dne se v tomto prostředí nedá pustit proti ostré doméně — prohlížeč
+nedůvěřuje CA odchozí proxy a TLS ověření se obcházet nemá; test proto běžel
+proti produkčnímu buildu lokálně.
+
+Zbývá provozovateli: vizuálně zkontrolovat administraci → Vstupné a věrnost a
+→ E-maily (šablona „Změna termínu“) a smazat sloučenou větev na GitHubu —
+mazání větví z tohoto prostředí končí na 403. Viz [NEEDED](NEEDED.md).
+
+---
+
 # Aktualizace 16. 9. 2026 — produkční code review a výkon
 
 Kompletní review kódu před spuštěním (mimo Nuki a WhatsApp/Zernio, které se
