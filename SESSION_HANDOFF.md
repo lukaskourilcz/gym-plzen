@@ -1,3 +1,69 @@
+# Aktualizace 16. 9. 2026 — produkční code review a výkon
+
+Kompletní review kódu před spuštěním (mimo Nuki a WhatsApp/Zernio, které se
+připojí později). Každý nález má issue na GitHubu (#46–#64); opravy jsou ve
+větvi `claude/wizardly-mayer-5v3ihy`, jeden commit na issue, s `Closes #N`.
+
+Opraveno v kódu: časově řízený banner otevření (#46), ISR pro CMS stránky, aby
+`/faq` a právní stránky nezmrazily cenu z buildu (#47), unikátní krok
+pipeline + migrace `20260916100000_pipeline_step_unique.sql` (#48; **v produkci
+zatím neaplikována**, viz NEEDED), uzavření termínu provozovatelem jde přes
+plné storno s uvolněním voucheru a upozorněním na vrácení platby (#49),
+e-mail „Změna termínu“ s novou `.ics` přílohou po přesunu (#50, nová šablona
+v administraci → E-maily), Sentry v prohlížeči jen s DSN (#51), cache
+`Intl` formátovačů (#52), realtime klient mimo kritickou cestu kalendáře
+(#53), kompaktní payload kalendáře (#54), session jednou za request a profil
+bez zbytečného zápisu (#55), middleware bez webhooků a cronů (#56), dávkový
+věrnostní stav v administraci (#57), uvolňování expirovaných holdů jen jednou
+za minutu (#58), CSP bez `'unsafe-eval'` (#59), pool zámků 5 (#60), Sentry
+výjimky se stackem (#61), Prettier (#62), dokumentace (#63). Issue #64 (Nuki
+`PUT /auth` nevrací id autorizace) zůstává otevřená do připojení zámku.
+
+Měřený průchod na mobilu (produkční build, lokální Postgres, Lighthouse
+mobil se simulovaným pomalým 4G, medián ze 3 běhů):
+
+| Stránka             | před: skóre / LCP / TBT | po: skóre / LCP / TBT  |
+| ------------------- | ----------------------- | ---------------------- |
+| Domů `/`            | 92 / 2 931 ms / 195 ms  | 92 / 2 942 ms / 162 ms |
+| `/rezervace`        | 72 / 4 071 ms / 474 ms  | 92 / 3 232 ms / 104 ms |
+| `/rezervace?date=…` | 80 / 4 368 ms / 252 ms  | 91 / 3 260 ms / 142 ms |
+| `/rezervace/udaje`  | 84 / 4 037 ms / 195 ms  | 90 / 3 390 ms / 145 ms |
+
+Serverová práce kalendáře `/rezervace`: 300–470 ms → 36–48 ms (cache
+`Intl.DateTimeFormat`; `getSlotsForRange` 190 ms → 9 ms). RSC payload
+kalendáře 132 kB → 45 kB, HTML 223 kB → 125 kB. Sdílený JS všech stránek
+198 kB → 104 kB (Sentry SDK 140 kB gzip mimo první načtení), `/rezervace`
+301 kB → 143 kB. Ověřeno: format, lint, typecheck, 132 unit testů, build,
+`npm audit --omit=dev` 0 nálezů, 17 veřejných e2e testů (Playwright proti
+`next start` a lokálnímu Postgresu), šířky 320–1728 px bez overflow, konzole
+bez chyb a CSP violací, klávesnice v mřížce kalendáře s viditelným fokusem.
+
+**Regrese odhalená při ověřování a její oprava.** Po zmenšení payloadu
+kalendáře (#54) se v produkčním buildu první výběr dne na `/rezervace`
+zhruba v polovině pokusů „neprovedl“: požadavek na RSC odešel a vrátil se,
+ale URL ani mřížka se nezměnily, až druhé stisknutí fungovalo. Příčina není
+v našem kódu: React (canary přibalený v Next 15.5) při odvíjení pozastavené
+navigace uvnitř **existující** Suspense hranice (té z `loading.tsx`) připojí
+posluchač na Flight řádek, který mezitím dorazil, a synchronní probuzení
+zahodí (`pingSuspendedRoot` běží ještě v render fázi s exit status
+„suspended with delay“); následné `markRootSuspended` lane zaparkuje a nic
+ji už neprobudí. Menší a rychlejší odpověď trefovala toto okno téměř vždy,
+původní 112 kB payload jen náhodou ne. Stejné riziko nese každá stránka,
+která naviguje sama na sebe s jinými search params pod `loading.tsx`.
+Oprava: `src/app/rezervace/loading.tsx` a
+`src/app/account/rezervace/[id]/zmenit/loading.tsx` jsou odstraněné (obě
+stránky nesou komentář proč); bez hranice se pozastavení řeší na kořenu,
+kde se probuzení zapíše, a přechod jen podrží aktuální pohled, dokud nedorazí
+data nového dne (žádné probliknutí skeletonu). Ověřeno 54/54 pokusů
+(Enter, mezerník i klik na čerstvé stránce) proti dřívějším ~50 %, navíc
+nový e2e test „the first date selection on a fresh calendar always commits“.
+Skeleton pro `/rezervace/udaje`, `/rezervace/hotovo` a administrační kalendář
+zůstává (ty na sebe s jinými parametry nenavigují). Před přidáním dalšího
+`loading.tsx` nad stránku s vlastní navigací přes search params nejdřív
+ověřit, že je chyba v Reactu opravená.
+
+---
+
 # Aktualizace 10. 9. 2026 — Comgate a placené rezervace
 
 Rozhodnutí klienta: brána je Comgate. Rezervace vyžaduje platbu; výběr termínu
