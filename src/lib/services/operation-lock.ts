@@ -7,6 +7,16 @@ import { requireEnv } from "@/lib/env";
 let locks: ReturnType<typeof postgres> | undefined;
 const held = new AsyncLocalStorage<ReadonlySet<string>>();
 
+/*
+ * A locked operation keeps its connection for the whole provider round trip
+ * (Comgate create/status, later Nuki), typically one to three seconds. Two
+ * customers paying while the watchdog reconciles already needs three; the
+ * pool has no acquisition timeout, so a too-small pool turns into unexplained
+ * multi-second submits rather than an error. Five covers the realistic
+ * concurrency of one instance while staying well inside the Supabase pooler.
+ */
+const LOCK_POOL_SIZE = 5;
+
 export async function withOperationLock<T>(
   key: string,
   work: () => Promise<T>,
@@ -14,7 +24,7 @@ export async function withOperationLock<T>(
   if (held.getStore()?.has(key)) return work();
   locks ??= postgres(requireEnv("DATABASE_URL").DATABASE_URL, {
     prepare: false,
-    max: 2,
+    max: LOCK_POOL_SIZE,
     idle_timeout: 20,
     connect_timeout: 10,
   });
