@@ -65,11 +65,18 @@ const savePublicTextImpl = defineAction({
       groupName: metadata.section,
       updatedByAdminId: admin.id,
     });
-    revalidatePath("/");
-    revalidatePath("/faq");
-    revalidatePath("/vybaveni");
-    revalidatePath("/provozni-rad");
-    revalidatePath("/admin/content");
+    // Contact details sit in every footer, so every CMS-backed page refreshes.
+    for (const path of [
+      "/",
+      "/faq",
+      "/vybaveni",
+      "/provozni-rad",
+      "/obchodni-podminky",
+      "/ochrana-soukromi",
+      "/doprava-a-platba",
+      "/admin/content",
+    ])
+      revalidatePath(path);
   },
 });
 

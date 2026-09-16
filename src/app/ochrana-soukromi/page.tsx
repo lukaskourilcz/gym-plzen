@@ -10,6 +10,9 @@ export const metadata: Metadata = {
     "Zásady zpracování osobních údajů, používání cookies a přehled práv návštěvníků a klientů NAVI Private Gym.",
   alternates: { canonical: "/ochrana-soukromi" },
 };
+// CMS text, contacts and the quoted price are read at request time and cached
+// briefly, so an admin change or a price period switch never waits for a deploy.
+export const revalidate = 300;
 
 const sections = [
   ["spravci", "Správci a kontakt"],

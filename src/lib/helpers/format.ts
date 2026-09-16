@@ -3,8 +3,25 @@
  * default to match the site's primary audience.
  */
 
+import { cachedDateTimeFormat } from "./datetime";
+
 const DEFAULT_LOCALE = "cs-CZ";
 const DEFAULT_TZ = "Europe/Prague";
+
+/* Same reasoning as the date formatter cache: construction is the cost. */
+const numberFormatters = new Map<string, Intl.NumberFormat>();
+function cachedNumberFormat(
+  locale: string,
+  options: Intl.NumberFormatOptions,
+): Intl.NumberFormat {
+  const key = `${locale}|${JSON.stringify(options)}`;
+  let formatter = numberFormatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat(locale, options);
+    numberFormatters.set(key, formatter);
+  }
+  return formatter;
+}
 
 /** Format an integer amount in the smallest currency unit (haléř/cent) as text. */
 export function formatMoney(
@@ -12,7 +29,7 @@ export function formatMoney(
   currency = "CZK",
   locale = DEFAULT_LOCALE,
 ): string {
-  return new Intl.NumberFormat(locale, {
+  return cachedNumberFormat(locale, {
     style: "currency",
     currency: currency.toUpperCase(),
     minimumFractionDigits: 0,
@@ -25,7 +42,7 @@ export function formatDateTime(
   locale = DEFAULT_LOCALE,
   timeZone = DEFAULT_TZ,
 ): string {
-  return new Intl.DateTimeFormat(locale, {
+  return cachedDateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
     timeZone,
@@ -38,7 +55,7 @@ export function formatDate(
   locale = DEFAULT_LOCALE,
   timeZone = DEFAULT_TZ,
 ): string {
-  return new Intl.DateTimeFormat(locale, {
+  return cachedDateTimeFormat(locale, {
     dateStyle: "medium",
     timeZone,
   }).format(date);
@@ -50,7 +67,7 @@ export function formatTime(
   locale = DEFAULT_LOCALE,
   timeZone = DEFAULT_TZ,
 ): string {
-  return new Intl.DateTimeFormat(locale, {
+  return cachedDateTimeFormat(locale, {
     timeStyle: "short",
     timeZone,
   }).format(date);

@@ -48,6 +48,16 @@ export async function ensureProfileForUser(user: {
   email: string | null;
   fullName: string | null;
 }): Promise<Profile> {
+  // The common case is a plain read: the row exists and the mirrored e-mail is
+  // current. Writing on every session lookup would turn each page view of a
+  // signed-in visitor into an upsert.
+  const [existing] = await db
+    .select()
+    .from(profiles)
+    .where(eq(profiles.id, user.id))
+    .limit(1);
+  if (existing && existing.email === user.email) return existing;
+
   const [row] = await db
     .insert(profiles)
     .values({ id: user.id, email: user.email, fullName: user.fullName })

@@ -20,6 +20,9 @@ export const metadata: Metadata = {
   description: "Informace a fotografie prostoru NAVI Private Gym v Plzni.",
   alternates: { canonical: "/vybaveni" },
 };
+// CMS text, contacts and the quoted price are read at request time and cached
+// briefly, so an admin change or a price period switch never waits for a deploy.
+export const revalidate = 300;
 
 export default async function EquipmentPage() {
   const content = await loadSiteContent();

@@ -421,11 +421,14 @@ test.describe("Public site", () => {
     page,
   }) => {
     await page.goto("/rezervace", { waitUntil: "domcontentloaded" });
-    const slot = page.getByRole("link", { name: /pokračovat k rezervaci/i });
+    await dismissTrackingConsentIfShown(page);
+    // A slot is a link whose accessible name ends with the visible "Vybrat".
+    const slot = page.locator('a[href^="/rezervace/udaje?start="]');
     test.skip(
       (await slot.count()) === 0,
       "No bookable slot in this environment",
     );
+    await expect(slot.first()).toHaveAccessibleName(/Vybrat$/);
 
     await slot.first().click();
     // No detour through the login page: booking works without an account.
@@ -434,7 +437,8 @@ test.describe("Public site", () => {
     for (const label of [/Jméno/, /Příjmení/, /E-mail/, /Telefon/]) {
       await expect(page.getByLabel(label).first()).toBeVisible();
     }
-    const consents = page.getByRole("checkbox");
+    // Scoped to the booking form: the analytics consent dialog has its own.
+    const consents = page.locator("form").getByRole("checkbox");
     await expect(consents).toHaveCount(1);
     await expect(consents).not.toBeChecked();
     await expect(consents).toHaveAccessibleName(
@@ -481,6 +485,47 @@ test.describe("Public site", () => {
     await expect(
       page.getByText(/\d{1,2}:\d{2}\s*–\s*\d{1,2}:\d{2}/).first(),
     ).toBeVisible();
+  });
+
+  test("the first date selection on a fresh calendar always commits", async ({
+    browser,
+  }) => {
+    // Regression: under a `loading.tsx` boundary the React canary bundled in
+    // Next 15.5 could drop the ping of a Flight row that arrived while it was
+    // unwinding, leaving the transition parked until a second interaction.
+    // Fresh pages per attempt reproduce the first-interaction race; the guard
+    // below skips the check where live availability is not configured.
+    test.setTimeout(90_000);
+    const probe = await browser.newPage();
+    await probe.goto("/rezervace", { waitUntil: "domcontentloaded" });
+    const availableCount = await probe
+      .locator('a[role="gridcell"][aria-label*="dostupné termíny"]')
+      .count();
+    await probe.close();
+    test.skip(
+      availableCount < 2,
+      "Live availability is not configured in this environment",
+    );
+
+    for (const attempt of [1, 2, 3, 4]) {
+      const page = await browser.newPage();
+      await page.goto("/rezervace", { waitUntil: "networkidle" });
+      const entry = page.locator('a[role="gridcell"][tabindex="0"]');
+      await entry.focus();
+      await entry.press("ArrowRight");
+      const target = page.locator('[role="gridcell"]:focus');
+      const targetDate = await target.getAttribute("data-date");
+      expect(targetDate, `attempt ${attempt} moved focus`).toMatch(
+        /^\d{4}-\d{2}-\d{2}$/,
+      );
+      if (attempt % 2 === 1) await target.press("Enter");
+      else await target.click();
+      await expect(page, `attempt ${attempt} committed`).toHaveURL(
+        new RegExp(`date=${targetDate}`),
+        { timeout: 8_000 },
+      );
+      await page.close();
+    }
   });
 
   test("public layout fits 320px and mobile navigation is operable", async ({

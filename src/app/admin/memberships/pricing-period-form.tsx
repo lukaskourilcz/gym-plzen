@@ -92,8 +92,8 @@ export function PricingPeriodForm({
       </div>
 
       <p className="mb-4 text-sm text-muted-foreground">
-        Cena nové rezervace se řídí datem návštěvy, ne datem nákupu.
-        Říjnový termín tak stojí 199 Kč i při rezervaci před začátkem října.
+        Cena nové rezervace se řídí datem návštěvy, ne datem nákupu. Říjnový
+        termín tak stojí 199 Kč i při rezervaci před začátkem října.
       </p>
       <FormFeedback error={serverError} success={success} />
       <div className="mt-3 flex flex-wrap gap-2">

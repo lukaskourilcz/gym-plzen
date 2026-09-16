@@ -13,6 +13,9 @@ export const metadata: Metadata = {
     "Jak zaplatit rezervaci NAVI Private Gym přes Comgate a kde získat pomoc s platbou.",
   alternates: { canonical: "/doprava-a-platba" },
 };
+// CMS text, contacts and the quoted price are read at request time and cached
+// briefly, so an admin change or a price period switch never waits for a deploy.
+export const revalidate = 300;
 
 const linkStyle =
   "font-bold underline underline-offset-4 hover:text-accent-foreground";
@@ -89,14 +92,12 @@ export default async function PaymentInformationPage() {
                 </p>
               </section>
               <section>
-                <h2 className="mb-3 text-2xl font-extrabold">
-                  Platba kartou
-                </h2>
+                <h2 className="mb-3 text-2xl font-extrabold">Platba kartou</h2>
                 <p>
-                  V bráně zvolíte platbu kartou, zadáte číslo karty,
-                  platnost a bezpečnostní kód a případně potvrdíte platbu u své
-                  banky pomocí 3D Secure. Po návratu na web uvidíte stav
-                  rezervace. Údaje o kartě na našem webu neukládáme.
+                  V bráně zvolíte platbu kartou, zadáte číslo karty, platnost a
+                  bezpečnostní kód a případně potvrdíte platbu u své banky
+                  pomocí 3D Secure. Po návratu na web uvidíte stav rezervace.
+                  Údaje o kartě na našem webu neukládáme.
                 </p>
                 <p className="mt-3">
                   <a

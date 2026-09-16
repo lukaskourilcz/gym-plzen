@@ -266,7 +266,7 @@ export default async function HomePage() {
                 source={availability.source}
                 nowMs={now.getTime()}
               />
-              <OpeningBanner />
+              <OpeningBanner at={now} />
             </div>
           </Container>
         </section>

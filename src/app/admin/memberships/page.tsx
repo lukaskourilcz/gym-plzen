@@ -111,12 +111,14 @@ export default async function PricingPage({
       status: deriveLoyaltyStatus(counts.get(member.user.id) ?? 0),
     }));
   } else {
-    withLoyalty = await Promise.all(
-      liveMembers.map(async (member) => ({
-        member,
-        status: await loyalty.getLoyaltyStatus(member.user.id),
-      })),
+    // Two grouped queries for the whole list rather than two per member.
+    const statuses = await loyalty.getLoyaltyStatusForUsers(
+      liveMembers.map((member) => member.user.id),
     );
+    withLoyalty = liveMembers.map((member) => ({
+      member,
+      status: statuses.get(member.user.id) ?? deriveLoyaltyStatus(0),
+    }));
   }
 
   return (

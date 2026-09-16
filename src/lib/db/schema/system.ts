@@ -34,6 +34,9 @@ export const reservationPipeline = pgTable(
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (t) => [
+    // One row per step: `initPipeline` upserts against this, so a payment
+    // confirmed twice (webhook and poll) cannot create a second pipeline.
+    uniqueIndex("reservation_pipeline_step_uidx").on(t.reservationId, t.step),
     index("reservation_pipeline_reservation_idx").on(t.reservationId),
     index("reservation_pipeline_retry_idx").on(t.nextRetryAt),
   ],

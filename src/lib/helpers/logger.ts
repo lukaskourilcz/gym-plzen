@@ -58,9 +58,13 @@ export const logger = {
   warn(message: string, meta?: Meta): void {
     const clean = cleanMeta(meta);
     line("warn", message, clean);
-    Sentry.captureMessage(redactForLogs(message), {
+    // Warnings are context for the next error, not events of their own:
+    // routine conditions ("duplicate alert suppressed", a default used while
+    // the database is unreachable) must not each open a Sentry issue.
+    Sentry.addBreadcrumb({
       level: "warning",
-      extra: clean,
+      message: redactForLogs(message),
+      data: clean,
     });
   },
   error(error: unknown, meta?: Meta): void {
@@ -69,6 +73,22 @@ export const logger = {
     );
     const clean = cleanMeta(meta);
     line("error", message, clean);
+    if (error instanceof Error) {
+      // Keep the stack and the error class so Sentry can group the failure,
+      // but never the unredacted message.
+      Sentry.captureException(scrubError(error, message), { extra: clean });
+      return;
+    }
     Sentry.captureMessage(message, { level: "error", extra: clean });
   },
 };
+
+/** A copy of the error with the redacted message and the original stack. */
+export function scrubError(error: Error, redactedMessage: string): Error {
+  const scrubbed = new Error(redactedMessage);
+  scrubbed.name = error.name;
+  scrubbed.stack = error.stack
+    ? error.stack.replace(error.message, redactedMessage)
+    : scrubbed.stack;
+  return scrubbed;
+}

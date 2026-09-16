@@ -143,7 +143,7 @@ export const SITE_DEFAULTS = {
   "home.pricing.title": "Bez závazků.\nBez předplatného.",
   "home.pricing.titleAccent": "Bez měsíčních plateb.",
   "home.pricing.promoNote":
-    "Akční cena platí pro rezervace vytvořené během akce, i na termíny v dalších měsících.",
+    "Akční cena platí pro návštěvy v akčním období, i při rezervaci předem.",
   "home.pricing.feature1": "Soukromé využití prostoru během rezervace",
   "home.pricing.feature2": "Online platba přes Comgate",
   "home.pricing.feature3": "Pokyny ke vstupu po potvrzení rezervace",

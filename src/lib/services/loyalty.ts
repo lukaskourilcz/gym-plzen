@@ -1,4 +1,4 @@
-import { and, count, eq, inArray, ne } from "drizzle-orm";
+import { and, count, eq, inArray, isNotNull, ne } from "drizzle-orm";
 import { db, type DatabaseExecutor } from "@/lib/db";
 import { reservation } from "@/lib/db/schema";
 import {
@@ -79,6 +79,50 @@ export async function countEntriesForUsers(
       row.userId ? [[row.userId, row.value] as const] : [],
     ),
   );
+}
+
+/**
+ * Loyalty status for many members in two grouped queries instead of two per
+ * member: entry counts, plus the reward numbers already claimed, so the
+ * "next entry is free" flag is as exact as the single-member version.
+ */
+export async function getLoyaltyStatusForUsers(
+  userIds: string[],
+): Promise<Map<string, LoyaltyStatus>> {
+  const result = new Map<string, LoyaltyStatus>();
+  if (userIds.length === 0) return result;
+  const [counts, claims] = await Promise.all([
+    countEntriesForUsers(userIds),
+    db
+      .select({ userId: reservation.userId, reward: reservation.loyaltyReward })
+      .from(reservation)
+      .where(
+        and(
+          inArray(reservation.userId, userIds),
+          isNotNull(reservation.loyaltyReward),
+          ne(reservation.status, "cancelled"),
+        ),
+      ),
+  ]);
+  const claimed = new Map<string, Set<number>>();
+  for (const row of claims) {
+    if (!row.userId || row.reward === null) continue;
+    (
+      claimed.get(row.userId) ??
+      claimed.set(row.userId, new Set()).get(row.userId)!
+    ).add(row.reward);
+  }
+  for (const userId of userIds) {
+    const totalEntries = counts.get(userId) ?? 0;
+    const status = deriveLoyaltyStatus(totalEntries);
+    if (
+      status.nextEntryIsFree &&
+      claimed.get(userId)?.has(Math.floor(totalEntries / FREE_ENTRY_EVERY) + 1)
+    )
+      status.nextEntryIsFree = false;
+    result.set(userId, status);
+  }
+  return result;
 }
 
 /** Compute the member's loyalty status from their entry count. */

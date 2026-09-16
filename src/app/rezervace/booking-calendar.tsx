@@ -5,26 +5,35 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Clock3 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { addDaysToDateKey, monthGrid } from "@/lib/helpers/datetime";
+import {
+  addDaysToDateKey,
+  cachedDateTimeFormat,
+  monthGrid,
+} from "@/lib/helpers/datetime";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
 
+/**
+ * One calendar cell. Only the selected day needs its slots; every other day
+ * needs a single flag, which keeps the month payload to a few kilobytes.
+ */
 export interface BookingDayView {
   dateKey: string;
   isClosed: boolean;
-  slots: Array<{
-    startISO: string;
-    endISO: string;
-    label: string;
-    durationMinutes: number;
-    available: boolean;
-  }>;
+  hasAvailability: boolean;
+}
+
+/** An available slot of the selected day, ready to render. */
+export interface BookingSlotView {
+  startISO: string;
+  label: string;
+  durationMinutes: number;
 }
 
 const weekdays = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
 
 function displayDate(dateKey: string, options: Intl.DateTimeFormatOptions) {
-  return new Intl.DateTimeFormat("cs-CZ", {
+  return cachedDateTimeFormat("cs-CZ", {
     ...options,
     timeZone: "UTC",
   }).format(new Date(`${dateKey}T12:00:00Z`));
@@ -37,6 +46,7 @@ export function BookingCalendar({
   maxDateKey,
   horizonDays,
   days,
+  selectedSlots,
   source,
   price,
 }: {
@@ -46,6 +56,8 @@ export function BookingCalendar({
   maxDateKey: string;
   horizonDays: number;
   days: BookingDayView[];
+  /** Available slots of `selectedDateKey`; empty when no day is selected. */
+  selectedSlots: BookingSlotView[];
   source: "live" | "preview" | "unavailable";
   price: string;
 }) {
@@ -56,8 +68,7 @@ export function BookingCalendar({
   const grid = monthGrid(monthKey);
   const byDate = new Map(days.map((day) => [day.dateKey, day]));
   const selectedDay = selectedDateKey ? byDate.get(selectedDateKey) : undefined;
-  const availableSlots =
-    selectedDay?.slots.filter((slot) => slot.available) ?? [];
+  const availableSlots = selectedDateKey ? selectedSlots : [];
   const currentMonth = todayKey.slice(0, 7);
   const maxMonth = maxDateKey.slice(0, 7);
   const previousSelectedDate = useRef(selectedDateKey);
@@ -241,9 +252,7 @@ export function BookingCalendar({
                         const outsideHorizon = cell.dateKey > maxDateKey;
                         const disabled =
                           !cell.inMonth || isPast || outsideHorizon;
-                        const hasAvailability = Boolean(
-                          day?.slots.some((slot) => slot.available),
-                        );
+                        const hasAvailability = Boolean(day?.hasAvailability);
                         const selected = cell.dateKey === selectedDateKey;
                         const label = displayDate(cell.dateKey, {
                           weekday: "long",
