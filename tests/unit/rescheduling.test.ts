@@ -49,3 +49,20 @@ test("only confirmed reservations are eligible", () => {
   assert.equal(result.eligible, false);
   if (!result.eligible) assert.equal(result.reason, "not_confirmed");
 });
+
+test("a term change is confirmed to the customer in every lock phase", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const [service, account] = await Promise.all([
+    readFile("src/lib/services/rescheduling.ts", "utf8"),
+    readFile("src/app/account/page.tsx", "utf8"),
+  ]);
+  assert.match(service, /await sendRescheduleConfirmation\(\{/);
+  assert.ok(
+    service.indexOf("sendRescheduleConfirmation({") <
+      service.indexOf("await fulfillReservation(updated.id)"),
+    "the written confirmation does not wait for the lock pipeline",
+  );
+  // The account notice must not promise an access code the lock phase cannot send.
+  assert.doesNotMatch(account, /Nový vstupní kód vám pošleme/);
+  assert.match(account, /Potvrzení nového termínu/);
+});
