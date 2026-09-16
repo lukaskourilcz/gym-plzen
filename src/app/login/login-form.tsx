@@ -6,35 +6,20 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/client";
 import {
   Field,
   FormFeedback,
   SubmitButton,
 } from "@/components/admin/form-controls";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { safeInternalPath } from "@/lib/security/redirects";
 import { FREE_ENTRY_EVERY } from "@/lib/config/pricing";
-import { publicEnv } from "@/lib/public-env";
+import {
+  CONFIGURED_OAUTH_PROVIDERS,
+  type OAuthProviderId,
+} from "@/lib/auth/oauth";
 import { authenticateAction } from "./actions";
-
-/** OAuth providers shown as buttons (enable each in the Supabase dashboard). */
-const OAUTH_PROVIDERS: { id: "google" | "apple" | "azure"; label: string }[] = [
-  { id: "google", label: "Pokračovat přes Google" },
-  { id: "apple", label: "Pokračovat přes Apple" },
-  { id: "azure", label: "Pokračovat přes Microsoft" },
-];
-
-const enabledOAuthProviders = new Set(
-  (publicEnv.NEXT_PUBLIC_OAUTH_PROVIDERS ?? "")
-    .split(",")
-    .map((provider) => provider.trim().toLowerCase())
-    .filter(Boolean),
-);
-const CONFIGURED_OAUTH_PROVIDERS = OAUTH_PROVIDERS.filter((provider) =>
-  enabledOAuthProviders.has(provider.id),
-);
 
 /**
  * Reasons `/auth/callback` can bounce a visitor back here. Without these the
@@ -46,6 +31,8 @@ const CALLBACK_ERRORS: Record<string, string> = {
   vyprselo:
     "Přihlášení se nepodařilo dokončit. Zkuste to prosím znovu, nebo se přihlaste e-mailem a heslem.",
   selhalo: "Přihlášení přes externí účet se nepodařilo.",
+  jiny_prohlizec:
+    "Přihlášení se nepodařilo dokončit. Otevřete přímo www.navigym.cz a zkuste to znovu, nebo se přihlaste e-mailem a heslem.",
 };
 
 // One flat schema serves both modes; `name` is only required in sign-up.
@@ -70,7 +57,7 @@ type FormValues = z.infer<typeof schema>;
 export function LoginForm({
   providers = CONFIGURED_OAUTH_PROVIDERS,
 }: {
-  providers?: typeof OAUTH_PROVIDERS;
+  providers?: readonly { id: OAuthProviderId; label: string }[];
 }) {
   const router = useRouter();
   const params = useSearchParams();
@@ -87,7 +74,6 @@ export function LoginForm({
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [serverError, setServerError] = useState<string | null>(callbackError);
   const [notice, setNotice] = useState<string | null>(null);
-  const [oauthPending, setOauthPending] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [isNavigating, startNavigation] = useTransition();
 
@@ -134,49 +120,21 @@ export function LoginForm({
     }
   });
 
-  async function onOAuth(provider: (typeof OAUTH_PROVIDERS)[number]["id"]) {
-    if (oauthPending) return;
-    setServerError(null);
-    setNotice(null);
-    const supabase = createClient();
-    if (!supabase) {
-      setServerError(
-        "Externí přihlášení teď není dostupné. Použijte prosím e-mail a heslo.",
-      );
-      return;
-    }
-    setOauthPending(provider);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-        },
-      });
-      if (!error) return;
-      setServerError("Přihlášení přes externí účet se nepodařilo spustit.");
-    } catch {
-      setServerError("Přihlášení přes externí účet se nepodařilo spustit.");
-    }
-    setOauthPending(null);
-  }
-
   return (
     <div>
       {providers.length > 0 && (
         <div className="grid gap-2.5">
           {providers.map((p) => (
-            <Button
+            <a
               key={p.id}
-              type="button"
-              variant="outline"
-              className="h-[46px] bg-card"
-              onClick={() => onOAuth(p.id)}
-              disabled={Boolean(oauthPending)}
-              aria-busy={oauthPending === p.id}
+              href={`/auth/signin?provider=${p.id}&next=${encodeURIComponent(next)}`}
+              className={buttonVariants({
+                variant: "outline",
+                className: "h-[46px] w-full bg-card",
+              })}
             >
-              {oauthPending === p.id ? "Přesměrovávám…" : p.label}
-            </Button>
+              {p.label}
+            </a>
           ))}
         </div>
       )}
