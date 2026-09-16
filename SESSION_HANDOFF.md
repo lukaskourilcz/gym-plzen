@@ -1,3 +1,38 @@
+# Oprava 16. 9. 2026 — Google v Safari (#18)
+
+Příčina nalezena. PKCE ověřovatel je cookie hostitele, který přihlášení
+**začal**, a kód se vrací na hostitele, kterého má povoleného Supabase.
+Prohlížeč flow spouštěl přes `window.location.origin`, takže návštěva, která
+přišla na jinou z adres webu, zapsala ověřovatel tam, kam se callback nikdy
+nevrací. `https://www.namastegym.cz` dodnes odpovídá 200, zatímco Supabase už
+míří na `www.navigym.cz` — kdo měl v prohlížeči starou adresu, přihlášení přes
+Google nedokončil. Není to chyba Safari jako takového: selže ten prohlížeč,
+který drží starou záložku, a klientka ji měla v Safari. Pěti lidem, kteří
+přišli na novou doménu, přihlášení prošlo (`auth.identities`, naposledy 7. 9.).
+
+Oprava: nové `/auth/signin` spouští flow na serveru a **nejdřív** přesune
+návštěvu na kanonický původ, takže se ověřovatel zapíše jednou, na hostiteli,
+který ho bude číst, a jako skutečná `Set-Cookie` (`Secure; SameSite=lax`)
+místo cookie psané skriptem — těm je ochrana soukromí v Safari výrazně méně
+nakloněná. Callback, který i tak dorazí jinam, se přepošle místo selhání, a
+výměna bez ověřovatele teď hlásí vlastní hlášku, ne „vypršelo“. Tlačítka
+poskytovatelů jsou odkazy, takže fungují i bez JavaScriptu.
+
+Ověřeno lokálně proti produkčnímu Supabase: start na kanonickém hostiteli
+vrací `Set-Cookie: sb-…-code-verifier; Path=/; Secure; SameSite=lax` a
+přesměruje na Google s `code_challenge`; start na `www.namastegym.cz`
+přesměruje na kanonickou doménu **bez** zapsané cookie; callback bez
+ověřovatele se z cizího hostitele přepošle a na kanonickém skončí na
+`/login?chyba=jiny_prohlizec`. Skutečné dokončení v Safari ověří provozovatel
+— WebKit tu není a TLS ověření proxy se obcházet nemá.
+
+Pozor na `nextUrl.origin`: hlásí `localhost` bez ohledu na hostitele, kterého
+použil prohlížeč, takže porovnání proti kanonické adrese přesměrovává donekonečna.
+Hostitel se proto bere z `x-forwarded-host`/`host`; test „the canonical move
+cannot loop“ to hlídá.
+
+---
+
 # Nasazeno 16. 9. 2026 — review sloučeno do `main`
 
 Migrace `20260916100000_pipeline_step_unique.sql` je **aplikovaná v produkčním
