@@ -41,3 +41,28 @@ test("account dates do not repeat the start time", () => {
   const start = new Date("2026-07-24T15:00:00.000Z");
   assert.equal(formatDate(start), "24. 7. 2026");
 });
+
+test("formatters are constructed once and cached conversions stay correct", async () => {
+  const { cachedDateTimeFormat } =
+    await import("../../src/lib/helpers/datetime");
+  const options = { timeZone: "Europe/Prague", weekday: "short" } as const;
+  assert.equal(
+    cachedDateTimeFormat("en-US", options),
+    cachedDateTimeFormat("en-US", options),
+  );
+  assert.notEqual(
+    cachedDateTimeFormat("en-US", options),
+    cachedDateTimeFormat("cs-CZ", options),
+  );
+  // A cached wall-clock conversion returns the same instant as a fresh one,
+  // and a distinct Date object each time so callers can never mutate the cache.
+  const first = localDateTimeToDate("2026-10-25", 5 * 60);
+  const second = localDateTimeToDate("2026-10-25", 5 * 60);
+  assert.equal(first.getTime(), second.getTime());
+  assert.notEqual(first, second);
+  assert.equal(first.toISOString(), "2026-10-25T04:00:00.000Z");
+  assert.equal(
+    localDateTimeToDate("2026-10-25", 1 * 60).toISOString(),
+    "2026-10-24T23:00:00.000Z",
+  );
+});

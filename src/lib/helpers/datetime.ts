@@ -8,6 +8,37 @@ export const MINUTE_MS = 60_000;
 export const PRAGUE_TIME_ZONE = "Europe/Prague";
 export const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
+/*
+ * Constructing an `Intl.DateTimeFormat` is the expensive part of formatting
+ * (locale and time-zone data lookup); calling `format` on an existing one is
+ * cheap. The booking calendar formats hundreds of slots per request, which
+ * used to cost ~350 ms of server CPU in constructors alone. Formatters are
+ * immutable, so one per (locale, options) is shared for the whole process.
+ * Client-safe: the same cache serves the calendar components in the browser.
+ */
+const formatters = new Map<string, Intl.DateTimeFormat>();
+
+export function cachedDateTimeFormat(
+  locale: string,
+  options: Intl.DateTimeFormatOptions,
+): Intl.DateTimeFormat {
+  const key = `${locale}|${JSON.stringify(options)}`;
+  let formatter = formatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, options);
+    formatters.set(key, formatter);
+  }
+  return formatter;
+}
+
+/*
+ * A wall-clock time in a zone always names the same instant, so resolved
+ * conversions are kept. The calendar asks for the same (day, minute) pairs on
+ * every request; a year of 15 daily slots is well under the cap.
+ */
+const instants = new Map<string, number>();
+const INSTANT_CACHE_LIMIT = 50_000;
+
 /** Two [start, end) intervals overlap iff aStart < bEnd && bStart < aEnd. */
 export function intervalsOverlap(
   aStart: Date,
@@ -30,7 +61,7 @@ export function minutesBetween(start: Date, end: Date): number {
 
 /** Minute-of-day (0–1439) for a date in the given IANA timezone. */
 export function minuteOfDay(date: Date, timeZone = "Europe/Prague"): number {
-  const parts = new Intl.DateTimeFormat("en-GB", {
+  const parts = cachedDateTimeFormat("en-GB", {
     timeZone,
     hour: "2-digit",
     minute: "2-digit",
@@ -43,7 +74,7 @@ export function minuteOfDay(date: Date, timeZone = "Europe/Prague"): number {
 
 /** Day of week (0=Sun…6=Sat) for a date in the given timezone. */
 export function dayOfWeek(date: Date, timeZone = "Europe/Prague"): number {
-  const wd = new Intl.DateTimeFormat("en-US", {
+  const wd = cachedDateTimeFormat("en-US", {
     timeZone,
     weekday: "short",
   }).format(date);
@@ -64,7 +95,7 @@ export function dateKeyInTimeZone(
   date: Date,
   timeZone = PRAGUE_TIME_ZONE,
 ): string {
-  const parts = new Intl.DateTimeFormat("en-CA", {
+  const parts = cachedDateTimeFormat("en-CA", {
     timeZone,
     year: "numeric",
     month: "2-digit",
@@ -120,6 +151,20 @@ export function localDateTimeToDate(
   ) {
     throw new Error("Invalid local date or time.");
   }
+  const cacheKey = `${timeZone}|${dateKey}|${minute}`;
+  const cached = instants.get(cacheKey);
+  if (cached !== undefined) return new Date(cached);
+  const instant = resolveLocalDateTime(dateKey, minute, timeZone);
+  if (instants.size >= INSTANT_CACHE_LIMIT) instants.clear();
+  instants.set(cacheKey, instant.getTime());
+  return instant;
+}
+
+function resolveLocalDateTime(
+  dateKey: string,
+  minute: number,
+  timeZone: string,
+): Date {
   const [year, month, day] = dateKey.split("-").map(Number);
   const hour = Math.floor(minute / 60);
   const minutePart = minute % 60;
@@ -127,7 +172,7 @@ export function localDateTimeToDate(
   let instant = new Date(wantedUtc);
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const rendered = new Intl.DateTimeFormat("en-CA", {
+    const rendered = cachedDateTimeFormat("en-CA", {
       timeZone,
       year: "numeric",
       month: "2-digit",
