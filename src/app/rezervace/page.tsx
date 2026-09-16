@@ -86,17 +86,23 @@ export default async function BookingPage({
     getSession(),
   ]);
   const price = formatMoney(content.entryPriceCents);
+  // The client needs one flag per day and the slots of the selected day only;
+  // shipping all 630 slots of the grid made the document ten times larger.
   const days = availability.days.map((day) => ({
     dateKey: day.dateKey,
     isClosed: day.isClosed,
-    slots: day.slots.map((slot) => ({
+    hasAvailability: day.slots.some((slot) => slot.available),
+  }));
+  const selectedSlots = (
+    availability.days.find((day) => day.dateKey === selectedDateKey)?.slots ??
+    []
+  )
+    .filter((slot) => slot.available)
+    .map((slot) => ({
       startISO: slot.start.toISOString(),
-      endISO: slot.end.toISOString(),
       label: formatTimeRange(slot.start, slot.end),
       durationMinutes: minutesBetween(slot.start, slot.end),
-      available: slot.available,
-    })),
-  }));
+    }));
 
   return (
     <>
@@ -154,6 +160,7 @@ export default async function BookingPage({
                 maxDateKey={maxDateKey}
                 horizonDays={horizonDays}
                 days={days}
+                selectedSlots={selectedSlots}
                 source={availability.source}
                 price={price}
               />
