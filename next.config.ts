@@ -1,13 +1,22 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
+/*
+ * `'unsafe-eval'` is only required by the Next.js development runtime
+ * (React Refresh, source-map evaluation). The production bundles, gtag, the
+ * Meta pixel and the Google Maps embed run without it, so it stays out of the
+ * shipped policy.
+ */
+const scriptEval =
+  process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'";
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'self'",
   "form-action 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://connect.facebook.net https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.ggpht.com https://*.googleusercontent.com blob:",
+  `script-src 'self' 'unsafe-inline'${scriptEval} https://www.googletagmanager.com https://connect.facebook.net https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.ggpht.com https://*.googleusercontent.com blob:`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob: https://static.wixstatic.com https://*.supabase.co https://www.facebook.com https://www.google-analytics.com https://*.google-analytics.com https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.ggpht.com https://*.googleusercontent.com",
