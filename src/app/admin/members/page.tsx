@@ -31,9 +31,11 @@ export default async function MembersPage() {
    * One grouped query for the whole page rather than a count per row. Demo data
    * has no reservations to group, so the columns simply read zero there.
    */
-  const entryCounts = demo
-    ? new Map<string, number>()
-    : await loyalty.countEntriesForUsers(rows.map((member) => member.user.id));
+  const statuses = demo
+    ? new Map<string, ReturnType<typeof loyalty.deriveLoyaltyStatus>>()
+    : await loyalty.getLoyaltyStatusForUsers(
+        rows.map((member) => member.user.id),
+      );
 
   return (
     <div>
@@ -52,9 +54,8 @@ export default async function MembersPage() {
         </TableHeader>
         <TableBody>
           {rows.map(({ user, profile }) => {
-            const status = loyalty.deriveLoyaltyStatus(
-              entryCounts.get(user.id) ?? 0,
-            );
+            const status =
+              statuses.get(user.id) ?? loyalty.deriveLoyaltyStatus(0);
             return (
               <TableRow key={user.id}>
                 <TableCell>{user.name}</TableCell>
