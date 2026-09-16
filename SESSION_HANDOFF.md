@@ -82,11 +82,12 @@ ale s měkkými hranami renderu. Až dodá vektory, stačí vyměnit `navi-mark.
 `navi-wordmark.png`, `navi-logo.png` a `navi-logo-email.png` a přegenerovat
 `src/app/icon.png`; v kódu se nemění nic.
 
-**Ceny.** Standardní cena je 289 Kč. Akční okno se nastavuje v administraci →
-Vstupné a věrnost a řídí se **okamžikem vytvoření rezervace**, ne termínem: kdo
-rezervuje během akce, platí akční cenu i za termín o měsíce později.
-Věrnostní 10. vstup zdarma platí i uvnitř akce. Změna termínu cenu
-nepřepočítává. Texty s cenou používají zástupné `{price}`
+**Ceny.** Standardní cena je 229 Kč (snížena 14. 9. 2026, viz
+[docs/LAUNCH_2026_10.md](docs/LAUNCH_2026_10.md)). Akční okno se nastavuje v administraci →
+Vstupné a věrnost a řídí se **datem návštěvy**, ne okamžikem nákupu: říjnový
+termín stojí akční cenu i při rezervaci v září (rozhodnutí klienta 14. 9. 2026,
+viz [docs/LAUNCH_2026_10.md](docs/LAUNCH_2026_10.md)). Věrnostní 10. vstup
+zdarma platí i uvnitř akce. Změna termínu cenu nepřepočítává. Texty s cenou používají zástupné `{price}`
 a `{pricePerPerson}`, takže nemohou zastarat.
 
 **Rozsah rezervací** už není napevno 60 dní: nastavuje se v administraci →
@@ -220,7 +221,8 @@ zjednodušený editor obsahu.
 - otevírací doba: každý den 5:00–23:45;
 - slot: 75 minut;
 - kapacita: až 5 osob včetně dětí;
-- cena: 289 Kč za rezervaci, každý 10. vstup zdarma;
+- cena: 229 Kč za rezervaci (od 14. 9. 2026; v říjnu 2026 akčních 199 Kč),
+  každý 10. vstup zdarma;
 - Instagram: `@navi_plzen`;
 - logo: zdroj od klienta, odvozené transparentní soubory jsou v
   `public/images/navi-logo.png`, `navi-mark.png` a `navi-wordmark.png`.
