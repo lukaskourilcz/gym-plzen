@@ -17,6 +17,9 @@ export const metadata: Metadata = {
     "Všeobecné obchodní podmínky samoobslužného studia NAVI Private Gym v Plzni.",
   alternates: { canonical: "/obchodni-podminky" },
 };
+// CMS text, contacts and the quoted price are read at request time and cached
+// briefly, so an admin change or a price period switch never waits for a deploy.
+export const revalidate = 300;
 
 const INLINE_LINK_PATTERN = /(\[[^\]]+\]\(https?:\/\/[^)]+\))/g;
 
