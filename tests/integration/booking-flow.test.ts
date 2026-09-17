@@ -27,6 +27,7 @@ import {
   startBooking,
 } from "../../src/lib/services/booking";
 import { checkAvailability } from "../../src/lib/services/availability";
+import { listForReservation as activityFor } from "../../src/lib/services/activity";
 import { getEntryPriceCents } from "../../src/lib/services/loyalty";
 import { synchronizeComgatePayment } from "../../src/lib/services/payments";
 import { releaseExpiredPendingReservations } from "../../src/lib/services/reservations";
@@ -175,6 +176,14 @@ describe(
         Buffer.from(mail.attachments![0]!.content, "base64").toString("utf8"),
         /BEGIN:VCALENDAR/,
       );
+
+      // The administration's history knows what happened and who did it.
+      const log = await activityFor(outcome.reservationId);
+      assert.deepEqual(
+        log.map((entry) => [entry.action, entry.actorType, entry.actorLabel]),
+        [["reservation.confirmed", "customer", GUEST.email]],
+      );
+      assert.match(log[0]!.summary, /voucher TESTNAVI5555X pokryl celou cenu/);
 
       // The token, and only the token, opens the confirmation for a guest.
       const confirmation = await getBookingConfirmation({
@@ -335,6 +344,16 @@ describe(
       assert.equal(outcome.kind, "checkout");
       comgate.settle("TEST-0001", "PAID");
       assert.equal(await synchronizeComgatePayment("TEST-0001"), true);
+      assert.deepEqual(
+        (await activityFor(outcome.reservationId)).map((entry) => [
+          entry.action,
+          entry.actorType,
+        ]),
+        [
+          ["reservation.created", "customer"],
+          ["reservation.confirmed", "system"],
+        ],
+      );
 
       const row = await reservationRow(outcome.reservationId);
       assert.equal(row.status, "confirmed");
@@ -384,6 +403,9 @@ describe(
       const old = await reservationRow(first.reservationId);
       assert.equal(old.status, "cancelled");
       assert.equal(old.cancel_reason, "payment_cancelled");
+      const log = await activityFor(first.reservationId);
+      assert.equal(log.at(-1)?.action, "reservation.cancelled");
+      assert.match(log.at(-1)?.summary ?? "", /Platba neproběhla/);
       assert.equal(comgate.creates.length, 2);
     });
 
@@ -502,6 +524,10 @@ describe(
       const row = await reservationRow(stale!.id);
       assert.equal(row.status, "cancelled");
       assert.equal(row.cancel_reason, "checkout_expired");
+      const log = await activityFor(stale!.id);
+      assert.equal(log.length, 1);
+      assert.equal(log[0]?.actorLabel, "Watchdog");
+      assert.match(log[0]?.summary ?? "", /nebyla zahájena do 32 minut/);
     });
 
     test("own reservations are found by account, by e-mail and by hold cookie only", async () => {
