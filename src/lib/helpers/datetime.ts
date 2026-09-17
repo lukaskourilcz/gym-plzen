@@ -260,3 +260,41 @@ export function instantToLocalInput(
   const mm = String(minute % 60).padStart(2, "0");
   return `${dateKeyInTimeZone(date, timeZone)}T${hh}:${mm}`;
 }
+
+/**
+ * The instant named by a value submitted from a date-time form field.
+ *
+ * A `datetime-local` input yields a zone-less value ("2026-10-01T07:30") that
+ * the administrator typed as Prague wall-clock time. `new Date()` would read
+ * it in the server's own zone instead, and Vercel runs in UTC: a voucher meant
+ * to start at 07:51 started at 09:51 Prague time that way. A value carrying
+ * its own offset or `Z` already names an instant and is parsed as one.
+ */
+export function formDateTimeToInstant(
+  value: string,
+  timeZone = PRAGUE_TIME_ZONE,
+): Date {
+  const trimmed = value.trim();
+  const local =
+    /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/.exec(
+      trimmed,
+    );
+  if (local) {
+    const [, dateKey, hours, minutes, seconds, millis] = local;
+    const instant = localDateTimeToDate(
+      dateKey!,
+      Number(hours) * 60 + Number(minutes),
+      timeZone,
+    );
+    return new Date(
+      instant.getTime() +
+        Number(seconds ?? 0) * 1000 +
+        Number((millis ?? "0").padEnd(3, "0")),
+    );
+  }
+  const instant = new Date(trimmed);
+  if (Number.isNaN(instant.getTime())) {
+    throw new Error("Invalid date-time value.");
+  }
+  return instant;
+}

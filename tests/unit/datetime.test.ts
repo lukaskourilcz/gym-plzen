@@ -66,3 +66,27 @@ test("formatters are constructed once and cached conversions stay correct", asyn
     "2026-10-24T23:00:00.000Z",
   );
 });
+
+test("form date-times are Prague wall-clock time unless they carry a zone", async () => {
+  const { formDateTimeToInstant } =
+    await import("../../src/lib/helpers/datetime");
+  // The value a `datetime-local` input submits: no zone, so Prague, not UTC.
+  assert.equal(
+    formDateTimeToInstant("2026-09-17T08:00").toISOString(),
+    "2026-09-17T06:00:00.000Z",
+  );
+  assert.equal(
+    formDateTimeToInstant("2026-12-01T08:00:30").toISOString(),
+    "2026-12-01T07:00:30.000Z",
+  );
+  // An explicit offset or Z already names an instant and is kept as is.
+  assert.equal(
+    formDateTimeToInstant("2026-09-17T08:00:00.000Z").toISOString(),
+    "2026-09-17T08:00:00.000Z",
+  );
+  assert.equal(
+    formDateTimeToInstant("2026-09-17T08:00:00+02:00").toISOString(),
+    "2026-09-17T06:00:00.000Z",
+  );
+  assert.throws(() => formDateTimeToInstant("brzy"));
+});
