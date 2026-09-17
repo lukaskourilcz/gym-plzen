@@ -10,6 +10,7 @@ import {
   type EmailTemplateTestValues,
   type EmailTemplateValues,
 } from "@/lib/validations/settings";
+import type { SupabaseAuthSyncResult } from "@/lib/config/email-templates";
 import { emailTemplates } from "@/lib/services";
 
 /** Save an application-owned transactional e-mail template. */
@@ -49,7 +50,7 @@ const sendEmailTemplateTestImpl = defineAction({
 
 export async function saveEmailTemplateAction(
   input: EmailTemplateValues,
-): Promise<Result<{ supabaseSynced?: boolean }>> {
+): Promise<Result<{ supabaseSync?: SupabaseAuthSyncResult }>> {
   return saveEmailTemplateImpl(input);
 }
 

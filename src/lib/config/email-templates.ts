@@ -144,6 +144,74 @@ export function isSupabaseAuthEmailTemplate(id: EmailTemplateId): boolean {
   return getEmailTemplateDefinition(id).delivery === "supabase_auth";
 }
 
+/** The display name every e-mail is sent under, whatever the provider holds. */
+export const EMAIL_BRAND = "NAVI Private Gym";
+const SUBJECT_SUFFIX = ` | ${EMAIL_BRAND}`;
+const SUBJECT_SUFFIX_PATTERN = /\s*\|?\s*NAVI Private Gym\s*$/i;
+
+/** Every subject ends with " | NAVI Private Gym", exactly once. */
+export function brandedSubject(subject: string): string {
+  const base = subject.replace(SUBJECT_SUFFIX_PATTERN, "").trim();
+  return base ? `${base}${SUBJECT_SUFFIX}` : EMAIL_BRAND;
+}
+
+/**
+ * "NAVI Private Gym <address>" from a configured sender that may carry any
+ * display name, or none: the brand is not something an environment variable
+ * gets to decide.
+ */
+export function brandedSender(configured: string): string {
+  const match = configured.match(/<([^<>\s]+@[^<>\s]+)>/);
+  const address = (match?.[1] ?? configured).trim();
+  return `${EMAIL_BRAND} <${address}>`;
+}
+
+/** The two templates Supabase Auth delivers; the rest go through Resend. */
+export const SUPABASE_AUTH_TEMPLATE_IDS = [
+  "signup_confirmation",
+  "password_reset",
+] as const satisfies readonly EmailTemplateId[];
+export type SupabaseAuthTemplateId =
+  (typeof SUPABASE_AUTH_TEMPLATE_IDS)[number];
+
+/** What saving one hosted template did on Supabase's side. */
+export type SupabaseAuthSyncResult =
+  | { synced: true }
+  | { synced: false; reason: "not_configured" }
+  | {
+      synced: false;
+      reason: "request_failed";
+      status?: number;
+      detail?: string;
+    };
+
+/**
+ * Whether the hosted auth config can be read with the configured token, and
+ * which templates already carry our confirmation link.
+ */
+export type SupabaseAuthSyncStatus =
+  | { configured: false }
+  | { configured: true; ok: false; status?: number; detail?: string }
+  | {
+      configured: true;
+      ok: true;
+      synced: Record<SupabaseAuthTemplateId, boolean>;
+      /** The SMTP sender name Supabase Auth currently sends under. */
+      senderName: string | null;
+    };
+
+/** " (HTTP 401: Unauthorized)" for a failure, or "" when nothing is known. */
+export function describeSupabaseAuthFailure(failure: {
+  status?: number;
+  detail?: string;
+}): string {
+  const parts = [
+    failure.status ? `HTTP ${failure.status}` : null,
+    failure.detail || null,
+  ].filter((part): part is string => Boolean(part));
+  return parts.length ? ` (${parts.join(": ")})` : "";
+}
+
 /**
  * Collapse the gap a variable leaves behind when it resolves to nothing.
  * `{loyalty}` is empty for guests, and without this their confirmation would

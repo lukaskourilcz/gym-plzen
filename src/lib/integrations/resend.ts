@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { brandedSender } from "@/lib/config/email-templates";
 import { hasEnv, requireEnv } from "@/lib/env";
 import { logger } from "@/lib/helpers/logger";
 
@@ -56,7 +57,7 @@ export async function sendEmail(
   const { RESEND_FROM_EMAIL } = requireEnv("RESEND_FROM_EMAIL");
   try {
     const { data, error } = await client().emails.send({
-      from: RESEND_FROM_EMAIL,
+      from: brandedSender(RESEND_FROM_EMAIL),
       to: params.to,
       subject: params.subject,
       html: params.html,

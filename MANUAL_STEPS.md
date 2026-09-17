@@ -171,7 +171,11 @@ Preview. 17. 9. 2026 bylo ověřeno, že aplikační e-maily (potvrzení rezerva
 změna termínu) i registrační e-mail Supabase Auth chodí z
 `noreply@navigym.cz`; doména `navigym.cz` je tedy v Resendu ověřená.
 
-- Sender: `NAVI Private Gym <noreply@navigym.cz>`
+- Sender: `NAVI Private Gym <noreply@navigym.cz>`. Ve Vercelu má být
+  `RESEND_FROM_EMAIL="NAVI Private Gym <noreply@navigym.cz>"`; 17. 9. 2026 tam
+  bylo ještě jméno „Namasté Private Gym“ a e-maily pod ním odcházely. Od téže
+  verze kód jméno odesílatele nastavuje sám (z proměnné bere jen adresu),
+  proměnnou přesto opravit.
 - Šablony jsou v administraci → **E-maily**. Je zde náhled s ukázkovými daty,
   test na zadanou adresu a editace textu pro potvrzení registrace, obnovu
   hesla, potvrzení rezervace, vstupní kód a storno. Všechny používají stejné
@@ -196,7 +200,9 @@ Pokud by se SMTP nastavovalo znovu:
 1. Zapnout **Custom SMTP**.
 2. Vyplnit:
    - Sender email: `noreply@navigym.cz`
-   - Sender name: `NAVI Private Gym`
+   - Sender name: `NAVI Private Gym` (17. 9. 2026 tam bylo „Namasté Private
+     Gym“; propsání šablon z administrace jméno přepíše samo, ruční oprava je
+     ale okamžitá)
    - Host: `smtp.resend.com`
    - Port: `465` (SSL / implicit TLS)
    - Username: `resend`
@@ -216,13 +222,18 @@ Pokud by se SMTP nastavovalo znovu:
    **Preview**, zaškrtnout **Sensitive**, uložit.
 3. Proměnná platí až pro nový deployment: **Deployments → poslední Production
    deployment → ⋯ → Redeploy** (nebo počkat na další push do `main`).
-4. V administraci webu → **E-maily** otevřít „Potvrzení registrace“. Pod
-   popisem musí být věta „Tato šablona se po uložení automaticky propíše do
-   Supabase Auth.“; pokud je tam místo ní výzva k doplnění tokenu, běží ještě
-   starý deployment nebo proměnná chybí. Kliknout **Uložit šablonu** (text
-   není nutné měnit) a totéž udělat pro „Obnova hesla“. Úspěch potvrdí hláška
-   „Šablona uložená.“; hláška „Text je uložený. Aby se změna promítla…“ po
-   uložení znamená, že propsání selhalo (nejčastěji neplatný token).
+4. V administraci webu → **E-maily**. Nad šablonami je stav propojení:
+   zelené „Propojení se Supabase Auth funguje“ (obě šablony propsané), žluté
+   „šablony čekají na uložení“ (token funguje, jmenované šablony zbývá
+   uložit), žluté „Šablony Supabase Auth se nepropisují“ (proměnná chybí nebo
+   běží deployment z doby před jejím přidáním), nebo červené „Propojení se
+   Supabase Auth selhalo“ s HTTP stavem a hláškou API (nejčastěji token z
+   jiného účtu, HTTP 401/403). Otevřít „Potvrzení registrace“, kliknout
+   **Uložit šablonu** (text není nutné měnit) a totéž udělat pro „Obnova
+   hesla“. Úspěch potvrdí hláška „Šablona uložená a propsaná do Supabase
+   Auth.“; červená hláška po uložení říká, proč propsání selhalo. Stav uvádí
+   i jméno odesílatele v Supabase Auth; uložení kterékoli z obou šablon ho
+   nastaví na „NAVI Private Gym“.
    Aplikace v bezpečném serverovém volání propíše český předmět, text, logo
    a tlačítko do hostovaného Supabase Auth. Token se nikdy neposílá do
    prohlížeče.

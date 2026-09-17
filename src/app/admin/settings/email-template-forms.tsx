@@ -6,11 +6,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { siteUrl } from "@/lib/helpers/site-url";
 import {
   EMAIL_TEMPLATE_DEFINITIONS,
+  describeSupabaseAuthFailure,
   emailTextToHtml,
   getEmailTemplateDefinition,
   renderEmailTemplateText,
   type EmailTemplate,
   type EmailTemplateId,
+  type SupabaseAuthSyncStatus,
+  type SupabaseAuthTemplateId,
 } from "@/lib/config/email-templates";
 import {
   emailTemplateSchema,
@@ -38,13 +41,27 @@ const PREVIEW_VALUES: Record<string, string> = {
   loyalty: "Tohle byla vaše 7. návštěva, do vstupu zdarma zbývají 3 vstupy.",
 };
 
+/** One line under a hosted template: is it live in Supabase Auth, and if not, why. */
+function supabaseAuthTemplateStatus(
+  id: EmailTemplateId,
+  status: SupabaseAuthSyncStatus,
+): string {
+  if (!status.configured)
+    return "Pro automatické propsání do Supabase Auth je potřeba doplnit serverovou proměnnou SUPABASE_MANAGEMENT_API_TOKEN ve Vercelu a spustit nový deployment.";
+  if (!status.ok)
+    return `Propojení se Supabase Auth selhalo${describeSupabaseAuthFailure(status)}. Zkontrolujte token ve Vercelu.`;
+  return status.synced[id as SupabaseAuthTemplateId]
+    ? "Tato šablona je v Supabase Auth propsaná. Po uložení se propíše znovu."
+    : "Tato šablona v Supabase Auth ještě není propsaná. Uložte ji a propíše se automaticky.";
+}
+
 /** Edit, preview, and test every transactional template sent by this app. */
 export function EmailTemplateForms({
   templates,
-  supabaseAuthSyncConfigured,
+  supabaseAuthSync,
 }: {
   templates: Record<EmailTemplateId, EmailTemplate>;
-  supabaseAuthSyncConfigured: boolean;
+  supabaseAuthSync: SupabaseAuthSyncStatus;
 }) {
   const [selectedId, setSelectedId] = useState<EmailTemplateId>(
     "reservation_confirmation",
@@ -92,9 +109,18 @@ export function EmailTemplateForms({
       setSaveError(result.error);
       return;
     }
+    const sync = result.data.supabaseSync;
+    if (sync && !sync.synced) {
+      setSaveError(
+        sync.reason === "not_configured"
+          ? "Text je uložený, ale do Supabase Auth se nepropsal: ve Vercelu chybí SUPABASE_MANAGEMENT_API_TOKEN, nebo běží deployment z doby před jeho přidáním."
+          : `Text je uložený, ale propsání do Supabase Auth selhalo${describeSupabaseAuthFailure(sync)}. Zkontrolujte token ve Vercelu a uložte šablonu znovu.`,
+      );
+      return;
+    }
     setSaveSuccess(
-      definition.delivery === "supabase_auth" && !result.data.supabaseSynced
-        ? "Text je uložený. Aby se změna promítla do registračních a resetovacích e-mailů, doplňte ve Vercelu SUPABASE_MANAGEMENT_API_TOKEN."
+      sync
+        ? "Šablona uložená a propsaná do Supabase Auth. Další odpovídající e-mail použije nový text."
         : "Šablona uložená. Další odpovídající e-mail použije nový text.",
     );
   });
@@ -146,9 +172,7 @@ export function EmailTemplateForms({
           ))}
           {definition.delivery === "supabase_auth" ? (
             <span className="block mt-2">
-              {supabaseAuthSyncConfigured
-                ? "Tato šablona se po uložení automaticky propíše do Supabase Auth."
-                : "Pro automatické propsání do Supabase Auth je potřeba doplnit serverovou proměnnou SUPABASE_MANAGEMENT_API_TOKEN."}
+              {supabaseAuthTemplateStatus(selectedId, supabaseAuthSync)}
             </span>
           ) : null}
         </p>

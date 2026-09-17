@@ -1,11 +1,13 @@
 import {
   EMAIL_TEMPLATE_IDS,
+  brandedSubject,
   emailTemplateSettingKey,
   emailTextToHtml,
   getEmailTemplateDefinition,
   isSupabaseAuthEmailTemplate,
   type EmailTemplate,
   type EmailTemplateId,
+  type SupabaseAuthSyncResult,
   renderEmailTemplateText,
 } from "@/lib/config/email-templates";
 import {
@@ -14,6 +16,7 @@ import {
   type SendEmailResult,
 } from "@/lib/integrations/resend";
 import {
+  checkSupabaseAuthTemplateSync,
   isSupabaseAuthTemplateSyncConfigured,
   syncSupabaseAuthEmailTemplate,
 } from "@/lib/integrations/supabase-management";
@@ -30,7 +33,9 @@ export async function getEmailTemplate(
     emailTemplateSettingKey(id),
   );
   return {
-    subject: rebrand(saved?.subject?.trim() || definition.fallback.subject),
+    subject: brandedSubject(
+      rebrand(saved?.subject?.trim() || definition.fallback.subject),
+    ),
     body: rebrand(saved?.body?.trim() || definition.fallback.body),
   };
 }
@@ -51,9 +56,9 @@ export async function saveEmailTemplate(params: {
   subject: string;
   body: string;
   updatedByAdminId: string;
-}): Promise<{ supabaseSynced?: boolean }> {
+}): Promise<{ supabaseSync?: SupabaseAuthSyncResult }> {
   const template = {
-    subject: rebrand(params.subject.trim()),
+    subject: brandedSubject(rebrand(params.subject.trim())),
     body: rebrand(params.body.trim()),
   };
   await setSetting(
@@ -63,11 +68,11 @@ export async function saveEmailTemplate(params: {
   );
   if (!isSupabaseAuthEmailTemplate(params.id)) return {};
 
-  const sync = await syncSupabaseAuthEmailTemplate({
+  const supabaseSync = await syncSupabaseAuthEmailTemplate({
     id: params.id,
     template,
   });
-  return { supabaseSynced: sync.synced };
+  return { supabaseSync };
 }
 
 export async function sendTransactionalEmail(params: {
@@ -128,4 +133,7 @@ export function getEmailTemplatePreview(id: EmailTemplateId): EmailTemplate {
   return renderEmailTemplateText(definition.fallback, TEST_VARIABLES);
 }
 
-export { isSupabaseAuthTemplateSyncConfigured };
+export {
+  isSupabaseAuthTemplateSyncConfigured,
+  checkSupabaseAuthTemplateSync as getSupabaseAuthSyncStatus,
+};
