@@ -104,9 +104,10 @@ je tedy ověřená ostrou platbou. Testovací rezervace jsou zrušené
 `code_delivered` čekají `pending` na zapnutí zámku, watchdog je při vypnutém
 zámku přeskakuje, storno bez kódů nic neodebírá, `sync-entry-log` bez
 přístupů nic nestáhne. Jediné, co s klikou souvisí, je text: potvrzovací
-e-mail i účet slibují „osobní vstupní kód před začátkem rezervace“ — do
-připojení zámku ho musí zákazníkům poslat provozovatel ručně, nebo upravit
-šablonu v administraci → E-maily (viz NEEDED).
+e-mail i účet slibují „osobní vstupní kód před začátkem rezervace“.
+Provozovatel 17. 9. rozhodl: bez Nuki zákazníci nevstupují, posilovna se
+otevírá 1. 10. 2026 a klika bude do té doby připojená — texty zůstávají a
+před zapnutím kódů je nutná oprava #64 (viz NEEDED).
 
 Lokální Postgres pro testy: `pg_ctlcluster 16 main start`, databáze
 `gym_test` s rolemi `anon`/`authenticated`, schématem `extensions` a publikací

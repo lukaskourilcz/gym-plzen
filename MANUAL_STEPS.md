@@ -140,12 +140,14 @@ klient dostane zprávu s kódem.
 
 ---
 
-## 5. Nuki (fyzický zámek) — čeká na nákup
+## 5. Nuki (fyzický zámek) — připojit před otevřením 1. 10. 2026
 
 **Kde:** <https://web.nuki.io/>.
 
-Po pořízení zámku doplnit:
+Bez kliky zákazníci nevstupují (rozhodnutí provozovatele 17. 9. 2026), proto
+musí být zámek připojený a ověřený do 30. 9. 2026. Po instalaci doplnit:
 
+- `NUKI_API_TOKEN` (API token z Nuki Web; Vercel → Sensitive, Production + Preview).
 - `NUKI_SMARTLOCK_ID` (číselné ID zámku z dashboardu).
 - `NUKI_WEBHOOK_SECRET` = `openssl rand -hex 32`; zapsat současně do Nuki webhook UI i do Vercelu (Sensitive, Production + Preview).
 - Webhook URL k zaregistrování na Nuki: `https://www.navigym.cz/api/webhooks/nuki`
@@ -154,16 +156,22 @@ Po pořízení zámku doplnit:
 **Fyzicky ověřit:** admin vytvoří rezervaci → kód doručen → zámek otevře →
 po skončení kód přestane platit → ruční revocation zafunguje.
 
+Vstupní kódy se zapínají až po tomto ověření v administraci → **Nastavení a
+branding** → „Aktivovat vstupní kódy přes Nuki“, a až po opravě
+[issue #64](https://github.com/lukaskourilcz/gym-plzen/issues/64) (adaptér
+musí po vytvoření kódu dohledat id autorizace; bez opravy skončí každá
+rezervace ve stavu „neznámý výsledek“). Viz NEEDED.md.
+
 ---
 
 ## 6. Resend — odchozí aplikační e-maily
 
-V Resend je ověřená doména `namastegym.cz` (nikoli `navigym.cz`), a Vercel má
-nastavené `RESEND_API_KEY` a `RESEND_FROM_EMAIL` pro Production i Preview.
-Odesílatel proto zatím zůstává na staré doméně — odesílání z `@navigym.cz`
-vyžaduje nejdřív ověření té domény v Resendu (DNS záznamy), viz NEEDED.md.
+Vercel má nastavené `RESEND_API_KEY` a `RESEND_FROM_EMAIL` pro Production i
+Preview. 17. 9. 2026 bylo ověřeno, že aplikační e-maily (potvrzení rezervace,
+změna termínu) i registrační e-mail Supabase Auth chodí z
+`noreply@navigym.cz`; doména `navigym.cz` je tedy v Resendu ověřená.
 
-- Sender: `NAVI Private Gym <noreply@namastegym.cz>`
+- Sender: `NAVI Private Gym <noreply@navigym.cz>`
 - Šablony jsou v administraci → **E-maily**. Je zde náhled s ukázkovými daty,
   test na zadanou adresu a editace textu pro potvrzení registrace, obnovu
   hesla, potvrzení rezervace, vstupní kód a storno. Všechny používají stejné
@@ -187,7 +195,7 @@ Pokud by se SMTP nastavovalo znovu:
 
 1. Zapnout **Custom SMTP**.
 2. Vyplnit:
-   - Sender email: `noreply@namastegym.cz`
+   - Sender email: `noreply@navigym.cz`
    - Sender name: `NAVI Private Gym`
    - Host: `smtp.resend.com`
    - Port: `465` (SSL / implicit TLS)
@@ -198,15 +206,26 @@ Pokud by se SMTP nastavovalo znovu:
 
 ### Zpřístupnění šablon v administraci
 
-1. Otevřít <https://supabase.com/dashboard/account/tokens> a vytvořit nový
-   **Personal Access Token** s oprávněním upravovat konfiguraci projektu.
-2. Ve Vercelu → Project → Settings → Environment Variables přidat
-   `SUPABASE_MANAGEMENT_API_TOKEN` pro **Production** i **Preview**.
-3. Uložit a spustit nový deployment.
-4. V administraci webu → **E-maily** upravit „Potvrzení registrace“ nebo
-   „Obnova hesla“ a uložit. Aplikace v bezpečném serverovém volání propíše
-   český předmět, text, logo a tlačítko do hostovaného Supabase Auth. Token se
-   nikdy neposílá do prohlížeče.
+1. Otevřít <https://supabase.com/dashboard/account/tokens> (přihlášení účtem,
+   pod kterým je projekt `rkmunagymohxtclymacm`) → **Generate new token**,
+   pojmenovat např. `navigym-auth-templates` a hodnotu hned zkopírovat —
+   zobrazí se jen jednou. Token má přístup k celému účtu Supabase, proto patří
+   jen do Vercelu a nikam jinam; na stejné stránce ho lze kdykoli zrušit.
+2. Ve Vercelu → projekt → **Settings → Environment Variables → Add**: Key
+   `SUPABASE_MANAGEMENT_API_TOKEN`, Value = token, prostředí **Production** i
+   **Preview**, zaškrtnout **Sensitive**, uložit.
+3. Proměnná platí až pro nový deployment: **Deployments → poslední Production
+   deployment → ⋯ → Redeploy** (nebo počkat na další push do `main`).
+4. V administraci webu → **E-maily** otevřít „Potvrzení registrace“. Pod
+   popisem musí být věta „Tato šablona se po uložení automaticky propíše do
+   Supabase Auth.“; pokud je tam místo ní výzva k doplnění tokenu, běží ještě
+   starý deployment nebo proměnná chybí. Kliknout **Uložit šablonu** (text
+   není nutné měnit) a totéž udělat pro „Obnova hesla“. Úspěch potvrdí hláška
+   „Šablona uložená.“; hláška „Text je uložený. Aby se změna promítla…“ po
+   uložení znamená, že propsání selhalo (nejčastěji neplatný token).
+   Aplikace v bezpečném serverovém volání propíše český předmět, text, logo
+   a tlačítko do hostovaného Supabase Auth. Token se nikdy neposílá do
+   prohlížeče.
 
 Tlačítko v šabloně nevede na výchozí `{{ .ConfirmationURL }}`, ale na
 `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&redirect_to={{ .RedirectTo }}`
@@ -224,8 +243,11 @@ Supabase → Authentication → Email Templates, použije stejný odkaz jako vý
 1. V produkci se zaregistrovat na novou testovací adresu a potvrdit e-mail.
 2. Na `/forgot-password` požádat o obnovu a přes e-mail nastavit nové heslo.
 3. V administraci odeslat test každé z pěti šablon na vlastní adresu.
-4. V Resend Logs ověřit odesílatele `noreply@namastegym.cz`, české texty a
+4. V Resend Logs ověřit odesílatele `noreply@navigym.cz`, české texty a
    načtené logo.
+5. Registrační odkaz otevřít v aplikaci Gmail na telefonu (jiný prohlížeč
+   než ten, kde registrace začala): musí skončit přihlášený na účtu, ne na
+   `/login` s hláškou.
 
 ---
 
