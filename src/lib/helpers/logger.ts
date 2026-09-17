@@ -1,6 +1,33 @@
-import * as Sentry from "@sentry/nextjs";
+import * as SentryModule from "@sentry/nextjs";
 
 type Meta = Record<string, unknown>;
+
+type SentryApi = Pick<
+  typeof SentryModule,
+  "addBreadcrumb" | "captureException" | "captureMessage"
+>;
+
+/*
+ * Inside the Next.js runtime the SDK's named exports are right here. A plain
+ * Node process (a CLI script, the test runner) can resolve the package to its
+ * CommonJS build instead, where they sit behind `default`; and a warning
+ * written on the way to a database error must never itself crash a script.
+ */
+function sentry(): SentryApi | null {
+  const candidates: unknown[] = [
+    SentryModule,
+    (SentryModule as { default?: unknown }).default,
+  ];
+  for (const candidate of candidates) {
+    if (
+      candidate &&
+      typeof (candidate as SentryApi).addBreadcrumb === "function" &&
+      typeof (candidate as SentryApi).captureException === "function"
+    )
+      return candidate as SentryApi;
+  }
+  return null;
+}
 const sensitiveKey =
   /(password|secret|token|authorization|cookie|code|pin|email|phone|payload|body|from)/i;
 
@@ -61,7 +88,7 @@ export const logger = {
     // Warnings are context for the next error, not events of their own:
     // routine conditions ("duplicate alert suppressed", a default used while
     // the database is unreachable) must not each open a Sentry issue.
-    Sentry.addBreadcrumb({
+    sentry()?.addBreadcrumb({
       level: "warning",
       message: redactForLogs(message),
       data: clean,
@@ -76,10 +103,10 @@ export const logger = {
     if (error instanceof Error) {
       // Keep the stack and the error class so Sentry can group the failure,
       // but never the unredacted message.
-      Sentry.captureException(scrubError(error, message), { extra: clean });
+      sentry()?.captureException(scrubError(error, message), { extra: clean });
       return;
     }
-    Sentry.captureMessage(message, { level: "error", extra: clean });
+    sentry()?.captureMessage(message, { level: "error", extra: clean });
   },
 };
 
