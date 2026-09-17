@@ -30,6 +30,8 @@ import { initPipeline } from "./pipeline";
 import { fulfillReservation } from "./fulfillment";
 import { redeemForReservation, releaseForReservation } from "./vouchers";
 import { raiseAlert } from "./alerts";
+import { recordIn as recordActivityIn } from "./activity";
+import { formatDateTime, formatMoney } from "@/lib/helpers/format";
 import type { BookingOutcome } from "./booking";
 
 /** Persist the attempt before any external side effect. An unknown response
@@ -283,6 +285,18 @@ export async function synchronizeComgatePayment(
               .where(eq(reservation.id, booking.id));
             await redeemForReservation(booking.id, tx);
             await initPipeline(booking.id, tx);
+            await recordActivityIn(tx, {
+              action: "reservation.confirmed",
+              actorType: "system",
+              actorLabel: "Comgate",
+              memberId: booking.userId,
+              reservationId: booking.id,
+              summary: `Platba ${formatMoney(current.amountCents, current.currency)} přijata (Comgate ${snapshot.id}), rezervace na ${formatDateTime(booking.startsAt)} potvrzena.`,
+              context: {
+                paymentId: current.id,
+                providerPaymentId: snapshot.id,
+              },
+            });
           } else if (
             booking.status !== "confirmed" &&
             booking.status !== "completed"
@@ -306,6 +320,15 @@ export async function synchronizeComgatePayment(
             })
             .where(eq(reservation.id, booking.id));
           await releaseForReservation(booking.id, tx);
+          await recordActivityIn(tx, {
+            action: "reservation.cancelled",
+            actorType: "system",
+            actorLabel: "Comgate",
+            memberId: booking.userId,
+            reservationId: booking.id,
+            summary: `Platba neproběhla (Comgate ${snapshot.id}: ${snapshot.state}), rezervace na ${formatDateTime(booking.startsAt)} zrušena.`,
+            context: { paymentId: current.id, providerPaymentId: snapshot.id },
+          });
         }
       },
     );

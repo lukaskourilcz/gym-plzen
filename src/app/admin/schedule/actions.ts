@@ -14,7 +14,14 @@ import {
   type CreateBlockedSlotValues,
   type OpeningHoursValues,
 } from "@/lib/validations/schedule";
-import { schedule, notifications, members, reservations } from "@/lib/services";
+import {
+  activity,
+  schedule,
+  notifications,
+  members,
+  reservations,
+} from "@/lib/services";
+import { formatDateTime } from "@/lib/helpers/format";
 
 /** Save opening hours for one weekday (converts "HH:mm" → minutes). */
 const saveOpeningHoursImpl = defineAction({
@@ -39,7 +46,7 @@ const createBlockedSlotImpl = defineAction({
   handler: async (input, admin) => {
     const start = formDateTimeToInstant(input.startsAt);
     const end = formDateTimeToInstant(input.endsAt);
-    await schedule.createBlockedSlot({
+    const block = await schedule.createBlockedSlot({
       startsAt: start,
       endsAt: end,
       reason: input.reason,
@@ -54,7 +61,24 @@ const createBlockedSlotImpl = defineAction({
       reason: input.note || "Termín byl uzavřen provozovatelem.",
       byAdminId: admin.id,
     });
+    await activity.record({
+      action: "blocked_slot.created",
+      actorType: "admin",
+      actorId: admin.id,
+      actorLabel: admin.email,
+      summary: `Termíny od ${formatDateTime(start)} do ${formatDateTime(end)} uzavřeny${input.note ? ` (${input.note})` : ""}; zrušeno rezervací: ${affected.length}.`,
+      context: { blockedSlotId: block.id, reason: input.reason },
+    });
     for (const r of affected) {
+      await activity.record({
+        action: "reservation.cancelled",
+        actorType: "admin",
+        actorId: admin.id,
+        actorLabel: admin.email,
+        memberId: r.userId,
+        reservationId: r.id,
+        summary: `Rezervace na ${formatDateTime(r.startsAt)} zrušena uzavřením termínů${input.note ? ` (${input.note})` : ""}.`,
+      });
       const channels = r.userId ? await members.getMember(r.userId) : null;
       await notifications.sendReservationClosure({
         userId: r.userId ?? null,
@@ -76,8 +100,17 @@ const createBlockedSlotImpl = defineAction({
 const deleteBlockedSlotImpl = defineAction({
   schema: deleteBlockedSlotSchema,
   authorize: assertAdmin,
-  handler: async (input) => {
+  handler: async (input, admin) => {
+    const block = await schedule.getBlockedSlot(input.id);
     await schedule.deleteBlockedSlot(input.id);
+    if (block)
+      await activity.record({
+        action: "blocked_slot.deleted",
+        actorType: "admin",
+        actorId: admin.id,
+        actorLabel: admin.email,
+        summary: `Uzavření termínů od ${formatDateTime(block.startsAt)} do ${formatDateTime(block.endsAt)} zrušeno.`,
+      });
     revalidatePath("/admin/schedule");
   },
 });

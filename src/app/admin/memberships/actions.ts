@@ -16,7 +16,8 @@ import {
   BOOKING_HORIZON_SETTING_KEY,
   clampBookingHorizonDays,
 } from "@/lib/config/schedule";
-import { cms, pricingPeriods } from "@/lib/services";
+import { activity, cms, pricingPeriods } from "@/lib/services";
+import { formatDateTime, formatMoney } from "@/lib/helpers/format";
 import { addDaysToDateKey, localDateTimeToDate } from "@/lib/helpers/datetime";
 import {
   bookingHorizonSchema,
@@ -53,6 +54,13 @@ const setEntryPriceImpl = defineAction({
       Math.round(priceCzk * 100),
       admin.id,
     );
+    await activity.record({
+      action: "settings.price_saved",
+      actorType: "admin",
+      actorId: admin.id,
+      actorLabel: admin.email,
+      summary: `Standardní cena vstupu nastavena na ${formatMoney(Math.round(priceCzk * 100))}.`,
+    });
     revalidatePath("/admin/memberships");
     revalidatePricedPages();
   },
@@ -95,13 +103,21 @@ const savePricingPeriodImpl = defineAction({
   schema: pricingPeriodSchema,
   authorize: assertAdmin,
   handler: async ({ id, name, priceCzk, startsOn, endsOn }, admin) => {
-    await pricingPeriods.savePricingPeriod({
+    const saved = await pricingPeriods.savePricingPeriod({
       id,
       name,
       priceCents: Math.round(priceCzk * 100),
       startsAt: localDateTimeToDate(startsOn, 0),
       endsAt: localDateTimeToDate(addDaysToDateKey(endsOn, 1), 0),
       adminId: admin.id,
+    });
+    await activity.record({
+      action: "settings.pricing_period_saved",
+      actorType: "admin",
+      actorId: admin.id,
+      actorLabel: admin.email,
+      summary: `Cenové období „${saved.name}“ ${formatMoney(saved.priceCents)} od ${formatDateTime(saved.startsAt)} do ${formatDateTime(new Date(saved.endsAt.getTime() - 60_000))} uloženo.`,
+      context: { pricingPeriodId: saved.id },
     });
     revalidatePath("/admin/memberships");
     revalidatePricedPages();
@@ -117,8 +133,16 @@ export async function savePricingPeriodAction(
 const deletePricingPeriodImpl = defineAction({
   schema: deletePricingPeriodSchema,
   authorize: assertAdmin,
-  handler: async ({ id }) => {
+  handler: async ({ id }, admin) => {
     await pricingPeriods.deletePricingPeriod(id);
+    await activity.record({
+      action: "settings.pricing_period_deleted",
+      actorType: "admin",
+      actorId: admin.id,
+      actorLabel: admin.email,
+      summary: "Cenové období smazáno.",
+      context: { pricingPeriodId: id },
+    });
     revalidatePath("/admin/memberships");
     revalidatePricedPages();
   },

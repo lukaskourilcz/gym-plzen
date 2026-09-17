@@ -1,8 +1,9 @@
 import { raiseAlert } from "./alerts";
-import { and, desc, eq, gte, inArray, lt, notExists } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt, notExists, sql } from "drizzle-orm";
 import { db, type DatabaseExecutor } from "@/lib/db";
 import { withReservationLock } from "./operation-lock";
-import { payment, reservation } from "@/lib/db/schema";
+import { invoice, payment, reservation } from "@/lib/db/schema";
+import { recordIn as recordActivityIn } from "./activity";
 import type { NewReservation, Reservation } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
 import { checkAvailability } from "./availability";
@@ -288,7 +289,23 @@ export async function releaseExpiredPendingReservations(
           lt(reservation.createdAt, cutoff),
         ),
       )
-      .returning({ id: reservation.id });
+      .returning({
+        id: reservation.id,
+        userId: reservation.userId,
+        startsAt: reservation.startsAt,
+      });
+
+    for (const row of released) {
+      await recordActivityIn(tx, {
+        action: "reservation.cancelled",
+        actorType: "system",
+        actorLabel: "Watchdog",
+        memberId: row.userId,
+        reservationId: row.id,
+        summary: `Rezervace na ${formatDateTime(row.startsAt)} zrušena: platba nebyla zahájena do ${holdMinutes} minut.`,
+        occurredAt: now,
+      });
+    }
 
     if (released.length > 0) {
       await tx
@@ -342,6 +359,52 @@ export async function listUpcomingForUser(
       ),
     )
     .orderBy(reservation.startsAt);
+}
+
+/** One reservation with what the administration wants to see beside it. */
+export interface ReservationHistoryRow extends Reservation {
+  paymentStatus: string | null;
+  voucherCode: string | null;
+  invoiceId: string | null;
+  invoiceNumber: string | null;
+  rescheduled: boolean;
+}
+
+/**
+ * A member's complete reservation history for the administration: every
+ * status, newest visit first, with the last payment attempt, the voucher that
+ * priced it, the issued document and whether the term was moved.
+ */
+export async function listHistoryForUser(
+  userId: string,
+  limit = 200,
+): Promise<ReservationHistoryRow[]> {
+  const rows = await db
+    .select({
+      reservation,
+      invoiceId: invoice.id,
+      invoiceNumber: invoice.number,
+      paymentStatus: sql<
+        string | null
+      >`(select p.status::text from public.payment p where p.reservation_id = ${reservation.id} order by p.created_at desc, p.id desc limit 1)`,
+      voucherCode: sql<
+        string | null
+      >`(select v.code from public.voucher_redemption vr join public.voucher v on v.id = vr.voucher_id where vr.reservation_id = ${reservation.id} and vr.status = 'redeemed' limit 1)`,
+      rescheduled: sql<boolean>`exists (select 1 from public.reservation_reschedule rr where rr.reservation_id = ${reservation.id})`,
+    })
+    .from(reservation)
+    .leftJoin(invoice, eq(invoice.reservationId, reservation.id))
+    .where(eq(reservation.userId, userId))
+    .orderBy(desc(reservation.startsAt), desc(reservation.id))
+    .limit(limit);
+  return rows.map((row) => ({
+    ...row.reservation,
+    paymentStatus: row.paymentStatus,
+    voucherCode: row.voucherCode,
+    invoiceId: row.invoiceId,
+    invoiceNumber: row.invoiceNumber,
+    rescheduled: Boolean(row.rescheduled),
+  }));
 }
 
 /** Most recent reservations (admin list view). */

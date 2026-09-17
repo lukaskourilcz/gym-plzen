@@ -5,7 +5,8 @@ import { assertAdmin } from "@/lib/auth/guards";
 import { defineAction } from "@/lib/helpers/action";
 import type { Result } from "@/lib/helpers/result";
 import { formDateTimeToInstant } from "@/lib/helpers/datetime";
-import { vouchers } from "@/lib/services";
+import { activity, vouchers } from "@/lib/services";
+import { formatDateTime, formatMoney } from "@/lib/helpers/format";
 import {
   createVoucherSchema,
   setVoucherActiveSchema,
@@ -34,6 +35,24 @@ const createVoucherImpl = defineAction({
         : null,
       createdByAdminId: admin.id,
     });
+    const discount =
+      created.kind === "percentage"
+        ? `${created.value} %`
+        : formatMoney(created.value);
+    const validity = [
+      created.validFrom ? `od ${formatDateTime(created.validFrom)}` : null,
+      created.validUntil ? `do ${formatDateTime(created.validUntil)}` : null,
+    ]
+      .filter(Boolean)
+      .join(" ");
+    await activity.record({
+      action: "voucher.created",
+      actorType: "admin",
+      actorId: admin.id,
+      actorLabel: admin.email,
+      summary: `Voucher ${created.code} (sleva ${discount}${created.maxRedemptions ? `, max. ${created.maxRedemptions} použití` : ""}) vytvořen${validity ? `, platí ${validity}` : ", bez časového omezení"}.`,
+      context: { voucherId: created.id },
+    });
     revalidatePath("/admin/vouchers");
     return created;
   },
@@ -42,8 +61,16 @@ const createVoucherImpl = defineAction({
 const setVoucherActiveImpl = defineAction({
   schema: setVoucherActiveSchema,
   authorize: assertAdmin,
-  handler: async (input) => {
-    await vouchers.setVoucherActive(input.id, input.isActive);
+  handler: async (input, admin) => {
+    const updated = await vouchers.setVoucherActive(input.id, input.isActive);
+    await activity.record({
+      action: input.isActive ? "voucher.activated" : "voucher.deactivated",
+      actorType: "admin",
+      actorId: admin.id,
+      actorLabel: admin.email,
+      summary: `Voucher ${updated.code} ${input.isActive ? "aktivován" : "deaktivován"}.`,
+      context: { voucherId: updated.id },
+    });
     revalidatePath("/admin/vouchers");
   },
 });

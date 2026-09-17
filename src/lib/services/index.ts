@@ -20,6 +20,7 @@ export * as notifications from "./notifications";
 export * as fulfillment from "./fulfillment";
 export * as pipeline from "./pipeline";
 export * as alerts from "./alerts";
+export * as activity from "./activity";
 export * as members from "./members";
 export * as memberships from "./memberships";
 export * as loyalty from "./loyalty";

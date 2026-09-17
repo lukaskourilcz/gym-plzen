@@ -8,6 +8,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { profiles } from "./members";
 import { reservation } from "./reservations";
 import { alertseverity, pipelineStep, pipelineStepStatus } from "./enums";
 
@@ -83,5 +84,50 @@ export const webhookEvent = pgTable(
   },
   (t) => [
     uniqueIndex("webhook_event_provider_event_idx").on(t.provider, t.eventId),
+  ],
+);
+
+/**
+ * The record of important things that happened: a reservation confirmed,
+ * cancelled or moved, a payment settled, an administrator's change. It exists
+ * so the administration can answer "what happened to this booking, and who did
+ * it" without reading application logs. Rows are written by the services that
+ * perform the action and never updated.
+ */
+export const activityLog = pgTable(
+  "activity_log",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    // Who did it: the customer themselves, an administrator, or the system
+    // (a payment notification, the watchdog).
+    actorType: text("actor_type")
+      .$type<"customer" | "admin" | "system">()
+      .notNull(),
+    actorId: uuid("actor_id").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    // Name or e-mail at the time, so the entry still reads the same after a
+    // profile changes or when a guest booked without an account.
+    actorLabel: text("actor_label"),
+    // Stable key such as "reservation.rescheduled"; labels live in the app.
+    action: text("action").notNull(),
+    // The member the entry concerns, even when an administrator acted.
+    memberId: uuid("member_id").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    reservationId: uuid("reservation_id").references(() => reservation.id, {
+      onDelete: "set null",
+    }),
+    // One Czech sentence for the administration, written when it happened.
+    summary: text("summary").notNull(),
+    context: jsonb("context"),
+  },
+  (t) => [
+    index("activity_log_occurred_idx").on(t.occurredAt),
+    index("activity_log_member_idx").on(t.memberId),
+    index("activity_log_reservation_idx").on(t.reservationId),
   ],
 );
