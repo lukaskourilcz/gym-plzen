@@ -102,6 +102,80 @@ export function formatStatus(status: string): string {
   return STATUS_LABELS[status] ?? status;
 }
 
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  pending: "Čeká na zaplacení",
+  processing: "Zpracovává se",
+  succeeded: "Zaplaceno",
+  failed: "Neproběhla",
+  refunded: "Vrácena",
+};
+
+/** State of a payment attempt, for the administration. */
+export function formatPaymentStatus(status: string): string {
+  return PAYMENT_STATUS_LABELS[status] ?? status;
+}
+
+const CHANNEL_LABELS: Record<string, string> = {
+  email: "E-mail",
+  whatsapp: "WhatsApp",
+  sms: "SMS",
+};
+
+/** Delivery channel of a message, for the administration. */
+export function formatChannel(channel: string): string {
+  return CHANNEL_LABELS[channel] ?? channel;
+}
+
+const MESSAGE_KIND_LABELS: Record<string, string> = {
+  access_code: "Vstupní kód",
+  reservation_confirmation: "Potvrzení rezervace",
+  reservation_reminder: "Připomínka rezervace",
+  reservation_cancellation: "Zrušení rezervace",
+  marketing: "Novinky",
+  system_alert: "Systémové upozornění",
+};
+
+/** What a message was about, for the administration. */
+export function formatMessageKind(kind: string): string {
+  return MESSAGE_KIND_LABELS[kind] ?? kind;
+}
+
+const SEVERITY_LABELS: Record<string, string> = {
+  info: "Informace",
+  warning: "Varování",
+  critical: "Kritické",
+};
+
+/** Severity of an operational alert, for the administration. */
+export function formatSeverity(severity: string): string {
+  return SEVERITY_LABELS[severity] ?? severity;
+}
+
+const LOCK_ACTION_LABELS: Record<string, string> = {
+  unlock: "Odemčení",
+  lock: "Zamčení",
+  unlatch: "Otevření dveří",
+  lock_n_go: "Zamknout a odejít",
+};
+
+const LOCK_TRIGGER_LABELS: Record<string, string> = {
+  system: "Systém",
+  manual: "Ručně",
+  button: "Tlačítko na zámku",
+  automatic: "Automaticky",
+  keypad: "Klávesnice",
+};
+
+/** What the lock did, in the entry book. */
+export function formatLockAction(action: string): string {
+  return LOCK_ACTION_LABELS[action] ?? action;
+}
+
+/** What made the lock act, in the entry book. */
+export function formatLockTrigger(trigger: string): string {
+  return LOCK_TRIGGER_LABELS[trigger] ?? trigger;
+}
+
 /** Convert minute-of-day (e.g. 900) to "HH:mm" (e.g. "15:00"). */
 export function minutesToHHmm(minutes: number): string {
   const h = Math.floor(minutes / 60);

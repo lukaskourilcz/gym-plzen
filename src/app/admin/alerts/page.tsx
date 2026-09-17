@@ -1,5 +1,5 @@
 import { alerts } from "@/lib/services";
-import { formatDateTime } from "@/lib/helpers/format";
+import { formatDateTime, formatSeverity } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
 import {
   Table,
@@ -39,7 +39,7 @@ export default async function AlertsPage() {
               className={a.resolvedAt ? undefined : "bg-destructive/5"}
             >
               <TableCell>{formatDateTime(a.createdAt)}</TableCell>
-              <TableCell>{a.severity}</TableCell>
+              <TableCell>{formatSeverity(a.severity)}</TableCell>
               <TableCell>
                 {a.title}
                 {a.body && (
@@ -50,7 +50,7 @@ export default async function AlertsPage() {
                 {a.notifiedAt ? formatDateTime(a.notifiedAt) : "Neodesláno"}
               </TableCell>
               <TableCell>
-                {a.resolvedAt ? formatDateTime(a.resolvedAt) : "otevřené"}
+                {a.resolvedAt ? formatDateTime(a.resolvedAt) : "Neuzavřené"}
               </TableCell>
             </TableRow>
           ))}
