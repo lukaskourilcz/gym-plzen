@@ -41,6 +41,8 @@ const serverSchema = z.object({
   COMGATE_MERCHANT_ID: z.string().optional(),
   COMGATE_SECRET: z.string().optional(),
   COMGATE_TEST_MODE: z.enum(["true", "false"]).default("true"),
+  // Local stand-in for the gateway, used by the integration tests only.
+  COMGATE_API_URL: z.string().url().optional(),
 
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().optional(),
