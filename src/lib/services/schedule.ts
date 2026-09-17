@@ -101,6 +101,15 @@ export async function createBlockedSlot(input: {
   return row!;
 }
 
+export async function getBlockedSlot(id: string): Promise<BlockedSlot | null> {
+  const [row] = await db
+    .select()
+    .from(blockedSlot)
+    .where(eq(blockedSlot.id, id))
+    .limit(1);
+  return row ?? null;
+}
+
 export async function deleteBlockedSlot(id: string): Promise<void> {
   await db.delete(blockedSlot).where(eq(blockedSlot.id, id));
 }

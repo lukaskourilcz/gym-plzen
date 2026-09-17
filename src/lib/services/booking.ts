@@ -41,6 +41,8 @@ import {
   resumeReservationCheckout,
   startReservationPayment,
 } from "./payments";
+import { record as recordActivity } from "./activity";
+import { formatDateTime, formatMoney } from "@/lib/helpers/format";
 
 export type BookingOutcome =
   | { kind: "free" | "processing"; reservationId: string; token?: string }
@@ -139,11 +141,24 @@ export async function startBooking(params: {
       tx,
     );
   });
+  const actor = {
+    actorType: "customer" as const,
+    actorId: params.userId,
+    actorLabel: params.details.email,
+    memberId: params.userId,
+    reservationId: reserved.id,
+  };
   if (reserved.status === "confirmed") {
+    await recordActivity({
+      ...actor,
+      action: "reservation.confirmed",
+      summary: `Rezervace na ${formatDateTime(params.startsAt)} potvrzena jako věrnostní vstup zdarma.`,
+    });
     await fulfillReservation(reserved.id);
     return { kind: "free", reservationId: reserved.id, token };
   }
   let priceCents = basePrice;
+  let voucherCode: string | null = null;
   if (params.voucherCode?.trim()) {
     try {
       const quote = await claimVoucher({
@@ -153,6 +168,7 @@ export async function startBooking(params: {
         reservedUntil: resolved.endsAt,
       });
       priceCents = quote.finalPriceCents;
+      voucherCode = quote.code;
       await updateReservationPrice(reserved.id, priceCents);
     } catch (error) {
       await releaseForReservation(reserved.id);
@@ -164,9 +180,21 @@ export async function startBooking(params: {
     if (!(await confirmReservation(reserved.id)))
       throw new ActionError("Rezervaci se nepodařilo potvrdit.");
     await redeemForReservation(reserved.id);
+    await recordActivity({
+      ...actor,
+      action: "reservation.confirmed",
+      summary: `Rezervace na ${formatDateTime(params.startsAt)} potvrzena, voucher ${voucherCode} pokryl celou cenu ${formatMoney(basePrice)}.`,
+      context: { voucherCode },
+    });
     await fulfillReservation(reserved.id);
     return { kind: "free", reservationId: reserved.id, token };
   }
+  await recordActivity({
+    ...actor,
+    action: "reservation.created",
+    summary: `Rezervace na ${formatDateTime(params.startsAt)} vytvořena, čeká na platbu ${formatMoney(priceCents)}${voucherCode ? ` (voucher ${voucherCode})` : ""}.`,
+    context: { priceCents, voucherCode },
+  });
   return startReservationPayment({
     reservationId: reserved.id,
     userId: params.userId,
@@ -279,6 +307,15 @@ async function continueOwnBooking(params: {
   // to this attempt, unless it was confirmed in the meantime.
   if (!(await releasePendingHold(own.id, "superseded")))
     throw new ActionError(ALREADY_CONFIRMED);
+  await recordActivity({
+    action: "reservation.cancelled",
+    actorType: "customer",
+    actorId: params.userId,
+    actorLabel: params.details.email,
+    memberId: own.userId,
+    reservationId: own.id,
+    summary: `Nedokončená rezervace na ${formatDateTime(own.startsAt)} nahrazena novým pokusem zákazníka.`,
+  });
   return null;
 }
 

@@ -1,5 +1,10 @@
 import { messages } from "@/lib/services";
-import { formatDateTime, formatStatus } from "@/lib/helpers/format";
+import {
+  formatChannel,
+  formatDateTime,
+  formatMessageKind,
+  formatStatus,
+} from "@/lib/helpers/format";
 import { withDemoFallback } from "@/lib/demo/dummy";
 import { PageHeader } from "@/components/admin/page-header";
 import {
@@ -12,7 +17,7 @@ import {
 } from "@/components/ui/table";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
 
-export const metadata = { title: "Doručené zprávy" };
+export const metadata = { title: "Odeslané zprávy" };
 export const dynamic = "force-dynamic";
 
 /** Per-channel delivery status for every outbound message. */
@@ -27,8 +32,8 @@ export default async function MessagesPage() {
   return (
     <div>
       <PageHeader
-        title="Doručené zprávy"
-        description="U každé rezervace vidíte, zda kód dorazil (e-mail / WhatsApp / SMS). Stav aktualizují webhooky providerů."
+        title="Odeslané zprávy"
+        description="Každý e-mail, WhatsApp nebo SMS, které systém zákazníkům poslal, a zda dorazily. Stav doručení hlásí poskytovatelé zpráv."
       />
       <Table>
         <TableHeader>
@@ -45,8 +50,8 @@ export default async function MessagesPage() {
           {rows.map((m) => (
             <TableRow key={m.id}>
               <TableCell>{formatDateTime(m.createdAt)}</TableCell>
-              <TableCell>{m.channel}</TableCell>
-              <TableCell>{m.kind}</TableCell>
+              <TableCell>{formatChannel(m.channel)}</TableCell>
+              <TableCell>{formatMessageKind(m.kind)}</TableCell>
               <TableCell>{m.recipient}</TableCell>
               <TableCell
                 className={

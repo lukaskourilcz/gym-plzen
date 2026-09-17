@@ -10,6 +10,7 @@ import {
   ChevronDown,
   Clock3,
   FileText,
+  History,
   Home,
   KeyRound,
   ListChecks,
@@ -44,7 +45,7 @@ const NAV_GROUPS = [
       ["/admin/memberships", "Vstupné a věrnost", Tags],
       ["/admin/vouchers", "Vouchery", TicketPercent],
       ["/admin/doklady", "Doklady", ReceiptText],
-      ["/admin/messages", "Doručené zprávy", MessageCircle],
+      ["/admin/messages", "Odeslané zprávy", MessageCircle],
     ],
   },
   {
@@ -61,6 +62,7 @@ const NAV_GROUPS = [
     label: "Systém",
     items: [
       ["/admin/statistics", "Statistiky", ChartNoAxesColumnIncreasing],
+      ["/admin/activity", "Historie akcí", History],
       ["/admin/alerts", "Upozornění", Bell],
     ],
   },

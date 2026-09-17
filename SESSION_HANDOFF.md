@@ -1,3 +1,35 @@
+# Administrace 17. 9. 2026 — profil člena, historie akcí, texty
+
+Druhá část session po sloučení oprav rezervačního průchodu (`e5b22e1`):
+
+- **Historie akcí** (`/admin/activity`, tabulka `activity_log`, migrace
+  `drizzle/20260917120000_activity_log.sql`, aplikovaná v produkci): potvrzené,
+  zrušené a přesunuté rezervace, přijaté i neproběhlé platby, expirace holdů a
+  každá změna provedená správcem (ruční rezervace, storno, uzavření termínů,
+  vouchery, profily a role členů, cena, cenová období, provozní nastavení).
+  Zapisují ji služby a akce, které změnu provádějí (`services/activity.ts`;
+  uvnitř transakce `recordIn`, mimo ni `record`, které nikdy neshodí akci).
+  Změna termínu zákazníkem se dosud nikde nepropisovala.
+- **Profil člena** (`/admin/members/[id]`): účet a kontakt, souhlasy, věrnost,
+  všechny rezervace s platbou, voucherem, dokladem a příznakem změny termínu,
+  odeslané zprávy, historie akcí a formuláře úprav (přesunuté z výpisu členů).
+  Jméno ve výpisu členů i kontakt u rezervace přihlášeného zákazníka na profil
+  odkazují; rezervace bez účtu je označená „Bez účtu“. V demo režimu se
+  zobrazí fixture člen bez úprav.
+- **Texty**: telefon už nechce „E.164“, ale předvolbu s příkladem; stránka
+  odeslaných zpráv se jmenuje „Odeslané zprávy“ a překládá kanál i typ; závažnost
+  upozornění a akce zámku v knize vstupů jsou česky. Test
+  `tests/unit/admin-copy.test.ts` hlídá, že každá uložená hodnota výčtu má
+  český popisek.
+- Voucher začínající o dvě hodiny později byl důsledek stejné chyby
+  `datetime-local` → UTC opravené v první části (`acf0c23`).
+
+Ověřeno: 150 unit a 14 integračních testů, lokální demo administrace v
+prohlížeči (nové stránky bez přetečení 320–1728 px, klávesnice na odkaz profilu
+s viditelným fokusem), produkční build, `npm audit --omit=dev` 0 nálezů.
+
+---
+
 # Audit rezervačního průchodu 17. 9. 2026 — dva incidenty ze Sentry
 
 **Co se stalo.** V 7:00 ráno začala hostka rezervaci na 1. 10. 7:30, byla

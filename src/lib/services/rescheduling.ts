@@ -21,6 +21,8 @@ import {
 } from "./slots";
 import { fulfillReservation } from "./fulfillment";
 import { sendRescheduleConfirmation } from "./notifications";
+import { recordIn as recordActivityIn } from "./activity";
+import { formatDateTime } from "@/lib/helpers/format";
 
 /** VOP 8.1 and 8.5: the request must arrive at least 24 hours in advance. */
 export const RESCHEDULE_CUTOFF_HOURS = 24;
@@ -229,6 +231,16 @@ async function rescheduleLocked(
         newStartsAt: moved.startsAt,
         newEndsAt: moved.endsAt,
         changedAt,
+      });
+      await recordActivityIn(tx, {
+        action: "reservation.rescheduled",
+        actorType: "customer",
+        actorId: input.userId,
+        actorLabel: current.contactEmail,
+        memberId: input.userId,
+        reservationId: current.id,
+        summary: `Termín změněn z ${formatDateTime(current.startsAt)} na ${formatDateTime(moved.startsAt)}.`,
+        occurredAt: changedAt,
       });
 
       // Commit the retryable code-refresh intent together with the new slot.

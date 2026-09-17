@@ -35,7 +35,7 @@ export function MemberForm({ member }: { member: MemberWithProfile }) {
       <input type="hidden" {...register("userId")} />
       <Field
         name="phone"
-        label="Telefon (E.164)"
+        label="Telefon (s předvolbou, např. +420 777 123 456)"
         error={formState.errors.phone}
       >
         <Input id="phone" placeholder="+420…" {...register("phone")} />

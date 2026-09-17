@@ -1,5 +1,9 @@
 import { entryLog } from "@/lib/services";
-import { formatDateTime } from "@/lib/helpers/format";
+import {
+  formatDateTime,
+  formatLockAction,
+  formatLockTrigger,
+} from "@/lib/helpers/format";
 import { withDemoFallback } from "@/lib/demo/dummy";
 import { PageHeader } from "@/components/admin/page-header";
 import {
@@ -44,8 +48,12 @@ export default async function EntryLogPage() {
             <TableRow key={e.id}>
               <TableCell>{formatDateTime(e.occurredAt)}</TableCell>
               <TableCell>{e.nukiName ?? "Neuvedeno"}</TableCell>
-              <TableCell>{e.action ?? "Neuvedeno"}</TableCell>
-              <TableCell>{e.trigger ?? "Neuvedeno"}</TableCell>
+              <TableCell>
+                {e.action ? formatLockAction(e.action) : "Neuvedeno"}
+              </TableCell>
+              <TableCell>
+                {e.trigger ? formatLockTrigger(e.trigger) : "Neuvedeno"}
+              </TableCell>
             </TableRow>
           ))}
           {rows.length === 0 && (

@@ -11,7 +11,8 @@ import {
   type CancelReservationValues,
 } from "@/lib/validations/reservations";
 import { formDateTimeToInstant } from "@/lib/helpers/datetime";
-import { reservations, fulfillment } from "@/lib/services";
+import { activity, reservations, fulfillment } from "@/lib/services";
+import { formatDateTime } from "@/lib/helpers/format";
 
 /**
  * Server actions for the reservations admin. Each: authorize (admin) → validate
@@ -34,6 +35,15 @@ const createImpl = defineAction({
       status: "confirmed", // admin bookings are confirmed immediately
       createdByAdminId: admin.id,
     });
+    await activity.record({
+      action: "reservation.created",
+      actorType: "admin",
+      actorId: admin.id,
+      actorLabel: admin.email,
+      memberId: reservation.userId,
+      reservationId: reservation.id,
+      summary: `Rezervace na ${formatDateTime(reservation.startsAt)} vytvořena ručně pro ${reservation.contactName ?? reservation.contactEmail ?? "neuvedený kontakt"}.`,
+    });
     // Provision + deliver the access code straight away.
     await fulfillment.fulfillReservation(reservation.id);
     revalidatePath("/admin/reservations");
@@ -44,12 +54,24 @@ const cancelImpl = defineAction({
   schema: cancelReservationSchema,
   authorize: assertAdmin,
   handler: async (input, admin) => {
+    const current = await reservations.getReservation(input.id);
     await reservations.cancelReservation({
       id: input.id,
       reason: input.reason || undefined,
       byAdminId: admin.id,
     });
+    if (current)
+      await activity.record({
+        action: "reservation.cancelled",
+        actorType: "admin",
+        actorId: admin.id,
+        actorLabel: admin.email,
+        memberId: current.userId,
+        reservationId: current.id,
+        summary: `Rezervace na ${formatDateTime(current.startsAt)} zrušena správcem${input.reason ? ` (${input.reason})` : ""}.`,
+      });
     revalidatePath("/admin/reservations");
+    revalidatePath(`/admin/members/${current?.userId ?? ""}`);
   },
 });
 

@@ -105,6 +105,7 @@ test("every admin screen renders without a route or error-boundary failure", asy
     "/admin/settings",
     "/admin/design-system",
     "/admin/statistics",
+    "/admin/activity",
     "/admin/alerts",
   ];
 

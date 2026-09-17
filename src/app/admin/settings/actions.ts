@@ -2,6 +2,7 @@
 
 import { operationsSchema, type Operations } from "@/lib/config/operations";
 import { saveOperations } from "@/lib/services/operations";
+import { activity } from "@/lib/services";
 import { revalidatePath } from "next/cache";
 import { assertAdmin } from "@/lib/auth/guards";
 import { defineAction } from "@/lib/helpers/action";
@@ -216,6 +217,13 @@ const saveOperationsImpl = defineAction({
   authorize: assertAdmin,
   handler: async (input, admin) => {
     await saveOperations(input, admin.id);
+    await activity.record({
+      action: "settings.operations_saved",
+      actorType: "admin",
+      actorId: admin.id,
+      actorLabel: admin.email,
+      summary: `Provozní nastavení: platby ${input.paymentsEnabled ? "zapnuty" : "vypnuty"}, vstupní kódy ${input.accessCodesEnabled ? "zapnuty" : "vypnuty"}, rezervace ${input.bookingsFrom ? `od ${input.bookingsFrom}` : "bez omezení data"}.`,
+    });
     for (const path of [
       "/admin/settings",
       "/account",
