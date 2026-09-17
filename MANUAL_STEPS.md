@@ -205,8 +205,19 @@ Pokud by se SMTP nastavovalo znovu:
 3. Uložit a spustit nový deployment.
 4. V administraci webu → **E-maily** upravit „Potvrzení registrace“ nebo
    „Obnova hesla“ a uložit. Aplikace v bezpečném serverovém volání propíše
-   český předmět, text, logo a tlačítko s `{{ .ConfirmationURL }}` do
-   hostovaného Supabase Auth. Token se nikdy neposílá do prohlížeče.
+   český předmět, text, logo a tlačítko do hostovaného Supabase Auth. Token se
+   nikdy neposílá do prohlížeče.
+
+Tlačítko v šabloně nevede na výchozí `{{ .ConfirmationURL }}`, ale na
+`{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&redirect_to={{ .RedirectTo }}`
+(u obnovy hesla `type=recovery`). Výchozí odkaz dokončí přihlášení jen v
+prohlížeči, ve kterém registrace začala (PKCE): odkaz otevřený v aplikaci
+Gmail nebo na jiném zařízení adresu sice potvrdí, ale skončí na přihlášení
+hláškou „Otevřete přímo www.navigym.cz“ (ověřeno 17. 9. 2026). Adresa
+`/auth/confirm` ověří token na serveru a přihlásí zákazníka tam, kde odkaz
+otevřel. Dokud šablony nejsou propsané (bez tokenu), Supabase posílá svou
+anglickou výchozí šablonu s původním odkazem; kdo ji upravuje ručně v
+Supabase → Authentication → Email Templates, použije stejný odkaz jako výše.
 
 **Ověření:**
 

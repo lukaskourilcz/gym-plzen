@@ -1,0 +1,79 @@
+import { NextResponse, type NextRequest } from "next/server";
+import type { EmailOtpType } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/helpers/logger";
+import { safeInternalPath } from "@/lib/security/redirects";
+
+/**
+ * E-mail confirmation and password-recovery links.
+ *
+ * Supabase's default `{{ .ConfirmationURL }}` runs the PKCE exchange, which
+ * needs the verifier cookie of the browser that started the sign-up. A link
+ * opened anywhere else (the Gmail app's own browser on a phone, a laptop after
+ * registering on the phone) confirms the address on Supabase's side and then
+ * ends on the login page with "otevřete přímo www.navigym.cz". The templates
+ * therefore point here with a token hash instead: `verifyOtp` proves the
+ * token on the server and starts the session in whichever browser opened it.
+ */
+const TYPES: readonly EmailOtpType[] = [
+  "signup",
+  "email",
+  "recovery",
+  "magiclink",
+  "invite",
+  "email_change",
+];
+
+function loginRedirect(request: NextRequest, reason: string, next: string) {
+  const url = new URL("/login", request.nextUrl.origin);
+  url.searchParams.set("chyba", reason);
+  url.searchParams.set("next", next);
+  return NextResponse.redirect(url);
+}
+
+/**
+ * Where to continue. The template carries Supabase's `{{ .RedirectTo }}`, which
+ * is our own callback URL with the destination the sign-up asked for; a plain
+ * `next` is accepted too.
+ */
+function destination(searchParams: URLSearchParams, type: EmailOtpType) {
+  const redirectTo = searchParams.get("redirect_to");
+  if (redirectTo) {
+    try {
+      const inner = new URL(redirectTo).searchParams.get("next");
+      if (inner) return safeInternalPath(inner);
+    } catch {
+      // Not a URL: fall through to the plain parameter and the defaults.
+    }
+  }
+  const next = searchParams.get("next");
+  if (next) return safeInternalPath(next);
+  return type === "recovery" ? "/reset-password" : "/account";
+}
+
+export async function GET(request: NextRequest) {
+  const { searchParams, origin } = request.nextUrl;
+  const tokenHash = searchParams.get("token_hash");
+  const requested = searchParams.get("type");
+  const type = TYPES.find((candidate) => candidate === requested) ?? null;
+  const next = destination(searchParams, type ?? "email");
+
+  if (!tokenHash || !type) return loginRedirect(request, "vyprselo", next);
+
+  const supabase = await createClient();
+  if (!supabase) return loginRedirect(request, "selhalo", next);
+
+  const { error } = await supabase.auth.verifyOtp({
+    type,
+    token_hash: tokenHash,
+  });
+  if (error) {
+    logger.warn("E-mail link could not be verified", {
+      type,
+      message: error.message,
+      status: error.status,
+    });
+    return loginRedirect(request, "vyprselo", next);
+  }
+  return NextResponse.redirect(new URL(next, origin));
+}
