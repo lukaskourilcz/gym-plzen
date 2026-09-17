@@ -1,3 +1,37 @@
+# E-maily 17. 9. 2026 odpoledne — propsání do Supabase Auth, značka, čitelnost
+
+Třetí část session po nasazení administrace (`146343c`):
+
+- **Propsání šablon do Supabase Auth** (`1d20b38`): operátor doplnil
+  `SUPABASE_MANAGEMENT_API_TOKEN`, ale stránka E-maily tvrdila synchronizaci
+  bez ohledu na token a neúspěšný PATCH hlásila stejně jako chybějící token.
+  Stránka teď čte hostovanou konfiguraci (`checkSupabaseAuthTemplateSync`) a
+  nad šablonami říká, zda token funguje, která šablona ještě nemá náš odkaz a
+  jaké je jméno odesílatele SMTP; neúspěšné uložení vrací HTTP stav a hlášku
+  API (`SupabaseAuthSyncResult`). Po nasazení operátor obě šablony uložil
+  („Šablona uložená a propsaná do Supabase Auth“) a ověření prošlo: registrace
+  i obnova hesla česky, předmět „… | NAVI Private Gym“, odesílatel
+  `NAVI Private Gym <noreply@navigym.cz>`, odkaz `/auth/confirm?token_hash=…`
+  dokončil přihlášení v úplně novém prohlížeči, nové heslo přihlásilo.
+- **Značka v odesílateli**: Resend i SMTP Supabase Auth posílaly jako „Namasté
+  Private Gym“ (proměnná `RESEND_FROM_EMAIL` ve Vercelu a Sender name v
+  Supabase). `brandedSender` bere z proměnné jen adresu, propsání šablon
+  nastavuje `smtp_sender_name`, `brandedSubject` sjednocuje předměty na
+  „… | NAVI Private Gym“ při čtení i uložení. V kódu ani v produkčním obsahu
+  žádná zákaznická stopa NAMASTÉ nezůstala (`tests/unit/brand.test.ts`).
+- **Čitelnost a zpětná vazba** (`e7dbde9`): žlutý tón `Notice` používal bílý
+  `warning-foreground` na 15% tintu; všechny tóny mají text `foreground`
+  (pravidlo v `docs/DESIGN_SYSTEM.md`, test `notice-contrast.test.ts`).
+  Hláška po uložení šablony mizela po sekundě, protože ji mazal efekt
+  reagující na nová data po `revalidatePath`; maže se jen při přepnutí šablony.
+- **Úklid**: zkušební účty `kouril.lukas+navi-auth-test@` a `+navi-auth-test2@`
+  smazány (auth.users i profiles), zkušební rezervace 22. 10. 22:30 zrušena
+  s `cancel_reason = integration_check` a claim voucheru `TESTNAVI5555XX`
+  uvolněn; termín je na webu opět volný.
+- **Nuki**: provozovatel rozhodl, že bez kliky zákazníci nevstupují; otevření
+  1. 10. 2026, zámek bude připojený dřív. Před zapnutím kódů zbývá issue #64
+     (`[owner:ai]` v NEEDED).
+
 # Administrace 17. 9. 2026 — profil člena, historie akcí, texty
 
 Druhá část session po sloučení oprav rezervačního průchodu (`e5b22e1`):

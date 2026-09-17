@@ -260,6 +260,10 @@ Supabase → Authentication → Email Templates, použije stejný odkaz jako vý
    než ten, kde registrace začala): musí skončit přihlášený na účtu, ne na
    `/login` s hláškou.
 
+Ověřeno 17. 9. 2026: registrace i obnova hesla chodí česky s předmětem
+„… | NAVI Private Gym“ od `NAVI Private Gym <noreply@navigym.cz>`, oba odkazy
+dokončily přihlášení v úplně novém prohlížeči a nové heslo přihlásilo.
+
 ---
 
 ## 8. Uptime a cron heartbeat monitoring
