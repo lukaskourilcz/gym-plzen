@@ -31,6 +31,9 @@ test.describe("Booking flow", () => {
   test.skip(!ready, "needs a local DATABASE_URL (see tests/e2e/README.md)");
   test.beforeAll(async () => {
     await gateway.start();
+    // The stand-in numbers its payments from one on every start, so a payment
+    // row left by an earlier run would collide on the provider id.
+    await sql!`delete from payment where provider = 'comgate' and provider_payment_id like 'TEST-%'`;
     await sql!`insert into site_setting (key, value, updated_at)
       values ('booking.operations', ${sql!.json({ paymentsEnabled: true, bookingsFrom: "", accessCodesEnabled: false })}, now())
       on conflict (key) do update set value = excluded.value, updated_at = now()`;

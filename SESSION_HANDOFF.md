@@ -24,7 +24,7 @@ Druhá část session po sloučení oprav rezervačního průchodu (`e5b22e1`):
 - Voucher začínající o dvě hodiny později byl důsledek stejné chyby
   `datetime-local` → UTC opravené v první části (`acf0c23`).
 
-Ověřeno: 149 unit, 14 integračních testů, lokální demo administrace v
+Ověřeno: 150 unit a 14 integračních testů, lokální demo administrace v
 prohlížeči (nové stránky bez přetečení 320–1728 px, klávesnice na odkaz profilu
 s viditelným fokusem), produkční build, `npm audit --omit=dev` 0 nálezů.
 
