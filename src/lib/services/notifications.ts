@@ -216,6 +216,8 @@ export async function sendReservationConfirmation(params: {
   startsAt: Date;
   endsAt: Date;
   priceCents: number | null;
+  /** Set when the entry is the member's free loyalty entry. */
+  loyaltyReward?: number | null;
   email?: string | null;
 }): Promise<void> {
   if (!params.email) return;
@@ -274,9 +276,13 @@ export async function sendReservationConfirmation(params: {
       duration: `${Math.round(
         (params.endsAt.getTime() - params.startsAt.getTime()) / 60_000,
       )} minut`,
+      // A free entry is either the loyalty reward or a voucher that covered
+      // the whole price; the e-mail must not call one the other.
       price:
         params.priceCents === 0
-          ? "zdarma (věrnostní vstup)"
+          ? params.loyaltyReward
+            ? "zdarma (věrnostní vstup)"
+            : "zdarma (voucher)"
           : params.priceCents === null
             ? "v ceně členství"
             : `${Math.round(params.priceCents / 100)} Kč`,
