@@ -1,3 +1,90 @@
+# Audit rezervačního průchodu 17. 9. 2026 — dva incidenty ze Sentry
+
+**Co se stalo.** V 7:00 ráno začala hostka rezervaci na 1. 10. 7:30, byla
+poslána na bránu Comgate a o osmnáct sekund později odeslala formulář znovu.
+Její vlastní držený termín se ohlásil jako „Tento termín je již rezervovaný“ a
+rezervace skončila v 7:30 vypršením platební relace (`4356f140…`, platba
+`ELEE-1J1Q-5VGH` → CANCELLED). Sentry to navíc hlásilo jako chybu, protože
+`defineAction` posílal každou očekávanou `ActionError` jako výjimku. Druhý
+incident: po změně termínu spadl `/account?zmena=uspesna` na
+`TypeError … reading 'getTime'` v `resolveEntryPrice` (zákaznice viděla
+„Connection closed“), přestože změna v databázi proběhla a e-mail odešel.
+
+**Opraveno ve větvi `claude/exciting-hopper-nexmb0`** (commity `acf0c23`…):
+
+- Opakované odeslání pokračuje ve vlastní rezervaci: člen podle účtu, host
+  podle cookie `navi_hold` (id + potvrzovací token, 35 minut, jen pod
+  `/rezervace`) nebo podle zadaného e-mailu pro stejný termín. Nejdřív se dotáhne
+  stav platby z Comgate, potvrzený termín odpoví větou, otevřená brána vrátí
+  stejnou relaci, voucher zadaný na druhý pokus starý hold nahradí
+  (`superseded`). Stránka údajů držitele holdu nevrací na kalendář, ale ukáže
+  „Tento termín už pro vás držíme“; tlačítko zůstane po odeslání zablokované,
+  dokud prohlížeč neodejde na bránu (a uvolní se po návratu z bfcache).
+- `ActionError` je od teď warning breadcrumb, Sentry výjimky zůstávají jen
+  pro neočekávané chyby. Logger snese i CommonJS build Sentry SDK (skripty,
+  testy).
+- Administrace četla `datetime-local` hodnoty v UTC: voucher „od 8:00“ začínal
+  v 10:00 (stejně bloky termínů a ruční rezervace). Nový
+  `formDateTimeToInstant` bere hodnotu bez zóny jako pražský čas. Dva testovací
+  vouchery v produkci (`TESTNAVI5555X`, `TESTNAVI5555XX`) jsem posunul o
+  −2 h na zamýšlenou platnost.
+- Cena: `resolveEntryPrice` ignoruje období bez platných instantů a pro
+  nepoužitelný okamžik vrací standardní cenu místo pádu; `loadSiteContent`
+  přijme jen skutečné `Date`. Přesný spouštěč v produkci se z kódu odvodit
+  nepodařilo (`now` tam nemůže být `undefined`; stejný průchod se u
+  testovacího člena po opravě nezopakoval) — po nasazení sledovat Sentry, a
+  pokud se objeví znovu, budu potřebovat přístup k události (Sentry MCP není
+  autorizované). Kalendář změny termínu už nevolá `router.refresh()` hned za
+  `router.push()`, což byl souběh dvou požadavků na stejnou trasu.
+- Potvrzovací e-mail už u vstupu zdarma z voucheru neříká „věrnostní vstup“.
+- Potvrzení registrace: výchozí `{{ .ConfirmationURL }}` je PKCE výměna, která
+  funguje jen v prohlížeči, kde registrace začala. Ověřeno v produkci: odkaz
+  otevřený jinde adresu potvrdí a skončí na `/login?chyba=jiny_prohlizec`.
+  Nová trasa `/auth/confirm` ověří `token_hash` na serveru a synchronizované
+  šablony na ni odkazují; dokud provozovatel nedoplní
+  `SUPABASE_MANAGEMENT_API_TOKEN` a neuloží šablony, chodí anglická výchozí
+  šablona Supabase se starým odkazem (viz NEEDED).
+
+**Testy.** 148 unit testů; 12 integračních testů (`npm run test:integration`,
+lokální Postgres 16 s aplikovanými migracemi, náhradní Resend a Comgate v
+`tests/integration/`) pokrývá hosta i člena s voucherem, desátý vstup zdarma,
+placený hold a jeho opakování s cookie i bez ní, vyrovnání a zrušení platby
+bránou, voucher na druhý pokus, odmítnutý voucher, vypnuté platby, blok,
+expiraci holdu a párování vlastní rezervace; Playwright
+`tests/e2e/booking-flow.spec.ts` projde v prohlížeči voucher i návrat z brány
+(režim 5 v `tests/e2e/README.md`), veřejná sada 17/17.
+
+**Ověřeno v produkci (`www.navigym.cz`, kód před opravou).** Host s voucherem
+`TESTNAVI5555XX`: rezervace `2c4f9ff7…` potvrzená, `/rezervace/hotovo`
+v pořádku, potvrzovací e-mail s přílohou `rezervace.ics` dorazil do 4 s
+z `noreply@navigym.cz` (doména je v Resendu ověřená). Registrace
+`kouril.lukas+navi-clen@gmail.com`: e-mail od Supabase Auth do 2 s, ale
+anglický výchozí text; přihlášení heslem, rezervace s voucherem jako člen
+(`a21d0d63…`, věrnost 1/10, e-mail s věrnostní větou), změna termínu a
+`/account?zmena=uspesna` bez chyby, e-mail „Změna termínu rezervace“ s novou
+`.ics`. Zákaznice `bilkova.klara@…` téhož rána zaplatila skutečných 199 Kč
+(`HIJ4-JP8D-39HS`), webhook potvrdil rezervaci a e-mail odešel — placená cesta
+je tedy ověřená ostrou platbou. Testovací rezervace jsou zrušené
+(`integration_check`), claimy voucheru uvolněné, testovací účet smazaný.
+
+**Zámek.** Žádná kontrola v kódu rezervaci s vypnutým Nuki neblokuje:
+`fulfillment` označí krok `payment` a skončí, kroky `code_created` /
+`code_delivered` čekají `pending` na zapnutí zámku, watchdog je při vypnutém
+zámku přeskakuje, storno bez kódů nic neodebírá, `sync-entry-log` bez
+přístupů nic nestáhne. Jediné, co s klikou souvisí, je text: potvrzovací
+e-mail i účet slibují „osobní vstupní kód před začátkem rezervace“ — do
+připojení zámku ho musí zákazníkům poslat provozovatel ručně, nebo upravit
+šablonu v administraci → E-maily (viz NEEDED).
+
+Lokální Postgres pro testy: `pg_ctlcluster 16 main start`, databáze
+`gym_test` s rolemi `anon`/`authenticated`, schématem `extensions` a publikací
+`supabase_realtime`, migrace z `drizzle/*.sql` v pořadí, `npm run db:seed`.
+Chromium v tomto prostředí důvěřuje CA proxy přes NSS databázi
+(`certutil -d sql:$HOME/.pki/nssdb -A -t "C,," -i /root/.ccr/agent-proxy-ca.crt`),
+takže browser testy proti ostré doméně už jdou spustit.
+
+---
+
 # Oprava 16. 9. 2026 — Google v Safari (#18)
 
 Příčina nalezena. PKCE ověřovatel je cookie hostitele, který přihlášení
