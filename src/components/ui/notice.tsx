@@ -2,10 +2,13 @@ import * as React from "react";
 import { AlertCircle, CheckCircle2, Info, TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Every tone is a light tint of its colour under the page foreground. The
+// `*-foreground` tokens are white, for text on a solid tone background only;
+// on a tint they vanish.
 const styles = {
   info: "border-info/30 bg-info/10 text-foreground",
   success: "border-success/30 bg-success/10 text-foreground",
-  warning: "border-warning/40 bg-warning/15 text-warning-foreground",
+  warning: "border-warning/40 bg-warning/15 text-foreground",
   error: "border-destructive/30 bg-destructive/10 text-foreground",
 } as const;
 

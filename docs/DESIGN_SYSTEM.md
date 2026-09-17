@@ -358,6 +358,9 @@ pricing band; it loses its force if every section shouts.
 ## Notices, badges, dialogs, tables, and navigation
 
 - Notices use `info`, `success`, `warning`, or `error`, an icon, and text.
+  Their background is a tint of the tone and the text is the page
+  `foreground`; the `*-foreground` tokens are white and belong only on a
+  solid tone background (destructive button, filled badge).
   Colour is never the only signal.
 - Badges communicate compact status only. Translate backend enum values before
   showing them to customers.

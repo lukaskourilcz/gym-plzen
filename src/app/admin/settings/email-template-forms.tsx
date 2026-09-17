@@ -80,14 +80,21 @@ export function EmailTemplateForms({
     defaultValues: { id: selectedId, email: "" },
   });
 
+  // Load the selected template, and reload it after a save: the saved copy
+  // may differ from what was typed (the subject suffix is added on save).
   useEffect(() => {
     form.reset({ id: selectedId, ...templates[selectedId] });
     testForm.setValue("id", selectedId);
+  }, [form, selectedId, templates, testForm]);
+
+  // Feedback belongs to the template it was shown for; it stays until the
+  // next action or a switch, not until the page re-renders behind it.
+  useEffect(() => {
     setSaveError(null);
     setSaveSuccess(null);
     setTestError(null);
     setTestSuccess(null);
-  }, [form, selectedId, templates, testForm]);
+  }, [selectedId]);
 
   const watchedSubject = form.watch("subject");
   const watchedBody = form.watch("body");
