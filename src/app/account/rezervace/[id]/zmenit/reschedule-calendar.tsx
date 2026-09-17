@@ -107,8 +107,11 @@ export function RescheduleCalendar({
       router.refresh();
       return;
     }
+    // The action already revalidated /account, and a dynamic page is fetched
+    // afresh on navigation. A refresh() fired right behind the push() started
+    // a second, competing request for the same route, which the browser saw
+    // end as "Connection closed" when one of them was abandoned.
     router.push("/account?zmena=uspesna");
-    router.refresh();
   };
 
   if (source === "unavailable") {

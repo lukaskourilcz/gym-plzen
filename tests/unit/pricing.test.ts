@@ -226,3 +226,34 @@ test("rescheduling never re-prices a reservation", async () => {
   assert.doesNotMatch(source, /priceCents\s*[:=]/);
   assert.doesNotMatch(source, /getEntryPrice|priceForNextEntry/);
 });
+
+test("price resolution never throws on a missing moment or a malformed period", () => {
+  // The account page failed in production with `at` undefined at runtime;
+  // the standard price is the safe answer, not a crash.
+  const missing = resolveEntryPrice({
+    standardPriceCents: STANDARD,
+    periods: [OCTOBER],
+    at: undefined as unknown as Date,
+  });
+  assert.equal(missing.priceCents, STANDARD);
+  assert.equal(missing.isPromo, false);
+
+  const stringified = resolveEntryPrice({
+    standardPriceCents: STANDARD,
+    periods: [
+      {
+        ...OCTOBER,
+        startsAt: "2026-10-01T00:00:00.000Z" as unknown as Date,
+      },
+    ],
+    at: at("2026-10-15"),
+  });
+  assert.equal(stringified.priceCents, STANDARD);
+
+  const invalid = resolveEntryPrice({
+    standardPriceCents: STANDARD,
+    periods: [OCTOBER],
+    at: new Date("not a date"),
+  });
+  assert.equal(invalid.priceCents, STANDARD);
+});

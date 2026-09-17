@@ -346,9 +346,16 @@ export async function loadSiteContent(
   const zoneImageUrls: string[] = [...DEFAULT_ZONE_IMAGE_URLS];
   // Default on: the photographs in place today are stand-ins.
   let illustrativePhotos = true;
+  /*
+   * Only a real instant is accepted here: `resolveEntryPrice` tolerates
+   * anything else by quoting the standard price, but the intent of a caller
+   * that did pass something is a specific visit date, so an unusable value
+   * is replaced by the same default as no value at all.
+   */
   const now =
-    options.at ??
-    localDateTimeToDate(initialBookingDateKey(new Date()), 12 * 60);
+    options.at instanceof Date && !Number.isNaN(options.at.getTime())
+      ? options.at
+      : localDateTimeToDate(initialBookingDateKey(new Date()), 12 * 60);
 
   if (!options.defaultsOnly) {
     try {
