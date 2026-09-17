@@ -51,7 +51,21 @@ export function BookingDetailsForm({
    * to the calendar. Same guard the login form uses.
    */
   const [ready, setReady] = useState(false);
-  useEffect(() => setReady(true), []);
+  /*
+   * Once the gateway URL is known the button stays disabled: the browser is
+   * on its way there, and a second click would submit the same booking again.
+   * A page restored from the back-forward cache (the back button from the
+   * gateway) keeps its state, so the button is released again there.
+   */
+  const [redirecting, setRedirecting] = useState(false);
+  useEffect(() => {
+    setReady(true);
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) setRedirecting(false);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   const { register, handleSubmit, formState, getValues, setValue } =
     useForm<BookingDetailsValues>({
@@ -105,6 +119,7 @@ export function BookingDetailsForm({
         { value: result.data.priceCents / 100, currency: "CZK" },
         `reservation:${result.data.reservationId}:checkout`,
       );
+      setRedirecting(true);
       window.location.href = result.data.url;
       return;
     }
@@ -253,16 +268,19 @@ export function BookingDetailsForm({
         size="lg"
         disabled={
           !ready ||
+          redirecting ||
           formState.isSubmitting ||
           (!paymentsAvailable && entryPriceCents > 0)
         }
         className="mt-6 w-full sm:w-auto"
       >
-        {formState.isSubmitting
-          ? "Ukládám rezervaci…"
-          : effectivePriceCents === 0
-            ? "Potvrdit vstup zdarma"
-            : "Pokračovat k platbě"}{" "}
+        {redirecting
+          ? "Přesměrováváme na platební bránu…"
+          : formState.isSubmitting
+            ? "Ukládám rezervaci…"
+            : effectivePriceCents === 0
+              ? "Potvrdit vstup zdarma"
+              : "Pokračovat k platbě"}{" "}
         <ArrowRight aria-hidden="true" />
       </Button>
       <p className="mt-3 text-xs text-muted-foreground">

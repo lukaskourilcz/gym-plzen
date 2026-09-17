@@ -222,6 +222,35 @@ export async function cancelReservationsForClosure(
   }
 }
 
+/**
+ * Give up a checkout hold that its own visitor is replacing with a fresh
+ * attempt (they came back to add a voucher, or the hold never reached the
+ * gateway). Only a row that is still pending is touched: a payment settling
+ * at the same moment confirms the reservation under the same lock, and a
+ * confirmed booking is never cancelled here. Returns whether it was released.
+ */
+export async function releasePendingHold(
+  id: string,
+  reason: string,
+): Promise<boolean> {
+  return withReservationLock(id, async () => {
+    const now = new Date();
+    const [released] = await db
+      .update(reservation)
+      .set({
+        status: "cancelled",
+        cancelledAt: now,
+        cancelReason: reason,
+        updatedAt: now,
+      })
+      .where(and(eq(reservation.id, id), eq(reservation.status, "pending")))
+      .returning({ id: reservation.id });
+    if (!released) return false;
+    await releaseForReservation(id);
+    return true;
+  });
+}
+
 /** Release stale Checkout holds so abandoned payments cannot block the gym. */
 export async function releaseExpiredPendingReservations(
   now = new Date(),

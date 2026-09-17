@@ -81,6 +81,7 @@ export async function startReservationPayment(params: {
           url: existing.gatewayUrl,
           reservationId: row.id,
           priceCents: existing.amountCents,
+          token: params.token,
         };
       return { kind: "processing", reservationId: row.id, token: params.token };
     }
@@ -158,7 +159,58 @@ export async function startReservationPayment(params: {
       url: outcome.payment.gwUrl!,
       reservationId: row.id,
       priceCents: row.priceCents,
+      token,
     };
+  });
+}
+
+export type ResumeOutcome =
+  | { state: "checkout"; outcome: BookingOutcome }
+  /** An attempt exists whose result the gateway has not settled yet. */
+  | { state: "processing" }
+  /** Nothing to continue: the hold is gone, or never reached the gateway. */
+  | { state: "none" };
+
+/**
+ * Continue the checkout of a hold that `startBooking` has already matched to
+ * the visitor. Unlike `startReservationPayment` this needs no token: a guest
+ * who came back from the gateway without the hold cookie no longer has one,
+ * and the match by contact e-mail is the identity the hold was created with.
+ * Nothing is created here, so it can never charge twice.
+ */
+export async function resumeReservationCheckout(
+  reservationId: string,
+): Promise<ResumeOutcome> {
+  return withReservationLock(reservationId, async () => {
+    const [row] = await db
+      .select()
+      .from(reservation)
+      .where(eq(reservation.id, reservationId));
+    if (!row || row.status !== "pending" || row.startsAt <= new Date())
+      return { state: "none" };
+    const [attempt] = await db
+      .select()
+      .from(payment)
+      .where(
+        and(
+          eq(payment.reservationId, row.id),
+          eq(payment.provider, "comgate"),
+          inArray(payment.status, ["pending", "processing"]),
+        ),
+      )
+      .limit(1);
+    if (!attempt) return { state: "none" };
+    if (attempt.status === "pending" && attempt.gatewayUrl)
+      return {
+        state: "checkout",
+        outcome: {
+          kind: "checkout",
+          url: attempt.gatewayUrl,
+          reservationId: row.id,
+          priceCents: attempt.amountCents,
+        },
+      };
+    return { state: "processing" };
   });
 }
 
