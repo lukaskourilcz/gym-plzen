@@ -63,7 +63,7 @@ export default async function MembersPage() {
                 <TableCell>
                   <Link
                     href={`/admin/members/${user.id}`}
-                    className="font-bold text-accent-foreground hover:underline"
+                    className="inline-flex min-h-11 items-center font-bold text-accent-foreground hover:underline"
                   >
                     {user.name || user.email}
                   </Link>

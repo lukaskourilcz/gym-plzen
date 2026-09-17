@@ -3,11 +3,25 @@ import { cn } from "@/lib/utils";
 
 /**
  * shadcn/ui-style table primitives. Wrap `Table` in its own scroll container so
- * wide tables scroll horizontally instead of breaking the layout.
+ * wide tables scroll horizontally instead of breaking the layout. The
+ * container is a named, focusable region: on a narrow screen a table with no
+ * interactive cells could otherwise not be scrolled from the keyboard.
  */
-export function Table({ className, ...props }: React.ComponentProps<"table">) {
+export function Table({
+  className,
+  label = "Tabulka",
+  ...props
+}: React.ComponentProps<"table"> & {
+  /** Accessible name of the scroll region around the table. */
+  label?: string;
+}) {
   return (
-    <div className="w-full overflow-x-auto rounded-lg border border-border">
+    <div
+      role="region"
+      aria-label={label}
+      tabIndex={0}
+      className="w-full overflow-x-auto rounded-lg border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
       <table
         className={cn("w-full caption-bottom text-sm", className)}
         {...props}

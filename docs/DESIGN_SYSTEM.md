@@ -365,6 +365,10 @@ pricing band; it loses its force if every section shouts.
   destructive-action distinction.
 - Tables keep headers visible and become readable stacked summaries or a
   horizontally contained region on small screens. The page must not overflow.
+  The shared `Table` wraps itself in a named, focusable scroll region
+  (`role="region"`, `tabIndex=0`, `label` prop), so a wide table with no
+  interactive cells can still be scrolled from the keyboard; pass a `label`
+  that names the table's content when a page holds more than one.
 - Navigation exposes the current route with `aria-current`. Mobile navigation
   has a labelled toggle, closes with Escape and restores focus when closed.
 - The first focusable control is a native skip link to the route-level `main`.

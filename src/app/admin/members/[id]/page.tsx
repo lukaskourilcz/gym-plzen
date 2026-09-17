@@ -35,7 +35,7 @@ import { loadDemoData } from "@/lib/demo/dummy";
 import { deriveLoyaltyStatus } from "@/lib/services/loyalty";
 import { MemberForm } from "../member-form";
 import { MemberRoleForm } from "../member-role-form";
-import { ActivityActor } from "../../activity/activity-actor";
+import { ActivityActor } from "@/components/admin/activity-actor";
 
 export const metadata = { title: "Profil člena" };
 export const dynamic = "force-dynamic";
@@ -81,7 +81,7 @@ function Detail({
   return (
     <div className="grid gap-1 py-2 sm:grid-cols-[11rem_1fr] sm:gap-4">
       <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="text-sm">{children}</dd>
+      <dd className="min-w-0 break-words text-sm">{children}</dd>
     </div>
   );
 }
@@ -120,10 +120,11 @@ export default async function MemberProfilePage({
   const { member, status, history, deliveries, entries } = loaded;
   const profile = member.profile;
   const name = member.user.name || member.user.email;
-  const paid = history.filter(
-    (row) => row.status !== "cancelled" && (row.priceCents ?? 0) > 0,
-  );
-  const spentCents = paid.reduce((sum, row) => sum + (row.priceCents ?? 0), 0);
+  // Only money that actually arrived counts as paid: a hold whose payment
+  // never settled carries a price too.
+  const spentCents = history
+    .filter((row) => row.paymentStatus === "succeeded")
+    .reduce((sum, row) => sum + (row.priceCents ?? 0), 0);
 
   return (
     <div>
@@ -134,7 +135,10 @@ export default async function MemberProfilePage({
         <ArrowLeft aria-hidden="true" className="size-4" />
         Zpět na členy
       </Link>
-      <PageHeader title={name} description={member.user.email}>
+      <PageHeader
+        title={name}
+        description={<span className="break-all">{member.user.email}</span>}
+      >
         <Badge variant={member.user.role === "admin" ? "accent" : "muted"}>
           {member.user.role === "admin" ? "Správce" : "Člen"}
         </Badge>
@@ -143,10 +147,12 @@ export default async function MemberProfilePage({
       <div className="mb-8 flex flex-wrap gap-4">
         <StatCard label="Návštěv celkem" value={status.totalEntries} />
         <StatCard
-          label="Do vstupu zdarma"
-          value={
-            status.nextEntryIsFree ? "další zdarma" : status.entriesUntilFree
+          label={
+            status.nextEntryIsFree
+              ? "Do vstupu zdarma · další vstup je zdarma"
+              : "Do vstupu zdarma"
           }
+          value={status.nextEntryIsFree ? 0 : status.entriesUntilFree}
         />
         <StatCard
           label="Vstupů zdarma získáno"
@@ -155,67 +161,74 @@ export default async function MemberProfilePage({
         <StatCard label="Zaplaceno celkem" value={formatMoney(spentCents)} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Účet a kontakt</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="divide-y divide-border">
-              <Detail label="Jméno">
-                {profile?.firstName || profile?.lastName
-                  ? `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim()
-                  : (profile?.fullName ?? "Neuvedeno")}
-              </Detail>
-              <Detail label="E-mail">{member.user.email || "Neuvedeno"}</Detail>
-              <Detail label="Telefon">
-                {profile?.phone ?? "Neuvedeno"}
-                {profile?.phone && profile.phoneVerified ? " (ověřený)" : ""}
-              </Detail>
-              <Detail label="Registrace">
-                {formatDateTime(member.user.createdAt)}
-              </Detail>
-              <Detail label="Poslední úprava profilu">
-                {profile ? formatDateTime(profile.updatedAt) : "Neuvedeno"}
-              </Detail>
-            </dl>
-          </CardContent>
-        </Card>
+      <section aria-labelledby="member-details">
+        <h2 id="member-details" className="sr-only">
+          Údaje člena
+        </h2>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Účet a kontakt</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="divide-y divide-border">
+                <Detail label="Jméno">
+                  {profile?.firstName || profile?.lastName
+                    ? `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim()
+                    : (profile?.fullName ?? "Neuvedeno")}
+                </Detail>
+                <Detail label="E-mail">
+                  {member.user.email || "Neuvedeno"}
+                </Detail>
+                <Detail label="Telefon">
+                  {profile?.phone ?? "Neuvedeno"}
+                  {profile?.phone && profile.phoneVerified ? " (ověřený)" : ""}
+                </Detail>
+                <Detail label="Registrace">
+                  {formatDateTime(member.user.createdAt)}
+                </Detail>
+                <Detail label="Poslední úprava profilu">
+                  {profile ? formatDateTime(profile.updatedAt) : "Neuvedeno"}
+                </Detail>
+              </dl>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Nastavení a souhlasy</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="divide-y divide-border">
-              <Detail label="Potvrzení a kódy">
-                E-mail vždy
-                {profile?.notifyByWhatsapp ? ", WhatsApp" : ""}
-                {profile?.notifyBySms ? ", SMS" : ""}
-              </Detail>
-              <Detail label="Souhlas s marketingem">
-                {profile?.marketingConsent
-                  ? `Ano${profile.marketingConsentAt ? ` (${formatDateTime(profile.marketingConsentAt)})` : ""}`
-                  : "Ne"}
-              </Detail>
-              <Detail label="Obchodní podmínky účtu">
-                {profile?.termsAcceptedAt
-                  ? formatDateTime(profile.termsAcceptedAt)
-                  : "Souhlas se dává u každé rezervace"}
-              </Detail>
-              <Detail label="Interní poznámka">
-                {profile?.note || "Žádná"}
-              </Detail>
-            </dl>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Nastavení a souhlasy</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="divide-y divide-border">
+                <Detail label="Potvrzení a kódy">
+                  E-mail vždy
+                  {profile?.notifyByWhatsapp ? ", WhatsApp" : ""}
+                  {profile?.notifyBySms ? ", SMS" : ""}
+                </Detail>
+                <Detail label="Souhlas s marketingem">
+                  {profile?.marketingConsent
+                    ? `Ano${profile.marketingConsentAt ? ` (${formatDateTime(profile.marketingConsentAt)})` : ""}`
+                    : "Ne"}
+                </Detail>
+                <Detail label="Obchodní podmínky účtu">
+                  {profile?.termsAcceptedAt
+                    ? formatDateTime(profile.termsAcceptedAt)
+                    : "Souhlas se dává u každé rezervace"}
+                </Detail>
+                <Detail label="Interní poznámka">
+                  {profile?.note || "Žádná"}
+                </Detail>
+              </dl>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
 
       <section aria-labelledby="member-reservations" className="mt-10">
         <h2 id="member-reservations" className="mb-3 text-lg font-semibold">
           Rezervace ({history.length})
         </h2>
-        <Table>
+        <Table label="Rezervace člena">
           <TableHeader>
             <TableRow>
               <TableHead>Termín</TableHead>
@@ -254,8 +267,16 @@ export default async function MemberProfilePage({
                     ? formatPaymentStatus(row.paymentStatus)
                     : "Bez platby"}
                 </TableCell>
-                <TableCell>{row.voucherCode ?? "—"}</TableCell>
-                <TableCell>{row.invoiceNumber ?? "—"}</TableCell>
+                <TableCell>
+                  {row.voucherCode ?? (
+                    <span className="text-muted-foreground">Bez voucheru</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {row.invoiceNumber ?? (
+                    <span className="text-muted-foreground">Bez dokladu</span>
+                  )}
+                </TableCell>
                 <TableCell className="whitespace-nowrap">
                   {formatDateTime(row.createdAt)}
                 </TableCell>
@@ -276,7 +297,7 @@ export default async function MemberProfilePage({
         <h2 id="member-activity" className="mb-3 text-lg font-semibold">
           Historie akcí
         </h2>
-        <Table>
+        <Table label="Historie akcí člena">
           <TableHeader>
             <TableRow>
               <TableHead>Čas</TableHead>
@@ -317,7 +338,7 @@ export default async function MemberProfilePage({
         <h2 id="member-messages" className="mb-3 text-lg font-semibold">
           Odeslané zprávy
         </h2>
-        <Table>
+        <Table label="Zprávy odeslané členovi">
           <TableHeader>
             <TableRow>
               <TableHead>Odesláno</TableHead>

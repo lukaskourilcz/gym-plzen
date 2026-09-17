@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
-import { ActivityActor } from "./activity-actor";
+import { ActivityActor } from "@/components/admin/activity-actor";
 
 export const metadata = { title: "Historie akcí" };
 export const dynamic = "force-dynamic";
@@ -32,7 +32,7 @@ export default async function ActivityPage() {
         title="Historie akcí"
         description="Potvrzené, zrušené a přesunuté rezervace, přijaté platby a změny provedené v administraci. Nejnovější nahoře."
       />
-      <Table>
+      <Table label="Historie akcí">
         <TableHeader>
           <TableRow>
             <TableHead>Čas</TableHead>
@@ -61,12 +61,17 @@ export default async function ActivityPage() {
                 {entry.memberId ? (
                   <Link
                     href={`/admin/members/${entry.memberId}`}
-                    className="font-bold text-accent-foreground hover:underline"
+                    className="inline-flex min-h-11 items-center font-bold text-accent-foreground hover:underline"
                   >
                     Profil člena
+                    <span className="sr-only">
+                      , záznam z {formatDateTime(entry.occurredAt)}
+                    </span>
                   </Link>
                 ) : (
-                  <span className="text-muted-foreground">Host</span>
+                  <span className="text-muted-foreground">
+                    {entry.actorType === "customer" ? "Host" : "Bez člena"}
+                  </span>
                 )}
               </TableCell>
             </TableRow>

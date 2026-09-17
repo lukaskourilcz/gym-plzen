@@ -65,7 +65,7 @@ export default async function ReservationsPage() {
                 {r.userId && !demo ? (
                   <Link
                     href={`/admin/members/${r.userId}`}
-                    className="font-bold text-accent-foreground hover:underline"
+                    className="inline-flex min-h-11 items-center font-bold text-accent-foreground hover:underline"
                   >
                     {r.contactName ?? r.contactEmail ?? "Člen"}
                   </Link>
