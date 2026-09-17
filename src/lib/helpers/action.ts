@@ -49,12 +49,18 @@ export function defineAction<
       const data = await config.handler(parsed.data, ctx);
       return ok(data);
     } catch (e) {
+      if (e instanceof ActionError) {
+        // An outcome the visitor is told about in so many words (a taken
+        // slot, an invalid voucher, a rate limit) is context for the next
+        // real failure, not a failure of its own: a warning breadcrumb, not a
+        // Sentry issue for every rejected form.
+        logger.warn(`Action rejected: ${e.message}`, {
+          where: "defineAction.handler",
+        });
+        return err(e.message);
+      }
       logger.error(e, { where: "defineAction.handler" });
-      const message =
-        e instanceof ActionError
-          ? e.message
-          : "Došlo k neočekávané chybě. Zkuste to prosím znovu.";
-      return err(message);
+      return err("Došlo k neočekávané chybě. Zkuste to prosím znovu.");
     }
   };
 }

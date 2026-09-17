@@ -1,6 +1,21 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { parseConsentPreferences } from "../../src/lib/config/analytics";
+import { createGoogleTag } from "../../src/lib/analytics/google-tag";
+
+test("Google commands use the Arguments protocol rather than ignored arrays", () => {
+  const queue: IArguments[] = [];
+  const gtag = createGoogleTag((command) => queue.push(command));
+  gtag("config", "test-id", { send_page_view: true });
+  assert.ok(queue[0]);
+  assert.equal(Object.prototype.toString.call(queue[0]), "[object Arguments]");
+  assert.equal(Array.isArray(queue[0]), false);
+  assert.deepEqual(Array.from(queue[0]), [
+    "config",
+    "test-id",
+    { send_page_view: true },
+  ]);
+});
 
 test("tracking preferences require both explicit boolean categories", () => {
   assert.deepEqual(

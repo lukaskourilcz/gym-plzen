@@ -4,8 +4,12 @@ import { httpRequest, HttpError } from "@/lib/helpers/http";
 import { safeEqual } from "@/lib/helpers/crypto";
 import { logger } from "@/lib/helpers/logger";
 
-/** Comgate REST API 2.0: https://apidoc.comgate.cz/api/rest/ */
-const API = "https://payments.comgate.cz/v2.0";
+/**
+ * Comgate REST API 2.0: https://apidoc.comgate.cz/api/rest/
+ * The base can be pointed at a local stand-in by the integration tests only;
+ * every deployment talks to the real gateway.
+ */
+const API = env.COMGATE_API_URL ?? "https://payments.comgate.cz/v2.0";
 const idSchema = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
 const amountSchema = z.union([
   z.number().int().nonnegative().safe(),

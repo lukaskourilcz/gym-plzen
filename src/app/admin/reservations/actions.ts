@@ -10,6 +10,7 @@ import {
   type CreateReservationValues,
   type CancelReservationValues,
 } from "@/lib/validations/reservations";
+import { formDateTimeToInstant } from "@/lib/helpers/datetime";
 import { reservations, fulfillment } from "@/lib/services";
 
 /**
@@ -24,8 +25,8 @@ const createImpl = defineAction({
   handler: async (input, admin) => {
     const reservation = await reservations.createReservation({
       userId: input.userId || null,
-      startsAt: new Date(input.startsAt),
-      endsAt: new Date(input.endsAt),
+      startsAt: formDateTimeToInstant(input.startsAt),
+      endsAt: formDateTimeToInstant(input.endsAt),
       contactName: input.contactName || null,
       contactEmail: input.contactEmail || null,
       contactPhone: input.contactPhone || null,

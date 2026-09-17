@@ -8,6 +8,7 @@ import {
   isDateKey,
   minutesBetween,
   monthGrid,
+  localDateTimeToDate,
 } from "@/lib/helpers/datetime";
 import {
   getBookingHorizonDays,
@@ -20,12 +21,22 @@ import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { RealtimeRefresher } from "@/components/realtime-refresher";
 import { BookingCalendar } from "./booking-calendar";
+import { initialBookingDateKey } from "@/lib/config/booking-start";
 
 export const metadata: Metadata = {
   title: "Rezervace soukromého gymu",
   description: "Vyberte datum a přesný čas rezervace NAVI Private Gym v Plzni.",
   alternates: { canonical: "/rezervace" },
 };
+/*
+ * Deliberately no `loading.tsx` next to this page. The calendar navigates to
+ * itself with different search params, and under a segment loading boundary
+ * the React build bundled with Next 15.5 can lose the wake-up of a Flight row
+ * that arrives while it unwinds, which parked the first date selection until
+ * the visitor clicked again. Without the boundary the suspension is handled
+ * at the root, where that wake-up is recorded; the transition simply holds
+ * the current view until the new day's data is in.
+ */
 export const dynamic = "force-dynamic";
 
 function validMonth(value: string | undefined): value is string {
@@ -42,6 +53,7 @@ export default async function BookingPage({
   const params = await searchParams;
   const now = new Date();
   const todayKey = dateKeyInTimeZone(now);
+  const initialDateKey = initialBookingDateKey(now);
   // Resolved once per request: the operator can change the horizon.
   const horizonDays = await getBookingHorizonDays();
   const maxDateKey = addDaysToDateKey(todayKey, horizonDays);
@@ -58,19 +70,18 @@ export default async function BookingPage({
           requestedMonth >= todayKey.slice(0, 7) &&
           requestedMonth <= maxDateKey.slice(0, 7)
         ? requestedMonth
-        : todayKey.slice(0, 7);
+        : initialDateKey.slice(0, 7);
   /*
-   * With no explicit date the page opens on today, so the visitor lands on a
-   * calendar that already shows times. Only the current month can fall back
-   * this way : on any other month today is not in the grid.
+   * Before launch, default to opening day; afterwards default to today.
+   * Keep explicit day/month navigation intact.
    */
   const selectedDateKey =
     requestedDate &&
     requestedDate.startsWith(monthKey) &&
     isWithinBookingHorizon(requestedDate, now, horizonDays)
       ? requestedDate
-      : monthKey === todayKey.slice(0, 7)
-        ? todayKey
+      : monthKey === initialDateKey.slice(0, 7)
+        ? initialDateKey
         : null;
   const grid = monthGrid(monthKey);
   const rangeStart = grid[0]!.dateKey;
@@ -78,21 +89,29 @@ export default async function BookingPage({
 
   const [availability, content, session] = await Promise.all([
     getSlotsForRange(rangeStart, rangeEnd, now),
-    loadSiteContent(),
+    loadSiteContent("cs", {
+      at: localDateTimeToDate(selectedDateKey ?? initialDateKey, 12 * 60),
+    }),
     getSession(),
   ]);
   const price = formatMoney(content.entryPriceCents);
+  // The client needs one flag per day and the slots of the selected day only;
+  // shipping all 630 slots of the grid made the document ten times larger.
   const days = availability.days.map((day) => ({
     dateKey: day.dateKey,
     isClosed: day.isClosed,
-    slots: day.slots.map((slot) => ({
+    hasAvailability: day.slots.some((slot) => slot.available),
+  }));
+  const selectedSlots = (
+    availability.days.find((day) => day.dateKey === selectedDateKey)?.slots ??
+    []
+  )
+    .filter((slot) => slot.available)
+    .map((slot) => ({
       startISO: slot.start.toISOString(),
-      endISO: slot.end.toISOString(),
       label: formatTimeRange(slot.start, slot.end),
       durationMinutes: minutesBetween(slot.start, slot.end),
-      available: slot.available,
-    })),
-  }));
+    }));
 
   return (
     <>
@@ -150,6 +169,7 @@ export default async function BookingPage({
                 maxDateKey={maxDateKey}
                 horizonDays={horizonDays}
                 days={days}
+                selectedSlots={selectedSlots}
                 source={availability.source}
                 price={price}
               />

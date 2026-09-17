@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { googleAvatarUrl } from "@/lib/helpers/profile";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -32,8 +33,19 @@ export interface SessionUser {
   googleAvatarUrl?: string | null;
 }
 
-/** The current user (verified via Supabase), or null when signed out. */
-export async function getSessionUser(): Promise<SessionUser | null> {
+/**
+ * The current user (verified via Supabase), or null when signed out.
+ *
+ * Wrapped in React `cache()`: the admin layout, the page it renders and any
+ * server action of the same request all ask for the session, and each call
+ * costs a Supabase Auth round trip plus a profile lookup. Within one request
+ * the answer cannot change, so it is resolved once.
+ */
+export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
+  return resolveSessionUser();
+});
+
+async function resolveSessionUser(): Promise<SessionUser | null> {
   if (await hasDemoAdminSession()) {
     return {
       id: "00000000-0000-0000-0000-000000000001",

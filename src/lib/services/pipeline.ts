@@ -28,7 +28,10 @@ export async function initPipeline(
     .values(
       STEPS.map((step) => ({ reservationId, step, nextRetryAt: new Date() })),
     )
-    .onConflictDoNothing();
+    // The unique (reservation, step) index is what makes this idempotent.
+    .onConflictDoNothing({
+      target: [reservationPipeline.reservationId, reservationPipeline.step],
+    });
 }
 
 /** Mark a step succeeded and clear any alert for it. */

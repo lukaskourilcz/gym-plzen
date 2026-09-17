@@ -11,8 +11,7 @@ import { pricingPeriodSchema } from "../../src/lib/validations/memberships";
 const STANDARD = DEFAULT_ENTRY_PRICE_CENTS;
 
 /**
- * The October promotion the client asked for: 199 Kč for anything booked
- * between 1 October and the end of 31 October, Prague time.
+ * 199 Kč for visits between 1 October and the end of 31 October, Prague time.
  */
 const OCTOBER: PromoWindow = {
   priceCents: 19_900,
@@ -24,8 +23,8 @@ const OCTOBER: PromoWindow = {
 const at = (dateKey: string, minute = 12 * 60) =>
   localDateTimeToDate(dateKey, minute);
 
-test("the standard entry price is 289 Kč", () => {
-  assert.equal(STANDARD, 28_900);
+test("the standard entry price is 229 Kč", () => {
+  assert.equal(STANDARD, 22_900);
 });
 
 test("without a promotion the standard price always applies", () => {
@@ -65,7 +64,7 @@ test("the promotion applies inside its window and nowhere else", () => {
   assert.equal(during.periodName, "Říjnová akce");
 
   // 1 November is back to the standard price, which is what the client asked
-  // for: "od listopadu 289 Kč".
+  // for: "od listopadu 229 Kč".
   const after = resolveEntryPrice({
     standardPriceCents: STANDARD,
     promo: OCTOBER,
@@ -183,23 +182,39 @@ test("a promotion may raise the price as well as lower it", () => {
   assert.equal(raised.isPromo, true);
 });
 
-test("booking in October for a January slot keeps the promotional price", () => {
-  // The client's requirement in one case: the promotion follows the moment of
-  // booking, never the date of the slot.
-  const bookedInOctober = resolveEntryPrice({
+test("October visits cost 199 Kč regardless of purchase date; later visits cost 229 Kč", () => {
+  const octoberVisit = resolveEntryPrice({
     standardPriceCents: STANDARD,
     promo: OCTOBER,
     at: at("2026-10-20"),
   });
-  assert.equal(bookedInOctober.priceCents, 19_900);
+  assert.equal(octoberVisit.priceCents, 19_900);
 
-  // The same January slot booked in November costs the standard price.
-  const bookedInNovember = resolveEntryPrice({
+  const novemberVisit = resolveEntryPrice({
     standardPriceCents: STANDARD,
     promo: OCTOBER,
     at: at("2026-11-02"),
   });
-  assert.equal(bookedInNovember.priceCents, STANDARD);
+  assert.equal(novemberVisit.priceCents, STANDARD);
+  assert.equal(
+    resolveEntryPrice({
+      standardPriceCents: STANDARD,
+      promo: OCTOBER,
+      at: at("2026-12-15"),
+    }).priceCents,
+    22_900,
+  );
+});
+
+test("booking, details and voucher quotes all pass the visit date to pricing", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const booking = await readFile("src/lib/services/booking.ts", "utf8");
+  const details = await readFile("src/app/rezervace/udaje/page.tsx", "utf8");
+  const vouchers = await readFile("src/app/rezervace/actions.ts", "utf8");
+  assert.match(booking, /getEntryPriceCents\(params.startsAt\)/);
+  assert.match(details, /getEntryPriceCents\(startsAt\)/);
+  assert.match(details, /priceForNextEntry\(session.user.id, startsAt\)/);
+  assert.match(vouchers, /getEntryPriceCents\(new Date\(input.startsAt\)\)/);
 });
 
 test("rescheduling never re-prices a reservation", async () => {
@@ -210,4 +225,35 @@ test("rescheduling never re-prices a reservation", async () => {
   );
   assert.doesNotMatch(source, /priceCents\s*[:=]/);
   assert.doesNotMatch(source, /getEntryPrice|priceForNextEntry/);
+});
+
+test("price resolution never throws on a missing moment or a malformed period", () => {
+  // The account page failed in production with `at` undefined at runtime;
+  // the standard price is the safe answer, not a crash.
+  const missing = resolveEntryPrice({
+    standardPriceCents: STANDARD,
+    periods: [OCTOBER],
+    at: undefined as unknown as Date,
+  });
+  assert.equal(missing.priceCents, STANDARD);
+  assert.equal(missing.isPromo, false);
+
+  const stringified = resolveEntryPrice({
+    standardPriceCents: STANDARD,
+    periods: [
+      {
+        ...OCTOBER,
+        startsAt: "2026-10-01T00:00:00.000Z" as unknown as Date,
+      },
+    ],
+    at: at("2026-10-15"),
+  });
+  assert.equal(stringified.priceCents, STANDARD);
+
+  const invalid = resolveEntryPrice({
+    standardPriceCents: STANDARD,
+    periods: [OCTOBER],
+    at: new Date("not a date"),
+  });
+  assert.equal(invalid.priceCents, STANDARD);
 });

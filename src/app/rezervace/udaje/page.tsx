@@ -2,13 +2,15 @@ import { isComgateConfigured } from "@/lib/integrations/comgate";
 import { getOperations } from "@/lib/services/operations";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ArrowLeft, Clock3 } from "lucide-react";
 import { footerProps, loadSiteContent } from "@/lib/content/site";
 import { getSession } from "@/lib/auth/guards";
 import { formatMoney, formatTimeRange } from "@/lib/helpers/format";
 import { dateKeyInTimeZone, minutesBetween } from "@/lib/helpers/datetime";
-import { availability, loyalty, members, slots } from "@/lib/services";
+import { HOLD_COOKIE, parseBookingHold } from "@/lib/helpers/booking-hold";
+import { availability, booking, loyalty, members, slots } from "@/lib/services";
 import { Container, Section } from "@/components/ui/container";
 import { Notice } from "@/components/ui/notice";
 import { SiteHeader } from "@/components/site/site-header";
@@ -64,17 +66,40 @@ export default async function BookingDetailsPage({
 
   const operations = await getOperations();
   const paymentsAvailable = operations.paymentsEnabled && isComgateConfigured();
-  const [content, session, free] = await Promise.all([
+  const [content, session, free, cookieStore] = await Promise.all([
     loadSiteContent(),
     getSession(),
     availability.checkAvailability(startsAt, resolved.endsAt),
+    cookies(),
   ]);
-  if (!free.available) redirect(`/rezervace?date=${dateKey}&stav=obsazeno`);
+  /*
+   * A taken slot may be the visitor's own: a guest back from the payment
+   * gateway carries the hold cookie, a member is known by account. Their
+   * booking continues here; only someone else's hold sends them back.
+   */
+  const hold = parseBookingHold(cookieStore.get(HOLD_COOKIE)?.value);
+  const own = free.available
+    ? null
+    : await booking.findOwnReservation({
+        userId: session?.user.id ?? null,
+        email: session?.user.email ?? null,
+        startsAt,
+        hold,
+      });
+  if (own?.status === "confirmed") {
+    redirect(
+      session
+        ? "/account"
+        : `/rezervace/hotovo?${new URLSearchParams({ reservation_id: own.id, ...(hold?.reservationId === own.id ? { token: hold.token } : {}) })}`,
+    );
+  }
+  if (!free.available && !own)
+    redirect(`/rezervace?date=${dateKey}&stav=obsazeno`);
 
   const member = session ? await members.getMember(session.user.id) : null;
   const entryPriceCents = session
-    ? (await loyalty.priceForNextEntry(session.user.id)).priceCents
-    : await loyalty.getEntryPriceCents();
+    ? (await loyalty.priceForNextEntry(session.user.id, startsAt)).priceCents
+    : await loyalty.getEntryPriceCents(startsAt);
 
   const nameParts = splitName(member?.user.name ?? "");
   const slotLabel = formatTimeRange(startsAt, resolved.endsAt);
@@ -126,6 +151,18 @@ export default async function BookingDetailsPage({
               </p>
             </div>
 
+            {own ? (
+              <Notice
+                className="mt-6"
+                tone="warning"
+                title="Tento termín už pro vás držíme"
+                role="status"
+              >
+                Rezervaci jste už začali, ale platba zatím neproběhla. Termín
+                držíme jen po dobu platební relace; pokračujte k platbě a
+                dokončete ji.
+              </Notice>
+            ) : null}
             {session ? null : (
               <Notice className="mt-6" role="status">
                 {`Rezervaci dokončíte i bez registrace. S účtem se počítá každý ${content.freeEntryEvery}. vstup zdarma.`}{" "}

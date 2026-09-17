@@ -25,6 +25,15 @@ import { RealtimeRefresher } from "@/components/realtime-refresher";
 import { RescheduleCalendar } from "./reschedule-calendar";
 
 export const metadata: Metadata = { title: "Změna termínu" };
+/*
+ * Deliberately no `loading.tsx` next to this page. The calendar navigates to
+ * itself with different search params, and under a segment loading boundary
+ * the React build bundled with Next 15.5 can lose the wake-up of a Flight row
+ * that arrives while it unwinds, which parked the first date selection until
+ * the visitor clicked again. Without the boundary the suspension is handled
+ * at the root, where that wake-up is recorded; the transition simply holds
+ * the current view until the new day's data is in.
+ */
 export const dynamic = "force-dynamic";
 
 function validMonth(value: string | undefined): value is string {
@@ -93,14 +102,18 @@ export default async function ReschedulePage({
   const days = availability.days.map((day) => ({
     dateKey: day.dateKey,
     isClosed: day.isClosed,
-    slots: day.slots.map((slot) => ({
+    hasAvailability: day.slots.some((slot) => slot.available),
+  }));
+  const selectedSlots = (
+    availability.days.find((day) => day.dateKey === selectedDateKey)?.slots ??
+    []
+  )
+    .filter((slot) => slot.available)
+    .map((slot) => ({
       startISO: slot.start.toISOString(),
-      endISO: slot.end.toISOString(),
       label: formatTimeRange(slot.start, slot.end),
       durationMinutes: minutesBetween(slot.start, slot.end),
-      available: slot.available,
-    })),
-  }));
+    }));
 
   return (
     <>
@@ -156,6 +169,7 @@ export default async function ReschedulePage({
                     current.endsAt,
                   )}`}
                   days={days}
+                  selectedSlots={selectedSlots}
                   source={availability.source}
                 />
               </div>

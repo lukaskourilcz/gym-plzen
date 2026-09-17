@@ -1,11 +1,12 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
 
 /**
- * Root error boundary. Reports React render errors to Sentry (no-op without a
- * DSN) and shows a minimal fallback. Replace the markup during the design phase.
+ * Root error boundary. Reports React render errors to Sentry and shows a
+ * minimal fallback. The SDK is loaded on demand so this boundary, which is
+ * part of every page's client bundle, does not carry it for visitors who
+ * never hit an error (and not at all when no DSN is configured).
  */
 export default function GlobalError({
   error,
@@ -13,7 +14,10 @@ export default function GlobalError({
   error: Error & { digest?: string };
 }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    if (!process.env.NEXT_PUBLIC_SENTRY_DSN) return;
+    void import("@sentry/nextjs").then((Sentry) =>
+      Sentry.captureException(error),
+    );
   }, [error]);
 
   return (

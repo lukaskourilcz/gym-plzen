@@ -51,6 +51,7 @@ async function fulfillLocked(reservationId: string): Promise<void> {
       startsAt: reservation.startsAt,
       endsAt: reservation.endsAt,
       priceCents: reservation.priceCents,
+      loyaltyReward: reservation.loyaltyReward,
       email: reservation.contactEmail,
     });
   } catch (error) {

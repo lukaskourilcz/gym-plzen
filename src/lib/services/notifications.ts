@@ -216,6 +216,8 @@ export async function sendReservationConfirmation(params: {
   startsAt: Date;
   endsAt: Date;
   priceCents: number | null;
+  /** Set when the entry is the member's free loyalty entry. */
+  loyaltyReward?: number | null;
   email?: string | null;
 }): Promise<void> {
   if (!params.email) return;
@@ -274,12 +276,73 @@ export async function sendReservationConfirmation(params: {
       duration: `${Math.round(
         (params.endsAt.getTime() - params.startsAt.getTime()) / 60_000,
       )} minut`,
+      // A free entry is either the loyalty reward or a voucher that covered
+      // the whole price; the e-mail must not call one the other.
       price:
         params.priceCents === 0
-          ? "zdarma (věrnostní vstup)"
+          ? params.loyaltyReward
+            ? "zdarma (věrnostní vstup)"
+            : "zdarma (voucher)"
           : params.priceCents === null
             ? "v ceně členství"
             : `${Math.round(params.priceCents / 100)} Kč`,
+    },
+  });
+  await record(
+    {
+      userId: params.userId,
+      reservationId: params.reservationId,
+      channel: "email",
+      kind: "reservation_confirmation",
+      recipient: params.email,
+    },
+    result,
+  );
+}
+
+/**
+ * Confirmation of a customer-initiated term change. The booking confirmation
+ * is sent once per reservation, so after a reschedule it would say nothing;
+ * this one is sent for every change (there is at most one) so the customer
+ * holds the new time in writing. The attached .ics keeps the reservation's
+ * UID, so a calendar that imported the original entry updates it in place.
+ */
+export async function sendRescheduleConfirmation(params: {
+  userId: string | null;
+  reservationId: string;
+  name?: string | null;
+  previousStartsAt: Date;
+  startsAt: Date;
+  endsAt: Date;
+  email?: string | null;
+}): Promise<void> {
+  if (!params.email) return;
+
+  const ics = buildIcs(
+    reservationCalendarEvent({
+      reservationId: params.reservationId,
+      startsAt: params.startsAt,
+      endsAt: params.endsAt,
+      address: publicAddress(await getText("contact.address").catch(() => "")),
+    }),
+  );
+
+  const result = await sendTransactionalEmail({
+    id: "reservation_rescheduled",
+    to: params.email,
+    attachments: [
+      {
+        filename: "rezervace.ics",
+        content: Buffer.from(ics, "utf8").toString("base64"),
+      },
+    ],
+    variables: {
+      name: params.name || "zákazníku",
+      previous_time: formatDateTime(params.previousStartsAt),
+      time: formatDateTime(params.startsAt),
+      duration: `${Math.round(
+        (params.endsAt.getTime() - params.startsAt.getTime()) / 60_000,
+      )} minut`,
     },
   });
   await record(

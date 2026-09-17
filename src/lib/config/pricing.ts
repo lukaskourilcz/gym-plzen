@@ -10,7 +10,7 @@
  */
 
 /** Default price of a single entry, in the smallest currency unit (haléř). */
-export const DEFAULT_ENTRY_PRICE_CENTS = 28_900; // 289 Kč
+export const DEFAULT_ENTRY_PRICE_CENTS = 22_900; // 229 Kč
 
 export const ENTRY_CURRENCY = "czk";
 
@@ -32,10 +32,8 @@ export const ENTRY_PRICE_SETTING_KEY = "pricing.entry_price_cents";
 /**
  * A time-limited price, set from the administration.
  *
- * The period is checked against the moment a reservation is *created*, not the
- * slot it books: someone who books in October during the promotion pays the
- * promotional price even for a January slot. Loyalty is unaffected, so every
- * tenth entry stays free inside the window too.
+ * The period is checked against the visit start, independent of purchase date.
+ * Loyalty is unaffected, so every tenth entry stays free inside the window too.
  */
 export interface PricingWindow {
   id?: string;
@@ -63,13 +61,22 @@ export interface EntryPrice {
   periodName?: string;
 }
 
+/** A real, valid instant; anything else (undefined, a string, NaN) is not. */
+function isInstant(value: unknown): value is Date {
+  return value instanceof Date && !Number.isNaN(value.getTime());
+}
+
 /**
  * Resolve the entry price at a given moment. Pure, so the whole promotion rule
  * is testable without a database or a clock.
  *
  * A window with a non-positive price, or one whose end is not after its start,
  * is ignored rather than trusted: a misconfigured promotion must never make
- * entry free by accident.
+ * entry free by accident. A window whose bounds are not instants is ignored
+ * the same way, and a moment that is not an instant (a caller passing nothing,
+ * or a string that survived serialisation) falls back to the standard price:
+ * the page this price belongs to must never fail to render over it, as the
+ * account page did in production on 17. 9. 2026.
  */
 export function resolveEntryPrice(params: {
   standardPriceCents: number;
@@ -83,13 +90,17 @@ export function resolveEntryPrice(params: {
     ...(params.periods ?? []),
     ...(params.promo ? [params.promo] : []),
   ];
-  const active = periods.find(
-    (period) =>
-      period.priceCents > 0 &&
-      period.endsAt.getTime() > period.startsAt.getTime() &&
-      at.getTime() >= period.startsAt.getTime() &&
-      at.getTime() < period.endsAt.getTime(),
-  );
+  const active = isInstant(at)
+    ? periods.find(
+        (period) =>
+          period.priceCents > 0 &&
+          isInstant(period.startsAt) &&
+          isInstant(period.endsAt) &&
+          period.endsAt.getTime() > period.startsAt.getTime() &&
+          at.getTime() >= period.startsAt.getTime() &&
+          at.getTime() < period.endsAt.getTime(),
+      )
+    : undefined;
 
   if (active) {
     return {

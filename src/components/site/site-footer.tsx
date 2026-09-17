@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Container } from "@/components/ui/container";
 import { BrandLockup } from "@/components/site/brand";
 import {
@@ -86,7 +87,7 @@ export function SiteFooter({
 
   return (
     <footer className="border-t border-white/10 bg-ink text-ink-foreground">
-      <Container className="grid gap-10 py-12 md:grid-cols-[1fr_2fr] lg:py-10">
+      <Container className="grid gap-x-10 gap-y-6 py-12 md:grid-cols-[1fr_2fr] lg:py-10">
         <div className="text-center md:text-left">
           <BrandLockup className="items-start text-left text-gold" />
           <p className="mt-6 text-xs leading-6 text-ink-foreground/75">
@@ -150,6 +151,9 @@ export function SiteFooter({
           <div>
             <h2 className="text-sm font-extrabold">Informace</h2>
             <div className="mt-2 grid">
+              <Link href="/doprava-a-platba" className={footerLink}>
+                Doprava a platba
+              </Link>
               <Link href="/provozni-rad" className={footerLink}>
                 Provozní řád
               </Link>
@@ -176,6 +180,35 @@ export function SiteFooter({
               {socialLinks()}
             </div>
           ) : null}
+        </div>
+        <div className="flex items-center justify-center gap-5 md:col-span-2">
+          <a
+            href="https://www.comgate.eu/cs/platebni-brana"
+            aria-label="Platební brána Comgate"
+            className="flex min-h-6 items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+          >
+            <Image
+              src="/cg-ithor.svg"
+              width={259}
+              height={60}
+              alt="Comgate"
+              className="h-auto w-20"
+            />
+          </a>
+          <Image
+            src="/Visa_Brandmark_White_RGB_2021.svg"
+            width={3385}
+            height={2078}
+            alt="Visa"
+            className="h-auto w-16"
+          />
+          <Image
+            src="/mc_symbol.svg"
+            width={152}
+            height={108}
+            alt="Mastercard"
+            className="h-auto w-10"
+          />
         </div>
       </Container>
     </footer>

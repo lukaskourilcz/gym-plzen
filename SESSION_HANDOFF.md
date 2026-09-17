@@ -1,3 +1,228 @@
+# Audit rezervačního průchodu 17. 9. 2026 — dva incidenty ze Sentry
+
+**Co se stalo.** V 7:00 ráno začala hostka rezervaci na 1. 10. 7:30, byla
+poslána na bránu Comgate a o osmnáct sekund později odeslala formulář znovu.
+Její vlastní držený termín se ohlásil jako „Tento termín je již rezervovaný“ a
+rezervace skončila v 7:30 vypršením platební relace (`4356f140…`, platba
+`ELEE-1J1Q-5VGH` → CANCELLED). Sentry to navíc hlásilo jako chybu, protože
+`defineAction` posílal každou očekávanou `ActionError` jako výjimku. Druhý
+incident: po změně termínu spadl `/account?zmena=uspesna` na
+`TypeError … reading 'getTime'` v `resolveEntryPrice` (zákaznice viděla
+„Connection closed“), přestože změna v databázi proběhla a e-mail odešel.
+
+**Opraveno ve větvi `claude/exciting-hopper-nexmb0`** (commity `acf0c23`…):
+
+- Opakované odeslání pokračuje ve vlastní rezervaci: člen podle účtu, host
+  podle cookie `navi_hold` (id + potvrzovací token, 35 minut, jen pod
+  `/rezervace`) nebo podle zadaného e-mailu pro stejný termín. Nejdřív se dotáhne
+  stav platby z Comgate, potvrzený termín odpoví větou, otevřená brána vrátí
+  stejnou relaci, voucher zadaný na druhý pokus starý hold nahradí
+  (`superseded`). Stránka údajů držitele holdu nevrací na kalendář, ale ukáže
+  „Tento termín už pro vás držíme“; tlačítko zůstane po odeslání zablokované,
+  dokud prohlížeč neodejde na bránu (a uvolní se po návratu z bfcache).
+- `ActionError` je od teď warning breadcrumb, Sentry výjimky zůstávají jen
+  pro neočekávané chyby. Logger snese i CommonJS build Sentry SDK (skripty,
+  testy).
+- Administrace četla `datetime-local` hodnoty v UTC: voucher „od 8:00“ začínal
+  v 10:00 (stejně bloky termínů a ruční rezervace). Nový
+  `formDateTimeToInstant` bere hodnotu bez zóny jako pražský čas. Dva testovací
+  vouchery v produkci (`TESTNAVI5555X`, `TESTNAVI5555XX`) jsem posunul o
+  −2 h na zamýšlenou platnost.
+- Cena: `resolveEntryPrice` ignoruje období bez platných instantů a pro
+  nepoužitelný okamžik vrací standardní cenu místo pádu; `loadSiteContent`
+  přijme jen skutečné `Date`. Přesný spouštěč v produkci se z kódu odvodit
+  nepodařilo (`now` tam nemůže být `undefined`; stejný průchod se u
+  testovacího člena po opravě nezopakoval) — po nasazení sledovat Sentry, a
+  pokud se objeví znovu, budu potřebovat přístup k události (Sentry MCP není
+  autorizované). Kalendář změny termínu už nevolá `router.refresh()` hned za
+  `router.push()`, což byl souběh dvou požadavků na stejnou trasu.
+- Potvrzovací e-mail už u vstupu zdarma z voucheru neříká „věrnostní vstup“.
+- Potvrzení registrace: výchozí `{{ .ConfirmationURL }}` je PKCE výměna, která
+  funguje jen v prohlížeči, kde registrace začala. Ověřeno v produkci: odkaz
+  otevřený jinde adresu potvrdí a skončí na `/login?chyba=jiny_prohlizec`.
+  Nová trasa `/auth/confirm` ověří `token_hash` na serveru a synchronizované
+  šablony na ni odkazují; dokud provozovatel nedoplní
+  `SUPABASE_MANAGEMENT_API_TOKEN` a neuloží šablony, chodí anglická výchozí
+  šablona Supabase se starým odkazem (viz NEEDED).
+
+**Testy.** 148 unit testů; 12 integračních testů (`npm run test:integration`,
+lokální Postgres 16 s aplikovanými migracemi, náhradní Resend a Comgate v
+`tests/integration/`) pokrývá hosta i člena s voucherem, desátý vstup zdarma,
+placený hold a jeho opakování s cookie i bez ní, vyrovnání a zrušení platby
+bránou, voucher na druhý pokus, odmítnutý voucher, vypnuté platby, blok,
+expiraci holdu a párování vlastní rezervace; Playwright
+`tests/e2e/booking-flow.spec.ts` projde v prohlížeči voucher i návrat z brány
+(režim 5 v `tests/e2e/README.md`), veřejná sada 17/17.
+
+**Ověřeno v produkci (`www.navigym.cz`, kód před opravou).** Host s voucherem
+`TESTNAVI5555XX`: rezervace `2c4f9ff7…` potvrzená, `/rezervace/hotovo`
+v pořádku, potvrzovací e-mail s přílohou `rezervace.ics` dorazil do 4 s
+z `noreply@navigym.cz` (doména je v Resendu ověřená). Registrace
+`kouril.lukas+navi-clen@gmail.com`: e-mail od Supabase Auth do 2 s, ale
+anglický výchozí text; přihlášení heslem, rezervace s voucherem jako člen
+(`a21d0d63…`, věrnost 1/10, e-mail s věrnostní větou), změna termínu a
+`/account?zmena=uspesna` bez chyby, e-mail „Změna termínu rezervace“ s novou
+`.ics`. Zákaznice `bilkova.klara@…` téhož rána zaplatila skutečných 199 Kč
+(`HIJ4-JP8D-39HS`), webhook potvrdil rezervaci a e-mail odešel — placená cesta
+je tedy ověřená ostrou platbou. Testovací rezervace jsou zrušené
+(`integration_check`), claimy voucheru uvolněné, testovací účet smazaný.
+
+**Zámek.** Žádná kontrola v kódu rezervaci s vypnutým Nuki neblokuje:
+`fulfillment` označí krok `payment` a skončí, kroky `code_created` /
+`code_delivered` čekají `pending` na zapnutí zámku, watchdog je při vypnutém
+zámku přeskakuje, storno bez kódů nic neodebírá, `sync-entry-log` bez
+přístupů nic nestáhne. Jediné, co s klikou souvisí, je text: potvrzovací
+e-mail i účet slibují „osobní vstupní kód před začátkem rezervace“ — do
+připojení zámku ho musí zákazníkům poslat provozovatel ručně, nebo upravit
+šablonu v administraci → E-maily (viz NEEDED).
+
+Lokální Postgres pro testy: `pg_ctlcluster 16 main start`, databáze
+`gym_test` s rolemi `anon`/`authenticated`, schématem `extensions` a publikací
+`supabase_realtime`, migrace z `drizzle/*.sql` v pořadí, `npm run db:seed`.
+Chromium v tomto prostředí důvěřuje CA proxy přes NSS databázi
+(`certutil -d sql:$HOME/.pki/nssdb -A -t "C,," -i /root/.ccr/agent-proxy-ca.crt`),
+takže browser testy proti ostré doméně už jdou spustit.
+
+---
+
+# Oprava 16. 9. 2026 — Google v Safari (#18)
+
+Příčina nalezena. PKCE ověřovatel je cookie hostitele, který přihlášení
+**začal**, a kód se vrací na hostitele, kterého má povoleného Supabase.
+Prohlížeč flow spouštěl přes `window.location.origin`, takže návštěva, která
+přišla na jinou z adres webu, zapsala ověřovatel tam, kam se callback nikdy
+nevrací. `https://www.namastegym.cz` dodnes odpovídá 200, zatímco Supabase už
+míří na `www.navigym.cz` — kdo měl v prohlížeči starou adresu, přihlášení přes
+Google nedokončil. Není to chyba Safari jako takového: selže ten prohlížeč,
+který drží starou záložku, a klientka ji měla v Safari. Pěti lidem, kteří
+přišli na novou doménu, přihlášení prošlo (`auth.identities`, naposledy 7. 9.).
+
+Oprava: nové `/auth/signin` spouští flow na serveru a **nejdřív** přesune
+návštěvu na kanonický původ, takže se ověřovatel zapíše jednou, na hostiteli,
+který ho bude číst, a jako skutečná `Set-Cookie` (`Secure; SameSite=lax`)
+místo cookie psané skriptem — těm je ochrana soukromí v Safari výrazně méně
+nakloněná. Callback, který i tak dorazí jinam, se přepošle místo selhání, a
+výměna bez ověřovatele teď hlásí vlastní hlášku, ne „vypršelo“. Tlačítka
+poskytovatelů jsou odkazy, takže fungují i bez JavaScriptu.
+
+Ověřeno lokálně proti produkčnímu Supabase: start na kanonickém hostiteli
+vrací `Set-Cookie: sb-…-code-verifier; Path=/; Secure; SameSite=lax` a
+přesměruje na Google s `code_challenge`; start na `www.namastegym.cz`
+přesměruje na kanonickou doménu **bez** zapsané cookie; callback bez
+ověřovatele se z cizího hostitele přepošle a na kanonickém skončí na
+`/login?chyba=jiny_prohlizec`. Skutečné dokončení v Safari ověří provozovatel
+— WebKit tu není a TLS ověření proxy se obcházet nemá.
+
+Pozor na `nextUrl.origin`: hlásí `localhost` bez ohledu na hostitele, kterého
+použil prohlížeč, takže porovnání proti kanonické adrese přesměrovává donekonečna.
+Hostitel se proto bere z `x-forwarded-host`/`host`; test „the canonical move
+cannot loop“ to hlídá.
+
+---
+
+# Nasazeno 16. 9. 2026 — review sloučeno do `main`
+
+Migrace `20260916100000_pipeline_step_unique.sql` je **aplikovaná v produkčním
+Supabase** (tabulka `reservation_pipeline` byla prázdná, index
+`reservation_pipeline_step_uidx` ověřený v `pg_indexes`), teprve poté se větev
+`claude/wizardly-mayer-5v3ihy` sloučila do `main` (merge commit `0e5b011`,
+`--no-ff`, bez konfliktů — `main` se mezitím nepohnul). Issues #46–#63 a #65 se
+zavřely automaticky; otevřené zůstávají #64 (Nuki, čeká na zámek) a #18.
+
+Znovu ověřeno na merge commitu proti lokálnímu Postgresu se seedem:
+format:check, lint, typecheck, 132 unit testů, `npm audit --omit=dev` (0 nálezů),
+produkční build a 17/17 veřejných e2e testů včetně „the first date selection on
+a fresh calendar always commits“. Build potvrdil i čísla z review: sdílený JS
+104 kB, `/rezervace` 143 kB, ISR `5m` na `/faq`, `/doprava-a-platba` a právních
+stránkách.
+
+Ověřeno přímo v produkci (`https://www.navigym.cz`): běží merge commit
+(`sentry-release=0e5b011d…`), `/faq` vrací `x-nextjs-prerender: 1` a
+`x-nextjs-stale-time: 300`, CSP už neobsahuje `'unsafe-eval'`, banner hlásí
+„OTEVÍRÁME 1. 10. • VSTUP 199 Kč PO CELÝ ŘÍJEN“ (budoucí čas odpovídá datu) a
+`/rezervace` posílá 42 buněk kalendáře bez jediného skeletonu, tedy odstraněné
+`loading.tsx` se propsalo.
+
+Dvě poznámky k postupu z minula. Za prvé: Vercel na ISR stránkách neposílá
+doslovné `s-maxage=300` — hodnotu si bere edge a prohlížeči vrací
+`max-age=0, must-revalidate` plus `x-nextjs-stale-time: 300`. Smoke test proto
+kontrolovat podle `x-nextjs-stale-time`, ne podle `s-maxage`. Za druhé: e2e test
+výběru dne se v tomto prostředí nedá pustit proti ostré doméně — prohlížeč
+nedůvěřuje CA odchozí proxy a TLS ověření se obcházet nemá; test proto běžel
+proti produkčnímu buildu lokálně.
+
+Zbývá provozovateli: vizuálně zkontrolovat administraci → Vstupné a věrnost a
+→ E-maily (šablona „Změna termínu“) a smazat sloučenou větev na GitHubu —
+mazání větví z tohoto prostředí končí na 403. Viz [NEEDED](NEEDED.md).
+
+---
+
+# Aktualizace 16. 9. 2026 — produkční code review a výkon
+
+Kompletní review kódu před spuštěním (mimo Nuki a WhatsApp/Zernio, které se
+připojí později). Každý nález má issue na GitHubu (#46–#64); opravy jsou ve
+větvi `claude/wizardly-mayer-5v3ihy`, jeden commit na issue, s `Closes #N`.
+
+Opraveno v kódu: časově řízený banner otevření (#46), ISR pro CMS stránky, aby
+`/faq` a právní stránky nezmrazily cenu z buildu (#47), unikátní krok
+pipeline + migrace `20260916100000_pipeline_step_unique.sql` (#48; **v produkci
+zatím neaplikována**, viz NEEDED), uzavření termínu provozovatelem jde přes
+plné storno s uvolněním voucheru a upozorněním na vrácení platby (#49),
+e-mail „Změna termínu“ s novou `.ics` přílohou po přesunu (#50, nová šablona
+v administraci → E-maily), Sentry v prohlížeči jen s DSN (#51), cache
+`Intl` formátovačů (#52), realtime klient mimo kritickou cestu kalendáře
+(#53), kompaktní payload kalendáře (#54), session jednou za request a profil
+bez zbytečného zápisu (#55), middleware bez webhooků a cronů (#56), dávkový
+věrnostní stav v administraci (#57), uvolňování expirovaných holdů jen jednou
+za minutu (#58), CSP bez `'unsafe-eval'` (#59), pool zámků 5 (#60), Sentry
+výjimky se stackem (#61), Prettier (#62), dokumentace (#63). Issue #64 (Nuki
+`PUT /auth` nevrací id autorizace) zůstává otevřená do připojení zámku.
+
+Měřený průchod na mobilu (produkční build, lokální Postgres, Lighthouse
+mobil se simulovaným pomalým 4G, medián ze 3 běhů):
+
+| Stránka             | před: skóre / LCP / TBT | po: skóre / LCP / TBT  |
+| ------------------- | ----------------------- | ---------------------- |
+| Domů `/`            | 92 / 2 931 ms / 195 ms  | 92 / 2 942 ms / 162 ms |
+| `/rezervace`        | 72 / 4 071 ms / 474 ms  | 92 / 3 232 ms / 104 ms |
+| `/rezervace?date=…` | 80 / 4 368 ms / 252 ms  | 91 / 3 260 ms / 142 ms |
+| `/rezervace/udaje`  | 84 / 4 037 ms / 195 ms  | 90 / 3 390 ms / 145 ms |
+
+Serverová práce kalendáře `/rezervace`: 300–470 ms → 36–48 ms (cache
+`Intl.DateTimeFormat`; `getSlotsForRange` 190 ms → 9 ms). RSC payload
+kalendáře 132 kB → 45 kB, HTML 223 kB → 125 kB. Sdílený JS všech stránek
+198 kB → 104 kB (Sentry SDK 140 kB gzip mimo první načtení), `/rezervace`
+301 kB → 143 kB. Ověřeno: format, lint, typecheck, 132 unit testů, build,
+`npm audit --omit=dev` 0 nálezů, 17 veřejných e2e testů (Playwright proti
+`next start` a lokálnímu Postgresu), šířky 320–1728 px bez overflow, konzole
+bez chyb a CSP violací, klávesnice v mřížce kalendáře s viditelným fokusem.
+
+**Regrese odhalená při ověřování a její oprava.** Po zmenšení payloadu
+kalendáře (#54) se v produkčním buildu první výběr dne na `/rezervace`
+zhruba v polovině pokusů „neprovedl“: požadavek na RSC odešel a vrátil se,
+ale URL ani mřížka se nezměnily, až druhé stisknutí fungovalo. Příčina není
+v našem kódu: React (canary přibalený v Next 15.5) při odvíjení pozastavené
+navigace uvnitř **existující** Suspense hranice (té z `loading.tsx`) připojí
+posluchač na Flight řádek, který mezitím dorazil, a synchronní probuzení
+zahodí (`pingSuspendedRoot` běží ještě v render fázi s exit status
+„suspended with delay“); následné `markRootSuspended` lane zaparkuje a nic
+ji už neprobudí. Menší a rychlejší odpověď trefovala toto okno téměř vždy,
+původní 112 kB payload jen náhodou ne. Stejné riziko nese každá stránka,
+která naviguje sama na sebe s jinými search params pod `loading.tsx`.
+Oprava: `src/app/rezervace/loading.tsx` a
+`src/app/account/rezervace/[id]/zmenit/loading.tsx` jsou odstraněné (obě
+stránky nesou komentář proč); bez hranice se pozastavení řeší na kořenu,
+kde se probuzení zapíše, a přechod jen podrží aktuální pohled, dokud nedorazí
+data nového dne (žádné probliknutí skeletonu). Ověřeno 54/54 pokusů
+(Enter, mezerník i klik na čerstvé stránce) proti dřívějším ~50 %, navíc
+nový e2e test „the first date selection on a fresh calendar always commits“.
+Skeleton pro `/rezervace/udaje`, `/rezervace/hotovo` a administrační kalendář
+zůstává (ty na sebe s jinými parametry nenavigují). Před přidáním dalšího
+`loading.tsx` nad stránku s vlastní navigací přes search params nejdřív
+ověřit, že je chyba v Reactu opravená.
+
+---
+
 # Aktualizace 10. 9. 2026 — Comgate a placené rezervace
 
 Rozhodnutí klienta: brána je Comgate. Rezervace vyžaduje platbu; výběr termínu
@@ -82,11 +307,12 @@ ale s měkkými hranami renderu. Až dodá vektory, stačí vyměnit `navi-mark.
 `navi-wordmark.png`, `navi-logo.png` a `navi-logo-email.png` a přegenerovat
 `src/app/icon.png`; v kódu se nemění nic.
 
-**Ceny.** Standardní cena je 289 Kč. Akční okno se nastavuje v administraci →
-Vstupné a věrnost a řídí se **okamžikem vytvoření rezervace**, ne termínem: kdo
-rezervuje během akce, platí akční cenu i za termín o měsíce později.
-Věrnostní 10. vstup zdarma platí i uvnitř akce. Změna termínu cenu
-nepřepočítává. Texty s cenou používají zástupné `{price}`
+**Ceny.** Standardní cena je 229 Kč (snížena 14. 9. 2026, viz
+[docs/LAUNCH_2026_10.md](docs/LAUNCH_2026_10.md)). Akční okno se nastavuje v administraci →
+Vstupné a věrnost a řídí se **datem návštěvy**, ne okamžikem nákupu: říjnový
+termín stojí akční cenu i při rezervaci v září (rozhodnutí klienta 14. 9. 2026,
+viz [docs/LAUNCH_2026_10.md](docs/LAUNCH_2026_10.md)). Věrnostní 10. vstup
+zdarma platí i uvnitř akce. Změna termínu cenu nepřepočítává. Texty s cenou používají zástupné `{price}`
 a `{pricePerPerson}`, takže nemohou zastarat.
 
 **Rozsah rezervací** už není napevno 60 dní: nastavuje se v administraci →
@@ -220,7 +446,8 @@ zjednodušený editor obsahu.
 - otevírací doba: každý den 5:00–23:45;
 - slot: 75 minut;
 - kapacita: až 5 osob včetně dětí;
-- cena: 289 Kč za rezervaci, každý 10. vstup zdarma;
+- cena: 229 Kč za rezervaci (od 14. 9. 2026; v říjnu 2026 akčních 199 Kč),
+  každý 10. vstup zdarma;
 - Instagram: `@navi_plzen`;
 - logo: zdroj od klienta, odvozené transparentní soubory jsou v
   `public/images/navi-logo.png`, `navi-mark.png` a `navi-wordmark.png`.

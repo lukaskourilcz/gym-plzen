@@ -1,6 +1,33 @@
-import * as Sentry from "@sentry/nextjs";
+import * as SentryModule from "@sentry/nextjs";
 
 type Meta = Record<string, unknown>;
+
+type SentryApi = Pick<
+  typeof SentryModule,
+  "addBreadcrumb" | "captureException" | "captureMessage"
+>;
+
+/*
+ * Inside the Next.js runtime the SDK's named exports are right here. A plain
+ * Node process (a CLI script, the test runner) can resolve the package to its
+ * CommonJS build instead, where they sit behind `default`; and a warning
+ * written on the way to a database error must never itself crash a script.
+ */
+function sentry(): SentryApi | null {
+  const candidates: unknown[] = [
+    SentryModule,
+    (SentryModule as { default?: unknown }).default,
+  ];
+  for (const candidate of candidates) {
+    if (
+      candidate &&
+      typeof (candidate as SentryApi).addBreadcrumb === "function" &&
+      typeof (candidate as SentryApi).captureException === "function"
+    )
+      return candidate as SentryApi;
+  }
+  return null;
+}
 const sensitiveKey =
   /(password|secret|token|authorization|cookie|code|pin|email|phone|payload|body|from)/i;
 
@@ -58,9 +85,13 @@ export const logger = {
   warn(message: string, meta?: Meta): void {
     const clean = cleanMeta(meta);
     line("warn", message, clean);
-    Sentry.captureMessage(redactForLogs(message), {
+    // Warnings are context for the next error, not events of their own:
+    // routine conditions ("duplicate alert suppressed", a default used while
+    // the database is unreachable) must not each open a Sentry issue.
+    sentry()?.addBreadcrumb({
       level: "warning",
-      extra: clean,
+      message: redactForLogs(message),
+      data: clean,
     });
   },
   error(error: unknown, meta?: Meta): void {
@@ -69,6 +100,22 @@ export const logger = {
     );
     const clean = cleanMeta(meta);
     line("error", message, clean);
-    Sentry.captureMessage(message, { level: "error", extra: clean });
+    if (error instanceof Error) {
+      // Keep the stack and the error class so Sentry can group the failure,
+      // but never the unredacted message.
+      sentry()?.captureException(scrubError(error, message), { extra: clean });
+      return;
+    }
+    sentry()?.captureMessage(message, { level: "error", extra: clean });
   },
 };
+
+/** A copy of the error with the redacted message and the original stack. */
+export function scrubError(error: Error, redactedMessage: string): Error {
+  const scrubbed = new Error(redactedMessage);
+  scrubbed.name = error.name;
+  scrubbed.stack = error.stack
+    ? error.stack.replace(error.message, redactedMessage)
+    : scrubbed.stack;
+  return scrubbed;
+}

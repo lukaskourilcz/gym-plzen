@@ -13,6 +13,9 @@ export const metadata: Metadata = {
     "Odpovědi k rezervaci, platbě, vstupu a poloze NAVI Private Gym.",
   alternates: { canonical: "/faq" },
 };
+// CMS text, contacts and the quoted price are read at request time and cached
+// briefly, so an admin change or a price period switch never waits for a deploy.
+export const revalidate = 300;
 
 export default async function FaqPage() {
   const content = await loadSiteContent();

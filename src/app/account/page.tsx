@@ -155,8 +155,9 @@ export default async function AccountPage({
                     className="mt-6"
                     role="status"
                   >
-                    Původní čas je znovu volný. Nový vstupní kód vám pošleme na
-                    uložené kontakty.
+                    Původní čas je znovu volný. Potvrzení nového termínu s
+                    aktualizovanou pozvánkou do kalendáře jsme vám poslali
+                    e-mailem.
                   </Notice>
                 ) : null}
 

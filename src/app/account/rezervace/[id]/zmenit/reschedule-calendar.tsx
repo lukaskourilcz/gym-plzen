@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarCheck2, ChevronLeft, ChevronRight } from "lucide-react";
-import { monthGrid } from "@/lib/helpers/datetime";
+import { cachedDateTimeFormat, monthGrid } from "@/lib/helpers/datetime";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
@@ -13,19 +13,19 @@ import { rescheduleReservationAction } from "./actions";
 interface RescheduleDayView {
   dateKey: string;
   isClosed: boolean;
-  slots: Array<{
-    startISO: string;
-    endISO: string;
-    label: string;
-    durationMinutes: number;
-    available: boolean;
-  }>;
+  hasAvailability: boolean;
+}
+
+interface RescheduleSlotView {
+  startISO: string;
+  label: string;
+  durationMinutes: number;
 }
 
 const weekdays = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
 
 function displayDate(dateKey: string, options: Intl.DateTimeFormatOptions) {
-  return new Intl.DateTimeFormat("cs-CZ", {
+  return cachedDateTimeFormat("cs-CZ", {
     ...options,
     timeZone: "UTC",
   }).format(new Date(`${dateKey}T12:00:00Z`));
@@ -39,6 +39,7 @@ export function RescheduleCalendar({
   maxDateKey,
   originalLabel,
   days,
+  selectedSlots,
   source,
 }: {
   reservationId: string;
@@ -48,6 +49,8 @@ export function RescheduleCalendar({
   maxDateKey: string;
   originalLabel: string;
   days: RescheduleDayView[];
+  /** Available slots of `selectedDateKey`; empty when no day is selected. */
+  selectedSlots: RescheduleSlotView[];
   source: "live" | "preview" | "unavailable";
 }) {
   const router = useRouter();
@@ -58,8 +61,7 @@ export function RescheduleCalendar({
   const grid = monthGrid(monthKey);
   const byDate = new Map(days.map((day) => [day.dateKey, day]));
   const selectedDay = selectedDateKey ? byDate.get(selectedDateKey) : undefined;
-  const availableSlots =
-    selectedDay?.slots.filter((slot) => slot.available) ?? [];
+  const availableSlots = selectedDateKey ? selectedSlots : [];
   const selectedSlot = availableSlots.find(
     (slot) => slot.startISO === selectedStartISO,
   );
@@ -105,8 +107,11 @@ export function RescheduleCalendar({
       router.refresh();
       return;
     }
+    // The action already revalidated /account, and a dynamic page is fetched
+    // afresh on navigation. A refresh() fired right behind the push() started
+    // a second, competing request for the same route, which the browser saw
+    // end as "Connection closed" when one of them was abandoned.
     router.push("/account?zmena=uspesna");
-    router.refresh();
   };
 
   if (source === "unavailable") {
@@ -198,7 +203,7 @@ export function RescheduleCalendar({
                 cell.inMonth &&
                 cell.dateKey >= todayKey &&
                 cell.dateKey <= maxDateKey;
-              const hasAvailable = day?.slots.some((slot) => slot.available);
+              const hasAvailable = day?.hasAvailability;
               const selected = cell.dateKey === selectedDateKey;
               const dayNumber = Number(cell.dateKey.slice(-2));
               if (!selectable) {

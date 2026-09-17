@@ -52,3 +52,23 @@ test("authentication e-mails have Czech branded fallbacks", () => {
   assert.equal(recovery.actionLabel, "Nastavit nové heslo");
   assert.match(recovery.fallback.subject, /Obnova hesla/);
 });
+
+test("a term change has its own customer e-mail with the old and new time", () => {
+  const rescheduled = getEmailTemplateDefinition("reservation_rescheduled");
+  assert.equal(rescheduled.delivery, "application");
+  assert.deepEqual(rescheduled.variables, [
+    "{name}",
+    "{previous_time}",
+    "{time}",
+    "{duration}",
+  ]);
+  const rendered = renderEmailTemplateText(rescheduled.fallback, {
+    name: "Klára",
+    previous_time: "2. 8. 2026 9:00",
+    time: "3. 8. 2026 18:00",
+    duration: "75 minut",
+  });
+  assert.match(rendered.body, /Původní termín: 2\. 8\. 2026 9:00/);
+  assert.match(rendered.body, /Nový termín: 3\. 8\. 2026 18:00/);
+  assert.doesNotMatch(rendered.body, /\{[a-z_]+\}/);
+});

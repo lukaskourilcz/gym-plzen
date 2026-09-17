@@ -15,6 +15,9 @@ export const metadata: Metadata = {
     "Provozní řád a smluvní podmínky privátního studia NAVI Private Gym v Plzni.",
   alternates: { canonical: "/provozni-rad" },
 };
+// CMS text, contacts and the quoted price are read at request time and cached
+// briefly, so an admin change or a price period switch never waits for a deploy.
+export const revalidate = 300;
 
 /** Structured operating rules; the approved clause copy remains CMS content. */
 export default async function RulesPage() {

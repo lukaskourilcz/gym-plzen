@@ -2,18 +2,37 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-test("calendar loading states mirror their final interfaces", async () => {
-  const [publicLoader, calendarSkeleton, adminLoader] = await Promise.all([
-    readFile("src/app/rezervace/loading.tsx", "utf8"),
+test("self-navigating calendars carry no segment loading boundary", async () => {
+  // Under a `loading.tsx` boundary the React build bundled with Next 15.5 can
+  // park a same-page search-param navigation (see the note in each page), so
+  // both calendars hold the current view instead of swapping in a skeleton.
+  await Promise.all(
+    [
+      "src/app/rezervace/loading.tsx",
+      "src/app/account/rezervace/[id]/zmenit/loading.tsx",
+    ].map((path) => assert.rejects(readFile(path, "utf8"), { code: "ENOENT" })),
+  );
+  const [bookingPage, reschedulePage, skeletons] = await Promise.all([
+    readFile("src/app/rezervace/page.tsx", "utf8"),
+    readFile("src/app/account/rezervace/[id]/zmenit/page.tsx", "utf8"),
     readFile("src/components/site/loading-skeletons.tsx", "utf8"),
+  ]);
+  assert.match(bookingPage, /Deliberately no `loading\.tsx`/);
+  assert.match(reschedulePage, /Deliberately no `loading\.tsx`/);
+  assert.doesNotMatch(skeletons, /CalendarSkeleton/);
+});
+
+test("remaining loading states mirror their final interfaces", async () => {
+  const [detailsLoader, doneLoader, adminLoader] = await Promise.all([
+    readFile("src/app/rezervace/udaje/loading.tsx", "utf8"),
+    readFile("src/app/rezervace/hotovo/loading.tsx", "utf8"),
     readFile("src/app/admin/calendar/loading.tsx", "utf8"),
   ]);
 
-  assert.match(publicLoader, /CalendarSkeleton/);
-  assert.match(publicLoader, /aria-busy="true"/);
-  assert.doesNotMatch(publicLoader, /id="main-content"/);
-  assert.match(calendarSkeleton, /grid-cols-7/);
-  assert.match(calendarSkeleton, /length: 42/);
+  for (const loader of [detailsLoader, doneLoader]) {
+    assert.match(loader, /aria-busy="true"/);
+    assert.doesNotMatch(loader, /id="main-content"/);
+  }
   assert.match(adminLoader, /repeat\(7,minmax/);
 });
 

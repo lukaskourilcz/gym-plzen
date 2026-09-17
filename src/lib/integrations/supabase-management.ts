@@ -12,12 +12,26 @@ const SUPABASE_AUTH_TEMPLATE_FIELDS = {
   signup_confirmation: {
     subject: "mailer_subjects_confirmation",
     content: "mailer_templates_confirmation_content",
+    otpType: "email",
   },
   password_reset: {
     subject: "mailer_subjects_recovery",
     content: "mailer_templates_recovery_content",
+    otpType: "recovery",
   },
 } as const;
+
+/**
+ * The link the hosted template carries. Not `{{ .ConfirmationURL }}`: that one
+ * only completes in the browser that started the sign-up (PKCE), so a link
+ * opened in the Gmail app or on another device ended on the login page with
+ * an error. `/auth/confirm` verifies the token hash on the server instead and
+ * starts the session wherever the link was opened; `{{ .RedirectTo }}` keeps
+ * the destination the sign-up asked for.
+ */
+export function supabaseAuthActionUrl(id: SupabaseAuthTemplateId): string {
+  return `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=${SUPABASE_AUTH_TEMPLATE_FIELDS[id].otpType}&redirect_to={{ .RedirectTo }}`;
+}
 
 type SupabaseAuthTemplateId = keyof typeof SUPABASE_AUTH_TEMPLATE_FIELDS;
 
@@ -63,7 +77,7 @@ export async function syncSupabaseAuthEmailTemplate(params: {
   });
   const fields = SUPABASE_AUTH_TEMPLATE_FIELDS[params.id];
   const body = emailTextToHtml(rendered.body, {
-    actionUrl: "{{ .ConfirmationURL }}",
+    actionUrl: supabaseAuthActionUrl(params.id),
     actionLabel: definition.actionLabel,
   });
 

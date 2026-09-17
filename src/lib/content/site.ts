@@ -1,6 +1,8 @@
 import { db } from "@/lib/db";
 import { contentBlock, pricingPeriod, siteSetting } from "@/lib/db/schema";
-import { and, eq, gt, lte } from "drizzle-orm";
+import { eq } from "drizzle-orm";
+import { initialBookingDateKey } from "@/lib/config/booking-start";
+import { localDateTimeToDate } from "@/lib/helpers/datetime";
 import { logger } from "@/lib/helpers/logger";
 import { formatMoney } from "@/lib/helpers/format";
 import {
@@ -141,9 +143,9 @@ export const SITE_DEFAULTS = {
   "home.pricing.title": "Bez závazků.\nBez předplatného.",
   "home.pricing.titleAccent": "Bez měsíčních plateb.",
   "home.pricing.promoNote":
-    "Akční cena platí pro rezervace vytvořené během akce, i na termíny v dalších měsících.",
+    "Akční cena platí pro návštěvy v akčním období, i při rezervaci předem.",
   "home.pricing.feature1": "Soukromé využití prostoru během rezervace",
-  "home.pricing.feature2": "Platba online kartou",
+  "home.pricing.feature2": "Online platba přes Comgate",
   "home.pricing.feature3": "Pokyny ke vstupu po potvrzení rezervace",
   "home.pricing.cardLabel": "Jednorázový vstup",
   "home.pricing.button": "Rezervovat trénink",
@@ -284,6 +286,7 @@ export interface SiteContent {
   get: (key: SiteContentKey) => string;
   /** What an entry costs right now, promotion included. */
   entryPriceCents: number;
+  entryPriceForDate: (at: Date) => number;
   /** The price outside the promotion, so the site can show both. */
   standardEntryPriceCents: number;
   /** True while a promotional window is running. */
@@ -324,16 +327,16 @@ export function footerProps(content: SiteContent) {
 /** Load public content once, with a resilient fallback outside strict admin reads. */
 export async function loadSiteContent(
   locale = "cs",
-  options: { strict?: boolean; defaultsOnly?: boolean } = {},
+  options: { strict?: boolean; defaultsOnly?: boolean; at?: Date } = {},
 ): Promise<SiteContent> {
   const values: Record<string, string> = { ...SITE_DEFAULTS };
   let standardEntryPriceCents = DEFAULT_ENTRY_PRICE_CENTS;
-  let activePricingPeriod: {
+  let pricingPeriods: {
     name: string;
     priceCents: number;
     startsAt: Date;
     endsAt: Date;
-  } | null = null;
+  }[] = [];
   let logoUrl: string | null = null;
   let termsUrl: string | null = null;
   let heroImageUrl: string | null = DEFAULT_HERO_IMAGE_URL;
@@ -343,7 +346,16 @@ export async function loadSiteContent(
   const zoneImageUrls: string[] = [...DEFAULT_ZONE_IMAGE_URLS];
   // Default on: the photographs in place today are stand-ins.
   let illustrativePhotos = true;
-  const now = new Date();
+  /*
+   * Only a real instant is accepted here: `resolveEntryPrice` tolerates
+   * anything else by quoting the standard price, but the intent of a caller
+   * that did pass something is a specific visit date, so an unusable value
+   * is replaced by the same default as no value at all.
+   */
+  const now =
+    options.at instanceof Date && !Number.isNaN(options.at.getTime())
+      ? options.at
+      : localDateTimeToDate(initialBookingDateKey(new Date()), 12 * 60);
 
   if (!options.defaultsOnly) {
     try {
@@ -362,14 +374,7 @@ export async function loadSiteContent(
             startsAt: pricingPeriod.startsAt,
             endsAt: pricingPeriod.endsAt,
           })
-          .from(pricingPeriod)
-          .where(
-            and(
-              lte(pricingPeriod.startsAt, now),
-              gt(pricingPeriod.endsAt, now),
-            ),
-          )
-          .limit(1),
+          .from(pricingPeriod),
       ]);
       for (const row of rows) {
         if (
@@ -407,7 +412,7 @@ export async function loadSiteContent(
         if (s.key === ILLUSTRATIVE_PHOTOS_KEY && typeof s.value === "boolean")
           illustrativePhotos = s.value;
       }
-      activePricingPeriod = currentPeriods[0] ?? null;
+      pricingPeriods = currentPeriods;
     } catch (e) {
       if (options.strict) throw e;
       // DB not provisioned/reachable yet : fall back to defaults so the public
@@ -419,13 +424,12 @@ export async function loadSiteContent(
   }
 
   /*
-   * The promotion is decided by the moment the page is rendered, which is also
-   * the moment a visitor would book. The homepage is ISR with a 60s window, so
-   * the price flips within a minute of the window opening or closing.
+   * Public copy quotes the selected visit date (opening day before launch).
+   * Calendar slots use the same loaded periods without per-slot DB queries.
    */
   const price = resolveEntryPrice({
     standardPriceCents: standardEntryPriceCents,
-    periods: activePricingPeriod ? [activePricingPeriod] : [],
+    periods: pricingPeriods,
     at: now,
   });
 
@@ -446,6 +450,12 @@ export async function loadSiteContent(
   return {
     get: (key) => rebrand(fillPrices(values[key] ?? SITE_DEFAULTS[key] ?? "")),
     entryPriceCents: price.priceCents,
+    entryPriceForDate: (at) =>
+      resolveEntryPrice({
+        standardPriceCents: standardEntryPriceCents,
+        periods: pricingPeriods,
+        at,
+      }).priceCents,
     standardEntryPriceCents: price.standardPriceCents,
     isPromoPrice: price.isPromo,
     promoEndsAt: price.promoEndsAt ?? null,

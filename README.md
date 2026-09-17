@@ -1,7 +1,7 @@
 # NAVI Private Gym
 
 Web, rezervační systém, členský účet a administrace pro soukromý gym na adrese
-Křížkova 424/23, Plzeň - Roudná. Aplikace používá Next.js, Supabase, Stripe a
+Křížkova 424/23, Plzeň - Roudná. Aplikace používá Next.js, Supabase, Comgate a
 Nuki.
 
 ## Aktuální stav
@@ -49,7 +49,7 @@ nastavení a chybějící klientské podklady jsou v [NEEDED.md](./NEEDED.md).
 | Styl      | Tailwind CSS 4, vlastní semantic tokens, Bitter, Lucide |
 | Databáze  | Supabase Postgres, Drizzle ORM                          |
 | Auth      | Supabase Auth a `@supabase/ssr`                         |
-| Platby    | Stripe Checkout                                         |
+| Platby    | Comgate REST API 2.0 (hostovaná brána)                  |
 | Vstup     | Nuki Web API                                            |
 | Zprávy    | Resend, WhatsApp Business, volitelně GoSMS              |
 | Dohled    | Sentry a Vercel Cron                                    |

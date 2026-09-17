@@ -122,3 +122,10 @@ test("the remaining-entries phrase agrees in Czech at every boundary", () => {
   assert.equal(entriesRemainingPhrase(5), "zbývá 5 vstupů");
   assert.equal(entriesRemainingPhrase(10), "zbývá 10 vstupů");
 });
+
+test("the batched admin status is exposed by the loyalty service", async () => {
+  const loyalty = await import("../../src/lib/services/loyalty");
+  assert.equal(typeof loyalty.getLoyaltyStatusForUsers, "function");
+  // An empty list must not touch the database at all.
+  assert.deepEqual(await loyalty.getLoyaltyStatusForUsers([]), new Map());
+});

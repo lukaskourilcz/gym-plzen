@@ -90,6 +90,30 @@ Pokud prostředí používá vlastní Chromium, nastav `PW_CHROMIUM_PATH`. Jinak
 - Aktuální blokátory a další kroky jsou v kořenovém `SESSION_HANDOFF.md` a
   `NEEDED.md`.
 
+## 5. Rezervační průchod s lokální databází a náhradní bránou
+
+`booking-flow.spec.ts` projde v prohlížeči obě cesty zákazníka: voucher na
+celou cenu (potvrzení bez platby) a placenou rezervaci, ze které se návštěvník
+vrátí z brány a odešle formulář znovu — tedy přesně situaci, která 17. 9. 2026
+hlásila vlastní rezervaci jako obsazený termín. Potřebuje lokální Postgres
+(`DATABASE_URL` v `.env.local` na `127.0.0.1`/`localhost`; proti vzdálené
+databázi se test sám přeskočí) a produkční build s Comgate nasměrovaným na
+náhradní bránu, kterou spec sám spustí na portu 4547. Build musí mít HTTPS
+`NEXT_PUBLIC_APP_URL`, jinak adaptér Comgate odmítne návratovou adresu:
+
+```bash
+NEXT_PUBLIC_APP_URL=https://localhost:3131 npm run build
+COMGATE_API_URL=http://127.0.0.1:4547/v2.0 COMGATE_MERCHANT_ID=test \
+COMGATE_SECRET=test COMGATE_TEST_MODE=true PORT=3131 npm start
+E2E_PORT=3131 npx playwright test tests/e2e/booking-flow.spec.ts
+```
+
+Stejnou databázi a stejné náhrady za Resend a Comgate používají integrační
+testy služeb (`npm run test:integration`, `tests/integration/`), které
+pokrývají celý `startBooking` včetně e-mailu s přílohou, vyrovnání platby,
+opakovaného odeslání s cookie i bez ní, voucheru na pokusu navíc a expirace
+holdu. Obojí maže rezervační tabulky, proto běží jen proti lokální databázi.
+
 ## 4. Varianty vzhledu a věrnostní ukazatel
 
 `design-preview-gate.spec.ts`, `design-variant.spec.ts` a

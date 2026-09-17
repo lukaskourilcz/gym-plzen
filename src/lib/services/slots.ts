@@ -101,6 +101,28 @@ export function buildDaySlots(
   return slots;
 }
 
+/*
+ * Abandoned checkout holds are released by the watchdog every five minutes.
+ * The calendar used to run the same write transaction on every render, which
+ * put a write in front of every public read for a case that is almost always
+ * empty. One release per minute per instance keeps availability fresh
+ * without that cost; a failure here must never hide the calendar.
+ */
+const RELEASE_INTERVAL_MS = 60_000;
+let lastReleaseAt = 0;
+async function releaseExpiredHoldsThrottled(now: Date): Promise<void> {
+  if (now.getTime() - lastReleaseAt < RELEASE_INTERVAL_MS) return;
+  lastReleaseAt = now.getTime();
+  try {
+    await releaseExpiredPendingReservations(now);
+  } catch (error) {
+    lastReleaseAt = 0;
+    logger.warn("releaseExpiredPendingReservations skipped", {
+      error: String(error),
+    });
+  }
+}
+
 /** Load a visible calendar range without ever substituting fictional slots. */
 export async function getSlotsForRange(
   startDateKey: string,
@@ -111,7 +133,7 @@ export async function getSlotsForRange(
   const rangeEnd = localDateTimeToDate(endDateKeyExclusive, 0);
 
   try {
-    await releaseExpiredPendingReservations(now);
+    await releaseExpiredHoldsThrottled(now);
     const operations = await getOperations();
     const [hoursRows, reservations, blocks] = await Promise.all([
       db.select().from(openingHours),

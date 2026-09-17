@@ -1,4 +1,4 @@
-import { and, count, eq, inArray, ne } from "drizzle-orm";
+import { and, count, eq, inArray, isNotNull, ne } from "drizzle-orm";
 import { db, type DatabaseExecutor } from "@/lib/db";
 import { reservation } from "@/lib/db/schema";
 import {
@@ -81,6 +81,50 @@ export async function countEntriesForUsers(
   );
 }
 
+/**
+ * Loyalty status for many members in two grouped queries instead of two per
+ * member: entry counts, plus the reward numbers already claimed, so the
+ * "next entry is free" flag is as exact as the single-member version.
+ */
+export async function getLoyaltyStatusForUsers(
+  userIds: string[],
+): Promise<Map<string, LoyaltyStatus>> {
+  const result = new Map<string, LoyaltyStatus>();
+  if (userIds.length === 0) return result;
+  const [counts, claims] = await Promise.all([
+    countEntriesForUsers(userIds),
+    db
+      .select({ userId: reservation.userId, reward: reservation.loyaltyReward })
+      .from(reservation)
+      .where(
+        and(
+          inArray(reservation.userId, userIds),
+          isNotNull(reservation.loyaltyReward),
+          ne(reservation.status, "cancelled"),
+        ),
+      ),
+  ]);
+  const claimed = new Map<string, Set<number>>();
+  for (const row of claims) {
+    if (!row.userId || row.reward === null) continue;
+    (
+      claimed.get(row.userId) ??
+      claimed.set(row.userId, new Set()).get(row.userId)!
+    ).add(row.reward);
+  }
+  for (const userId of userIds) {
+    const totalEntries = counts.get(userId) ?? 0;
+    const status = deriveLoyaltyStatus(totalEntries);
+    if (
+      status.nextEntryIsFree &&
+      claimed.get(userId)?.has(Math.floor(totalEntries / FREE_ENTRY_EVERY) + 1)
+    )
+      status.nextEntryIsFree = false;
+    result.set(userId, status);
+  }
+  return result;
+}
+
 /** Compute the member's loyalty status from their entry count. */
 export async function getLoyaltyStatus(userId: string): Promise<LoyaltyStatus> {
   const totalEntries = await countEntries(userId);
@@ -132,13 +176,10 @@ export async function getStandardEntryPriceCents(): Promise<number> {
 /**
  * What an entry costs at a given moment, with a scheduled period applied.
  *
- * `at` is the moment the customer is booking, never the slot they book: a
- * reservation created during the promotion keeps the promotional price even
- * for a slot months later.
+ * `at` is the visit start, not the purchase moment. All booking paths must
+ * supply it so a future October visit gets the October price in September.
  */
-export async function getEntryPrice(
-  at: Date = new Date(),
-): Promise<EntryPrice> {
+export async function getEntryPrice(at: Date): Promise<EntryPrice> {
   const [standardPriceCents, period] = await Promise.all([
     getStandardEntryPriceCents(),
     getActivePricingPeriod(at),
@@ -150,10 +191,8 @@ export async function getEntryPrice(
   });
 }
 
-/** The price a customer pays right now. */
-export async function getEntryPriceCents(
-  at: Date = new Date(),
-): Promise<number> {
+/** Price for the requested visit start. */
+export async function getEntryPriceCents(at: Date): Promise<number> {
   return (await getEntryPrice(at)).priceCents;
 }
 
@@ -163,7 +202,7 @@ export async function getEntryPriceCents(
  */
 export async function priceForNextEntry(
   userId: string,
-  at: Date = new Date(),
+  at: Date,
 ): Promise<{ priceCents: number; isFree: boolean }> {
   const [status, price] = await Promise.all([
     getLoyaltyStatus(userId),

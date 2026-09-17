@@ -8,6 +8,8 @@ import { ActionError } from "@/lib/helpers/action";
 import { checkAvailability } from "./availability";
 import { initPipeline } from "./pipeline";
 import { listCodesForReservation, revokeAccessCode } from "./access-codes";
+import { releaseForReservation } from "./vouchers";
+import { formatDateTime, formatMoney } from "@/lib/helpers/format";
 
 /**
  * Reservation service : the write-side business logic for bookings. All
@@ -163,6 +165,90 @@ async function cancelReservationLocked(params: {
       context: { reservationId: params.id },
     });
   }
+}
+
+/**
+ * Cancel reservations the operator is closing (a block placed over a range
+ * that already has bookings). Each one takes the full cancellation path, so
+ * the reservation lock is held and any access code is revoked; voucher claims
+ * are released; and a paid reservation raises a critical alert, because the
+ * money has to be returned by hand in the Comgate portal and nothing else
+ * would tell the operator that.
+ */
+export async function cancelReservationsForClosure(
+  affected: Reservation[],
+  params: { reason: string; byAdminId?: string },
+): Promise<void> {
+  if (affected.length === 0) return;
+  const settled = await db
+    .select({
+      id: payment.id,
+      reservationId: payment.reservationId,
+      amountCents: payment.amountCents,
+      currency: payment.currency,
+    })
+    .from(payment)
+    .where(
+      and(
+        inArray(
+          payment.reservationId,
+          affected.map((row) => row.id),
+        ),
+        eq(payment.status, "succeeded"),
+      ),
+    );
+  const paidBy = new Map(settled.map((row) => [row.reservationId, row]));
+
+  for (const row of affected) {
+    await cancelReservation({
+      id: row.id,
+      reason: params.reason,
+      byAdminId: params.byAdminId,
+    });
+    await releaseForReservation(row.id);
+    const paid = paidBy.get(row.id);
+    if (!paid) continue;
+    await raiseAlert({
+      severity: "critical",
+      dedupeKey: `refund-needed:${row.id}`,
+      title: "Zrušená zaplacená rezervace vyžaduje vrácení platby",
+      body: `Termín ${formatDateTime(row.startsAt)} uzavřel provozovatel. Zákazník zaplatil ${formatMoney(paid.amountCents, paid.currency)}; vraťte platbu v portálu Comgate a dejte mu vědět.`,
+      context: {
+        reservationId: row.id,
+        paymentId: paid.id,
+        amountCents: paid.amountCents,
+      },
+    });
+  }
+}
+
+/**
+ * Give up a checkout hold that its own visitor is replacing with a fresh
+ * attempt (they came back to add a voucher, or the hold never reached the
+ * gateway). Only a row that is still pending is touched: a payment settling
+ * at the same moment confirms the reservation under the same lock, and a
+ * confirmed booking is never cancelled here. Returns whether it was released.
+ */
+export async function releasePendingHold(
+  id: string,
+  reason: string,
+): Promise<boolean> {
+  return withReservationLock(id, async () => {
+    const now = new Date();
+    const [released] = await db
+      .update(reservation)
+      .set({
+        status: "cancelled",
+        cancelledAt: now,
+        cancelReason: reason,
+        updatedAt: now,
+      })
+      .where(and(eq(reservation.id, id), eq(reservation.status, "pending")))
+      .returning({ id: reservation.id });
+    if (!released) return false;
+    await releaseForReservation(id);
+    return true;
+  });
 }
 
 /** Release stale Checkout holds so abandoned payments cannot block the gym. */

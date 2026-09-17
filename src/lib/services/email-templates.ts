@@ -104,8 +104,9 @@ const TEST_VARIABLES: Record<string, string> = {
   name: "Klára",
   code: "482 916",
   time: "pondělí 3. srpna 2026 v 18:00",
+  previous_time: "neděle 2. srpna 2026 v 9:00",
   duration: "75 minut",
-  price: "289 Kč",
+  price: "229 Kč",
   reason: "Úprava provozní doby",
   loyalty: "Tohle byla vaše 7. návštěva, do vstupu zdarma zbývají 3 vstupy.",
 };

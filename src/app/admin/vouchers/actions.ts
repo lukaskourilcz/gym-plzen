@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { assertAdmin } from "@/lib/auth/guards";
 import { defineAction } from "@/lib/helpers/action";
 import type { Result } from "@/lib/helpers/result";
+import { formDateTimeToInstant } from "@/lib/helpers/datetime";
 import { vouchers } from "@/lib/services";
 import {
   createVoucherSchema,
@@ -24,8 +25,13 @@ const createVoucherImpl = defineAction({
           ? input.value
           : Math.round(input.value * 100),
       maxRedemptions: input.maxRedemptions,
-      validFrom: input.validFrom ? new Date(input.validFrom) : null,
-      validUntil: input.validUntil ? new Date(input.validUntil) : null,
+      // The form field is Prague wall-clock time, not the server's zone.
+      validFrom: input.validFrom
+        ? formDateTimeToInstant(input.validFrom)
+        : null,
+      validUntil: input.validUntil
+        ? formDateTimeToInstant(input.validUntil)
+        : null,
       createdByAdminId: admin.id,
     });
     revalidatePath("/admin/vouchers");

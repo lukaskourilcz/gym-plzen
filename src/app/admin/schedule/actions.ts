@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { assertAdmin } from "@/lib/auth/guards";
 import { defineAction } from "@/lib/helpers/action";
 import type { Result } from "@/lib/helpers/result";
+import { formDateTimeToInstant } from "@/lib/helpers/datetime";
 import { hhmmToMinutes } from "@/lib/helpers/format";
 import {
   createBlockedSlotSchema,
@@ -13,7 +14,7 @@ import {
   type CreateBlockedSlotValues,
   type OpeningHoursValues,
 } from "@/lib/validations/schedule";
-import { schedule, notifications, members } from "@/lib/services";
+import { schedule, notifications, members, reservations } from "@/lib/services";
 
 /** Save opening hours for one weekday (converts "HH:mm" → minutes). */
 const saveOpeningHoursImpl = defineAction({
@@ -36,8 +37,8 @@ const createBlockedSlotImpl = defineAction({
   schema: createBlockedSlotSchema,
   authorize: assertAdmin,
   handler: async (input, admin) => {
-    const start = new Date(input.startsAt);
-    const end = new Date(input.endsAt);
+    const start = formDateTimeToInstant(input.startsAt);
+    const end = formDateTimeToInstant(input.endsAt);
     await schedule.createBlockedSlot({
       startsAt: start,
       endsAt: end,
@@ -46,12 +47,13 @@ const createBlockedSlotImpl = defineAction({
       createdByAdminId: admin.id,
     });
 
-    // Closing a slot that already has bookings: cancel them and notify members.
-    const affected = await schedule.cancelOverlappingReservations(
-      start,
-      end,
-      input.note || "Termín byl uzavřen provozovatelem.",
-    );
+    // Closing a slot that already has bookings: cancel them (full cancellation,
+    // voucher release, refund alert for paid ones) and notify each member.
+    const affected = await schedule.findOverlappingReservations(start, end);
+    await reservations.cancelReservationsForClosure(affected, {
+      reason: input.note || "Termín byl uzavřen provozovatelem.",
+      byAdminId: admin.id,
+    });
     for (const r of affected) {
       const channels = r.userId ? await members.getMember(r.userId) : null;
       await notifications.sendReservationClosure({

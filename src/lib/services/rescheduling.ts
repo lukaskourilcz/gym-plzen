@@ -20,6 +20,7 @@ import {
   resolveSlotFromHours,
 } from "./slots";
 import { fulfillReservation } from "./fulfillment";
+import { sendRescheduleConfirmation } from "./notifications";
 
 /** VOP 8.1 and 8.5: the request must arrive at least 24 hours in advance. */
 export const RESCHEDULE_CUTOFF_HOURS = 24;
@@ -119,8 +120,9 @@ async function rescheduleLocked(
   }
 
   let updated: Reservation;
+  let previousStartsAt: Date;
   try {
-    updated = await db.transaction(async (tx) => {
+    ({ moved: updated, previousStartsAt } = await db.transaction(async (tx) => {
       const [current] = await tx
         .select()
         .from(reservation)
@@ -252,8 +254,8 @@ async function rescheduleLocked(
           ),
         );
 
-      return moved;
-    });
+      return { moved, previousStartsAt: current.startsAt };
+    }));
   } catch (error) {
     const code =
       typeof error === "object" && error !== null && "code" in error
@@ -268,6 +270,26 @@ async function rescheduleLocked(
       throw new ActionError("Tuto rezervaci už jste jednou změnili.");
     }
     throw error;
+  }
+
+  // The customer must hold the change in writing whatever the lock phase:
+  // fulfillment sends the booking confirmation only once per reservation, so
+  // on its own it would say nothing about the new time. Never fails the change.
+  try {
+    await sendRescheduleConfirmation({
+      userId: input.userId,
+      reservationId: updated.id,
+      name: updated.contactName,
+      previousStartsAt,
+      startsAt: updated.startsAt,
+      endsAt: updated.endsAt,
+      email: updated.contactEmail,
+    });
+  } catch (error) {
+    logger.error(error, {
+      where: "rescheduleReservation.sendRescheduleConfirmation",
+      reservationId: updated.id,
+    });
   }
 
   // Nuki and notification calls stay outside the database transaction. The

@@ -2,7 +2,7 @@
 name: gym-architecture
 description: >-
   Architecture, conventions, and integration wiring for the gym-plzen booking &
-  CMS system (Next.js + Drizzle + Supabase Auth + Stripe/Nuki/WhatsApp/Resend).
+  CMS system (Next.js + Drizzle + Supabase Auth + Comgate/Nuki/WhatsApp/Resend).
   Use when implementing features, wiring integrations, editing the schema, or
   adding admin modules in this repo.
 ---
@@ -10,7 +10,8 @@ description: >-
 # gym-plzen architecture
 
 A single-occupancy gym booking system: visitors book one-at-a-time training
-slots, pay one-time entry (289 Kč, every 10th free for members: no
+slots, pay one-time entry (229 Kč standard, set in admin → Vstupné a věrnost;
+every 10th free for members: no
 subscriptions), and receive a time-limited Nuki keypad code over
 email/WhatsApp. An account is optional. An admin CMS ("redakční systém")
 manages content, reservations, members, pricing, and monitors reliability.
@@ -29,7 +30,7 @@ app/ (routes, server actions)  ─calls→  lib/services/  ─calls→  lib/db +
 - **Services** (`src/lib/services/*`): all business logic and the ONLY layer
   that touches `db` and integrations. Namespaced barrel: `import { reservations,
 cms, loyalty } from "@/lib/services"`.
-- **Integrations** (`src/lib/integrations/*`): thin adapters over Stripe, Nuki,
+- **Integrations** (`src/lib/integrations/*`): thin adapters over Comgate, Nuki,
   WhatsApp, Resend, GoSMS, Supabase. Lazy init, `is*Configured()`, typed results.
 - **Helpers** (`src/lib/helpers/*`): reusable, cross-cutting: `result`, `action`
   (`ActionError`, `defineAction`), `http` (`httpRequest` with retry/backoff),
@@ -72,10 +73,10 @@ Every form: admin and login: is built on **React Hook Form + Zod**:
 - **Booking availability**: `services/slots.ts` resolves configured weekday
   duration and returns `live`, non-production `preview`, or `unavailable`.
   Production never falls back to fictional slots.
-- **Guest booking**: `/rezervace` → `/rezervace/udaje?start=<ISO>` → Stripe.
+- **Guest booking**: `/rezervace` → `/rezervace/udaje?start=<ISO>` → Comgate.
   `booking.startBooking` takes a nullable `userId`; a guest reservation has
   `userId = null` and is identified by its contact snapshot. Ownership checks
-  (Stripe webhook, `getBookingConfirmation`) compare both sides as nullable, so
+  (Comgate webhook, `getBookingConfirmation`) compare both sides as nullable, so
   `null === null` is a valid match and a member's booking still cannot be
   claimed by anyone else. Loyalty needs an account and stays members-only.
 - **Consents**: both checkboxes (house rules, terms) are part of the

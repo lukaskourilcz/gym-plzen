@@ -24,6 +24,22 @@ import {
 } from "@/lib/validations/settings";
 
 /**
+ * Every public surface that quotes the entry price or the running promotion.
+ * The CMS pages are ISR, so without this an admin price change would wait for
+ * their next scheduled regeneration.
+ */
+const PRICED_PUBLIC_PATHS = [
+  "/",
+  "/rezervace",
+  "/faq",
+  "/doprava-a-platba",
+] as const;
+
+function revalidatePricedPages() {
+  for (const path of PRICED_PUBLIC_PATHS) revalidatePath(path);
+}
+
+/**
  * Pricing admin action. The gym sells a single one-time entry (no
  * subscriptions), so the only editable commercial setting is the entry price,
  * stored under `pricing.entry_price_cents` (converted from Kč to haléř here).
@@ -38,8 +54,7 @@ const setEntryPriceImpl = defineAction({
       admin.id,
     );
     revalidatePath("/admin/memberships");
-    revalidatePath("/");
-    revalidatePath("/rezervace");
+    revalidatePricedPages();
   },
 });
 
@@ -89,8 +104,7 @@ const savePricingPeriodImpl = defineAction({
       adminId: admin.id,
     });
     revalidatePath("/admin/memberships");
-    revalidatePath("/");
-    revalidatePath("/rezervace");
+    revalidatePricedPages();
   },
 });
 
@@ -106,8 +120,7 @@ const deletePricingPeriodImpl = defineAction({
   handler: async ({ id }) => {
     await pricingPeriods.deletePricingPeriod(id);
     revalidatePath("/admin/memberships");
-    revalidatePath("/");
-    revalidatePath("/rezervace");
+    revalidatePricedPages();
   },
 });
 
