@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { loyalty, members } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
 import { withDemoFallback } from "@/lib/demo/dummy";
@@ -10,8 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { MemberForm } from "./member-form";
-import { MemberRoleForm } from "./member-role-form";
 import { Badge } from "@/components/ui/badge";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
 
@@ -39,7 +38,10 @@ export default async function MembersPage() {
 
   return (
     <div>
-      <PageHeader title="Členové" />
+      <PageHeader
+        title="Členové"
+        description="Každý registrovaný účet. Jméno otevře profil člena s kontaktem, věrností, historií rezervací a záznamem akcí."
+      />
       <Table>
         <TableHeader>
           <TableRow>
@@ -58,7 +60,14 @@ export default async function MembersPage() {
               statuses.get(user.id) ?? loyalty.deriveLoyaltyStatus(0);
             return (
               <TableRow key={user.id}>
-                <TableCell>{user.name}</TableCell>
+                <TableCell>
+                  <Link
+                    href={`/admin/members/${user.id}`}
+                    className="font-bold text-accent-foreground hover:underline"
+                  >
+                    {user.name || user.email}
+                  </Link>
+                </TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{profile?.phone ?? "Neuvedeno"}</TableCell>
                 <TableCell>{formatDateTime(user.createdAt)}</TableCell>
@@ -85,30 +94,6 @@ export default async function MembersPage() {
           )}
         </TableBody>
       </Table>
-
-      {!demo && (
-        <section className="mt-8 max-w-xl">
-          <h2 className="mb-3 text-lg font-semibold">Úprava člena</h2>
-          {rows.map((member) => (
-            <details
-              key={member.user.id}
-              className="mb-3 rounded-lg border border-border p-3"
-            >
-              <summary className="cursor-pointer">
-                {member.user.name} ({member.user.email})
-              </summary>
-              <div className="mt-3">
-                <MemberForm member={member} />
-                <MemberRoleForm
-                  userId={member.user.id}
-                  isAdmin={member.user.role === "admin"}
-                  name={member.user.name || member.user.email}
-                />
-              </div>
-            </details>
-          ))}
-        </section>
-      )}
     </div>
   );
 }

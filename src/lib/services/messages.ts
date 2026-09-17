@@ -20,6 +20,19 @@ export async function listForReservation(
     .orderBy(desc(messageDelivery.createdAt));
 }
 
+/** Every delivery attempt addressed to one member, newest first. */
+export async function listForUser(
+  userId: string,
+  limit = 100,
+): Promise<MessageDelivery[]> {
+  return db
+    .select()
+    .from(messageDelivery)
+    .where(eq(messageDelivery.userId, userId))
+    .orderBy(desc(messageDelivery.createdAt))
+    .limit(limit);
+}
+
 /** Recent deliveries across all reservations (admin overview). */
 export async function listRecent(limit = 200): Promise<MessageDelivery[]> {
   return db

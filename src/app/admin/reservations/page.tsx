@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { reservations } from "@/lib/services";
 import {
   formatDateTime,
@@ -61,7 +62,23 @@ export default async function ReservationsPage() {
               <TableCell>{formatDateTime(r.startsAt)}</TableCell>
               <TableCell>{formatDateTime(r.endsAt)}</TableCell>
               <TableCell>
-                {r.contactName ?? r.contactEmail ?? "Neuvedeno"}
+                {r.userId && !demo ? (
+                  <Link
+                    href={`/admin/members/${r.userId}`}
+                    className="font-bold text-accent-foreground hover:underline"
+                  >
+                    {r.contactName ?? r.contactEmail ?? "Člen"}
+                  </Link>
+                ) : (
+                  <>
+                    {r.contactName ?? r.contactEmail ?? "Neuvedeno"}
+                    {!r.userId && (
+                      <span className="block text-xs text-muted-foreground">
+                        Bez účtu
+                      </span>
+                    )}
+                  </>
+                )}
               </TableCell>
               <TableCell>
                 {r.priceCents != null
