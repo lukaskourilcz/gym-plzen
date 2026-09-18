@@ -138,7 +138,7 @@ export default function DesignSystemPage() {
                 hasNext
                 hrefForPage={(page) => `/admin/design-system?page=${page}`}
                 label="Ukázkové stránkování"
-                className="flex flex-wrap items-center gap-4"
+                className="mt-0"
               />
               <p className="mt-3 text-sm text-muted-foreground">
                 Dlouhé seznamy (historie objednávek, historie akcí) se čtou po

@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /**
  * Previous / next pagination for a list read one page at a time.
@@ -26,7 +27,7 @@ export function Pagination({
   return (
     <nav
       aria-label={label}
-      className={className ?? "mt-6 flex flex-wrap items-center gap-4"}
+      className={cn("mt-6 flex flex-wrap items-center gap-4", className)}
     >
       {page > 1 ? (
         <Button href={hrefForPage(page - 1)} variant="outline">
