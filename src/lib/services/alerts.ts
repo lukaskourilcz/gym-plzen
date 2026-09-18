@@ -5,6 +5,7 @@ import type { SystemAlert } from "@/lib/db/types";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/helpers/logger";
 import { sendTextMessage } from "@/lib/integrations/whatsapp";
+import { notifyAlert } from "./operator-notifications";
 
 /**
  * Operational alerting. Any failure in the reliability pipeline (or an uptime
@@ -71,7 +72,11 @@ export async function raiseAlert(
       })
       .returning();
 
-    if (alert) await dispatchToWhatsApp(alert);
+    if (alert) {
+      await dispatchToWhatsApp(alert);
+      // The WhatsApp group is one way in; e-mail is the one that works today.
+      await notifyAlert(alert);
+    }
     return alert ?? null;
   } catch (e) {
     // Last-resort: at least get it into Sentry/console.

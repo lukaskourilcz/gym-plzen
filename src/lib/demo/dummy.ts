@@ -255,6 +255,7 @@ export function buildDemoMessages(
           channel === "email" ? (r.contactEmail ?? "") : (r.contactPhone ?? ""),
         providerMessageId: `demo-${i}-${c}`,
         providerResponse: null,
+        dedupeKey: null,
         failureReason: failed ? "Nedoručeno (ukázka)" : null,
         sentAt: r.createdAt,
         deliveredAt: failed ? null : r.createdAt,

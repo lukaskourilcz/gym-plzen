@@ -21,6 +21,7 @@ import {
 } from "./slots";
 import { fulfillReservation } from "./fulfillment";
 import { sendRescheduleConfirmation } from "./notifications";
+import { notifyReservationRescheduled } from "./operator-notifications";
 import { recordIn as recordActivityIn } from "./activity";
 import { formatDateTime } from "@/lib/helpers/format";
 
@@ -303,6 +304,11 @@ async function rescheduleLocked(
       reservationId: updated.id,
     });
   }
+
+  await notifyReservationRescheduled({
+    reservation: updated,
+    previousStartsAt,
+  });
 
   // Nuki and notification calls stay outside the database transaction. The
   // durable pipeline was reset in the transaction, so the watchdog can retry

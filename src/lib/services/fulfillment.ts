@@ -12,6 +12,7 @@ import {
   loadMemberChannels,
   sendReservationConfirmation,
 } from "./notifications";
+import { notifyReservationConfirmed } from "./operator-notifications";
 import { getPipeline, markStepFailed, markStepSucceeded } from "./pipeline";
 import { issueAndSend } from "./invoices";
 
@@ -60,6 +61,10 @@ async function fulfillLocked(reservationId: string): Promise<void> {
       reservationId,
     });
   }
+
+  // And the operator hears about the booking, if they asked to. The notice
+  // claims the reservation once, so the watchdog's retries stay quiet.
+  await notifyReservationConfirmed(reservation);
 
   // The payment document is an accounting convenience and is issued at most
   // once per reservation. Like the confirmation it must never hold back the

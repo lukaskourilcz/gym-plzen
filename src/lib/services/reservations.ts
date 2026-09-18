@@ -10,6 +10,7 @@ import { checkAvailability } from "./availability";
 import { initPipeline } from "./pipeline";
 import { listCodesForReservation, revokeAccessCode } from "./access-codes";
 import { releaseForReservation } from "./vouchers";
+import { notifyReservationCancelled } from "./operator-notifications";
 import { formatDateTime, formatMoney } from "@/lib/helpers/format";
 
 /**
@@ -144,6 +145,10 @@ async function cancelReservationLocked(params: {
   reason?: string;
   byAdminId?: string;
 }): Promise<void> {
+  // Read it before it changes: only a confirmed reservation disappearing is
+  // news for the operator. A pending hold that expired or a rejected voucher
+  // is the system tidying up after itself.
+  const before = await getReservation(params.id);
   await db
     .update(reservation)
     .set({
@@ -166,6 +171,11 @@ async function cancelReservationLocked(params: {
       context: { reservationId: params.id },
     });
   }
+  if (before?.status === "confirmed")
+    await notifyReservationCancelled({
+      reservation: before,
+      reason: params.reason,
+    });
 }
 
 /**

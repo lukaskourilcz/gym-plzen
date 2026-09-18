@@ -1,6 +1,10 @@
 import { getOperations } from "@/lib/services/operations";
+import { getOperatorNotifications } from "@/lib/services/operator-notifications";
 import { DEFAULT_OPERATIONS } from "@/lib/config/operations";
+import { DEFAULT_OPERATOR_NOTIFICATIONS } from "@/lib/config/operator-notifications";
+import { SITE_DEFAULTS } from "@/lib/content/site";
 import { OperationsForm } from "./operations-form";
+import { OperatorNotificationsForm } from "./notifications-form";
 import { cms, invoices } from "@/lib/services";
 import { loadSiteContent } from "@/lib/content/site";
 import {
@@ -50,6 +54,12 @@ export const dynamic = "force-dynamic";
 export default async function SettingsPage() {
   const demo = await hasDemoAdminSession();
   const operations = demo ? DEFAULT_OPERATIONS : await getOperations();
+  const operatorNotifications = demo
+    ? {
+        ...DEFAULT_OPERATOR_NOTIFICATIONS,
+        recipients: SITE_DEFAULTS["contact.email"],
+      }
+    : await getOperatorNotifications();
   const [
     logoUrl,
     termsUrl,
@@ -110,6 +120,20 @@ export default async function SettingsPage() {
           </CardHeader>
           <CardContent>
             <OperationsForm values={operations} />
+          </CardContent>
+        </Card>
+        <Card className="max-w-2xl">
+          <CardHeader>
+            <CardTitle>Provozní upozornění</CardTitle>
+            <CardDescription>
+              Informační e-maily pro provozovatele: co se v systému stalo.
+              Zákazníkům tyto zprávy nechodí. Náhled a testovací odeslání
+              najdete v sekci E-maily pod šablonou „Upozornění pro
+              provozovatele“.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <OperatorNotificationsForm values={operatorNotifications} />
           </CardContent>
         </Card>
         <Card className="max-w-2xl">

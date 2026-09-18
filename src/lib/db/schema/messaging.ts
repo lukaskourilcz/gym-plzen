@@ -4,6 +4,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { profiles } from "./members";
@@ -39,6 +40,11 @@ export const messageDelivery = pgTable(
     providerResponse: jsonb("provider_response"),
     failureReason: text("failure_reason"),
 
+    // What this message was about, for messages that must be sent at most
+    // once: "reservationConfirmed:<reservation>:<address>". A failed attempt
+    // releases its key (sets it back to null) so a retry may claim it again.
+    dedupeKey: text("dedupe_key"),
+
     sentAt: timestamp("sent_at"),
     deliveredAt: timestamp("delivered_at"),
     readAt: timestamp("read_at"),
@@ -50,6 +56,9 @@ export const messageDelivery = pgTable(
     index("message_delivery_reservation_idx").on(t.reservationId),
     index("message_delivery_provider_idx").on(t.providerMessageId),
     index("message_delivery_status_idx").on(t.status),
+    // Null keys stay distinct in Postgres, so only the messages that carry a
+    // key are constrained: the claim is taken by whoever inserts first.
+    uniqueIndex("message_delivery_dedupe_uidx").on(t.dedupeKey),
   ],
 );
 

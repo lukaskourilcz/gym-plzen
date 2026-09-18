@@ -1,3 +1,52 @@
+# Provozní upozornění 18. 9. 2026 — e-maily pro provozovatele
+
+Co se v systému stane, se teď dá poslat e-mailem lidem, kteří posilovnu
+provozují. Zákazníkům tyto zprávy nechodí.
+
+- **Nastavení** (administrace → Nastavení a branding → **Provozní upozornění**):
+  adresy (více oddělených čárkou, nejvýše 5) a zaškrtávátko u každé události.
+  Konfigurace je v `site_setting` pod klíčem `notifications.operator`
+  (`src/lib/config/operator-notifications.ts`). Dokud nikdo nic neuložil, platí
+  výchozí stav: adresa = kontaktní e-mail webu (`contact.email`, dnes
+  `info@navigym.cz`) a zapnuté události Nová rezervace, Změna termínu a Provozní
+  problém. Prázdné pole adres odesílání vypne.
+- **Události** (`OPERATOR_EVENT_DEFINITIONS`): `reservationConfirmed` (potvrzená
+  rezervace, i na voucher a věrnostní vstup), `reservationRescheduled` (zákazník
+  si přesunul termín), `reservationCancelled` (zrušená **potvrzená** rezervace;
+  vypršelý hold ani zamítnutý voucher se nehlásí), `memberRegistered` (dokončená
+  registrace) a `systemAlert` (vše ze sekce Upozornění — dnes jediná cesta, jak
+  se ke správci dostane kritická chyba, protože WhatsApp skupina ještě není
+  zapojená).
+- **Kde se to spouští**: `fulfillment.fulfillReservation` (hned po potvrzovacím
+  e-mailu zákazníkovi), `rescheduling.rescheduleReservation`,
+  `reservations.cancelReservation` (jen u potvrzené rezervace),
+  `alerts.raiseAlert` a `members.recordRegistration`, kterou volají routy
+  `/auth/confirm` (potvrzení e-mailu) a `/auth/callback` (první přihlášení přes
+  Google, poznané podle stáří účtu). Žádné z volání nemůže shodit akci, kterou
+  popisuje: `notify` chyby loguje a polyká.
+- **Jednou a dost**: každé upozornění nese `scope` (id rezervace, id člena, id
+  alertu) a zabírá si ho v `message_delivery.dedupe_key` ještě před odesláním
+  (`kind = 'operator_notice'`; migrace `20260918090000_operator_notifications.sql`
+  přidává hodnotu enumu, sloupec a unikátní index). Watchdog může fulfillment
+  opakovat, druhý e-mail už nepošle. Neúspěšné odeslání klíč uvolní, takže
+  příští pokus to zkusí znovu, a v administraci → Odeslané zprávy je vidět jako
+  „Upozornění pro provozovatele“ ve stavu selhalo.
+- **Text e-mailu** je šablona `operator_notice` v administraci → E-maily, takže
+  jde upravit i s náhledem a testovacím odesláním. Proměnné `{event}`,
+  `{summary}`, `{detail}`; tlačítko vede do administrace (`sendTransactionalEmail`
+  nově přijímá `actionUrl` a adresu zopakuje i v textové části, aby odkaz
+  nezmizel v klientovi bez HTML). Volný text (důvod storna, tělo alertu) patří
+  do `{summary}`, protože detailní řádky jsou tabulka.
+- **Historie akcí** zná nově `member.registered` (dokončená registrace) a
+  `settings.operator_notifications_saved`.
+- **Ověřeno**: unit i integrační testy (nový soubor
+  `tests/integration/operator-notifications.test.ts`: doručení na dvě adresy,
+  vypnutá událost, prázdné adresy, změna a storno, vypršelý hold, alert, uložení
+  z administrace), lint, typecheck, `npm audit --omit=dev` bez nálezů, produkční
+  build. V prohlížeči: 44px řádky, `aria-describedby` u každé volby, viditelný
+  focus, žádný overflow 320–1728 px. Integrační `resetDatabase` upozornění vypíná,
+  aby ostatní sady viděly jen e-maily zákazníka.
+
 # Pět úprav 18. 9. 2026 — září, kalendář, telefon, e-maily, stránkování
 
 Zadání provozovatele, pět bodů, každý ve vlastním commitu na

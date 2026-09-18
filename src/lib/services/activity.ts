@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db, type DatabaseExecutor } from "@/lib/db";
 import { activityLog } from "@/lib/db/schema";
 import type { ActivityLog } from "@/lib/db/types";
@@ -25,9 +25,11 @@ export const ACTIVITY_ACTIONS = {
   "voucher.created": "Voucher vytvořen",
   "voucher.activated": "Voucher aktivován",
   "voucher.deactivated": "Voucher deaktivován",
+  "member.registered": "Nová registrace",
   "member.profile_updated": "Profil člena upraven",
   "member.role_changed": "Role člena změněna",
   "settings.operations_saved": "Provozní nastavení uloženo",
+  "settings.operator_notifications_saved": "Provozní upozornění uložena",
   "settings.price_saved": "Cena vstupu uložena",
   "settings.pricing_period_saved": "Cenové období uloženo",
   "settings.pricing_period_deleted": "Cenové období smazáno",
@@ -99,6 +101,25 @@ export async function listPage(page: number): Promise<ActivityLog[]> {
     .orderBy(desc(activityLog.occurredAt), desc(activityLog.id))
     .limit(pageLimit(ACTIVITY_PAGE_SIZE))
     .offset(pageOffset(page, ACTIVITY_PAGE_SIZE));
+}
+
+/**
+ * Whether this member already has an entry of this action. Used by events
+ * that may be reported more than once (a registration is completed in a
+ * route the visitor can open twice) and should be recorded only the first.
+ */
+export async function hasMemberAction(
+  memberId: string,
+  action: ActivityAction,
+): Promise<boolean> {
+  const [existing] = await db
+    .select({ id: activityLog.id })
+    .from(activityLog)
+    .where(
+      and(eq(activityLog.memberId, memberId), eq(activityLog.action, action)),
+    )
+    .limit(1);
+  return Boolean(existing);
 }
 
 /** Everything that concerns one member, newest first. */

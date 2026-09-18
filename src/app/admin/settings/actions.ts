@@ -1,7 +1,14 @@
 "use server";
 
 import { operationsSchema, type Operations } from "@/lib/config/operations";
+import {
+  OPERATOR_EVENT_DEFINITIONS,
+  operatorNotificationsSchema,
+  parseRecipients,
+  type OperatorNotifications,
+} from "@/lib/config/operator-notifications";
 import { saveOperations } from "@/lib/services/operations";
+import { saveOperatorNotifications } from "@/lib/services/operator-notifications";
 import { activity } from "@/lib/services";
 import { revalidatePath } from "next/cache";
 import { assertAdmin } from "@/lib/auth/guards";
@@ -236,4 +243,33 @@ const saveOperationsImpl = defineAction({
 });
 export async function saveOperationsAction(input: Operations) {
   return saveOperationsImpl(input);
+}
+
+/** Which events reach the operator by e-mail, and at which addresses. */
+const saveOperatorNotificationsImpl = defineAction({
+  schema: operatorNotificationsSchema,
+  authorize: assertAdmin,
+  handler: async (input, admin) => {
+    await saveOperatorNotifications(input, admin.id);
+    const enabled = OPERATOR_EVENT_DEFINITIONS.filter(
+      (event) => input.events[event.id],
+    ).map((event) => event.label);
+    const recipients = parseRecipients(input.recipients);
+    await activity.record({
+      action: "settings.operator_notifications_saved",
+      actorType: "admin",
+      actorId: admin.id,
+      actorLabel: admin.email,
+      summary: `Provozní upozornění: ${
+        enabled.length ? enabled.join(", ") : "žádná událost"
+      }; adresy: ${recipients.length ? recipients.join(", ") : "žádné"}.`,
+    });
+    revalidatePath("/admin/settings");
+  },
+});
+
+export async function saveOperatorNotificationsAction(
+  input: OperatorNotifications,
+): Promise<Result<unknown>> {
+  return saveOperatorNotificationsImpl(input);
 }

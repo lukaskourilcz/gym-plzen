@@ -14,6 +14,7 @@ export const EMAIL_TEMPLATE_IDS = [
   "access_code",
   "reservation_cancellation",
   "payment_document",
+  "operator_notice",
 ] as const;
 
 export type EmailTemplateId = (typeof EMAIL_TEMPLATE_IDS)[number];
@@ -118,6 +119,19 @@ export const EMAIL_TEMPLATE_DEFINITIONS: readonly EmailTemplateDefinition[] = [
     fallback: {
       subject: "Zrušení rezervace | NAVI Private Gym",
       body: "Ahoj {name},\n\nvaše rezervace na {time} byla bohužel zrušena.\n\nDůvod: {reason}\n\nOmlouváme se za komplikace. Vyberte si prosím jiný volný termín.\n\nNAVI Private Gym",
+    },
+  },
+  {
+    id: "operator_notice",
+    label: "Upozornění pro provozovatele",
+    description:
+      "Interní e-mail pro provozovatele, ne pro zákazníka. Které události chodí a na jaké adresy, se nastavuje v Nastavení a branding → Provozní upozornění.",
+    variables: ["{event}", "{summary}", "{detail}"],
+    delivery: "application",
+    actionLabel: "Otevřít administraci",
+    fallback: {
+      subject: "{event} | NAVI Private Gym",
+      body: "{summary}\n\n{detail}\n\nToto je interní upozornění z rezervačního systému. Které události chodí a komu, nastavíte v administraci v sekci Nastavení a branding, Provozní upozornění.",
     },
   },
 ];

@@ -4,6 +4,9 @@ import { profiles } from "@/lib/db/schema";
 import type { Profile } from "@/lib/db/types";
 import { toE164 } from "@/lib/helpers/phone";
 import { ActionError } from "@/lib/helpers/action";
+import { logger } from "@/lib/helpers/logger";
+import { hasMemberAction, record as recordActivity } from "./activity";
+import { notifyNewMember } from "./operator-notifications";
 
 /**
  * Member service over the Supabase-Auth `profiles` table. Supabase owns
@@ -68,6 +71,34 @@ export async function ensureProfileForUser(user: {
     })
     .returning();
   return row!;
+}
+
+/**
+ * A visitor finished registering: they confirmed their e-mail or came back
+ * from Google for the first time. Writes the history entry and informs the
+ * operator, once per member however many times the route is opened, and never
+ * at the cost of the sign-in that called it.
+ */
+export async function recordRegistration(params: {
+  userId: string;
+  email?: string | null;
+  name?: string | null;
+}): Promise<void> {
+  try {
+    if (await hasMemberAction(params.userId, "member.registered")) return;
+    const label = params.name?.trim() || params.email?.trim() || "";
+    await recordActivity({
+      action: "member.registered",
+      actorType: "customer",
+      actorId: params.userId,
+      actorLabel: label || null,
+      memberId: params.userId,
+      summary: `${label || "Nový zákazník"} dokončil registraci.`,
+    });
+    await notifyNewMember(params);
+  } catch (error) {
+    logger.error(error, { where: "members.recordRegistration" });
+  }
 }
 
 /** Update mutable profile fields. Phone is normalised to E.164. */

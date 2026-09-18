@@ -17,6 +17,7 @@ export * as slots from "./slots";
 export * as stats from "./stats";
 export * as accessCodes from "./access-codes";
 export * as notifications from "./notifications";
+export * as operatorNotifications from "./operator-notifications";
 export * as fulfillment from "./fulfillment";
 export * as pipeline from "./pipeline";
 export * as alerts from "./alerts";

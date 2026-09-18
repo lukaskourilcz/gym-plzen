@@ -71,6 +71,8 @@ export const messageKind = pgEnum("message_kind", [
   "reservation_cancellation",
   "marketing",
   "system_alert",
+  // Informational e-mail to the operator: a booking arrived, a time moved.
+  "operator_notice",
 ]);
 
 /** Lifecycle of a Nuki access code. */

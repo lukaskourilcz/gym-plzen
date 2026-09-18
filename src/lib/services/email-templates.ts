@@ -80,28 +80,35 @@ export async function sendTransactionalEmail(params: {
   to: string;
   variables: Record<string, string>;
   attachments?: EmailAttachment[];
+  /** Where the template's button leads, when the caller knows better. */
+  actionUrl?: string;
 }): Promise<SendEmailResult> {
   const template = await getEmailTemplate(params.id);
   const rendered = renderEmailTemplateText(template, params.variables);
   const definition = getEmailTemplateDefinition(params.id);
-  const actionUrl =
-    params.id === "signup_confirmation"
-      ? siteUrl("/login")
-      : siteUrl("/reset-password");
+  // A template carries a button when its definition names one. The address
+  // is the caller's when it passed one, otherwise the page the template has
+  // always led to.
+  const action = definition.actionLabel
+    ? {
+        actionLabel: definition.actionLabel,
+        actionUrl:
+          params.actionUrl ??
+          (params.id === "signup_confirmation"
+            ? siteUrl("/login")
+            : siteUrl("/reset-password")),
+      }
+    : undefined;
   return sendEmail({
     to: params.to,
     subject: rendered.subject,
-    text: rendered.body,
+    // The button exists only in the HTML part, so the plain-text alternative
+    // repeats the address; otherwise a text-only client loses the link.
+    text: action
+      ? `${rendered.body}\n\n${action.actionLabel}: ${action.actionUrl}`
+      : rendered.body,
     attachments: params.attachments,
-    html: emailTextToHtml(
-      rendered.body,
-      definition.delivery === "supabase_auth"
-        ? {
-            actionUrl,
-            actionLabel: definition.actionLabel,
-          }
-        : undefined,
-    ),
+    html: emailTextToHtml(rendered.body, action),
   });
 }
 
@@ -114,6 +121,14 @@ const TEST_VARIABLES: Record<string, string> = {
   price: "229 Kč",
   reason: "Úprava provozní doby",
   loyalty: "Tohle byla vaše 7. návštěva, do vstupu zdarma zbývají 3 vstupy.",
+  number: "2026-0042",
+  amount: "229 Kč",
+  date: "3. srpna 2026",
+  event: "Nová rezervace",
+  summary:
+    "Klára Nováková si zarezervovala termín na pondělí 3. srpna 2026 v 18:00.",
+  detail:
+    "Termín: pondělí 3. srpna 2026 v 18:00\nDélka: 75 minut\nZákazník: Klára Nováková\nE-mail: klara@example.com\nTelefon: +420 777 123 456\nCena: 229 Kč",
 };
 
 /** Send the selected template with explicit, clearly fictional test values. */

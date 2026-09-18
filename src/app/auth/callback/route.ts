@@ -8,6 +8,7 @@ import {
 } from "@/lib/auth/oauth";
 import { safeInternalPath } from "@/lib/security/redirects";
 import { siteOrigin } from "@/lib/helpers/site-url";
+import { members } from "@/lib/services";
 
 /**
  * OAuth / email-confirmation callback. Supabase redirects here with a `code`;
@@ -86,5 +87,27 @@ export async function GET(request: NextRequest) {
     return loginRedirect(request, hasVerifier ? "vyprselo" : "jiny_prohlizec");
   }
 
+  // A Google sign-in creates the account on its first pass through here, and
+  // looks exactly like every later one. The account's age is what tells them
+  // apart; the record itself is written once per member either way.
+  if (data.user && isFreshAccount(data.user.created_at))
+    await members.recordRegistration({
+      userId: data.user.id,
+      email: data.user.email,
+      name:
+        typeof data.user.user_metadata?.full_name === "string"
+          ? data.user.user_metadata.full_name
+          : null,
+    });
+
   return NextResponse.redirect(new URL(next, origin));
+}
+
+/** Created in the last few minutes, i.e. by the sign-in that just happened. */
+const FRESH_ACCOUNT_MS = 10 * 60 * 1000;
+
+function isFreshAccount(createdAt: string | undefined): boolean {
+  if (!createdAt) return false;
+  const created = new Date(createdAt).getTime();
+  return Number.isFinite(created) && Date.now() - created < FRESH_ACCOUNT_MS;
 }

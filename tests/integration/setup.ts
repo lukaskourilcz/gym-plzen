@@ -56,6 +56,9 @@ for (const key of [
 ])
   delete process.env[key];
 
+const { DEFAULT_OPERATOR_NOTIFICATIONS, OPERATOR_NOTIFICATIONS_SETTING_KEY } =
+  await import("../../src/lib/config/operator-notifications");
+
 export const resend = createResendMock(RESEND_PORT);
 export const comgate = createComgateMock(COMGATE_PORT);
 
@@ -108,6 +111,13 @@ export async function resetDatabase(): Promise<void> {
   });
   await setSetting("pricing.entry_price_cents", 22_900);
   await setSetting("billing.send_documents", false);
+  // The operator's own notifications are on by default in production and have
+  // their own suite; here they would add a second recipient to every booking
+  // and blur what the customer actually received.
+  await setSetting(OPERATOR_NOTIFICATIONS_SETTING_KEY, {
+    recipients: "",
+    events: DEFAULT_OPERATOR_NOTIFICATIONS.events,
+  });
   resend.sent.length = 0;
   comgate.creates.length = 0;
   comgate.payments.clear();

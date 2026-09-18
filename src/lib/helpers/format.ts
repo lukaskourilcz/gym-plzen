@@ -133,6 +133,7 @@ const MESSAGE_KIND_LABELS: Record<string, string> = {
   reservation_cancellation: "Zrušení rezervace",
   marketing: "Novinky",
   system_alert: "Systémové upozornění",
+  operator_notice: "Upozornění pro provozovatele",
 };
 
 /** What a message was about, for the administration. */

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/helpers/logger";
+import { members } from "@/lib/services";
 import { safeInternalPath } from "@/lib/security/redirects";
 
 /**
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
   if (!supabase) return loginRedirect(request, "selhalo", next);
 
-  const { error } = await supabase.auth.verifyOtp({
+  const { data, error } = await supabase.auth.verifyOtp({
     type,
     token_hash: tokenHash,
   });
@@ -75,5 +76,20 @@ export async function GET(request: NextRequest) {
     });
     return loginRedirect(request, "vyprselo", next);
   }
+
+  // Confirming the address is what finishes a registration, so this is where
+  // a new member becomes one. Recovery and an address change are not new
+  // members, and the record is written once per member however often the link
+  // is opened.
+  if (data.user && (type === "signup" || type === "email" || type === "invite"))
+    await members.recordRegistration({
+      userId: data.user.id,
+      email: data.user.email,
+      name:
+        typeof data.user.user_metadata?.full_name === "string"
+          ? data.user.user_metadata.full_name
+          : null,
+    });
+
   return NextResponse.redirect(new URL(next, origin));
 }
