@@ -186,13 +186,13 @@ export function BookingDetailsForm({
          * whatever it saved.
          */}
         {canSavePhone ? (
-          <div className="flex min-h-11 items-start gap-3 text-sm">
+          <div className="flex min-h-11 items-center gap-3 text-sm">
             <input
               id="savePhone"
               type="checkbox"
               // `accent-color` is the only thing a native checkbox honours
               // here; border and radius utilities would be inert.
-              className="mt-0.5 size-5 shrink-0 accent-[var(--color-primary)]"
+              className="size-5 shrink-0 accent-[var(--color-primary)]"
               {...register("savePhone")}
             />
             <label htmlFor="savePhone">

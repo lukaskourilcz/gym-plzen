@@ -78,20 +78,19 @@ export function BookingCalendar({
   const minMonth = minDateKey.slice(0, 7);
   const maxMonth = maxDateKey.slice(0, 7);
   /*
-   * The grid keeps one tab stop. It belongs to the selected day, and in a
-   * month without one to that month's first bookable day: a month reached
-   * through the next-month control has neither a selection nor today in it,
-   * and the grid would otherwise be unreachable from the keyboard.
+   * The grid keeps one tab stop, and on a day that can be chosen: the
+   * selected one, otherwise this month's first bookable day. It used to fall
+   * on today, so a month reached through the next-month control had neither a
+   * selection nor today in it and the grid could not be reached from the
+   * keyboard.
    */
+  const isSelectable = (dateKey: string) =>
+    dateKey >= minDateKey && dateKey <= maxDateKey;
   const tabStopDateKey =
-    selectedDateKey ??
-    grid.find(
-      (cell) =>
-        cell.inMonth &&
-        cell.dateKey >= minDateKey &&
-        cell.dateKey <= maxDateKey,
-    )?.dateKey ??
-    null;
+    selectedDateKey && isSelectable(selectedDateKey)
+      ? selectedDateKey
+      : (grid.find((cell) => cell.inMonth && isSelectable(cell.dateKey))
+          ?.dateKey ?? null);
   const previousSelectedDate = useRef(selectedDateKey);
 
   useEffect(() => {
@@ -356,7 +355,7 @@ export function BookingCalendar({
                       month: "long",
                       year: "numeric",
                     })}
-                    , nejvýše {horizonDays} dní dopředu.
+                    , nejvýše {horizonDays} dní od dneška.
                   </span>
                 ) : (
                   <span>Rezervovat lze nejvýše {horizonDays} dní dopředu.</span>

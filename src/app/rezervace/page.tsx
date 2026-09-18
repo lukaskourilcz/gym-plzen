@@ -88,7 +88,7 @@ export default async function BookingPage({
     requestedDate.startsWith(monthKey) &&
     isBookable(requestedDate)
       ? requestedDate
-      : monthKey === minMonth
+      : monthKey === minMonth && isBookable(minDateKey)
         ? minDateKey
         : null;
   const grid = monthGrid(monthKey);

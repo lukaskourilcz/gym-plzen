@@ -212,10 +212,32 @@ export function RescheduleCalendar({
               const selected = cell.dateKey === selectedDateKey;
               const dayNumber = Number(cell.dateKey.slice(-2));
               if (!selectable) {
+                /*
+                 * A day of this month that cannot be chosen says why; a day of
+                 * the neighbouring month is filler and stays out of the
+                 * accessibility tree entirely.
+                 */
+                const reason = !cell.inMonth
+                  ? null
+                  : cell.dateKey < todayKey
+                    ? "minulý termín"
+                    : cell.dateKey < minDateKey
+                      ? "před otevřením"
+                      : "mimo rezervační období";
                 return (
                   <span
                     key={cell.dateKey}
-                    aria-hidden="true"
+                    aria-hidden={reason ? undefined : true}
+                    aria-disabled={reason ? true : undefined}
+                    aria-label={
+                      reason
+                        ? `${displayDate(cell.dateKey, {
+                            weekday: "long",
+                            day: "numeric",
+                            month: "long",
+                          })}, ${reason}`
+                        : undefined
+                    }
                     className="grid min-h-12 place-items-center rounded-sm text-sm text-muted-foreground/35 sm:min-h-14"
                   >
                     {dayNumber}

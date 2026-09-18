@@ -15,8 +15,3 @@ export function firstBookableDateKey(now: Date): string {
   const today = dateKeyInTimeZone(now);
   return today < OPENING_DATE_KEY ? OPENING_DATE_KEY : today;
 }
-
-/** The month every calendar opens on: `"2026-10"`. */
-export function firstBookableMonthKey(now: Date): string {
-  return firstBookableDateKey(now).slice(0, 7);
-}

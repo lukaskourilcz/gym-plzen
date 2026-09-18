@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  firstBookableDateKey,
-  firstBookableMonthKey,
-} from "../../src/lib/config/booking-start";
+import { firstBookableDateKey } from "../../src/lib/config/booking-start";
 
 test("the first bookable day is opening day before launch and today afterwards", () => {
   assert.equal(
@@ -25,22 +22,12 @@ test("the first bookable day is opening day before launch and today afterwards",
 });
 
 test("no calendar can be paged back to a month before opening", () => {
-  // The month floor is what keeps September out of the public calendar and out
-  // of the reschedule calendar in the customer's profile.
-  assert.equal(
-    firstBookableMonthKey(new Date("2026-09-18T07:00:00Z")),
-    "2026-10",
-  );
-  assert.equal(
-    firstBookableMonthKey(new Date("2026-09-01T07:00:00Z")),
-    "2026-10",
-  );
-  assert.equal(
-    firstBookableMonthKey(new Date("2026-10-20T07:00:00Z")),
-    "2026-10",
-  );
-  assert.equal(
-    firstBookableMonthKey(new Date("2026-11-03T07:00:00Z")),
-    "2026-11",
-  );
+  // Both calendars take their month from this day, and that is what keeps
+  // September out of the public calendar and out of the customer's profile.
+  const monthOf = (iso: string) =>
+    firstBookableDateKey(new Date(iso)).slice(0, 7);
+  assert.equal(monthOf("2026-09-18T07:00:00Z"), "2026-10");
+  assert.equal(monthOf("2026-09-01T07:00:00Z"), "2026-10");
+  assert.equal(monthOf("2026-10-20T07:00:00Z"), "2026-10");
+  assert.equal(monthOf("2026-11-03T07:00:00Z"), "2026-11");
 });
