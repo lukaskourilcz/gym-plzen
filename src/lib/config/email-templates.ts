@@ -1,4 +1,4 @@
-import { siteUrl } from "@/lib/helpers/site-url";
+import { siteHost, siteUrl } from "@/lib/helpers/site-url";
 
 /**
  * The customer-facing transactional e-mails. Their subject and text body live
@@ -247,22 +247,158 @@ function escapeEmailHtml(value: string): string {
     .replaceAll("'", "&#039;");
 }
 
+/**
+ * The palette, restated as literal hex, because an e-mail client cannot read
+ * a CSS variable. This is the only place the design tokens are duplicated:
+ * every value mirrors its token in `globals.css` (`page` is `background`,
+ * `surface` is `card`, `detail` is `secondary`, and so on) and is changed
+ * together with it. Georgia stands in for Bitter, which no mail client has.
+ */
+const MAIL = {
+  page: "#faf8f3",
+  surface: "#ffffff",
+  detail: "#efece4",
+  border: "#dcd7cc",
+  brand: "#004534",
+  ink: "#003527",
+  text: "#2e2e2e",
+  muted: "#5b6360",
+  onBrand: "#ffffff",
+  font: "Georgia,'Times New Roman',serif",
+} as const;
+
+/** A "Termín: pondělí 3. srpna" line of a template, split at its first colon. */
+interface DetailLine {
+  label: string;
+  value: string;
+}
+
+/*
+ * A label is a word or two, so a sentence that merely contains a colon stays
+ * prose. Letters, digits, spaces and hyphens only, which also keeps a link out
+ * ("Více na https://navigym.cz" would otherwise read as a label).
+ */
+const DETAIL_LABEL = /^[\p{L}\d][\p{L}\d \-]{0,23}$/u;
+/*
+ * And a value is a value, not a sentence: template bodies are edited in the
+ * administration, where "Upozornění: rezervace je nepřenosná a platí jen pro
+ * uvedený termín." is prose an operator typed, not a row of a table. A value
+ * therefore stays short and does not end a sentence. A leading slash pair is
+ * what is left of a URL after the colon.
+ */
+const DETAIL_VALUE_MAX = 60;
+
+function detailLine(line: string): DetailLine | null {
+  const colon = line.indexOf(":");
+  if (colon < 0) return null;
+  const label = line.slice(0, colon).trim();
+  const value = line.slice(colon + 1).trim();
+  if (
+    !value ||
+    value.length > DETAIL_VALUE_MAX ||
+    /[.!?:]$/.test(value) ||
+    value.startsWith("//") ||
+    !DETAIL_LABEL.test(label)
+  )
+    return null;
+  return { label, value };
+}
+
+/** The lines of one paragraph, when every one of them is a label and a value. */
+function detailLines(paragraph: string): DetailLine[] | null {
+  const lines = paragraph
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (!lines.length) return null;
+  const parsed = lines.map(detailLine);
+  return parsed.every((line): line is DetailLine => line !== null)
+    ? parsed
+    : null;
+}
+
+/**
+ * The reservation detail of an e-mail: what the customer looks for first, so
+ * it is a quiet table of labels and values rather than three lines of prose.
+ */
+function renderDetails(lines: DetailLine[]): string {
+  const cell = (index: number) =>
+    `padding:11px 16px;font-family:${MAIL.font};${index ? `border-top:1px solid ${MAIL.border};` : ""}`;
+  const rows = lines
+    .map(
+      ({ label, value }, index) =>
+        `<tr><td style="${cell(index)}font-size:14px;line-height:1.5;color:${MAIL.muted}">${escapeEmailHtml(label)}</td>` +
+        `<td style="${cell(index)}font-size:15px;line-height:1.5;font-weight:bold;color:${MAIL.text}">${escapeEmailHtml(value)}</td></tr>`,
+    )
+    .join("");
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:0 0 20px;border:1px solid ${MAIL.border};background:${MAIL.detail};border-collapse:collapse">${rows}</table>`;
+}
+
+function renderParagraph(paragraph: string): string {
+  return `<p style="margin:0 0 18px;font-family:${MAIL.font};font-size:16px;line-height:1.65;color:${MAIL.text}">${escapeEmailHtml(
+    paragraph,
+  ).replaceAll("\n", "<br />")}</p>`;
+}
+
+/**
+ * The one action an authentication e-mail carries. A table around the anchor,
+ * because Outlook ignores padding on an inline-block; the anchor itself keeps
+ * the padding for every client that does honour it.
+ */
+function renderAction(url: string, label: string): string {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 10px;border-collapse:collapse"><tr><td align="center" style="background:${MAIL.brand};border-radius:4px"><a href="${escapeEmailHtml(url)}" style="display:inline-block;padding:14px 26px;font-family:${MAIL.font};font-size:15px;font-weight:bold;line-height:1.2;color:${MAIL.onBrand};text-decoration:none">${escapeEmailHtml(label)}</a></td></tr></table>`;
+}
+
+/** One 600px column, centred, for both the card and the footer under it. */
+function column(content: string, style = ""): string {
+  const base = "width:100%;max-width:600px;border-collapse:collapse";
+  return `<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" align="center" style="${style ? `${base};${style}` : base}">${content}</table>`;
+}
+
+/**
+ * The branded shell around a template's plain text.
+ *
+ * Nested tables and inline styles on purpose: this is the markup every mail
+ * client agrees on, and Outlook in particular has no grid, no flexbox and no
+ * stylesheet. The text itself stays the source of truth : it is escaped, its
+ * blank lines become paragraphs, and a paragraph whose every line reads
+ * "label: value" becomes the detail table.
+ */
 export function emailTextToHtml(
   text: string,
   options?: { actionUrl?: string; actionLabel?: string },
 ): string {
-  const paragraphs = escapeEmailHtml(text)
+  const body = text
     .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
     .filter(Boolean)
-    .map(
-      (paragraph) =>
-        `<p style="margin:0 0 18px">${paragraph.replaceAll("\n", "<br />")}</p>`,
-    )
+    .map((paragraph) => {
+      const details = detailLines(paragraph);
+      return details ? renderDetails(details) : renderParagraph(paragraph);
+    })
     .join("");
   const action =
     options?.actionUrl && options.actionLabel
-      ? `<p style="margin:26px 0 4px"><a href="${escapeEmailHtml(options.actionUrl)}" style="display:inline-block;background:#005340;color:#ffffff;padding:13px 20px;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;font-weight:700">${escapeEmailHtml(options.actionLabel)}</a></p>`
+      ? renderAction(options.actionUrl, options.actionLabel)
       : "";
+  const card = column(
+    `<tr><td style="height:4px;background:${MAIL.ink};font-size:1px;line-height:4px">&nbsp;</td></tr>` +
+      `<tr><td align="center" style="padding:28px 28px 20px;border-bottom:1px solid ${MAIL.border}"><img src="${siteUrl(
+        "/images/navi-logo-email.png",
+      )}" alt="${EMAIL_BRAND}" width="150" style="display:block;width:150px;max-width:150px;height:auto;border:0;margin:0 auto" /></td></tr>` +
+      `<tr><td style="padding:30px 28px 14px">${body}${action}</td></tr>`,
+    `background:${MAIL.surface};border:1px solid ${MAIL.border}`,
+  );
+  /*
+   * The footer carries the address and the no-reply line only. Every template
+   * signs off in its own text, which is also the whole of the plain-text
+   * alternative, so repeating the brand here would sign each e-mail twice.
+   */
+  const footer = column(
+    `<tr><td align="center" style="padding:18px 12px 0;font-family:${MAIL.font};font-size:13px;line-height:1.6;color:${MAIL.muted}"><a href="${siteUrl(
+      "/",
+    )}" style="color:${MAIL.brand}">${siteHost()}</a><br />Tento e-mail byl odeslán automaticky. Na tuto adresu prosím neodpovídejte.</td></tr>`,
+  );
 
-  return `<div style="margin:0;background:#f5f3ee;padding:32px 16px;color:#18221e;font-family:Georgia,'Times New Roman',serif;line-height:1.6"><div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #d8d2c6;padding:36px"><img src="${siteUrl("/images/navi-logo-email.png")}" alt="NAVI Private Gym" width="150" style="display:block;width:150px;height:auto;margin:0 0 28px" /><p style="margin:0 0 24px;color:#005340;font-weight:700;letter-spacing:.08em;font-size:13px">NAVI PRIVATE GYM</p>${paragraphs}${action}<p style="margin:28px 0 0;color:#68706b;font-size:13px">Tento e-mail byl odeslán automaticky. Na tuto adresu prosím neodpovídejte.</p></div></div>`;
+  return `<div style="margin:0;background:${MAIL.page};padding:32px 16px;font-family:${MAIL.font};color:${MAIL.text}"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse"><tr><td align="center">${card}${footer}</td></tr></table></div>`;
 }

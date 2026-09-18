@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Notice } from "@/components/ui/notice";
+import { Pagination } from "@/components/ui/pagination";
 import { BrandLockup, BrandLogo, BrandMark } from "@/components/site/brand";
 import {
   FacebookIcon,
@@ -121,6 +122,29 @@ export default function DesignSystemPage() {
               <p className="mt-3 text-sm text-muted-foreground">
                 Na mobilu nahrazuje horizontální pás. Otevřené menu seskupuje
                 moduly, označuje aktivní route a zavírá se klávesou Escape.
+              </p>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section aria-labelledby="kit-pagination">
+          <h2 id="kit-pagination" className="mb-4 text-xl font-extrabold">
+            Stránkování
+          </h2>
+          <Card>
+            <CardContent className="max-w-xl p-5">
+              <Pagination
+                page={2}
+                hasNext
+                hrefForPage={(page) => `/admin/design-system?page=${page}`}
+                label="Ukázkové stránkování"
+                className="mt-0"
+              />
+              <p className="mt-3 text-sm text-muted-foreground">
+                Dlouhé seznamy (historie objednávek, historie akcí) se čtou po
+                stránkách: dvě tlačítka, číslo stránky a pojmenovaná navigace.
+                Další stránka se pozná z jednoho řádku načteného nad limit, bez
+                počítání celé tabulky. Jediná stránka nevykreslí nic.
               </p>
             </CardContent>
           </Card>

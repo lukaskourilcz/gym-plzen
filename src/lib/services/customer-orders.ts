@@ -1,6 +1,7 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { invoice, reservation } from "@/lib/db/schema";
+import { pageLimit, pageOffset } from "@/lib/helpers/pagination";
 
 export const ORDER_PAGE_SIZE = 20;
 /** Every query is scoped to the verified auth user; no contact-email matching. */
@@ -30,8 +31,8 @@ export async function listCustomerOrders(userId: string, page: number) {
     )
     .where(eq(reservation.userId, userId))
     .orderBy(desc(reservation.createdAt), desc(reservation.id))
-    .limit(ORDER_PAGE_SIZE + 1)
-    .offset((page - 1) * ORDER_PAGE_SIZE);
+    .limit(pageLimit(ORDER_PAGE_SIZE))
+    .offset(pageOffset(page, ORDER_PAGE_SIZE));
 }
 
 export async function getCustomerInvoice(userId: string, invoiceId: string) {

@@ -1,3 +1,75 @@
+# Pět úprav 18. 9. 2026 — září, kalendář, telefon, e-maily, stránkování
+
+Zadání provozovatele, pět bodů, každý ve vlastním commitu na
+`claude/exciting-hopper-nexmb0`.
+
+- **Září už nikde není** (`3d2048b`): posilovna se otevírá 1. 10., ale oba
+  kalendáře září nabízely. Veřejný sice začínal na otevíracím dni, listování
+  zpět ale ukázalo měsíc přeškrtnutých dnů; kalendář změny termínu v profilu
+  klienta na září přímo začínal a předvybral dnešek, kde rezervovat nelze.
+  `firstBookableDateKey` (přejmenované `initialBookingDateKey`, počítalo už
+  dřív ten samý den) je teď dolní hranice obou: listování se na otevíracím
+  měsíci zastaví a `?month=2026-09` i `?date=2026-09-20` spadnou na říjen. Pod
+  mřížkou je věta „Termíny přijímáme od 1. října 2026, nejvýše 60 dní od
+  dneška.“ Mřížka má jedno tabové zastavení, a to na dni, který jde vybrat;
+  dřív padlo na dnešek, takže měsíc otevřený tlačítkem „Následující měsíc“
+  neměl ani výběr, ani dnešek a z klávesnice se do něj nedalo dostat. Den
+  „před otevřením“ (zakázaný s vlastním důvodem pro čtečku) v prohlížeči
+  neuvidíte: otevírací den je prvního, takže žádný takový den v zobrazeném
+  měsíci není — je to připravené na otevření uprostřed měsíce. Po revizi
+  design systému dostaly důvod i nevybratelné dny v kalendáři změny termínu
+  (dřív byly celé `aria-hidden`) a ani jeden kalendář už nepředvybere den
+  mimo rezervační horizont.
+- **Jedno tlačítko do kalendáře** (`55f974a`): „Přidat do kalendáře“ (stažení
+  `.ics`) zmizelo, protože tentýž soubor je přílohou potvrzovacího e-mailu;
+  zůstalo „Přidat do Google Kalendáře“. Trasa `/api/reservations/[id]/calendar.ics`
+  zůstává (autorizovaná po rezervaci, obsah přílohy), jen na ni nic neodkazuje.
+- **Telefon do profilu** (`ad304bf`): pod polem telefonu má přihlášený člen
+  zaškrtávátko „Uložit telefon do profilu a příště ho předvyplnit“. Zápis
+  proběhne po vytvoření rezervaci a nikdy jí nestojí v cestě (selhání se jen
+  zaloguje) a dotkne se jen řádku, kde je číslo skutečně jiné — potvrzení
+  nezměněného čísla tedy nezahodí ověření, změněné číslo ověření ruší, stejně
+  jako formulář profilu. Host zaškrtávátko nevidí, nemá kam ukládat.
+  Integrační soubory od teď běží po jednom (`--test-concurrency=1`): paralelně
+  jeden soubor smazal voucher, s kterým druhý zakládal rezervaci, a dva
+  procesy se sousedním PID si sahaly na stejný port náhradní služby.
+- **E-maily** (`f96e6ec`): obálka je nová — vnořené tabulky s inline styly
+  (to jediné umí každý klient včetně Outlooku), 600 px na střed, linka `ink`,
+  logo, tělo, nejvýš jedno tlačítko a patička s adresou webu. Odstavec, jehož
+  každý řádek je „název: hodnota“, se vykreslí jako tabulka detailů, takže
+  potvrzení vede termínem, délkou a cenou; próza (i s odkazem) zůstává prózou.
+  Barvy obálky dřív byly hodnoty, které nejsou v paletě; teď každá zrcadlí
+  token z `globals.css` (v e-mailu nelze číst CSS proměnnou, takže je to
+  jediné povolené místo, kde se tokeny opisují). Text šablon je pořád zdrojem
+  pravdy a jde do zprávy jako plaintext.
+- **Stránkování historie akcí** (`c5ef312`): `/admin/activity` čtelo 200
+  nejnovějších řádků a zbytek historie byl nedosažitelný. Čte po 50, nejnovější
+  nahoře, přes společné `Pagination` a `helpers/pagination` (o řádek víc, než
+  je stránka — tím se pozná další stránka bez počítání tabulky). Historie
+  objednávek v účtu používá totéž místo své kopie; jediná stránka nevykreslí
+  nic. Zdokumentováno v `docs/DESIGN_SYSTEM.md` a v `/admin/design-system`.
+
+**Ověřeno.** 165 unit testů, 16 integračních proti lokálnímu Postgresu (nově
+paging historie akcí a zápis telefonu do profilu), formát, lint, typecheck,
+produkční build, `npm audit --omit=dev` bez nálezu. V Chromiu proti lokálnímu
+dev serveru: říjen jako výchozí měsíc a zakázané listování zpět, obě spadnutí
+ze září, listopad dosažitelný z klávesnice, šipky/Enter/PageUp v mřížce,
+potvrzená rezervace s jediným odkazem do Google Kalendáře (44 px, 3px fokus),
+zaškrtávátko telefonu (44 px řádek, pořadí Tab telefon → uložit → voucher,
+Space přepne), stránkování v administraci (prázdná první stránka pager
+nevykreslí, `?page=3` má „Předchozí“) a šířky 320–1728 px bez vodorovného
+přetečení. Všech sedm e-mailů vykresleno v prohlížeči na 360 a 680 px; kontrast
+textu na bílé, na výplni detailů i v patičce je nad AA.
+
+**Co zbývá provozovateli** (v NEEDED): potvrdit datum otevření se správkyněmi,
+po nasazení znovu uložit obě šablony Supabase Auth (hostované HTML se propíše
+teprve uložením) a prohlédnout si nové e-maily v Gmailu, Outlooku a na iPhonu.
+Kalendář změny termínu jsem v prohlížeči neotevřel: lokálně není přihlášení
+přes Supabase, takže jeho stránku nelze načíst; logiku má společnou s veřejným
+kalendářem a krytou testem `tests/unit/booking-start.test.ts`.
+
+---
+
 # E-maily 17. 9. 2026 odpoledne — propsání do Supabase Auth, značka, čitelnost
 
 Třetí část session po nasazení administrace (`146343c`):

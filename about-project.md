@@ -23,7 +23,7 @@ obsahová i provozní administrace a věrnostní pravidlo každého 10. vstupu z
   synchronizují přes serverový Management API token.
 - **Comgate** — jednorázové platby za rezervace.
 - **Nuki** — generování a ověření vstupních kódů.
-- **Resend / WhatsApp** — doručení pěti e-mailových šablon, vstupních kódů a
+- **Resend / WhatsApp** — doručení sedmi e-mailových šablon, vstupních kódů a
   provozních pokynů; Resend je poskytovatelem SMTP pro Supabase Auth.
 - **Sentry** — sledování chyb a výkonu.
 - **Vercel** — hosting, analytika a cron.

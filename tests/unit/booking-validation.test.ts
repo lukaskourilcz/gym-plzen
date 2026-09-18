@@ -26,3 +26,28 @@ test("booking requires one combined rules and terms consent", () => {
     false,
   );
 });
+
+test("keeping the phone number is optional and must be a real choice", () => {
+  // A guest's form never sends the flag; a member's sends true or false.
+  assert.equal(
+    bookingDetailsSchema.safeParse({ ...validDetails, acceptConditions: true })
+      .success,
+    true,
+  );
+  assert.equal(
+    bookingDetailsSchema.parse({
+      ...validDetails,
+      acceptConditions: true,
+      savePhone: true,
+    }).savePhone,
+    true,
+  );
+  assert.equal(
+    bookingDetailsSchema.safeParse({
+      ...validDetails,
+      acceptConditions: true,
+      savePhone: "ano",
+    }).success,
+    false,
+  );
+});

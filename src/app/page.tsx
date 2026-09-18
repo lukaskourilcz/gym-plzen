@@ -16,7 +16,7 @@ import {
   RANGE_DASH,
 } from "@/lib/helpers/format";
 import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/helpers/datetime";
-import { initialBookingDateKey } from "@/lib/config/booking-start";
+import { firstBookableDateKey } from "@/lib/config/booking-start";
 import { getSlotsForRange } from "@/lib/services/slots";
 import { cms } from "@/lib/services";
 import {
@@ -86,7 +86,7 @@ export const revalidate = 60;
 export default async function HomePage() {
   const now = new Date();
   const today = dateKeyInTimeZone(now);
-  const previewStart = initialBookingDateKey(now);
+  const previewStart = firstBookableDateKey(now);
   const [content, heroDaysSetting] = await Promise.all([
     loadSiteContent(),
     cms.getSetting<number>(HERO_PREVIEW_DAYS_KEY).catch(() => null),

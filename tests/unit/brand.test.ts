@@ -43,10 +43,11 @@ test("every e-mail template fallback is branded NAVI", () => {
     assert.doesNotMatch(definition.fallback.body, OLD_BRAND, definition.id);
     assert.doesNotMatch(definition.label, OLD_BRAND, definition.id);
   }
-  // The shared mail chrome carries the wordmark and the logo.
+  // The shared mail chrome carries the brand and the logo.
   const html = emailTextToHtml("Ahoj.");
   assert.doesNotMatch(html, OLD_BRAND);
-  assert.match(html, /NAVI PRIVATE GYM/);
+  assert.match(html, /NAVI Private Gym/);
+  assert.match(html, /navi-logo-email\.png/);
 });
 
 test("the calendar entry is branded NAVI", () => {

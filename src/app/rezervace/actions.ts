@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { getSession } from "@/lib/auth/guards";
 import {
@@ -12,6 +13,7 @@ import {
 import { publicEnv } from "@/lib/public-env";
 import { defineAction, ActionError } from "@/lib/helpers/action";
 import type { Result } from "@/lib/helpers/result";
+import { logger } from "@/lib/helpers/logger";
 import { toE164 } from "@/lib/helpers/phone";
 import {
   bookingDetailsSchema,
@@ -20,6 +22,7 @@ import {
   type VoucherQuoteValues,
 } from "@/lib/validations/booking";
 import { booking, loyalty, vouchers } from "@/lib/services";
+import { saveBookingPhone } from "@/lib/services/customer-profile";
 import { takeRateLimit } from "@/lib/security/rate-limit";
 
 /** Validate contact details and start hosted checkout. */
@@ -64,6 +67,21 @@ const startImpl = defineAction({
       voucherCode: input.voucherCode,
       hold,
     });
+    /*
+     * The number the member asked us to keep, stored once the booking exists
+     * and never in its way: a failed profile write must not cost a
+     * reservation that is already placed, so it is logged and nothing more.
+     */
+    if (input.savePhone && session) {
+      try {
+        await saveBookingPhone(session.user.id, phone);
+        revalidatePath("/account");
+        revalidatePath(`/admin/members/${session.user.id}`);
+      } catch (error) {
+        logger.error(error, { where: "startCheckout.saveBookingPhone" });
+      }
+    }
+
     // A guest keeps the key to their hold for the payment session, so a
     // return from the gateway continues this booking. A finished booking, or
     // a member (matched by account), leaves no key behind.

@@ -34,9 +34,9 @@ nastavení a chybějící klientské podklady jsou v [NEEDED.md](./NEEDED.md).
 - `/account`: profil člena, věrnost a rezervace.
 - `/admin`: chráněná administrace, CMS, rozvrh, rezervace, provozní přehledy,
   profil každého člena (kontakt, věrnost, historie rezervací a odeslaných
-  zpráv), historie akcí (potvrzené, zrušené a přesunuté rezervace, platby a
-  změny provedené správcem) a pět editovatelných e-mailových šablon s logem,
-  náhledem a testovacím odesláním. Registrace a obnova hesla se přes serverový Supabase Management
+  zpráv), historie akcí po stránkách (potvrzené, zrušené a přesunuté rezervace,
+  platby a změny provedené správcem) a sedm editovatelných e-mailových šablon
+  s logem, náhledem a testovacím odesláním. Registrace a obnova hesla se přes serverový Supabase Management
   token synchronizují do Supabase Auth.
   Obsah webu je rozdělený do lidsky pojmenovaných sekcí; u každého aktuálního
   textu je samostatná ikona úprav bez technických CMS polí.

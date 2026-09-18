@@ -122,7 +122,6 @@ export default async function BookingDonePage({
                 startsAt={confirmation.startsAt}
                 endsAt={confirmation.endsAt}
                 address={publicAddress(content.get("contact.address"))}
-                token={params.token}
               />
             ) : null}
             <div className="mt-8 flex flex-wrap justify-center gap-3">

@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { contentBlock, pricingPeriod, siteSetting } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { initialBookingDateKey } from "@/lib/config/booking-start";
+import { firstBookableDateKey } from "@/lib/config/booking-start";
 import { localDateTimeToDate } from "@/lib/helpers/datetime";
 import { logger } from "@/lib/helpers/logger";
 import { formatMoney } from "@/lib/helpers/format";
@@ -355,7 +355,7 @@ export async function loadSiteContent(
   const now =
     options.at instanceof Date && !Number.isNaN(options.at.getTime())
       ? options.at
-      : localDateTimeToDate(initialBookingDateKey(new Date()), 12 * 60);
+      : localDateTimeToDate(firstBookableDateKey(new Date()), 12 * 60);
 
   if (!options.defaultsOnly) {
     try {

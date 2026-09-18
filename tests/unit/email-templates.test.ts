@@ -25,12 +25,55 @@ test("e-mail HTML escapes editor text before rendering the branded shell", () =>
     actionLabel: "Pokračovat",
   });
 
-  assert.match(html, /NAVI PRIVATE GYM/);
+  assert.match(html, /NAVI Private Gym/);
   assert.match(html, /navi-logo-email\.png/);
   assert.match(html, /href="https:\/\/example\.com\/action"/);
   assert.match(html, />Pokračovat</);
   assert.match(html, /Ahoj &lt;Klára&gt; &amp; tým/);
   assert.doesNotMatch(html, /Ahoj <Klára>/);
+});
+
+test("reservation detail becomes a table of labels and values", () => {
+  const html = emailTextToHtml(
+    "Ahoj Klára,\n\nTermín: pondělí 3. srpna v 18:00\nDélka: 75 minut\nCena: 229 Kč\n\nPozor, adresa je https://navigym.cz/kontakt",
+  );
+
+  // Every line of that paragraph is a label and a value, so it is a table…
+  assert.match(html, /<td[^>]*>Termín<\/td>/);
+  assert.match(html, /<td[^>]*>pondělí 3\. srpna v 18:00<\/td>/);
+  assert.match(html, /<td[^>]*>Cena<\/td>/);
+  assert.match(html, /<td[^>]*>229 Kč<\/td>/);
+  // …while prose, including prose carrying a link, stays a paragraph.
+  assert.match(html, /<p[^>]*>Ahoj Klára,<\/p>/);
+  assert.match(
+    html,
+    /<p[^>]*>Pozor, adresa je https:\/\/navigym\.cz\/kontakt<\/p>/,
+  );
+});
+
+test("an administrator's prose is never turned into a table", () => {
+  const html = emailTextToHtml(
+    "Dobrý den,\n\nUpozornění: rezervace je nepřenosná a platí jen pro uvedený termín.\n\nPozor: dveře se zamykají",
+  );
+  // A sentence is a sentence, whatever it starts with…
+  assert.match(
+    html,
+    /<p[^>]*>Upozornění: rezervace je nepřenosná a platí jen pro uvedený termín\.<\/p>/,
+  );
+  // …but a short label and value is still a detail row.
+  assert.match(html, /<td[^>]*>Pozor<\/td>/);
+  assert.match(html, /<td[^>]*>dveře se zamykají<\/td>/);
+});
+
+test("a detail table keeps the order and count of the lines it was given", () => {
+  const html = emailTextToHtml("Původní: včera\nNový: dnes\nDélka: 75 minut");
+  // One block for the whole paragraph, not one per line.
+  assert.equal((html.match(/background:#efece4/g) ?? []).length, 1);
+  const detail = html.slice(html.indexOf("background:#efece4"));
+  const rows = detail.slice(0, detail.indexOf("</table>"));
+  assert.equal((rows.match(/<tr>/g) ?? []).length, 3);
+  assert.ok(rows.indexOf("Původní") < rows.indexOf("Nový"));
+  assert.ok(rows.indexOf("Nový") < rows.indexOf("Délka"));
 });
 
 test("each application e-mail template declares its available variables", () => {

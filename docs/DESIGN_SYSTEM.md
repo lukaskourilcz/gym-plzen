@@ -345,6 +345,12 @@ pricing band; it loses its force if every section shouts.
   this for whatever control it is given, because React Hook Form focuses the
   first invalid field on submit and an unannounced landing there is silence.
 - Top-level errors use the notice component with `role="alert"`.
+- A native checkbox is 20px and cannot be resized, so the target is the row:
+  put the box and its label in a 44px-high row, centred, and keep at least 8px
+  between that row and the neighbouring control. That spacing is what satisfies
+  WCAG 2.5.8, and it is the third documented case of a target under 44 by 44
+  (see Buttons and links). The booking form's two checkboxes, the consent and
+  the offer to keep the phone number, are both built this way.
 - A combined consent checkbox may name multiple linked documents in one
   sentence. Keep every document link outside the plain-text `label`, because a
   `label` may not contain an interactive element. Put the full sentence in an
@@ -372,6 +378,16 @@ pricing band; it loses its force if every section shouts.
   (`role="region"`, `tabIndex=0`, `label` prop), so a wide table with no
   interactive cells can still be scrolled from the keyboard; pass a `label`
   that names the table's content when a page holds more than one.
+- A list that grows without bound is paged rather than cut to an arbitrary
+  limit. The shared `Pagination` renders a previous control, the page number
+  and a next control inside a `nav` whose `aria-label` names the list, and
+  renders nothing when there is only one page. Whether a next page exists comes
+  from reading one row beyond the page size, so no page pays for a count query
+  over the whole table. The activity history and the customer's order history
+  work this way; members, reservations, sent messages and the activity list on
+  a member's profile still read a fixed limit, and `NEEDED.md` carries the task
+  of giving them the same treatment. A new or reworked list uses the shared
+  control.
 - Navigation exposes the current route with `aria-current`. Mobile navigation
   has a labelled toggle, closes with Escape and restores focus when closed.
 - The first focusable control is a native skip link to the route-level `main`.
@@ -401,6 +417,42 @@ The public booking flow is date first.
   service-unavailable states are distinct.
 - Async availability changes use a polite live region. Blocking errors preserve
   the selected date.
+
+## Transactional e-mail
+
+Every automatic e-mail is one plain-text body inside one shared shell
+(`emailTextToHtml`). The text is what an administrator edits and is also the
+plain-text alternative that goes out with the message, so the shell only ever
+adds presentation: it escapes the text, turns blank lines into paragraphs, and
+turns a paragraph whose every line reads `label: value` into the detail table
+that carries the term, the length and the price.
+
+- Nested tables and inline styles, 600px wide, centred. E-mail has no grid, no
+  flexbox and no stylesheet; Outlook in particular has none of the three.
+- The palette is restated as literal hex in one `MAIL` map, because an e-mail
+  client cannot read a CSS variable. Each value mirrors its token in
+  `globals.css` and changes with it. The invoice PDF
+  (`lib/pdf/invoice-pdf.ts`) is the only other surface allowed to restate them,
+  for the same reason; two of its three values predate this rule and have
+  drifted off the palette, which `NEEDED.md` records. No component may restate
+  a token this way: on the web the variable is right there.
+- Georgia stands in for Bitter, which no mail client has, and every text cell
+  declares it: Outlook's Word engine resets the font family inside a table.
+  Body copy is 16px, a detail value and the action label 15px, detail labels
+  14px, the footer 13px.
+- The card carries a 4px `ink` rule, the logo centred on `card` at 150px wide
+  (the width the footer lockup uses), the body, and at most one action button:
+  `primary`, white label, 4px radius, the same square-ish control the site
+  uses. The link inside it is the action, so the padding sits on the anchor as
+  well as the cell.
+- The detail table is marked `role="presentation"` deliberately. It has no
+  header row and mail clients have no dependable table semantics, so the label
+  and the value are read in order, and the plain-text alternative keeps the
+  colon between them.
+- The footer holds the site address and the no-reply line. The brand is not
+  repeated there: each template signs off in its own text.
+- Contrast is checked against the surface the text actually sits on, including
+  the detail table's `secondary` fill.
 
 ## Photography
 

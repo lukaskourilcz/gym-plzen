@@ -80,10 +80,11 @@ e2e účtu, náhled e-mailu s `{loyalty}`.
    platné `session_id` (neuhodnutelné Stripe checkout id) v query; jinak 404. VEVENT v `Europe/Prague`: UID `<id>@namastegym.cz`, SUMMARY
    „Trénink · NAVI Private Gym“, LOCATION veřejná adresa z CMS,
    DESCRIPTION krátké pokyny. Vstupní kódy do kalendáře nikdy nepatří.
-3. UI: na `/rezervace/hotovo` (jen stav confirmed) akce „Přidat do
-   kalendáře (.ics)“ a odkaz „Google Kalendář“
-   (`calendar.google.com/render?action=TEMPLATE`, časy v UTC). Stejné akce
-   u nadcházejících rezervací v `/account`.
+3. UI: na `/rezervace/hotovo` (jen stav confirmed) a u nadcházejících
+   rezervací v `/account` odkaz „Přidat do Google Kalendáře“
+   (`calendar.google.com/render?action=TEMPLATE`, časy v UTC). Stažení `.ics`
+   z 18. 9. 2026 v rozhraní není: tentýž soubor je přílohou potvrzovacího
+   e-mailu, takže tlačítko opakovalo to, co zákazník má v poště.
 4. E-mail: příloha `rezervace.ics` v potvrzení. Resend adaptér se rozšíří o
    volitelné `attachments` (base64) a `sendTransactionalEmail` o
    passthrough. Fallback při potížích: odkaz na ICS route v textu.

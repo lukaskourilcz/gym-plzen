@@ -96,7 +96,7 @@ test.describe("Booking flow", () => {
       page.getByRole("heading", { name: "Rezervace je potvrzená" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("link", { name: /Google Kalendář/ }),
+      page.getByRole("link", { name: /Přidat do Google Kalendáře/ }),
     ).toBeVisible();
 
     const [row] = await sql!<{ status: string; price_cents: number }[]>`

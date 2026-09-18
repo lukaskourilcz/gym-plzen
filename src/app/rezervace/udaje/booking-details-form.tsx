@@ -28,11 +28,14 @@ export function BookingDetailsForm({
   paymentsAvailable = true,
   startsAtISO,
   entryPriceCents,
+  canSavePhone = false,
   defaultValues,
 }: {
   paymentsAvailable?: boolean;
   startsAtISO: string;
   entryPriceCents: number;
+  /** A signed-in member has a profile the number can be kept in; a guest does not. */
+  canSavePhone?: boolean;
   defaultValues: {
     firstName: string;
     lastName: string;
@@ -74,6 +77,8 @@ export function BookingDetailsForm({
         startsAt: startsAtISO,
         ...defaultValues,
         voucherCode: "",
+        // Keeping the number is the member's choice, so it starts unticked.
+        savePhone: false,
         // `undefined` rather than `false`: an unticked box must fail validation,
         // and React needs the input to stay uncontrolled either way.
         acceptConditions: undefined,
@@ -174,10 +179,32 @@ export function BookingDetailsForm({
           {...register("phone")}
         />
       </Field>
-      <p className="-mt-2 text-xs text-muted-foreground">
-        Potvrzení a kód ke vstupu vám pošleme e-mailem. Zasílání přes WhatsApp
-        si můžete zapnout ve svém profilu.
-      </p>
+      <div className="-mt-2 grid gap-2">
+        {/*
+         * Only a member has a profile to keep the number in, and keeping it is
+         * their choice: the box starts unticked and the next booking prefills
+         * whatever it saved.
+         */}
+        {canSavePhone ? (
+          <div className="flex min-h-11 items-center gap-3 text-sm">
+            <input
+              id="savePhone"
+              type="checkbox"
+              // `accent-color` is the only thing a native checkbox honours
+              // here; border and radius utilities would be inert.
+              className="size-5 shrink-0 accent-[var(--color-primary)]"
+              {...register("savePhone")}
+            />
+            <label htmlFor="savePhone">
+              Uložit telefon do profilu a příště ho předvyplnit.
+            </label>
+          </div>
+        ) : null}
+        <p className="text-xs text-muted-foreground">
+          Potvrzení a kód ke vstupu vám pošleme e-mailem. Zasílání přes WhatsApp
+          si můžete zapnout ve svém profilu.
+        </p>
+      </div>
 
       {entryPriceCents > 0 ? (
         <fieldset className="mt-7 border-t border-border pt-6">

@@ -22,6 +22,7 @@ import { Notice } from "@/components/ui/notice";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { RealtimeRefresher } from "@/components/realtime-refresher";
+import { firstBookableDateKey } from "@/lib/config/booking-start";
 import { RescheduleCalendar } from "./reschedule-calendar";
 
 export const metadata: Metadata = { title: "Změna termínu" };
@@ -69,28 +70,37 @@ export default async function ReschedulePage({
     now,
   );
   const todayKey = dateKeyInTimeZone(now);
+  /*
+   * The same floor as the public calendar: before opening day there is no
+   * earlier month to move a reservation into, so this page opens on the
+   * opening month instead of on a September full of struck-through days.
+   */
+  const minDateKey = firstBookableDateKey(now);
+  const minMonth = minDateKey.slice(0, 7);
   // Resolved once per request: the operator can change the horizon.
   const horizonDays = await getBookingHorizonDays();
   const maxDateKey = addDaysToDateKey(todayKey, horizonDays);
+  const isBookable = (dateKey: string) =>
+    dateKey >= minDateKey && isWithinBookingHorizon(dateKey, now, horizonDays);
   const requestedDate =
     typeof query.date === "string" && isDateKey(query.date) ? query.date : null;
   const requestedMonth =
     typeof query.month === "string" ? query.month : undefined;
   const monthKey =
-    requestedDate && isWithinBookingHorizon(requestedDate, now, horizonDays)
+    requestedDate && isBookable(requestedDate)
       ? requestedDate.slice(0, 7)
       : validMonth(requestedMonth) &&
-          requestedMonth >= todayKey.slice(0, 7) &&
+          requestedMonth >= minMonth &&
           requestedMonth <= maxDateKey.slice(0, 7)
         ? requestedMonth
-        : todayKey.slice(0, 7);
+        : minMonth;
   const selectedDateKey =
     requestedDate &&
     requestedDate.startsWith(monthKey) &&
-    isWithinBookingHorizon(requestedDate, now, horizonDays)
+    isBookable(requestedDate)
       ? requestedDate
-      : monthKey === todayKey.slice(0, 7)
-        ? todayKey
+      : monthKey === minMonth && isBookable(minDateKey)
+        ? minDateKey
         : null;
 
   const grid = monthGrid(monthKey);
@@ -163,6 +173,7 @@ export default async function ReschedulePage({
                   monthKey={monthKey}
                   selectedDateKey={selectedDateKey}
                   todayKey={todayKey}
+                  minDateKey={minDateKey}
                   maxDateKey={maxDateKey}
                   originalLabel={`${formatDate(current.startsAt)} · ${formatTimeRange(
                     current.startsAt,
