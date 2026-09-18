@@ -43,6 +43,7 @@ export function BookingCalendar({
   monthKey,
   selectedDateKey,
   todayKey,
+  minDateKey,
   maxDateKey,
   horizonDays,
   days,
@@ -53,6 +54,8 @@ export function BookingCalendar({
   monthKey: string;
   selectedDateKey: string | null;
   todayKey: string;
+  /** Earliest bookable day: opening day before launch, today afterwards. */
+  minDateKey: string;
   maxDateKey: string;
   horizonDays: number;
   days: BookingDayView[];
@@ -69,8 +72,26 @@ export function BookingCalendar({
   const byDate = new Map(days.map((day) => [day.dateKey, day]));
   const selectedDay = selectedDateKey ? byDate.get(selectedDateKey) : undefined;
   const availableSlots = selectedDateKey ? selectedSlots : [];
-  const currentMonth = todayKey.slice(0, 7);
+  // Months before the first bookable day hold nothing to book, so the calendar
+  // does not go there: before opening day, paging back stops at the opening
+  // month instead of showing a month of struck-through days.
+  const minMonth = minDateKey.slice(0, 7);
   const maxMonth = maxDateKey.slice(0, 7);
+  /*
+   * The grid keeps one tab stop. It belongs to the selected day, and in a
+   * month without one to that month's first bookable day: a month reached
+   * through the next-month control has neither a selection nor today in it,
+   * and the grid would otherwise be unreachable from the keyboard.
+   */
+  const tabStopDateKey =
+    selectedDateKey ??
+    grid.find(
+      (cell) =>
+        cell.inMonth &&
+        cell.dateKey >= minDateKey &&
+        cell.dateKey <= maxDateKey,
+    )?.dateKey ??
+    null;
   const previousSelectedDate = useRef(selectedDateKey);
 
   useEffect(() => {
@@ -129,7 +150,7 @@ export function BookingCalendar({
     if (event.key === "PageUp" || event.key === "PageDown") {
       event.preventDefault();
       const targetMonth = moveMonth(event.key === "PageUp" ? -1 : 1);
-      if (targetMonth < currentMonth || targetMonth > maxMonth) return;
+      if (targetMonth < minMonth || targetMonth > maxMonth) return;
       router.push(
         buildHref({
           month: targetMonth,
@@ -164,12 +185,12 @@ export function BookingCalendar({
               href={buildHref({ month: moveMonth(-1), date: null })}
               variant="outline"
               size="icon"
-              aria-disabled={monthKey <= currentMonth}
+              aria-disabled={monthKey <= minMonth}
               className={cn(
-                monthKey <= currentMonth && "pointer-events-none opacity-40",
+                monthKey <= minMonth && "pointer-events-none opacity-40",
               )}
               aria-label="Předchozí měsíc"
-              tabIndex={monthKey <= currentMonth ? -1 : undefined}
+              tabIndex={monthKey <= minMonth ? -1 : undefined}
             >
               <ChevronLeft aria-hidden="true" />
             </Button>
@@ -249,9 +270,15 @@ export function BookingCalendar({
                       .map((cell) => {
                         const day = byDate.get(cell.dateKey);
                         const isPast = cell.dateKey < todayKey;
+                        // Before opening day: today, but still nothing to book.
+                        const beforeOpening =
+                          !isPast && cell.dateKey < minDateKey;
                         const outsideHorizon = cell.dateKey > maxDateKey;
                         const disabled =
-                          !cell.inMonth || isPast || outsideHorizon;
+                          !cell.inMonth ||
+                          isPast ||
+                          beforeOpening ||
+                          outsideHorizon;
                         const hasAvailability = Boolean(day?.hasAvailability);
                         const selected = cell.dateKey === selectedDateKey;
                         const label = displayDate(cell.dateKey, {
@@ -264,7 +291,7 @@ export function BookingCalendar({
                           "relative flex aspect-square min-h-11 min-w-0 items-center justify-center rounded-sm border text-lg font-bold outline-none transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:text-xl",
                           !cell.inMonth && "invisible",
                           cell.inMonth && "border-transparent",
-                          (isPast || outsideHorizon) &&
+                          (isPast || beforeOpening || outsideHorizon) &&
                             "cursor-not-allowed text-muted-foreground/45 line-through",
                           cell.dateKey === todayKey && "border-border bg-muted",
                           hasAvailability &&
@@ -274,7 +301,7 @@ export function BookingCalendar({
                             "border-primary bg-primary text-primary-foreground",
                         );
                         const content = Number(cell.dateKey.slice(-2));
-                        const ariaLabel = `${label}${isPast ? ", minulý termín" : outsideHorizon ? ", mimo rezervační období" : hasAvailability ? ", dostupné termíny" : ", bez volných termínů"}`;
+                        const ariaLabel = `${label}${isPast ? ", minulý termín" : beforeOpening ? ", před otevřením" : outsideHorizon ? ", mimo rezervační období" : hasAvailability ? ", dostupné termíny" : ", bez volných termínů"}`;
 
                         return disabled ? (
                           <span
@@ -303,12 +330,7 @@ export function BookingCalendar({
                               cell.dateKey === todayKey ? "date" : undefined
                             }
                             aria-label={ariaLabel}
-                            tabIndex={
-                              selected ||
-                              (!selectedDateKey && cell.dateKey === todayKey)
-                                ? 0
-                                : -1
-                            }
+                            tabIndex={cell.dateKey === tabStopDateKey ? 0 : -1}
                             onKeyDown={(event) =>
                               onDateKeyDown(event, cell.dateKey)
                             }
@@ -326,7 +348,19 @@ export function BookingCalendar({
                 ))}
               </div>
               <div className="mt-4 border-t border-border pt-4 text-sm text-muted-foreground">
-                <span>Rezervovat lze nejvýše {horizonDays} dní dopředu.</span>
+                {minDateKey > todayKey ? (
+                  <span>
+                    Termíny přijímáme od{" "}
+                    {displayDate(minDateKey, {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                    , nejvýše {horizonDays} dní dopředu.
+                  </span>
+                ) : (
+                  <span>Rezervovat lze nejvýše {horizonDays} dní dopředu.</span>
+                )}
               </div>
             </div>
           </>

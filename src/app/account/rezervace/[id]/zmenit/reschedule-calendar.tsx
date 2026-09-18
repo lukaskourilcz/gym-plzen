@@ -36,6 +36,7 @@ export function RescheduleCalendar({
   monthKey,
   selectedDateKey,
   todayKey,
+  minDateKey,
   maxDateKey,
   originalLabel,
   days,
@@ -46,6 +47,8 @@ export function RescheduleCalendar({
   monthKey: string;
   selectedDateKey: string | null;
   todayKey: string;
+  /** Earliest bookable day: opening day before launch, today afterwards. */
+  minDateKey: string;
   maxDateKey: string;
   originalLabel: string;
   days: RescheduleDayView[];
@@ -65,7 +68,9 @@ export function RescheduleCalendar({
   const selectedSlot = availableSlots.find(
     (slot) => slot.startISO === selectedStartISO,
   );
-  const currentMonth = todayKey.slice(0, 7);
+  // Paging back stops at the first bookable month; the ones before it hold no
+  // day this reservation could move to.
+  const minMonth = minDateKey.slice(0, 7);
   const maxMonth = maxDateKey.slice(0, 7);
   const basePath = `/account/rezervace/${reservationId}/zmenit`;
 
@@ -145,7 +150,7 @@ export function RescheduleCalendar({
             })}
           </h2>
           <div className="flex gap-2">
-            {previousMonth >= currentMonth ? (
+            {previousMonth >= minMonth ? (
               <Button
                 href={buildHref({ month: previousMonth, date: null })}
                 variant="outline"
@@ -201,7 +206,7 @@ export function RescheduleCalendar({
               const day = byDate.get(cell.dateKey);
               const selectable =
                 cell.inMonth &&
-                cell.dateKey >= todayKey &&
+                cell.dateKey >= minDateKey &&
                 cell.dateKey <= maxDateKey;
               const hasAvailable = day?.hasAvailability;
               const selected = cell.dateKey === selectedDateKey;

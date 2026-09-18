@@ -21,7 +21,7 @@ import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { RealtimeRefresher } from "@/components/realtime-refresher";
 import { BookingCalendar } from "./booking-calendar";
-import { initialBookingDateKey } from "@/lib/config/booking-start";
+import { firstBookableDateKey } from "@/lib/config/booking-start";
 
 export const metadata: Metadata = {
   title: "Rezervace soukromého gymu",
@@ -53,10 +53,18 @@ export default async function BookingPage({
   const params = await searchParams;
   const now = new Date();
   const todayKey = dateKeyInTimeZone(now);
-  const initialDateKey = initialBookingDateKey(now);
+  /*
+   * Before launch the earliest bookable day is opening day, afterwards it is
+   * today. Nothing earlier is offered, so it is also the floor of month
+   * navigation: the months before opening hold no bookable day at all.
+   */
+  const minDateKey = firstBookableDateKey(now);
+  const minMonth = minDateKey.slice(0, 7);
   // Resolved once per request: the operator can change the horizon.
   const horizonDays = await getBookingHorizonDays();
   const maxDateKey = addDaysToDateKey(todayKey, horizonDays);
+  const isBookable = (dateKey: string) =>
+    dateKey >= minDateKey && isWithinBookingHorizon(dateKey, now, horizonDays);
   const requestedDate =
     typeof params.date === "string" && isDateKey(params.date)
       ? params.date
@@ -64,24 +72,24 @@ export default async function BookingPage({
   const requestedMonth =
     typeof params.month === "string" ? params.month : undefined;
   const monthKey =
-    requestedDate && isWithinBookingHorizon(requestedDate, now, horizonDays)
+    requestedDate && isBookable(requestedDate)
       ? requestedDate.slice(0, 7)
       : validMonth(requestedMonth) &&
-          requestedMonth >= todayKey.slice(0, 7) &&
+          requestedMonth >= minMonth &&
           requestedMonth <= maxDateKey.slice(0, 7)
         ? requestedMonth
-        : initialDateKey.slice(0, 7);
+        : minMonth;
   /*
-   * Before launch, default to opening day; afterwards default to today.
-   * Keep explicit day/month navigation intact.
+   * The opening month opens on the first bookable day; a month the visitor
+   * navigated to opens with no day selected. Explicit day navigation wins.
    */
   const selectedDateKey =
     requestedDate &&
     requestedDate.startsWith(monthKey) &&
-    isWithinBookingHorizon(requestedDate, now, horizonDays)
+    isBookable(requestedDate)
       ? requestedDate
-      : monthKey === initialDateKey.slice(0, 7)
-        ? initialDateKey
+      : monthKey === minMonth
+        ? minDateKey
         : null;
   const grid = monthGrid(monthKey);
   const rangeStart = grid[0]!.dateKey;
@@ -90,7 +98,7 @@ export default async function BookingPage({
   const [availability, content, session] = await Promise.all([
     getSlotsForRange(rangeStart, rangeEnd, now),
     loadSiteContent("cs", {
-      at: localDateTimeToDate(selectedDateKey ?? initialDateKey, 12 * 60),
+      at: localDateTimeToDate(selectedDateKey ?? minDateKey, 12 * 60),
     }),
     getSession(),
   ]);
@@ -166,6 +174,7 @@ export default async function BookingPage({
                 monthKey={monthKey}
                 selectedDateKey={selectedDateKey}
                 todayKey={todayKey}
+                minDateKey={minDateKey}
                 maxDateKey={maxDateKey}
                 horizonDays={horizonDays}
                 days={days}
