@@ -4,19 +4,18 @@ import { cn } from "@/lib/utils";
 import { googleCalendarUrl, reservationCalendarEvent } from "@/lib/helpers/ics";
 
 /**
- * "Add to calendar" for one confirmed reservation: a downloadable .ics for
- * Apple/Outlook and a Google Calendar template link.
+ * "Add to Google Calendar" for one confirmed reservation.
  *
- * Plain anchors on purpose: the .ics is served with a `Content-Disposition`
- * attachment header, which the router would otherwise try to navigate to, and
- * the Google link leaves the site entirely.
+ * The confirmation e-mail already carries the reservation as a `.ics`
+ * attachment, which is what Apple Calendar and Outlook take, so the page
+ * offers the one thing that attachment cannot do: open the prefilled event in
+ * Google Calendar. A plain anchor on purpose: the link leaves the site.
  */
 export function CalendarActions({
   reservationId,
   startsAt,
   endsAt,
   address,
-  token,
   className,
   size = "sm",
 }: {
@@ -24,8 +23,6 @@ export function CalendarActions({
   startsAt: Date;
   endsAt: Date;
   address?: string | null;
-  /** Passed through so a guest keeps the same proof of access the page used. */
-  token?: string;
   className?: string;
   size?: "sm" | "default";
 }) {
@@ -35,24 +32,17 @@ export function CalendarActions({
     endsAt,
     address,
   });
-  const icsHref = token
-    ? `/api/reservations/${reservationId}/calendar.ics?token=${encodeURIComponent(token)}`
-    : `/api/reservations/${reservationId}/calendar.ics`;
-  const classes = cn(buttonVariants({ variant: "outline", size }));
 
   return (
     <div className={cn("flex flex-wrap gap-2", className)}>
-      <a href={icsHref} className={classes}>
-        <CalendarPlus aria-hidden="true" />
-        Přidat do kalendáře
-      </a>
       <a
         href={googleCalendarUrl(event)}
         target="_blank"
         rel="noopener noreferrer"
-        className={classes}
+        className={cn(buttonVariants({ variant: "outline", size }))}
       >
-        Google Kalendář
+        <CalendarPlus aria-hidden="true" />
+        Přidat do Google Kalendáře
         <span className="sr-only">(otevře se v novém okně)</span>
       </a>
     </div>
