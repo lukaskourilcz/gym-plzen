@@ -14,7 +14,12 @@ import {
 } from "./setup";
 import assert from "node:assert/strict";
 import { after, before, beforeEach, describe, test } from "node:test";
-import { record, listForMember } from "../../src/lib/services/activity";
+import {
+  ACTIVITY_PAGE_SIZE,
+  listForMember,
+  listPage,
+  record,
+} from "../../src/lib/services/activity";
 import { listHistoryForUser } from "../../src/lib/services/reservations";
 import { listForUser } from "../../src/lib/services/messages";
 import { saveBookingPhone } from "../../src/lib/services/customer-profile";
@@ -127,6 +132,33 @@ describe(
       assert.equal((await listForMember(BORIS.id)).length, 1);
       assert.equal((await listForUser(ANNA.id)).length, 1);
       assert.equal((await listForUser(BORIS.id)).length, 0);
+    });
+
+    test("the history is read one page at a time, newest first", async () => {
+      const total = ACTIVITY_PAGE_SIZE + 2;
+      // One minute apart, oldest first, so the expected order is unambiguous.
+      for (let index = 0; index < total; index += 1)
+        await record({
+          action: "reservation.confirmed",
+          actorType: "system",
+          memberId: ANNA.id,
+          summary: `Akce ${index}`,
+          occurredAt: new Date(Date.UTC(2026, 9, 5, 8, index)),
+        });
+
+      const first = await listPage(1);
+      const second = await listPage(2);
+      // One row beyond the page is what tells the page there is a next one.
+      assert.equal(first.length, ACTIVITY_PAGE_SIZE + 1);
+      assert.equal(first[0]?.summary, `Akce ${total - 1}`);
+      assert.equal(second.length, total - ACTIVITY_PAGE_SIZE);
+      assert.equal(
+        second[0]?.summary,
+        `Akce ${total - 1 - ACTIVITY_PAGE_SIZE}`,
+      );
+      // No row is served twice and none is skipped between the pages.
+      const ids = new Set([...first, ...second].map((entry) => entry.id));
+      assert.equal(ids.size, total);
     });
 
     test("a booking keeps the phone in the member's own profile only", async () => {
