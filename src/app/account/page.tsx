@@ -20,6 +20,7 @@ import {
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
+import { pageFromParam } from "@/lib/helpers/pagination";
 import { CalendarDays } from "lucide-react";
 import { LoyaltyWidget } from "@/components/loyalty-widget";
 import { SiteHeader } from "@/components/site/site-header";
@@ -49,10 +50,7 @@ export default async function AccountPage({
     params.tab === "profile" || params.tab === "orders"
       ? params.tab
       : "reservations";
-  const page =
-    typeof params.page === "string" && /^\d+$/.test(params.page)
-      ? Math.min(10000, Math.max(1, Number(params.page)))
-      : 1;
+  const page = pageFromParam(params.page);
   const member = isDemoCustomer ? null : await getMember(user.id);
   const names = splitFullName(user.name);
   const profileValues = {

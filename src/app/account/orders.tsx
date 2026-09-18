@@ -1,4 +1,6 @@
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
+import { splitPage } from "@/lib/helpers/pagination";
 import {
   formatDate,
   formatTimeRange,
@@ -27,8 +29,10 @@ export async function Orders({
   page: number;
   isDemo: boolean;
 }) {
-  const rows = isDemo ? [] : await listCustomerOrders(userId, page);
-  const hasNext = rows.length > ORDER_PAGE_SIZE;
+  const { rows, hasNext } = splitPage(
+    isDemo ? [] : await listCustomerOrders(userId, page),
+    ORDER_PAGE_SIZE,
+  );
   return (
     <section aria-labelledby="orders-heading">
       <h2 id="orders-heading" className="text-2xl font-extrabold">
@@ -39,7 +43,7 @@ export async function Orders({
         stáhnete po jeho vystavení.
       </p>
       <div className="mt-6 grid gap-3">
-        {rows.slice(0, ORDER_PAGE_SIZE).map((row) => (
+        {rows.map((row) => (
           <article
             key={row.id}
             className="rounded-lg border border-border bg-card p-5"
@@ -94,28 +98,12 @@ export async function Orders({
           </p>
         ) : null}
       </div>
-      <nav
-        aria-label="Stránkování objednávek"
-        className="mt-6 flex flex-wrap items-center gap-4"
-      >
-        {page > 1 ? (
-          <Button
-            href={`/account?tab=orders&page=${page - 1}`}
-            variant="outline"
-          >
-            Předchozí
-          </Button>
-        ) : null}
-        <span className="text-sm">Strana {page}</span>
-        {hasNext ? (
-          <Button
-            href={`/account?tab=orders&page=${page + 1}`}
-            variant="outline"
-          >
-            Další
-          </Button>
-        ) : null}
-      </nav>
+      <Pagination
+        page={page}
+        hasNext={hasNext}
+        hrefForPage={(next) => `/account?tab=orders&page=${next}`}
+        label="Stránkování objednávek"
+      />
     </section>
   );
 }

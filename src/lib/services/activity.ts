@@ -3,6 +3,7 @@ import { db, type DatabaseExecutor } from "@/lib/db";
 import { activityLog } from "@/lib/db/schema";
 import type { ActivityLog } from "@/lib/db/types";
 import { logger } from "@/lib/helpers/logger";
+import { pageLimit, pageOffset } from "@/lib/helpers/pagination";
 
 /**
  * The activity log: one row per important thing that happened, written by
@@ -84,13 +85,20 @@ export async function record(entry: ActivityEntry): Promise<void> {
   }
 }
 
-/** Newest entries first, for the administration's history page. */
-export async function listRecent(limit = 200): Promise<ActivityLog[]> {
+export const ACTIVITY_PAGE_SIZE = 50;
+
+/**
+ * One page of the log, newest first, for the administration's history page.
+ * Returns up to one row more than the page size: that extra row is how the
+ * page knows there is a next one, without counting a table that only grows.
+ */
+export async function listPage(page: number): Promise<ActivityLog[]> {
   return db
     .select()
     .from(activityLog)
     .orderBy(desc(activityLog.occurredAt), desc(activityLog.id))
-    .limit(limit);
+    .limit(pageLimit(ACTIVITY_PAGE_SIZE))
+    .offset(pageOffset(page, ACTIVITY_PAGE_SIZE));
 }
 
 /** Everything that concerns one member, newest first. */

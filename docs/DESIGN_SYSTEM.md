@@ -372,6 +372,12 @@ pricing band; it loses its force if every section shouts.
   (`role="region"`, `tabIndex=0`, `label` prop), so a wide table with no
   interactive cells can still be scrolled from the keyboard; pass a `label`
   that names the table's content when a page holds more than one.
+- A list that grows without bound is paged, never truncated to an arbitrary
+  limit. The shared `Pagination` renders a previous control, the page number
+  and a next control inside a `nav` whose `aria-label` names the list, and
+  renders nothing when there is only one page. Whether a next page exists comes
+  from reading one row beyond the page size, so no page pays for a count query
+  over the whole table.
 - Navigation exposes the current route with `aria-current`. Mobile navigation
   has a labelled toggle, closes with Escape and restores focus when closed.
 - The first focusable control is a native skip link to the route-level `main`.

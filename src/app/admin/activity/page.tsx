@@ -11,6 +11,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Pagination } from "@/components/ui/pagination";
+import { pageFromParam, splitPage } from "@/lib/helpers/pagination";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
 import { ActivityActor } from "@/components/admin/activity-actor";
 
@@ -21,10 +23,23 @@ export const dynamic = "force-dynamic";
  * What happened, in order: reservations confirmed, cancelled or moved,
  * payments settled, and every change an administrator made. Each row says
  * who did it and links to the member it concerns.
+ *
+ * The log only grows, so it is read one page at a time, like the customer's
+ * order history. One row beyond the page is what tells us there is another
+ * page; the rest of that row is not rendered.
  */
-export default async function ActivityPage() {
+export default async function ActivityPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const page = pageFromParam(params.page);
   const demo = await hasDemoAdminSession();
-  const rows = demo ? [] : await activity.listRecent(200);
+  const { rows, hasNext } = splitPage(
+    demo ? [] : await activity.listPage(page),
+    activity.ACTIVITY_PAGE_SIZE,
+  );
 
   return (
     <div>
@@ -79,12 +94,20 @@ export default async function ActivityPage() {
           {rows.length === 0 && (
             <TableRow>
               <TableCell colSpan={5} className="text-muted-foreground">
-                Zatím žádné zaznamenané akce.
+                {page === 1
+                  ? "Zatím žádné zaznamenané akce."
+                  : "Na této stránce už žádné akce nejsou."}
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
+      <Pagination
+        page={page}
+        hasNext={hasNext}
+        hrefForPage={(next) => `/admin/activity?page=${next}`}
+        label="Stránkování historie akcí"
+      />
     </div>
   );
 }
