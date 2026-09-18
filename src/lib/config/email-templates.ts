@@ -275,18 +275,31 @@ interface DetailLine {
 
 /*
  * A label is a word or two, so a sentence that merely contains a colon stays
- * prose. Letters, digits, spaces and hyphens only: that keeps a link out
- * ("Více na https://navigym.cz" would otherwise read as a label), as does the
- * value starting with a slash pair.
+ * prose. Letters, digits, spaces and hyphens only, which also keeps a link out
+ * ("Více na https://navigym.cz" would otherwise read as a label).
  */
 const DETAIL_LABEL = /^[\p{L}\d][\p{L}\d \-]{0,23}$/u;
+/*
+ * And a value is a value, not a sentence: template bodies are edited in the
+ * administration, where "Upozornění: rezervace je nepřenosná a platí jen pro
+ * uvedený termín." is prose an operator typed, not a row of a table. A value
+ * therefore stays short and does not end a sentence. A leading slash pair is
+ * what is left of a URL after the colon.
+ */
+const DETAIL_VALUE_MAX = 60;
 
 function detailLine(line: string): DetailLine | null {
   const colon = line.indexOf(":");
   if (colon < 0) return null;
   const label = line.slice(0, colon).trim();
   const value = line.slice(colon + 1).trim();
-  if (!value || value.startsWith("//") || !DETAIL_LABEL.test(label))
+  if (
+    !value ||
+    value.length > DETAIL_VALUE_MAX ||
+    /[.!?:]$/.test(value) ||
+    value.startsWith("//") ||
+    !DETAIL_LABEL.test(label)
+  )
     return null;
   return { label, value };
 }
@@ -310,7 +323,7 @@ function detailLines(paragraph: string): DetailLine[] | null {
  */
 function renderDetails(lines: DetailLine[]): string {
   const cell = (index: number) =>
-    `padding:11px 16px;${index ? `border-top:1px solid ${MAIL.border};` : ""}`;
+    `padding:11px 16px;font-family:${MAIL.font};${index ? `border-top:1px solid ${MAIL.border};` : ""}`;
   const rows = lines
     .map(
       ({ label, value }, index) =>
@@ -322,7 +335,7 @@ function renderDetails(lines: DetailLine[]): string {
 }
 
 function renderParagraph(paragraph: string): string {
-  return `<p style="margin:0 0 18px;font-size:16px;line-height:1.65;color:${MAIL.text}">${escapeEmailHtml(
+  return `<p style="margin:0 0 18px;font-family:${MAIL.font};font-size:16px;line-height:1.65;color:${MAIL.text}">${escapeEmailHtml(
     paragraph,
   ).replaceAll("\n", "<br />")}</p>`;
 }
@@ -372,7 +385,7 @@ export function emailTextToHtml(
     `<tr><td style="height:4px;background:${MAIL.ink};font-size:1px;line-height:4px">&nbsp;</td></tr>` +
       `<tr><td align="center" style="padding:28px 28px 20px;border-bottom:1px solid ${MAIL.border}"><img src="${siteUrl(
         "/images/navi-logo-email.png",
-      )}" alt="${EMAIL_BRAND}" width="104" style="display:block;width:104px;max-width:104px;height:auto;border:0;margin:0 auto" /></td></tr>` +
+      )}" alt="${EMAIL_BRAND}" width="150" style="display:block;width:150px;max-width:150px;height:auto;border:0;margin:0 auto" /></td></tr>` +
       `<tr><td style="padding:30px 28px 14px">${body}${action}</td></tr>`,
     `background:${MAIL.surface};border:1px solid ${MAIL.border}`,
   );

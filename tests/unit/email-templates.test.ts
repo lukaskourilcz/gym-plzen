@@ -51,6 +51,20 @@ test("reservation detail becomes a table of labels and values", () => {
   );
 });
 
+test("an administrator's prose is never turned into a table", () => {
+  const html = emailTextToHtml(
+    "Dobrý den,\n\nUpozornění: rezervace je nepřenosná a platí jen pro uvedený termín.\n\nPozor: dveře se zamykají",
+  );
+  // A sentence is a sentence, whatever it starts with…
+  assert.match(
+    html,
+    /<p[^>]*>Upozornění: rezervace je nepřenosná a platí jen pro uvedený termín\.<\/p>/,
+  );
+  // …but a short label and value is still a detail row.
+  assert.match(html, /<td[^>]*>Pozor<\/td>/);
+  assert.match(html, /<td[^>]*>dveře se zamykají<\/td>/);
+});
+
 test("a detail table keeps the order and count of the lines it was given", () => {
   const html = emailTextToHtml("Původní: včera\nNový: dnes\nDélka: 75 minut");
   // One block for the whole paragraph, not one per line.
