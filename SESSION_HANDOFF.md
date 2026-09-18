@@ -9,13 +9,17 @@ Zadání provozovatele, pět bodů, každý ve vlastním commitu na
   klienta na září přímo začínal a předvybral dnešek, kde rezervovat nelze.
   `firstBookableDateKey` (přejmenované `initialBookingDateKey`, počítalo už
   dřív ten samý den) je teď dolní hranice obou: listování se na otevíracím
-  měsíci zastaví, `?month=2026-09` i `?date=2026-09-20` spadnou na říjen a den
-  před otevřením je zakázaný s vlastním důvodem pro čtečku („před otevřením“).
-  Pod mřížkou je věta „Termíny přijímáme od 1. října 2026, nejvýše 60 dní
-  dopředu.“ Mřížka má jedno tabové zastavení; dřív padlo na dnešek, takže
-  měsíc otevřený tlačítkem „Následující měsíc“ neměl ani výběr, ani dnešek a
-  z klávesnice se do něj nedalo dostat — teď padne na první rezervovatelný den
-  toho měsíce.
+  měsíci zastaví a `?month=2026-09` i `?date=2026-09-20` spadnou na říjen. Pod
+  mřížkou je věta „Termíny přijímáme od 1. října 2026, nejvýše 60 dní od
+  dneška.“ Mřížka má jedno tabové zastavení, a to na dni, který jde vybrat;
+  dřív padlo na dnešek, takže měsíc otevřený tlačítkem „Následující měsíc“
+  neměl ani výběr, ani dnešek a z klávesnice se do něj nedalo dostat. Den
+  „před otevřením“ (zakázaný s vlastním důvodem pro čtečku) v prohlížeči
+  neuvidíte: otevírací den je prvního, takže žádný takový den v zobrazeném
+  měsíci není — je to připravené na otevření uprostřed měsíce. Po revizi
+  design systému dostaly důvod i nevybratelné dny v kalendáři změny termínu
+  (dřív byly celé `aria-hidden`) a ani jeden kalendář už nepředvybere den
+  mimo rezervační horizont.
 - **Jedno tlačítko do kalendáře** (`55f974a`): „Přidat do kalendáře“ (stažení
   `.ics`) zmizelo, protože tentýž soubor je přílohou potvrzovacího e-mailu;
   zůstalo „Přidat do Google Kalendáře“. Trasa `/api/reservations/[id]/calendar.ics`
