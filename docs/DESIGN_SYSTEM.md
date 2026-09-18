@@ -408,6 +408,32 @@ The public booking flow is date first.
 - Async availability changes use a polite live region. Blocking errors preserve
   the selected date.
 
+## Transactional e-mail
+
+Every automatic e-mail is one plain-text body inside one shared shell
+(`emailTextToHtml`). The text is what an administrator edits and is also the
+plain-text alternative that goes out with the message, so the shell only ever
+adds presentation: it escapes the text, turns blank lines into paragraphs, and
+turns a paragraph whose every line reads `label: value` into the detail table
+that carries the term, the length and the price.
+
+- Nested tables and inline styles, 600px wide, centred. E-mail has no grid, no
+  flexbox and no stylesheet; Outlook in particular has none of the three.
+- The palette is restated as literal hex in one `MAIL` map, because an e-mail
+  client cannot read a CSS variable. Each value mirrors its token in
+  `globals.css` and changes with it. Nothing else in the codebase may restate a
+  token this way.
+- Georgia stands in for Bitter, which no mail client has. Body copy is 16px,
+  detail labels 14px, the footer 13px.
+- The card carries a 4px `ink` rule, the logo centred on `card`, the body, and
+  at most one action button: `primary`, white label, 4px radius, the same
+  square-ish control the site uses. The link inside it is the action, so the
+  padding sits on the anchor as well as the cell.
+- The footer holds the site address and the no-reply line. The brand is not
+  repeated there: each template signs off in its own text.
+- Contrast is checked against the surface the text actually sits on, including
+  the detail table's `secondary` fill.
+
 ## Photography
 
 - Use only verified client photography. Do not generate or source a fake gym.
