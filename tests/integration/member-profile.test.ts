@@ -1,7 +1,8 @@
 /**
  * The administration's member profile reads: reservation history with its
  * payment, voucher and document, deliveries and the activity log for one
- * member, and never another member's rows.
+ * member, and never another member's rows. Plus the one write a booking makes
+ * to a profile: the phone number the member asked us to keep.
  */
 import {
   databaseReady,
@@ -16,6 +17,7 @@ import { after, before, beforeEach, describe, test } from "node:test";
 import { record, listForMember } from "../../src/lib/services/activity";
 import { listHistoryForUser } from "../../src/lib/services/reservations";
 import { listForUser } from "../../src/lib/services/messages";
+import { saveBookingPhone } from "../../src/lib/services/customer-profile";
 
 const ANNA = {
   id: "22222222-2222-4222-8222-222222222222",
@@ -125,6 +127,33 @@ describe(
       assert.equal((await listForMember(BORIS.id)).length, 1);
       assert.equal((await listForUser(ANNA.id)).length, 1);
       assert.equal((await listForUser(BORIS.id)).length, 0);
+    });
+
+    test("a booking keeps the phone in the member's own profile only", async () => {
+      const phoneOf = async (id: string) =>
+        (
+          await rows<{ phone: string | null; phone_verified: boolean }>(
+            `select phone, phone_verified from profiles where id = $1`,
+            [id],
+          )
+        )[0];
+
+      await saveBookingPhone(ANNA.id, "+420777123456");
+      assert.equal((await phoneOf(ANNA.id))?.phone, "+420777123456");
+      assert.equal((await phoneOf(BORIS.id))?.phone, null);
+
+      // A number confirmed a second time is left exactly as it was, so a
+      // verification that still holds is not dropped by an unchanged value.
+      await rows(`update profiles set phone_verified = true where id = $1`, [
+        ANNA.id,
+      ]);
+      await saveBookingPhone(ANNA.id, "+420777123456");
+      assert.equal((await phoneOf(ANNA.id))?.phone_verified, true);
+
+      // A different number is a different number: unverified again.
+      await saveBookingPhone(ANNA.id, "+420608111222");
+      assert.equal((await phoneOf(ANNA.id))?.phone, "+420608111222");
+      assert.equal((await phoneOf(ANNA.id))?.phone_verified, false);
     });
   },
 );

@@ -25,6 +25,8 @@ export const bookingDetailsSchema = z.object({
   email: emailSchema,
   phone: phoneSchema,
   voucherCode: z.string().max(64, "Kód je příliš dlouhý.").optional(),
+  /** Signed-in members only: keep this number in the profile for next time. */
+  savePhone: z.boolean().optional(),
   acceptConditions: consentSchema,
 });
 

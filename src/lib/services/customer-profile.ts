@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
 import { ActionError } from "@/lib/helpers/action";
@@ -26,4 +26,27 @@ export async function saveCustomerProfile(
     .where(eq(profiles.id, userId))
     .returning({ id: profiles.id });
   if (!updated) throw new ActionError("Profil se nepodařilo najít.");
+}
+
+/**
+ * Keep the number a member typed into a booking, because they asked for it
+ * with the checkbox next to the field. The next booking then prefills it.
+ *
+ * The update only matches a row whose number actually differs, so confirming
+ * an unchanged number neither bumps `updatedAt` nor drops a verification that
+ * still holds. A changed number is unverified again, as in the profile form.
+ */
+export async function saveBookingPhone(
+  userId: string,
+  phone: string,
+): Promise<void> {
+  await db
+    .update(profiles)
+    .set({ phone, phoneVerified: false, updatedAt: new Date() })
+    .where(
+      and(
+        eq(profiles.id, userId),
+        sql`${profiles.phone} is distinct from ${phone}`,
+      ),
+    );
 }

@@ -23,7 +23,7 @@
     "rebrand:navi": "tsx scripts/rebrand-navi.ts",
     "set-promo": "tsx scripts/set-promo.ts",
     "test": "tsx --test tests/unit/*.test.ts",
-    "test:integration": "tsx --test --test-force-exit tests/integration/*.test.ts",
+    "test:integration": "tsx --test --test-force-exit --test-concurrency=1 tests/integration/*.test.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {

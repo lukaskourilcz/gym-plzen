@@ -26,7 +26,9 @@ if (databaseReady) process.env.DATABASE_URL = url;
 else delete process.env.DATABASE_URL;
 
 /* Provider stand-ins on ports derived from the process, so parallel runs
- * cannot collide; both must be known before the provider modules load. */
+ * cannot collide; both must be known before the provider modules load.
+ * `npm run test:integration` additionally runs one file at a time, because
+ * every file truncates the same database (see `resetDatabase`). */
 const base = 40_000 + (process.pid % 10_000);
 export const RESEND_PORT = base;
 export const COMGATE_PORT = base + 1;

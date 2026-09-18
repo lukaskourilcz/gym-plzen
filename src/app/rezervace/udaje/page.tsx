@@ -187,6 +187,7 @@ export default async function BookingDetailsPage({
                 paymentsAvailable={paymentsAvailable}
                 startsAtISO={startsAt.toISOString()}
                 entryPriceCents={entryPriceCents}
+                canSavePhone={Boolean(member) && !session?.user.isDemo}
                 defaultValues={{
                   firstName: member?.profile?.firstName ?? nameParts.firstName,
                   lastName: member?.profile?.lastName ?? nameParts.lastName,
