@@ -21,6 +21,7 @@ import {
   WhatsAppIcon,
 } from "@/components/site/social-icons";
 import { PageHeader } from "@/components/admin/page-header";
+import { CheckboxRow } from "@/components/admin/form-controls";
 
 export const metadata = { title: "Design systém" };
 
@@ -415,6 +416,14 @@ export default function DesignSystemPage() {
                 </p>
               </div>
               <Input disabled value="Pole je vypnuté" readOnly />
+              {/* The administration's setting row: 44px target, hover, and
+                  the explanation tied to the box rather than named by it. */}
+              <CheckboxRow
+                id="kit-checkbox-row"
+                label="Aktivovat online platby"
+                help="Rezervace platí až po ověřené úhradě."
+                register={{ defaultChecked: true, readOnly: true }}
+              />
               {/* Combined consent: links stay outside the plain-text label and
                   the full sentence supplies the accessible name. */}
               <div className="flex min-h-11 items-center gap-3 text-sm">

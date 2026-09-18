@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  CheckboxRow,
   Field,
   FormFeedback,
   SubmitButton,
@@ -17,8 +18,8 @@ import { saveOperatorNotificationsAction } from "./actions";
 
 /**
  * Which events reach the people who run the gym, and at which addresses.
- * Every row is a 44px target with its own explanation, because "Nová
- * rezervace" alone does not say whether an unpaid attempt counts.
+ * Every row explains itself, because "Nová rezervace" alone does not say
+ * whether an unpaid attempt counts.
  */
 export function OperatorNotificationsForm({
   values,
@@ -49,39 +50,30 @@ export function OperatorNotificationsForm({
           type="text"
           inputMode="email"
           autoComplete="off"
-          placeholder="info@navigym.cz, druhy@navigym.cz"
-          aria-describedby="recipients-help"
+          placeholder="vas@email.cz, druhy@email.cz"
+          // Both ids: `Field` only adds its own when the control has none, and
+          // the error must stay audible where the help text already speaks.
+          aria-describedby="recipients-help recipients-error"
           {...register("recipients")}
         />
       </Field>
-      <p id="recipients-help" className="mb-5 text-sm text-muted-foreground">
+      <p id="recipients-help" className="mb-6 text-sm text-muted-foreground">
         Více adres oddělte čárkou, nejvýše {MAX_OPERATOR_RECIPIENTS}. Prázdné
-        pole odesílání vypne. Zákazníkům tyto e-maily nechodí.
+        pole odesílání vypne.
       </p>
 
-      <fieldset className="mb-5">
-        <legend className="mb-2 text-sm font-bold">
-          O čem chcete vědět e-mailem
+      <fieldset className="mb-6">
+        <legend className="mb-2 text-sm font-extrabold">
+          Události, o kterých chcete vědět
         </legend>
         {OPERATOR_EVENT_DEFINITIONS.map((event) => (
-          <div key={event.id} className="mb-3 last:mb-0">
-            <label className="flex min-h-11 items-center gap-3 text-sm font-bold">
-              <input
-                id={`event-${event.id}`}
-                type="checkbox"
-                className="size-5 accent-primary"
-                aria-describedby={`event-${event.id}-help`}
-                {...register(`events.${event.id}`)}
-              />
-              {event.label}
-            </label>
-            <p
-              id={`event-${event.id}-help`}
-              className="text-sm text-muted-foreground"
-            >
-              {event.description}
-            </p>
-          </div>
+          <CheckboxRow
+            key={event.id}
+            id={`event-${event.id}`}
+            label={event.label}
+            help={event.description}
+            register={register(`events.${event.id}`)}
+          />
         ))}
       </fieldset>
 

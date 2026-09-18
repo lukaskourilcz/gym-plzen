@@ -1,5 +1,6 @@
 "use client";
 import {
+  CheckboxRow,
   Field,
   FormFeedback,
   SubmitButton,
@@ -23,18 +24,14 @@ export function OperationsForm({ values }: { values: Operations }) {
   });
   return (
     <form onSubmit={submit} noValidate>
-      <label className="mb-4 flex min-h-11 items-center gap-3 text-sm font-bold">
-        <input
-          type="checkbox"
-          className="size-5 accent-primary"
-          {...register("paymentsEnabled")}
-        />{" "}
-        Aktivovat online platby přes Comgate
-      </label>
-      <p className="mb-4 text-sm text-muted-foreground">
-        Rezervace platí až po ověřené úhradě. Bez aktivních plateb se lze
-        registrovat a prohlížet termíny.
-      </p>
+      <div className="mb-4">
+        <CheckboxRow
+          id="paymentsEnabled"
+          label="Aktivovat online platby přes Comgate"
+          help="Rezervace platí až po ověřené úhradě. Bez aktivních plateb se lze registrovat a prohlížet termíny."
+          register={register("paymentsEnabled")}
+        />
+      </div>
       <Field
         name="bookingsFrom"
         label="První den dostupný pro rezervace"
@@ -46,18 +43,14 @@ export function OperationsForm({ values }: { values: Operations }) {
         Datum omezuje kalendář i ukládání rezervací. Prázdné pole ponechá
         všechny budoucí termíny.
       </p>
-      <label className="mb-4 flex min-h-11 items-center gap-3 text-sm font-bold">
-        <input
-          type="checkbox"
-          className="size-5 accent-primary"
-          {...register("accessCodesEnabled")}
+      <div className="mb-6">
+        <CheckboxRow
+          id="accessCodesEnabled"
+          label="Aktivovat vstupní kódy přes Nuki"
+          help="Zapněte až po instalaci a fyzickém otestování zámku. Registrace, rezervace a platby fungují samostatně."
+          register={register("accessCodesEnabled")}
         />
-        Aktivovat vstupní kódy přes Nuki
-      </label>
-      <p className="mb-5 text-sm text-muted-foreground">
-        Zapněte až po instalaci a fyzickém otestování zámku. Registrace,
-        rezervace a platby fungují samostatně.
-      </p>
+      </div>
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={formState.isSubmitting}>
         Uložit provozní nastavení

@@ -109,7 +109,7 @@ const recipientsSchema = z
   .refine(
     (value) =>
       parseRecipients(value).every((one) => address.safeParse(one).success),
-    "Zadejte platné e-mailové adresy oddělené čárkou.",
+    "Zadejte platné e-mailové adresy.",
   )
   .refine(
     (value) => parseRecipients(value).length <= MAX_OPERATOR_RECIPIENTS,

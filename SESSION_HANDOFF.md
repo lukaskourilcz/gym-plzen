@@ -39,6 +39,22 @@ provozují. Zákazníkům tyto zprávy nechodí.
   do `{summary}`, protože detailní řádky jsou tabulka.
 - **Historie akcí** zná nově `member.registered` (dokončená registrace) a
   `settings.operator_notifications_saved`.
+- **Sdílený řádek se zaškrtávátkem**: revize design systému našla, že nativní
+  20px box nesplňuje 44px cíl a že se vzor psal pokaždé znovu. Vznikla
+  `CheckboxRow` (`components/admin/form-controls.tsx`): 44px řádek, kurzor a
+  hover jako u ovládacího prvku, vysvětlující věta pod popiskem svázaná přes
+  `aria-describedby` (nikdy součást popisku). Používají ji obě karty Nastavení,
+  je popsaná v `docs/DESIGN_SYSTEM.md` a vykreslená v `/admin/design-system`.
+  Starší `CheckboxField` (16px box, mrtvé třídy `rounded border-input`) zbývá
+  převést — úkol v NEEDED.
+- **Chyba pole se zase ohlásí**: `Field` přidává `aria-describedby` jen
+  ovládacímu prvku, který si žádné nenastavil, takže statické `recipients-help`
+  by chybovou hlášku umlčelo. Pole teď uvádí obě id.
+- **Resend a limit rychlosti**: potvrzená rezervace pošle e-mail zákazníkovi a
+  hned nato upozornění provozovateli, což je přesně dávka, kterou Resend
+  odmítá (dvě požadavky za sekundu). `sendEmail` po odmítnutí
+  `rate_limit_exceeded` počká a zkusí to ještě jednou; stand-in v testech to umí
+  simulovat (`resend.rateLimitNext()`).
 - **Ověřeno**: unit i integrační testy (nový soubor
   `tests/integration/operator-notifications.test.ts`: doručení na dvě adresy,
   vypnutá událost, prázdné adresy, změna a storno, vypršelý hold, alert, uložení

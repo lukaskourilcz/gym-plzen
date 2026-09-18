@@ -119,6 +119,7 @@ export async function resetDatabase(): Promise<void> {
     events: DEFAULT_OPERATOR_NOTIFICATIONS.events,
   });
   resend.sent.length = 0;
+  resend.rateLimitNext(0);
   comgate.creates.length = 0;
   comgate.payments.clear();
 }

@@ -129,8 +129,8 @@ export default async function EmailsPage() {
           <CardTitle>Automatické e-maily</CardTitle>
           <CardDescription>
             {supabaseAuthSync.configured
-              ? "Potvrzení registrace a obnova hesla se po uložení propíšou do Supabase Auth. Rezervace, vstupní kód a storno se odesílají přímo přes Resend. Poslední šablona je interní upozornění pro provozovatele, ne pro zákazníka."
-              : "Potvrzení registrace a obnovu hesla posílá Supabase Auth; z administrace se propíšou až po doplnění SUPABASE_MANAGEMENT_API_TOKEN ve Vercelu. Rezervace, vstupní kód a storno se odesílají přímo přes Resend. Poslední šablona je interní upozornění pro provozovatele, ne pro zákazníka."}
+              ? "Potvrzení registrace a obnova hesla se po uložení propíšou do Supabase Auth. Rezervace, vstupní kód a storno se odesílají přímo přes Resend."
+              : "Potvrzení registrace a obnovu hesla posílá Supabase Auth; z administrace se propíšou až po doplnění SUPABASE_MANAGEMENT_API_TOKEN ve Vercelu. Rezervace, vstupní kód a storno se odesílají přímo přes Resend."}
           </CardDescription>
         </CardHeader>
         <CardContent>

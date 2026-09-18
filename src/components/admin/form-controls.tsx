@@ -74,6 +74,49 @@ function describeControl(
   });
 }
 
+/**
+ * A checkbox and its label as one 44px row, which is how a native 20px box
+ * reaches the target size the design system requires. The whole row toggles
+ * the box, so it carries the pointer and the hover treatment of a control,
+ * and an optional sentence underneath explains the choice without leaving
+ * the accessible name.
+ */
+export function CheckboxRow({
+  id,
+  label,
+  help,
+  register,
+}: {
+  id: string;
+  label: string;
+  help?: string;
+  register: React.InputHTMLAttributes<HTMLInputElement>;
+}) {
+  const helpId = `${id}-help`;
+  return (
+    <div className="mb-3 last:mb-0">
+      <label
+        htmlFor={id}
+        className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-bold hover:text-accent-foreground"
+      >
+        <input
+          id={id}
+          type="checkbox"
+          className="size-5 shrink-0 accent-primary"
+          aria-describedby={help ? helpId : undefined}
+          {...register}
+        />
+        {label}
+      </label>
+      {help && (
+        <p id={helpId} className="text-sm text-muted-foreground">
+          {help}
+        </p>
+      )}
+    </div>
+  );
+}
+
 /** Top-level success/error banner for a form. */
 export function FormFeedback({
   error,

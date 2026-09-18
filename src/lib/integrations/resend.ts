@@ -55,16 +55,28 @@ export async function sendEmail(
   }
 
   const { RESEND_FROM_EMAIL } = requireEnv("RESEND_FROM_EMAIL");
+  const payload = {
+    from: brandedSender(RESEND_FROM_EMAIL),
+    to: params.to,
+    subject: params.subject,
+    html: params.html,
+    text: params.text,
+    replyTo: params.replyTo,
+    attachments: params.attachments?.length ? params.attachments : undefined,
+  };
   try {
-    const { data, error } = await client().emails.send({
-      from: brandedSender(RESEND_FROM_EMAIL),
-      to: params.to,
-      subject: params.subject,
-      html: params.html,
-      text: params.text,
-      replyTo: params.replyTo,
-      attachments: params.attachments?.length ? params.attachments : undefined,
-    });
+    let { data, error } = await client().emails.send(payload);
+    // Resend allows a couple of requests per second, and one confirmed
+    // booking sends the customer's confirmation, the operator's notice and
+    // sometimes a document within the same moment. A refusal for that reason
+    // is not a failure yet: wait out the window and send it once more.
+    if (error && error.name === "rate_limit_exceeded") {
+      logger.warn("Resend rate limit reached : retrying once", {
+        subject: params.subject,
+      });
+      await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_PAUSE_MS));
+      ({ data, error } = await client().emails.send(payload));
+    }
     if (error) {
       logger.error(error, { where: "resend.sendEmail" });
       return { sent: false, error: error.message };
@@ -75,3 +87,6 @@ export async function sendEmail(
     return { sent: false, error: e instanceof Error ? e.message : "unknown" };
   }
 }
+
+/** Long enough for Resend's per-second window to reopen. */
+const RATE_LIMIT_PAUSE_MS = 1_100;

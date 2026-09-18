@@ -33,9 +33,25 @@ export interface SentEmail {
 /** Resend: `POST /emails` answers with an id, like the real API. */
 export function createResendMock(port: number) {
   const sent: SentEmail[] = [];
+  // How many of the next requests are refused for rate limiting, which is
+  // what Resend does when a confirmed booking sends several e-mails at once.
+  let refusals = 0;
   const server = createServer(async (request, response) => {
     if (request.method === "POST" && request.url === "/emails") {
-      sent.push((await readJson(request)) as SentEmail);
+      const body = (await readJson(request)) as SentEmail;
+      if (refusals > 0) {
+        refusals -= 1;
+        response.writeHead(429, { "content-type": "application/json" });
+        response.end(
+          JSON.stringify({
+            statusCode: 429,
+            name: "rate_limit_exceeded",
+            message: "Too many requests.",
+          }),
+        );
+        return;
+      }
+      sent.push(body);
       response.writeHead(200, { "content-type": "application/json" });
       response.end(JSON.stringify({ id: `email-${sent.length}` }));
       return;
@@ -44,6 +60,10 @@ export function createResendMock(port: number) {
   });
   return {
     sent,
+    /** Refuse the next `count` sends with 429, as the real API would. */
+    rateLimitNext: (count = 1) => {
+      refusals = count;
+    },
     start: () => listen(server, port),
     stop: () => new Promise<void>((resolve) => server.close(() => resolve())),
   };

@@ -351,6 +351,14 @@ pricing band; it loses its force if every section shouts.
   WCAG 2.5.8, and it is the third documented case of a target under 44 by 44
   (see Buttons and links). The booking form's two checkboxes, the consent and
   the offer to keep the phone number, are both built this way.
+- In the administration that row is the shared `CheckboxRow`
+  (`@/components/admin/form-controls`): a 44px label row with `size-5
+shrink-0 accent-primary`, the pointer and hover treatment every control
+  owes, and an optional sentence underneath. The sentence is a paragraph tied
+  to the box with `aria-describedby`, never part of the label, so the
+  accessible name stays the choice itself and the explanation is still read.
+  Use it whenever a setting needs saying why; a bare label row is the same
+  component without `help`.
 - A combined consent checkbox may name multiple linked documents in one
   sentence. Keep every document link outside the plain-text `label`, because a
   `label` may not contain an interactive element. Put the full sentence in an

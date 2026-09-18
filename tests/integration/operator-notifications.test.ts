@@ -175,6 +175,21 @@ describe(
       assert.equal(operatorEmails().length, 2);
     });
 
+    test("a send refused for rate limiting is retried, not lost", async () => {
+      await configure(OPERATOR);
+      // The customer's confirmation goes first and takes the allowance with
+      // it; the operator's notice is refused once and has to survive that.
+      resend.rateLimitNext(1);
+      const reservationId = await bookFreeEntry(slot(16));
+
+      assert.equal(operatorEmails().length, 1);
+      const [delivery] = await rows<{ status: string; dedupe_key: string }>(
+        "select status, dedupe_key from message_delivery where kind = 'operator_notice'",
+      );
+      assert.equal(delivery?.status, "sent");
+      assert.ok(delivery?.dedupe_key?.includes(reservationId));
+    });
+
     test("an event the operator switched off is not sent", async () => {
       await configure(OPERATOR, { reservationConfirmed: false });
       await bookFreeEntry(slot(10));
