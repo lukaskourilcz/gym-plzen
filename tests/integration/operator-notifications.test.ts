@@ -159,6 +159,17 @@ describe(
         "each delivery claims the reservation for its address",
       );
 
+      // Never filed under the member: their own page lists what was sent to
+      // them, and this went to the operator.
+      assert.ok(
+        (
+          await rows(
+            "select id from message_delivery where kind = 'operator_notice' and user_id is not null",
+          )
+        ).length === 0,
+        "the operator's mail is not the member's mail",
+      );
+
       // The watchdog retries fulfillment; the operator is not told twice.
       await fulfillReservation(reservationId);
       assert.equal(operatorEmails().length, 2);

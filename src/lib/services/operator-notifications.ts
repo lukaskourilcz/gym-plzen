@@ -91,8 +91,12 @@ export interface OperatorNotice {
    * scope every call sends.
    */
   scope?: string | null;
+  /**
+   * The booking this is about, so the delivery is filed with it. There is
+   * deliberately no member: `message_delivery.user_id` means "sent to this
+   * member", and the administration lists a member's own mail by it.
+   */
   reservationId?: string | null;
-  memberId?: string | null;
   /** Where in the administration the recipient continues. */
   path?: string;
 }
@@ -172,7 +176,7 @@ async function claim(
   const [row] = await db
     .insert(messageDelivery)
     .values({
-      userId: notice.memberId ?? null,
+      userId: null,
       reservationId: notice.reservationId ?? null,
       channel: "email",
       kind: "operator_notice",
@@ -226,7 +230,6 @@ export async function notifyReservationConfirmed(
     event: "reservationConfirmed",
     scope: reservation.id,
     reservationId: reservation.id,
-    memberId: reservation.userId ?? null,
     path: reservationPath(reservation),
     summary: `${reservation.contactName?.trim() || "Zákazník"} má potvrzenou rezervaci na ${formatDateTime(reservation.startsAt)}.`,
     details: [
@@ -250,7 +253,6 @@ export async function notifyReservationRescheduled(params: {
     // what makes the notice unique.
     scope: `${reservation.id}:${reservation.startsAt.toISOString()}`,
     reservationId: reservation.id,
-    memberId: reservation.userId ?? null,
     path: reservationPath(reservation),
     summary: `${reservation.contactName?.trim() || "Zákazník"} si přesunul rezervaci na ${formatDateTime(reservation.startsAt)}.`,
     details: [
@@ -272,7 +274,6 @@ export async function notifyReservationCancelled(params: {
     event: "reservationCancelled",
     scope: reservation.id,
     reservationId: reservation.id,
-    memberId: reservation.userId ?? null,
     path: reservationPath(reservation),
     // The reason is whatever the operator typed, so it stays prose.
     summary: `Rezervace na ${formatDateTime(reservation.startsAt)} byla zrušena.${
@@ -296,7 +297,6 @@ export async function notifyNewMember(params: {
   await notify({
     event: "memberRegistered",
     scope: params.userId,
-    memberId: params.userId,
     path: `/admin/members/${params.userId}`,
     summary: `${name || params.email?.trim() || "Nový zákazník"} dokončil registraci.`,
     details: [
