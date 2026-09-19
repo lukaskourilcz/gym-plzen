@@ -20,6 +20,8 @@ import {
   stopEverything,
 } from "./setup";
 import assert from "node:assert/strict";
+import { receiveAction } from "../../src/lib/helpers/action-response";
+import { ok } from "../../src/lib/helpers/result";
 import { after, before, beforeEach, describe, test } from "node:test";
 import {
   findOwnReservation,
@@ -333,6 +335,37 @@ describe(
         { message: "Tento termín je již rezervovaný." },
       );
     });
+
+    for (const member of [false, true]) {
+      test(`a lost checkout response can be retried without a second booking or payment (${member ? "member" : "guest without cookie"})`, async () => {
+        if (member) await seedProfile(MEMBER);
+        const input = {
+          userId: member ? MEMBER.id : null,
+          startsAt: slot(10),
+          details: guestDetails(),
+        };
+        let original: Awaited<ReturnType<typeof startBooking>> | undefined;
+        const lost = await receiveAction(async () => {
+          original = await startBooking(input);
+          // No result (including the hold token/cookie) reaches the browser.
+          throw new TypeError("Load failed");
+        });
+        assert.equal(lost.received, false);
+        assert.equal(original?.kind, "checkout");
+        const retry = await receiveAction(async () =>
+          ok(await startBooking(input)),
+        );
+        if (!retry.received || !retry.result.ok) assert.fail("retry failed");
+        const recovered = retry.result.data;
+        assert.equal(recovered.reservationId, original?.reservationId);
+        assert.equal(recovered.kind, "checkout");
+        if (recovered.kind === "checkout" && original?.kind === "checkout")
+          assert.equal(recovered.url, original.url);
+        assert.equal(await reservationCount(), 1);
+        assert.equal(comgate.creates.length, 1);
+        assert.equal(resend.sent.length, 0);
+      });
+    }
 
     test("the gateway settling the payment confirms the booking and a repeat submit says so", async () => {
       const startsAt = slot(11);

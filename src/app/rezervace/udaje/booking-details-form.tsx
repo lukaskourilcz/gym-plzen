@@ -18,6 +18,17 @@ import { trackMetaEvent } from "@/lib/analytics/meta-pixel";
 import { formatMoney } from "@/lib/helpers/format";
 import type { VoucherQuote } from "@/lib/services/vouchers";
 import { quoteVoucherAction } from "../actions";
+import { receiveAction } from "@/lib/helpers/action-response";
+
+function reportTransportError(error: unknown, where: string) {
+  // Load monitoring only after a failure; reporting must never block recovery.
+  if (!process.env.NEXT_PUBLIC_SENTRY_DSN) return;
+  void import("@sentry/nextjs")
+    .then(({ captureException }) =>
+      captureException(error, { tags: { operation: where } }),
+    )
+    .catch(() => {});
+}
 
 /**
  * Booking details + the combined document consent, for members and guests
@@ -45,6 +56,7 @@ export function BookingDetailsForm({
 }) {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [checkoutInterrupted, setCheckoutInterrupted] = useState(false);
   const [voucherError, setVoucherError] = useState<string | null>(null);
   const [voucherQuote, setVoucherQuote] = useState<VoucherQuote | null>(null);
   const [voucherLoading, setVoucherLoading] = useState(false);
@@ -98,8 +110,18 @@ export function BookingDetailsForm({
       return;
     }
     setVoucherLoading(true);
-    const result = await quoteVoucherAction({ code, startsAt: startsAtISO });
+    const response = await receiveAction(() =>
+      quoteVoucherAction({ code, startsAt: startsAtISO }),
+    );
     setVoucherLoading(false);
+    if (!response.received) {
+      reportTransportError(response.error, "booking.quoteVoucher.transport");
+      setVoucherError(
+        "Ověření voucheru se nepodařilo dokončit. Zkontrolujte připojení a zkuste to znovu.",
+      );
+      return;
+    }
+    const result = response.result;
     if (!result.ok) {
       setVoucherError(result.error);
       return;
@@ -110,7 +132,19 @@ export function BookingDetailsForm({
 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
-    const result = await startCheckoutAction(values);
+    const response = await receiveAction(() => startCheckoutAction(values));
+    if (!response.received) {
+      reportTransportError(response.error, "booking.startCheckout.transport");
+      setCheckoutInterrupted(true);
+      setServerError(
+        "Nepodařilo se načíst výsledek rezervace. Vaše údaje zůstaly vyplněné. Zkontrolujte připojení a zkuste pokračovat znovu.",
+      );
+      // The server may already have created the hold. Refreshing here could
+      // redirect away from the form before the visitor can resume checkout.
+      return;
+    }
+    setCheckoutInterrupted(false);
+    const result = response.result;
     if (!result.ok) {
       setServerError(result.error);
       // The slot may have gone in the meantime; refresh so the calendar behind
@@ -305,9 +339,11 @@ export function BookingDetailsForm({
           ? "Přesměrováváme na platební bránu…"
           : formState.isSubmitting
             ? "Ukládám rezervaci…"
-            : effectivePriceCents === 0
-              ? "Potvrdit vstup zdarma"
-              : "Pokračovat k platbě"}{" "}
+            : checkoutInterrupted
+              ? "Zkusit pokračovat znovu"
+              : effectivePriceCents === 0
+                ? "Potvrdit vstup zdarma"
+                : "Pokračovat k platbě"}{" "}
         <ArrowRight aria-hidden="true" />
       </Button>
       <p className="mt-3 text-xs text-muted-foreground">
