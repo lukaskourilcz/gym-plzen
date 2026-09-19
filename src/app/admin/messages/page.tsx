@@ -20,7 +20,7 @@ import { hasDemoAdminSession } from "@/lib/auth/demo";
 export const metadata = { title: "Odeslané zprávy" };
 export const dynamic = "force-dynamic";
 
-/** Per-channel delivery status for every outbound message. */
+/** Sending status for every outbound message. */
 export default async function MessagesPage() {
   const demoEnabled = await hasDemoAdminSession();
   const { rows } = await withDemoFallback(
@@ -33,7 +33,7 @@ export default async function MessagesPage() {
     <div>
       <PageHeader
         title="Odeslané zprávy"
-        description="Každý e-mail, WhatsApp nebo SMS, které systém zákazníkům poslal, a zda dorazily. Stav doručení hlásí poskytovatelé zpráv."
+        description="Přehled e-mailů, WhatsApp zpráv a SMS, které systém zákazníkům odesílá, včetně stavu odeslání."
       />
       <Table>
         <TableHeader>
@@ -43,7 +43,6 @@ export default async function MessagesPage() {
             <TableHead>Typ</TableHead>
             <TableHead>Příjemce</TableHead>
             <TableHead>Stav</TableHead>
-            <TableHead>Doručeno</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -61,14 +60,11 @@ export default async function MessagesPage() {
                 {formatStatus(m.status)}
                 {m.failureReason ? ` (${m.failureReason})` : ""}
               </TableCell>
-              <TableCell>
-                {m.deliveredAt ? formatDateTime(m.deliveredAt) : "Nedoručeno"}
-              </TableCell>
             </TableRow>
           ))}
           {rows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={6} className="text-muted-foreground">
+              <TableCell colSpan={5} className="text-muted-foreground">
                 Zatím žádné zprávy.
               </TableCell>
             </TableRow>

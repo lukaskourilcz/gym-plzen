@@ -15,7 +15,7 @@ import {
   minutesToHHmm,
   RANGE_DASH,
 } from "@/lib/helpers/format";
-import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/helpers/datetime";
+import { addDaysToDateKey } from "@/lib/helpers/datetime";
 import { firstBookableDateKey } from "@/lib/config/booking-start";
 import { getSlotsForRange } from "@/lib/services/slots";
 import { cms } from "@/lib/services";
@@ -85,7 +85,6 @@ export const revalidate = 60;
 
 export default async function HomePage() {
   const now = new Date();
-  const today = dateKeyInTimeZone(now);
   const previewStart = firstBookableDateKey(now);
   const [content, heroDaysSetting] = await Promise.all([
     loadSiteContent(),
@@ -150,16 +149,6 @@ export default async function HomePage() {
     openingHours: `Mo-Su ${minutesToHHmm(DEFAULT_OPEN_MINUTE)}-${minutesToHHmm(DEFAULT_CLOSE_MINUTE)}`,
   };
   const previewDays: HeroAvailabilityDay[] = availability.days.map((day) => ({
-    label:
-      day.dateKey === today
-        ? "Dnes"
-        : day.dateKey === addDaysToDateKey(today, 1)
-          ? "Zítra"
-          : new Intl.DateTimeFormat("cs-CZ", {
-              weekday: "long",
-              day: "numeric",
-              timeZone: "UTC",
-            }).format(new Date(`${day.dateKey}T12:00:00Z`)),
     dateLabel: day.dateKey,
     slots: day.slots.map((slot) => ({
       label: formatTimeRange(slot.start, slot.end),

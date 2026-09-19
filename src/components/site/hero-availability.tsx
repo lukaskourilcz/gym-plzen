@@ -13,7 +13,6 @@ export interface HeroAvailabilitySlot {
 }
 
 export interface HeroAvailabilityDay {
-  label: string;
   dateLabel: string;
   slots: HeroAvailabilitySlot[];
 }
@@ -101,9 +100,9 @@ export function HeroAvailability({
               <ChevronLeft aria-hidden="true" className="size-4" />
             </button>
             <div className="min-w-0 text-center">
-              <div className="truncate text-sm font-extrabold">{day.label}</div>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-sm font-extrabold">
                 {new Intl.DateTimeFormat("cs-CZ", {
+                  weekday: "long",
                   day: "numeric",
                   month: "long",
                   timeZone: "UTC",
