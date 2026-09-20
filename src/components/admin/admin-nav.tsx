@@ -35,6 +35,7 @@ const NAV_GROUPS = [
       ["/admin/calendar", "Kalendář", CalendarDays],
       ["/admin/reservations", "Rezervace", ListChecks],
       ["/admin/schedule", "Otevírací doba a bloky", Clock3],
+      ["/admin/access-codes", "Vstupní kódy", KeyRound],
       ["/admin/entry-log", "Kniha vstupů", KeyRound],
     ],
   },

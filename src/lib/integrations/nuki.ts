@@ -194,3 +194,15 @@ export async function fetchLog(limit = 50): Promise<NukiLogEntry[]> {
     return [];
   }
 }
+
+/** Server-only admin read: no mutation, and no PINs in logs or persistent cache. */
+export async function readKeypadCodes(): Promise<Array<{ id: string; code: string }>> {
+  if (!isNukiConfigured()) throw new Error("Nuki not configured");
+  const lockId = smartlockId();
+  const auths = await httpRequest<NukiAuth[]>(`${API_BASE}/smartlock/${lockId}/auth`, {
+    headers: authHeader(), cache: "no-store", timeoutMs: 5000,
+  });
+  return auths.filter((auth) => auth.type === NUKI_TYPE_KEYPAD &&
+    String(auth.smartlockId) === lockId && /^[1-9]{6}$/.test(String(auth.code)))
+    .map((auth) => ({ id: auth.id, code: String(auth.code) }));
+}
