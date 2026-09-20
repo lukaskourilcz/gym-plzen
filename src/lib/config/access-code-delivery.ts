@@ -8,3 +8,11 @@ export function accessCodeDeliveryAt(startsAt: Date): Date {
 export function isAccessCodeDeliveryDue(startsAt: Date, now = new Date()): boolean {
   return now.getTime() >= accessCodeDeliveryAt(startsAt).getTime();
 }
+
+/** Sending a PIN early never grants entry before the reservation starts. */
+export function accessCodeValidity(startsAt: Date, endsAt: Date, showerMinutes: number) {
+  return {
+    validFrom: new Date(startsAt),
+    validUntil: new Date(endsAt.getTime() + showerMinutes * 60_000),
+  };
+}

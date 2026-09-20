@@ -17,9 +17,6 @@ export const DEFAULT_OPEN_MINUTE = 5 * 60; // 05:00
 export const DEFAULT_CLOSE_MINUTE = 23 * 60 + 45; // 23:45
 export const DEFAULT_SLOT_MINUTES = 75;
 
-/** Access code becomes valid this many minutes before the slot start. */
-export const CODE_LEAD_MINUTES = 15;
-
 /** Default shower grace: the access code stays valid this long AFTER the slot. */
 export const DEFAULT_SHOWER_MINUTES = 15;
 

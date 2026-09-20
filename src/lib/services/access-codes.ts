@@ -6,10 +6,9 @@ import { db } from "@/lib/db";
 import { accessCode } from "@/lib/db/schema";
 import type { AccessCode } from "@/lib/db/types";
 import { generateKeypadCode, hashCode } from "@/lib/helpers/crypto";
-import { addMinutes } from "@/lib/helpers/datetime";
+import { accessCodeValidity } from "@/lib/config/access-code-delivery";
 import { logger } from "@/lib/helpers/logger";
 import { createKeypadCode, deleteAuth, recoverKeypadCode } from "@/lib/integrations/nuki";
-import { CODE_LEAD_MINUTES } from "@/lib/config/schedule";
 import { getShowerMinutes } from "./schedule";
 
 /**
@@ -61,11 +60,9 @@ async function issueAccessCodeLocked(params: {
   )
     throw new Error("Existing access code must be reconciled or revoked first");
   const plaintext = generateKeypadCode();
-  // Code valid from a lead time before the slot until the end of the slot plus
-  // the shower grace, so the member can shower after training.
+  // Entry starts exactly with the reservation and includes the shower grace.
   const showerMinutes = await getShowerMinutes();
-  const validFrom = addMinutes(params.startsAt, -CODE_LEAD_MINUTES);
-  const validUntil = addMinutes(params.endsAt, showerMinutes);
+  const { validFrom, validUntil } = accessCodeValidity(params.startsAt, params.endsAt, showerMinutes);
 
   const [record] = await db
     .insert(accessCode)
