@@ -35,6 +35,7 @@ export interface SendEmailParams {
   text?: string;
   replyTo?: string;
   attachments?: EmailAttachment[];
+  idempotencyKey?: string;
 }
 
 export interface SendEmailResult {
@@ -65,7 +66,7 @@ export async function sendEmail(
     attachments: params.attachments?.length ? params.attachments : undefined,
   };
   try {
-    let { data, error } = await client().emails.send(payload);
+    let { data, error } = await client().emails.send(payload, { idempotencyKey: params.idempotencyKey });
     // Resend allows a couple of requests per second, and one confirmed
     // booking sends the customer's confirmation, the operator's notice and
     // sometimes a document within the same moment. A refusal for that reason
@@ -75,7 +76,7 @@ export async function sendEmail(
         subject: params.subject,
       });
       await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_PAUSE_MS));
-      ({ data, error } = await client().emails.send(payload));
+      ({ data, error } = await client().emails.send(payload, { idempotencyKey: params.idempotencyKey }));
     }
     if (error) {
       logger.error(error, { where: "resend.sendEmail" });

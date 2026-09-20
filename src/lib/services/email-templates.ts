@@ -80,6 +80,7 @@ export async function sendTransactionalEmail(params: {
   to: string;
   variables: Record<string, string>;
   attachments?: EmailAttachment[];
+  idempotencyKey?: string;
   /** Where the template's button leads, when the caller knows better. */
   actionUrl?: string;
 }): Promise<SendEmailResult> {
@@ -108,6 +109,7 @@ export async function sendTransactionalEmail(params: {
       ? `${rendered.body}\n\n${action.actionLabel}: ${action.actionUrl}`
       : rendered.body,
     attachments: params.attachments,
+    idempotencyKey: params.idempotencyKey,
     html: emailTextToHtml(rendered.body, action),
   });
 }

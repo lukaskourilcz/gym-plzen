@@ -5,10 +5,10 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { accessCode } from "@/lib/db/schema";
 import type { AccessCode } from "@/lib/db/types";
-import { generateNumericCode, hashCode } from "@/lib/helpers/crypto";
+import { generateKeypadCode, hashCode } from "@/lib/helpers/crypto";
 import { addMinutes } from "@/lib/helpers/datetime";
 import { logger } from "@/lib/helpers/logger";
-import { createKeypadCode, deleteAuth } from "@/lib/integrations/nuki";
+import { createKeypadCode, deleteAuth, recoverKeypadCode } from "@/lib/integrations/nuki";
 import { CODE_LEAD_MINUTES } from "@/lib/config/schedule";
 import { getShowerMinutes } from "./schedule";
 
@@ -60,7 +60,7 @@ async function issueAccessCodeLocked(params: {
     existing.some((row) => row.status !== "revoked" && row.status !== "expired")
   )
     throw new Error("Existing access code must be reconciled or revoked first");
-  const plaintext = generateNumericCode(6);
+  const plaintext = generateKeypadCode();
   // Code valid from a lead time before the slot until the end of the slot plus
   // the shower grace, so the member can shower after training.
   const showerMinutes = await getShowerMinutes();
@@ -102,7 +102,7 @@ async function issueAccessCodeLocked(params: {
       })
       .where(eq(accessCode.id, record.id));
   } else {
-    logger.warn("Nuki provisioning failed; code stored for retry", {
+    logger.warn("Nuki provisioning unconfirmed; authorization will be reconciled", {
       reservationId: params.reservationId,
       error: lock.error,
     });
@@ -142,10 +142,15 @@ async function revokeAccessCodeLocked(id: string): Promise<void> {
     .where(eq(accessCode.id, id))
     .limit(1);
   if (!row || row.status === "revoked") return;
-  if (row.failureReason === "provisioning_unknown" && !row.nukiAuthId)
-    throw new Error(
-      "Unknown Nuki authorization must be reconciled before revocation",
-    );
+  if (row.failureReason === "provisioning_unknown" && !row.nukiAuthId) {
+    const recovered = await recoverKeypadCode({
+      codeHash: row.codeHash, allowedFrom: row.validFrom, allowedUntil: row.validUntil,
+    });
+    if (!recovered) throw new Error("Unknown Nuki authorization must be reconciled before revocation");
+    row.nukiAuthId = recovered.nukiAuthId;
+    await db.update(accessCode).set({ nukiAuthId: recovered.nukiAuthId, updatedAt: new Date() })
+      .where(eq(accessCode.id, id));
+  }
   if (row.nukiAuthId && !(await deleteAuth(row.nukiAuthId))) {
     throw new Error(
       "Nuki code revocation failed; the code is still considered active.",
@@ -165,4 +170,18 @@ export async function listCodesForReservation(
     .select()
     .from(accessCode)
     .where(eq(accessCode.reservationId, reservationId));
+}
+
+/** Resume a timed-out create or email attempt without changing the customer's PIN. */
+export async function recoverAccessCode(row: AccessCode): Promise<string | null> {
+  const recovered = await recoverKeypadCode({
+    codeHash: row.codeHash, allowedFrom: row.validFrom,
+    allowedUntil: row.validUntil, nukiAuthId: row.nukiAuthId,
+  });
+  if (!recovered) return null;
+  await db.update(accessCode).set({
+    nukiAuthId: recovered.nukiAuthId, status: "scheduled",
+    failureReason: null, updatedAt: new Date(),
+  }).where(eq(accessCode.id, row.id));
+  return recovered.plaintext;
 }

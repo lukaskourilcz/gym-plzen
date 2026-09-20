@@ -16,6 +16,11 @@ export function generateNumericCode(digits = 6): string {
   return randomInt(0, max).toString().padStart(digits, "0");
 }
 
+/** Nuki keypads have digits 1–9; zero cannot be entered. */
+export function generateKeypadCode(): string {
+  return Array.from({ length: 6 }, () => randomInt(1, 10)).join("");
+}
+
 /** One-way hash of an access code for storage (we never need the plaintext back). */
 export function hashCode(code: string): string {
   return createHash("sha256").update(code).digest("hex");

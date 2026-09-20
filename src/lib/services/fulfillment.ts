@@ -5,11 +5,10 @@ import { getReservation } from "./reservations";
 import {
   issueAccessCode,
   listCodesForReservation,
-  revokeAccessCode,
+  recoverAccessCode,
 } from "./access-codes";
 import {
   dispatchAccessCode,
-  loadMemberChannels,
   sendReservationConfirmation,
 } from "./notifications";
 import { notifyReservationConfirmed } from "./operator-notifications";
@@ -94,14 +93,6 @@ async function fulfillLocked(reservationId: string): Promise<void> {
 
   // Step: code_created : issue a code + provision it on the lock (once).
   const existing = await listCodesForReservation(reservationId);
-  if (existing.some((code) => code.failureReason === "provisioning_unknown")) {
-    await markStepFailed(
-      reservationId,
-      "code_created",
-      "Předchozí požadavek na zámek má neznámý výsledek. Ověřte autorizaci v Nuki; automaticky se další kód nevytvoří.",
-    );
-    return;
-  }
   const pipeline = await getPipeline(reservationId);
   const deliveryDone = pipeline.some(
     (step) => step.step === "code_delivered" && step.status === "succeeded",
@@ -111,26 +102,22 @@ async function fulfillLocked(reservationId: string): Promise<void> {
     (c) => ["scheduled", "active", "used"].includes(c.status) && c.nukiAuthId,
   );
 
-  const needsFreshCode =
-    existing.length === 0 || !codeReady || (codeReady && !deliveryDone);
-
-  if (needsFreshCode && !deliveryDone) {
-    if (codeReady) {
-      const revocations = await Promise.allSettled(
-        existing
-          .filter((code) => code.nukiAuthId && code.status !== "revoked")
-          .map((code) => revokeAccessCode(code.id)),
-      );
-      if (revocations.some((result) => result.status === "rejected")) {
-        await markStepFailed(
-          reservationId,
-          "code_created",
-          "Previous access code could not be revoked",
-        );
-        return;
-      }
-      codeReady = false;
+  const liveCode = existing.find((code) => !["revoked", "expired"].includes(code.status));
+  let accessCodeId = liveCode?.id;
+  if (!deliveryDone && liveCode) {
+    try {
+      plaintext = await recoverAccessCode(liveCode);
+    } catch {
+      plaintext = null;
     }
+    if (!plaintext) {
+      await markStepFailed(reservationId, "code_created",
+        "Nuki zatím nepotvrdilo správný kód a jeho platnost. Další kód se nevytváří.");
+      return;
+    }
+    codeReady = true;
+    await markStepSucceeded(reservationId, "code_created");
+  } else if (!deliveryDone) {
     try {
       const issued = await issueAccessCode({
         reservationId,
@@ -139,6 +126,7 @@ async function fulfillLocked(reservationId: string): Promise<void> {
         memberName: reservation.contactName,
       });
       plaintext = issued.plaintext;
+      accessCodeId = issued.accessCode.id;
       codeReady = issued.provisionedOnLock;
       if (issued.provisionedOnLock) {
         await markStepSucceeded(reservationId, "code_created");
@@ -162,23 +150,20 @@ async function fulfillLocked(reservationId: string): Promise<void> {
     await markStepSucceeded(reservationId, "code_created");
   }
 
-  // Step: code_delivered : dispatch across channels. We can only deliver a
-  // freshly-generated plaintext (we never store it); on retries without a new
-  // code we treat delivery as already handled by the original run.
+  // Deliver a newly confirmed PIN or the same PIN recovered from Nuki.
+  // A stable Resend key prevents duplicate sends after an ambiguous response.
   if (plaintext) {
-    const channels = reservation.userId
-      ? await loadMemberChannels(reservation.userId)
-      : null;
     const outcome = await dispatchAccessCode({
+      accessCodeId,
       userId: reservation.userId ?? null,
       reservationId,
       name: reservation.contactName,
       code: plaintext,
       startsAt: reservation.startsAt,
       email: reservation.contactEmail,
-      phone: channels ? channels.phone : reservation.contactPhone,
-      notifyByWhatsapp: channels?.notifyByWhatsapp ?? false,
-      notifyBySms: channels?.notifyBySms ?? false,
+      // Email is the only enabled delivery channel for access codes.
+      notifyByWhatsapp: false,
+      notifyBySms: false,
     });
 
     if (outcome.emailDelivered) {

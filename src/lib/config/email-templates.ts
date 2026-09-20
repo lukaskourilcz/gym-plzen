@@ -94,7 +94,7 @@ export const EMAIL_TEMPLATE_DEFINITIONS: readonly EmailTemplateDefinition[] = [
     delivery: "application",
     fallback: {
       subject: "Váš vstupní kód | NAVI Private Gym",
-      body: "Ahoj {name},\n\nvaše rezervace je dnes {time}.\n\nVstupní kód: {code}\n\nKód zadejte na klávesnici u dveří v čase vaší rezervace. Kód je osobní a platí pouze pro tento termín.\n\nNAVI Private Gym",
+      body: "Ahoj {name},\n\nváš termín rezervace: {time}.\n\nVstupní kód: {code}\n\nKód zadejte na klávesnici u dveří v čase vaší rezervace. Kód je osobní a platí pouze pro tento termín.\n\nNAVI Private Gym",
     },
   },
   {

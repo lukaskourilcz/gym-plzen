@@ -59,6 +59,7 @@ async function record(
 }
 
 export interface AccessCodeMessageContext {
+  accessCodeId?: string;
   userId: string | null;
   reservationId: string;
   name?: string | null;
@@ -91,6 +92,7 @@ export async function dispatchAccessCode(
   if (ctx.email) {
     const result = await sendTransactionalEmail({
       id: "access_code",
+      idempotencyKey: ctx.accessCodeId ? `access-code/${ctx.accessCodeId}` : undefined,
       to: ctx.email,
       variables: {
         name: ctx.name || "zákazníku",

@@ -1,5 +1,6 @@
 import { hasEnv, requireEnv } from "@/lib/env";
 import { httpRequest } from "@/lib/helpers/http";
+import { hashCode } from "@/lib/helpers/crypto";
 import { logger } from "@/lib/helpers/logger";
 
 /**
@@ -42,48 +43,105 @@ export interface CreateCodeResult {
   error?: string;
 }
 
-/**
- * Create a time-limited keypad code on the lock. Nuki expects the code as a
- * number and times as ISO strings; the window uses `allowedFromDate`/
- * `allowedUntilDate`.
- */
-export async function createKeypadCode(
-  params: CreateCodeParams,
-): Promise<CreateCodeResult> {
-  if (!isNukiConfigured()) {
-    logger.warn("Nuki not configured : keypad code not created");
-    return { created: false, error: "nuki_not_configured" };
+export interface CodeIdentity {
+  codeHash: string;
+  allowedFrom: Date;
+  allowedUntil: Date;
+  nukiAuthId?: string | null;
+}
+
+interface NukiAuth {
+  id: string;
+  smartlockId: number;
+  type: number;
+  code?: number;
+  enabled: boolean;
+  allowedFromDate?: string;
+  allowedUntilDate?: string;
+  allowedWeekDays?: number;
+  allowedFromTime?: number;
+  allowedUntilTime?: number;
+  operationId?: unknown;
+  error?: string;
+}
+
+/** Read back the actual authorization. An accepted PUT alone is not success. */
+export function createNukiClient(
+  config: { token: string; lockId: string },
+  request: typeof httpRequest = httpRequest,
+  pause: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms)),
+) {
+  const url = `${API_BASE}/smartlock/${config.lockId}/auth`;
+  const headers = { authorization: `Bearer ${config.token}` };
+  async function list() {
+    return request<NukiAuth[]>(url, { headers, cache: "no-store", timeoutMs: 5000 });
   }
-  try {
-    const res = await httpRequest<{ id?: string } | unknown>(
-      `${API_BASE}/smartlock/${smartlockId()}/auth`,
-      {
-        method: "PUT",
-        headers: authHeader(),
-        retries: 0,
+  async function recover(identity: CodeIdentity) {
+    const matches = (await list()).filter((auth) =>
+      auth.type === NUKI_TYPE_KEYPAD &&
+      String(auth.smartlockId) === config.lockId &&
+      (!identity.nukiAuthId || auth.id === identity.nukiAuthId) &&
+      /^[1-9]{6}$/.test(String(auth.code)) &&
+      hashCode(String(auth.code)) === identity.codeHash &&
+      Date.parse(auth.allowedFromDate ?? "") === identity.allowedFrom.getTime() &&
+      Date.parse(auth.allowedUntilDate ?? "") === identity.allowedUntil.getTime(),
+    );
+    if (matches.length !== 1) return null;
+    const auth = matches[0];
+    if (!auth || !auth.id || !auth.enabled || auth.operationId || auth.error ||
+        (auth.allowedWeekDays != null && auth.allowedWeekDays !== 127) ||
+        (auth.allowedFromTime != null && auth.allowedFromTime !== 0) ||
+        (auth.allowedUntilTime != null && auth.allowedUntilTime !== 0)) return null;
+    return { nukiAuthId: auth.id, plaintext: String(auth.code) };
+  }
+  async function create(params: CreateCodeParams): Promise<CreateCodeResult> {
+    if (!/^[1-9]{6}$/.test(String(params.code)) ||
+        !Number.isFinite(params.allowedFrom.getTime()) ||
+        !Number.isFinite(params.allowedUntil.getTime()) ||
+        params.allowedFrom >= params.allowedUntil) {
+      return { created: false, error: "invalid_nuki_code_or_window" };
+    }
+    // Never repeat the mutation, even if its response is lost. GET can recover it.
+    try {
+      await request(url, {
+        method: "PUT", headers, retries: 0, timeoutMs: 5000,
         json: {
-          name: params.name,
-          type: NUKI_TYPE_KEYPAD,
-          code: params.code,
+          name: params.name.slice(0, 32), type: NUKI_TYPE_KEYPAD,
+          code: params.code, remoteAllowed: false,
           allowedFromDate: params.allowedFrom.toISOString(),
           allowedUntilDate: params.allowedUntil.toISOString(),
+          allowedWeekDays: 127, allowedFromTime: 0, allowedUntilTime: 0,
         },
-      },
-    );
-    // The PUT auth endpoint is asynchronous; the created auth id is resolved by
-    // listing auths or via callback. We return whatever id came back if any.
-    const id =
-      res && typeof res === "object" && "id" in res
-        ? String((res as { id: unknown }).id)
-        : undefined;
-    return { created: true, nukiAuthId: id };
-  } catch (e) {
-    logger.error(e, { where: "nuki.createKeypadCode" });
-    return {
-      created: false,
-      error: e instanceof Error ? e.message : "unknown",
-    };
+      });
+    } catch {
+      // Outcome may be unknown; do not log the API body (it can contain a PIN).
+    }
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt) await pause(1000);
+      try {
+        const result = await recover({ ...params, codeHash: hashCode(String(params.code)) });
+        if (result) return { created: true, nukiAuthId: result.nukiAuthId };
+      } catch { /* The watchdog will reconcile without issuing another code. */ }
+    }
+    return { created: false, error: "provisioning_unknown" };
   }
+  return { create, recover };
+}
+
+function configuredClient() {
+  const { NUKI_API_TOKEN, NUKI_SMARTLOCK_ID } = requireEnv("NUKI_API_TOKEN", "NUKI_SMARTLOCK_ID");
+  return createNukiClient({ token: NUKI_API_TOKEN, lockId: NUKI_SMARTLOCK_ID });
+}
+
+export async function createKeypadCode(params: CreateCodeParams): Promise<CreateCodeResult> {
+  if (!isNukiConfigured()) return { created: false, error: "nuki_not_configured" };
+  return configuredClient().create(params);
+}
+
+/** Recover plaintext only from a matching, synced Nuki authorization, never storage. */
+export async function recoverKeypadCode(identity: CodeIdentity) {
+  if (!isNukiConfigured()) return null;
+  return configuredClient().recover(identity);
 }
 
 /** Remove a previously created keypad code (revocation / cleanup). */
@@ -98,7 +156,17 @@ export async function deleteAuth(nukiAuthId: string): Promise<boolean> {
         retries: 2,
       },
     );
-    return true;
+    // Deletion is asynchronous too. Do not release the reservation until the
+    // authorization has actually disappeared from the device's synced state.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt) await new Promise((resolve) => setTimeout(resolve, 1000));
+      const auths = await httpRequest<NukiAuth[]>(
+        `${API_BASE}/smartlock/${smartlockId()}/auth`,
+        { headers: authHeader(), cache: "no-store", timeoutMs: 5000 },
+      );
+      if (!auths.some((auth) => auth.id === nukiAuthId)) return true;
+    }
+    return false;
   } catch (e) {
     logger.error(e, { where: "nuki.deleteAuth", nukiAuthId });
     return false;
