@@ -1,4 +1,3 @@
-import { FailedAttemptsDialog } from "@/components/admin/failed-attempts-dialog";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/guards";
 import { listAdminAccessCodes } from "@/lib/services/admin-access-codes";
@@ -32,7 +31,7 @@ export default async function AccessCodesPage({ searchParams }: {
       {nukiUnavailable && <p role="status" className="mb-4 rounded-md border p-3 text-sm">Nuki se teď nepodařilo načíst. Zobrazujeme uloženou platnost a poslední dvě číslice kódů. Zkuste stránku obnovit.</p>}
       <p className="mb-4 text-sm text-muted-foreground">Použití potvrzuje úspěšné otevření kódem podle dostupné historie Nuki. Nový záznam se objeví po synchronizaci zámku a obnovení stránky.</p>
       {usageUnavailable && <p role="status" className="mb-4 rounded-md border p-3 text-sm">Historii použití se nepodařilo načíst celou. Zobrazujeme potvrzené uložené záznamy; ostatní použití nyní nelze ověřit.</p>}
-      <div className="mb-4"><FailedAttemptsDialog attempts={unassignedFailures} unavailable={usageUnavailable} unassigned /></div>
+      <p className="mb-4 text-sm text-muted-foreground">Nepřiřazené neúspěšné pokusy: <strong>{unassignedFailures.length}</strong>{usageUnavailable ? " (historie není úplná)" : ""}. Tyto pokusy Nuki nespojilo s konkrétním kódem. Sloupec u zákazníka počítá pouze pokusy přiřazené k jeho kódu.</p>
       <Table>
         <TableHeader><TableRow>
           <TableHead>Kód</TableHead><TableHead>Zákazník</TableHead><TableHead>Platí od</TableHead>
@@ -62,7 +61,7 @@ export default async function AccessCodesPage({ searchParams }: {
                 </details>}
               </> : <span className="text-sm text-muted-foreground">{usageUnavailable ? "Nelze ověřit" : "Bez záznamu použití"}</span>}
             </TableCell>
-            <TableCell><FailedAttemptsDialog attempts={row.failures} unavailable={usageUnavailable} /></TableCell>
+            <TableCell><span className="font-semibold">{row.failures.length}</span>{usageUnavailable && <span className="block text-xs text-muted-foreground">Neúplné údaje</span>}</TableCell>
             <TableCell>
               <Link className="font-semibold text-accent-foreground hover:underline" href={`/admin/reservations?id=${row.reservationId}`}>
                 {formatDateTime(row.reservationStart)}
