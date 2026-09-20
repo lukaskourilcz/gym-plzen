@@ -176,6 +176,9 @@ export async function deleteAuth(nukiAuthId: string): Promise<boolean> {
 export interface NukiLogEntry {
   id: string;
   name?: string;
+  authId?: string;
+  state?: number;
+  source?: number;
   action?: number;
   trigger?: number;
   date: string;
@@ -205,4 +208,25 @@ export async function readKeypadCodes(): Promise<Array<{ id: string; code: strin
   return auths.filter((auth) => auth.type === NUKI_TYPE_KEYPAD &&
     String(auth.smartlockId) === lockId && /^[1-9]{6}$/.test(String(auth.code)))
     .map((auth) => ({ id: auth.id, code: String(auth.code) }));
+}
+
+/** Paginate the retained activity history; never turn an API failure into "unused". */
+export async function readKeypadUsageLog(from: Date): Promise<{ entries: NukiLogEntry[]; complete: boolean }> {
+  if (!isNukiConfigured()) throw new Error("Nuki not configured");
+  const entries: NukiLogEntry[] = [];
+  let cursor: string | undefined;
+  for (let page = 0; page < 20; page++) {
+    const query = new URLSearchParams({ limit: "50", fromDate: from.toISOString() });
+    if (cursor) query.set("id", cursor);
+    const batch = await httpRequest<NukiLogEntry[]>(
+      `${API_BASE}/smartlock/${smartlockId()}/log?${query}`,
+      { headers: authHeader(), cache: "no-store", timeoutMs: 5000, retries: 0 },
+    );
+    entries.push(...batch);
+    if (batch.length < 50) return { entries, complete: true };
+    const next = batch[batch.length - 1]?.id;
+    if (!next || next === cursor) break;
+    cursor = next;
+  }
+  return { entries, complete: false };
 }

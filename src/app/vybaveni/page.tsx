@@ -85,7 +85,7 @@ export default async function EquipmentPage() {
                     >
                       {zone.title}
                     </h3>
-                    <p className="mt-4 text-sm leading-6 opacity-85">
+                    <p className="mt-4 whitespace-pre-line text-sm leading-6 opacity-85">
                       {zone.body}
                     </p>
                   </div>

@@ -1,8 +1,10 @@
-import { and, desc, gte, lt } from "drizzle-orm";
+import { and, desc, gte, lt, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { entryLog } from "@/lib/db/schema";
+import { entryLog, accessCode, reservation } from "@/lib/db/schema";
 import type { EntryLog } from "@/lib/db/types";
 import { fetchLog, type NukiLogEntry } from "@/lib/integrations/nuki";
+import { isSuccessfulKeypadUse } from "@/lib/helpers/nuki-usage";
+import { eq } from "drizzle-orm";
 import { logger } from "@/lib/helpers/logger";
 
 /**
@@ -23,7 +25,11 @@ const TRIGGERS: Record<number, string> = {
   1: "manual",
   2: "button",
   3: "automatic",
-  6: "keypad",
+  4: "web",
+  5: "app",
+  6: "auto_lock",
+  7: "accessory",
+  255: "keypad",
 };
 
 /** Pull the latest lock log entries and upsert new ones (idempotent by nukiLogId). */
@@ -31,7 +37,16 @@ export async function syncEntryLog(limit = 50): Promise<{ inserted: number }> {
   const entries = await fetchLog(limit);
   if (entries.length === 0) return { inserted: 0 };
 
-  const rows = entries.map(mapEntry);
+  const ids = entries.filter(isSuccessfulKeypadUse).map(e => e.authId!);
+  const linked = ids.length ? await db.select({ codeId: accessCode.id, authId: accessCode.nukiAuthId,
+    reservationId: accessCode.reservationId, userId: reservation.userId })
+    .from(accessCode).innerJoin(reservation, eq(reservation.id, accessCode.reservationId))
+    .where(inArray(accessCode.nukiAuthId, ids)) : [];
+  const rows = entries.map(e => {
+    const match = isSuccessfulKeypadUse(e) ? linked.find(c => c.authId === e.authId) : undefined;
+    return { ...mapEntry(e), accessCodeId: match?.codeId ?? null,
+      reservationId: match?.reservationId ?? null, userId: match?.userId ?? null };
+  });
   const result = await db
     .insert(entryLog)
     .values(rows)

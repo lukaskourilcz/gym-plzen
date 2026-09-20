@@ -17,8 +17,8 @@ export default async function AccessCodesPage({ searchParams }: {
   const params = await searchParams;
   const rawPage = Number(params.page);
   const page = Number.isSafeInteger(rawPage) && rawPage > 0 && rawPage <= 100000 ? rawPage : 1;
-  const { rows, hasNext, nukiUnavailable } = admin.isDemo
-    ? { rows: [], hasNext: false, nukiUnavailable: false }
+  const { rows, hasNext, nukiUnavailable, usageUnavailable } = admin.isDemo
+    ? { rows: [], hasNext: false, nukiUnavailable: false, usageUnavailable: false }
     : await listAdminAccessCodes(page);
   const now = new Date();
   return (
@@ -29,10 +29,12 @@ export default async function AccessCodesPage({ searchParams }: {
         Plný kód je dostupný, dokud ho Nuki uchovává; u odstraněných kódů vidíte poslední dvě číslice.
       </p>
       {nukiUnavailable && <p role="status" className="mb-4 rounded-md border p-3 text-sm">Nuki se teď nepodařilo načíst. Zobrazujeme uloženou platnost a poslední dvě číslice kódů. Zkuste stránku obnovit.</p>}
+      <p className="mb-4 text-sm text-muted-foreground">Použití potvrzuje úspěšné otevření kódem podle dostupné historie Nuki. Nový záznam se objeví po synchronizaci zámku a obnovení stránky.</p>
+      {usageUnavailable && <p role="status" className="mb-4 rounded-md border p-3 text-sm">Historii použití se nepodařilo načíst celou. Zobrazujeme potvrzené uložené záznamy; ostatní použití nyní nelze ověřit.</p>}
       <Table>
         <TableHeader><TableRow>
           <TableHead>Kód</TableHead><TableHead>Zákazník</TableHead><TableHead>Platí od</TableHead>
-          <TableHead>Platí do</TableHead><TableHead>Stav kódu</TableHead><TableHead>Rezervace</TableHead>
+          <TableHead>Platí do</TableHead><TableHead>Stav kódu</TableHead><TableHead>Použito</TableHead><TableHead>Rezervace</TableHead>
         </TableRow></TableHeader>
         <TableBody>
           {rows.map((row) => <TableRow key={row.id}>
@@ -49,6 +51,15 @@ export default async function AccessCodesPage({ searchParams }: {
             <TableCell className="whitespace-nowrap">{formatDateTime(row.validFrom)}</TableCell>
             <TableCell className="whitespace-nowrap">{formatDateTime(row.validUntil)}</TableCell>
             <TableCell>{accessCodeStatusLabel(row, now)}</TableCell>
+            <TableCell className="min-w-44">
+              {row.usedAt.length ? <>
+                <span className="font-semibold">Ano ({row.usedAt.length}×)</span>
+                <span className="block whitespace-nowrap text-xs">{formatDateTime(row.usedAt[0]!)}</span>
+                {row.usedAt.length > 1 && <details className="mt-1 text-xs"><summary className="cursor-pointer">Všechny časy použití</summary>
+                  <ul>{row.usedAt.map(at => <li key={at.toISOString()}>{formatDateTime(at)}</li>)}</ul>
+                </details>}
+              </> : <span className="text-sm text-muted-foreground">{usageUnavailable ? "Nelze ověřit" : "Bez záznamu použití"}</span>}
+            </TableCell>
             <TableCell>
               <Link className="font-semibold text-accent-foreground hover:underline" href={`/admin/reservations?id=${row.reservationId}`}>
                 {formatDateTime(row.reservationStart)}
@@ -56,7 +67,7 @@ export default async function AccessCodesPage({ searchParams }: {
               <span className="block text-xs text-muted-foreground">{formatStatus(row.reservationStatus)}</span>
             </TableCell>
           </TableRow>)}
-          {!rows.length && <TableRow><TableCell colSpan={6} className="text-muted-foreground">Na této stránce nejsou žádné kódy. Kódy pro budoucí rezervace se vytvářejí nejdříve hodinu před začátkem.</TableCell></TableRow>}
+          {!rows.length && <TableRow><TableCell colSpan={7} className="text-muted-foreground">Na této stránce nejsou žádné kódy. Kódy pro budoucí rezervace se vytvářejí nejdříve hodinu před začátkem.</TableCell></TableRow>}
         </TableBody>
       </Table>
       <nav aria-label="Stránkování vstupních kódů" className="mt-4 flex items-center gap-4">

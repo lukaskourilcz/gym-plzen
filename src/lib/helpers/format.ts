@@ -153,6 +153,7 @@ export function formatSeverity(severity: string): string {
 }
 
 const LOCK_ACTION_LABELS: Record<string, string> = {
+  keypad_open: "Otevření kódem",
   unlock: "Odemčení",
   lock: "Zamčení",
   unlatch: "Otevření dveří",
@@ -165,6 +166,10 @@ const LOCK_TRIGGER_LABELS: Record<string, string> = {
   button: "Tlačítko na zámku",
   automatic: "Automaticky",
   keypad: "Klávesnice",
+  auto_lock: "Automatické zamčení",
+  app: "Aplikace",
+  web: "Nuki Web",
+  accessory: "Příslušenství",
 };
 
 /** What the lock did, in the entry book. */
