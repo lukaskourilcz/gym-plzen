@@ -1,3 +1,4 @@
+import { keypadFailureReason } from "./nuki-usage";
 /**
  * Presentation helpers : currency, dates, phone. Formatting is Czech-locale by
  * default to match the site's primary audience.
@@ -174,6 +175,7 @@ const LOCK_TRIGGER_LABELS: Record<string, string> = {
 
 /** What the lock did, in the entry book. */
 export function formatLockAction(action: string): string {
+  if (action.startsWith("keypad_failure_")) return keypadFailureReason(Number(action.replace("keypad_failure_", "")));
   return LOCK_ACTION_LABELS[action] ?? action;
 }
 
