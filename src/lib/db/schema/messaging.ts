@@ -80,3 +80,23 @@ export const marketingCampaign = pgTable("marketing_campaign", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+/** Exact sent content. Short-lived, server-only, never used for deduplication. */
+export const emailArchive = pgTable(
+  "email_archive",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    providerMessageId: text("provider_message_id").notNull().unique(),
+    sender: text("sender").notNull(),
+    recipient: text("recipient").notNull(),
+    subject: text("subject").notNull(),
+    html: text("html").notNull(),
+    bodyText: text("body_text"),
+    attachmentNames: jsonb("attachment_names")
+      .$type<string[]>()
+      .notNull()
+      .default([]),
+    sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("email_archive_sent_at_idx").on(t.sentAt)],
+);
