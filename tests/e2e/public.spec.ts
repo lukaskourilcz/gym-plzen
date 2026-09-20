@@ -270,7 +270,7 @@ test.describe("Public site", () => {
     ).toBeVisible();
     await expect(
       page.getByRole("link", { name: /WhatsApp, NAVI Private Gym/i }),
-    ).toHaveAttribute("href", "https://wa.me/420731737355");
+    ).toHaveAttribute("href", "https://wa.me/420732817217");
     await expect(
       page.getByRole("link", { name: /Facebook, NAVI Private Gym/i }),
     ).toHaveAttribute(

@@ -83,7 +83,10 @@ function publicInstagram(value?: string | null) {
   return instagram;
 }
 
-/** Derive WhatsApp exclusively from the primary public Czech phone. */
+/** Dedicated NAVI Business inbox, separate from the public voice-call number. */
+export const PUBLIC_WHATSAPP_PHONE = "+420 732 817 217";
+
+/** Format a phone as a WhatsApp click-to-chat URL. */
 export function publicWhatsApp(phone?: string | null) {
   let digits = phone?.replace(/\D/g, "") ?? "";
   if (digits.startsWith("00")) digits = digits.slice(2);
@@ -320,7 +323,7 @@ export function footerProps(content: SiteContent) {
     address: publicAddress(content.get("contact.address")),
     facebookUrl: publicFacebook(content.get("contact.facebook")),
     instagramUrl: publicInstagram(content.get("contact.instagram")),
-    whatsappUrl: publicWhatsApp(phone),
+    whatsappUrl: publicWhatsApp(PUBLIC_WHATSAPP_PHONE),
   };
 }
 
