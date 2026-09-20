@@ -8,11 +8,13 @@
 
 ## Fulfillment
 
-After confirmation/payment, an enabled lock workflow creates a six-digit PIN containing only digits 1–9. Validity begins 15 minutes before the reservation and ends after its configured shower grace period. The PIN is emailed after Nuki confirms the matching authorization, time limits and completed synchronization.
+Confirmation/payment emails are immediate. The enabled lock workflow waits until 60 minutes before the reservation before it creates a six-digit PIN containing only digits 1–9. Validity begins 15 minutes before the reservation and ends after its configured shower grace period. The PIN is emailed after Nuki confirms the matching authorization, time limits and completed synchronization.
 
 Nuki's asynchronous PUT returns HTTP 204 without an authorization ID. The adapter reads the authorization list to resolve it, with bounded polling. Unknown outcomes are reconciled by the watchdog without another PUT. PINs remain hashed in the database; email retries recover the original PIN from Nuki by hash, authorization ID and exact validity window. Resend uses an idempotency key based on the access-code record (provider deduplication window: 24 hours).
 
 Cancellation verifies that Nuki has removed the authorization before marking it revoked. A pending or failed operation leaves an actionable pipeline failure; it must never cause an unverified code to be sent.
+
+The watchdog checks due reservations every minute. Bookings confirmed inside the one-hour window are fulfilled immediately. Future PIN steps do not consume retry batches, and the fulfillment entry point independently enforces the time boundary. Emails sent before this correction cannot be recalled.
 
 ## Checks
 

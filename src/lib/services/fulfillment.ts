@@ -1,3 +1,4 @@
+import { isAccessCodeDeliveryDue } from "@/lib/config/access-code-delivery";
 import { withReservationLock } from "./operation-lock";
 import { getOperations } from "./operations";
 import { logger } from "@/lib/helpers/logger";
@@ -90,6 +91,10 @@ async function fulfillLocked(reservationId: string): Promise<void> {
   // receive their confirmation/document while lock work remains dormant.
   await markStepSucceeded(reservationId, "payment");
   if (!(await getOperations()).accessCodesEnabled) return;
+
+  // This guard applies to every caller: payment, admin booking and watchdog.
+  // Confirmation goes out immediately, but PINs never before start minus 60 min.
+  if (!isAccessCodeDeliveryDue(reservation.startsAt)) return;
 
   // Step: code_created : issue a code + provision it on the lock (once).
   const existing = await listCodesForReservation(reservationId);

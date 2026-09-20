@@ -1,3 +1,4 @@
+import { ACCESS_CODE_NOTICE_MINUTES } from "@/lib/config/access-code-delivery";
 import { and, eq, getTableColumns, gt, isNull, lte, or } from "drizzle-orm";
 import { db, type DatabaseExecutor } from "@/lib/db";
 import { getOperations } from "./operations";
@@ -114,6 +115,7 @@ export async function markStepFailed(
 /** Steps that are due for a retry now (consumed by the watchdog cron). */
 export async function dueForRetry(limit = 50): Promise<ReservationPipeline[]> {
   const { accessCodesEnabled } = await getOperations();
+  const now = new Date();
   return db
     .select(getTableColumns(reservationPipeline))
     .from(reservationPipeline)
@@ -127,14 +129,19 @@ export async function dueForRetry(limit = 50): Promise<ReservationPipeline[]> {
         accessCodesEnabled
           ? undefined
           : eq(reservationPipeline.step, "payment"),
-        gt(reservation.endsAt, new Date()),
+        // Future PIN steps must not occupy the retry batch and starve due ones.
+        or(
+          eq(reservationPipeline.step, "payment"),
+          lte(reservation.startsAt, addMinutes(now, ACCESS_CODE_NOTICE_MINUTES)),
+        ),
+        gt(reservation.endsAt, now),
         or(
           eq(reservationPipeline.status, "retrying"),
           eq(reservationPipeline.status, "pending"),
         ),
         or(
           isNull(reservationPipeline.nextRetryAt),
-          lte(reservationPipeline.nextRetryAt, new Date()),
+          lte(reservationPipeline.nextRetryAt, now),
         ),
       ),
     )
