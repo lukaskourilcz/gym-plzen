@@ -17,7 +17,7 @@ test("failed PIN attempts retain anonymous errors but exclude other input method
   assert.equal(isFailedKeypadUse({ ...event, state: 224, trigger: 253, authId: undefined }), true);
   assert.equal(isFailedKeypadUse({ ...event, state: 9 }), true);
   assert.equal(isFailedKeypadUse({ ...event, state: 1 }), true);
-  for (const override of [{ state: 0 }, { state: undefined }, { state: 225 }, { state: 226 }, { state: 9, source: 2 }, { state: 9, source: 3 }, { state: 9, trigger: 5 }, { state: 9, date: "invalid" }]) {
+  for (const override of [{ state: 0 }, { state: undefined }, { state: 225 }, { state: 226 }, { state: 9, source: 2 }, { state: 9, source: 3 }, { state: 9, trigger: 5 }, { state: 1, action: 2 }, { state: 9, date: "invalid" }]) {
     assert.equal(isFailedKeypadUse({ ...event, ...override }), false);
   }
   assert.equal(keypadFailureReason(224), "Nesprávný vstupní kód");

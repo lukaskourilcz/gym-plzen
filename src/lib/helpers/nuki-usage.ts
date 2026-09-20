@@ -13,6 +13,7 @@ export function isFailedKeypadUse(entry: NukiLogEntry): boolean {
     (entry.source == null || entry.source === 0 || entry.source === 1) &&
     entry.state != null && entry.state !== 0 &&
     entry.state !== 225 && entry.state !== 226 &&
+    (entry.state === 224 || entry.trigger === 253 || [1, 3, 4, 5].includes(entry.action ?? -1)) &&
     Number.isFinite(Date.parse(entry.date));
 }
 
