@@ -1,0 +1,58 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import {
+  isZernioTestRecipient,
+  zernioAccessPayload,
+  zernioMessageId,
+} from "../../src/lib/helpers/zernio-access";
+
+test("WhatsApp test requires both allowlisted email and phone and fails closed", () => {
+  const base = {
+    email: "test@example.com",
+    phone: "777111222",
+    allowedEmail: "test@example.com",
+    allowedPhone: "+420777111222",
+  };
+  assert.equal(isZernioTestRecipient(base), true);
+  for (const patch of [
+    { allowedPhone: undefined },
+    { allowedEmail: undefined },
+    { phone: null },
+    { email: "other@example.com" },
+    { phone: "777111223" },
+  ])
+    assert.equal(isZernioTestRecipient({ ...base, ...patch }), false);
+});
+test("Zernio uses approved Czech template and exact Nuki validity in the right order", () => {
+  const result = zernioAccessPayload({
+    accountId: "account",
+    phone: "777111222",
+    reservationTime: "term",
+    pin: "234567",
+    validFrom: "start",
+    validUntil: "end+15",
+  });
+  assert.equal(result.participantId, "420777111222");
+  assert.equal(result.templateName, "navi_rezervace_vstup_cs");
+  assert.equal(result.templateLanguage, "cs");
+  assert.deepEqual(result.templateParams, [
+    "term",
+    "234567",
+    "start",
+    "end+15",
+  ]);
+});
+test("An HTTP success without an accepted message ID is not a sent message", () => {
+  assert.equal(
+    zernioMessageId({ success: true, data: { messageId: "wamid.test" } }),
+    "wamid.test",
+  );
+  for (const r of [
+    null,
+    {},
+    { success: true },
+    { success: true, data: { messageId: "" } },
+    { success: false, data: { messageId: "x" } },
+  ])
+    assert.equal(zernioMessageId(r), null);
+});

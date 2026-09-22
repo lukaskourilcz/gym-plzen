@@ -47,6 +47,11 @@ const serverSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().optional(),
 
+  ZERNIO_API_KEY: z.string().optional(),
+  ZERNIO_ACCOUNT_ID: z.string().optional(),
+  ZERNIO_TEST_RECIPIENT: z.string().optional(),
+  ZERNIO_TEST_EMAIL: z.string().optional(),
+
   WHATSAPP_ACCESS_TOKEN: z.string().optional(),
   WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
   WHATSAPP_BUSINESS_ACCOUNT_ID: z.string().optional(),

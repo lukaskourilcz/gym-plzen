@@ -1,3 +1,4 @@
+import { sendTestReservationWhatsApp } from "./whatsapp-test";
 import { isAccessCodeDeliveryDue } from "@/lib/config/access-code-delivery";
 import { withReservationLock } from "./operation-lock";
 import { getOperations } from "./operations";
@@ -107,8 +108,13 @@ async function fulfillLocked(reservationId: string): Promise<void> {
     (c) => ["scheduled", "active", "used"].includes(c.status) && c.nukiAuthId,
   );
 
-  const liveCode = existing.find((code) => !["revoked", "expired"].includes(code.status));
+  const liveCode = existing.find(
+    (code) => !["revoked", "expired"].includes(code.status),
+  );
   let accessCodeId = liveCode?.id;
+  let codeValidity = liveCode
+    ? { validFrom: liveCode.validFrom, validUntil: liveCode.validUntil }
+    : null;
   if (!deliveryDone && liveCode) {
     try {
       plaintext = await recoverAccessCode(liveCode);
@@ -116,8 +122,11 @@ async function fulfillLocked(reservationId: string): Promise<void> {
       plaintext = null;
     }
     if (!plaintext) {
-      await markStepFailed(reservationId, "code_created",
-        "Nuki zatím nepotvrdilo správný kód a jeho platnost. Další kód se nevytváří.");
+      await markStepFailed(
+        reservationId,
+        "code_created",
+        "Nuki zatím nepotvrdilo správný kód a jeho platnost. Další kód se nevytváří.",
+      );
       return;
     }
     codeReady = true;
@@ -132,6 +141,10 @@ async function fulfillLocked(reservationId: string): Promise<void> {
       });
       plaintext = issued.plaintext;
       accessCodeId = issued.accessCode.id;
+      codeValidity = {
+        validFrom: issued.accessCode.validFrom,
+        validUntil: issued.accessCode.validUntil,
+      };
       codeReady = issued.provisionedOnLock;
       if (issued.provisionedOnLock) {
         await markStepSucceeded(reservationId, "code_created");
@@ -170,6 +183,27 @@ async function fulfillLocked(reservationId: string): Promise<void> {
       notifyByWhatsapp: false,
       notifyBySms: false,
     });
+
+    if (accessCodeId && codeValidity) {
+      try {
+        await sendTestReservationWhatsApp({
+          reservationId,
+          accessCodeId,
+          userId: reservation.userId ?? null,
+          phone: reservation.contactPhone,
+          email: reservation.contactEmail,
+          pin: plaintext,
+          startsAt: reservation.startsAt,
+          ...codeValidity,
+        });
+      } catch {
+        // An optional test channel must never hold back the mandatory email.
+        logger.error("WhatsApp test failed", {
+          where: "fulfillment.whatsappTest",
+          reservationId,
+        });
+      }
+    }
 
     if (outcome.emailDelivered) {
       await markStepSucceeded(reservationId, "code_delivered");
