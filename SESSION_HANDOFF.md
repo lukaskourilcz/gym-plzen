@@ -1,3 +1,47 @@
+# Události rezervace 22. 9. 2026 večer — zpráva z Chromu byla mylná
+
+Claude in Chrome (účet NAVI) hlásil Lukášovi, že pixel posílá jen `PageView`
+a „v JS bundlech webu není žádné volání `fbq('track', …)` pro Purchase,
+InitiateCheckout, Schedule“, takže Ads Manager ukazuje Nákup jako „Inactive
+event“ a je třeba doplnit kód. Není to tak; agent hledal doslovný řetězec,
+který v kódu není (`trackMetaEvent` předává název události jako proměnnou, v
+bundlu je `(0,k.Jz)("InitiateCheckout",{value:…,currency:"CZK"},"reservation:…:checkout")`),
+a rezervaci nedokončil, takže `Purchase` vidět nemohl.
+
+**Důkaz 1, živé bundly:** `app/rezervace/udaje/page-d932f551f99d33b8.js`
+nese `InitiateCheckout` (po úspěšném odeslání formuláře, těsně před
+přesměrováním na Comgate) a `app/rezervace/hotovo/page-8ec1394689c569d8.js`
+nese `Purchase` s `{value: cena/100, currency}` i `Schedule` pro bezplatnou
+rezervaci; obojí s `eventID`. **Důkaz 2, průchod v prohlížeči** (lokální
+produkční build s testovacím ID pixelu `1000000000000000`, náhradní brána
+Comgate z `tests/integration/mocks.ts`, `fbevents.js` blokovaný, takže volání
+zůstala ve frontě stubu a nic neodešlo): po „Povolit vše“ fronta na stránce s
+údaji `["init"], ["track","PageView"] ×2, ["track","InitiateCheckout",{"value":229,"currency":"CZK"},{"eventID":"reservation:<id>:checkout"}]`;
+po vypořádání platby (`settle` + webhook `/api/webhooks/comgate`) a otevření
+návratové adresy `/rezervace/hotovo?reservation_id=…&token=…` stránka
+„Rezervace je potvrzená“ a fronta
+`["track","Purchase",{"value":229,"currency":"CZK"},{"eventID":"reservation:<id>:purchase"}]`;
+řádek rezervace `confirmed`, 22900 haléřů.
+
+**Proč Meta ukazuje „Inactive“.** Dataset `1393792405627460` dostává události
+až od 22. 9. 14:39 UTC a nikdo zatím nezaplatil s povoleným marketingem; Meta
+označuje událost jako neaktivní, dokud ji nedostane. Nákup jde v kampani vybrat
+i tak, aktivní bude po první skutečné platbě (zkušební rezervace, vrácení
+v Comgate — krok 3 v NEEDED). Z téže zprávy platí: CTA „Book now“ se v češtině
+zobrazuje jako „Rezervovat“ a pole se ukáže až po nahrání kreativy; před prvním
+publikováním chce Meta beneficienta a plátce (#3858152); nepublikovaný draft
+„New Sales Campaign“ doporučeno smazat. Vše doplněno do úkolu Meta v NEEDED.
+
+**Poznámky k opakování sondy.** Ochrana proti opakovanému webhooku ukládá
+`webhook_event` (`comgate`, `TEST-0001:PAID`): druhý běh proti téže databázi
+skončí na „Platbu ještě ověřujeme“, dokud se řádky `TEST-%` nesmažou (spolu s
+`payment` a rezervacemi `probe-%@example.test`). `kill` procesu `npx next
+start` nechá `next-server` poslouchat dál — ukončit `pkill -9 -f '^next-server'`,
+jinak další start skončí `EADDRINUSE` a sonda běží proti starému serveru.
+Automatický test událostí pixelu v rezervaci neexistuje (`booking-flow.spec.ts`
+odklikává „Pouze nezbytné“); dnešní ověření je ruční, skript zůstal mimo
+repozitář.
+
 # Konzole webu 22. 9. 2026 večer — hlášky CSP od pixelu a chybějící favicon
 
 Lukáš poslal konzoli z `www.navigym.cz`: dvě hlášky „Refused to connect …
