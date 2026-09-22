@@ -22,6 +22,15 @@ portfoliu, web se přepnul na dataset NAVI: `NEXT_PUBLIC_META_PIXEL_ID` =
 `1393792405627460`, nasazeno z `main`. Klářin pixel `1816423579552231` zůstává
 nedotčený. Přiřazení datasetu reklamnímu účtu, doména a Test events jsou v NEEDED.
 
+Ověřeno po přepnutí (build `dpl_pf1HmErN5BbHujoH3wdGzTzRp1Ha` z `708e546`,
+READY 14:39 UTC, alias `www.navigym.cz`): `/ochrana-soukromi` uvádí „Pixel s ID
+1393792405627460“, klientský bundle `app/layout-…js` nese
+`META_PIXEL_ID:"1393792405627460"` a v Chromiu po „Povolit vše“ `fbq.getState()`
+hlásí pixel `1393792405627460` s jednou zaznamenanou událostí (`PageView`);
+beacony na `facebook.com/tr` byly zachycené a zahozené, dataset z ověření nic
+nedostal. První skutečná událost tedy dorazí od prvního návštěvníka, který
+marketing povolí.
+
 Ověřeno před přepnutím na živém webu (Chromium; HTML, chunky i `fbevents.js` přes curl, protože
 sandboxová proxy zahazovala dávky požadavků; beacony na `facebook.com/tr`
 zachycené a zahozené, na pixel nic nedorazilo): lišta nabízí Analytiku i
