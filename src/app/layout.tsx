@@ -6,6 +6,8 @@ import { DESIGN_VARIANT_INIT_SCRIPT } from "@/lib/config/design-variant";
 import { AnalyticsConsentManager } from "@/components/site/analytics-consent";
 import { SkipLink } from "@/components/ui/skip-link";
 import "./globals.css";
+import { siteVerification } from "@/lib/config/site-verification";
+import { env } from "@/lib/env";
 
 /** Self-hosted by Next with latin-ext so Czech diacritics match on every OS. */
 const bitter = Bitter({
@@ -30,6 +32,7 @@ export const metadata: Metadata = {
     type: "website",
     locale: "cs_CZ",
   },
+  verification: siteVerification(env.META_DOMAIN_VERIFICATION),
 };
 
 export default function RootLayout({

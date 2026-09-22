@@ -52,6 +52,10 @@ const serverSchema = z.object({
   ZERNIO_TEST_RECIPIENT: z.string().optional(),
   ZERNIO_TEST_EMAIL: z.string().optional(),
 
+  // Meta domain verification code (the `content` of the meta tag); rendered
+  // into <head> by the root layout so Business Settings can verify navigym.cz.
+  META_DOMAIN_VERIFICATION: z.string().optional(),
+
   WHATSAPP_ACCESS_TOKEN: z.string().optional(),
   WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
   WHATSAPP_BUSINESS_ACCOUNT_ID: z.string().optional(),

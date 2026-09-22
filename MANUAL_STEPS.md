@@ -82,6 +82,7 @@ Měřicí ID nejsou v kódu. Ve Vercelu nastav pro Production i Preview:
 
 - `NEXT_PUBLIC_GA_MEASUREMENT_ID` — GA4 Measurement ID (`G-…`) nové property NAVI.
 - `NEXT_PUBLIC_META_PIXEL_ID` — Meta Pixel / Dataset ID.
+- `META_DOMAIN_VERIFICATION` — kód pro ověření domény v Meta (Nastavení firmy → Bezpečnost značky → Domény → `navigym.cz` → metoda „meta tag“, jen hodnota `content`). Web ho vykreslí jako `<meta name="facebook-domain-verification">` v `<head>` každé stránky; po nasazení kliknout v Meta na „Ověřit“. DNS `navigym.cz` je u WebSupportu, takže TXT záznam by znamenal přihlášení tam.
 
 Bez hodnoty se příslušný skript vůbec nenačte a lišta souhlasu danou kategorii
 nenabídne. Google Merchant Center se pro rezervace fitness nepoužívá; místo něj
