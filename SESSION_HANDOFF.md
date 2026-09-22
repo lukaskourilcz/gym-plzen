@@ -78,11 +78,9 @@ opravuje tři věci, které se při tom našly.
   vstup nepočítá).
 - **Náhled odeslaných e-mailů** (`540fb67`): přesné znění zprávy se ukládá do
   nové tabulky `email_archive` a maže se po 30 dnech hodinovým cronem
-  `/api/cron/purge-email-archive`. **Migrace
-  `drizzle/20260920190156_email_archive.sql` jako jediná z poslední řady nemá
-  zápis v `NEEDED.md`** — je aditivní a zápis do archivu je obalený, takže bez
-  ní se e-maily posílají dál, jen náhled zůstane prázdný; úkol na ověření je
-  teď v NEEDED.
+  `/api/cron/purge-email-archive`. Migrace `drizzle/20260920190156_email_archive.sql` jako jediná z poslední řady
+  neměla zápis v `NEEDED.md`; odpoledne ověřeno přes Supabase, že v produkci
+  je (tabulka, index, RLS, historie migrací 20. 9. 19:02) — zapsáno jako hotové.
 - **Zkušební WhatsApp se vstupním kódem přes Zernio** (`ee0d085`): zpráva odejde
   jen tehdy, když se telefon **i** e-mail rezervace shodují s
   `ZERNIO_TEST_RECIPIENT` a `ZERNIO_TEST_EMAIL`. Ostatním zákazníkům nechodí nic,
@@ -99,8 +97,7 @@ stavech: s nastaveným ID vypíše to ID, bez něj větu, že nastavené není.
 
 **Co zbývá provozovateli** (v NEEDED): sdílet Klářin pixel do portfolia NAVI a přiřadit ho
 reklamnímu účtu (rozhodnutí z odpoledne, zápis výše),
-dokončit zkoušku vstupu přes Nuki (22. 9. nebyla připojená klika), ověřit
-migraci `email_archive` v produkci a případně nastavit Zernio.
+dokončit zkoušku vstupu přes Nuki (22. 9. nebyla připojená klika), případně nastavit Zernio.
 
 # Provozní upozornění 18. 9. 2026 — e-maily pro provozovatele
 
