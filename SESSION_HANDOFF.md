@@ -10,13 +10,19 @@ reklamního účtu NAVI nedorazí ani `PageView`, natož `Purchase`. GA4 je v po
 `InitiateCheckout` při odeslání údajů a na stránce potvrzení `Purchase` s částkou
 (u bezplatné rezervace `Schedule`).
 
-**Rozhodnutí:** pixel zůstává Klářin, zachová se historie. Ve Vercelu jen
-vyčištěná hodnota a poznámka; Preview záměrně bez ID, aby zkušební rezervace z
-preview nasazení nechodily do reklamních dat jako nákupy. Redeploy nebyl nutný.
-Vše ostatní je na straně Meta — kroky v NEEDED. Dataset „NAVI Private Gym –
-navigym.cz“ z dopoledne zůstává nepoužitý.
+**Rozhodnutí (dvě):** dopoledne ponechat Klářin pixel (ve Vercelu jen vyčištěná
+hodnota; Preview záměrně bez ID, aby zkušební rezervace z preview nasazení
+nechodily do reklamních dat jako nákupy). Odpoledne Claude in Chrome v portfoliu
+NAVI zjistil, že si přístup k cizímu pixelu vyžádat nejde — nové rozhraní má pod
+„Add“ jen „Create a new dataset“ — a že dopolední dataset „NAVI Private Gym –
+navigym.cz“ má ID `1393792405627460` a hlásí „not receiving events“. Protože
+Klářin pixel nemá pro NAVI žádnou nákupní historii (gym otevírá 1. 10., jsou na
+něm jen návštěvy z namastegym.cz) a sdílení by záviselo na krocích v jejím
+portfoliu, web se přepnul na dataset NAVI: `NEXT_PUBLIC_META_PIXEL_ID` =
+`1393792405627460`, nasazeno z `main`. Klářin pixel `1816423579552231` zůstává
+nedotčený. Přiřazení datasetu reklamnímu účtu, doména a Test events jsou v NEEDED.
 
-Ověřeno na živém webu (Chromium; HTML, chunky i `fbevents.js` přes curl, protože
+Ověřeno před přepnutím na živém webu (Chromium; HTML, chunky i `fbevents.js` přes curl, protože
 sandboxová proxy zahazovala dávky požadavků; beacony na `facebook.com/tr`
 zachycené a zahozené, na pixel nic nedorazilo): lišta nabízí Analytiku i
 Marketing, po „Povolit vše“ se načte `fbevents.js` 2.9.406 a konfigurace
@@ -95,8 +101,7 @@ produkčnímu buildu, formát, lint, typecheck, `npm audit --omit=dev` bez nále
 produkční build. Sekce „Externí služby na webu“ ověřena v prohlížeči v obou
 stavech: s nastaveným ID vypíše to ID, bez něj větu, že nastavené není.
 
-**Co zbývá provozovateli** (v NEEDED): sdílet Klářin pixel do portfolia NAVI a přiřadit ho
-reklamnímu účtu (rozhodnutí z odpoledne, zápis výše),
+**Co zbývá provozovateli** (v NEEDED): přiřadit dataset NAVI reklamnímu účtu (zápis výše),
 dokončit zkoušku vstupu přes Nuki (22. 9. nebyla připojená klika), případně nastavit Zernio.
 
 # Provozní upozornění 18. 9. 2026 — e-maily pro provozovatele
