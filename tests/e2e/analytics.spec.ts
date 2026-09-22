@@ -9,7 +9,14 @@ import { expect, test } from "@playwright/test";
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "G-E2ETEST000";
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID ?? "1000000000000000";
 
-const STORAGE_KEY = "namaste:tracking-consent-v2";
+/*
+ * Where the saved choice really lives. The rebrand renamed this key, and a
+ * suite still clearing and asserting the old one neither starts from a clean
+ * slate nor sees what the page just saved. Both retired keys are cleared too,
+ * so a stale value cannot suppress the banner.
+ */
+const STORAGE_KEY = "navi:tracking-consent-v2";
+const LEGACY_TRACKING_STORAGE_KEY = "namaste:tracking-consent-v2";
 const LEGACY_STORAGE_KEY = "namaste:analytics-consent-v1";
 const GOOGLE_TAG_SELECTOR = `script[src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"]`;
 const META_TAG_SELECTOR =
@@ -21,11 +28,16 @@ test.describe("tracking consent", () => {
       route.abort(),
     );
     await page.addInitScript(
-      ({ current, legacy }) => {
+      ({ current, legacyTracking, legacy }) => {
         window.localStorage.removeItem(current);
+        window.localStorage.removeItem(legacyTracking);
         window.localStorage.removeItem(legacy);
       },
-      { current: STORAGE_KEY, legacy: LEGACY_STORAGE_KEY },
+      {
+        current: STORAGE_KEY,
+        legacyTracking: LEGACY_TRACKING_STORAGE_KEY,
+        legacy: LEGACY_STORAGE_KEY,
+      },
     );
   });
 
@@ -123,11 +135,16 @@ test.describe("tracking consent", () => {
     page,
   }) => {
     await page.addInitScript(
-      ({ current, legacy }) => {
+      ({ current, legacyTracking, legacy }) => {
         localStorage.removeItem(current);
+        localStorage.removeItem(legacyTracking);
         localStorage.setItem(legacy, "granted");
       },
-      { current: STORAGE_KEY, legacy: LEGACY_STORAGE_KEY },
+      {
+        current: STORAGE_KEY,
+        legacyTracking: LEGACY_TRACKING_STORAGE_KEY,
+        legacy: LEGACY_STORAGE_KEY,
+      },
     );
     await page.goto("/", { waitUntil: "domcontentloaded" });
 
