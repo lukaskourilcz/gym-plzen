@@ -50,6 +50,22 @@ test("no measurement id is baked into the source", async () => {
   assert.doesNotMatch(source, /"\d{15,}"/);
 });
 
+test("the privacy policy names the ids that actually load", async () => {
+  const fs = await import("node:fs/promises");
+  const policy = await fs.readFile("src/app/ochrana-soukromi/page.tsx", "utf8");
+
+  /*
+   * The policy is a legal statement about what the browser really loads, so it
+   * has to read the same ids as the trackers. A hardcoded id silently outlives
+   * the account it named: the rebrand moved measurement to the environment,
+   * but this page kept quoting the retired Namasté GA4 and Meta ids.
+   */
+  assert.doesNotMatch(policy, /G-[A-Z0-9]{6,}/);
+  assert.doesNotMatch(policy, /\d{15,}/);
+  assert.match(policy, /\{GOOGLE_ANALYTICS_ID\}/);
+  assert.match(policy, /\{META_PIXEL_ID\}/);
+});
+
 test("with no trackers configured there is no consent to ask for", async () => {
   const fs = await import("node:fs/promises");
   const consent = await fs.readFile(

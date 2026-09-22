@@ -775,8 +775,19 @@ test.describe("Public site", () => {
     await expect(
       page.getByText("Renáta Janoušková", { exact: true }),
     ).toBeVisible();
-    await expect(page.getByText("G-6L9N41NKT8")).toBeVisible();
-    await expect(page.getByText("1816423579552231")).toBeVisible();
+    /*
+     * The policy quotes whatever ids this build actually loads, so the
+     * assertion follows the build's environment instead of a fixed pair that
+     * would keep passing after the account behind it was retired.
+     */
+    const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
+    const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim();
+    await expect(
+      page.getByText(gaId || "Google tag zatím nemáme nastavený"),
+    ).toBeVisible();
+    await expect(
+      page.getByText(pixelId || "Pixel zatím nemáme nastavený"),
+    ).toBeVisible();
     await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       "href",

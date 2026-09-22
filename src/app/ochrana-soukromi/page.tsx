@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { GOOGLE_ANALYTICS_ID, META_PIXEL_ID } from "@/lib/config/analytics";
 import { footerProps, loadSiteContent } from "@/lib/content/site";
 import { Container, Section } from "@/components/ui/container";
 import { SiteHeader } from "@/components/site/site-header";
@@ -495,8 +496,18 @@ export default async function PrivacyPage() {
                       Google Analytics 4
                     </h3>
                     <p className="mt-2">
-                      Google tag s ID měření G-6L9N41NKT8 načteme pouze po
-                      povolení Analytiky. Může zpracovat pseudonymní ID
+                      {GOOGLE_ANALYTICS_ID ? (
+                        <>
+                          Google tag s ID měření {GOOGLE_ANALYTICS_ID} načteme
+                        </>
+                      ) : (
+                        <>
+                          Google tag zatím nemáme nastavený, takže se nenačítá a
+                          lišta souhlasu kategorii Analytika nenabízí. Jakmile
+                          ho nasadíme, načteme ho
+                        </>
+                      )}{" "}
+                      pouze po povolení Analytiky. Může zpracovat pseudonymní ID
                       prohlížeče, navštívené stránky, přibližnou polohu
                       odvozenou z IP adresy a technické údaje o zařízení.
                       Reklamní úložiště, Google signals, personalizace reklam a
@@ -508,13 +519,21 @@ export default async function PrivacyPage() {
                       Meta Pixel
                     </h3>
                     <p className="mt-2">
-                      Pixel s ID 1816423579552231 načteme pouze po povolení
-                      Marketingu. Může zaznamenat návštěvu stránky, zahájení
-                      platebního procesu, vytvoření rezervace a její potvrzení.
-                      Z rezervačního formuláře mu neposíláme jméno, e-mail ani
-                      telefon a nepoužíváme pokročilé párování. Meta může
-                      přijaté údaje spojit s účtem uživatele a zpracovávat je
-                      podle vlastních pravidel.
+                      {META_PIXEL_ID ? (
+                        <>Pixel s ID {META_PIXEL_ID} načteme</>
+                      ) : (
+                        <>
+                          Pixel zatím nemáme nastavený, takže se nenačítá a
+                          lišta souhlasu kategorii Marketing nenabízí. Jakmile
+                          ho nasadíme, načteme ho
+                        </>
+                      )}{" "}
+                      pouze po povolení Marketingu. Může zaznamenat návštěvu
+                      stránky, zahájení platebního procesu, vytvoření rezervace
+                      a její potvrzení. Z rezervačního formuláře mu neposíláme
+                      jméno, e-mail ani telefon a nepoužíváme pokročilé
+                      párování. Meta může přijaté údaje spojit s účtem uživatele
+                      a zpracovávat je podle vlastních pravidel.
                     </p>
                   </div>
                   <div>
