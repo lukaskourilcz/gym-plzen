@@ -1,3 +1,25 @@
+# Meta pixel 22. 9. 2026 odpoledne — proč reklama neviděla rezervace
+
+Klára a Renáta nemohly v Ads Manageru vybrat nákup rezervace jako cíl reklamy.
+Příčina ověřená na živém webu (SSR text `/ochrana-soukromi` a literál v
+klientském bundlu `app/layout-…js`) a potom ve Vercelu: `NEXT_PUBLIC_META_PIXEL_ID`
+je od 9. 9. `1816423579552231` — Klářin pixel z éry NAMASTÉ (s odřádkováním na
+konci, které kód ořízne) — a firemní portfolio NAVI žádný pixel nevidí, takže do
+reklamního účtu NAVI nedorazí ani `PageView`, natož `Purchase`. GA4 je v pořádku
+(`G-8FN17RXP1T`). Web sám nákup měří: po marketingovém souhlasu `PageView`,
+`InitiateCheckout` při odeslání údajů a na stránce potvrzení `Purchase` s částkou
+(u bezplatné rezervace `Schedule`).
+
+**Rozhodnutí:** pixel zůstává Klářin, zachová se historie. Ve Vercelu jen
+vyčištěná hodnota a poznámka; Preview záměrně bez ID, aby zkušební rezervace z
+preview nasazení nechodily do reklamních dat jako nákupy. Redeploy nebyl nutný.
+Vše ostatní je na straně Meta — kroky v NEEDED. Dataset „NAVI Private Gym –
+navigym.cz“ z dopoledne zůstává nepoužitý.
+
+Poznámka k ověření: v sandboxu Chromium přes proxy nedotáhl JS chunky (502),
+takže probe lišty souhlasu na živém webu neprošla; chování pixelu je kryté e2e
+testy proti produkčnímu buildu (zápis níže).
+
 # Měření, cookies a úklid 22. 9. 2026 — dokončení přerušené session
 
 Předchozí session skončila uprostřed práce na Meta pixelu (došel limit) a
@@ -70,8 +92,8 @@ produkčnímu buildu, formát, lint, typecheck, `npm audit --omit=dev` bez nále
 produkční build. Sekce „Externí služby na webu“ ověřena v prohlížeči v obou
 stavech: s nastaveným ID vypíše to ID, bez něj větu, že nastavené není.
 
-**Co zbývá provozovateli** (v NEEDED): doplnit ID nového Meta datasetu do
-`NEXT_PUBLIC_META_PIXEL_ID` a dokončit jeho propojení s reklamním účtem,
+**Co zbývá provozovateli** (v NEEDED): sdílet Klářin pixel do portfolia NAVI a přiřadit ho
+reklamnímu účtu (rozhodnutí z odpoledne, zápis výše),
 dokončit zkoušku vstupu přes Nuki (22. 9. nebyla připojená klika), ověřit
 migraci `email_archive` v produkci a případně nastavit Zernio.
 
