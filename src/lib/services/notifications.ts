@@ -92,7 +92,9 @@ export async function dispatchAccessCode(
   if (ctx.email) {
     const result = await sendTransactionalEmail({
       id: "access_code",
-      idempotencyKey: ctx.accessCodeId ? `access-code/${ctx.accessCodeId}` : undefined,
+      idempotencyKey: ctx.accessCodeId
+        ? `access-code/${ctx.accessCodeId}`
+        : undefined,
       to: ctx.email,
       variables: {
         name: ctx.name || "zákazníku",

@@ -132,7 +132,10 @@ export async function dueForRetry(limit = 50): Promise<ReservationPipeline[]> {
         // Future PIN steps must not occupy the retry batch and starve due ones.
         or(
           eq(reservationPipeline.step, "payment"),
-          lte(reservation.startsAt, addMinutes(now, ACCESS_CODE_NOTICE_MINUTES)),
+          lte(
+            reservation.startsAt,
+            addMinutes(now, ACCESS_CODE_NOTICE_MINUTES),
+          ),
         ),
         gt(reservation.endsAt, now),
         or(

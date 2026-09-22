@@ -69,48 +69,72 @@ interface NukiAuth {
 export function createNukiClient(
   config: { token: string; lockId: string },
   request: typeof httpRequest = httpRequest,
-  pause: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms)),
+  pause: (ms: number) => Promise<void> = (ms) =>
+    new Promise((r) => setTimeout(r, ms)),
 ) {
   const url = `${API_BASE}/smartlock/${config.lockId}/auth`;
   const headers = { authorization: `Bearer ${config.token}` };
   async function list() {
-    return request<NukiAuth[]>(url, { headers, cache: "no-store", timeoutMs: 5000 });
+    return request<NukiAuth[]>(url, {
+      headers,
+      cache: "no-store",
+      timeoutMs: 5000,
+    });
   }
   async function recover(identity: CodeIdentity) {
-    const matches = (await list()).filter((auth) =>
-      auth.type === NUKI_TYPE_KEYPAD &&
-      String(auth.smartlockId) === config.lockId &&
-      (!identity.nukiAuthId || auth.id === identity.nukiAuthId) &&
-      /^[1-9]{6}$/.test(String(auth.code)) &&
-      hashCode(String(auth.code)) === identity.codeHash &&
-      Date.parse(auth.allowedFromDate ?? "") === identity.allowedFrom.getTime() &&
-      Date.parse(auth.allowedUntilDate ?? "") === identity.allowedUntil.getTime(),
+    const matches = (await list()).filter(
+      (auth) =>
+        auth.type === NUKI_TYPE_KEYPAD &&
+        String(auth.smartlockId) === config.lockId &&
+        (!identity.nukiAuthId || auth.id === identity.nukiAuthId) &&
+        /^[1-9]{6}$/.test(String(auth.code)) &&
+        hashCode(String(auth.code)) === identity.codeHash &&
+        Date.parse(auth.allowedFromDate ?? "") ===
+          identity.allowedFrom.getTime() &&
+        Date.parse(auth.allowedUntilDate ?? "") ===
+          identity.allowedUntil.getTime(),
     );
     if (matches.length !== 1) return null;
     const auth = matches[0];
-    if (!auth || !auth.id || !auth.enabled || auth.operationId || auth.error ||
-        (auth.allowedWeekDays != null && auth.allowedWeekDays !== 127) ||
-        (auth.allowedFromTime != null && auth.allowedFromTime !== 0) ||
-        (auth.allowedUntilTime != null && auth.allowedUntilTime !== 0)) return null;
+    if (
+      !auth ||
+      !auth.id ||
+      !auth.enabled ||
+      auth.operationId ||
+      auth.error ||
+      (auth.allowedWeekDays != null && auth.allowedWeekDays !== 127) ||
+      (auth.allowedFromTime != null && auth.allowedFromTime !== 0) ||
+      (auth.allowedUntilTime != null && auth.allowedUntilTime !== 0)
+    )
+      return null;
     return { nukiAuthId: auth.id, plaintext: String(auth.code) };
   }
   async function create(params: CreateCodeParams): Promise<CreateCodeResult> {
-    if (!/^[1-9]{6}$/.test(String(params.code)) ||
-        !Number.isFinite(params.allowedFrom.getTime()) ||
-        !Number.isFinite(params.allowedUntil.getTime()) ||
-        params.allowedFrom >= params.allowedUntil) {
+    if (
+      !/^[1-9]{6}$/.test(String(params.code)) ||
+      !Number.isFinite(params.allowedFrom.getTime()) ||
+      !Number.isFinite(params.allowedUntil.getTime()) ||
+      params.allowedFrom >= params.allowedUntil
+    ) {
       return { created: false, error: "invalid_nuki_code_or_window" };
     }
     // Never repeat the mutation, even if its response is lost. GET can recover it.
     try {
       await request(url, {
-        method: "PUT", headers, retries: 0, timeoutMs: 5000,
+        method: "PUT",
+        headers,
+        retries: 0,
+        timeoutMs: 5000,
         json: {
-          name: params.name.slice(0, 32), type: NUKI_TYPE_KEYPAD,
-          code: params.code, remoteAllowed: false,
+          name: params.name.slice(0, 32),
+          type: NUKI_TYPE_KEYPAD,
+          code: params.code,
+          remoteAllowed: false,
           allowedFromDate: params.allowedFrom.toISOString(),
           allowedUntilDate: params.allowedUntil.toISOString(),
-          allowedWeekDays: 127, allowedFromTime: 0, allowedUntilTime: 0,
+          allowedWeekDays: 127,
+          allowedFromTime: 0,
+          allowedUntilTime: 0,
         },
       });
     } catch {
@@ -119,9 +143,14 @@ export function createNukiClient(
     for (let attempt = 0; attempt < 3; attempt++) {
       if (attempt) await pause(1000);
       try {
-        const result = await recover({ ...params, codeHash: hashCode(String(params.code)) });
+        const result = await recover({
+          ...params,
+          codeHash: hashCode(String(params.code)),
+        });
         if (result) return { created: true, nukiAuthId: result.nukiAuthId };
-      } catch { /* The watchdog will reconcile without issuing another code. */ }
+      } catch {
+        /* The watchdog will reconcile without issuing another code. */
+      }
     }
     return { created: false, error: "provisioning_unknown" };
   }
@@ -129,12 +158,18 @@ export function createNukiClient(
 }
 
 function configuredClient() {
-  const { NUKI_API_TOKEN, NUKI_SMARTLOCK_ID } = requireEnv("NUKI_API_TOKEN", "NUKI_SMARTLOCK_ID");
+  const { NUKI_API_TOKEN, NUKI_SMARTLOCK_ID } = requireEnv(
+    "NUKI_API_TOKEN",
+    "NUKI_SMARTLOCK_ID",
+  );
   return createNukiClient({ token: NUKI_API_TOKEN, lockId: NUKI_SMARTLOCK_ID });
 }
 
-export async function createKeypadCode(params: CreateCodeParams): Promise<CreateCodeResult> {
-  if (!isNukiConfigured()) return { created: false, error: "nuki_not_configured" };
+export async function createKeypadCode(
+  params: CreateCodeParams,
+): Promise<CreateCodeResult> {
+  if (!isNukiConfigured())
+    return { created: false, error: "nuki_not_configured" };
   return configuredClient().create(params);
 }
 
@@ -199,24 +234,41 @@ export async function fetchLog(limit = 50): Promise<NukiLogEntry[]> {
 }
 
 /** Server-only admin read: no mutation, and no PINs in logs or persistent cache. */
-export async function readKeypadCodes(): Promise<Array<{ id: string; code: string }>> {
+export async function readKeypadCodes(): Promise<
+  Array<{ id: string; code: string }>
+> {
   if (!isNukiConfigured()) throw new Error("Nuki not configured");
   const lockId = smartlockId();
-  const auths = await httpRequest<NukiAuth[]>(`${API_BASE}/smartlock/${lockId}/auth`, {
-    headers: authHeader(), cache: "no-store", timeoutMs: 5000,
-  });
-  return auths.filter((auth) => auth.type === NUKI_TYPE_KEYPAD &&
-    String(auth.smartlockId) === lockId && /^[1-9]{6}$/.test(String(auth.code)))
+  const auths = await httpRequest<NukiAuth[]>(
+    `${API_BASE}/smartlock/${lockId}/auth`,
+    {
+      headers: authHeader(),
+      cache: "no-store",
+      timeoutMs: 5000,
+    },
+  );
+  return auths
+    .filter(
+      (auth) =>
+        auth.type === NUKI_TYPE_KEYPAD &&
+        String(auth.smartlockId) === lockId &&
+        /^[1-9]{6}$/.test(String(auth.code)),
+    )
     .map((auth) => ({ id: auth.id, code: String(auth.code) }));
 }
 
 /** Paginate the retained activity history; never turn an API failure into "unused". */
-export async function readKeypadUsageLog(from: Date): Promise<{ entries: NukiLogEntry[]; complete: boolean }> {
+export async function readKeypadUsageLog(
+  from: Date,
+): Promise<{ entries: NukiLogEntry[]; complete: boolean }> {
   if (!isNukiConfigured()) throw new Error("Nuki not configured");
   const entries: NukiLogEntry[] = [];
   let cursor: string | undefined;
   for (let page = 0; page < 20; page++) {
-    const query = new URLSearchParams({ limit: "50", fromDate: from.toISOString() });
+    const query = new URLSearchParams({
+      limit: "50",
+      fromDate: from.toISOString(),
+    });
     if (cursor) query.set("id", cursor);
     const batch = await httpRequest<NukiLogEntry[]>(
       `${API_BASE}/smartlock/${smartlockId()}/log?${query}`,

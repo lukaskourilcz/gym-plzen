@@ -26,14 +26,22 @@ export const metadata = { title: "Rezervace" };
 export const dynamic = "force-dynamic";
 
 /** Reservations admin: manual booking form + a list of recent reservations. */
-export default async function ReservationsPage({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
+export default async function ReservationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ id?: string }>;
+}) {
   await requireAdmin();
   const query = await searchParams;
   const parsedId = idSchema.safeParse(query.id);
   const selectedId = parsedId.success ? parsedId.data : undefined;
   const demoEnabled = await hasDemoAdminSession();
   const { rows, demo } = await withDemoFallback(
-    selectedId ? reservations.getReservation(selectedId).then((row) => row ? [row] : []) : reservations.listRecent(100),
+    selectedId
+      ? reservations
+          .getReservation(selectedId)
+          .then((row) => (row ? [row] : []))
+      : reservations.listRecent(100),
     (d) => d.reservations,
     demoEnabled,
   );
@@ -41,7 +49,14 @@ export default async function ReservationsPage({ searchParams }: { searchParams:
   return (
     <div>
       <PageHeader title="Rezervace" />
-      {selectedId && <Link href="/admin/reservations" className="mb-4 inline-flex text-sm text-accent-foreground hover:underline">Zobrazit všechny rezervace</Link>}
+      {selectedId && (
+        <Link
+          href="/admin/reservations"
+          className="mb-4 inline-flex text-sm text-accent-foreground hover:underline"
+        >
+          Zobrazit všechny rezervace
+        </Link>
+      )}
       <Card className="mb-8 max-w-lg">
         <CardHeader>
           <CardTitle>Nová rezervace (ručně)</CardTitle>
@@ -51,7 +66,9 @@ export default async function ReservationsPage({ searchParams }: { searchParams:
         </CardContent>
       </Card>
 
-      <h2 className="mb-3 text-lg font-semibold">{selectedId ? "Vybraná rezervace" : "Poslední rezervace"}</h2>
+      <h2 className="mb-3 text-lg font-semibold">
+        {selectedId ? "Vybraná rezervace" : "Poslední rezervace"}
+      </h2>
       <Table>
         <TableHeader>
           <TableRow>

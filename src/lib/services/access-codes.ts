@@ -8,7 +8,11 @@ import type { AccessCode } from "@/lib/db/types";
 import { generateKeypadCode, hashCode } from "@/lib/helpers/crypto";
 import { accessCodeValidity } from "@/lib/config/access-code-delivery";
 import { logger } from "@/lib/helpers/logger";
-import { createKeypadCode, deleteAuth, recoverKeypadCode } from "@/lib/integrations/nuki";
+import {
+  createKeypadCode,
+  deleteAuth,
+  recoverKeypadCode,
+} from "@/lib/integrations/nuki";
 import { getShowerMinutes } from "./schedule";
 
 /**
@@ -62,7 +66,11 @@ async function issueAccessCodeLocked(params: {
   const plaintext = generateKeypadCode();
   // Entry starts exactly with the reservation and includes the shower grace.
   const showerMinutes = await getShowerMinutes();
-  const { validFrom, validUntil } = accessCodeValidity(params.startsAt, params.endsAt, showerMinutes);
+  const { validFrom, validUntil } = accessCodeValidity(
+    params.startsAt,
+    params.endsAt,
+    showerMinutes,
+  );
 
   const [record] = await db
     .insert(accessCode)
@@ -99,10 +107,13 @@ async function issueAccessCodeLocked(params: {
       })
       .where(eq(accessCode.id, record.id));
   } else {
-    logger.warn("Nuki provisioning unconfirmed; authorization will be reconciled", {
-      reservationId: params.reservationId,
-      error: lock.error,
-    });
+    logger.warn(
+      "Nuki provisioning unconfirmed; authorization will be reconciled",
+      {
+        reservationId: params.reservationId,
+        error: lock.error,
+      },
+    );
     await db
       .update(accessCode)
       .set({
@@ -141,11 +152,18 @@ async function revokeAccessCodeLocked(id: string): Promise<void> {
   if (!row || row.status === "revoked") return;
   if (row.failureReason === "provisioning_unknown" && !row.nukiAuthId) {
     const recovered = await recoverKeypadCode({
-      codeHash: row.codeHash, allowedFrom: row.validFrom, allowedUntil: row.validUntil,
+      codeHash: row.codeHash,
+      allowedFrom: row.validFrom,
+      allowedUntil: row.validUntil,
     });
-    if (!recovered) throw new Error("Unknown Nuki authorization must be reconciled before revocation");
+    if (!recovered)
+      throw new Error(
+        "Unknown Nuki authorization must be reconciled before revocation",
+      );
     row.nukiAuthId = recovered.nukiAuthId;
-    await db.update(accessCode).set({ nukiAuthId: recovered.nukiAuthId, updatedAt: new Date() })
+    await db
+      .update(accessCode)
+      .set({ nukiAuthId: recovered.nukiAuthId, updatedAt: new Date() })
       .where(eq(accessCode.id, id));
   }
   if (row.nukiAuthId && !(await deleteAuth(row.nukiAuthId))) {
@@ -170,15 +188,24 @@ export async function listCodesForReservation(
 }
 
 /** Resume a timed-out create or email attempt without changing the customer's PIN. */
-export async function recoverAccessCode(row: AccessCode): Promise<string | null> {
+export async function recoverAccessCode(
+  row: AccessCode,
+): Promise<string | null> {
   const recovered = await recoverKeypadCode({
-    codeHash: row.codeHash, allowedFrom: row.validFrom,
-    allowedUntil: row.validUntil, nukiAuthId: row.nukiAuthId,
+    codeHash: row.codeHash,
+    allowedFrom: row.validFrom,
+    allowedUntil: row.validUntil,
+    nukiAuthId: row.nukiAuthId,
   });
   if (!recovered) return null;
-  await db.update(accessCode).set({
-    nukiAuthId: recovered.nukiAuthId, status: "scheduled",
-    failureReason: null, updatedAt: new Date(),
-  }).where(eq(accessCode.id, row.id));
+  await db
+    .update(accessCode)
+    .set({
+      nukiAuthId: recovered.nukiAuthId,
+      status: "scheduled",
+      failureReason: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(accessCode.id, row.id));
   return recovered.plaintext;
 }
