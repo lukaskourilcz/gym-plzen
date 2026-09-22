@@ -1,3 +1,80 @@
+# Měření, cookies a úklid 22. 9. 2026 — dokončení přerušené session
+
+Předchozí session skončila uprostřed práce na Meta pixelu (došel limit) a
+nedokončila ani obvyklý závěr: od 18. 9. nepřibyl žádný zápis sem ani do
+`NEEDED.md`, ačkoli mezitím přibylo dvanáct commitů. Tenhle zápis to dohání a
+opravuje tři věci, které se při tom našly.
+
+- **Zásady ochrany soukromí uváděly cizí měřicí ID** (`5e298f3`). Stránka
+  `/ochrana-soukromi` měla v textu natvrdo GA4 `G-6L9N41NKT8` a Meta Pixel
+  `1816423579552231` — což jsou **zrušené účty z éry NAMASTÉ**. Měření samo se
+  přitom už od rebrandu řídí proměnnými `NEXT_PUBLIC_GA_MEASUREMENT_ID` a
+  `NEXT_PUBLIC_META_PIXEL_ID`, takže právní dokument tvrdil návštěvníkovi něco
+  jiného, než co by se v prohlížeči skutečně načetlo. Sekce teď čte tutéž
+  konfiguraci jako `meta-pixel.ts` a lišta souhlasu. Když ID nastavené není,
+  stránka to řekne („Pixel zatím nemáme nastavený…“) místo aby jmenovala
+  neexistující pixel — a to je přesně dnešní stav, dokud se nedoplní ID nového
+  datasetu. Unit test `analytics.test.ts` sice už dřív vyžadoval, aby ID žila v
+  prostředí, ale kontroloval jen `config/analytics.ts`; hlídá teď i tuhle
+  stránku. E2E aserce na ten starý pár by po zrušení účtů mlčky procházela dál,
+  proto se řídí prostředím buildu.
+- **Testy souhlasu s cookies neseděly na klíč, který web zapisuje** (`41debc3`).
+  `ded8877` přejmenoval uloženou volbu na `navi:tracking-consent-v2`, ale
+  `tests/e2e/analytics.spec.ts` dál mazal a četl `namaste:tracking-consent-v2`.
+  Dva ze čtyř testů proto porovnávaly `null` a padaly, a žádný z nich
+  nezačínal s čistým stavem, protože mazal jiný klíč, než jaký stránka ukládá.
+  Po opravě prochází všechny čtyři proti produkčnímu buildu: bez souhlasu se
+  nenačte ani gtag, ani `fbevents.js`; Analytika a Marketing jsou nezávislé
+  volby; pixel a PageView naskočí až po marketingovém souhlasu; a odvolání
+  souhlasu maže `_fbp`/`_fbc` i `_ga*`.
+- **Proměnné Zernio nebyly v `.env.example`** (`1781e20`). `ee0d085` je přidal
+  do schématu serveru, ale nikam je nezapsal, takže allowlist, který celou
+  zkušební WhatsApp cestu omezuje na jediného příjemce, nebyl odnikud vidět.
+- **Formát** (`127b38a`): commity z 20. 9. neprošly formátovačem, takže
+  `npm run format:check` hlásil šestnáct souborů. Jen formát, žádná změna
+  chování.
+
+**Co se mezitím událo a nebylo zapsané** (19.–22. 9.):
+
+- **Rezervační formulář přežije ztracenou odpověď** (`bb0939e`) a kalendář na
+  úvodní straně má jednodušší datum bez sloupce s časem doručení (`d84b2fd`).
+- **Kontaktní odkaz na WhatsApp** míří do schránky NAVI Business (`f4c191d`).
+- **Nuki vstupní kódy** (`a185615`, `4031404`, `d29f6d2`): PIN vzniká až hodinu
+  před rezervací, platí přesně od jejího začátku do konce plus doba na sprchu a
+  odesílá se e-mailem (Resend) teprve poté, co Nuki potvrdí autorizaci, časové
+  meze i dokončenou synchronizaci. Asynchronní `PUT` vrací 204 bez id, takže si
+  je adaptér dohledá ve výpisu autorizací; nejasné výsledky dorovná watchdog bez
+  dalšího `PUT`. Podrobnosti v [docs/NUKI_EMAIL.md](docs/NUKI_EMAIL.md).
+- **Administrace → Vstupní kódy** (`ad1a1f6`, `b9a7394`, `80b507b`, `797b73f`,
+  `fa35422`): přehled kódů s platností a odkazem na zákazníka, ověřené použití
+  klávesnice a počty neúspěšných pokusů (neúspěšné zamykání se mezi pokusy o
+  vstup nepočítá).
+- **Náhled odeslaných e-mailů** (`540fb67`): přesné znění zprávy se ukládá do
+  nové tabulky `email_archive` a maže se po 30 dnech hodinovým cronem
+  `/api/cron/purge-email-archive`. **Migrace
+  `drizzle/20260920190156_email_archive.sql` jako jediná z poslední řady nemá
+  zápis v `NEEDED.md`** — je aditivní a zápis do archivu je obalený, takže bez
+  ní se e-maily posílají dál, jen náhled zůstane prázdný; úkol na ověření je
+  teď v NEEDED.
+- **Zkušební WhatsApp se vstupním kódem přes Zernio** (`ee0d085`): zpráva odejde
+  jen tehdy, když se telefon **i** e-mail rezervace shodují s
+  `ZERNIO_TEST_RECIPIENT` a `ZERNIO_TEST_EMAIL`. Ostatním zákazníkům nechodí nic,
+  e-mail zůstává povinným kanálem a selhání testovacího kanálu nikdy nezdrží
+  povinný e-mail. Odeslání si zabírá `message_delivery.dedupe_key`, takže
+  opakovaný fulfillment druhou zprávu nepošle.
+
+**Ověřeno.** 194 unit testů, 27 integračních proti lokálnímu Postgresu (po
+`db:seed`; bez osazeného rozvrhu padají na „termín není dostupný“, což není
+chyba kódu), 4 testy souhlasu a 14 testů veřejného webu v Chromiu proti
+produkčnímu buildu, formát, lint, typecheck, `npm audit --omit=dev` bez nálezu a
+produkční build. Sekce „Externí služby na webu“ ověřena v prohlížeči v obou
+stavech: s nastaveným ID vypíše to ID, bez něj větu, že nastavené není.
+
+**Co zbývá provozovateli** (v NEEDED): doplnit ID nového Meta datasetu do
+`NEXT_PUBLIC_META_PIXEL_ID` a dokončit jeho propojení s reklamním účtem,
+dokončit zkoušku vstupu přes Nuki (22. 9. nebyla připojená klika), ověřit
+migraci `email_archive` v produkci a případně nastavit Zernio.
+
 # Provozní upozornění 18. 9. 2026 — e-maily pro provozovatele
 
 Co se v systému stane, se teď dá poslat e-mailem lidem, kteří posilovnu
