@@ -1,3 +1,53 @@
+# Konzole webu 22. 9. 2026 večer — hlášky CSP od pixelu a chybějící favicon
+
+Lukáš poslal konzoli z `www.navigym.cz`: dvě hlášky „Refused to connect …
+violates … connect-src“ pro
+`https://dv-c3e594c6d429469e90b54478358619c3.ecs.us-east-1.on.aws/events?cee=no`
+a `https://bded8a3c6ae-1-1053047382554.us-central1.run.app/events?cee=no`,
+a `favicon.ico` 404.
+
+**Co ty hosty jsou.** Konfigurace, kterou Meta pro dataset `1393792405627460`
+vrací (`connect.facebook.net/signals/config/1393792405627460`), má sekci
+`openbridge` s `endpoints: [{ endpoint: "https://dv-…on.aws/", fallbackDomain:
+"https://…run.app", enrichmentDisabled: true }]`. OpenBridge je prohlížečová
+část Conversions API Gateway: `fbevents.js` (2.9.406) pošle každou událost
+dvakrát — obrázkovým beaconem na `https://www.facebook.com/tr/` (standardní
+pixel) a `fetch` POSTem na endpoint gateway `/events?cee=no` (`cee=no` je jen
+překlad `enrichmentDisabled`). Obě kopie nesou totéž `event_id`
+(`ob3_plugin-set_…`), Meta je deduplikuje. Naše CSP (`next.config.ts`,
+`connect-src`) povoluje `https://www.facebook.com`, ale žádný host na
+`on.aws`/`run.app`, takže druhý kanál prohlížeč zablokuje a zaloguje; první
+projde. Reklama tedy o `PageView` ani `Purchase` nepřichází; blokovaná je jen
+serverová kopie téže události. Kdo gateway zřídil, odsud vidět není (NAVI ji
+nezakládalo) — v Events Manageru → dataset → Settings → Conversions API.
+
+**Ověření na živém webu** (Chromium, assety přes curl kvůli proxy, běžný UA).
+Po „Povolit vše“: `fbq.getState()` pixel `1393792405627460`, `eventCount: 1`;
+zachycené odchozí požadavky
+`img https://www.facebook.com/tr/?id=1393792405627460&ev=PageView&dl=https://www.navigym.cz/&eid=ob3_plugin-set_…`
+a `fetch https://dv-…on.aws/events?cee=no` s tělem
+`{"event_name":"PageView",…,"event_id":"ob3_plugin-set_…"}`. Nic z toho sandbox
+neopustilo (patch `sendBeacon`/`fetch`/`XHR`/`Image.src` v init skriptu plus CDP
+blocklist), dataset z ověření nic nedostal. Poučení: s výchozím headless UA
+`fbevents.js` událost napočítá, ale neodešle (`IS_HEADLESS` podle
+`/HeadlessChrome/` v UA) — proto odpolední sonda „neviděla“ žádný beacon. Dva
+běhy sondy přeposlaly přes curl po jednom GA4 `collect` hitu, takže v GA4 může
+být z 22. 9. ~16:20 UTC jedna návštěva navíc; třetí běh už mimo web a skripty
+Meta/Google nic nepouštěl.
+
+**Rozhodnutí: CSP neměnit,** dokud Lukáš nerozhodne (položka v NEEDED). Hosty
+jsou náhodné, vázané na dataset a mohou se změnit; wildcard `https://*.on.aws
+https://*.run.app` by otevřel `connect-src` libovolné aplikaci na AWS/GCP. Když
+gateway chceme, přidají se do `connect-src` právě ty dva hosty.
+
+**Favicon.** `/favicon.ico` neexistoval (jen `src/app/icon.png`), prohlížeče,
+správci záložek a náhledy odkazů ho žádají bez ohledu na `<link rel="icon">`.
+Přidán `src/app/favicon.ico` (16, 32 a 48 px, 32bitové BMP položky) vygenerovaný
+ze `src/app/icon.png` přes `sharp` (skript zůstal mimo repozitář, `sharp` není
+naše přímá závislost). Next ho servíruje na `/favicon.ico` a vykresluje druhý
+`<link rel="icon">`; homepage e2e test v `tests/e2e/public.spec.ts` počítá s
+oběma odkazy a `docs/DESIGN_SYSTEM.md` říká generovat obojí spolu.
+
 # Meta pixel 22. 9. 2026 odpoledne — proč reklama neviděla rezervace
 
 Klára a Renáta nemohly v Ads Manageru vybrat nákup rezervace jako cíl reklamy.
