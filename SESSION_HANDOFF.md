@@ -16,8 +16,13 @@ preview nasazení nechodily do reklamních dat jako nákupy. Redeploy nebyl nutn
 Vše ostatní je na straně Meta — kroky v NEEDED. Dataset „NAVI Private Gym –
 navigym.cz“ z dopoledne zůstává nepoužitý.
 
-Poznámka k ověření: v sandboxu Chromium přes proxy nedotáhl JS chunky (502),
-takže probe lišty souhlasu na živém webu neprošla; chování pixelu je kryté e2e
+Ověřeno na živém webu (Chromium; HTML, chunky i `fbevents.js` přes curl, protože
+sandboxová proxy zahazovala dávky požadavků; beacony na `facebook.com/tr`
+zachycené a zahozené, na pixel nic nedorazilo): lišta nabízí Analytiku i
+Marketing, po „Povolit vše“ se načte `fbevents.js` 2.9.406 a konfigurace
+`signals/config/1816423579552231`, `fbq.getState()` hlásí pixel
+`1816423579552231` s jednou zaznamenanou událostí (`PageView`). Produkční deploy
+z `a6cf8e0` má v bundlu hodnotu už bez odřádkování. Chování pixelu kryjí i e2e
 testy proti produkčnímu buildu (zápis níže).
 
 # Měření, cookies a úklid 22. 9. 2026 — dokončení přerušené session
