@@ -29,6 +29,9 @@ marketing language, or an unnecessary call to action in every section.
   place gold artwork on a light surface.
 - The browser icon is `src/app/icon.png`, the same silhouette in `gold` on
   `ink`. Do not redraw or approximate the symbol for favicons.
+  `src/app/favicon.ico` (16, 32 and 48 px) is generated from that PNG for the
+  unprompted `/favicon.ico` request browsers, bookmark managers and link
+  previews make; regenerate both together.
 - Minimum digital size is 32 by 32 CSS pixels. Clear space is at least one
   quarter of the symbol width on every side.
 - Pass `decorative` when adjacent text already names the brand, so the symbol
@@ -59,7 +62,8 @@ visualisation (`public/images/navi-logo-source.png`), which is the only artwork
 supplied so far. They are faithful in shape but carry the render's soft edges.
 When the client delivers vectors, replace `navi-mark.png`, `navi-wordmark.png`,
 `navi-logo.png` and the flat-colour `navi-logo-email.png` (e-mail clients ignore
-CSS masks) and regenerate `src/app/icon.png`; no component changes are needed.
+CSS masks) and regenerate `src/app/icon.png` together with the derived
+`src/app/favicon.ico`; no component changes are needed.
 
 ## Design variants
 

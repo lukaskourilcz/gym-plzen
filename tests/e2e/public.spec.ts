@@ -200,10 +200,14 @@ test.describe("Public site", () => {
     await expect(
       page.getByRole("button", { name: "Ilustrační foto" }),
     ).toHaveCount(4);
-    await expect(page.locator('link[rel~="icon"]')).toHaveAttribute(
-      "href",
-      /icon\.png/,
-    );
+    // Two icon links now: the PNG the metadata declares and the classic
+    // /favicon.ico that browsers and link-preview tools request unprompted.
+    await expect(
+      page.locator('link[rel~="icon"][type="image/png"]'),
+    ).toHaveAttribute("href", /icon\.png/);
+    await expect(
+      page.locator('link[rel~="icon"][href^="/favicon.ico"]'),
+    ).toHaveCount(1);
     const operatingSteps = page.locator("#jak-to-funguje");
     for (const number of ["01", "02", "03", "04", "05", "06"]) {
       await expect(
