@@ -31,6 +31,21 @@ beacony na `facebook.com/tr` byly zachycené a zahozené, dataset z ověření n
 nedostal. První skutečná událost tedy dorazí od prvního návštěvníka, který
 marketing povolí.
 
+**Doména pro Meta (16:00 UTC).** Reklamní účet byl k datasetu už připojený, ale
+`navigym.cz` v portfoliu neexistovala a Meta bez ověřené domény kampaň na web
+nepustí. DNS zóna je u WebSupportu (`ns1.websupport.cz`), TXT záznam tedy odsud
+přidat nejde; zvolena metoda meta tagu: `siteVerification` v
+`src/lib/config/site-verification.ts` (čistý helper, unit test) plní
+`metadata.verification.other` v root layoutu z `META_DOMAIN_VERIFICATION`
+(`src/lib/env.ts`, `.env.example`, `MANUAL_STEPS.md`); bez hodnoty se nevykreslí
+nic (`55a516b`). Claude in Chrome doménu přidal (ID 2345774789562842) a opsal
+kód; ten je ve Vercelu jen pro Production. Po deployi je tag v `<head>` na
+`www.navigym.cz` i při čtení `navigym.cz` s následováním přesměrování, tak jak
+ho bude číst crawler Mety. Zbývá kliknutí „Verify Domain“ (v NEEDED). V Events
+Manageru → Actions svítí dvě doporučení na Conversions API — upsell, zatím
+neřešeno; přehled hlásí „Finish setting up Meta Pixel – 0 %“, což zmizí s první
+událostí od návštěvníka, který povolí marketing.
+
 Ověřeno před přepnutím na živém webu (Chromium; HTML, chunky i `fbevents.js` přes curl, protože
 sandboxová proxy zahazovala dávky požadavků; beacony na `facebook.com/tr`
 zachycené a zahozené, na pixel nic nedorazilo): lišta nabízí Analytiku i
