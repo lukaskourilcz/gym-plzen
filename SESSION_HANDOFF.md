@@ -1,5 +1,7 @@
 # Uzavírání diskuze — 23. 9. 2026
 
+PR #67 nasazený na produkci (READY, 3e992d5). Živé storno vlastního testu ověřeno v Gmailu ve 14:06; Nuki watchdog online ve 14:06, žádné blokace revokací. Google e-mail doložil vlastníka „NAVI Private Gym“.
+
 Aktuální změny, externí blokery a důkazy jsou v [DISCUSSION_AUDIT_2026_09_23.md](docs/DISCUSSION_AUDIT_2026_09_23.md). Storno e-mail má trvalou frontu; GA4 purchase je doplněný; Nuki má samostatný dohled; Zernio test kontroluje doručení a bezpečně opakuje jen jasná odmítnutí. WhatsApp billing eligibility stále blokuje živé doručení. Testovací allowlist nerozšiřovat bez dokončeného doručovacího testu.
 
 Oprava staršího záznamu níže: všechna tři neprovedená odebrání již produkční watchdog dokončil, access_revocation_pending = 0. Historické selhání vytvoření kódu pro minulý test 22. 9. zůstává otevřené.
