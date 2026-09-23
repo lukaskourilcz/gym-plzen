@@ -110,6 +110,7 @@ export function SiteHeader({
               booking action of its own above the fold. */}
             <Button
               href="/rezervace"
+              prefetch={false}
               size="sm"
               className="px-2.5 uppercase tracking-[.04em] sm:px-4 sm:tracking-[.1em]"
             >

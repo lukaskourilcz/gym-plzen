@@ -1,10 +1,6 @@
 import { z } from "zod";
 import { optionalText } from "./common";
 import {
-  MAX_HERO_PREVIEW_DAYS,
-  MIN_HERO_PREVIEW_DAYS,
-} from "@/lib/config/hero";
-import {
   MAX_BOOKING_HORIZON_DAYS,
   MIN_BOOKING_HORIZON_DAYS,
 } from "@/lib/config/schedule";
@@ -61,15 +57,6 @@ export const emailTemplateTestSchema = z.object({
   email: z.string().trim().email("Zadejte platnou e-mailovou adresu."),
 });
 
-/** How many days ahead (incl. today) the hero availability calendar lets visitors browse. */
-export const heroPreviewSchema = z.object({
-  previewDays: z
-    .number({ invalid_type_error: "Zadejte číslo." })
-    .int("Zadejte celé číslo.")
-    .min(MIN_HERO_PREVIEW_DAYS, `Nejméně ${MIN_HERO_PREVIEW_DAYS} den.`)
-    .max(MAX_HERO_PREVIEW_DAYS, `Nejvýše ${MAX_HERO_PREVIEW_DAYS} dní.`),
-});
-
 /** How far ahead visitors may book, in days including today. */
 export const bookingHorizonSchema = z.object({
   horizonDays: z
@@ -95,7 +82,6 @@ export type BookingHorizonValues = z.infer<typeof bookingHorizonSchema>;
 export type SmsTemplateValues = z.infer<typeof smsTemplateSchema>;
 export type EmailTemplateValues = z.infer<typeof emailTemplateSchema>;
 export type EmailTemplateTestValues = z.infer<typeof emailTemplateTestSchema>;
-export type HeroPreviewValues = z.infer<typeof heroPreviewSchema>;
 
 /**
  * The operator's billing details, printed on every payment document. Every

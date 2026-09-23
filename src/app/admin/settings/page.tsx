@@ -24,11 +24,6 @@ import {
   DEFAULT_BILLING_PROFILE,
   missingBillingFields,
 } from "@/lib/config/billing";
-import {
-  DEFAULT_HERO_PREVIEW_DAYS,
-  HERO_PREVIEW_DAYS_KEY,
-  clampHeroPreviewDays,
-} from "@/lib/config/hero";
 import { PageHeader } from "@/components/admin/page-header";
 import {
   Card,
@@ -42,7 +37,6 @@ import {
   BrandingForm,
   FileUploader,
   SitePhotosForm,
-  HeroCalendarForm,
   SmsTemplateForm,
 } from "./settings-forms";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
@@ -67,7 +61,6 @@ export default async function SettingsPage() {
     heroImageAlt,
     sectionsImageUrl,
     smsTemplate,
-    heroPreviewDays,
     siteContent,
     billing,
   ] = demo
@@ -78,7 +71,6 @@ export default async function SettingsPage() {
         "Ilustrační fotografie soukromého fitness",
         DEFAULT_SECTIONS_IMAGE_URL,
         DEFAULT_SMS_ACCESS_TEMPLATE,
-        DEFAULT_HERO_PREVIEW_DAYS,
         {
           galleryImageUrls: [...DEFAULT_GALLERY_IMAGE_URLS],
           zoneImageUrls: [...DEFAULT_ZONE_IMAGE_URLS],
@@ -98,7 +90,6 @@ export default async function SettingsPage() {
         cms.getSetting<string>(HERO_IMAGE_ALT_KEY),
         cms.getSetting<string>(SECTIONS_IMAGE_URL_KEY),
         cms.getSetting<string>(SMS_ACCESS_TEMPLATE_KEY),
-        cms.getSetting<number>(HERO_PREVIEW_DAYS_KEY),
         loadSiteContent("cs", { strict: true }),
         invoices.getBillingReadiness(),
       ]);
@@ -155,16 +146,14 @@ export default async function SettingsPage() {
           <CardHeader>
             <CardTitle>Náhled volných termínů</CardTitle>
             <CardDescription>
-              Určete, kolik nejbližších dní lze procházet v kartě dostupnosti na
-              hlavní stránce.
+              Kalendář na hlavní stránce umožňuje listovat 90 dní dopředu.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <HeroCalendarForm
-              previewDays={clampHeroPreviewDays(
-                heroPreviewDays ?? DEFAULT_HERO_PREVIEW_DAYS,
-              )}
-            />
+            <p className="text-sm text-muted-foreground">
+              První čtyři dny se načtou při otevření stránky. Další dny se
+              načítají až po jejich výběru.
+            </p>
           </CardContent>
         </Card>
 

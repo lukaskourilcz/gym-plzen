@@ -46,6 +46,7 @@ type ButtonAsButton = ButtonBaseProps &
 type ButtonAsLink = ButtonBaseProps &
   Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "href"> & {
     href: string;
+    prefetch?: boolean;
   };
 
 export type ButtonProps = ButtonAsButton | ButtonAsLink;

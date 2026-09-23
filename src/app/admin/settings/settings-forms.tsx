@@ -16,13 +16,8 @@ import {
   billingProfileSchema,
   brandingSchema,
   sitePhotosSchema,
-  heroPreviewSchema,
   smsTemplateSchema,
 } from "@/lib/validations/settings";
-import {
-  MAX_HERO_PREVIEW_DAYS,
-  MIN_HERO_PREVIEW_DAYS,
-} from "@/lib/config/hero";
 import {
   MAX_VAT_RATE_PERCENT,
   type BillingProfile,
@@ -31,7 +26,6 @@ import {
   saveBillingProfileAction,
   saveBrandingAction,
   saveSitePhotosAction,
-  saveHeroPreviewAction,
   saveSmsTemplateAction,
   uploadFileAction,
 } from "./actions";
@@ -224,43 +218,6 @@ export function SitePhotosForm({
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={form.formState.isSubmitting}>
         Uložit fotografie
-      </SubmitButton>
-    </form>
-  );
-}
-
-/** Number of upcoming days shown in the homepage availability preview. */
-export function HeroCalendarForm({ previewDays }: { previewDays: number }) {
-  const { form, submit, serverError, success } = useActionForm({
-    schema: heroPreviewSchema,
-    action: saveHeroPreviewAction,
-    successMessage: "Nastavení náhledu uloženo.",
-    defaultValues: { previewDays },
-  });
-
-  return (
-    <form onSubmit={submit} className="max-w-xs">
-      <Field
-        name="previewDays"
-        label="Počet dní včetně dneška"
-        error={form.formState.errors.previewDays}
-      >
-        <Input
-          id="previewDays"
-          type="number"
-          min={MIN_HERO_PREVIEW_DAYS}
-          max={MAX_HERO_PREVIEW_DAYS}
-          step={1}
-          {...form.register("previewDays", { valueAsNumber: true })}
-        />
-      </Field>
-      <p className="mb-2 text-xs text-muted-foreground">
-        Povolený rozsah je {MIN_HERO_PREVIEW_DAYS} až {MAX_HERO_PREVIEW_DAYS}
-        dní. Celý měsíční kalendář zůstává na stránce Rezervace.
-      </p>
-      <FormFeedback error={serverError} success={success} />
-      <SubmitButton isSubmitting={form.formState.isSubmitting}>
-        Uložit náhled
       </SubmitButton>
     </form>
   );
