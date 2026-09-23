@@ -44,10 +44,10 @@ describe("lazy hero day availability", { skip: !databaseReady }, () => {
       false,
     );
   });
-  test("refuses dates outside the 90-day range", async () => {
-    assert.equal(await getHeroDay("2026-12-31", now), null);
+  test("refuses dates outside the 180-day range", async () => {
+    assert.equal(await getHeroDay("2027-03-31", now), null);
     assert.equal(await getHeroDay("2026-09-30", now), null);
     assert.equal(await getHeroDay("2026-11-31", now), null);
-    assert.ok(await getHeroDay("2026-12-30", now));
+    assert.ok(await getHeroDay("2027-03-30", now));
   });
 });

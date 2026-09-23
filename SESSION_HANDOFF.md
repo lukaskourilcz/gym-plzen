@@ -1,3 +1,7 @@
+# Rozšíření kalendáře na 180 dní — 23. 9. 2026
+
+Na žádost uživatele se limit úvodního kalendáře zvyšuje z 90 na 180 dní. Počet přednačtených dní zůstává 4. Produkční `booking.horizon_days` byl sjednocen ze 130 na 180, aby šly pozdější nabízené termíny také objednat. Testy hranic upraveny na den 180/181. Předchozí ověření 90denního chování níže je historické.
+
 # Lazy kalendář na úvodní stránce — 23. 9. 2026
 
 Kalendář prochází až dnešek + 90 dní (pražský čas), začíná prvním rezervovatelným dnem. Úvodní stránka předává přesně první 4 dny. Další vybraný den načítá přes `GET /api/availability/day?date=YYYY-MM-DD`, s kontrolou hranic, `no-store`, bez údajů zákazníků. Úspěšné odpovědi zůstávají v paměti komponenty; opuštěné požadavky se ruší, po 15 s je dostupné opakování. Odkazy do rezervací na homepage a v headeru nepřednačítají rezervační stránku. Zrušené staré nastavení `hero.preview_days` se již nečte ani nenabízí k úpravě.
