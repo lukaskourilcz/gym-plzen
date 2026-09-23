@@ -15,20 +15,15 @@ import {
   minutesToHHmm,
   RANGE_DASH,
 } from "@/lib/helpers/format";
-import { addDaysToDateKey } from "@/lib/helpers/datetime";
+import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/helpers/datetime";
 import { firstBookableDateKey } from "@/lib/config/booking-start";
 import { getSlotsForRange } from "@/lib/services/slots";
-import { cms } from "@/lib/services";
 import {
   DEFAULT_CLOSE_MINUTE,
   DEFAULT_OPEN_MINUTE,
   DEFAULT_SLOT_MINUTES,
 } from "@/lib/config/schedule";
-import {
-  DEFAULT_HERO_PREVIEW_DAYS,
-  HERO_PREVIEW_DAYS_KEY,
-  clampHeroPreviewDays,
-} from "@/lib/config/hero";
+import { HERO_INITIAL_DAYS, HERO_HORIZON_DAYS } from "@/lib/config/hero";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site/site-header";
@@ -86,16 +81,10 @@ export const revalidate = 60;
 export default async function HomePage() {
   const now = new Date();
   const previewStart = firstBookableDateKey(now);
-  const [content, heroDaysSetting] = await Promise.all([
-    loadSiteContent(),
-    cms.getSetting<number>(HERO_PREVIEW_DAYS_KEY).catch(() => null),
-  ]);
-  const heroPreviewDays = clampHeroPreviewDays(
-    heroDaysSetting ?? DEFAULT_HERO_PREVIEW_DAYS,
-  );
+  const content = await loadSiteContent();
   const availability = await getSlotsForRange(
     previewStart,
-    addDaysToDateKey(previewStart, heroPreviewDays),
+    addDaysToDateKey(previewStart, HERO_INITIAL_DAYS),
     now,
   );
   const t = content.get;
@@ -234,7 +223,12 @@ export default async function HomePage() {
                * with the logo for width, so the hero keeps its own pair.
                */}
               <div className="mt-8 grid max-w-xl gap-3 sm:grid-cols-2 lg:hidden">
-                <Button href="/rezervace" size="lg" className="justify-center">
+                <Button
+                  href="/rezervace"
+                  prefetch={false}
+                  size="lg"
+                  className="justify-center"
+                >
                   {t("home.hero.primaryCta")}{" "}
                   <ArrowRight data-cta-arrow aria-hidden="true" />
                 </Button>
@@ -255,6 +249,11 @@ export default async function HomePage() {
                   days={previewDays}
                   source={availability.source}
                   nowMs={now.getTime()}
+                  startDateKey={previewStart}
+                  endDateKey={addDaysToDateKey(
+                    dateKeyInTimeZone(now),
+                    HERO_HORIZON_DAYS,
+                  )}
                 />
               </div>
               <OpeningBanner at={now} />
@@ -447,7 +446,12 @@ export default async function HomePage() {
                   )}
                 </div>
                 <div className="px-7 py-7 text-center">
-                  <Button href="/rezervace" size="lg" className="w-full">
+                  <Button
+                    href="/rezervace"
+                    prefetch={false}
+                    size="lg"
+                    className="w-full"
+                  >
                     {t("home.pricing.button")}{" "}
                     <ArrowRight data-cta-arrow aria-hidden="true" />
                   </Button>
@@ -516,6 +520,7 @@ export default async function HomePage() {
             </div>
             <Button
               href="/rezervace"
+              prefetch={false}
               size="lg"
               className="min-w-52 justify-center justify-self-center bg-gold text-gold-foreground hover:bg-gold/90 lg:justify-self-end"
             >

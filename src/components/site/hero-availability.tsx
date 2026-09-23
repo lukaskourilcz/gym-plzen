@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { addDaysToDateKey } from "@/lib/helpers/datetime";
+import { Button } from "@/components/ui/button";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
 export interface HeroAvailabilitySlot {
@@ -35,13 +37,18 @@ function getVisibleSlots(slots: HeroAvailabilitySlot[]) {
 
 export function HeroAvailability({
   days,
-  source,
+  source: initialSource,
   nowMs,
+  startDateKey,
+  endDateKey,
 }: {
   days: HeroAvailabilityDay[];
   source: "live" | "preview" | "unavailable";
   nowMs: number;
+  startDateKey: string;
+  endDateKey: string;
 }) {
+  const dateHeading = useRef<HTMLDivElement>(null);
   const [now, setNow] = useState(nowMs);
   const [selectedDay, setSelectedDay] = useState(0);
 
@@ -51,13 +58,57 @@ export function HeroAvailability({
     return () => window.clearInterval(id);
   }, []);
 
-  const dayCount = days.length;
-  const activeIndex = Math.min(selectedDay, Math.max(0, dayCount - 1));
-  const day = days[activeIndex];
+  const dateKey = addDaysToDateKey(startDateKey, selectedDay);
+  const [cache, setCache] = useState<
+    Record<string, { day: HeroAvailabilityDay; source: "live" | "preview" }>
+  >(() =>
+    Object.fromEntries(
+      initialSource === "unavailable"
+        ? []
+        : days.map((day) => [day.dateLabel, { day, source: initialSource }]),
+    ),
+  );
+  const [failedDate, setFailedDate] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
+  const entry = cache[dateKey];
+  const failed = failedDate === dateKey;
+  const source = entry?.source ?? "unavailable";
+  const day = entry?.day;
+  useEffect(() => {
+    if (entry) return;
+    const controller = new AbortController();
+    setFailedDate(null);
+    const timeout = window.setTimeout(() => {
+      setFailedDate(dateKey);
+      controller.abort();
+    }, 15_000);
+    void fetch(`/api/availability/day?date=${encodeURIComponent(dateKey)}`, {
+      signal: controller.signal,
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Availability unavailable");
+        const result = await response.json();
+        if (
+          result.day?.dateLabel !== dateKey ||
+          !Array.isArray(result.day.slots) ||
+          !["live", "preview"].includes(result.source)
+        )
+          throw new Error("Invalid availability");
+        if (!controller.signal.aborted)
+          setCache((previous) => ({ ...previous, [dateKey]: result }));
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setFailedDate(dateKey);
+      })
+      .finally(() => window.clearTimeout(timeout));
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [dateKey, entry, retry]);
   const visibleSlots = getVisibleSlots(day?.slots ?? []);
-  const reservationHref = day
-    ? `/rezervace?date=${encodeURIComponent(day.dateLabel)}`
-    : "/rezervace";
+  const reservationHref = `/rezervace?date=${encodeURIComponent(dateKey)}`;
 
   return (
     <section
@@ -82,53 +133,90 @@ export function HeroAvailability({
           >
             {source === "preview"
               ? "Ukázková dostupnost"
-              : "Dočasně nedostupné"}
+              : failed
+                ? "Dočasně nedostupné"
+                : "Načítání"}
           </span>
         )}
       </div>
 
-      {day ? (
+      <p role="status" aria-live="polite" className="sr-only">
+        {day
+          ? `Termíny načteny. Volných: ${visibleSlots.filter((slot) => getSlotState(slot, now) === "available").length}.`
+          : failed
+            ? "Dostupnost se nepodařilo načíst."
+            : "Načítání termínů…"}
+      </p>
+      {dateKey ? (
         <>
           <div className="flex items-center justify-between gap-3 px-4 pt-4 sm:px-5">
             <button
               type="button"
               onClick={() => setSelectedDay((value) => Math.max(0, value - 1))}
-              disabled={activeIndex === 0}
+              disabled={selectedDay === 0}
               aria-label="Předchozí den"
-              className="grid size-11 shrink-0 place-items-center rounded-sm border border-border text-muted-foreground transition-colors enabled:hover:border-primary enabled:hover:text-foreground disabled:opacity-35"
+              className="grid size-11 shrink-0 place-items-center rounded-sm border border-border text-muted-foreground transition-colors enabled:hover:border-primary enabled:hover:text-foreground disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <ChevronLeft aria-hidden="true" className="size-4" />
             </button>
             <div className="min-w-0 text-center">
-              <div className="text-sm font-extrabold">
+              <div
+                ref={dateHeading}
+                tabIndex={-1}
+                aria-live="polite"
+                className="text-sm font-extrabold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
                 {new Intl.DateTimeFormat("cs-CZ", {
                   weekday: "long",
                   day: "numeric",
                   month: "long",
                   timeZone: "UTC",
-                }).format(new Date(`${day.dateLabel}T12:00:00Z`))}
+                }).format(new Date(`${dateKey}T12:00:00Z`))}
               </div>
             </div>
             <button
               type="button"
               onClick={() =>
-                setSelectedDay((value) => Math.min(dayCount - 1, value + 1))
+                setSelectedDay((value) =>
+                  dateKey < endDateKey ? value + 1 : value,
+                )
               }
-              disabled={activeIndex >= dayCount - 1}
+              disabled={dateKey >= endDateKey}
               aria-label="Další den"
-              className="grid size-11 shrink-0 place-items-center rounded-sm border border-border text-muted-foreground transition-colors enabled:hover:border-primary enabled:hover:text-foreground disabled:opacity-35"
+              className="grid size-11 shrink-0 place-items-center rounded-sm border border-border text-muted-foreground transition-colors enabled:hover:border-primary enabled:hover:text-foreground disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <ChevronRight aria-hidden="true" className="size-4" />
             </button>
           </div>
 
-          {visibleSlots.length > 0 ? (
+          {!day ? (
+            <div className="px-4 py-5 text-center text-sm text-muted-foreground sm:px-5">
+              {failed ? (
+                <>
+                  <p>Dostupnost se nepodařilo načíst.</p>
+                  <Button
+                    variant="outline"
+                    className="mt-3"
+                    onClick={() => {
+                      dateHeading.current?.focus();
+                      setRetry((value) => value + 1);
+                    }}
+                  >
+                    Zkusit znovu
+                  </Button>
+                </>
+              ) : (
+                "Načítání termínů…"
+              )}
+            </div>
+          ) : visibleSlots.length > 0 ? (
             <div className="grid grid-cols-2 gap-1.5 px-4 py-4 sm:grid-cols-4 sm:px-5 lg:grid-cols-5">
               {visibleSlots.map((slot) => {
                 const state = getSlotState(slot, now);
                 if (state === "available") {
                   return (
                     <Link
+                      prefetch={false}
                       key={slot.startMs}
                       // Straight to the details step: picking a time here used
                       // to drop the visitor back into the calendar to pick the
@@ -158,7 +246,7 @@ export function HeroAvailability({
                     <span className="text-xs font-semibold line-through">
                       {slot.label}
                     </span>
-                    <span className="mt-0.5 text-[11px] font-semibold">
+                    <span className="mt-0.5 text-xs font-semibold">
                       {slot.price}
                     </span>
                     <span className="sr-only">
@@ -182,6 +270,7 @@ export function HeroAvailability({
 
       <div className="mx-4 flex justify-end border-t border-border py-4 sm:mx-5">
         <Link
+          prefetch={false}
           href={reservationHref}
           className="inline-flex min-h-11 items-center gap-2 text-base font-extrabold text-accent-foreground underline decoration-2 underline-offset-4 hover:decoration-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >

@@ -1,3 +1,11 @@
+# Lazy kalendář na úvodní stránce — 23. 9. 2026
+
+Kalendář prochází až dnešek + 90 dní (pražský čas), začíná prvním rezervovatelným dnem. Úvodní stránka předává přesně první 4 dny. Další vybraný den načítá přes `GET /api/availability/day?date=YYYY-MM-DD`, s kontrolou hranic, `no-store`, bez údajů zákazníků. Úspěšné odpovědi zůstávají v paměti komponenty; opuštěné požadavky se ruší, po 15 s je dostupné opakování. Odkazy do rezervací na homepage a v headeru nepřednačítají rezervační stránku. Zrušené staré nastavení `hero.preview_days` se již nečte ani nenabízí k úpravě.
+
+Ověřeno v Chrome: čtyři dny bez dodatečných požadavků, pátý den načten jediným požadavkem, návrat využívá cache; desktop a klávesnice včetně focus. HTTP kontrola potvrzuje pouze 4 data se sloty v HTML, samostatný den na hranici 90 dní a odmítnutí dne 91. Problémy s ovládáním Chrome zabránily úplné matici šířek a zoomu; otevřený bod v NEEDED.md. Testovací databáze je lokální `codex_navi_access_test`, není produkční.
+
+---
+
 # Uzavírání diskuze — 23. 9. 2026
 
 PR #67 nasazený na produkci (READY, 3e992d5). Živé storno vlastního testu ověřeno v Gmailu ve 14:06; Nuki watchdog online ve 14:06, žádné blokace revokací. Google e-mail doložil vlastníka „NAVI Private Gym“.
