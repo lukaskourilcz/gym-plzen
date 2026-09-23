@@ -1,6 +1,6 @@
 # Rozšíření kalendáře na 180 dní — 23. 9. 2026
 
-Na žádost uživatele se limit úvodního kalendáře zvyšuje z 90 na 180 dní. Počet přednačtených dní zůstává 4. Produkční `booking.horizon_days` byl sjednocen ze 130 na 180, aby šly pozdější nabízené termíny také objednat. Testy hranic upraveny na den 180/181. Předchozí ověření 90denního chování níže je historické.
+Na žádost uživatele se limit úvodního kalendáře zvyšuje z 90 na 180 dní. Počet přednačtených dní zůstává 4. Na další přání uživatele se drží pouze tyto první 4 dny a již navštívené dny v okně ±2 od vybraného data (nejvýše 9 dní dohromady). Vzdálenější položky se zahazují; návrat na ně znamená nový požadavek. Sousední dny se nepřednačítají. Produkční `booking.horizon_days` byl sjednocen ze 130 na 180, aby šly pozdější nabízené termíny také objednat. Testy hranic upraveny na den 180/181. Předchozí ověření 90denního chování níže je historické.
 
 # Lazy kalendář na úvodní stránce — 23. 9. 2026
 
