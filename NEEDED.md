@@ -1,6 +1,6 @@
 ## Obnova vstupních kódů — 23. 9. 2026
 
-- [ ] **Nasadit trvalé úlohy PINů** — aplikovat `drizzle/20260923130000_durable_access_codes.sql` na ověřený projekt gym-plzen (`rkmunagymohxtclymacm`), uložit serverový `ACCESS_CODE_ENCRYPTION_KEY` a nasadit aplikaci. [imp:5] [owner:ai] [time:15m] [kind:deploy]
+- [x] **Připravit a sloučit obnovu PINů** — migrace `drizzle/20260923130000_durable_access_codes.sql` aplikována na gym-plzen (`rkmunagymohxtclymacm`), samostatný serverový `ACCESS_CODE_ENCRYPTION_KEY` uložený ve Vercel Production, PR #66 sloučený do main pro automatické nasazení. 199 unit + 37 integračních testů, build, lint, typy, formát a audit prošly. [imp:5] [owner:ai] [time:15m] [kind:deploy]
 - [ ] **Fyzicky ověřit vstup po výpadku** — na testovací rezervaci ověřit funkční PIN na klávesnici, zachování PINu po výpadku Wi-Fi a odebrání po stornu; API potvrzení není test mechanického otevření. [imp:5] [owner:me] [time:15m] [kind:setup]
 
 # Co je potřeba dokončit mimo repozitář

@@ -1,3 +1,26 @@
+# Obnova Nuki po výpadku — 23. 9. 2026
+
+PR #66 zavádí trvalé šifrované úlohy PINů, přípravu -24 h, e-mail -1 h,
+neomezenou obnovu s odstupy a ověřené odebrání s blokací termínu. Detaily a
+bezpečný rollout/rollback: [ACCESS_CODE_RECOVERY.md](docs/ACCESS_CODE_RECOVERY.md).
+Migrace aplikovaná na produkční projekt `rkmunagymohxtclymacm`, nový klíč uložený
+jako sensitive environment variable pouze ve Vercel Production. **Klíč
+nepřepisovat ani nerotovat bez přešifrování existujících úloh.** RLS zapnuté,
+žádné granty anon/authenticated k access_code. Tři historické blokace předány
+obnově; neoznačovat je ručně za vyřešené bez potvrzení Nuki.
+
+Ověření: 199 unit a 37 integračních testů v samostatné lokální DB
+`codex_navi_access_test`, lint, typecheck, format, audit (0 zranitelností),
+produkční build a Vercel preview úspěšné. Responzivita na 8 šířkách a keyboard
+scroll tabulky ověřeny. Žádná skutečná platba ani otevření dveří při těchto testech.
+Fyzický test klávesnice po výpadku zůstává v NEEDED. WhatsApp stále jen stávající
+testovací rozsah, nerozšiřován na všechny zákazníky. Purchase beze změny.
+
+Pracovní kopie této změny: `gym-plzen-access-recovery`; původní špinavé kopie
+`gym-plzen` a `gym-plzen-launch` nebyly měněny.
+
+---
+
 # Události rezervace 22. 9. 2026 večer — zpráva z Chromu byla mylná
 
 Claude in Chrome (účet NAVI) hlásil Lukášovi, že pixel posílá jen `PageView`
