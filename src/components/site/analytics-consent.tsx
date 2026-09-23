@@ -4,11 +4,13 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { createGoogleTag } from "@/lib/analytics/google-tag";
+import {
+  startGoogleAnalytics,
+  ANALYTICS_CONSENT_CHANGED,
+} from "@/lib/analytics/google-analytics";
 import {
   CONSENT_STORAGE_KEY,
   LEGACY_TRACKING_CONSENT_STORAGE_KEY,
-  GOOGLE_ANALYTICS_ID,
   isAnalyticsConfigured,
   isMarketingConfigured,
   LEGACY_ANALYTICS_CONSENT_STORAGE_KEY,
@@ -21,68 +23,10 @@ import {
   startMetaPixel,
 } from "@/lib/analytics/meta-pixel";
 
-declare global {
-  interface Window {
-    dataLayer?: unknown[];
-    gtag?: (...args: unknown[]) => void;
-  }
-}
-
-const GOOGLE_TAG_SCRIPT_ID = "namaste-google-analytics";
 const EMPTY_PREFERENCES: ConsentPreferences = {
   analytics: false,
   marketing: false,
 };
-let analyticsStarted = false;
-
-function ensureGtag() {
-  window.dataLayer = window.dataLayer ?? [];
-  window.gtag =
-    window.gtag ??
-    createGoogleTag((command) => window.dataLayer?.push(command));
-  return window.gtag;
-}
-
-function googleConsentState(analyticsStorage: "granted" | "denied") {
-  return {
-    analytics_storage: analyticsStorage,
-    ad_storage: "denied",
-    ad_user_data: "denied",
-    ad_personalization: "denied",
-  } as const;
-}
-
-/**
- * Basic Consent Mode: gtag.js is not requested until analytics is allowed.
- * Advertising storage and signals stay disabled even after analytics consent.
- */
-function startGoogleAnalytics() {
-  // No measurement ID configured: nothing to start.
-  if (!GOOGLE_ANALYTICS_ID) return;
-  const gtag = ensureGtag();
-
-  if (analyticsStarted || document.getElementById(GOOGLE_TAG_SCRIPT_ID)) {
-    analyticsStarted = true;
-    gtag("consent", "update", googleConsentState("granted"));
-    return;
-  }
-
-  gtag("consent", "default", googleConsentState("denied"));
-  gtag("set", "ads_data_redaction", true);
-  gtag("consent", "update", googleConsentState("granted"));
-  gtag("js", new Date());
-  gtag("config", GOOGLE_ANALYTICS_ID, {
-    allow_google_signals: false,
-    allow_ad_personalization_signals: false,
-  });
-
-  const script = document.createElement("script");
-  script.id = GOOGLE_TAG_SCRIPT_ID;
-  script.async = true;
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ANALYTICS_ID}`;
-  document.head.append(script);
-  analyticsStarted = true;
-}
 
 function deleteGoogleAnalyticsCookies() {
   const hostParts = window.location.hostname.split(".");
@@ -153,7 +97,10 @@ export function AnalyticsConsentManager() {
   }, []);
 
   useEffect(() => {
-    if (preferences?.analytics) startGoogleAnalytics();
+    if (preferences?.analytics) {
+      startGoogleAnalytics();
+      window.dispatchEvent(new Event(ANALYTICS_CONSENT_CHANGED));
+    }
   }, [preferences?.analytics]);
 
   useEffect(() => {
@@ -188,7 +135,12 @@ export function AnalyticsConsentManager() {
       const marketingRevoked =
         preferences?.marketing === true && !nextPreferences.marketing;
       if (analyticsRevoked) {
-        window.gtag?.("consent", "update", googleConsentState("denied"));
+        window.gtag?.("consent", "update", {
+          analytics_storage: "denied",
+          ad_storage: "denied",
+          ad_user_data: "denied",
+          ad_personalization: "denied",
+        });
         deleteGoogleAnalyticsCookies();
       }
       if (marketingRevoked) deleteMetaPixelCookies();

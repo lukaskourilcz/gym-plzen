@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  trackGooglePurchase,
+  ANALYTICS_CONSENT_CHANGED,
+} from "@/lib/analytics/google-analytics";
 import { useEffect } from "react";
 import { trackMetaEvent } from "@/lib/analytics/meta-pixel";
 
@@ -12,6 +16,14 @@ export function BookingConversionTracker({
   priceCents: number;
   currency: string;
 }) {
+  useEffect(() => {
+    const track = () =>
+      trackGooglePurchase(reservationId, priceCents, currency);
+    track();
+    window.addEventListener(ANALYTICS_CONSENT_CHANGED, track);
+    return () => window.removeEventListener(ANALYTICS_CONSENT_CHANGED, track);
+  }, [currency, priceCents, reservationId]);
+
   useEffect(() => {
     const normalizedCurrency = currency.toUpperCase();
     if (priceCents > 0) {
