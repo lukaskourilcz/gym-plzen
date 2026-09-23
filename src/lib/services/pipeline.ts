@@ -1,5 +1,18 @@
-import { ACCESS_CODE_NOTICE_MINUTES } from "@/lib/config/access-code-delivery";
-import { and, eq, getTableColumns, gt, isNull, lte, or } from "drizzle-orm";
+import {
+  ACCESS_CODE_NOTICE_MINUTES,
+  ACCESS_CODE_PREPARE_MINUTES,
+} from "@/lib/config/access-code-delivery";
+import {
+  sql,
+  asc,
+  and,
+  eq,
+  getTableColumns,
+  gt,
+  isNull,
+  lte,
+  or,
+} from "drizzle-orm";
 import { db, type DatabaseExecutor } from "@/lib/db";
 import { getOperations } from "./operations";
 import { reservation, reservationPipeline } from "@/lib/db/schema";
@@ -59,7 +72,7 @@ export async function markStepSucceeded(
 
 /**
  * Record a step failure, schedule the next retry with backoff, and raise an
- * alert once attempts are exhausted.
+ * alert after repeated failures while continuing bounded retries.
  */
 export async function markStepFailed(
   reservationId: string,
@@ -80,16 +93,24 @@ export async function markStepFailed(
 
   const attempts = (row?.attempts ?? 0) + 1;
   const exhausted = attempts >= MAX_ATTEMPTS;
+  const [booking] = await db
+    .select({ startsAt: reservation.startsAt })
+    .from(reservation)
+    .where(eq(reservation.id, reservationId))
+    .limit(1);
+  const urgent =
+    booking && booking.startsAt.getTime() - Date.now() <= 15 * 60_000;
 
   await db
     .update(reservationPipeline)
     .set({
-      status: exhausted ? "failed" : "retrying",
+      status: "retrying",
       attempts,
       lastError: error,
-      nextRetryAt: exhausted
-        ? null
-        : addMinutes(new Date(), retryDelayMinutes(attempts)),
+      nextRetryAt: addMinutes(
+        new Date(),
+        urgent ? 1 : retryDelayMinutes(attempts),
+      ),
       updatedAt: new Date(),
     })
     .where(
@@ -132,14 +153,26 @@ export async function dueForRetry(limit = 50): Promise<ReservationPipeline[]> {
         // Future PIN steps must not occupy the retry batch and starve due ones.
         or(
           eq(reservationPipeline.step, "payment"),
-          lte(
-            reservation.startsAt,
-            addMinutes(now, ACCESS_CODE_NOTICE_MINUTES),
+          and(
+            eq(reservationPipeline.step, "code_created"),
+            lte(
+              reservation.startsAt,
+              addMinutes(now, ACCESS_CODE_PREPARE_MINUTES),
+            ),
+          ),
+          and(
+            eq(reservationPipeline.step, "code_delivered"),
+            sql`exists (select 1 from reservation_pipeline prerequisite where prerequisite.reservation_id = ${reservation.id} and prerequisite.step = 'code_created' and prerequisite.status = 'succeeded')`,
+            lte(
+              reservation.startsAt,
+              addMinutes(now, ACCESS_CODE_NOTICE_MINUTES),
+            ),
           ),
         ),
         gt(reservation.endsAt, now),
         or(
           eq(reservationPipeline.status, "retrying"),
+          eq(reservationPipeline.status, "failed"),
           eq(reservationPipeline.status, "pending"),
         ),
         or(
@@ -147,6 +180,11 @@ export async function dueForRetry(limit = 50): Promise<ReservationPipeline[]> {
           lte(reservationPipeline.nextRetryAt, now),
         ),
       ),
+    )
+    .orderBy(
+      asc(reservation.startsAt),
+      asc(reservationPipeline.nextRetryAt),
+      asc(reservationPipeline.id),
     )
     .limit(limit);
 }

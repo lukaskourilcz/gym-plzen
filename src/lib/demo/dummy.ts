@@ -216,6 +216,7 @@ export function buildDemoReservations(
       endsAt,
       status,
       confirmationTokenHash: null,
+      accessRevocationPending: false,
       loyaltyReward: null,
       contactName: fullName(u),
       contactEmail: u.email,

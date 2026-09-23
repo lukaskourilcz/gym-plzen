@@ -1,7 +1,8 @@
+import { listCodesForReservation, revokeAccessCode } from "./access-codes";
 import { withReservationLock } from "./operation-lock";
 import { getOperations } from "./operations";
 import { isDateOpenForBooking } from "@/lib/config/operations";
-import { and, eq, gt, inArray, lt, ne } from "drizzle-orm";
+import { or, and, eq, gt, inArray, lt, ne } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   blockedSlot,
@@ -179,7 +180,10 @@ async function rescheduleLocked(
           and(
             lt(reservation.startsAt, target.endsAt),
             gt(reservation.endsAt, target.startsAt),
-            inArray(reservation.status, ["pending", "confirmed"]),
+            or(
+              inArray(reservation.status, ["pending", "confirmed"]),
+              eq(reservation.accessRevocationPending, true),
+            ),
             ne(reservation.id, current.id),
           ),
         )
@@ -204,6 +208,20 @@ async function rescheduleLocked(
         throw new ActionError("Tento termín není k dispozici.");
       }
 
+      // A code prepared at the 24-hour boundary must be revoked before releasing
+      // the old window. On uncertainty the transaction leaves that window booked.
+      const liveCodes = (await listCodesForReservation(current.id)).filter(
+        (c) => !["revoked", "expired"].includes(c.status),
+      );
+      for (const code of liveCodes) {
+        try {
+          await revokeAccessCode(code.id);
+        } catch {
+          throw new ActionError(
+            "Změna termínu čeká na ověření odebrání vstupního kódu. Kontaktujte prosím obsluhu.",
+          );
+        }
+      }
       const changedAt = new Date();
       const [moved] = await tx
         .update(reservation)
@@ -245,8 +263,8 @@ async function rescheduleLocked(
       });
 
       // Commit the retryable code-refresh intent together with the new slot.
-      // Provider calls still happen after commit, so no network request holds
-      // the reservation row lock.
+      // New-code creation happens after commit; old-code revocation above
+      // must finish before releasing the original slot.
       await tx
         .update(reservationPipeline)
         .set({

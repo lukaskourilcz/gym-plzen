@@ -1,3 +1,4 @@
+import { reconcileRevocations } from "@/lib/services/access-codes";
 import { reconcilePendingPayments } from "@/lib/services/payments";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
@@ -18,6 +19,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  const revocations = await reconcileRevocations();
   const reconciledPayments = await reconcilePendingPayments();
   const released = await reservations.releaseExpiredPendingReservations();
   const due = await pipeline.dueForRetry(50);
@@ -49,6 +51,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     ok: true,
+    revocations,
     reconciledPayments,
     releasedPendingReservations: released,
     dueSteps: due.length,

@@ -1,5 +1,8 @@
 import { sendTestReservationWhatsApp } from "./whatsapp-test";
-import { isAccessCodeDeliveryDue } from "@/lib/config/access-code-delivery";
+import {
+  isAccessCodeDeliveryDue,
+  isAccessCodePreparationDue,
+} from "@/lib/config/access-code-delivery";
 import { withReservationLock } from "./operation-lock";
 import { getOperations } from "./operations";
 import { logger } from "@/lib/helpers/logger";
@@ -94,8 +97,8 @@ async function fulfillLocked(reservationId: string): Promise<void> {
   if (!(await getOperations()).accessCodesEnabled) return;
 
   // This guard applies to every caller: payment, admin booking and watchdog.
-  // Confirmation goes out immediately, but PINs never before start minus 60 min.
-  if (!isAccessCodeDeliveryDue(reservation.startsAt)) return;
+  // Confirmation is immediate; prepare at -24h, deliver separately at -1h.
+  if (!isAccessCodePreparationDue(reservation.startsAt)) return;
 
   // Step: code_created : issue a code + provision it on the lock (once).
   const existing = await listCodesForReservation(reservationId);
@@ -170,7 +173,7 @@ async function fulfillLocked(reservationId: string): Promise<void> {
 
   // Deliver a newly confirmed PIN or the same PIN recovered from Nuki.
   // A stable Resend key prevents duplicate sends after an ambiguous response.
-  if (plaintext) {
+  if (plaintext && isAccessCodeDeliveryDue(reservation.startsAt)) {
     const outcome = await dispatchAccessCode({
       accessCodeId,
       userId: reservation.userId ?? null,

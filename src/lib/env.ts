@@ -62,6 +62,10 @@ const serverSchema = z.object({
   WHATSAPP_VERIFY_TOKEN: z.string().optional(),
   WHATSAPP_APP_SECRET: z.string().optional(),
 
+  ACCESS_CODE_ENCRYPTION_KEY: z
+    .string()
+    .regex(/^[a-fA-F0-9]{64}$/)
+    .optional(),
   NUKI_API_TOKEN: z.string().optional(),
   NUKI_SMARTLOCK_ID: z.string().optional(),
   NUKI_WEBHOOK_SECRET: z.string().optional(),

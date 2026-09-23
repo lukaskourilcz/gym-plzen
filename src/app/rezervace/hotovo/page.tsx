@@ -55,8 +55,8 @@ export default async function BookingDonePage({
       icon: CheckCircle2,
       title: "Rezervace je potvrzená",
       body: session
-        ? "Termín najdete ve svém účtu. Pokyny ke vstupu obdržíte před návštěvou."
-        : "Potvrzení jsme poslali na váš e-mail. Pokyny ke vstupu obdržíte před návštěvou e-mailem.",
+        ? "Termín najdete ve svém účtu. Vstupní kód připravujeme samostatně a posíláme e-mailem hodinu před začátkem; při pozdější rezervaci co nejdříve po ověření."
+        : "Potvrzení jsme poslali na váš e-mail. Vstupní kód připravujeme samostatně a posíláme e-mailem hodinu před začátkem; při pozdější rezervaci co nejdříve po ověření.",
     },
     cancelled: {
       icon: TriangleAlert,
