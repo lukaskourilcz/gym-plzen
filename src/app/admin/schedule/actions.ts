@@ -14,13 +14,7 @@ import {
   type CreateBlockedSlotValues,
   type OpeningHoursValues,
 } from "@/lib/validations/schedule";
-import {
-  activity,
-  schedule,
-  notifications,
-  members,
-  reservations,
-} from "@/lib/services";
+import { activity, schedule, reservations } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
 
 /** Save opening hours for one weekday (converts "HH:mm" → minutes). */
@@ -78,17 +72,6 @@ const createBlockedSlotImpl = defineAction({
         memberId: r.userId,
         reservationId: r.id,
         summary: `Rezervace na ${formatDateTime(r.startsAt)} zrušena uzavřením termínů${input.note ? ` (${input.note})` : ""}.`,
-      });
-      const channels = r.userId ? await members.getMember(r.userId) : null;
-      await notifications.sendReservationClosure({
-        userId: r.userId ?? null,
-        reservationId: r.id,
-        name: r.contactName,
-        startsAt: r.startsAt,
-        email: r.contactEmail ?? channels?.user.email ?? null,
-        phone: r.contactPhone ?? channels?.profile?.phone ?? null,
-        notifyByWhatsapp: channels?.profile?.notifyByWhatsapp ?? false,
-        reason: input.note || undefined,
       });
     }
 

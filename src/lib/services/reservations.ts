@@ -1,8 +1,15 @@
+import { deliverCancellation } from "./cancellation-delivery";
 import { raiseAlert } from "./alerts";
 import { and, desc, eq, gte, inArray, lt, notExists, sql } from "drizzle-orm";
 import { db, type DatabaseExecutor } from "@/lib/db";
 import { withReservationLock } from "./operation-lock";
-import { invoice, payment, reservation } from "@/lib/db/schema";
+import {
+  invoice,
+  payment,
+  reservation,
+  messageDelivery,
+  profiles,
+} from "@/lib/db/schema";
 import { recordIn as recordActivityIn } from "./activity";
 import type { NewReservation, Reservation } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
@@ -154,15 +161,65 @@ async function cancelReservationLocked(params: {
   // is the system tidying up after itself.
   const before = await getReservation(params.id);
   await requestCodeRevocations(params.id);
-  await db
-    .update(reservation)
-    .set({
-      status: "cancelled",
-      cancelledAt: new Date(),
-      cancelReason: params.reason ?? null,
-      updatedAt: new Date(),
-    })
-    .where(eq(reservation.id, params.id));
+  if (!before) return;
+  const [member] = before.userId
+    ? await db
+        .select({ email: profiles.email })
+        .from(profiles)
+        .where(eq(profiles.id, before.userId))
+    : [];
+  const email = before.contactEmail ?? member?.email;
+  await db.transaction(async (tx) => {
+    await tx
+      .update(reservation)
+      .set({
+        status: "cancelled",
+        cancelledAt: before.cancelledAt ?? new Date(),
+        cancelReason:
+          before.status === "cancelled"
+            ? before.cancelReason
+            : (params.reason ?? null),
+        updatedAt: new Date(),
+      })
+      .where(eq(reservation.id, params.id));
+    if (before.status === "confirmed" && email) {
+      await tx
+        .insert(messageDelivery)
+        .values({
+          reservationId: before.id,
+          userId: before.userId,
+          channel: "email",
+          kind: "reservation_cancellation",
+          recipient: email,
+          dedupeKey: `cancellation/${before.id}`,
+          status: "queued",
+        })
+        .onConflictDoNothing();
+    }
+  });
+  await releaseForReservation(params.id);
+  const [paid] = await db
+    .select()
+    .from(payment)
+    .where(
+      and(
+        eq(payment.reservationId, params.id),
+        eq(payment.status, "succeeded"),
+      ),
+    )
+    .limit(1);
+  if (paid)
+    await raiseAlert({
+      severity: "critical",
+      dedupeKey: `refund-needed:${params.id}`,
+      title: "Zrušená zaplacená rezervace vyžaduje vrácení platby",
+      body: `Rezervace na ${formatDateTime(before.startsAt)} byla zrušena. Zákazník zaplatil ${formatMoney(paid.amountCents, paid.currency)}; ověřte nárok a stav refundace v Comgate. Samotné storno platbu nevrací.`,
+      context: {
+        reservationId: params.id,
+        paymentId: paid.id,
+        amountCents: paid.amountCents,
+      },
+    });
   const codes = await listCodesForReservation(params.id);
   const revocations = await Promise.allSettled(
     codes.map((code) => revokeAccessCode(code.id)),
@@ -176,6 +233,7 @@ async function cancelReservationLocked(params: {
       context: { reservationId: params.id },
     });
   }
+  await deliverCancellation(params.id);
   if (before?.status === "confirmed")
     await notifyReservationCancelled({
       reservation: before,
@@ -195,45 +253,11 @@ export async function cancelReservationsForClosure(
   affected: Reservation[],
   params: { reason: string; byAdminId?: string },
 ): Promise<void> {
-  if (affected.length === 0) return;
-  const settled = await db
-    .select({
-      id: payment.id,
-      reservationId: payment.reservationId,
-      amountCents: payment.amountCents,
-      currency: payment.currency,
-    })
-    .from(payment)
-    .where(
-      and(
-        inArray(
-          payment.reservationId,
-          affected.map((row) => row.id),
-        ),
-        eq(payment.status, "succeeded"),
-      ),
-    );
-  const paidBy = new Map(settled.map((row) => [row.reservationId, row]));
-
   for (const row of affected) {
     await cancelReservation({
       id: row.id,
       reason: params.reason,
       byAdminId: params.byAdminId,
-    });
-    await releaseForReservation(row.id);
-    const paid = paidBy.get(row.id);
-    if (!paid) continue;
-    await raiseAlert({
-      severity: "critical",
-      dedupeKey: `refund-needed:${row.id}`,
-      title: "Zrušená zaplacená rezervace vyžaduje vrácení platby",
-      body: `Termín ${formatDateTime(row.startsAt)} uzavřel provozovatel. Zákazník zaplatil ${formatMoney(paid.amountCents, paid.currency)}; vraťte platbu v portálu Comgate a dejte mu vědět.`,
-      context: {
-        reservationId: row.id,
-        paymentId: paid.id,
-        amountCents: paid.amountCents,
-      },
     });
   }
 }

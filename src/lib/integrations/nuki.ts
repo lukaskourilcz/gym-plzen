@@ -397,3 +397,28 @@ export function durableNukiClient(lockId: string) {
     lockId,
   });
 }
+
+/** Connectivity reported by Nuki Cloud; does not prove physical door operation. */
+export async function readLockConnectivity(): Promise<
+  "online" | "offline" | "unknown"
+> {
+  if (!isNukiConfigured()) return "unknown";
+  try {
+    const device = await httpRequest<{ serverState?: number }>(
+      `${API_BASE}/smartlock/${smartlockId()}`,
+      {
+        headers: authHeader(),
+        cache: "no-store",
+        timeoutMs: 5000,
+        retries: 0,
+      },
+    );
+    return device.serverState === 0
+      ? "online"
+      : typeof device.serverState === "number"
+        ? "offline"
+        : "unknown";
+  } catch {
+    return "unknown";
+  }
+}
