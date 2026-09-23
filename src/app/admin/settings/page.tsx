@@ -146,7 +146,7 @@ export default async function SettingsPage() {
           <CardHeader>
             <CardTitle>Náhled volných termínů</CardTitle>
             <CardDescription>
-              Kalendář na hlavní stránce umožňuje listovat 90 dní dopředu.
+              Kalendář na hlavní stránce umožňuje listovat 180 dní dopředu.
             </CardDescription>
           </CardHeader>
           <CardContent>

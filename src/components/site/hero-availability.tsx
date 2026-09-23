@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { addDaysToDateKey } from "@/lib/helpers/datetime";
+import { pruneHeroAvailabilityCache } from "@/lib/helpers/hero-availability";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -68,6 +69,11 @@ export function HeroAvailability({
         : days.map((day) => [day.dateLabel, { day, source: initialSource }]),
     ),
   );
+  useEffect(() => {
+    setCache((previous) =>
+      pruneHeroAvailabilityCache(previous, startDateKey, dateKey),
+    );
+  }, [startDateKey, dateKey]);
   const [failedDate, setFailedDate] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
   const entry = cache[dateKey];
@@ -96,7 +102,13 @@ export function HeroAvailability({
         )
           throw new Error("Invalid availability");
         if (!controller.signal.aborted)
-          setCache((previous) => ({ ...previous, [dateKey]: result }));
+          setCache((previous) =>
+            pruneHeroAvailabilityCache(
+              { ...previous, [dateKey]: result },
+              startDateKey,
+              dateKey,
+            ),
+          );
       })
       .catch(() => {
         if (!controller.signal.aborted) setFailedDate(dateKey);
@@ -106,7 +118,7 @@ export function HeroAvailability({
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [dateKey, entry, retry]);
+  }, [dateKey, entry, retry, startDateKey]);
   const visibleSlots = getVisibleSlots(day?.slots ?? []);
   const reservationHref = `/rezervace?date=${encodeURIComponent(dateKey)}`;
 
