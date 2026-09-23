@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   index,
+  boolean,
   integer,
   pgTable,
   smallint,
@@ -32,6 +33,9 @@ export const reservation = pgTable(
     endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
 
     status: reservationStatus("status").notNull().default("pending"),
+    accessRevocationPending: boolean("access_revocation_pending")
+      .notNull()
+      .default(false),
     confirmationTokenHash: text("confirmation_token_hash"),
     loyaltyReward: integer("loyalty_reward"),
 

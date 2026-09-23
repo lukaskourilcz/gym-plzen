@@ -29,7 +29,7 @@ export const reservationPipeline = pgTable(
     status: pipelineStepStatus("status").notNull().default("pending"),
     attempts: integer("attempts").default(0).notNull(),
     lastError: text("last_error"),
-    nextRetryAt: timestamp("next_retry_at"),
+    nextRetryAt: timestamp("next_retry_at", { withTimezone: true }),
     completedAt: timestamp("completed_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),

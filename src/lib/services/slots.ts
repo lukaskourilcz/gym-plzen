@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, lt } from "drizzle-orm";
+import { or, and, eq, gt, inArray, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { blockedSlot, openingHours, reservation } from "@/lib/db/schema";
 import {
@@ -144,7 +144,10 @@ export async function getSlotsForRange(
           and(
             lt(reservation.startsAt, rangeEnd),
             gt(reservation.endsAt, rangeStart),
-            inArray(reservation.status, ["pending", "confirmed"]),
+            or(
+              inArray(reservation.status, ["pending", "confirmed"]),
+              eq(reservation.accessRevocationPending, true),
+            ),
           ),
         ),
       db

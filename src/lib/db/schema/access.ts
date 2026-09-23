@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   uniqueIndex,
   index,
+  integer,
   pgTable,
   text,
   timestamp,
@@ -24,10 +25,21 @@ export const accessCode = pgTable(
       .notNull()
       .references(() => reservation.id, { onDelete: "cascade" }),
 
-    // The 6-digit code is stored hashed; we never need the plaintext back
-    // after delivery. `codeLast2` helps admins eyeball-match support requests.
+    // Hash supports provider reconciliation; authenticated ciphertext allows
+    // retries without changing the PIN. The encryption key lives outside DB.
     codeHash: text("code_hash").notNull(),
     codeLast2: text("code_last2"),
+    // Durable intent. Ciphertext is bound to this row + reservation + device.
+    encryptedPin: text("encrypted_pin"),
+    lockId: text("lock_id"),
+    provisionState: text("provision_state")
+      .$type<"prepared" | "submitted" | "ready">()
+      .notNull()
+      .default("submitted"),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    revokeRequestedAt: timestamp("revoke_requested_at", { withTimezone: true }),
+    retryAt: timestamp("retry_at", { withTimezone: true }),
+    attempts: integer("attempts").notNull().default(0),
 
     // Nuki authorization id, so we can revoke the code on the lock later.
     nukiAuthId: text("nuki_auth_id"),

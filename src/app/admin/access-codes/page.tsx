@@ -187,7 +187,8 @@ export default async function AccessCodesPage({
             <TableRow>
               <TableCell colSpan={8} className="text-muted-foreground">
                 Na této stránce nejsou žádné kódy. Kódy pro budoucí rezervace se
-                vytvářejí nejdříve hodinu před začátkem.
+                vytvářejí nejdříve 24 hodin před začátkem. Plán přípravy najdete
+                v přehledu rezervací.
               </TableCell>
             </TableRow>
           )}

@@ -84,7 +84,10 @@ export async function checkAvailability(
     .where(
       and(
         overlaps(reservation.startsAt, reservation.endsAt, startsAt, endsAt),
-        or(...ACTIVE_STATUSES.map((s) => eq(reservation.status, s))),
+        or(
+          ...ACTIVE_STATUSES.map((s) => eq(reservation.status, s)),
+          eq(reservation.accessRevocationPending, true),
+        ),
         opts.excludeReservationId
           ? ne(reservation.id, opts.excludeReservationId)
           : undefined,

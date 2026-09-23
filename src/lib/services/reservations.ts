@@ -8,7 +8,11 @@ import type { NewReservation, Reservation } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
 import { checkAvailability } from "./availability";
 import { initPipeline } from "./pipeline";
-import { listCodesForReservation, revokeAccessCode } from "./access-codes";
+import {
+  listCodesForReservation,
+  revokeAccessCode,
+  requestCodeRevocations,
+} from "./access-codes";
 import { releaseForReservation } from "./vouchers";
 import { notifyReservationCancelled } from "./operator-notifications";
 import { formatDateTime, formatMoney } from "@/lib/helpers/format";
@@ -149,6 +153,7 @@ async function cancelReservationLocked(params: {
   // news for the operator. A pending hold that expired or a rejected voucher
   // is the system tidying up after itself.
   const before = await getReservation(params.id);
+  await requestCodeRevocations(params.id);
   await db
     .update(reservation)
     .set({

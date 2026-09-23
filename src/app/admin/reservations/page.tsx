@@ -1,3 +1,5 @@
+import { reservationAccessState } from "@/lib/helpers/reservation-access-state";
+import { adminReservationAccess } from "@/lib/services/reservation-access";
 import { requireAdmin } from "@/lib/auth/guards";
 import { idSchema } from "@/lib/validations/common";
 import Link from "next/link";
@@ -46,9 +48,29 @@ export default async function ReservationsPage({
     demoEnabled,
   );
 
+  const access = demo
+    ? new Map(
+        rows.map((r) => [
+          r.id,
+          {
+            ...reservationAccessState({
+              ...r,
+              hold: false,
+              delivered: false,
+              enabled: true,
+            }),
+            pin: undefined as string | undefined,
+          },
+        ]),
+      )
+    : await adminReservationAccess(rows);
+
   return (
     <div>
-      <PageHeader title="Rezervace" />
+      <PageHeader
+        title="Rezervace"
+        description="Kód připravujeme 24 hodin před termínem a posíláme e-mailem hodinu před začátkem. U bližších rezervací začne příprava ihned po potvrzení."
+      />
       {selectedId && (
         <Link
           href="/admin/reservations"
@@ -77,6 +99,7 @@ export default async function ReservationsPage({
             <TableHead>Kontakt</TableHead>
             <TableHead>Cena</TableHead>
             <TableHead>Stav</TableHead>
+            <TableHead>Vstupní kód</TableHead>
             <TableHead />
           </TableRow>
         </TableHeader>
@@ -110,6 +133,21 @@ export default async function ReservationsPage({
                   : "členství"}
               </TableCell>
               <TableCell>{formatStatus(r.status)}</TableCell>
+              <TableCell className="min-w-52">
+                {access.get(r.id)?.pin && (
+                  <span className="block font-mono text-base font-semibold tracking-widest">
+                    {access.get(r.id)?.pin}
+                  </span>
+                )}
+                <span className="block text-sm">
+                  {access.get(r.id)?.label ?? "Ukázková rezervace"}
+                </span>
+                {access.get(r.id)?.at && (
+                  <span className="block text-sm text-muted-foreground">
+                    {formatDateTime(access.get(r.id)!.at!)}
+                  </span>
+                )}
+              </TableCell>
               <TableCell>
                 {!demo && r.status !== "cancelled" && (
                   <CancelButton reservationId={r.id} />
@@ -119,7 +157,7 @@ export default async function ReservationsPage({
           ))}
           {rows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={6} className="text-muted-foreground">
+              <TableCell colSpan={7} className="text-muted-foreground">
                 Zatím žádné rezervace.
               </TableCell>
             </TableRow>

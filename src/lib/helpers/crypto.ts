@@ -16,9 +16,13 @@ export function generateNumericCode(digits = 6): string {
   return randomInt(0, max).toString().padStart(digits, "0");
 }
 
-/** Nuki keypads have digits 1–9; zero cannot be entered. */
+/** Nuki PINs use 1–9 and must not start with 12. */
 export function generateKeypadCode(): string {
-  return Array.from({ length: 6 }, () => randomInt(1, 10)).join("");
+  let code: string;
+  do {
+    code = Array.from({ length: 6 }, () => randomInt(1, 10)).join("");
+  } while (code.startsWith("12"));
+  return code;
 }
 
 /** One-way hash of an access code for storage (we never need the plaintext back). */
