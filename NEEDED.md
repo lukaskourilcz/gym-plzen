@@ -1,3 +1,8 @@
+## Kalendář úvodní stránky 23. 9. 2026
+
+- [x] **90 dní s načítáním po dnech** — první 4 dny v úvodním HTML, další jen po výběru, mezipaměť navštívených dní, zrušení starých požadavků a opakování při výpadku. [imp:4] [owner:ai] [time:1h] [kind:deploy]
+- [ ] **Doplnit responzivní kontrolu kalendáře** — desktop a klávesnice ověřeny; po obnovení spolehlivého ovládání Chrome ověřit šířky 320–1728 px, 200% zoom a reduced motion. [imp:2] [owner:ai] [time:15m] [kind:deploy]
+
 ## Aktualizace diskuze 23. 9. 2026
 
 - [x] **Běžné storno a dohled Nuki** — jednotný zákaznický storno e-mail s obnovou, uvolnění voucheru, upozornění na refundaci a kontrola spojení po 5 min / upozornění po 15 min. [imp:5] [owner:ai] [time:2h] [kind:deploy]
