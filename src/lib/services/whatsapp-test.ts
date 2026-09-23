@@ -1,13 +1,19 @@
-import { eq } from "drizzle-orm";
+import { withReservationLock } from "./operation-lock";
+import { recoverAccessCode } from "./access-codes";
+import { raiseAlert, resolveAlert } from "./alerts";
+import { and, asc, eq, gt, inArray, lte, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { messageDelivery } from "@/lib/db/schema";
+import { messageDelivery, accessCode, reservation } from "@/lib/db/schema";
 import { env } from "@/lib/env";
 import { formatDateTime } from "@/lib/helpers/format";
 import { isZernioTestRecipient } from "@/lib/helpers/zernio-access";
-import { sendZernioAccessCode } from "@/lib/integrations/zernio";
+import {
+  readZernioDelivery,
+  sendZernioAccessCode,
+} from "@/lib/integrations/zernio";
 
 /** Explicit, temporary allowlist. Unrelated customers remain on email only. */
-export async function sendTestReservationWhatsApp(input: {
+type WhatsAppInput = {
   reservationId: string;
   accessCodeId: string;
   userId: string | null;
@@ -17,7 +23,12 @@ export async function sendTestReservationWhatsApp(input: {
   startsAt: Date;
   validFrom: Date;
   validUntil: Date;
-}) {
+};
+
+export async function sendTestReservationWhatsApp(input: WhatsAppInput) {
+  return withReservationLock(input.reservationId, () => sendLocked(input));
+}
+async function sendLocked(input: WhatsAppInput) {
   if (
     !isZernioTestRecipient({
       phone: input.phone,
@@ -27,7 +38,8 @@ export async function sendTestReservationWhatsApp(input: {
     })
   )
     return;
-  const [claim] = await db
+  const key = `zernio-access/${input.accessCodeId}`;
+  await db
     .insert(messageDelivery)
     .values({
       reservationId: input.reservationId,
@@ -36,11 +48,42 @@ export async function sendTestReservationWhatsApp(input: {
       kind: "access_code",
       recipient: input.phone!,
       status: "queued",
-      dedupeKey: `zernio-access/${input.accessCodeId}`,
+      dedupeKey: key,
+      providerResponse: { attempts: 0, submitted: false },
     })
-    .onConflictDoNothing({ target: messageDelivery.dedupeKey })
-    .returning({ id: messageDelivery.id });
-  if (!claim) return;
+    .onConflictDoNothing();
+  const [claim] = await db
+    .select()
+    .from(messageDelivery)
+    .where(eq(messageDelivery.dedupeKey, key));
+  if (!claim || ["sent", "delivered", "read"].includes(claim.status)) return;
+  const state = claim.providerResponse as {
+    attempts?: number;
+    submitted?: boolean;
+    retrySafe?: boolean;
+    conversationId?: string;
+  } | null;
+  // A crash/timeout after submission is ambiguous. Never blindly resend a PIN.
+  if (
+    !state ||
+    (state.submitted && !state.retrySafe) ||
+    (state.attempts ?? 0) >= 3
+  )
+    return;
+  if (
+    claim.status === "failed" &&
+    Date.now() - claim.updatedAt.getTime() < 15 * 60_000
+  )
+    return;
+  const attempts = (state.attempts ?? 0) + 1;
+  await db
+    .update(messageDelivery)
+    .set({
+      status: "queued",
+      updatedAt: new Date(),
+      providerResponse: { attempts, submitted: true, retrySafe: false },
+    })
+    .where(eq(messageDelivery.id, claim.id));
   const result = await sendZernioAccessCode({
     phone: input.phone!,
     pin: input.pin,
@@ -51,6 +94,12 @@ export async function sendTestReservationWhatsApp(input: {
   await db
     .update(messageDelivery)
     .set({
+      providerResponse: {
+        attempts,
+        submitted: true,
+        conversationId: result.sent ? result.conversationId : null,
+        retrySafe: !result.sent && result.error === "zernio_http_429",
+      },
       status: result.sent ? "sent" : "failed",
       providerMessageId: result.sent ? result.providerMessageId : null,
       failureReason: result.sent ? null : result.error,
@@ -58,4 +107,141 @@ export async function sendTestReservationWhatsApp(input: {
       updatedAt: new Date(),
     })
     .where(eq(messageDelivery.id, claim.id));
+  if (!result.sent)
+    await raiseAlert({
+      dedupeKey: `whatsapp:${input.reservationId}`,
+      title: "WhatsApp čeká na ověření odeslání",
+      body: "E-mail se odesílá nezávisle. Zkontrolujte stav v Zernio; nejasný výsledek se automaticky neopakuje.",
+      context: { reservationId: input.reservationId, reason: result.error },
+    });
+}
+
+/** Independent from mandatory email success; only the explicitly allowlisted tester. */
+export async function reconcileTestWhatsApp() {
+  if (!env.ZERNIO_TEST_EMAIL || !env.ZERNIO_API_KEY || !env.ZERNIO_ACCOUNT_ID)
+    return;
+  const pending = await db
+    .select()
+    .from(messageDelivery)
+    .where(
+      and(
+        eq(messageDelivery.channel, "whatsapp"),
+        inArray(messageDelivery.status, ["sent", "queued"]),
+        lte(messageDelivery.updatedAt, new Date(Date.now() - 5 * 60_000)),
+      ),
+    )
+    .orderBy(asc(messageDelivery.updatedAt))
+    .limit(10);
+  for (const message of pending) {
+    if (
+      !message.dedupeKey?.startsWith("zernio-access/") ||
+      !message.reservationId
+    )
+      continue;
+    const metadata = message.providerResponse as {
+      conversationId?: string;
+      attempts?: number;
+    } | null;
+    if (!metadata?.conversationId || !message.providerMessageId) {
+      await raiseAlert({
+        dedupeKey: `whatsapp:${message.reservationId}`,
+        title: "Výsledek odeslání WhatsAppu nelze ověřit",
+        body: "Zkontrolujte testovací konverzaci v Zernio. Nejasný pokus se neopakuje, e-mail běží nezávisle.",
+        context: { reservationId: message.reservationId },
+      });
+      continue;
+    }
+    try {
+      await withReservationLock(message.reservationId, async () => {
+        const result = await readZernioDelivery(
+          metadata.conversationId!,
+          message.providerMessageId!,
+        );
+        await db
+          .update(messageDelivery)
+          .set({
+            status: result.status === "unknown" ? "sent" : result.status,
+            deliveredAt: ["delivered", "read"].includes(result.status)
+              ? new Date()
+              : undefined,
+            readAt: result.status === "read" ? new Date() : undefined,
+            failureReason:
+              result.status === "failed"
+                ? `zernio_delivery_failed_${result.errorCode ?? "unknown"}`
+                : null,
+            providerResponse: {
+              ...metadata,
+              submitted: true,
+              retrySafe:
+                result.status === "failed" && result.errorCode !== 131042,
+            },
+            updatedAt: new Date(),
+          })
+          .where(eq(messageDelivery.id, message.id));
+        if (result.status === "failed")
+          await raiseAlert({
+            dedupeKey: `whatsapp:${message.reservationId}`,
+            title: "WhatsApp nedoručil vstupní kód",
+            body: "Zkontrolujte Zernio a účet WhatsApp. E-mailové doručení běží nezávisle.",
+            context: {
+              reservationId: message.reservationId,
+              providerCode: result.errorCode,
+            },
+          });
+        if (["delivered", "read"].includes(result.status))
+          await resolveAlert(`whatsapp:${message.reservationId}`);
+      });
+    } catch {
+      /* Read failure is not proof of delivery failure; retry the read. */
+    }
+  }
+  const candidates = await db
+    .select({ booking: reservation, code: accessCode })
+    .from(reservation)
+    .innerJoin(accessCode, eq(accessCode.reservationId, reservation.id))
+    .where(
+      and(
+        eq(reservation.status, "confirmed"),
+        sql`lower(trim(${reservation.contactEmail})) = ${env.ZERNIO_TEST_EMAIL.trim().toLowerCase()}`,
+        lte(reservation.startsAt, new Date(Date.now() + 60 * 60_000)),
+        gt(reservation.endsAt, new Date()),
+        inArray(accessCode.status, ["scheduled", "active"]),
+      ),
+    )
+    .orderBy(asc(reservation.startsAt))
+    .limit(10);
+  for (const { booking, code } of candidates) {
+    await withReservationLock(booking.id, async () => {
+      const [current] = await db
+        .select()
+        .from(reservation)
+        .where(eq(reservation.id, booking.id));
+      if (current?.status !== "confirmed") return;
+      const [delivery] = await db
+        .select()
+        .from(messageDelivery)
+        .where(eq(messageDelivery.dedupeKey, `zernio-access/${code.id}`));
+      if (
+        delivery &&
+        (["sent", "delivered", "read"].includes(delivery.status) ||
+          ((delivery.providerResponse as { submitted?: boolean })?.submitted !==
+            false &&
+            !(delivery.providerResponse as { retrySafe?: boolean })?.retrySafe))
+      )
+        return;
+      const pin = await recoverAccessCode(code);
+      if (pin)
+        await sendTestReservationWhatsApp({
+          reservationId: booking.id,
+          accessCodeId: code.id,
+          userId: booking.userId,
+          phone: booking.contactPhone,
+          email: booking.contactEmail,
+          pin,
+          startsAt: booking.startsAt,
+          validFrom: code.validFrom,
+          validUntil: code.validUntil,
+        });
+    });
+  }
 }

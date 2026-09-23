@@ -28,7 +28,7 @@ test("closing a range cancels through the full path and flags paid bookings for 
     service.indexOf("export async function cancelReservationsForClosure"),
   );
   assert.match(closure, /await cancelReservation\(\{/);
-  assert.match(closure, /await releaseForReservation\(row\.id\)/);
-  assert.match(closure, /dedupeKey: `refund-needed:\$\{row\.id\}`/);
-  assert.match(closure, /eq\(payment\.status, "succeeded"\)/);
+  assert.match(service, /await releaseForReservation\(params\.id\)/);
+  assert.match(service, /dedupeKey: `refund-needed:\$\{params\.id\}`/);
+  assert.match(service, /eq\(payment\.status, "succeeded"\)/);
 });

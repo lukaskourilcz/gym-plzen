@@ -87,130 +87,132 @@ export function SiteFooter({
 
   return (
     <footer className="border-t border-white/10 bg-ink text-ink-foreground">
-      <Container className="grid gap-x-10 gap-y-6 py-12 md:grid-cols-[1fr_2fr] lg:py-10">
-        <div className="text-center md:text-left">
-          <BrandLockup className="items-start text-left text-gold" />
-          <p className="mt-6 text-xs leading-6 text-ink-foreground/75">
-            © {year} {brand}
-            <br />
-            Soukromý prostor pro nerušený trénink v Plzni.
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-x-5 gap-y-7 sm:grid-cols-3 lg:gap-6">
-          <div>
-            <h2 className="text-sm font-extrabold">Menu</h2>
-            <div className="mt-2 grid">
-              {PUBLIC_NAV.map((item) => (
-                <Link key={item.href} href={item.href} className={footerLink}>
-                  {item.label}
+      <div data-nosnippet>
+        <Container className="grid gap-x-10 gap-y-6 py-12 md:grid-cols-[1fr_2fr] lg:py-10">
+          <div className="text-center md:text-left">
+            <BrandLockup className="items-start text-left text-gold" />
+            <p className="mt-6 text-xs leading-6 text-ink-foreground/75">
+              © {year} {brand}
+              <br />
+              Soukromý prostor pro nerušený trénink v Plzni.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-x-5 gap-y-7 sm:grid-cols-3 lg:gap-6">
+            <div>
+              <h2 className="text-sm font-extrabold">Menu</h2>
+              <div className="mt-2 grid">
+                {PUBLIC_NAV.map((item) => (
+                  <Link key={item.href} href={item.href} className={footerLink}>
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h2 className="text-sm font-extrabold">Kontakt</h2>
+              <div className="mt-2 grid">
+                {phone ? (
+                  <a
+                    href={`tel:${phone.replace(/\s/g, "")}`}
+                    className={footerLink}
+                  >
+                    {phone}
+                  </a>
+                ) : null}
+                {secondaryPhone ? (
+                  <a
+                    href={`tel:${secondaryPhone.replace(/\s/g, "")}`}
+                    className={footerLink}
+                  >
+                    {secondaryPhone}
+                  </a>
+                ) : null}
+                {email ? (
+                  <a href={`mailto:${email}`} className={footerLink}>
+                    {email}
+                  </a>
+                ) : null}
+                {address ? (
+                  <p className="py-2 text-sm leading-6 text-ink-foreground/75">
+                    {/* Street, locality and postcode each get their own line. */}
+                    {addressLines.map((line) => (
+                      <span key={line} className="block">
+                        {line}
+                      </span>
+                    ))}
+                  </p>
+                ) : null}
+                {!phone && !secondaryPhone && !email ? (
+                  <p className="py-2 text-sm leading-6 text-ink-foreground/75">
+                    Kontaktní údaje doplní provozovatel.
+                  </p>
+                ) : null}
+              </div>
+            </div>
+            <div>
+              <h2 className="text-sm font-extrabold">Informace</h2>
+              <div className="mt-2 grid">
+                <Link href="/doprava-a-platba" className={footerLink}>
+                  Doprava a platba
                 </Link>
-              ))}
-            </div>
-          </div>
-          <div>
-            <h2 className="text-sm font-extrabold">Kontakt</h2>
-            <div className="mt-2 grid">
-              {phone ? (
-                <a
-                  href={`tel:${phone.replace(/\s/g, "")}`}
-                  className={footerLink}
-                >
-                  {phone}
-                </a>
+                <Link href="/provozni-rad" className={footerLink}>
+                  Provozní řád
+                </Link>
+                <Link href="/obchodni-podminky" className={footerLink}>
+                  Obchodní podmínky
+                </Link>
+                <Link href="/ochrana-soukromi" className={footerLink}>
+                  Ochrana soukromí
+                </Link>
+                <CookieSettingsButton
+                  className={`${footerLink} w-fit cursor-pointer appearance-none border-0 bg-transparent p-0 text-left`}
+                />
+              </div>
+              {socials.length > 0 ? (
+                <div className="mt-5 hidden sm:block">
+                  <h3 className="text-sm font-extrabold">Sledujte nás</h3>
+                  {socialLinks()}
+                </div>
               ) : null}
-              {secondaryPhone ? (
-                <a
-                  href={`tel:${secondaryPhone.replace(/\s/g, "")}`}
-                  className={footerLink}
-                >
-                  {secondaryPhone}
-                </a>
-              ) : null}
-              {email ? (
-                <a href={`mailto:${email}`} className={footerLink}>
-                  {email}
-                </a>
-              ) : null}
-              {address ? (
-                <p className="py-2 text-sm leading-6 text-ink-foreground/75">
-                  {/* Street, locality and postcode each get their own line. */}
-                  {addressLines.map((line) => (
-                    <span key={line} className="block">
-                      {line}
-                    </span>
-                  ))}
-                </p>
-              ) : null}
-              {!phone && !secondaryPhone && !email ? (
-                <p className="py-2 text-sm leading-6 text-ink-foreground/75">
-                  Kontaktní údaje doplní provozovatel.
-                </p>
-              ) : null}
-            </div>
-          </div>
-          <div>
-            <h2 className="text-sm font-extrabold">Informace</h2>
-            <div className="mt-2 grid">
-              <Link href="/doprava-a-platba" className={footerLink}>
-                Doprava a platba
-              </Link>
-              <Link href="/provozni-rad" className={footerLink}>
-                Provozní řád
-              </Link>
-              <Link href="/obchodni-podminky" className={footerLink}>
-                Obchodní podmínky
-              </Link>
-              <Link href="/ochrana-soukromi" className={footerLink}>
-                Ochrana soukromí
-              </Link>
-              <CookieSettingsButton
-                className={`${footerLink} w-fit cursor-pointer appearance-none border-0 bg-transparent p-0 text-left`}
-              />
             </div>
             {socials.length > 0 ? (
-              <div className="mt-5 hidden sm:block">
-                <h3 className="text-sm font-extrabold">Sledujte nás</h3>
+              <div className="sm:hidden">
+                <h2 className="text-sm font-extrabold">Sledujte nás</h2>
                 {socialLinks()}
               </div>
             ) : null}
           </div>
-          {socials.length > 0 ? (
-            <div className="sm:hidden">
-              <h2 className="text-sm font-extrabold">Sledujte nás</h2>
-              {socialLinks()}
-            </div>
-          ) : null}
-        </div>
-        <div className="flex items-center justify-center gap-5 md:col-span-2">
-          <a
-            href="https://www.comgate.eu/cs/platebni-brana"
-            aria-label="Platební brána Comgate"
-            className="flex min-h-6 items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
-          >
+          <div className="flex items-center justify-center gap-5 md:col-span-2">
+            <a
+              href="https://www.comgate.eu/cs/platebni-brana"
+              aria-label="Platební brána Comgate"
+              className="flex min-h-6 items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            >
+              <Image
+                src="/cg-ithor.svg"
+                width={259}
+                height={60}
+                alt="Comgate"
+                className="h-auto w-20"
+              />
+            </a>
             <Image
-              src="/cg-ithor.svg"
-              width={259}
-              height={60}
-              alt="Comgate"
-              className="h-auto w-20"
+              src="/Visa_Brandmark_White_RGB_2021.svg"
+              width={3385}
+              height={2078}
+              alt="Visa"
+              className="h-auto w-16"
             />
-          </a>
-          <Image
-            src="/Visa_Brandmark_White_RGB_2021.svg"
-            width={3385}
-            height={2078}
-            alt="Visa"
-            className="h-auto w-16"
-          />
-          <Image
-            src="/mc_symbol.svg"
-            width={152}
-            height={108}
-            alt="Mastercard"
-            className="h-auto w-10"
-          />
-        </div>
-      </Container>
+            <Image
+              src="/mc_symbol.svg"
+              width={152}
+              height={108}
+              alt="Mastercard"
+              className="h-auto w-10"
+            />
+          </div>
+        </Container>
+      </div>
     </footer>
   );
 }

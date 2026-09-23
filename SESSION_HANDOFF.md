@@ -1,3 +1,11 @@
+# Uzavírání diskuze — 23. 9. 2026
+
+Aktuální změny, externí blokery a důkazy jsou v [DISCUSSION_AUDIT_2026_09_23.md](docs/DISCUSSION_AUDIT_2026_09_23.md). Storno e-mail má trvalou frontu; GA4 purchase je doplněný; Nuki má samostatný dohled; Zernio test kontroluje doručení a bezpečně opakuje jen jasná odmítnutí. WhatsApp billing eligibility stále blokuje živé doručení. Testovací allowlist nerozšiřovat bez dokončeného doručovacího testu.
+
+Oprava staršího záznamu níže: všechna tři neprovedená odebrání již produkční watchdog dokončil, access_revocation_pending = 0. Historické selhání vytvoření kódu pro minulý test 22. 9. zůstává otevřené.
+
+---
+
 # Obnova Nuki po výpadku — 23. 9. 2026
 
 PR #66 zavádí trvalé šifrované úlohy PINů, přípravu -24 h, e-mail -1 h,

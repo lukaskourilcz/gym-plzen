@@ -250,11 +250,13 @@ export default async function HomePage() {
             </div>
 
             <div className="min-w-0 space-y-4">
-              <HeroAvailability
-                days={previewDays}
-                source={availability.source}
-                nowMs={now.getTime()}
-              />
+              <div data-nosnippet>
+                <HeroAvailability
+                  days={previewDays}
+                  source={availability.source}
+                  nowMs={now.getTime()}
+                />
+              </div>
               <OpeningBanner at={now} />
             </div>
           </Container>

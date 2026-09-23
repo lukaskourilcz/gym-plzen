@@ -1,3 +1,6 @@
+import { reconcileTestWhatsApp } from "@/lib/services/whatsapp-test";
+import { retryCancellationEmails } from "@/lib/services/cancellation-delivery";
+import { monitorLockConnectivity } from "@/lib/services/lock-health";
 import { reconcileRevocations } from "@/lib/services/access-codes";
 import { reconcilePendingPayments } from "@/lib/services/payments";
 import { NextResponse, type NextRequest } from "next/server";
@@ -19,6 +22,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  try {
+    await monitorLockConnectivity();
+  } catch {
+    logger.warn("Lock connectivity check deferred");
+  }
+  try {
+    await retryCancellationEmails();
+  } catch {
+    logger.warn("Cancellation email retry deferred");
+  }
   const revocations = await reconcileRevocations();
   const reconciledPayments = await reconcilePendingPayments();
   const released = await reservations.releaseExpiredPendingReservations();
@@ -33,6 +46,12 @@ export async function GET(request: NextRequest) {
     } catch (e) {
       logger.error(e, { where: "cron.watchdog", reservationId: id });
     }
+  }
+
+  try {
+    await reconcileTestWhatsApp();
+  } catch {
+    logger.warn("WhatsApp reconciliation deferred");
   }
 
   // Fire-and-forget heartbeat to UptimeRobot. Never blocks the watchdog or

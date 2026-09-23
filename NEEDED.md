@@ -1,3 +1,13 @@
+## Aktualizace diskuze 23. 9. 2026
+
+- [x] **Běžné storno a dohled Nuki** — jednotný zákaznický storno e-mail s obnovou, uvolnění voucheru, upozornění na refundaci a kontrola spojení po 5 min / upozornění po 15 min. [imp:5] [owner:ai] [time:2h] [kind:deploy]
+- [x] **GA4 nákup a Google úryvek** — purchase se souhlasem a deduplikací; termíny/patička vyřazeny ze snippetů. [imp:4] [owner:ai] [time:1h] [kind:deploy]
+- [ ] **WhatsApp billing eligibility** — Meta/Zernio odmítlo vlastní test. Vyřešit omezení a ověřit delivered/read, potom dokončit zákaznický rollout; web nyní kontroluje stav nezávisle na e-mailu. [imp:5] [owner:me] [time:30m] [kind:setup]
+- [ ] **Přístup do správné GA4 služby** — zpřístupnit Navi Private Gym s ID G-8FN17RXP1T, poté ověřit purchase a UTM; dostupná služba G-KQ07Q68YB7 je jiná. [imp:4] [owner:me] [time:15m] [kind:setup]
+- [ ] **Doložit finální reklamu a refundaci** — určit příjemce/plátce a finální reklamu, potvrdit refundaci Kláře v Comgate; neprováděno automaticky. [imp:4] [owner:me] [time:20m] [kind:decision]
+
+Podrobný stav: [DISCUSSION_AUDIT_2026_09_23.md](docs/DISCUSSION_AUDIT_2026_09_23.md).
+
 ## Obnova vstupních kódů — 23. 9. 2026
 
 - [x] **Připravit a sloučit obnovu PINů** — migrace `drizzle/20260923130000_durable_access_codes.sql` aplikována na gym-plzen (`rkmunagymohxtclymacm`), samostatný serverový `ACCESS_CODE_ENCRYPTION_KEY` uložený ve Vercel Production, PR #66 sloučený do main pro automatické nasazení. 199 unit + 37 integračních testů, build, lint, typy, formát a audit prošly. [imp:5] [owner:ai] [time:15m] [kind:deploy]
