@@ -222,9 +222,12 @@ export async function revokeAccessCode(id: string): Promise<void> {
       revokeRequestedAt: row.revokeRequestedAt ?? new Date(),
     });
     try {
-      const client = durableNukiClient(
-        row.lockId ?? requireEnv("NUKI_SMARTLOCK_ID").NUKI_SMARTLOCK_ID,
-      );
+      const lockId =
+        row.lockId ?? requireEnv("NUKI_SMARTLOCK_ID").NUKI_SMARTLOCK_ID;
+      // Pin legacy revocations to this device before the first provider call,
+      // so a configuration change cannot move a retry to another lock.
+      if (!row.lockId) await update(id, { lockId });
+      const client = durableNukiClient(lockId);
       let authId = row.nukiAuthId;
       let absent = false;
       if (!authId) {

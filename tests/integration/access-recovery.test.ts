@@ -45,6 +45,7 @@ async function code(id: string) {
       encrypted_pin: string | null;
       status: string;
       code_hash: string;
+      lock_id: string | null;
     }>("select * from access_code where reservation_id=$1", [id])
   )[0]!;
 }
@@ -265,8 +266,14 @@ describe(
     test("offline cancellation holds slot through database constraint until confirmed deletion", async () => {
       const id = await booking();
       await fulfillReservation(id);
+      // A pre-migration code has no device binding or encrypted PIN yet.
+      await rows(
+        "update access_code set lock_id=null, encrypted_pin=null where reservation_id=$1",
+        [id],
+      );
       online = false;
       await cancelReservation({ id });
+      assert.equal((await code(id)).lock_id, "123");
       const [r] = await rows<{
         status: string;
         access_revocation_pending: boolean;

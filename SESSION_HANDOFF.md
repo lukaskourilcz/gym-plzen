@@ -13,7 +13,7 @@ Ověření: 199 unit a 37 integračních testů v samostatné lokální DB
 `codex_navi_access_test`, lint, typecheck, format, audit (0 zranitelností),
 produkční build a Vercel preview úspěšné. Responzivita na 8 šířkách a keyboard
 scroll tabulky ověřeny. Žádná skutečná platba ani otevření dveří při těchto testech.
-Fyzický test klávesnice po výpadku zůstává v NEEDED. WhatsApp stále jen stávající
+Produkce c9c43ba byla READY, živá administrace ověřena a watchdog zpracoval všechny tři staré blokace; odebrání zatím nepotvrzené, další pokusy naplánované. Následná oprava ukládá ID zařízení také pro staré úlohy odebrání (10 cílených integračních testů opět prošlo). Fyzický test klávesnice po výpadku zůstává v NEEDED. WhatsApp stále jen stávající
 testovací rozsah, nerozšiřován na všechny zákazníky. Purchase beze změny.
 
 Pracovní kopie této změny: `gym-plzen-access-recovery`; původní špinavé kopie
