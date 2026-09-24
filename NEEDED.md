@@ -1,9 +1,11 @@
 ## Aktualizace 24. 9. 2026
 
+- [x] **Živě ověřit desátý vstup zdarma** — sedmý až devátý s voucherem, desátý automaticky zdarma bez voucheru, další nabídka opět 199 Kč. Aktuálně se počítají i budoucí potvrzené rezervace a 100% vouchery. [imp:4] [owner:ai] [time:15m] [kind:setup]
+
 - [x] **Plynulé přednačítání kalendáře** — nově po prvním posunu čtyři dny dopředu, max. 11 dní v paměti, limit 180 dní zachován. Nahrazuje dřívější záměr načítat pouze vybraný den. [imp:4] [owner:ai] [time:1h] [kind:deploy]
 - [x] **Google název a popis** — veřejně ověřeno NAVI Private Gym i popis firmy; není třeba znovu ukládat. [imp:3] [owner:ai] [time:10m] [kind:content]
 - [ ] **WhatsApp skutečné doručení** — po uživatelově opravě fakturace test 24. 9. 22:06 přijat, stále pouze Sent a uživatel zprávu neobdržel. Potřebujeme delivered/read; zákaznický rollout zatím nezapínat. [imp:5] [owner:me] [time:20m] [kind:setup]
-- [ ] **Úklid vlastních testovacích rezervací** — novou rezervaci 1. 10. 10:00 a dosavadní testy ponechány; vybrat, které zachovat pro vstupní test, zbytek stornovat se zachováním účetní historie. [imp:3] [owner:me] [time:10m] [kind:decision]
+- [ ] **Úklid vlastních testovacích rezervací** — uživatel místo storna požádal o test věrnosti; doplněny a potvrzeny rezervace až do desáté. Úklid až po dokončení testování, zachovat účetní historii. [imp:3] [owner:me] [time:10m] [kind:decision]
 
 ## Kalendář úvodní stránky 23. 9. 2026
 

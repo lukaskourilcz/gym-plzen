@@ -1,3 +1,11 @@
+# Živá věrnost — 24. 9. 2026 večer
+
+Uživatel místo úklidu výslovně požádal o další rezervace a schválil podmínky všech čtyř. Vlastní testy 1. 10. 11:15, 12:30, 13:45 s voucherem posunuly počítadlo na 7, 8, 9. Desátá 1. 10. 15:00–16:15 nabídla vstup zdarma bez pole voucheru a byla potvrzena: „Tohle byla vaše 10. návštěva a byla zdarma.“ Následující formulář opět ukázal 199 Kč (neodeslán). Současná věrnost tedy počítá potvrzené budoucí termíny i 100% voucher, nikoli jen zaplacené nebo absolvované vstupy. Žádné storno provedeno. Kódy zůstávají plánované -24 h / doručení -1 h.
+
+Kalendář PR #70 je na produkci READY, commit c92e1b3, živé listování ověřeno. Zernio ruční test 22:06 stále jen Sent; uživatel dosud nepotvrdil doručení. Dotaz na příchozí TEST čeká na odpověď. Podrobnosti v auditu z 24. 9.
+
+---
+
 # Plynulé listování a WhatsApp test — 24. 9. 2026
 
 Na výslovné nové přání uživatele kalendář po prvním posunu přednačítá čtyři dny dopředu. První render zůstává pouze čtyřdenní. Paměť drží první čtyři + okolí vybraného dne -2/+4 (max. 11); požadavky potřebné při dalším kliknutí se nepřerušují. Vzdálené požadavky se ruší, opožděné odpovědi ignorují. Limit 180 dní nezměněn.
