@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   isHeroDateAllowed,
+  heroDatesToLoad,
   pruneHeroAvailabilityCache,
 } from "../../src/lib/helpers/hero-availability";
 
@@ -28,7 +29,7 @@ test("hero dates reject malformed, impossible and pre-opening dates", () => {
   assert.equal(isHeroDateAllowed("2027-03-23", now), false);
 });
 
-test("only four initial days and already visited nearby dates remain cached", () => {
+test("initial days and the bounded nearby window remain cached", () => {
   const cache = {
     "2026-10-01": 1,
     "2026-10-02": 2,
@@ -50,8 +51,9 @@ test("only four initial days and already visited nearby dates remain cached", ()
     "2026-10-18",
     "2026-10-20",
     "2026-10-22",
+    "2026-10-23",
   ]);
-  assert.equal(result["2026-10-19"], undefined); // no neighbour prefetch
+  assert.equal(result["2026-10-19"], undefined); // pruning never fabricates a response
   assert.equal(result["2026-10-05"], undefined); // revisit needs a new request
   assert.equal(cache["2026-10-05"], 5); // immutable React state
   assert.equal(
@@ -73,11 +75,19 @@ test("browsing all 180 days keeps memory bounded, including reverse navigation",
   ]) {
     const selected = dateAt(offset);
     cache = pruneHeroAvailabilityCache(
-      { ...cache, [selected]: offset },
+      {
+        ...cache,
+        ...Object.fromEntries(
+          heroDatesToLoad(selected, dateAt(180), true).map((date) => [
+            date,
+            date === selected ? offset : (cache[date] ?? -1),
+          ]),
+        ),
+      },
       start,
       selected,
     );
-    assert.ok(Object.keys(cache).length <= 9);
+    assert.ok(Object.keys(cache).length <= 11);
     assert.equal(cache[selected], offset);
     for (let i = 0; i < 4; i++) assert.equal(cache[dateAt(i)], i);
   }
@@ -86,5 +96,23 @@ test("browsing all 180 days keeps memory bounded, including reverse navigation",
     dateAt(1),
     dateAt(2),
     dateAt(3),
+    dateAt(4),
+  ]);
+});
+
+test("prefetch starts only after navigation and respects the last allowed date", () => {
+  assert.deepEqual(heroDatesToLoad("2026-10-01", "2027-03-23", false), [
+    "2026-10-01",
+  ]);
+  assert.deepEqual(heroDatesToLoad("2026-10-02", "2027-03-23", true), [
+    "2026-10-02",
+    "2026-10-03",
+    "2026-10-04",
+    "2026-10-05",
+    "2026-10-06",
+  ]);
+  assert.deepEqual(heroDatesToLoad("2027-03-22", "2027-03-23", true), [
+    "2027-03-22",
+    "2027-03-23",
   ]);
 });

@@ -1,7 +1,14 @@
+## Aktualizace 24. 9. 2026
+
+- [x] **Plynulé přednačítání kalendáře** — nově po prvním posunu čtyři dny dopředu, max. 11 dní v paměti, limit 180 dní zachován. Nahrazuje dřívější záměr načítat pouze vybraný den. [imp:4] [owner:ai] [time:1h] [kind:deploy]
+- [x] **Google název a popis** — veřejně ověřeno NAVI Private Gym i popis firmy; není třeba znovu ukládat. [imp:3] [owner:ai] [time:10m] [kind:content]
+- [ ] **WhatsApp skutečné doručení** — po uživatelově opravě fakturace test 24. 9. 22:06 přijat, stále pouze Sent a uživatel zprávu neobdržel. Potřebujeme delivered/read; zákaznický rollout zatím nezapínat. [imp:5] [owner:me] [time:20m] [kind:setup]
+- [ ] **Úklid vlastních testovacích rezervací** — novou rezervaci 1. 10. 10:00 a dosavadní testy ponechány; vybrat, které zachovat pro vstupní test, zbytek stornovat se zachováním účetní historie. [imp:3] [owner:me] [time:10m] [kind:decision]
+
 ## Kalendář úvodní stránky 23. 9. 2026
 
 - [x] **180 dní s načítáním po dnech** — první 4 dny v úvodním HTML, další jen po výběru, omezená paměť prvních 4 dní a navštíveného okolí ±2 dny, zrušení starých požadavků a opakování při výpadku. [imp:4] [owner:ai] [time:1h] [kind:deploy]
-- [ ] **Doplnit responzivní kontrolu kalendáře** — desktop a klávesnice ověřeny; po obnovení spolehlivého ovládání Chrome ověřit šířky 320–1728 px, 200% zoom a reduced motion. [imp:2] [owner:ai] [time:15m] [kind:deploy]
+- [ ] **Doplnit responzivní kontrolu kalendáře** — 24. 9. ověřeny šířky 320–1728 px a klávesnice/focus; zbývá plné ověření 200% zoom a reduced motion. [imp:2] [owner:ai] [time:15m] [kind:deploy]
 
 ## Aktualizace diskuze 23. 9. 2026
 
