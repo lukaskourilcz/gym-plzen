@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { addDaysToDateKey } from "@/lib/helpers/datetime";
-import { pruneHeroAvailabilityCache } from "@/lib/helpers/hero-availability";
+import {
+  heroDatesToLoad,
+  pruneHeroAvailabilityCache,
+} from "@/lib/helpers/hero-availability";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -69,56 +72,84 @@ export function HeroAvailability({
         : days.map((day) => [day.dateLabel, { day, source: initialSource }]),
     ),
   );
-  useEffect(() => {
-    setCache((previous) =>
-      pruneHeroAvailabilityCache(previous, startDateKey, dateKey),
-    );
-  }, [startDateKey, dateKey]);
+  const latestSelection = useRef(dateKey);
+  const cached = useRef(cache);
+  const requests = useRef(new Map<string, AbortController>());
+  const navigated = useRef(false);
   const [failedDate, setFailedDate] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
   const entry = cache[dateKey];
   const failed = failedDate === dateKey;
   const source = entry?.source ?? "unavailable";
   const day = entry?.day;
+
+  // Keep in-flight neighbour requests when navigation reaches their date.
+  // Cancelling on every click would make fast browsing wait again and again.
   useEffect(() => {
-    if (entry) return;
-    const controller = new AbortController();
+    latestSelection.current = dateKey;
+    if (selectedDay !== 0) navigated.current = true;
+    cached.current = pruneHeroAvailabilityCache(
+      cached.current,
+      startDateKey,
+      dateKey,
+    );
+    setCache(cached.current);
+    const wanted = heroDatesToLoad(dateKey, endDateKey, navigated.current);
+    for (const [date, controller] of requests.current) {
+      if (!wanted.includes(date)) {
+        controller.abort();
+        requests.current.delete(date);
+      }
+    }
     setFailedDate(null);
-    const timeout = window.setTimeout(() => {
-      setFailedDate(dateKey);
-      controller.abort();
-    }, 15_000);
-    void fetch(`/api/availability/day?date=${encodeURIComponent(dateKey)}`, {
-      signal: controller.signal,
-      cache: "no-store",
-    })
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Availability unavailable");
-        const result = await response.json();
-        if (
-          result.day?.dateLabel !== dateKey ||
-          !Array.isArray(result.day.slots) ||
-          !["live", "preview"].includes(result.source)
-        )
-          throw new Error("Invalid availability");
-        if (!controller.signal.aborted)
-          setCache((previous) =>
-            pruneHeroAvailabilityCache(
-              { ...previous, [dateKey]: result },
-              startDateKey,
-              dateKey,
-            ),
+    for (const date of wanted) {
+      if (cached.current[date] || requests.current.has(date)) continue;
+      const controller = new AbortController();
+      requests.current.set(date, controller);
+      const timeout = window.setTimeout(() => {
+        if (latestSelection.current === date) setFailedDate(date);
+        controller.abort();
+      }, 15_000);
+      void fetch(`/api/availability/day?date=${encodeURIComponent(date)}`, {
+        signal: controller.signal,
+        cache: "no-store",
+      })
+        .then(async (response) => {
+          if (!response.ok) throw new Error("Availability unavailable");
+          const result = await response.json();
+          if (
+            result.day?.dateLabel !== date ||
+            !Array.isArray(result.day.slots) ||
+            !["live", "preview"].includes(result.source)
+          )
+            throw new Error("Invalid availability");
+          if (controller.signal.aborted) return;
+          cached.current = pruneHeroAvailabilityCache(
+            { ...cached.current, [date]: result },
+            startDateKey,
+            latestSelection.current,
           );
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setFailedDate(dateKey);
-      })
-      .finally(() => window.clearTimeout(timeout));
+          setCache(cached.current);
+          setFailedDate((previous) => (previous === date ? null : previous));
+        })
+        .catch(() => {
+          if (!controller.signal.aborted && latestSelection.current === date)
+            setFailedDate(date);
+        })
+        .finally(() => {
+          window.clearTimeout(timeout);
+          if (requests.current.get(date) === controller)
+            requests.current.delete(date);
+        });
+    }
+  }, [dateKey, selectedDay, retry, startDateKey, endDateKey]);
+  useEffect(() => {
+    const pending = requests.current;
     return () => {
-      window.clearTimeout(timeout);
-      controller.abort();
+      for (const controller of pending.values()) controller.abort();
+      pending.clear();
     };
-  }, [dateKey, entry, retry, startDateKey]);
+  }, []);
   const visibleSlots = getVisibleSlots(day?.slots ?? []);
   const reservationHref = `/rezervace?date=${encodeURIComponent(dateKey)}`;
 

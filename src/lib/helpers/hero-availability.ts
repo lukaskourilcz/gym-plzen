@@ -13,9 +13,18 @@ export function isHeroDateAllowed(date: string, now = new Date()): boolean {
   );
 }
 
-/** Retain the initial payload and only visited dates near the selection.
- * This never fetches or creates neighbouring days.
- */
+/** Fetch the selection first, then four dates ahead after navigation starts. */
+export function heroDatesToLoad(
+  selectedDate: string,
+  endDate: string,
+  navigated: boolean,
+): string[] {
+  return Array.from({ length: navigated ? 5 : 1 }, (_, offset) =>
+    addDaysToDateKey(selectedDate, offset),
+  ).filter((date) => date <= endDate);
+}
+
+/** Keep the initial four dates, two behind and four ahead (at most 11). */
 export function pruneHeroAvailabilityCache<T>(
   cache: Record<string, T>,
   startDate: string,
@@ -23,7 +32,7 @@ export function pruneHeroAvailabilityCache<T>(
 ): Record<string, T> {
   const initialEnd = addDaysToDateKey(startDate, HERO_INITIAL_DAYS);
   const nearbyStart = addDaysToDateKey(selectedDate, -2);
-  const nearbyEnd = addDaysToDateKey(selectedDate, 2);
+  const nearbyEnd = addDaysToDateKey(selectedDate, 4);
   const entries = Object.entries(cache);
   const retained = entries.filter(
     ([date]) =>

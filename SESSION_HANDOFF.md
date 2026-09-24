@@ -1,3 +1,13 @@
+# Plynulé listování a WhatsApp test — 24. 9. 2026
+
+Na výslovné nové přání uživatele kalendář po prvním posunu přednačítá čtyři dny dopředu. První render zůstává pouze čtyřdenní. Paměť drží první čtyři + okolí vybraného dne -2/+4 (max. 11); požadavky potřebné při dalším kliknutí se nepřerušují. Vzdálené požadavky se ruší, opožděné odpovědi ignorují. Limit 180 dní nezměněn.
+
+205 unit a 44 integračních testů prošlo, typy/lint/build/audit bez chyby. Chrome ověřil listování přes první čtyři dny, klávesnici/focus a šířky 320–1728 px bez horizontálního přetečení. Plné ověření 200% zoomu a reduced motion zůstává otevřené. Design review bez P0–P2, opraven popis v administraci.
+
+Živá rezervace vlastníka 1. 10. 2026 10:00–11:15 za 0 Kč potvrzena s výslovným souhlasem s podmínkami; voucher NAVI-WA-TEST-2210. Standardní příprava -24 h a odeslání -1 h nebyly obcházeny. Samostatný test Zernio ve 22:06 znovu poslal schválenou vstupní šablonu pro existující vlastní test 2. 10. 05:00; HTTP 200 a ID zprávy, zatím pouze Sent, uživatel potvrdil nedoručení. To NENÍ úspěšný end-to-end test. Fakturační údaje upravil a ověřil uživatel sám. Další stav a konkrétní kroky: docs/DISCUSSION_AUDIT_2026_09_24.md.
+
+---
+
 # Rozšíření kalendáře na 180 dní — 23. 9. 2026
 
 Na žádost uživatele se limit úvodního kalendáře zvyšuje z 90 na 180 dní. Počet přednačtených dní zůstává 4. Na další přání uživatele se drží pouze tyto první 4 dny a již navštívené dny v okně ±2 od vybraného data (nejvýše 9 dní dohromady). Vzdálenější položky se zahazují; návrat na ně znamená nový požadavek. Sousední dny se nepřednačítají. Produkční `booking.horizon_days` byl sjednocen ze 130 na 180, aby šly pozdější nabízené termíny také objednat. Testy hranic upraveny na den 180/181. Předchozí ověření 90denního chování níže je historické.

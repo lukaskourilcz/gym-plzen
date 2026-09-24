@@ -151,8 +151,9 @@ export default async function SettingsPage() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              První čtyři dny se načtou při otevření stránky. Další dny se
-              načítají až po jejich výběru.
+              První čtyři dny se načtou při otevření stránky. Při listování se
+              průběžně připravují čtyři dny dopředu. Vzdálenější termíny se z
+              paměti odstraní.
             </p>
           </CardContent>
         </Card>
