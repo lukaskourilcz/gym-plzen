@@ -1,3 +1,9 @@
+## Admin kalendář — 25. 9. 2026
+
+- [x] **Řádky podle rezervačních termínů** — 75minutové intervaly na ose, v rezervacích jen jména, vyšší řádky a zalamování; ověřeno v Chrome a 208 testy. [imp:4] [owner:ai] [time:1h] [kind:deploy]
+- [x] **Přesný titulek a popis homepage** — Roudná odstraněna z titulku, description nahrazen přesným textem uživatele. [imp:3] [owner:ai] [time:5m] [kind:content]
+- [ ] **Doplnit skutečný 200% zoom a reduced motion admin kalendáře** — poloviční šířka/reflow, klávesnice a focus ověřeny, v kalendáři žádná aktivní animace; nativní zoom a emulace preference dosud neověřeny. [imp:2] [owner:ai] [time:10m] [kind:deploy]
+
 ## SEO a migrace — 25. 9. 2026
 
 - [x] **Trvalé přesměrování starých domén** — čtyři hosty namastegym.cz a namastegymplzen.cz směřují 301/308 na www.navigym.cz, cesty a UTM zachovány. [imp:5] [owner:ai] [time:15m] [kind:setup]
