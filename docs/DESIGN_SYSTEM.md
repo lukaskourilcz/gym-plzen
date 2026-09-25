@@ -438,8 +438,9 @@ shared grid with a minimum 15-minute interval; off-grid events retain their exac
 position within the row. Axis labels show
 both ends of each row; event cards show only the customer name, wrapping rather
 than spending a line on a repeated time. Missing names have a Czech fallback,
-never a contact e-mail. Rows have at least 80px height and use semantic status
-colours. Phones start in day view. `/admin/design-system` includes a read-only
+never a contact e-mail. Rows start at 44px; only a row containing a wrapped name grows to fit its
+content. Background blocks are shaded without visible text. Semantic status
+colours are preserved. Phones start in day view. `/admin/design-system` includes a read-only
 example with explicitly illustrative names.
 
 ## Transactional e-mail
