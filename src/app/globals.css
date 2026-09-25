@@ -358,8 +358,57 @@ summary {
  * the title and controls deliberately, and keep every action at the 44px touch
  * target used throughout the rest of the product.
  */
+/* Operational calendar: one reservation window per row, names within it. */
+.admin-booking-calendar {
+  --fc-button-bg-color: var(--primary);
+  --fc-button-border-color: var(--primary);
+  --fc-button-hover-bg-color: var(--ink);
+  --fc-button-hover-border-color: var(--ink);
+  --fc-button-active-bg-color: var(--ink);
+  --fc-button-active-border-color: var(--ink);
+  --fc-border-color: var(--border);
+  --fc-today-bg-color: var(--secondary);
+}
+
+.admin-booking-calendar .fc .fc-timegrid-slot {
+  height: 5rem;
+}
+
+.admin-booking-calendar .fc .fc-timegrid-slot-label {
+  vertical-align: middle;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-booking-calendar .fc .fc-timegrid-slot-label-frame {
+  text-align: center;
+}
+
+.admin-booking-calendar .fc .fc-event-main {
+  padding: 0.25rem;
+}
+
+.admin-booking-calendar .admin-calendar-name {
+  display: block;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-size: 0.875rem;
+  line-height: 1.25;
+}
+
+.admin-booking-calendar .fc .fc-toolbar {
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
 .admin-booking-calendar .fc .fc-button {
   min-height: 44px;
+}
+
+.admin-booking-calendar .fc .fc-button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+  box-shadow: none;
 }
 
 @media (max-width: 639px) {

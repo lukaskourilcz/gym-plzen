@@ -1,3 +1,28 @@
+# Admin kalendář a přesné SEO texty — 25. 9. 2026
+
+Kalendář nově používá nakonfigurovanou délku rezervací místo hodinových řádků.
+Při současných 75 minutách má 15 řádků, popisky 05:00–06:15 až 22:30–23:45;
+v událostech pouze jméno, bez času a e-mailového fallbacku. Vyšší 80px řádky,
+zalamování jmen, sémantické barvy, viditelný focus. Snap bloků sleduje řádky.
+Smíšené délky/otevírací časy používají společnou mřížku nejméně 15 minut;
+rezervace zachovávají skutečnou časovou polohu. Read-only příklad v design kitu.
+
+Na navazující přesný pokyn uživatele titulek homepage:
+NAVI Private Gym | Soukromé fitness Plzeň
+Popisek: NAVI Private Gym: celé samoobslužné fitness v Plzni jen pro vás a váš
+doprovod. Rezervujte si svůj trénink v soukromí online.
+
+208 testů, lint, typecheck, formát, audit bez zranitelností a produkční build
+prošly. Chrome lokálně: 320, 390, 667 landscape, 768, 1024, 1280, 1440, 1728 px;
+při 667 nalezené oříznutí delšího jména opraveno výškou 80px a ověřeno. Den,
+týden i měsíc bez duplicitního času; klávesnice/focus ověřeny. Reflow při
+poloviční šířce 735px bez přetečení; skutečný 200% browser zoom se klávesovou
+zkratkou neaktivoval, nelze vydávat za provedený test. V kalendáři nebyly
+nalezeny aktivní animace; samostatná emulace reduced motion neprovedena.
+Design-system reviewer po opravě minimálního intervalu bez P0–P2.
+
+---
+
 # SEO a migrace — 25. 9. 2026
 
 Čtyři body implementované a živě ověřené, s jedním externím nedokončeným

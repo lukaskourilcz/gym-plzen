@@ -430,6 +430,18 @@ The public booking flow is date first.
 - Async availability changes use a polite live region. Blocking errors preserve
   the selected date.
 
+### Admin operational calendar
+
+The week/day time axis follows configured reservation windows (normally 75
+minutes, 05:00–06:15 through 22:30–23:45). If weekday schedules differ, use a
+shared grid with a minimum 15-minute interval; off-grid events retain their exact
+position within the row. Axis labels show
+both ends of each row; event cards show only the customer name, wrapping rather
+than spending a line on a repeated time. Missing names have a Czech fallback,
+never a contact e-mail. Rows have at least 80px height and use semantic status
+colours. Phones start in day view. `/admin/design-system` includes a read-only
+example with explicitly illustrative names.
+
 ## Transactional e-mail
 
 Every automatic e-mail is one plain-text body inside one shared shell

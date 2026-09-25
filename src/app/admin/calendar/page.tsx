@@ -8,6 +8,7 @@ import {
   DEFAULT_CLOSE_MINUTE,
   DEFAULT_OPEN_MINUTE,
 } from "@/lib/config/schedule";
+import { calendarRowMinutes } from "@/lib/helpers/calendar-grid";
 import { minutesToHHmm } from "@/lib/helpers/format";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
 
@@ -40,15 +41,18 @@ export default async function CalendarPage() {
       ? Math.max(...activeDays.map((day) => day.closeMinute))
       : DEFAULT_CLOSE_MINUTE;
 
+  const slotMinutes = calendarRowMinutes(activeDays, openMinute);
+
   const events: EventInput[] = [
     ...reservations
       .filter((r) => r.status !== "cancelled")
       .map((r) => ({
         id: r.id,
-        title: r.contactName ?? r.contactEmail ?? "Rezervace",
+        title: r.contactName?.trim() || "Zákazník bez jména",
         start: r.startsAt.toISOString(),
         end: r.endsAt.toISOString(),
-        backgroundColor: r.status === "confirmed" ? "#16a34a" : "#f59e0b",
+        backgroundColor:
+          r.status === "confirmed" ? "var(--success)" : "var(--warning)",
         borderColor: "transparent",
       })),
     ...blocks.map((b) => ({
@@ -57,7 +61,7 @@ export default async function CalendarPage() {
       start: b.startsAt.toISOString(),
       end: b.endsAt.toISOString(),
       display: "background" as const,
-      backgroundColor: "#94a3b8",
+      backgroundColor: "var(--muted-foreground)",
     })),
   ];
 
@@ -73,6 +77,7 @@ export default async function CalendarPage() {
             events={events}
             openMinute={openMinute}
             closeMinute={closeMinute}
+            slotMinutes={slotMinutes}
           />
         </CardContent>
       </Card>
