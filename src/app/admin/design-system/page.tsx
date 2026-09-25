@@ -71,6 +71,13 @@ export default function DesignSystemPage() {
             readOnly
             events={[
               {
+                title: "Zavřeno – tento text se nesmí zobrazit",
+                start: localDateTimeToDate(calendarDate, 300).toISOString(),
+                end: localDateTimeToDate(calendarDate, 375).toISOString(),
+                display: "background",
+                backgroundColor: "var(--muted-foreground)",
+              },
+              {
                 title: "Jana Nováková",
                 start: localDateTimeToDate(calendarDate, 975).toISOString(),
                 end: localDateTimeToDate(calendarDate, 1050).toISOString(),

@@ -1,3 +1,22 @@
+# Kompaktní admin kalendář — 25. 9. 2026
+
+Navazující oprava podle screenshotu uživatele: všechny background/inverse-background
+bloky bez viditelného textu, zůstává stínování. Výchozí řádek 44px, pouze řádky
+s delšími jmény se zvětšují. ResizeObserver sleduje jména a kontejner, MutationObserver
+změny zobrazených událostí; odpojená jména se uvolňují. Font ready také přeměří.
+Scoped CSS mimo FullCalendar DOM přežije jeho redraw. expandRows vypnuto.
+Samotné updateSize/render nestačí na přepočet slat cache; čerstvý objekt stejného
+slotDuration ji obnoví při skutečné změně výšek, bez změny pohledu/data.
+
+Chrome: při 667px řádky 9/10 měří 65/82px, všechny ostatní 44; události 64/81px,
+odchylka od začátku řádku 0 a žádné oříznutí. Při 1440px 44/47px, události 43/46px,
+opět offset 0. Prázdný týden všech 15 řádků 44px. Background text prázdný.
+Základní responzivní kontrola 320–1728px bez horizontálního přetečení;
+klávesnice/focus beze změny. 208 testů, lint, typy, formát, audit 0 prošly.
+V konzoli lokálně chyba rozšíření React DevTools (chrome-extension), ne aplikace.
+
+---
+
 # Admin kalendář a přesné SEO texty — 25. 9. 2026
 
 Nasazeno: PR #73, commit c4a3a89, deployment dpl_22Qcq46RFdRtb3A9FNT5X6dFmqee

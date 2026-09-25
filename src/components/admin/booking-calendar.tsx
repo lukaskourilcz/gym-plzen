@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -38,6 +38,9 @@ export function BookingCalendar({
 }) {
   const router = useRouter();
   const calendarRef = useRef<FullCalendar>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const rowStyleRef = useRef<HTMLStyleElement>(null);
+  const calendarId = useId();
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -65,6 +68,86 @@ export function BookingCalendar({
     return () => compact.removeEventListener("change", syncView);
   }, []);
 
+  // TimeGrid positions events absolutely, so their text cannot naturally size
+  // the table row. Measure only foreground names, then resize that slot alone.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    let frame = 0;
+    let disposed = false;
+    const observedNames = new Set<HTMLElement>();
+    const resizeRows = () => {
+      frame = 0;
+      const heights = new Map<number, number>();
+      for (const name of observedNames) {
+        if (!container.contains(name)) {
+          sizeObserver.unobserve(name);
+          observedNames.delete(name);
+        }
+      }
+      container
+        .querySelectorAll<HTMLElement>(
+          ".fc-timegrid-event .admin-calendar-name[data-start-minute]",
+        )
+        .forEach((name) => {
+          if (!observedNames.has(name)) {
+            observedNames.add(name);
+            sizeObserver.observe(name);
+          }
+          const minute = Number(name.dataset.startMinute);
+          const row = Math.max(
+            0,
+            Math.floor((minute - openMinute) / slotMinutes),
+          );
+          heights.set(
+            row,
+            Math.max(
+              heights.get(row) ?? 44,
+              Math.ceil(name.getBoundingClientRect().height) + 12,
+            ),
+          );
+        });
+      // Keep sizing outside FullCalendar's managed DOM: its redraw can replace
+      // table rows, but these scoped rules must survive that redraw.
+      const rules = [...heights]
+        .map(
+          ([row, height]) =>
+            `[data-calendar-id="${calendarId}"] .fc-timegrid-slots tr:nth-child(${row + 1}) { --calendar-row-height: ${height}px; }`,
+        )
+        .join("\n");
+      if (rowStyleRef.current && rowStyleRef.current.textContent !== rules) {
+        rowStyleRef.current.textContent = rules;
+        // updateSize alone keeps TimeGrid's cached slat coordinates when the
+        // width is unchanged. A fresh duration object rebuilds those coordinates
+        // without changing the time scale, current view, date or keyboard focus.
+        calendarRef.current
+          ?.getApi()
+          .setOption("slotDuration", { minutes: slotMinutes });
+      }
+    };
+    const scheduleResize = () => {
+      if (!frame) frame = requestAnimationFrame(resizeRows);
+    };
+    const sizeObserver = new ResizeObserver(scheduleResize);
+    sizeObserver.observe(container);
+    const contentObserver = new MutationObserver(scheduleResize);
+    contentObserver.observe(container.querySelector(".fc") ?? container, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+    scheduleResize();
+    void document.fonts.ready.then(() => {
+      if (!disposed) scheduleResize();
+    });
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(frame);
+      sizeObserver.disconnect();
+      contentObserver.disconnect();
+    };
+  }, [events, openMinute, slotMinutes, calendarId]);
+
   async function onSelect(sel: DateSelectArg) {
     if (busy || readOnly) return;
     setActionError(null);
@@ -87,7 +170,12 @@ export function BookingCalendar({
   }
 
   return (
-    <div className="admin-booking-calendar">
+    <div
+      ref={containerRef}
+      data-calendar-id={calendarId}
+      className="admin-booking-calendar"
+    >
+      <style ref={rowStyleRef} />
       <FullCalendar
         ref={calendarRef}
         plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
@@ -109,18 +197,29 @@ export function BookingCalendar({
           return `${minutesToHHmm(start)} – ${minutesToHHmm(Math.min(start + slotMinutes, closeMinute))}`;
         }}
         displayEventTime={false}
-        eventContent={({ event }) => (
-          <span className="admin-calendar-name" title={event.title}>
-            {event.title}
-          </span>
-        )}
+        eventContent={({ event }) =>
+          event.display === "background" ||
+          event.display === "inverse-background" ? null : (
+            <span
+              className="admin-calendar-name"
+              title={event.title}
+              data-start-minute={
+                event.start
+                  ? event.start.getHours() * 60 + event.start.getMinutes()
+                  : undefined
+              }
+            >
+              {event.title}
+            </span>
+          )
+        }
         allDaySlot={false}
         nowIndicator
         selectable={!busy && !readOnly}
         selectMirror
         select={onSelect}
         height="auto"
-        expandRows
+        expandRows={false}
         businessHours={{
           daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
           startTime: minutesToHHmm(openMinute),

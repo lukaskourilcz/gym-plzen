@@ -371,7 +371,7 @@ summary {
 }
 
 .admin-booking-calendar .fc .fc-timegrid-slot {
-  height: 5rem;
+  height: var(--calendar-row-height, 44px);
 }
 
 .admin-booking-calendar .fc .fc-timegrid-slot-label {

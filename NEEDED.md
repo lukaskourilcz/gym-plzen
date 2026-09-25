@@ -1,5 +1,7 @@
 ## Admin kalendář — 25. 9. 2026
 
+- [x] **Kompaktní řádky a skryté popisky bloků** — základ 44px, pouze řádek s delším jménem roste; při změně šířky i týdne se vrací zpět. Zašeděné bloky bez textu. [imp:4] [owner:ai] [time:1h] [kind:deploy]
+
 - [x] **Řádky podle rezervačních termínů** — 75minutové intervaly na ose, v rezervacích jen jména, vyšší řádky a zalamování; ověřeno v Chrome a 208 testy. [imp:4] [owner:ai] [time:1h] [kind:deploy]
 - [x] **Přesný titulek a popis homepage** — Roudná odstraněna z titulku, description nahrazen přesným textem uživatele. [imp:3] [owner:ai] [time:5m] [kind:content]
 - [ ] **Doplnit skutečný 200% zoom a reduced motion admin kalendáře** — poloviční šířka/reflow, klávesnice a focus ověřeny, v kalendáři žádná aktivní animace; nativní zoom a emulace preference dosud neověřeny. [imp:2] [owner:ai] [time:10m] [kind:deploy]
