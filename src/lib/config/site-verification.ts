@@ -10,10 +10,13 @@ export function siteVerification(
   googleSiteCode?: string,
 ): Metadata["verification"] {
   const code = metaDomainCode?.trim();
-  const google = googleSiteCode?.trim();
-  if (!code && !google) return undefined;
+  const google = googleSiteCode
+    ?.split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (!code && !google?.length) return undefined;
   return {
     ...(code ? { other: { "facebook-domain-verification": code } } : {}),
-    ...(google ? { google } : {}),
+    ...(google?.length ? { google } : {}),
   };
 }
