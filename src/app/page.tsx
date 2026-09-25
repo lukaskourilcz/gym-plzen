@@ -71,9 +71,9 @@ const FACT_BORDERS = [
 ] as const;
 
 export const metadata: Metadata = {
-  title: { absolute: "NAVI Private Gym | Soukromé fitness Plzeň – Roudná" },
+  title: { absolute: "NAVI Private Gym | Soukromé fitness Plzeň" },
   description:
-    "NAVI Private Gym: celé samoobslužné fitness v Plzni na Roudné jen pro vás a váš doprovod. Rezervujte si 75 minut soukromí online. Křížkova 424/23.",
+    "NAVI Private Gym: celé samoobslužné fitness v Plzni jen pro vás a váš doprovod. Rezervujte si svůj trénink v soukromí online.",
   alternates: { canonical: "/" },
 };
 export const revalidate = 60;
