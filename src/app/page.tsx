@@ -71,9 +71,9 @@ const FACT_BORDERS = [
 ] as const;
 
 export const metadata: Metadata = {
-  title: "Soukromý gym v Plzni",
+  title: { absolute: "NAVI Private Gym | Soukromé fitness Plzeň – Roudná" },
   description:
-    "NAVI Private Gym je soukromý prostor v Plzni. Vyberte termín online, zaplaťte bezpečně a obdržíte pokyny ke vstupu.",
+    "NAVI Private Gym: celé samoobslužné fitness v Plzni na Roudné jen pro vás a váš doprovod. Rezervujte si 75 minut soukromí online. Křížkova 424/23.",
   alternates: { canonical: "/" },
 };
 export const revalidate = 60;
@@ -122,11 +122,22 @@ export default async function HomePage() {
     ctaQuoteBreakIndex > 0
       ? ctaQuote.slice(0, ctaQuoteBreakIndex).trimEnd()
       : ctaQuote;
+  const contacts = footerProps(content);
   const businessJson = {
     "@context": "https://schema.org",
     "@type": "HealthClub",
     name: brand,
-    url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    "@id": `${publicEnv.NEXT_PUBLIC_APP_URL}/#gym`,
+    url: publicEnv.NEXT_PUBLIC_APP_URL,
+    telephone: contacts.phone,
+    email: contacts.email,
+    sameAs: [contacts.facebookUrl, contacts.instagramUrl],
+    hasMap: mapsUrl,
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: GYM_POSITION.lat,
+      longitude: GYM_POSITION.lng,
+    },
     address: {
       "@type": "PostalAddress",
       streetAddress: "Křížkova 424/23",

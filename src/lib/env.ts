@@ -55,6 +55,7 @@ const serverSchema = z.object({
   // Meta domain verification code (the `content` of the meta tag); rendered
   // into <head> by the root layout so Business Settings can verify navigym.cz.
   META_DOMAIN_VERIFICATION: z.string().optional(),
+  GOOGLE_SITE_VERIFICATION: z.string().optional(),
 
   WHATSAPP_ACCESS_TOKEN: z.string().optional(),
   WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),

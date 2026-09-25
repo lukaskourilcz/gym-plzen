@@ -7,7 +7,13 @@ import type { Metadata } from "next";
  */
 export function siteVerification(
   metaDomainCode: string | undefined,
+  googleSiteCode?: string,
 ): Metadata["verification"] {
   const code = metaDomainCode?.trim();
-  return code ? { other: { "facebook-domain-verification": code } } : undefined;
+  const google = googleSiteCode?.trim();
+  if (!code && !google) return undefined;
+  return {
+    ...(code ? { other: { "facebook-domain-verification": code } } : {}),
+    ...(google ? { google } : {}),
+  };
 }
