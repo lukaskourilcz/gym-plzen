@@ -1,5 +1,10 @@
 # Kompaktní admin kalendář — 25. 9. 2026
 
+Nasazeno PR #74, commit 1d251d8, deployment dpl_A4SVvJArSCLX7L4Tu51z8QwXm52f READY.
+Živý týden 28. 9.–4. 10.: všechny 3 šedé bloky bez textu, 7 rezervací bez
+oříznutí a s nulovou odchylkou od svého řádku. Na aktuální široké obrazovce
+všech 15 řádků 44px. Produkční build prošel; sloučená větev odstraněna.
+
 Navazující oprava podle screenshotu uživatele: všechny background/inverse-background
 bloky bez viditelného textu, zůstává stínování. Výchozí řádek 44px, pouze řádky
 s delšími jmény se zvětšují. ResizeObserver sleduje jména a kontejner, MutationObserver
