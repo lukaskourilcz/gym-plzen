@@ -32,7 +32,10 @@ export const metadata: Metadata = {
     type: "website",
     locale: "cs_CZ",
   },
-  verification: siteVerification(env.META_DOMAIN_VERIFICATION),
+  verification: siteVerification(
+    env.META_DOMAIN_VERIFICATION,
+    env.GOOGLE_SITE_VERIFICATION,
+  ),
 };
 
 export default function RootLayout({

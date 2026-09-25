@@ -1,3 +1,25 @@
+# SEO a migrace — 25. 9. 2026
+
+Na výslovné přání uživatele dokončujeme 4 body SEO. Staré čtyři hosty ve
+Vercelu přesměrovávají 308 na www.navigym.cz, včetně cest a query. Sitemap
+odeslána do GSC, Success / 9 URL. GBP web HTTPS s UTM a datum 1. 10. 2026
+přijaty, rozšířený popis a přímý rezervační odkaz odeslány. Websupport není
+přihlášený; pro staré URL služby je připravena HTML verifikace (nová
+GOOGLE_SITE_VERIFICATION ve Vercel Production). Oznámení změny adresy až po
+nasazení a ověření; nepovažovat za hotové před výsledkem Google.
+Podrobnosti: docs/SEO_MIGRATION_2026_09_25.md.
+
+Kontroly: 205 unit testů, lint, typy, format a audit prošly. Build prošel s
+lokální testovací DB; první běh narazil na výchozí neexistující DB roli
+unconfigured. V HTML sestavení ověřena Google značka, titulek a HealthClub
+s kontakty, geolokací a sociálními profily.
+
+Ranní úklid testů: 11 zbývajících potvrzených rezervací vlastníka stornováno,
+všech 26 pod jeho e-mailem cancelled. Tři odebrání kódů ještě čekala na Nuki,
+budoucí slot 2. 10. 05:00 správně blokovaný. Historie zachována, bez refundace.
+
+---
+
 # Živá věrnost — 24. 9. 2026 večer
 
 Uživatel místo úklidu výslovně požádal o další rezervace a schválil podmínky všech čtyř. Vlastní testy 1. 10. 11:15, 12:30, 13:45 s voucherem posunuly počítadlo na 7, 8, 9. Desátá 1. 10. 15:00–16:15 nabídla vstup zdarma bez pole voucheru a byla potvrzena: „Tohle byla vaše 10. návštěva a byla zdarma.“ Následující formulář opět ukázal 199 Kč (neodeslán). Současná věrnost tedy počítá potvrzené budoucí termíny i 100% voucher, nikoli jen zaplacené nebo absolvované vstupy. Žádné storno provedeno. Kódy zůstávají plánované -24 h / doručení -1 h.
