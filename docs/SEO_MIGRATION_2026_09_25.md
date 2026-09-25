@@ -3,8 +3,8 @@
 ## Opravené směrování
 
 Ve Vercelu nastaveny domény `namastegym.cz`, `www.namastegym.cz`,
-`namastegymplzen.cz` a `www.namastegymplzen.cz` na trvalé přesměrování 308
-přímo na `www.navigym.cz`. Nová holá doména už stejně přesměrovávala na www.
+`namastegymplzen.cz` a `www.namastegymplzen.cz` na trvalé přesměrování
+přímo na `www.navigym.cz` (namastegym.cz 301, ostatní tři hosty 308). Nová holá doména už stejně přesměrovávala na www.
 HTTP nejprve přechází na HTTPS. Ověřeno 16 HTTP požadavky: kořen a `/vybaveni`
 s UTM parametrem, čtyři staré hosty, HTTP i HTTPS; cesta i query zachovány.
 Změna je v nastavení projektu Vercel, nikoli v aplikačních routách.
@@ -23,7 +23,9 @@ Stará doména nemá dostupné DNS přihlášení. URL-prefix vlastnictví se pr
 ověřuje HTML značkou `GOOGLE_SITE_VERIFICATION`, nastavenou pro Vercel Production.
 Google doporučuje pro weby přesměrované na jinou doménu právě HTML značku;
 ověřovací soubor by přes cizí doménu nefungoval. Značku ponechat i po migraci.
-Oznámení změny adresy je nutné dokončit až po ověření starých URL služeb.
+Všechny čtyři staré URL-prefix služby jsou ověřené. DNS přístup nebyl potřeba.
+Produkční proměnná obsahuje dvě ověřovací značky oddělené čárkou; obě
+jsou ověřené v živém HTML a musí zůstat zachované.
 
 ## Firemní profil a místní SEO
 
@@ -81,7 +83,9 @@ po explicitním použití existující izolované testovací DB prošel.
 nové homepage potvrzuje skutečnou Google značku a nové SEO/JSON-LD údaje.
 `https://www.namastegym.cz/` ověřeno metodou HTML tag; Change of Address
 prošlo validací i s 308 a bylo potvrzeno na `navigym.cz`, stav „This site is
-currently moving“, datum zahájení 25 September 2026. Další varianty se doplňují.
+currently moving“, datum zahájení 25 September 2026. Stejným způsobem byly následně potvrzeny
+obě varianty namastegymplzen.cz (s www i bez www). U všech tří je v GSC
+ověřen stav „This site is currently moving“ a cílová doména navigym.cz.
 Homepage v URL Inspection „URL is on Google“; požadavek na nové procházení
 po změně přijat („Indexing requested“). Jediná procházená nezařazená URL
 z přehledu je `/obchodni-podminky`, nikoli hlavní stránka.
@@ -93,3 +97,18 @@ následování 200 na nové doméně, včetně cesty a query. Ověření vlastni
 migrační validaci prošlo. Nejde o dokončené oznámení této varianty; je nutné
 později zopakovat, není důvod měnit funkční DNS nebo vypínat zabezpečení.
 Ostatní tři staré hosty zůstávají 308.
+
+Finální aplikační vydání: PR #72, commit `c835c9f`, deployment
+`dpl_Csjz9f6YH4VfKaBgV2dmTYNg14un` READY s produkčními aliasy. Podpora obou
+Google značek ověřena živě. Lint, typecheck, 205 unit testů a produkční build
+prošly i po této změně. Všech 9 URL sitemapy vrací 200; osm veřejných
+obsahových stránek má správný canonical, login nemá explicitní canonical.
+
+### Zbývající kroky
+
+- Později opakovat pouze Change of Address pro `https://namastegym.cz/`;
+  dosavadní tři validace skončily chybou Google fetch, nikoli chybou vlastnictví.
+- Dodat skutečné aktuální fotografie provozovny a po návštěvách získávat
+  dobrovolné recenze; nic neposíláno zákazníkům.
+- Změny výsledků vyhledávání a pořadí jsou následné zpracování Googlu,
+  ne výsledek, který by tato konfigurace okamžitě garantovala.

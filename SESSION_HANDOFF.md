@@ -1,18 +1,23 @@
 # SEO a migrace — 25. 9. 2026
 
-Na výslovné přání uživatele dokončujeme 4 body SEO. Staré čtyři hosty ve
-Vercelu přesměrovávají 308 na www.navigym.cz, včetně cest a query. Sitemap
-odeslána do GSC, Success / 9 URL. GBP web HTTPS s UTM a datum 1. 10. 2026
-přijaty, rozšířený popis a přímý rezervační odkaz odeslány. Websupport není
-přihlášený; pro staré URL služby je připravena HTML verifikace (nová
-GOOGLE_SITE_VERIFICATION ve Vercel Production). Oznámení změny adresy až po
-nasazení a ověření; nepovažovat za hotové před výsledkem Google.
-Podrobnosti: docs/SEO_MIGRATION_2026_09_25.md.
+Čtyři body implementované a živě ověřené, s jedním externím nedokončeným
+krokem GSC. Staré čtyři hosty přesměrovávají na www.navigym.cz (holá
+namastegym.cz 301, ostatní 308), cesty i query zachovány. Sitemap Success / 9 URL.
+Homepage „URL is on Google“, nová indexace vyžádána. Všechny čtyři staré
+URL-prefix služby ověřeny přes dvě HTML značky, bez Websupport/DNS přístupu.
+Change of Address přijat pro www.namastegym.cz a obě namastegymplzen.cz;
+namastegym.cz bez www stále vrací Google „Couldn’t fetch the page“ po třech
+pokusech, přestože HTTP 301→200 a vlastnictví fungují. Později zopakovat.
 
-Kontroly: 205 unit testů, lint, typy, format a audit prošly. Build prošel s
-lokální testovací DB; první běh narazil na výchozí neexistující DB roli
-unconfigured. V HTML sestavení ověřena Google značka, titulek a HealthClub
-s kontakty, geolokací a sociálními profily.
+GBP přijal datum 1. 10. 2026, HTTPS web s UTM a rozšířený popis (veřejně ověřen).
+Rezervační odkaz s UTM a popis služby uloženy. Reálné fotky a dobrovolné recenze
+od návštěvníků zbývají provozovatelům; zprávy zákazníkům neposílány.
+Web má nový místní titulek/popisek a HealthClub JSON-LD s aktuálními kontakty.
+PR #71 a #72 sloučené, větve smazané. Produkční commit c835c9f, deployment
+dpl_Csjz9f6YH4VfKaBgV2dmTYNg14un READY, obě Google značky živě ověřené.
+GOOGLE_SITE_VERIFICATION obsahuje dvě čárkou oddělené značky, nesmazat.
+205 unit testů, lint, typy, formát, audit (0) a build s izolovanou lokální DB
+prošly. Detail a konkrétní zbývající kroky: docs/SEO_MIGRATION_2026_09_25.md.
 
 Ranní úklid testů: 11 zbývajících potvrzených rezervací vlastníka stornováno,
 všech 26 pod jeho e-mailem cancelled. Tři odebrání kódů ještě čekala na Nuki,
