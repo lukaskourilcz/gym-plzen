@@ -1,3 +1,5 @@
+import { BookingCalendar } from "@/components/admin/booking-calendar";
+import { dateKeyInTimeZone, localDateTimeToDate } from "@/lib/helpers/datetime";
 import { CustomerAvatar } from "@/components/site/customer-avatar";
 import {
   AlertTriangle,
@@ -48,6 +50,7 @@ const designVariantTokens = [
 ] as const;
 
 export default function DesignSystemPage() {
+  const calendarDate = dateKeyInTimeZone(new Date());
   return (
     <div>
       <PageHeader
@@ -56,6 +59,34 @@ export default function DesignSystemPage() {
       />
 
       <div className="grid gap-8">
+        <section aria-labelledby="kit-calendar">
+          <h2 id="kit-calendar" className="mb-4 text-xl font-extrabold">
+            Provozní kalendář
+          </h2>
+          <p className="mb-4 text-sm text-muted-foreground">
+            Ukázková jména. Jeden řádek odpovídá 75 minutám; čas je na ose, v
+            rezervaci pouze jméno. V této ukázce nelze vytvářet bloky.
+          </p>
+          <BookingCalendar
+            readOnly
+            events={[
+              {
+                title: "Jana Nováková",
+                start: localDateTimeToDate(calendarDate, 975).toISOString(),
+                end: localDateTimeToDate(calendarDate, 1050).toISOString(),
+                backgroundColor: "var(--success)",
+                borderColor: "transparent",
+              },
+              {
+                title: "Alexandra Dvořáková",
+                start: localDateTimeToDate(calendarDate, 1050).toISOString(),
+                end: localDateTimeToDate(calendarDate, 1125).toISOString(),
+                backgroundColor: "var(--success)",
+                borderColor: "transparent",
+              },
+            ]}
+          />
+        </section>
         <section aria-labelledby="kit-avatar">
           <h2 id="kit-avatar" className="mb-4 text-xl font-extrabold">
             Zákaznický avatar

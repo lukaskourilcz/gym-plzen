@@ -13,6 +13,7 @@ import { minutesToHHmm } from "@/lib/helpers/format";
 import {
   DEFAULT_CLOSE_MINUTE,
   DEFAULT_OPEN_MINUTE,
+  DEFAULT_SLOT_MINUTES,
 } from "@/lib/config/schedule";
 
 /**
@@ -26,10 +27,14 @@ export function BookingCalendar({
   events,
   openMinute = DEFAULT_OPEN_MINUTE,
   closeMinute = DEFAULT_CLOSE_MINUTE,
+  slotMinutes = DEFAULT_SLOT_MINUTES,
+  readOnly = false,
 }: {
   events: EventInput[];
   openMinute?: number;
   closeMinute?: number;
+  slotMinutes?: number;
+  readOnly?: boolean;
 }) {
   const router = useRouter();
   const calendarRef = useRef<FullCalendar>(null);
@@ -61,7 +66,7 @@ export function BookingCalendar({
   }, []);
 
   async function onSelect(sel: DateSelectArg) {
-    if (busy) return;
+    if (busy || readOnly) return;
     setActionError(null);
     const label = `${sel.start.toLocaleString("cs-CZ")} – ${sel.end.toLocaleTimeString("cs-CZ")}`;
     if (!window.confirm(`Blokovat tento čas pro úklid?\n${label}`)) {
@@ -96,11 +101,22 @@ export function BookingCalendar({
         }}
         slotMinTime={`${minutesToHHmm(openMinute)}:00`}
         slotMaxTime={`${minutesToHHmm(closeMinute)}:00`}
-        slotDuration="01:00:00"
-        snapDuration="01:00:00"
+        slotDuration={{ minutes: slotMinutes }}
+        slotLabelInterval={{ minutes: slotMinutes }}
+        snapDuration={{ minutes: slotMinutes }}
+        slotLabelContent={({ date }) => {
+          const start = date.getHours() * 60 + date.getMinutes();
+          return `${minutesToHHmm(start)} – ${minutesToHHmm(Math.min(start + slotMinutes, closeMinute))}`;
+        }}
+        displayEventTime={false}
+        eventContent={({ event }) => (
+          <span className="admin-calendar-name" title={event.title}>
+            {event.title}
+          </span>
+        )}
         allDaySlot={false}
         nowIndicator
-        selectable={!busy}
+        selectable={!busy && !readOnly}
         selectMirror
         select={onSelect}
         height="auto"
