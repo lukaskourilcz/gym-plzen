@@ -1,5 +1,10 @@
 # Admin kalendář a přesné SEO texty — 25. 9. 2026
 
+Nasazeno: PR #73, commit c4a3a89, deployment dpl_22Qcq46RFdRtb3A9FNT5X6dFmqee
+READY. Živý Chrome v týdnu 28. 9.–4. 10.: 15 správných intervalů, 7 rezervací,
+0 duplicitních časů, 0 oříznutých jmen, bez přetečení. HTTP produkce potvrzuje
+přesný nový titulek i description. Sloučená větev smazána lokálně i vzdáleně.
+
 Kalendář nově používá nakonfigurovanou délku rezervací místo hodinových řádků.
 Při současných 75 minutách má 15 řádků, popisky 05:00–06:15 až 22:30–23:45;
 v událostech pouze jméno, bez času a e-mailového fallbacku. Vyšší 80px řádky,
