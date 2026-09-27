@@ -1,3 +1,7 @@
+## Rezervace — 27. 9. 2026
+
+- [x] **Cena za celý prostor** — uvedeno u ceníku na úvodní stránce, nad volnými termíny a v přehledu před platbou; vstup zdarma má vlastní srozumitelný text. [imp:3] [owner:ai] [time:15m] [kind:content]
+
 ## Admin kalendář — 25. 9. 2026
 
 - [x] **Kompaktní řádky a skryté popisky bloků** — základ 44px, pouze řádek s delším jménem roste; při změně šířky i týdne se vrací zpět. Zašeděné bloky bez textu. [imp:4] [owner:ai] [time:1h] [kind:deploy]

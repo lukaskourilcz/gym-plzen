@@ -403,6 +403,9 @@ export function BookingCalendar({
 
         {availableSlots.length > 0 ? (
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+            <p className="col-span-full text-sm font-semibold text-foreground">
+              Uvedená cena platí za celý prostor, nikoli za osobu.
+            </p>
             {/*
              * A slot leads straight to the details step. It used to bounce a
              * signed-out visitor to the login page and back to an empty

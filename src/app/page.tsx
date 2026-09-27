@@ -441,6 +441,9 @@ export default async function HomePage() {
                       / {DEFAULT_SLOT_MINUTES} minut
                     </span>
                   </div>
+                  <p className="mt-4 text-sm font-semibold text-card-foreground">
+                    Uvedená cena platí za celý prostor, nikoli za osobu.
+                  </p>
                   {/*
                    * During a promotion the standard price stays visible, so the
                    * saving is a fact the visitor can check rather than a claim.
