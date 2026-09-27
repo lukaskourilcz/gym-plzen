@@ -143,11 +143,16 @@ export default async function BookingDetailsPage({
               <p className="font-extrabold">
                 {dayLabel}, {slotLabel}
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="w-full text-sm text-muted-foreground">
                 {minutesBetween(startsAt, resolved.endsAt)} minut ·{" "}
                 {entryPriceCents === 0
                   ? "vstup zdarma"
                   : formatMoney(entryPriceCents)}
+                <span className="mt-1 block font-medium text-foreground">
+                  {entryPriceCents === 0
+                    ? "Rezervujete celý prostor, nikoli místo pro jednu osobu."
+                    : "Uvedená cena platí za celý prostor, nikoli za osobu."}
+                </span>
               </p>
             </div>
 
