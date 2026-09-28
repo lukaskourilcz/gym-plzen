@@ -1,6 +1,17 @@
 import { deliverCancellation } from "./cancellation-delivery";
 import { raiseAlert } from "./alerts";
-import { and, desc, eq, gte, inArray, lt, notExists, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNotNull,
+  lt,
+  notExists,
+  or,
+  sql,
+} from "drizzle-orm";
 import { db, type DatabaseExecutor } from "@/lib/db";
 import { withReservationLock } from "./operation-lock";
 import {
@@ -21,6 +32,7 @@ import {
   requestCodeRevocations,
 } from "./access-codes";
 import { releaseForReservation } from "./vouchers";
+import { cancelOrdersOfReleased } from "./order-state";
 import { notifyReservationCancelled } from "./operator-notifications";
 import { formatDateTime, formatMoney } from "@/lib/helpers/format";
 
@@ -39,6 +51,8 @@ const AVAILABILITY_MESSAGES: Record<string, string> = {
 
 export interface CreateReservationInput {
   userId?: string | null;
+  /** The checkout this slot belongs to; absent for admin walk-ins. */
+  orderId?: string | null;
   startsAt: Date;
   endsAt: Date;
   contactName?: string | null;
@@ -76,6 +90,7 @@ export async function createReservation(
 
   const values: NewReservation = {
     userId: input.userId ?? null,
+    orderId: input.orderId ?? null,
     startsAt: input.startsAt,
     endsAt: input.endsAt,
     status: input.status ?? "pending",
@@ -198,26 +213,38 @@ async function cancelReservationLocked(params: {
     }
   });
   await releaseForReservation(params.id);
+  // One payment can cover a whole order; only this slot's share is at stake.
   const [paid] = await db
     .select()
     .from(payment)
     .where(
       and(
-        eq(payment.reservationId, params.id),
+        before.orderId
+          ? or(
+              eq(payment.reservationId, params.id),
+              eq(payment.orderId, before.orderId),
+            )
+          : eq(payment.reservationId, params.id),
         eq(payment.status, "succeeded"),
       ),
     )
     .limit(1);
-  if (paid)
+  const paidForSlot = paid
+    ? paid.orderId
+      ? (before.priceCents ?? 0)
+      : paid.amountCents
+    : 0;
+  if (paid && paidForSlot > 0)
     await raiseAlert({
       severity: "critical",
       dedupeKey: `refund-needed:${params.id}`,
       title: "Zrušená zaplacená rezervace vyžaduje vrácení platby",
-      body: `Rezervace na ${formatDateTime(before.startsAt)} byla zrušena. Zákazník zaplatil ${formatMoney(paid.amountCents, paid.currency)}; ověřte nárok a stav refundace v Comgate. Samotné storno platbu nevrací.`,
+      body: `Rezervace na ${formatDateTime(before.startsAt)} byla zrušena. Zákazník za ni zaplatil ${formatMoney(paidForSlot, paid.currency)}${paid.orderId ? ` jako součást objednávky za ${formatMoney(paid.amountCents, paid.currency)}` : ""}; ověřte nárok a stav refundace v Comgate. Samotné storno platbu nevrací.`,
       context: {
         reservationId: params.id,
         paymentId: paid.id,
-        amountCents: paid.amountCents,
+        orderId: paid.orderId,
+        amountCents: paidForSlot,
       },
     });
   const codes = await listCodesForReservation(params.id);
@@ -315,7 +342,13 @@ export async function releaseExpiredPendingReservations(
               .from(payment)
               .where(
                 and(
-                  eq(payment.reservationId, reservation.id),
+                  or(
+                    eq(payment.reservationId, reservation.id),
+                    and(
+                      isNotNull(reservation.orderId),
+                      eq(payment.orderId, reservation.orderId),
+                    ),
+                  ),
                   eq(payment.provider, "comgate"),
                   inArray(payment.status, [
                     "pending",
@@ -331,6 +364,7 @@ export async function releaseExpiredPendingReservations(
       .returning({
         id: reservation.id,
         userId: reservation.userId,
+        orderId: reservation.orderId,
         startsAt: reservation.startsAt,
       });
 
@@ -345,6 +379,21 @@ export async function releaseExpiredPendingReservations(
         occurredAt: now,
       });
     }
+
+    // An order's slots share one creation time and one payment, so they are
+    // released together; the order follows them, voucher claims included.
+    await cancelOrdersOfReleased(
+      tx,
+      [
+        ...new Set(
+          released.flatMap((row) => (row.orderId ? [row.orderId] : [])),
+        ),
+      ],
+      "checkout_expired",
+      now,
+    );
+    for (const row of released)
+      if (!row.orderId) await releaseForReservation(row.id, tx);
 
     if (released.length > 0) {
       await tx

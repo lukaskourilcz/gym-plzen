@@ -13,6 +13,7 @@ export * as availability from "./availability";
 export * as reservations from "./reservations";
 export * as rescheduling from "./rescheduling";
 export * as booking from "./booking";
+export * as orders from "./orders";
 export * as slots from "./slots";
 export * as stats from "./stats";
 export * as accessCodes from "./access-codes";

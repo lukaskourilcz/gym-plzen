@@ -90,7 +90,7 @@ export default async function BookingDetailsPage({
     redirect(
       session
         ? "/account"
-        : `/rezervace/hotovo?${new URLSearchParams({ reservation_id: own.id, ...(hold?.reservationId === own.id ? { token: hold.token } : {}) })}`,
+        : `/rezervace/hotovo?${new URLSearchParams({ reservation_id: own.id, ...(hold?.kind === "reservation" && hold.id === own.id ? { token: hold.token } : {}) })}`,
     );
   }
   if (!free.available && !own)
