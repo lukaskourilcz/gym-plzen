@@ -32,7 +32,7 @@ import {
   requestCodeRevocations,
 } from "./access-codes";
 import { releaseForReservation } from "./vouchers";
-import { cancelOrdersOfReleased } from "./order-state";
+import { cancelOrdersOfReleased, cancelPendingOrderIn } from "./order-state";
 import { notifyReservationCancelled } from "./operator-notifications";
 import { formatDateTime, formatMoney } from "@/lib/helpers/format";
 
@@ -213,6 +213,14 @@ async function cancelReservationLocked(params: {
     }
   });
   await releaseForReservation(params.id);
+  // An unpaid order is bought as a whole: one slot gone means the order can no
+  // longer be confirmed, so its other held slots must not stay blocked.
+  if (before.status === "pending" && before.orderId) {
+    const orderId = before.orderId;
+    await db.transaction((tx) =>
+      cancelPendingOrderIn(tx, orderId, params.reason ?? "slot_cancelled"),
+    );
+  }
   // One payment can cover a whole order; only this slot's share is at stake.
   const [paid] = await db
     .select()

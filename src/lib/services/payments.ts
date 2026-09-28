@@ -35,7 +35,7 @@ import { processWebhookEvent } from "./webhooks";
 import { initPipeline } from "./pipeline";
 import { fulfillReservation } from "./fulfillment";
 import { redeemForReservation, releaseForReservation } from "./vouchers";
-import { raiseAlert } from "./alerts";
+import { deliverPendingAlerts, raiseAlert } from "./alerts";
 import { recordIn as recordActivityIn } from "./activity";
 import { formatDateTime, formatMoney } from "@/lib/helpers/format";
 import type { BookingOutcome } from "./booking";
@@ -247,6 +247,45 @@ export async function resumeOrderCheckout(
       };
     return { state: "processing" };
   });
+}
+
+/**
+ * Whether a checkout still has a gateway session that could be paid: a
+ * `pending` attempt (the customer may complete it in another tab) or a
+ * `processing` one whose outcome is unknown. Such a hold must not be released
+ * and replaced, or one person can pay for the same slots twice.
+ */
+export async function hasOpenOrderPayment(orderId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: payment.id })
+    .from(payment)
+    .where(
+      and(
+        eq(payment.orderId, orderId),
+        eq(payment.provider, "comgate"),
+        inArray(payment.status, ["pending", "processing"]),
+      ),
+    )
+    .limit(1);
+  return Boolean(row);
+}
+
+/** The single-reservation counterpart of `hasOpenOrderPayment`. */
+export async function hasOpenReservationPayment(
+  reservationId: string,
+): Promise<boolean> {
+  const [row] = await db
+    .select({ id: payment.id })
+    .from(payment)
+    .where(
+      and(
+        eq(payment.reservationId, reservationId),
+        eq(payment.provider, "comgate"),
+        inArray(payment.status, ["pending", "processing"]),
+      ),
+    )
+    .limit(1);
+  return Boolean(row);
 }
 
 /** Ask the gateway about an order's open payment; failures wait for the watchdog. */
@@ -578,6 +617,9 @@ export async function synchronizeComgatePayment(
       .update(payment)
       .set({ lastCheckedAt: new Date() })
       .where(eq(payment.id, known.id));
+    // A late-payment alert is written inside the ledger transaction; send it
+    // now that it is committed.
+    await deliverPendingAlerts();
     // Durable pipeline exists even if this process dies here. Retries can run it.
     if (snapshot.state === "PAID")
       await fulfillReservation(known.reservationId!);
@@ -701,6 +743,7 @@ async function synchronizeOrderPayment(
       .update(payment)
       .set({ lastCheckedAt: new Date() })
       .where(eq(payment.id, known.id));
+    await deliverPendingAlerts();
     if (snapshot.state === "PAID")
       for (const slot of await listOrderReservations(orderId))
         if (slot.status === "confirmed") await fulfillReservation(slot.id);
@@ -769,7 +812,11 @@ export async function reconcilePendingPayments(limit = 10) {
       .where(eq(payment.id, attempt.id));
   }
   const rows = await db
-    .select({ id: payment.providerPaymentId, localId: payment.id })
+    .select({
+      id: payment.providerPaymentId,
+      localId: payment.id,
+      createdAt: payment.createdAt,
+    })
     .from(payment)
     .where(
       and(
@@ -796,6 +843,17 @@ export async function reconcilePendingPayments(limit = 10) {
           .update(payment)
           .set({ lastCheckedAt: new Date() })
           .where(eq(payment.id, row.localId));
+        // A gateway session lasts 30 minutes. Still unsettled well after that,
+        // the attempt cannot be matched (changed merchant or test mode, a
+        // mismatched amount) and would hold its slots forever unnoticed.
+        if (row.createdAt < new Date(Date.now() - 45 * 60_000))
+          await raiseAlert({
+            severity: "critical",
+            dedupeKey: `payment-sync:${row.localId}`,
+            title: "Platbu se nedaří ověřit v Comgate",
+            body: "Stav platby se ani po 45 minutách nepodařilo ověřit. Zkontrolujte platbu v Comgate podle reference; termíny zůstávají blokované, dokud se stav nevyjasní.",
+            context: { paymentId: row.localId, providerPaymentId: row.id },
+          });
       }
     }
   return completed;

@@ -44,11 +44,11 @@ export async function fulfillReservation(reservationId: string): Promise<void> {
  * under a lock of their own: it is taken last and holds no other, which keeps
  * it free of lock-order cycles with the payment and reservation locks.
  */
-async function announceConfirmed(reservation: Reservation): Promise<void> {
+async function announceConfirmed(reservation: Reservation): Promise<boolean> {
   const order = reservation.orderId
     ? await getOrder(reservation.orderId)
     : null;
-  if (order && order.status !== "confirmed") return;
+  if (order && order.status !== "confirmed") return true;
   const all = order ? await listOrderReservations(order.id) : [];
   const slots = all.filter(
     (slot) => slot.status === "confirmed" || slot.status === "completed",
@@ -67,12 +67,13 @@ async function announceConfirmed(reservation: Reservation): Promise<void> {
 async function announceUnlocked(
   reservation: Reservation,
   order: { order: BookingOrder; slots: Reservation[] } | null,
-): Promise<void> {
+): Promise<boolean> {
   const reservationId = reservation.id;
+  let confirmationSent = false;
   try {
-    if (order) await sendOrderConfirmation(order);
+    if (order) confirmationSent = await sendOrderConfirmation(order);
     else
-      await sendReservationConfirmation({
+      confirmationSent = await sendReservationConfirmation({
         userId: reservation.userId ?? null,
         reservationId,
         name: reservation.contactName,
@@ -107,6 +108,7 @@ async function announceUnlocked(
   } catch (error) {
     logger.error(error, { where: "fulfillment.issueDocument", reservationId });
   }
+  return confirmationSent;
 }
 
 async function fulfillLocked(reservationId: string): Promise<void> {
@@ -127,11 +129,19 @@ async function fulfillLocked(reservationId: string): Promise<void> {
   // Confirmation, the operator's notice and the payment document are useful
   // operationally, but must never hold back the entry code. Access-code
   // delivery remains the reliability pipeline's invariant.
-  await announceConfirmed(reservation);
+  const confirmationSent = await announceConfirmed(reservation);
 
   // The physical lock is a separately enabled phase. Paid reservations still
   // receive their confirmation/document while lock work remains dormant.
-  await markStepSucceeded(reservationId, "payment");
+  // The "payment" step also carries the customer's confirmation: a paid
+  // customer who never heard back is retried and, in the end, alerted.
+  if (confirmationSent) await markStepSucceeded(reservationId, "payment");
+  else
+    await markStepFailed(
+      reservationId,
+      "payment",
+      "Potvrzovací e-mail zákazníkovi se nepodařilo odeslat.",
+    );
   if (!(await getOperations()).accessCodesEnabled) return;
 
   // This guard applies to every caller: payment, admin booking and watchdog.

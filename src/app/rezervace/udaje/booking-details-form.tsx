@@ -138,7 +138,12 @@ export function BookingDetailsForm({
 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
-    const response = await receiveAction(() => startCheckoutAction(values));
+    // The selection comes from the page, never from the form's first render:
+    // "Odebrat" changes only the URL, and a kept form must not book slots the
+    // visitor has just removed.
+    const response = await receiveAction(() =>
+      startCheckoutAction({ ...values, starts: startsISO }),
+    );
     if (!response.received) {
       reportTransportError(response.error, "booking.startCheckout.transport");
       setCheckoutInterrupted(true);

@@ -232,8 +232,8 @@ export async function sendReservationConfirmation(params: {
   /** Set when the entry is the member's free loyalty entry. */
   loyaltyReward?: number | null;
   email?: string | null;
-}): Promise<void> {
-  if (!params.email) return;
+}): Promise<boolean> {
+  if (!params.email) return true;
 
   const [alreadySent] = await db
     .select({ id: messageDelivery.id })
@@ -247,7 +247,7 @@ export async function sendReservationConfirmation(params: {
       ),
     )
     .limit(1);
-  if (alreadySent) return;
+  if (alreadySent) return true;
 
   /*
    * Loyalty is members-only: a guest booking has no account to count against,
@@ -311,6 +311,7 @@ export async function sendReservationConfirmation(params: {
     },
     result,
   );
+  return result.sent;
 }
 
 /** "středa 1. 10. 10:00 – 11:15 · 229 Kč", one line of an order e-mail. */
@@ -345,18 +346,18 @@ function termCount(n: number): string {
 export async function sendOrderConfirmation(params: {
   order: BookingOrder;
   slots: Reservation[];
-}): Promise<void> {
+}): Promise<boolean> {
   const { order, slots } = params;
   const email = order.contactEmail;
   const first = slots[0];
-  if (!email || !first) return;
+  if (!email || !first) return true;
   const dedupeKey = `order-confirmation/${order.id}`;
   const [alreadySent] = await db
     .select({ id: messageDelivery.id })
     .from(messageDelivery)
     .where(eq(messageDelivery.dedupeKey, dedupeKey))
     .limit(1);
-  if (alreadySent) return;
+  if (alreadySent) return true;
 
   const loyalty = order.userId
     ? orderLoyaltySentence(
@@ -410,6 +411,7 @@ export async function sendOrderConfirmation(params: {
     // Only a delivered confirmation closes the order; a failure is retried.
     dedupeKey: result.sent ? dedupeKey : null,
   });
+  return result.sent;
 }
 
 /**
