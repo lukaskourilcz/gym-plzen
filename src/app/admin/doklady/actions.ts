@@ -55,13 +55,8 @@ const issueImpl = defineAction({
       throw new ActionError("Doklad lze vystavit jen k potvrzené rezervaci.");
     }
 
-    const outcome = await invoices.issueAndSend({
-      reservationId,
-      userId: reservation.userId ?? null,
-      customerName: reservation.contactName,
-      customerEmail: reservation.contactEmail,
-      totalCents: reservation.priceCents,
-      startsAt: reservation.startsAt,
+    // A slot of a multi-slot order gets the order's one document.
+    const outcome = await invoices.issueDocumentFor(reservation, {
       force: true,
     });
 

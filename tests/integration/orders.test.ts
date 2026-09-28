@@ -9,10 +9,12 @@
 import {
   comgate,
   databaseReady,
+  resend,
   resetDatabase,
   rows,
   seedProfile,
   seedVoucher,
+  setSetting,
   startProviders,
   stopEverything,
 } from "./setup";
@@ -24,6 +26,7 @@ import {
 } from "../../src/lib/services/orders";
 import { startBooking } from "../../src/lib/services/booking";
 import { synchronizeComgatePayment } from "../../src/lib/services/payments";
+import { fulfillReservation } from "../../src/lib/services/fulfillment";
 import {
   cancelReservation,
   releaseExpiredPendingReservations,
@@ -185,6 +188,79 @@ describe(
         ).state,
         "invalid",
       );
+    });
+
+    test("a paid order sends one confirmation, one document and one operator notice", async () => {
+      await setSetting("billing.send_documents", true);
+      await setSetting("billing.profile", {
+        legalName: "Ukázka Fitness s.r.o.",
+        street: "Americká 1234/56",
+        city: "Plzeň",
+        zip: "301 00",
+        ico: "12345678",
+        dic: "",
+        vatRatePercent: 0,
+        bankAccount: "",
+        registryNote: "",
+      });
+      const recipients = "provoz@example.test";
+      const [current] = await rows<{ value: { events: unknown } }>(
+        "select value from site_setting where key = 'notifications.operator'",
+      );
+      await setSetting("notifications.operator", {
+        recipients,
+        events: current?.value.events,
+      });
+      const outcome = await startOrder({
+        userId: null,
+        starts: [slot(3), slot(4), slot(5)],
+        details: details(),
+      });
+      comgate.settle("TEST-0001", "PAID");
+      await synchronizeComgatePayment("TEST-0001");
+      // The watchdog retrying every slot changes nothing.
+      for (const row of await slotsOf(outcome.orderId))
+        await fulfillReservation(row.id);
+
+      const toCustomer = resend.sent.filter((mail) => mail.to === GUEST.email);
+      const confirmations = toCustomer.filter((mail) =>
+        mail.subject.startsWith("Potvrzení objednávky"),
+      );
+      assert.equal(confirmations.length, 1);
+      assert.equal(
+        toCustomer.filter((mail) =>
+          mail.subject.startsWith("Potvrzení rezervace"),
+        ).length,
+        0,
+      );
+      const mail = confirmations[0]!;
+      assert.match(mail.text ?? "", /Rezervovali jste 3 termíny/);
+      assert.match(mail.text ?? "", /Celkem: 687\sKč/);
+      const ics = Buffer.from(mail.attachments![0]!.content, "base64").toString(
+        "utf8",
+      );
+      assert.equal(ics.match(/BEGIN:VEVENT/g)?.length, 3);
+
+      const documents = await rows<{
+        order_id: string;
+        total_cents: number;
+        items: { totalCents: number }[];
+      }>("select order_id, total_cents, items from invoice");
+      assert.equal(documents.length, 1);
+      assert.equal(documents[0]?.order_id, outcome.orderId);
+      assert.equal(documents[0]?.total_cents, 3 * PRICE);
+      assert.deepEqual(
+        documents[0]?.items.map((item) => item.totalCents),
+        [PRICE, PRICE, PRICE],
+      );
+      assert.equal(
+        toCustomer.filter((mail) => mail.subject.startsWith("Doklad")).length,
+        1,
+      );
+
+      const notices = resend.sent.filter((mail) => mail.to === recipients);
+      assert.equal(notices.length, 1);
+      assert.match(notices[0]!.text ?? "", /objednávku 3 termínů/);
     });
 
     test("the slot that is a member's tenth entry is free inside the order", async () => {

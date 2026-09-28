@@ -1,7 +1,8 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { documentCounter, invoice } from "@/lib/db/schema";
-import type { Invoice } from "@/lib/db/types";
+import type { InvoiceItem } from "@/lib/db/schema";
+import type { Invoice, Reservation } from "@/lib/db/types";
 import {
   BILLING_ENABLED_SETTING_KEY,
   BILLING_PROFILE_SETTING_KEY,
@@ -18,6 +19,7 @@ import { formatDateTime } from "@/lib/helpers/format";
 import { logger } from "@/lib/helpers/logger";
 import { renderInvoicePdf, type InvoiceDocument } from "@/lib/pdf/invoice-pdf";
 import { getSetting, setSetting } from "./cms";
+import { getOrder, listOrderReservations } from "./order-state";
 import { sendTransactionalEmail } from "./email-templates";
 
 /**
@@ -132,6 +134,22 @@ export interface IssueParams {
   paidAt?: Date;
   /** Bypass the operator's on/off switch (an admin issuing by hand). */
   force?: boolean;
+  /** Set for a multi-slot order: one document for all of its slots. */
+  orderId?: string;
+  /** The order's lines; the description then names the order as a whole. */
+  items?: InvoiceItem[];
+  description?: string;
+}
+
+export async function getInvoiceForOrder(
+  orderId: string,
+): Promise<Invoice | null> {
+  const [row] = await db
+    .select()
+    .from(invoice)
+    .where(eq(invoice.orderId, orderId))
+    .limit(1);
+  return row ?? null;
 }
 
 export async function getInvoiceForReservation(
@@ -155,7 +173,9 @@ export async function getInvoiceForReservation(
 export async function issueForReservation(
   params: IssueParams,
 ): Promise<IssueOutcome> {
-  const existing = await getInvoiceForReservation(params.reservationId);
+  const existing =
+    (params.orderId ? await getInvoiceForOrder(params.orderId) : null) ??
+    (await getInvoiceForReservation(params.reservationId));
   if (existing) {
     return { issued: false, reason: "already_issued", invoice: existing };
   }
@@ -188,15 +208,19 @@ export async function issueForReservation(
       number: formatDocumentNumber(year, await nextSequence(year)),
       year,
       reservationId: params.reservationId,
+      orderId: params.orderId ?? null,
       userId: params.userId,
       suppliedAt: paidAt,
       totalCents: amounts.totalCents,
       baseCents: amounts.baseCents,
       vatCents: amounts.vatCents,
       vatRatePercent: amounts.vatRatePercent,
-      description: `Jednorázový vstup do NAVI Private Gym, ${formatDateTime(
-        params.startsAt,
-      )}`,
+      description:
+        params.description ??
+        `Jednorázový vstup do NAVI Private Gym, ${formatDateTime(
+          params.startsAt,
+        )}`,
+      items: params.items ?? null,
       customerName: params.customerName,
       customerEmail: params.customerEmail,
       supplier,
@@ -207,6 +231,56 @@ export async function issueForReservation(
   return { issued: true, invoice: row };
 }
 
+/**
+ * The document for a confirmed reservation: its own, or, for a slot of a
+ * multi-slot order, the one document of the whole order with a line per
+ * slot. The order's document is filed under its first slot, so the older
+ * one-document-per-reservation rule still holds.
+ */
+export async function issueDocumentFor(
+  reservation: Reservation,
+  options: { force?: boolean } = {},
+): Promise<IssueOutcome> {
+  const issue = issueAndSend;
+  const order = reservation.orderId
+    ? await getOrder(reservation.orderId)
+    : null;
+  if (!order) {
+    return issue({
+      reservationId: reservation.id,
+      userId: reservation.userId ?? null,
+      customerName: reservation.contactName,
+      customerEmail: reservation.contactEmail,
+      totalCents: reservation.priceCents,
+      startsAt: reservation.startsAt,
+      force: options.force,
+    });
+  }
+  const slots = await listOrderReservations(order.id);
+  const first = slots[0] ?? reservation;
+  return issue({
+    reservationId: first.id,
+    orderId: order.id,
+    userId: order.userId ?? null,
+    customerName: order.contactName,
+    customerEmail: order.contactEmail,
+    totalCents: order.totalCents,
+    startsAt: first.startsAt,
+    force: options.force,
+    description:
+      slots.length === 1
+        ? undefined
+        : `Vstupy do NAVI Private Gym (${slots.length}×)`,
+    items:
+      slots.length === 1
+        ? undefined
+        : slots.map((slot) => ({
+            description: `Vstup ${formatDateTime(slot.startsAt)}${slot.loyaltyReward ? " (věrnostní vstup zdarma)" : ""}`,
+            totalCents: slot.priceCents ?? 0,
+          })),
+  });
+}
+
 // ── Rendering ───────────────────────────────────────────────────────────────
 
 function toDocument(row: Invoice): InvoiceDocument {
@@ -215,6 +289,7 @@ function toDocument(row: Invoice): InvoiceDocument {
     issuedAt: row.issuedAt,
     suppliedAt: row.suppliedAt,
     description: row.description,
+    items: row.items ?? [],
     totalCents: row.totalCents,
     baseCents: row.baseCents,
     vatCents: row.vatCents,

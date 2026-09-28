@@ -11,6 +11,12 @@ import {
 import { profiles } from "./members";
 import { bookingOrder, reservation } from "./reservations";
 
+/** One line of a payment document: a slot and what was paid for it. */
+export interface InvoiceItem {
+  description: string;
+  totalCents: number;
+}
+
 /**
  * Gapless per-year counter behind the document number. A single row per year,
  * incremented with `INSERT … ON CONFLICT DO UPDATE … RETURNING`, so two
@@ -71,6 +77,11 @@ export const invoice = pgTable(
 
     /** What was sold, in the customer's language. */
     description: text("description").notNull(),
+    /**
+     * One line per slot of a multi-slot order, frozen at issue time. Null on
+     * single-slot documents, which have only the description above.
+     */
+    items: jsonb("items").$type<InvoiceItem[]>(),
 
     customerName: text("customer_name"),
     customerEmail: text("customer_email"),

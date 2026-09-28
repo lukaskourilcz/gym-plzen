@@ -1,7 +1,12 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { messageDelivery } from "@/lib/db/schema";
-import type { MessageDelivery, Reservation, SystemAlert } from "@/lib/db/types";
+import type {
+  BookingOrder,
+  MessageDelivery,
+  Reservation,
+  SystemAlert,
+} from "@/lib/db/types";
 import {
   DEFAULT_OPERATOR_NOTIFICATIONS,
   OPERATOR_NOTIFICATIONS_SETTING_KEY,
@@ -237,6 +242,34 @@ export async function notifyReservationConfirmed(
       ["Délka", durationText(reservation.startsAt, reservation.endsAt)],
       ...customerDetails(reservation),
       ["Cena", priceText(reservation)],
+    ],
+  });
+}
+
+/** A multi-slot order became real: one notice for all of its slots. */
+export async function notifyOrderConfirmed(params: {
+  order: BookingOrder;
+  slots: Reservation[];
+}): Promise<void> {
+  const { order, slots } = params;
+  const first = slots[0];
+  if (!first) return;
+  await notify({
+    event: "reservationConfirmed",
+    scope: `order:${order.id}`,
+    reservationId: first.id,
+    path: reservationPath(first),
+    summary: `${order.contactName?.trim() || "Zákazník"} má potvrzenou objednávku ${slots.length} termínů za ${order.totalCents === 0 ? "0 Kč" : formatMoney(order.totalCents, order.currency)}.`,
+    details: [
+      ...slots.map(
+        (slot, index) =>
+          [
+            `Termín ${index + 1}`,
+            `${formatDateTime(slot.startsAt)}, ${priceText(slot)}`,
+          ] as const,
+      ),
+      ...customerDetails(first),
+      ["Celkem", formatMoney(order.totalCents, order.currency)],
     ],
   });
 }

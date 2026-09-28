@@ -33,6 +33,8 @@ export interface InvoiceDocument {
   issuedAt: Date;
   suppliedAt: Date;
   description: string;
+  /** Lines of a multi-slot order; empty for a single item. */
+  items: { description: string; totalCents: number }[];
   totalCents: number;
   baseCents: number;
   vatCents: number;
@@ -205,34 +207,62 @@ export async function renderInvoicePdf(doc: InvoiceDocument): Promise<Buffer> {
 
   pdf.moveTo(left, y).lineTo(right, y).strokeColor(RULE).lineWidth(1).stroke();
 
+  /*
+   * A multi-slot order lists every slot with what was paid for it. The
+   * lines carry the amounts actually charged, VAT included, because a split
+   * of the base per line would not add up to the base of the total below.
+   */
+  const lines =
+    doc.items.length > 0
+      ? doc.items.map((item) => ({
+          description: item.description,
+          amount: czk(item.totalCents, doc.hasVat),
+        }))
+      : [
+          {
+            description: doc.description,
+            amount: czk(
+              doc.hasVat ? doc.baseCents : doc.totalCents,
+              doc.hasVat,
+            ),
+          },
+        ];
   pdf
     .font(bold)
     .fontSize(8)
     .fillColor(MUTED)
     .text("POLOŽKA", left, y + 8, { width: amountColumn - left - 8 })
-    .text("ČÁSTKA", amountColumn, y + 8, { width: 110, align: "right" });
-
-  const itemTop = pdf.y + 8;
-  pdf
-    .font(regular)
-    .fontSize(11)
-    .fillColor(INK)
-    .text(doc.description, left, itemTop, {
-      width: amountColumn - left - 8,
-    });
-  pdf
-    .font(regular)
-    .fontSize(11)
-    .fillColor(INK)
     .text(
-      czk(doc.hasVat ? doc.baseCents : doc.totalCents, doc.hasVat),
+      doc.items.length > 0 && doc.hasVat ? "ČÁSTKA S DPH" : "ČÁSTKA",
       amountColumn,
-      itemTop,
-      {
-        width: 110,
-        align: "right",
-      },
+      y + 8,
+      { width: 110, align: "right" },
     );
+
+  if (doc.items.length > 0)
+    pdf
+      .font(bold)
+      .fontSize(11)
+      .fillColor(INK)
+      .text(doc.description, left, pdf.y + 8, {
+        width: amountColumn - left - 8,
+      });
+  for (const line of lines) {
+    const itemTop = pdf.y + (doc.items.length > 0 ? 4 : 8);
+    pdf
+      .font(regular)
+      .fontSize(11)
+      .fillColor(INK)
+      .text(line.description, left, itemTop, {
+        width: amountColumn - left - 8,
+      });
+    const bottom = pdf.y;
+    pdf.text(line.amount, amountColumn, itemTop, {
+      width: 110,
+      align: "right",
+    });
+    pdf.y = Math.max(bottom, pdf.y);
+  }
 
   y = pdf.y + 14;
   pdf.moveTo(left, y).lineTo(right, y).strokeColor(RULE).stroke();

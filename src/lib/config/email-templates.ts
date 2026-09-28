@@ -10,6 +10,7 @@ export const EMAIL_TEMPLATE_IDS = [
   "signup_confirmation",
   "password_reset",
   "reservation_confirmation",
+  "order_confirmation",
   "reservation_rescheduled",
   "access_code",
   "reservation_cancellation",
@@ -71,6 +72,18 @@ export const EMAIL_TEMPLATE_DEFINITIONS: readonly EmailTemplateDefinition[] = [
     fallback: {
       subject: "Potvrzení rezervace | NAVI Private Gym",
       body: "Ahoj {name},\n\nvaše rezervace je potvrzená.\n\nTermín: {time}\nDélka: {duration}\nCena: {price}\n\n{loyalty}\n\nPřed začátkem rezervace vám pošleme osobní vstupní kód.\n\nNAVI Private Gym",
+    },
+  },
+  {
+    id: "order_confirmation",
+    label: "Potvrzení objednávky více termínů",
+    description:
+      "Odešle se po zaplacení objednávky se dvěma a více termíny, s pozvánkou do kalendáře pro každý termín. Objednávka jednoho termínu používá Potvrzení rezervace.",
+    variables: ["{name}", "{slots}", "{count}", "{total}", "{loyalty}"],
+    delivery: "application",
+    fallback: {
+      subject: "Potvrzení objednávky | NAVI Private Gym",
+      body: "Ahoj {name},\n\nvaše objednávka je potvrzená. Rezervovali jste {count}:\n\n{slots}\n\nCelkem: {total}\n\n{loyalty}\n\nPřed začátkem každého termínu vám pošleme osobní vstupní kód, platný jen pro daný termín.\n\nNAVI Private Gym",
     },
   },
   {
