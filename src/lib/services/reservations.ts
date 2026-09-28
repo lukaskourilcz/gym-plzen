@@ -456,6 +456,8 @@ export interface ReservationHistoryRow extends Reservation {
   invoiceId: string | null;
   invoiceNumber: string | null;
   rescheduled: boolean;
+  /** Slots in this reservation's order; 0 for a reservation bought alone. */
+  orderSlots: number;
 }
 
 /**
@@ -474,14 +476,25 @@ export async function listHistoryForUser(
       invoiceNumber: invoice.number,
       paymentStatus: sql<
         string | null
-      >`(select p.status::text from public.payment p where p.reservation_id = ${reservation.id} order by p.created_at desc, p.id desc limit 1)`,
+      >`(select p.status::text from public.payment p where p.reservation_id = ${reservation.id} or (${reservation.orderId} is not null and p.order_id = ${reservation.orderId}) order by p.created_at desc, p.id desc limit 1)`,
       voucherCode: sql<
         string | null
-      >`(select v.code from public.voucher_redemption vr join public.voucher v on v.id = vr.voucher_id where vr.reservation_id = ${reservation.id} and vr.status = 'redeemed' limit 1)`,
+      >`(select v.code from public.voucher_redemption vr join public.voucher v on v.id = vr.voucher_id where (vr.reservation_id = ${reservation.id} or (${reservation.orderId} is not null and vr.order_id = ${reservation.orderId})) and vr.status = 'redeemed' limit 1)`,
       rescheduled: sql<boolean>`exists (select 1 from public.reservation_reschedule rr where rr.reservation_id = ${reservation.id})`,
+      orderSlots: sql<number>`(select count(*) from public.reservation o where ${reservation.orderId} is not null and o.order_id = ${reservation.orderId})::int`,
     })
     .from(reservation)
-    .leftJoin(invoice, eq(invoice.reservationId, reservation.id))
+    // A slot of an order shares the order's one document.
+    .leftJoin(
+      invoice,
+      or(
+        eq(invoice.reservationId, reservation.id),
+        and(
+          isNotNull(reservation.orderId),
+          eq(invoice.orderId, reservation.orderId),
+        ),
+      ),
+    )
     .where(eq(reservation.userId, userId))
     .orderBy(desc(reservation.startsAt), desc(reservation.id))
     .limit(limit);
@@ -492,7 +505,25 @@ export async function listHistoryForUser(
     invoiceId: row.invoiceId,
     invoiceNumber: row.invoiceNumber,
     rescheduled: Boolean(row.rescheduled),
+    orderSlots: Number(row.orderSlots ?? 0),
   }));
+}
+
+/** How many slots each of the given orders holds, for list annotations. */
+export async function countOrderSlots(
+  orderIds: readonly string[],
+): Promise<Map<string, number>> {
+  if (orderIds.length === 0) return new Map();
+  const rows = await db
+    .select({ orderId: reservation.orderId, value: sql<number>`count(*)::int` })
+    .from(reservation)
+    .where(inArray(reservation.orderId, [...orderIds]))
+    .groupBy(reservation.orderId);
+  return new Map(
+    rows.flatMap((row) =>
+      row.orderId ? [[row.orderId, Number(row.value)] as const] : [],
+    ),
+  );
 }
 
 /** Most recent reservations (admin list view). */

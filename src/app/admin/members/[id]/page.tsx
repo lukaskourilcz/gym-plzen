@@ -64,6 +64,7 @@ async function loadDemoMember(id: string) {
       invoiceId: null,
       invoiceNumber: null,
       rescheduled: false,
+      orderSlots: 0,
     })),
     deliveries: data.messages.filter((row) => row.userId === id),
     entries: [],
@@ -249,6 +250,11 @@ export default async function MemberProfilePage({
                   {row.rescheduled ? (
                     <Badge variant="outline" className="ml-2">
                       Změněný termín
+                    </Badge>
+                  ) : null}
+                  {row.orderSlots > 1 ? (
+                    <Badge variant="outline" className="ml-2">
+                      Objednávka {row.orderSlots} termínů
                     </Badge>
                   ) : null}
                 </TableCell>
