@@ -14,6 +14,13 @@ export function safeInternalPath(
   try {
     const url = new URL(value, "https://namaste.invalid");
     if (url.origin !== "https://namaste.invalid") return fallback;
+    // Dot segments are resolved while parsing, so "/.//evil.com",
+    // "/%2e//evil.com" and "/a/..//evil.com" all normalise to the pathname
+    // "//evil.com", which a browser reads as a protocol-relative URL to
+    // another host. Check the normalised result, not only the raw input.
+    if (url.pathname.startsWith("//") || url.pathname.includes("\\")) {
+      return fallback;
+    }
     return `${url.pathname}${url.search}${url.hash}`;
   } catch {
     return fallback;
