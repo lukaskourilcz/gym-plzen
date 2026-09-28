@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { getHeroDay } from "@/lib/services/hero-availability";
 
 export const dynamic = "force-dynamic";
+// The homepage gives up after 15 s; never hold a function for 300 s.
+export const maxDuration = 20;
 export async function GET(request: Request) {
   const date = new URL(request.url).searchParams.get("date") ?? "";
   const now = new Date();

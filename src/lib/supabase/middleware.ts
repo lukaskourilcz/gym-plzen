@@ -30,9 +30,37 @@ export async function updateSession(
     },
   });
 
-  // Touch the user to trigger a token refresh when needed.
-  await supabase.auth.getUser();
+  // Touch the user to trigger a token refresh when needed. The Auth round
+  // trip is bounded: on 28. 9. 2026 production requests stalled here until
+  // the platform killed them after 300 s. A late refresh only means the
+  // Server Component refreshes the session itself; a hung page means the
+  // visitor cannot book at all.
+  await withTimeout(supabase.auth.getUser(), AUTH_REFRESH_TIMEOUT_MS);
   return protectSensitiveCache(request, response);
+}
+
+export const AUTH_REFRESH_TIMEOUT_MS = 4_000;
+
+/** Resolve with the promise, or give up quietly after `ms`. Never rejects. */
+export async function withTimeout(
+  work: Promise<unknown>,
+  ms: number,
+): Promise<"done" | "timeout"> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<"timeout">((resolve) => {
+    timer = setTimeout(() => resolve("timeout"), ms);
+  });
+  try {
+    return await Promise.race([
+      work.then(
+        () => "done" as const,
+        () => "done" as const,
+      ),
+      timeout,
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function protectSensitiveCache(request: NextRequest, response: NextResponse) {
