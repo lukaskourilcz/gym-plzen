@@ -8,6 +8,8 @@ import {
   resend,
 } from "./setup";
 import assert from "node:assert/strict";
+import postgres from "postgres";
+import { NextRequest } from "next/server";
 import { after, before, beforeEach, describe, test } from "node:test";
 import { env } from "../../src/lib/env";
 import { fulfillReservation } from "../../src/lib/services/fulfillment";
@@ -23,6 +25,7 @@ import {
 } from "../../src/lib/services/access-codes";
 import { checkAvailability } from "../../src/lib/services/availability";
 import { decryptPin } from "../../src/lib/helpers/pin-vault";
+import { GET as watchdog } from "../../src/app/api/cron/watchdog/route";
 
 const nativeFetch = globalThis.fetch;
 let online = true,
@@ -31,6 +34,7 @@ let online = true,
   mode: "ok" | "lost" | "rejected" | "pending" = "ok",
   deleteWorks = true;
 let auths: Array<Record<string, unknown>> = [];
+let emails: Array<{ at: number; body: string }> = [];
 const key = "ab".repeat(32);
 const now = new Date("2030-10-01T10:00:00Z");
 async function booking(minutes = 30) {
@@ -85,8 +89,11 @@ describe(
       env.NUKI_SMARTLOCK_ID = "123";
       env.ACCESS_CODE_ENCRYPTION_KEY = key;
       globalThis.fetch = async (url, options) => {
-        if (!String(url).startsWith("https://api.nuki.io/"))
+        if (!String(url).startsWith("https://api.nuki.io/")) {
+          if (String(url).startsWith(process.env.RESEND_BASE_URL!))
+            emails.push({ at: performance.now(), body: String(options?.body) });
           return nativeFetch(url, options);
+        }
         nukiCalls++;
         if (options?.method === "PUT") {
           putCount++;
@@ -542,6 +549,56 @@ describe(
         (await steps(upcoming)).every(([, status]) => status === "pending"),
       );
       assert.equal(await closeFinishedPipelines(), 0);
+    });
+    test("watchdog delivers due PINs while revocation is stuck on a busy reservation", async () => {
+      const cancelled = await booking(120);
+      await fulfillReservation(cancelled);
+      online = false;
+      await cancelReservation({ id: cancelled });
+      online = true;
+      await rows("update access_code set retry_at=null");
+      const due = await booking(30);
+      // Another process holds the cancelled reservation's lock past the timeout.
+      const blocker = postgres(process.env.DATABASE_URL!, { max: 1 });
+      await blocker`select pg_advisory_lock(hashtextextended(${`reservation:${cancelled}`}, 0))`;
+      let response: Response;
+      emails = [];
+      const started = performance.now();
+      try {
+        env.CRON_SECRET = "test-cron";
+        response = await watchdog(
+          new NextRequest("https://navigym.test/api/cron/watchdog", {
+            headers: { authorization: "Bearer test-cron" },
+          }),
+        );
+      } finally {
+        await blocker.end();
+      }
+      const finished = performance.now();
+      assert.equal(response.status, 200);
+      assert.equal((await response.json()).processed, 1);
+      const ready = await code(due);
+      assert.equal(ready.provision_state, "ready");
+      const pin = decryptPin(
+        ready.encrypted_pin!,
+        `access-code:${ready.id}:${due}:123`,
+        key,
+      );
+      // The PIN goes out before revocation waits out the busy lock (5 s).
+      const pinEmail = emails.find((e) => e.body.includes(pin));
+      assert.ok(pinEmail);
+      assert.ok(pinEmail.at - started < 4000);
+      assert.ok(finished - started > 5000);
+      assert.equal(
+        (
+          await rows(
+            "select * from message_delivery where kind='access_code' and status='sent' and reservation_id=$1",
+            [due],
+          )
+        ).length,
+        1,
+      );
+      assert.equal((await code(cancelled)).status, "scheduled");
     });
     test("offline cancellation holds slot through database constraint until confirmed deletion", async () => {
       const id = await booking();
