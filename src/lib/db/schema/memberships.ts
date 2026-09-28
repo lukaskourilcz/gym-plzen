@@ -11,7 +11,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { profiles } from "./members";
-import { reservation } from "./reservations";
+import { bookingOrder, reservation } from "./reservations";
 import { membershipStatus, paymentStatus, paymentType } from "./enums";
 
 /**
@@ -104,6 +104,9 @@ export const payment = pgTable(
     reservationId: uuid("reservation_id").references(() => reservation.id, {
       onDelete: "set null",
     }),
+    orderId: uuid("order_id").references(() => bookingOrder.id, {
+      onDelete: "set null",
+    }),
     membershipId: uuid("membership_id").references(() => membership.id, {
       onDelete: "set null",
     }),
@@ -129,12 +132,18 @@ export const payment = pgTable(
       .where(
         sql`${t.provider} = 'comgate' and ${t.status} in ('pending', 'processing', 'succeeded')`,
       ),
+    uniqueIndex("payment_active_order_uidx")
+      .on(t.orderId)
+      .where(
+        sql`${t.provider} = 'comgate' and ${t.status} in ('pending', 'processing', 'succeeded')`,
+      ),
     index("payment_provider_check_idx").on(
       t.provider,
       t.status,
       t.lastCheckedAt,
     ),
     index("payment_user_idx").on(t.userId),
+    index("payment_order_idx").on(t.orderId),
     index("payment_reservation_idx").on(t.reservationId),
     index("payment_reservation_created_id_idx").on(
       t.reservationId,

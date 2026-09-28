@@ -10,6 +10,8 @@ import type * as s from "./schema";
 export type Profile = InferSelectModel<typeof s.profiles>;
 export type NewProfile = InferInsertModel<typeof s.profiles>;
 
+export type BookingOrder = InferSelectModel<typeof s.bookingOrder>;
+export type NewBookingOrder = InferInsertModel<typeof s.bookingOrder>;
 export type Reservation = InferSelectModel<typeof s.reservation>;
 export type NewReservation = InferInsertModel<typeof s.reservation>;
 export type BlockedSlot = InferSelectModel<typeof s.blockedSlot>;

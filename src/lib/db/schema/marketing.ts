@@ -10,7 +10,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { profiles } from "./members";
-import { reservation } from "./reservations";
+import { bookingOrder, reservation } from "./reservations";
 import {
   newsletterSubscriptionStatus,
   voucherKind,
@@ -51,7 +51,10 @@ export const voucher = pgTable(
   ],
 );
 
-/** Audit record connecting a voucher claim to exactly one reservation. */
+/**
+ * Audit record connecting a voucher claim to exactly one reservation, and for
+ * a multi-slot checkout also to its order (one claim per order).
+ */
 export const voucherRedemption = pgTable(
   "voucher_redemption",
   {
@@ -62,6 +65,9 @@ export const voucherRedemption = pgTable(
     reservationId: uuid("reservation_id")
       .notNull()
       .references(() => reservation.id, { onDelete: "cascade" }),
+    orderId: uuid("order_id").references(() => bookingOrder.id, {
+      onDelete: "cascade",
+    }),
     status: voucherRedemptionStatus("status").notNull().default("reserved"),
     originalPriceCents: integer("original_price_cents").notNull(),
     discountCents: integer("discount_cents").notNull(),
@@ -80,6 +86,7 @@ export const voucherRedemption = pgTable(
   },
   (t) => [
     uniqueIndex("voucher_redemption_reservation_uidx").on(t.reservationId),
+    uniqueIndex("voucher_redemption_order_uidx").on(t.orderId),
     index("voucher_redemption_voucher_status_idx").on(t.voucherId, t.status),
     index("voucher_redemption_reserved_until_idx").on(t.reservedUntil),
   ],

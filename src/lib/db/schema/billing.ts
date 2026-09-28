@@ -9,7 +9,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { profiles } from "./members";
-import { reservation } from "./reservations";
+import { bookingOrder, reservation } from "./reservations";
 
 /**
  * Gapless per-year counter behind the document number. A single row per year,
@@ -48,6 +48,11 @@ export const invoice = pgTable(
     reservationId: uuid("reservation_id")
       .notNull()
       .references(() => reservation.id, { onDelete: "cascade" }),
+    // Set for a multi-slot checkout: one document per order. The reservation
+    // above is then the order's first slot.
+    orderId: uuid("order_id").references(() => bookingOrder.id, {
+      onDelete: "restrict",
+    }),
     userId: uuid("user_id").references(() => profiles.id, {
       onDelete: "set null",
     }),
@@ -86,6 +91,7 @@ export const invoice = pgTable(
     // One document per reservation: re-running fulfillment must not issue a
     // second number for a payment that already has one.
     uniqueIndex("invoice_reservation_uidx").on(t.reservationId),
+    uniqueIndex("invoice_order_uidx").on(t.orderId),
     index("invoice_issued_at_idx").on(t.issuedAt),
     index("invoice_user_idx").on(t.userId),
   ],

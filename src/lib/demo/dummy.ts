@@ -212,6 +212,7 @@ export function buildDemoReservations(
     rows.push({
       id: `demo-r-${n}`,
       userId: userId(u),
+      orderId: null,
       startsAt,
       endsAt,
       status,

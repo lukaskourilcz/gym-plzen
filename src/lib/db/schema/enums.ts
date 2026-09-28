@@ -14,6 +14,13 @@ export const reservationStatus = pgEnum("reservation_status", [
   "no_show", // slot passed, no unlock recorded
 ]);
 
+/** A checkout of one or more reservations paid together. */
+export const bookingOrderStatus = pgEnum("booking_order_status", [
+  "pending", // created, awaiting payment
+  "confirmed", // paid, or free; every reservation of the order is confirmed
+  "cancelled", // expired or abandoned before confirmation
+]);
+
 /** Why a slot on the calendar is unavailable when it is not a booking. */
 export const blockReason = pgEnum("block_reason", [
   "maintenance",
