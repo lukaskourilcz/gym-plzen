@@ -11,7 +11,13 @@ import {
   or,
 } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { payment, reservation, systemAlert } from "@/lib/db/schema";
+import {
+  bookingOrder,
+  payment,
+  reservation,
+  systemAlert,
+} from "@/lib/db/schema";
+import type { BookingOrder, Payment } from "@/lib/db/types";
 import { env, publicEnv } from "@/lib/env";
 import {
   createComgatePayment,
@@ -33,6 +39,238 @@ import { raiseAlert } from "./alerts";
 import { recordIn as recordActivityIn } from "./activity";
 import { formatDateTime, formatMoney } from "@/lib/helpers/format";
 import type { BookingOutcome } from "./booking";
+import {
+  cancelPendingOrderIn,
+  confirmOrderIn,
+  getOrder,
+  listOrderReservations,
+  releasePendingOrder,
+  withOrderLock,
+} from "./order-state";
+
+/** What starting or continuing an order's checkout hands back to the page. */
+export type OrderOutcome =
+  | { kind: "free" | "processing"; orderId: string; token?: string }
+  | {
+      kind: "checkout";
+      url: string;
+      orderId: string;
+      totalCents: number;
+      /** A guest's proof of ownership, for the hold cookie; absent on resumes. */
+      token?: string;
+    };
+
+const ACTIVE_ATTEMPT = ["pending", "processing", "succeeded"] as const;
+
+/** Czech gateway description: the customer sees it on the payment page. */
+export function orderPaymentDescription(slotCount: number): string {
+  return slotCount === 1
+    ? "Jednorázový vstup | NAVI Private Gym"
+    : `Vstupy (${slotCount}×) | NAVI Private Gym`;
+}
+
+function ownsOrder(
+  order: BookingOrder,
+  userId: string | null,
+  token: string | undefined,
+): boolean {
+  if (userId && order.userId === userId) return true;
+  return Boolean(
+    !order.userId &&
+    token &&
+    order.confirmationTokenHash &&
+    safeEqual(hashCode(token), order.confirmationTokenHash),
+  );
+}
+
+/**
+ * One Comgate payment for the whole order. As with a single reservation, the
+ * attempt is persisted before the gateway is called, and an unknown response
+ * keeps it active so a double click or a restart can never charge twice.
+ */
+export async function startOrderPayment(params: {
+  orderId: string;
+  userId: string | null;
+  token?: string;
+}): Promise<OrderOutcome> {
+  return withOrderLock(params.orderId, async () => {
+    const order = await getOrder(params.orderId);
+    if (!order || !ownsOrder(order, params.userId, params.token))
+      throw new ActionError("Objednávku se nepodařilo najít.");
+    const slots = await listOrderReservations(order.id);
+    if (
+      order.status !== "pending" ||
+      order.totalCents <= 0 ||
+      !order.contactEmail ||
+      slots.length === 0 ||
+      slots.some((slot) => slot.status !== "pending") ||
+      slots[0]!.startsAt <= new Date()
+    )
+      throw new ActionError("Tuto objednávku nelze uhradit.");
+    if (!(await getOperations()).paymentsEnabled || !isComgateConfigured())
+      throw new ActionError(
+        "Online platby se připravují. Rezervace je platná pouze po úhradě.",
+      );
+    const [existing] = await db
+      .select()
+      .from(payment)
+      .where(
+        and(
+          eq(payment.orderId, order.id),
+          eq(payment.provider, "comgate"),
+          inArray(payment.status, [...ACTIVE_ATTEMPT]),
+        ),
+      )
+      .limit(1);
+    if (existing) {
+      if (existing.gatewayUrl && existing.status !== "succeeded")
+        return {
+          kind: "checkout",
+          url: existing.gatewayUrl,
+          orderId: order.id,
+          totalCents: existing.amountCents,
+          token: params.token,
+        };
+      return { kind: "processing", orderId: order.id, token: params.token };
+    }
+    const token = params.token ?? randomBytes(32).toString("hex");
+    const [attempt] = await db
+      .insert(payment)
+      .values({
+        userId: order.userId,
+        orderId: order.id,
+        type: "one_off",
+        status: "processing",
+        amountCents: order.totalCents,
+        currency: order.currency,
+        provider: "comgate",
+        providerMerchantId: env.COMGATE_MERCHANT_ID,
+        providerEnvironment: env.COMGATE_TEST_MODE,
+        failureReason: "creation_pending",
+      })
+      .returning();
+    if (!attempt) throw new Error("Payment attempt missing");
+    const outcome = await createComgatePayment({
+      orderNumber: attempt.id,
+      amountMinor: order.totalCents,
+      payer: {
+        email: order.contactEmail,
+        ...splitFullName(order.contactName ?? ""),
+        ...(order.contactPhone ? { phone: order.contactPhone } : {}),
+      },
+      description: orderPaymentDescription(slots.length),
+      returnUrl: `${publicEnv.NEXT_PUBLIC_APP_URL}/rezervace/hotovo?order_id=${order.id}&token=${token}`,
+    });
+    if (!outcome.created) {
+      await db
+        .update(payment)
+        .set({
+          status: outcome.ambiguous ? "processing" : "failed",
+          failureReason: outcome.ambiguous ? "creation_unknown" : outcome.error,
+          lastCheckedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(payment.id, attempt.id));
+      if (outcome.ambiguous) {
+        await raiseAlert({
+          severity: "critical",
+          dedupeKey: `payment-unknown:${attempt.id}`,
+          title: "Výsledek založení platby není známý",
+          body: "Ověřte pokus v Comgate podle reference. Aplikace další platbu automaticky nezaloží.",
+          context: { paymentId: attempt.id, orderId: order.id },
+        });
+        return { kind: "processing", orderId: order.id, token };
+      }
+      await releasePendingOrder(order.id, "payment_creation_failed");
+      throw new ActionError(
+        "Platbu se nepodařilo zahájit. Termíny jsme uvolnili, zkuste rezervaci znovu.",
+      );
+    }
+    await db
+      .update(payment)
+      .set({
+        providerPaymentId: outcome.payment.id,
+        gatewayUrl: outcome.payment.gwUrl,
+        status: "pending",
+        failureReason: null,
+        lastCheckedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(payment.id, attempt.id));
+    return {
+      kind: "checkout",
+      url: outcome.payment.gwUrl!,
+      orderId: order.id,
+      totalCents: order.totalCents,
+      token,
+    };
+  });
+}
+
+export type OrderResumeOutcome =
+  | { state: "checkout"; outcome: OrderOutcome }
+  | { state: "processing" }
+  | { state: "none" };
+
+/**
+ * Continue the checkout of an order the booking flow has matched to the
+ * visitor by contact e-mail, without a token. Creates nothing, so it can never
+ * charge twice; see `resumeReservationCheckout` for the single-slot original.
+ */
+export async function resumeOrderCheckout(
+  orderId: string,
+): Promise<OrderResumeOutcome> {
+  return withOrderLock(orderId, async () => {
+    const order = await getOrder(orderId);
+    if (!order || order.status !== "pending") return { state: "none" };
+    const [attempt] = await db
+      .select()
+      .from(payment)
+      .where(
+        and(
+          eq(payment.orderId, order.id),
+          eq(payment.provider, "comgate"),
+          inArray(payment.status, ["pending", "processing"]),
+        ),
+      )
+      .limit(1);
+    if (!attempt) return { state: "none" };
+    if (attempt.status === "pending" && attempt.gatewayUrl)
+      return {
+        state: "checkout",
+        outcome: {
+          kind: "checkout",
+          url: attempt.gatewayUrl,
+          orderId: order.id,
+          totalCents: attempt.amountCents,
+        },
+      };
+    return { state: "processing" };
+  });
+}
+
+/** Ask the gateway about an order's open payment; failures wait for the watchdog. */
+export async function refreshOrderPayment(orderId: string) {
+  const [row] = await db
+    .select()
+    .from(payment)
+    .where(
+      and(
+        eq(payment.orderId, orderId),
+        eq(payment.provider, "comgate"),
+        inArray(payment.status, ["pending", "processing"]),
+      ),
+    )
+    .orderBy(desc(payment.createdAt))
+    .limit(1);
+  if (row?.providerPaymentId) {
+    try {
+      await synchronizeComgatePayment(row.providerPaymentId);
+    } catch {
+      /* Status stays pending; watchdog retries. */
+    }
+  }
+}
 
 /** Persist the attempt before any external side effect. An unknown response
  * keeps the attempt active so double clicks/restarts cannot charge twice. */
@@ -231,14 +469,17 @@ export async function synchronizeComgatePayment(
     )
     .limit(1);
   // Never let a public callback trigger arbitrary provider lookups.
-  if (!known?.reservationId) return false;
+  if (!known?.reservationId && !known?.orderId) return false;
   if (
     !isComgateConfigured() ||
     known.providerMerchantId !== env.COMGATE_MERCHANT_ID ||
     known.providerEnvironment !== env.COMGATE_TEST_MODE
   )
     throw new Error("Payment environment mismatch");
-  return withReservationLock(known.reservationId, async () => {
+  if (known.orderId)
+    return synchronizeOrderPayment(known, known.orderId, providerId);
+  const reservationId = known.reservationId!;
+  return withReservationLock(reservationId, async () => {
     const outcome = await getComgatePayment(providerId);
     if (!outcome.found) throw new Error("Payment status unavailable");
     if (!paymentMatches(known, outcome.payment))
@@ -344,6 +585,129 @@ export async function synchronizeComgatePayment(
   });
 }
 
+/**
+ * The order counterpart of the reservation branch above: one payment settles
+ * every slot of the order in one transaction, or none of them. There is no
+ * partial confirmation; a payment arriving for an order that can no longer be
+ * confirmed as a whole raises the late-payment alert instead.
+ */
+async function synchronizeOrderPayment(
+  known: Payment,
+  orderId: string,
+  providerId: string,
+): Promise<boolean> {
+  return withOrderLock(orderId, async () => {
+    const outcome = await getComgatePayment(providerId);
+    if (!outcome.found) throw new Error("Payment status unavailable");
+    if (!paymentMatches(known, outcome.payment))
+      throw new Error("Payment identity or amount mismatch");
+    const snapshot = outcome.payment;
+    await processWebhookEvent(
+      {
+        provider: "comgate",
+        eventId: `${snapshot.id}:${snapshot.state}`,
+        payload: { paymentId: known.id, state: snapshot.state },
+      },
+      async (tx) => {
+        const [current] = await tx
+          .select()
+          .from(payment)
+          .where(eq(payment.id, known.id))
+          .for("update");
+        const [order] = await tx
+          .select()
+          .from(bookingOrder)
+          .where(eq(bookingOrder.id, orderId))
+          .for("update");
+        if (!current || !order || !paymentMatches(current, snapshot))
+          throw new Error("Payment binding changed");
+        const slots = await tx
+          .select()
+          .from(reservation)
+          .where(eq(reservation.orderId, orderId))
+          .orderBy(asc(reservation.startsAt))
+          .for("update");
+        const status = nextPaymentStatus(current.status, snapshot.state);
+        await tx
+          .update(payment)
+          .set({
+            status,
+            paidAt:
+              status === "succeeded"
+                ? (current.paidAt ?? new Date())
+                : current.paidAt,
+            failureReason: status === "failed" ? snapshot.state : null,
+            updatedAt: new Date(),
+            lastCheckedAt: new Date(),
+          })
+          .where(eq(payment.id, current.id));
+        const when = slots.map((slot) => formatDateTime(slot.startsAt));
+        if (status === "succeeded") {
+          const confirmable =
+            order.status === "pending" &&
+            slots.length > 0 &&
+            slots.every(
+              (slot) => slot.status === "pending" && slot.endsAt > new Date(),
+            );
+          if (confirmable) {
+            const confirmed = await confirmOrderIn(tx, orderId);
+            for (const slot of confirmed)
+              await recordActivityIn(tx, {
+                action: "reservation.confirmed",
+                actorType: "system",
+                actorLabel: "Comgate",
+                memberId: slot.userId,
+                reservationId: slot.id,
+                summary: `Platba ${formatMoney(current.amountCents, current.currency)} za objednávku ${slots.length > 1 ? `${slots.length} termínů ` : ""}přijata (Comgate ${snapshot.id}), rezervace na ${formatDateTime(slot.startsAt)} potvrzena.`,
+                context: {
+                  orderId,
+                  paymentId: current.id,
+                  providerPaymentId: snapshot.id,
+                },
+              });
+          } else if (order.status !== "confirmed") {
+            await tx.insert(systemAlert).values({
+              severity: "critical",
+              dedupeKey: `late-payment:${current.id}`,
+              title: "Platba přišla k neplatné objednávce",
+              body: `Objednávka termínů ${when.join(", ")} už není celá volná. Ověřte platbu a domluvte vrácení nebo náhradní termíny. Termíny se automaticky neobnovily.`,
+              context: { paymentId: current.id, orderId },
+            });
+          }
+        } else if (status === "failed" && order.status === "pending") {
+          const released = await cancelPendingOrderIn(
+            tx,
+            orderId,
+            "payment_cancelled",
+          );
+          for (const slot of released)
+            await recordActivityIn(tx, {
+              action: "reservation.cancelled",
+              actorType: "system",
+              actorLabel: "Comgate",
+              memberId: slot.userId,
+              reservationId: slot.id,
+              summary: `Platba za objednávku neproběhla (Comgate ${snapshot.id}: ${snapshot.state}), rezervace na ${formatDateTime(slot.startsAt)} zrušena.`,
+              context: {
+                orderId,
+                paymentId: current.id,
+                providerPaymentId: snapshot.id,
+              },
+            });
+        }
+      },
+    );
+    await db
+      .update(payment)
+      .set({ lastCheckedAt: new Date() })
+      .where(eq(payment.id, known.id));
+    if (snapshot.state === "PAID")
+      for (const slot of await listOrderReservations(orderId))
+        if (slot.status === "confirmed") await fulfillReservation(slot.id);
+    return true;
+  });
+}
+
 export async function refreshReservationPayment(reservationId: string) {
   const [row] = await db
     .select()
@@ -393,7 +757,11 @@ export async function reconcilePendingPayments(limit = 10) {
       dedupeKey: `payment-unknown:${attempt.id}`,
       title: "Výsledek založení platby není známý",
       body: "Ověřte pokus v Comgate podle reference. Bez ověření nezakládejte další platbu ani neuvolňujte termín.",
-      context: { paymentId: attempt.id, reservationId: attempt.reservationId },
+      context: {
+        paymentId: attempt.id,
+        reservationId: attempt.reservationId,
+        orderId: attempt.orderId,
+      },
     });
     await db
       .update(payment)

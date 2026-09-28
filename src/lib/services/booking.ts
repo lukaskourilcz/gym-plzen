@@ -215,8 +215,8 @@ export async function findOwnReservation(params: {
   startsAt: Date;
   hold?: BookingHold | null;
 }): Promise<Reservation | null> {
-  if (params.hold) {
-    const held = await getReservation(params.hold.reservationId);
+  if (params.hold?.kind === "reservation") {
+    const held = await getReservation(params.hold.id);
     if (
       held &&
       held.confirmationTokenHash &&
@@ -290,7 +290,7 @@ async function continueOwnBooking(params: {
   if (!params.voucherCode?.trim()) {
     const proven =
       (params.userId !== null && own.userId === params.userId) ||
-      params.hold?.reservationId === own.id;
+      (params.hold?.kind === "reservation" && params.hold.id === own.id);
     if (proven)
       // Proof of ownership allows the full path, a fresh gateway session
       // included, should the earlier one never have been created.

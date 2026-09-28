@@ -315,7 +315,11 @@ describe(
         userId: null,
         startsAt,
         details: guestDetails({ email: "typo@example.test" }),
-        hold: { reservationId: outcome.reservationId, token: outcome.token! },
+        hold: {
+          kind: "reservation",
+          id: outcome.reservationId,
+          token: outcome.token!,
+        },
       });
       assert.equal(withCookie.kind, "checkout");
       if (withCookie.kind === "checkout") {
@@ -330,7 +334,11 @@ describe(
           userId: null,
           startsAt,
           details: guestDetails({ email: "typo@example.test" }),
-          hold: { reservationId: outcome.reservationId, token: "f".repeat(64) },
+          hold: {
+            kind: "reservation",
+            id: outcome.reservationId,
+            token: "f".repeat(64),
+          },
         }),
         { message: "Tento termín je již rezervovaný." },
       );
@@ -456,7 +464,11 @@ describe(
         startsAt,
         details: guestDetails(),
         voucherCode: VOUCHER,
-        hold: { reservationId: first.reservationId, token: first.token! },
+        hold: {
+          kind: "reservation",
+          id: first.reservationId,
+          token: first.token!,
+        },
       });
       assert.equal(second.kind, "free");
       assert.notEqual(second.reservationId, first.reservationId);
@@ -599,7 +611,7 @@ describe(
             userId: null,
             email: null,
             startsAt,
-            hold: { reservationId: id, token },
+            hold: { kind: "reservation", id, token },
           })
         )?.id,
         id,
@@ -610,7 +622,7 @@ describe(
           userId: null,
           email: null,
           startsAt: slot(19),
-          hold: { reservationId: id, token },
+          hold: { kind: "reservation", id, token },
         }),
         null,
       );

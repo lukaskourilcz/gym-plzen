@@ -1,8 +1,9 @@
 /**
  * The checkout-hold cookie.
  *
- * When a guest starts a paid booking, the browser keeps the reservation id and
- * the confirmation token for the length of the payment session. A return from
+ * When a guest starts a paid booking, the browser keeps the order id (or, for
+ * a hold made before multi-slot orders, the reservation id) and the
+ * confirmation token for the length of the payment session. A return from
  * the gateway (the back button, a tab reopened from history) then finds the
  * visitor's own hold instead of a slot that merely looks taken, and the token
  * lets the booking continue exactly as it started. Members need none of this:
@@ -20,15 +21,20 @@ export const HOLD_COOKIE_MAX_AGE_SECONDS = 35 * 60;
 export const HOLD_COOKIE_PATH = "/rezervace";
 
 export interface BookingHold {
-  reservationId: string;
+  /** An order holds every slot of one checkout; a reservation is the older form. */
+  kind: "order" | "reservation";
+  id: string;
   token: string;
 }
 
-const RESERVATION_ID = /^[0-9a-f-]{36}$/i;
+const ID = /^[0-9a-f-]{36}$/i;
 const TOKEN = /^[0-9a-f]{64}$/;
+const ORDER_PREFIX = "o";
 
 export function serializeBookingHold(hold: BookingHold): string {
-  return `${hold.reservationId}.${hold.token}`;
+  return hold.kind === "order"
+    ? `${ORDER_PREFIX}.${hold.id}.${hold.token}`
+    : `${hold.id}.${hold.token}`;
 }
 
 /** A hold from the raw cookie value, or null for anything malformed. */
@@ -37,10 +43,16 @@ export function parseBookingHold(
 ): BookingHold | null {
   if (!value) return null;
   const parts = value.split(".");
-  if (parts.length !== 2) return null;
-  const [reservationId, token] = parts as [string, string];
-  if (!RESERVATION_ID.test(reservationId) || !TOKEN.test(token)) return null;
-  return { reservationId, token };
+  const kind =
+    parts.length === 3 && parts[0] === ORDER_PREFIX
+      ? "order"
+      : parts.length === 2
+        ? "reservation"
+        : null;
+  if (!kind) return null;
+  const [id, token] = parts.slice(-2) as [string, string];
+  if (!ID.test(id) || !TOKEN.test(token)) return null;
+  return { kind, id, token };
 }
 
 export function bookingHoldCookieOptions(secure: boolean) {

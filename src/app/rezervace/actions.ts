@@ -89,7 +89,8 @@ const startImpl = defineAction({
       cookieStore.set(
         HOLD_COOKIE,
         serializeBookingHold({
-          reservationId: outcome.reservationId,
+          kind: "reservation",
+          id: outcome.reservationId,
           token: outcome.token,
         }),
         bookingHoldCookieOptions(

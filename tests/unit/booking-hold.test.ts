@@ -8,20 +8,29 @@ import {
 } from "../../src/lib/helpers/booking-hold";
 
 const hold = {
-  reservationId: "4356f140-1864-43a5-80f9-e27f8a6df17b",
+  kind: "reservation" as const,
+  id: "4356f140-1864-43a5-80f9-e27f8a6df17b",
   token: "a".repeat(64),
 };
 
 test("the hold cookie round-trips a reservation id and its token", () => {
   assert.deepEqual(parseBookingHold(serializeBookingHold(hold)), hold);
+  assert.equal(serializeBookingHold(hold), `${hold.id}.${hold.token}`);
+});
+
+test("an order hold is told apart from an older reservation hold", () => {
+  const order = { ...hold, kind: "order" as const };
+  assert.equal(serializeBookingHold(order), `o.${hold.id}.${hold.token}`);
+  assert.deepEqual(parseBookingHold(serializeBookingHold(order)), order);
+  assert.equal(parseBookingHold(`x.${hold.id}.${hold.token}`), null);
 });
 
 test("anything that is not exactly an id and a 256-bit token is ignored", () => {
   assert.equal(parseBookingHold(undefined), null);
   assert.equal(parseBookingHold(""), null);
   assert.equal(parseBookingHold("not-a-cookie"), null);
-  assert.equal(parseBookingHold(`${hold.reservationId}.short`), null);
-  assert.equal(parseBookingHold(`${hold.reservationId}.${hold.token}.x`), null);
+  assert.equal(parseBookingHold(`${hold.id}.short`), null);
+  assert.equal(parseBookingHold(`${hold.id}.${hold.token}.x`), null);
   assert.equal(parseBookingHold(`nope.${hold.token}`), null);
 });
 

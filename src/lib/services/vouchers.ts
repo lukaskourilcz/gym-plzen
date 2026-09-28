@@ -117,13 +117,18 @@ export async function quoteVoucher(
   return calculateVoucherQuote(usable, originalPriceCents);
 }
 
-/** Reserve one use under a row lock so a limited voucher cannot oversell. */
+/**
+ * Reserve one use under a row lock so a limited voucher cannot oversell. An
+ * order claims once for all of its slots: the price is the order's total and
+ * the claim points at the order's first paid reservation.
+ */
 export async function claimVoucher(params: {
   code: string;
   reservationId: string;
+  orderId?: string;
   originalPriceCents: number;
   reservedUntil?: Date;
-}): Promise<VoucherQuote> {
+}): Promise<VoucherQuote & { voucherId: string }> {
   const code = normalizeVoucherCode(params.code);
   return db.transaction(async (tx) => {
     const now = new Date();
@@ -163,13 +168,14 @@ export async function claimVoucher(params: {
     await tx.insert(voucherRedemption).values({
       voucherId: usable.id,
       reservationId: params.reservationId,
+      orderId: params.orderId ?? null,
       originalPriceCents: quote.originalPriceCents,
       discountCents: quote.discountCents,
       finalPriceCents: quote.finalPriceCents,
       reservedUntil:
         params.reservedUntil ?? new Date(now.getTime() + CHECKOUT_HOLD_MS),
     });
-    return quote;
+    return { ...quote, voucherId: usable.id };
   });
 }
 
@@ -200,6 +206,40 @@ export async function releaseForReservation(
     .where(
       and(
         eq(voucherRedemption.reservationId, reservationId),
+        eq(voucherRedemption.status, "reserved"),
+      ),
+    );
+}
+
+/** Consume an order's claim, together with the order's confirmation. */
+export async function redeemForOrder(
+  orderId: string,
+  executor: DatabaseExecutor = db,
+) {
+  const now = new Date();
+  await executor
+    .update(voucherRedemption)
+    .set({ status: "redeemed", redeemedAt: now, updatedAt: now })
+    .where(
+      and(
+        eq(voucherRedemption.orderId, orderId),
+        eq(voucherRedemption.status, "reserved"),
+      ),
+    );
+}
+
+/** Give an unpaid order's claim back to the voucher. */
+export async function releaseForOrder(
+  orderId: string,
+  executor: DatabaseExecutor = db,
+) {
+  const now = new Date();
+  await executor
+    .update(voucherRedemption)
+    .set({ status: "released", releasedAt: now, updatedAt: now })
+    .where(
+      and(
+        eq(voucherRedemption.orderId, orderId),
         eq(voucherRedemption.status, "reserved"),
       ),
     );
