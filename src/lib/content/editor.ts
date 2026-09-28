@@ -16,7 +16,7 @@ const item = (key: ContentEditorKey, label: string): ContentEditorItem => ({
   label,
 });
 
-const FAQ_ITEMS = Array.from({ length: 20 }, (_, index) => {
+const FAQ_ITEMS = Array.from({ length: 21 }, (_, index) => {
   const number = index + 1;
   return [
     item(`faq.${number}.question`, `Otázka ${number}`),

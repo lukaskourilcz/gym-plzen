@@ -1,3 +1,35 @@
+# Objednávky více termínů hotové — 29. 9. 2026
+
+Epic #76 dokončen, všech 7 kroků sloučeno a nasazeno: #87 model, #88 služby a
+platba, #89 doklad/potvrzení/upozornění za objednávku (+ migrace
+`invoice.items`), #90 veřejné UI, #91 účet a administrace, #92 texty. Obě
+migrace (`booking_orders`, `invoice_items`) jsou na produkci.
+
+**Jak to funguje.** Kalendář: termín je přepínač (`aria-pressed`), výběr až 10
+termínů v URL (`start=` opakovaně), lepicí lišta → `/rezervace/udaje` se
+seznamem, voucher na celou objednávku → `orders.startOrder` (jedna
+`booking_order`, rezervace per termín, věrnost přes termíny, sleva rozpočítaná)
+→ `payments.startOrderPayment` → webhook potvrdí vše nebo nic. Fulfillment:
+potvrzení, upozornění a doklad jednou za objednávku (`announceConfirmed`, listový
+zámek `order-fulfillment:<id>`); PIN, změna a storno per termín. Cookie
+`navi_hold` = `o.<orderId>.<token>`. Starý `booking.startBooking` a
+`reservation_id` na hotovo zůstávají pro dřívější holdy a odkazy.
+
+**Ověřeno.** 223 unit, 57 integračních (13 v `tests/integration/orders.test.ts`),
+build, lint, typy, formát. Lokální produkční build proti lokální DB: 3 termíny
+ve 2 dnech → 100% voucher → 3 potvrzené, `.ics` se 3 událostmi. Playwright
+320–1728 px bez přetečení, klávesnice, fokus. Design review bez P0, P1/P2
+opraveny. E2E `booking-flow` + `public` 18/19 (selhání „Pokračovat přes…“ je
+lokální `NEXT_PUBLIC_OAUTH_PROVIDERS`). Produkce: kalendář s přepínači,
+`/rezervace/udaje` se 2 termíny ukazuje „Pokračovat k platbě 398 Kč“.
+
+**Neověřeno / pro vlastníka.** Skutečná placená objednávka přes Comgate;
+znění VOP 4.6 a 8.9 a datum účinnosti (NEEDED). Lokálně chybí Node 22
+(`npx -p node@22`) a Comgate; testovací DB `codex_navi_access_test`.
+Otevřené chyby #84–#86 z 28. 9. zůstávají.
+
+---
+
 # Objednávky 1/7: datový model — 28. 9. 2026 večer
 
 Krok #77 hotový (PR #87). Nová tabulka `booking_order` (+ enum

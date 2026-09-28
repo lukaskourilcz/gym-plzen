@@ -28,7 +28,9 @@ nastavení a chybějící klientské podklady jsou v [NEEDED.md](./NEEDED.md).
 ## Hlavní části
 
 - `/`: veřejný web, cena, způsob rezervace, pravidla, galerie, kontakt a mapa.
-- `/rezervace`: měsíční date-first kalendář a přesné časové rozsahy slotů.
+- `/rezervace`: měsíční date-first kalendář a přesné časové rozsahy slotů;
+  výběr až 10 termínů najednou, které se zaplatí jednou objednávkou
+  (`services/orders.ts`, plán v `docs/MULTI_SLOT_ORDER_PLAN_2026_09_28.md`).
 - `/login`: Supabase přihlášení a registrace; v lokálním vývoji také demo účty.
 - `/forgot-password`, `/reset-password`: bezpečná obnova hesla přes Supabase Auth.
 - `/account`: profil člena, věrnost a rezervace.

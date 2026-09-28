@@ -73,8 +73,17 @@ Every form: admin and login: is built on **React Hook Form + Zod**:
 - **Booking availability**: `services/slots.ts` resolves configured weekday
   duration and returns `live`, non-production `preview`, or `unavailable`.
   Production never falls back to fictional slots.
+- **Multi-slot orders**: the calendar toggles up to `MAX_SLOTS_PER_ORDER` (10)
+  slots into the URL (`start=` repeated) → `/rezervace/udaje?start=…&start=…`
+  → one Comgate payment. `orders.startOrder` creates a `booking_order` and one
+  reservation per slot atomically (loyalty rewards across slots, one voucher
+  per order split per slot); `payments.startOrderPayment` / the webhook settle
+  all slots or none. PIN, pipeline, reschedule and cancel stay per
+  reservation; confirmation e-mail, operator notice and document are once per
+  order (`fulfillment.announceConfirmed`). `booking.startBooking` is the older
+  single-slot path, kept for holds and links made before orders.
 - **Guest booking**: `/rezervace` → `/rezervace/udaje?start=<ISO>` → Comgate.
-  `booking.startBooking` takes a nullable `userId`; a guest reservation has
+  `orders.startOrder` (like the older `booking.startBooking`) takes a nullable `userId`; a guest reservation has
   `userId = null` and is identified by its contact snapshot. Ownership checks
   (Comgate webhook, `getBookingConfirmation`) compare both sides as nullable, so
   `null === null` is a valid match and a member's booking still cannot be
