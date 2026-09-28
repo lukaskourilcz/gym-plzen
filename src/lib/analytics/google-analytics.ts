@@ -68,6 +68,8 @@ export function trackGooglePurchase(
   reservationId: string,
   priceCents: number,
   currency: string,
+  /** Slots bought together in one order; one entry each. */
+  quantity = 1,
 ) {
   if (!GOOGLE_ANALYTICS_ID || priceCents <= 0 || !Number.isFinite(priceCents))
     return;
@@ -95,8 +97,8 @@ export function trackGooglePurchase(
       {
         item_id: "private-gym-entry",
         item_name: "Vstup NAVI Private Gym",
-        price: priceCents / 100,
-        quantity: 1,
+        price: priceCents / 100 / Math.max(1, quantity),
+        quantity: Math.max(1, quantity),
       },
     ],
   });

@@ -425,6 +425,24 @@ The public booking flow is date first.
   Page Down change month, and Enter or Space selects a date.
 - Slots render only after date selection and show exact start and end, duration,
   and price.
+- A slot is a toggle button (`aria-pressed`), not a link: one tap adds it to the
+  visitor's selection, another takes it out, and focus stays on it. A picked
+  slot is solid `primary` with a two-pixel border and a visible "Vybráno" with
+  a check icon; the accessible name ends with the visible "Vybrat" or
+  "Vybráno". The selection holds up to 10 slots across days and lives in the URL
+  as repeated `start` parameters, rewritten in place without a history entry.
+- A day with picked slots carries a small `gold` count in its top-right corner
+  (12px, `ink` text) and says "vybráno N termínů" in its accessible name.
+- While anything is picked, a selection bar sits sticky at the bottom of the
+  calendar grid: the count and total ("Vybráno 3 termíny · 687 Kč"), a ghost
+  "Zrušit výběr" and the one primary "Pokračovat" to the details step. Sticky,
+  not fixed, so it settles above the footer instead of covering it; on phones
+  the price note is dropped to keep the bar short.
+- The details step lists every selected slot with its price and an "Odebrat"
+  link, offers "Přidat další termín" back to the calendar with the selection
+  kept, and one form, one voucher, one consent and one payment for all of them.
+  A slot that is no longer bookable is flagged in `destructive` text and
+  blocks submission until it is removed.
 - Available, selected, unavailable, past, loading, empty, closed, and
   service-unavailable states are distinct.
 - Async availability changes use a polite live region. Blocking errors preserve

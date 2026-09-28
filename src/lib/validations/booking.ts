@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { dateTimeStringSchema, emailSchema, phoneSchema } from "./common";
+import { MAX_SLOTS_PER_ORDER } from "@/lib/config/orders";
 
 /**
  * Public booking details. One schema covers both visitors: a guest fills it in
@@ -18,8 +19,17 @@ const consentSchema = z.literal(true, {
   }),
 });
 
+/** The selected slot starts of one order, as ISO strings. */
+const startsSchema = z
+  .array(dateTimeStringSchema)
+  .min(1, "Vyberte alespoň jeden termín.")
+  .max(
+    MAX_SLOTS_PER_ORDER,
+    `Najednou lze objednat nejvýše ${MAX_SLOTS_PER_ORDER} termínů.`,
+  );
+
 export const bookingDetailsSchema = z.object({
-  startsAt: dateTimeStringSchema,
+  starts: startsSchema,
   firstName: z.string().min(1, "Zadejte jméno.").max(60),
   lastName: z.string().min(1, "Zadejte příjmení.").max(60),
   email: emailSchema,
@@ -31,7 +41,7 @@ export const bookingDetailsSchema = z.object({
 });
 
 export const voucherQuoteSchema = z.object({
-  startsAt: dateTimeStringSchema,
+  starts: startsSchema,
   code: z.string().min(1, "Zadejte kód voucheru.").max(64),
 });
 

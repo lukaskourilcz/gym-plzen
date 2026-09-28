@@ -32,19 +32,25 @@ function reportTransportError(error: unknown, where: string) {
 
 /**
  * Booking details + the combined document consent, for members and guests
- * alike. A member arrives with their profile prefilled but still confirms it:
- * consent belongs to the reservation, not to the account.
+ * alike, for every selected slot at once. A member arrives with their profile
+ * prefilled but still confirms it: consent belongs to the reservation, not to
+ * the account.
  */
 export function BookingDetailsForm({
   paymentsAvailable = true,
-  startsAtISO,
-  entryPriceCents,
+  startsISO,
+  totalCents,
+  blocked = false,
   canSavePhone = false,
   defaultValues,
 }: {
   paymentsAvailable?: boolean;
-  startsAtISO: string;
-  entryPriceCents: number;
+  /** The bookable slots of the selection, in start order. */
+  startsISO: string[];
+  /** What the selection costs before a voucher, loyalty rewards applied. */
+  totalCents: number;
+  /** A selected slot must be removed before the order can be placed. */
+  blocked?: boolean;
   /** A signed-in member has a profile the number can be kept in; a guest does not. */
   canSavePhone?: boolean;
   defaultValues: {
@@ -62,7 +68,7 @@ export function BookingDetailsForm({
   const [voucherLoading, setVoucherLoading] = useState(false);
   /*
    * Submitting before hydration falls back to a native GET, which replaces the
-   * `start` query parameter with the form fields and bounces the visitor back
+   * `start` query parameters with the form fields and bounces the visitor back
    * to the calendar. Same guard the login form uses.
    */
   const [ready, setReady] = useState(false);
@@ -86,7 +92,7 @@ export function BookingDetailsForm({
     useForm<BookingDetailsValues>({
       resolver: zodResolver(bookingDetailsSchema),
       defaultValues: {
-        startsAt: startsAtISO,
+        starts: startsISO,
         ...defaultValues,
         voucherCode: "",
         // Keeping the number is the member's choice, so it starts unticked.
@@ -97,8 +103,8 @@ export function BookingDetailsForm({
       },
     });
 
-  const effectivePriceCents = voucherQuote?.finalPriceCents ?? entryPriceCents;
-  const voucherUnavailable = !paymentsAvailable && entryPriceCents > 0;
+  const effectivePriceCents = voucherQuote?.finalPriceCents ?? totalCents;
+  const voucherUnavailable = !paymentsAvailable && totalCents > 0;
   const voucherField = register("voucherCode");
 
   async function applyVoucher() {
@@ -111,7 +117,7 @@ export function BookingDetailsForm({
     }
     setVoucherLoading(true);
     const response = await receiveAction(() =>
-      quoteVoucherAction({ code, startsAt: startsAtISO }),
+      quoteVoucherAction({ code, starts: startsISO }),
     );
     setVoucherLoading(false);
     if (!response.received) {
@@ -155,22 +161,24 @@ export function BookingDetailsForm({
     if (result.data.kind === "checkout") {
       trackMetaEvent(
         "InitiateCheckout",
-        { value: result.data.priceCents / 100, currency: "CZK" },
-        `reservation:${result.data.reservationId}:checkout`,
+        {
+          value: result.data.totalCents / 100,
+          currency: "CZK",
+          num_items: startsISO.length,
+        },
+        `order:${result.data.orderId}:checkout`,
       );
       setRedirecting(true);
       window.location.href = result.data.url;
       return;
     }
     router.push(
-      `/rezervace/hotovo?reservation_id=${result.data.reservationId}${result.data.token ? `&token=${result.data.token}` : ""}`,
+      `/rezervace/hotovo?order_id=${result.data.orderId}${result.data.token ? `&token=${result.data.token}` : ""}`,
     );
   });
 
   return (
     <form onSubmit={onSubmit} noValidate>
-      <input type="hidden" {...register("startsAt")} />
-
       <div className="grid gap-x-5 sm:grid-cols-2">
         <Field
           name="firstName"
@@ -240,7 +248,7 @@ export function BookingDetailsForm({
         </p>
       </div>
 
-      {entryPriceCents > 0 ? (
+      {totalCents > 0 ? (
         <fieldset className="mt-7 border-t border-border pt-6">
           <legend className="flex items-center gap-2 text-sm font-extrabold">
             <TicketPercent
@@ -289,8 +297,9 @@ export function BookingDetailsForm({
           ) : null}
           {voucherQuote ? (
             <p role="status" className="mt-3 text-sm font-bold text-success">
-              Voucher uplatněn. Sleva {formatMoney(voucherQuote.discountCents)},
-              k platbě {formatMoney(voucherQuote.finalPriceCents)}.
+              Voucher uplatněn na celou objednávku. Sleva{" "}
+              {formatMoney(voucherQuote.discountCents)}, k platbě{" "}
+              {formatMoney(voucherQuote.finalPriceCents)}.
             </p>
           ) : null}
         </fieldset>
@@ -331,7 +340,8 @@ export function BookingDetailsForm({
           !ready ||
           redirecting ||
           formState.isSubmitting ||
-          (!paymentsAvailable && entryPriceCents > 0)
+          blocked ||
+          (!paymentsAvailable && totalCents > 0)
         }
         className="mt-6 w-full sm:w-auto"
       >
@@ -342,14 +352,18 @@ export function BookingDetailsForm({
             : checkoutInterrupted
               ? "Zkusit pokračovat znovu"
               : effectivePriceCents === 0
-                ? "Potvrdit vstup zdarma"
-                : "Pokračovat k platbě"}{" "}
+                ? startsISO.length === 1
+                  ? "Potvrdit vstup zdarma"
+                  : "Potvrdit vstupy zdarma"
+                : `Pokračovat k platbě ${formatMoney(effectivePriceCents)}`}{" "}
         <ArrowRight aria-hidden="true" />
       </Button>
       <p className="mt-3 text-xs text-muted-foreground">
         {effectivePriceCents === 0
           ? "Vstup zdarma je platný po potvrzení rezervace."
-          : "Rezervace je platná až po ověřené úhradě. Termín držíme pouze po dobu zpracování platby."}
+          : startsISO.length === 1
+            ? "Rezervace je platná až po ověřené úhradě. Termín držíme pouze po dobu zpracování platby."
+            : "Všechny termíny zaplatíte jednou platbou. Rezervace jsou platné až po ověřené úhradě a termíny držíme pouze po dobu zpracování platby."}
       </p>
     </form>
   );

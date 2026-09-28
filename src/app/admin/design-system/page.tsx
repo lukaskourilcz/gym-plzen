@@ -524,9 +524,15 @@ export default function DesignSystemPage() {
                   {[20, 21, 22, 23, 24, 25, 26].map((day) => (
                     <span
                       key={day}
-                      className={`grid min-h-11 place-items-center rounded-md border ${day === 23 ? "border-accent-foreground bg-accent font-extrabold" : day < 22 ? "bg-muted text-muted-foreground line-through" : "bg-card"}`}
+                      className={`relative grid min-h-11 place-items-center rounded-md border ${day === 23 ? "border-accent-foreground bg-accent font-extrabold" : day < 22 ? "bg-muted text-muted-foreground line-through" : "bg-card"}`}
                     >
                       {day}
+                      {/* Slots picked on that day, for a multi-slot order. */}
+                      {day === 23 || day === 25 ? (
+                        <span className="absolute right-0.5 top-0.5 min-w-4 rounded-sm bg-gold px-1 text-center text-xs font-extrabold leading-4 text-ink">
+                          {day === 23 ? 2 : 1}
+                        </span>
+                      ) : null}
                     </span>
                   ))}
                 </div>
@@ -540,12 +546,17 @@ export default function DesignSystemPage() {
                   <Clock3 className="mr-2 inline size-4" />
                   08:00 až 09:15
                 </button>
+                {/* A picked slot stays a toggle: solid primary, two-pixel
+                    border and a visible "Vybráno", never colour alone. */}
                 <button
-                  className="min-h-12 rounded-md border-2 border-accent-foreground bg-accent px-4 text-left font-extrabold"
+                  className="flex min-h-12 items-center justify-between rounded-md border-2 border-primary bg-primary px-4 text-left font-extrabold text-primary-foreground"
                   aria-pressed="true"
                 >
-                  <Check className="mr-2 inline size-4" />
                   10:30 až 11:45
+                  <span className="inline-flex items-center gap-1 text-sm">
+                    <Check className="size-4" aria-hidden="true" />
+                    Vybráno
+                  </span>
                 </button>
                 <button
                   disabled
@@ -560,6 +571,24 @@ export default function DesignSystemPage() {
                 </div>
               </CardContent>
             </Card>
+            {/* Selection bar: sticky at the bottom of the calendar while
+                anything is picked, one primary action. */}
+            <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-lg border border-border bg-card px-5 py-3 shadow-md lg:col-span-2">
+              <p className="text-sm">
+                <span className="block text-base font-extrabold">
+                  Vybráno 3 termíny · 687 Kč
+                </span>
+                <span className="block text-muted-foreground">
+                  Cena platí za celý prostor.
+                </span>
+              </p>
+              <div className="flex gap-2">
+                <Button type="button" variant="ghost">
+                  Zrušit výběr
+                </Button>
+                <Button type="button">Pokračovat</Button>
+              </div>
+            </div>
           </div>
         </section>
 

@@ -421,23 +421,31 @@ test.describe("Public site", () => {
     }
   });
 
-  test("a slot leads straight to the details step, consents and all", async ({
+  test("selected slots lead to the details step, consents and all", async ({
     page,
   }) => {
     await page.goto("/rezervace", { waitUntil: "domcontentloaded" });
     await dismissTrackingConsentIfShown(page);
-    // A slot is a link whose accessible name ends with the visible "Vybrat".
-    const slot = page.locator('a[href^="/rezervace/udaje?start="]');
+    // A slot is a toggle button whose accessible name ends with "Vybrat".
+    const slot = page.getByRole("button", { name: /Vybrat$/ });
     test.skip(
-      (await slot.count()) === 0,
-      "No bookable slot in this environment",
+      (await slot.count()) < 2,
+      "Not enough bookable slots in this environment",
     );
-    await expect(slot.first()).toHaveAccessibleName(/Vybrat$/);
-
     await slot.first().click();
+    await expect(
+      page.getByRole("button", { pressed: true }).first(),
+    ).toHaveAccessibleName(/Vybráno$/);
+    // A second slot joins the same order; the bar counts both.
+    await slot.first().click();
+    const bar = page.getByRole("region", { name: "Vybrané termíny" });
+    await expect(bar).toContainText("Vybráno 2 termíny");
+    await expect(page).toHaveURL(/start=.*start=/);
+
+    await bar.getByRole("link", { name: /Pokračovat/ }).click();
     // No detour through the login page: booking works without an account.
     await expect(page).toHaveURL(/\/rezervace\/udaje\?start=/);
-    await expect(page.getByTestId("chosen-slot")).toBeVisible();
+    await expect(page.getByTestId("chosen-slot")).toHaveCount(2);
     for (const label of [/Jméno/, /Příjmení/, /E-mail/, /Telefon/]) {
       await expect(page.getByLabel(label).first()).toBeVisible();
     }

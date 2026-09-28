@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { footerProps, loadSiteContent } from "@/lib/content/site";
 import { getSession } from "@/lib/auth/guards";
-import { formatMoney, formatTimeRange } from "@/lib/helpers/format";
+import { formatTimeRange } from "@/lib/helpers/format";
 import {
   addDaysToDateKey,
   dateKeyInTimeZone,
@@ -14,7 +14,10 @@ import {
   getBookingHorizonDays,
   getSlotsForRange,
   isWithinBookingHorizon,
+  resolveBookableSlot,
 } from "@/lib/services/slots";
+import { getEntryPriceCents, getLoyaltyStatus } from "@/lib/services/loyalty";
+import { parseSelectedStarts } from "@/lib/helpers/booking-selection";
 import { Container, Section } from "@/components/ui/container";
 import { Notice } from "@/components/ui/notice";
 import { SiteHeader } from "@/components/site/site-header";
@@ -102,7 +105,45 @@ export default async function BookingPage({
     }),
     getSession(),
   ]);
-  const price = formatMoney(content.entryPriceCents);
+  /*
+   * The visitor's selection from the URL, priced exactly per slot. A slot
+   * that is no longer offered at all (in the past, or the day was closed)
+   * drops out here; one that someone else took meanwhile is flagged on the
+   * details step, where it can be removed.
+   */
+  const shortDay = new Intl.DateTimeFormat("cs-CZ", {
+    weekday: "short",
+    day: "numeric",
+    month: "numeric",
+    timeZone: "Europe/Prague",
+  });
+  const selected = (
+    await Promise.all(
+      parseSelectedStarts(params.start).map(async (startsAt) => {
+        const resolved = await resolveBookableSlot(startsAt);
+        if (!resolved || startsAt <= now) return null;
+        return {
+          startISO: startsAt.toISOString(),
+          label: `${shortDay.format(startsAt)}, ${formatTimeRange(startsAt, resolved.endsAt)}`,
+          priceCents: await getEntryPriceCents(startsAt),
+        };
+      }),
+    )
+  ).filter((slot) => slot !== null);
+  const loyaltyStatus = session
+    ? await getLoyaltyStatus(session.user.id)
+    : null;
+  // A reward already claimed by a pending checkout moves the next free slot
+  // one full cycle on, as the order itself would.
+  const loyalty = loyaltyStatus
+    ? {
+        cadence: loyaltyStatus.cadence,
+        entriesUntilFree:
+          loyaltyStatus.entriesUntilFree === 1 && !loyaltyStatus.nextEntryIsFree
+            ? 1 + loyaltyStatus.cadence
+            : loyaltyStatus.entriesUntilFree,
+      }
+    : null;
   // The client needs one flag per day and the slots of the selected day only;
   // shipping all 630 slots of the grid made the document ten times larger.
   const days = availability.days.map((day) => ({
@@ -142,7 +183,8 @@ export default async function BookingPage({
               </h1>
               <p className="mt-4 text-base leading-7 text-muted-foreground sm:text-lg">
                 U vybraného dne uvidíte volné termíny včetně přesného času
-                konce, délky a ceny. Rezervovat můžete i bez registrace.
+                konce, délky a ceny. Vybrat můžete i více termínů najednou a
+                zaplatit je jednou platbou. Rezervovat můžete i bez registrace.
               </p>
             </div>
 
@@ -179,8 +221,10 @@ export default async function BookingPage({
                 horizonDays={horizonDays}
                 days={days}
                 selectedSlots={selectedSlots}
+                selected={selected}
+                loyalty={loyalty}
                 source={availability.source}
-                price={price}
+                priceCents={content.entryPriceCents}
               />
             </div>
           </Container>
