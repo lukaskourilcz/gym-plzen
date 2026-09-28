@@ -29,8 +29,10 @@ import { synchronizeComgatePayment } from "../../src/lib/services/payments";
 import { fulfillReservation } from "../../src/lib/services/fulfillment";
 import {
   cancelReservation,
+  listHistoryForUser,
   releaseExpiredPendingReservations,
 } from "../../src/lib/services/reservations";
+import { listCustomerOrders } from "../../src/lib/services/customer-orders";
 import {
   addDaysToDateKey,
   dateKeyInTimeZone,
@@ -488,6 +490,42 @@ describe(
       assert.equal(alert?.context.amountCents, PRICE);
       assert.match(alert?.body ?? "", /součást objednávky/);
       assert.equal(second?.status, "confirmed");
+    });
+
+    test("the account groups an order's slots and the administration labels them", async () => {
+      await seedProfile(MEMBER);
+      const order = await startOrder({
+        userId: MEMBER.id,
+        starts: [slot(3), slot(4)],
+        details: details({ email: MEMBER.email }),
+      });
+      comgate.settle("TEST-0001", "PAID");
+      await synchronizeComgatePayment("TEST-0001");
+      await startBooking({
+        userId: MEMBER.id,
+        startsAt: slot(6),
+        details: details({ email: MEMBER.email }),
+      });
+
+      const purchases = await listCustomerOrders(MEMBER.id, 1);
+      assert.equal(purchases.length, 2);
+      const grouped = purchases.find((row) => row.orderId === order.orderId);
+      assert.ok(grouped);
+      assert.equal(grouped.slots.length, 2);
+      assert.equal(grouped.totalCents, 2 * PRICE);
+      assert.equal(grouped.paymentStatus, "succeeded");
+      const single = purchases.find((row) => row.orderId === null);
+      assert.equal(single?.slots.length, 1);
+      assert.equal(single?.paymentStatus, "pending");
+
+      const history = await listHistoryForUser(MEMBER.id);
+      const ofOrder = history.filter((row) => row.orderId === order.orderId);
+      assert.equal(ofOrder.length, 2);
+      assert.ok(
+        ofOrder.every(
+          (row) => row.orderSlots === 2 && row.paymentStatus === "succeeded",
+        ),
+      );
     });
   },
 );

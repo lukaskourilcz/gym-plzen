@@ -48,6 +48,14 @@ export default async function ReservationsPage({
     demoEnabled,
   );
 
+  // Slots bought together in one checkout carry a note, so cancelling one of
+  // them is not mistaken for cancelling the whole purchase.
+  const orderSlots = demo
+    ? new Map<string, number>()
+    : await reservations.countOrderSlots([
+        ...new Set(rows.flatMap((r) => (r.orderId ? [r.orderId] : []))),
+      ]);
+
   const access = demo
     ? new Map(
         rows.map((r) => [
@@ -131,6 +139,11 @@ export default async function ReservationsPage({
                 {r.priceCents != null
                   ? formatMoney(r.priceCents, r.currency)
                   : "členství"}
+                {r.orderId && (orderSlots.get(r.orderId) ?? 0) > 1 ? (
+                  <span className="block text-xs text-muted-foreground">
+                    Součást objednávky {orderSlots.get(r.orderId)} termínů
+                  </span>
+                ) : null}
               </TableCell>
               <TableCell>{formatStatus(r.status)}</TableCell>
               <TableCell className="min-w-52">
