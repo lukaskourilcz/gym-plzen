@@ -58,6 +58,13 @@ export interface SelectionLoyalty {
   cadence: number;
 }
 
+/** "jeden vstup" / "3 vstupy" / "5 vstupů". */
+function freeEntries(n: number): string {
+  if (n === 1) return "jeden vstup";
+  if (n >= 2 && n <= 4) return `${n} vstupy`;
+  return `${n} vstupů`;
+}
+
 /** "3 termíny" / "5 termínů". */
 function termCount(n: number): string {
   if (n === 1) return "1 termín";
@@ -134,6 +141,8 @@ export function BookingCalendar({
       : (grid.find((cell) => cell.inMonth && isSelectable(cell.dateKey))
           ?.dateKey ?? null);
   const previousSelectedDate = useRef(selectedDateKey);
+  const slotsHeadingRef = useRef<HTMLHeadingElement>(null);
+  const [announcement, setAnnouncement] = useState("");
 
   /*
    * The selection lives in the URL (`start=…` repeated) so it survives a
@@ -204,6 +213,7 @@ export function BookingCalendar({
   };
 
   const updateSelection = (next: SelectedSlotView[]) => {
+    setAnnouncement("");
     const sorted = [...next].sort((a, b) =>
       a.startISO.localeCompare(b.startISO),
     );
@@ -407,7 +417,7 @@ export function BookingCalendar({
                           year: "numeric",
                         });
                         const cellClass = cn(
-                          "relative flex aspect-square min-h-11 min-w-0 items-center justify-center rounded-sm border text-lg font-bold outline-none transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:text-xl",
+                          "relative flex aspect-square min-h-11 min-w-0 scroll-mb-36 items-center justify-center rounded-sm border text-lg font-bold outline-none transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:text-xl",
                           !cell.inMonth && "invisible",
                           cell.inMonth && "border-transparent",
                           (isPast || beforeOpening || outsideHorizon) &&
@@ -420,7 +430,7 @@ export function BookingCalendar({
                             "border-primary bg-primary text-primary-foreground",
                         );
                         const content = Number(cell.dateKey.slice(-2));
-                        const ariaLabel = `${label}${isPast ? ", minulý termín" : beforeOpening ? ", před otevřením" : outsideHorizon ? ", mimo rezervační období" : hasAvailability ? ", dostupné termíny" : ", bez volných termínů"}${pickedHere > 0 ? `, vybráno ${termCount(pickedHere)}` : ""}`;
+                        const ariaLabel = `${label}${isPast ? ", minulý termín" : beforeOpening ? ", před otevřením" : outsideHorizon ? ", mimo rezervační období" : hasAvailability ? ", dostupné termíny" : ", bez volných termínů"}${pickedHere > 0 ? `, vybráno: ${termCount(pickedHere)}` : ""}`;
 
                         return disabled ? (
                           <span
@@ -463,7 +473,7 @@ export function BookingCalendar({
                             {pickedHere > 0 ? (
                               <span
                                 aria-hidden="true"
-                                className="absolute right-0.5 top-0.5 min-w-4 rounded-sm bg-gold px-1 text-center text-xs font-extrabold leading-4 text-ink"
+                                className="absolute -right-1 -top-1 min-w-4 rounded-sm bg-primary px-1 text-center text-xs font-extrabold leading-4 text-primary-foreground ring-2 ring-card"
                               >
                                 {pickedHere}
                               </span>
@@ -498,7 +508,12 @@ export function BookingCalendar({
         <div className="text-xs font-extrabold uppercase tracking-[.14em] text-accent-foreground">
           2. Čas
         </div>
-        <h2 id="slots-heading" className="mt-1 text-2xl font-extrabold">
+        <h2
+          id="slots-heading"
+          ref={slotsHeadingRef}
+          tabIndex={-1}
+          className="mt-1 text-2xl font-extrabold"
+        >
           {selectedDateKey
             ? displayDate(selectedDateKey, {
                 weekday: "long",
@@ -556,7 +571,8 @@ export function BookingCalendar({
                   onClick={() => toggleSlot(slot)}
                   className={cn(
                     buttonVariants({ variant: "outline" }),
-                    "h-auto min-h-16 justify-between px-4 py-3",
+                    // Focus scrolled into view clears the sticky selection bar.
+                    "h-auto min-h-16 scroll-mb-36 justify-between px-4 py-3",
                     picked
                       ? "border-2 border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
                       : "border-primary bg-primary/10 hover:bg-primary/20",
@@ -611,6 +627,11 @@ export function BookingCalendar({
         ) : null}
       </section>
 
+      {/* Always mounted, so clearing the selection is still announced. */}
+      <p aria-live="polite" className="sr-only">
+        {announcement}
+      </p>
+
       {selection.length > 0 ? (
         /*
          * Sticky rather than fixed: it rides along at the bottom of the
@@ -625,7 +646,7 @@ export function BookingCalendar({
           <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
             <p aria-live="polite" aria-atomic="true" className="text-sm">
               <span className="block text-base font-extrabold">
-                Vybráno {termCount(selection.length)} ·{" "}
+                Vybráno: {termCount(selection.length)} ·{" "}
                 {totalCents === 0 ? "zdarma" : formatMoney(totalCents)}
               </span>
               <span
@@ -636,7 +657,7 @@ export function BookingCalendar({
                 )}
               >
                 {freeCount > 0
-                  ? `Z toho ${freeCount === 1 ? "jeden vstup" : `${freeCount} vstupy`} zdarma za věrnost. `
+                  ? `Z toho ${freeEntries(freeCount)} zdarma za věrnost. `
                   : ""}
                 {full
                   ? `Najednou lze vybrat nejvýše ${MAX_SLOTS_PER_ORDER} termínů.`
@@ -647,7 +668,13 @@ export function BookingCalendar({
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => updateSelection([])}
+                onClick={() => {
+                  updateSelection([]);
+                  // The bar and its button go away; focus returns to the
+                  // slot list the visitor was choosing from.
+                  setAnnouncement("Výběr termínů byl zrušen.");
+                  slotsHeadingRef.current?.focus();
+                }}
               >
                 Zrušit výběr
               </Button>

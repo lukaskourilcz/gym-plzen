@@ -529,7 +529,7 @@ export default function DesignSystemPage() {
                       {day}
                       {/* Slots picked on that day, for a multi-slot order. */}
                       {day === 23 || day === 25 ? (
-                        <span className="absolute right-0.5 top-0.5 min-w-4 rounded-sm bg-gold px-1 text-center text-xs font-extrabold leading-4 text-ink">
+                        <span className="absolute -right-1 -top-1 min-w-4 rounded-sm bg-primary px-1 text-center text-xs font-extrabold leading-4 text-primary-foreground ring-2 ring-card">
                           {day === 23 ? 2 : 1}
                         </span>
                       ) : null}
@@ -542,9 +542,19 @@ export default function DesignSystemPage() {
               <CardContent className="grid gap-3 p-5 sm:grid-cols-2">
                 {/* Solid `border-primary` on a 10% fill: the border is the
                     control's only boundary and must clear 3:1 on its own. */}
-                <button className="min-h-12 rounded-md border border-primary bg-primary/10 px-4 text-left font-extrabold">
-                  <Clock3 className="mr-2 inline size-4" />
-                  08:00 až 09:15
+                <button
+                  className="flex min-h-16 items-center justify-between rounded-md border border-primary bg-primary/10 px-4 py-3 text-left"
+                  aria-pressed="false"
+                >
+                  <span>
+                    <span className="block font-extrabold">08:00 – 09:15</span>
+                    <span className="mt-0.5 block text-sm font-medium text-muted-foreground">
+                      75 min · 229 Kč
+                    </span>
+                  </span>
+                  <span className="text-sm font-extrabold text-accent-foreground">
+                    Vybrat
+                  </span>
                 </button>
                 {/* A picked slot stays a toggle: solid primary, two-pixel
                     border and a visible "Vybráno", never colour alone. */}
@@ -576,7 +586,7 @@ export default function DesignSystemPage() {
             <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-lg border border-border bg-card px-5 py-3 shadow-md lg:col-span-2">
               <p className="text-sm">
                 <span className="block text-base font-extrabold">
-                  Vybráno 3 termíny · 687 Kč
+                  Vybráno: 3 termíny · 687 Kč
                 </span>
                 <span className="block text-muted-foreground">
                   Cena platí za celý prostor.
@@ -589,6 +599,44 @@ export default function DesignSystemPage() {
                 <Button type="button">Pokračovat</Button>
               </div>
             </div>
+            {/* Details step: one row per selected slot; a slot that can no
+                longer be booked says so in destructive text. */}
+            <ul className="grid gap-3 lg:col-span-2">
+              <li className="flex items-start gap-4 rounded-lg border border-border bg-card p-4">
+                <Clock3
+                  aria-hidden="true"
+                  className="mt-0.5 size-6 shrink-0 text-accent-foreground"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-extrabold">
+                    čtvrtek 1. října, 10:00 – 11:15
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    75 minut · 229 Kč
+                  </p>
+                </div>
+                <Button type="button" variant="ghost" size="sm">
+                  Odebrat
+                </Button>
+              </li>
+              <li className="flex items-start gap-4 rounded-lg border border-border bg-card p-4">
+                <Clock3
+                  aria-hidden="true"
+                  className="mt-0.5 size-6 shrink-0 text-accent-foreground"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-extrabold">
+                    sobota 3. října, 18:00 – 19:15
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-destructive">
+                    Tento termín už není volný. Odeberte ho z výběru.
+                  </p>
+                </div>
+                <Button type="button" variant="ghost" size="sm">
+                  Odebrat
+                </Button>
+              </li>
+            </ul>
           </div>
         </section>
 

@@ -431,18 +431,25 @@ The public booking flow is date first.
   a check icon; the accessible name ends with the visible "Vybrat" or
   "Vybráno". The selection holds up to 10 slots across days and lives in the URL
   as repeated `start` parameters, rewritten in place without a history entry.
-- A day with picked slots carries a small `gold` count in its top-right corner
-  (12px, `ink` text) and says "vybráno N termínů" in its accessible name.
+- A day with picked slots carries a small count badge on its top-right corner
+  (12px, `primary` fill, white digit, `ring-card` so it reads on the selected
+  cell too) and says "vybráno: N termínů" in its accessible name. Not `gold`:
+  gold stays an accent for ink surfaces.
 - While anything is picked, a selection bar sits sticky at the bottom of the
-  calendar grid: the count and total ("Vybráno 3 termíny · 687 Kč"), a ghost
+  calendar grid: the count and total ("Vybráno: 3 termíny · 687 Kč"), a ghost
   "Zrušit výběr" and the one primary "Pokračovat" to the details step. Sticky,
   not fixed, so it settles above the footer instead of covering it; on phones
-  the price note is dropped to keep the bar short.
+  the price note is dropped to keep the bar short. Slots and day cells carry a
+  bottom scroll margin so a focused control is never scrolled under the bar.
+  Clearing the selection moves focus to the slot list heading and is announced
+  through a live region that stays mounted.
 - The details step lists every selected slot with its price and an "Odebrat"
   link, offers "Přidat další termín" back to the calendar with the selection
   kept, and one form, one voucher, one consent and one payment for all of them.
   A slot that is no longer bookable is flagged in `destructive` text and
-  blocks submission until it is removed.
+  blocks submission until it is removed; the disabled submit then carries the
+  reason under it, tied with `aria-describedby`. Each "Odebrat" names its slot
+  (day and time) for assistive technology.
 - Available, selected, unavailable, past, loading, empty, closed, and
   service-unavailable states are distinct.
 - Async availability changes use a polite live region. Blocking errors preserve

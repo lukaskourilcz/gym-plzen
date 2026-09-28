@@ -237,7 +237,7 @@ export default async function BookingDetailsPage({
                       >
                         Odebrat
                         <span className="sr-only">
-                          {` termín ${dayFormat.format(item.startsAt)}`}
+                          {` termín ${dayFormat.format(item.startsAt)}${item.endsAt ? ` ${formatTimeRange(item.startsAt, item.endsAt)}` : ""}`}
                         </span>
                       </Button>
                     </li>
@@ -284,8 +284,9 @@ export default async function BookingDetailsPage({
                 }
                 role="status"
               >
-                Odeberte ho prosím z výběru. Ostatní termíny pak dokončíte
-                jednou platbou.
+                {blocked === 1
+                  ? "Odeberte ho prosím z výběru. Ostatní termíny pak dokončíte jednou platbou."
+                  : "Odeberte je prosím z výběru. Ostatní termíny pak dokončíte jednou platbou."}
               </Notice>
             ) : null}
             {heldCount > 0 ? (
@@ -299,9 +300,9 @@ export default async function BookingDetailsPage({
                 }
                 role="status"
               >
-                Rezervaci jste už začali, ale platba zatím neproběhla. Termíny
-                držíme jen po dobu platební relace; pokračujte k platbě a
-                dokončete ji.
+                {heldCount === 1
+                  ? "Rezervaci jste už začali, ale platba zatím neproběhla. Termín držíme jen po dobu platební relace; pokračujte k platbě a dokončete ji."
+                  : "Rezervaci jste už začali, ale platba zatím neproběhla. Termíny držíme jen po dobu platební relace; pokračujte k platbě a dokončete ji."}
               </Notice>
             ) : null}
             {session ? null : (

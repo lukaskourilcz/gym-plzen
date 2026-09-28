@@ -439,7 +439,7 @@ test.describe("Public site", () => {
     // A second slot joins the same order; the bar counts both.
     await slot.first().click();
     const bar = page.getByRole("region", { name: "Vybrané termíny" });
-    await expect(bar).toContainText("Vybráno 2 termíny");
+    await expect(bar).toContainText("Vybráno: 2 termíny");
     await expect(page).toHaveURL(/start=.*start=/);
 
     await bar.getByRole("link", { name: /Pokračovat/ }).click();

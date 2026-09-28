@@ -343,6 +343,7 @@ export function BookingDetailsForm({
           blocked ||
           (!paymentsAvailable && totalCents > 0)
         }
+        aria-describedby={blocked ? "submit-blocked" : undefined}
         className="mt-6 w-full sm:w-auto"
       >
         {redirecting
@@ -358,6 +359,14 @@ export function BookingDetailsForm({
                 : `Pokračovat k platbě ${formatMoney(effectivePriceCents)}`}{" "}
         <ArrowRight aria-hidden="true" />
       </Button>
+      {blocked ? (
+        <p
+          id="submit-blocked"
+          className="mt-3 text-sm font-bold text-destructive"
+        >
+          Nejprve odeberte termíny, které už nelze rezervovat.
+        </p>
+      ) : null}
       <p className="mt-3 text-xs text-muted-foreground">
         {effectivePriceCents === 0
           ? "Vstup zdarma je platný po potvrzení rezervace."

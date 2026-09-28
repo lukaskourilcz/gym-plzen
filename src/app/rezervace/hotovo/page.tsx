@@ -15,6 +15,7 @@ import {
 import { formatMoney, formatTimeRange } from "@/lib/helpers/format";
 import { Container, Section } from "@/components/ui/container";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Notice } from "@/components/ui/notice";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
@@ -249,12 +250,13 @@ export default async function BookingDonePage({
                 <div className="mt-5 flex justify-center">
                   {/* A plain anchor: the response is a file, not a page. */}
                   <a
-                    href={`/api/orders/${view.orderId}/calendar.ics${params.token ? `?token=${params.token}` : ""}`}
+                    href={`/api/orders/${view.orderId}/calendar.ics${params.token ? `?${new URLSearchParams({ token: params.token })}` : ""}`}
                     download="rezervace.ics"
-                    className={buttonVariants({
-                      variant: "outline",
-                      size: "sm",
-                    })}
+                    className={cn(
+                      buttonVariants({ variant: "outline", size: "sm" }),
+                      // Long Czech label: wrap rather than overflow at 320px.
+                      "h-auto whitespace-normal py-2 text-center",
+                    )}
                   >
                     <CalendarPlus aria-hidden="true" />
                     Přidat všechny termíny do kalendáře
