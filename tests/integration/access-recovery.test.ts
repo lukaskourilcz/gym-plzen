@@ -11,7 +11,11 @@ import assert from "node:assert/strict";
 import { after, before, beforeEach, describe, test } from "node:test";
 import { env } from "../../src/lib/env";
 import { fulfillReservation } from "../../src/lib/services/fulfillment";
-import { initPipeline, dueForRetry } from "../../src/lib/services/pipeline";
+import {
+  closeFinishedPipelines,
+  initPipeline,
+  dueForRetry,
+} from "../../src/lib/services/pipeline";
 import { cancelReservation } from "../../src/lib/services/reservations";
 import {
   expireEndedCodes,
@@ -56,6 +60,20 @@ async function code(id: string) {
       retry_at: Date | null;
     }>("select * from access_code where reservation_id=$1", [id])
   )[0]!;
+}
+async function steps(id: string) {
+  return (
+    await rows<{ step: string; status: string; next_retry_at: Date | null }>(
+      "select step, status, next_retry_at from reservation_pipeline where reservation_id=$1 order by step::text",
+      [id],
+    )
+  ).map((r) => [r.step, r.status, r.next_retry_at]);
+}
+async function openStepAlerts(id: string) {
+  return rows(
+    "select * from system_alert where dedupe_key like $1 and resolved_at is null",
+    [`reservation:${id}:%`],
+  );
 }
 
 describe(
@@ -490,6 +508,40 @@ describe(
       assert.equal((await code(id)).status, "expired");
       assert.equal(auths.length, 0);
       assert.ok((await alerts())[0]!.resolved_at);
+    });
+    test("cancellation closes the pipeline and resolves its step alerts", async () => {
+      const id = await booking();
+      online = false;
+      for (let n = 0; n < 5; n++) await fulfillReservation(id);
+      assert.equal((await openStepAlerts(id)).length, 1);
+      await cancelReservation({ id });
+      assert.deepEqual(await steps(id), [
+        ["code_created", "failed", null],
+        ["code_delivered", "failed", null],
+        ["payment", "succeeded", null],
+      ]);
+      assert.equal((await openStepAlerts(id)).length, 0);
+    });
+    test("watchdog sweep closes pipelines of ended reservations only", async (t) => {
+      const ended = await booking();
+      online = false;
+      for (let n = 0; n < 5; n++) await fulfillReservation(ended);
+      assert.equal((await openStepAlerts(ended)).length, 1);
+      const upcoming = await booking(300);
+      // Ongoing reservations are left alone.
+      assert.equal(await closeFinishedPipelines(), 0);
+      t.mock.timers.setTime(now.getTime() + 91 * 60000);
+      assert.equal(await closeFinishedPipelines(), 1);
+      assert.deepEqual(await steps(ended), [
+        ["code_created", "failed", null],
+        ["code_delivered", "failed", null],
+        ["payment", "succeeded", null],
+      ]);
+      assert.equal((await openStepAlerts(ended)).length, 0);
+      assert.ok(
+        (await steps(upcoming)).every(([, status]) => status === "pending"),
+      );
+      assert.equal(await closeFinishedPipelines(), 0);
     });
     test("offline cancellation holds slot through database constraint until confirmed deletion", async () => {
       const id = await booking();

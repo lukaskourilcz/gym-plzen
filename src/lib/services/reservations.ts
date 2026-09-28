@@ -25,7 +25,7 @@ import { recordIn as recordActivityIn } from "./activity";
 import type { NewReservation, Reservation } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
 import { checkAvailability } from "./availability";
-import { initPipeline } from "./pipeline";
+import { closePipeline, initPipeline } from "./pipeline";
 import {
   listCodesForReservation,
   revokeAccessCode,
@@ -212,6 +212,8 @@ async function cancelReservationLocked(params: {
         .onConflictDoNothing();
     }
   });
+  // Nothing is left to fulfil: stop retries and resolve their alerts.
+  await closePipeline(params.id, "Rezervace zrušena");
   await releaseForReservation(params.id);
   // One payment can cover a whole order; only this slot's share is at stake.
   const [paid] = await db
