@@ -83,7 +83,7 @@ function slotUnavailable(startsAt: Date): ActionError {
   );
 }
 
-interface ResolvedSlot {
+export interface ResolvedSlot {
   startsAt: Date;
   endsAt: Date;
 }
@@ -307,6 +307,54 @@ async function continueOwnOrder(
       context: row.orderId ? { orderId: row.orderId } : undefined,
     });
   return null;
+}
+
+export interface OrderQuoteSlot {
+  startsAt: Date;
+  endsAt: Date;
+  priceCents: number;
+  /** The member's loyalty reward: this slot is free. */
+  isReward: boolean;
+}
+
+/**
+ * What the selection would cost right now: every slot's price, the loyalty
+ * rewards among them for a member, and the total. The same rules as
+ * `startOrder`, read without locks, for the details page and the voucher
+ * quote; the order itself recomputes everything atomically.
+ */
+export async function quoteOrder(params: {
+  userId: string | null;
+  slots: readonly ResolvedSlot[];
+}): Promise<{ slots: OrderQuoteSlot[]; totalCents: number }> {
+  const prices = await Promise.all(
+    params.slots.map((slot) => getEntryPriceCents(slot.startsAt)),
+  );
+  let rewards: (number | null)[] = params.slots.map(() => null);
+  if (params.userId) {
+    const allocated = allocateLoyaltyRewards(
+      await countEntries(params.userId),
+      params.slots.length,
+      FREE_ENTRY_EVERY,
+    );
+    rewards = [];
+    for (const reward of allocated)
+      rewards.push(
+        reward && !(await hasClaimedReward(params.userId, reward))
+          ? reward
+          : null,
+      );
+  }
+  const slots = params.slots.map((slot, index) => ({
+    startsAt: slot.startsAt,
+    endsAt: slot.endsAt,
+    priceCents: rewards[index] ? 0 : prices[index]!,
+    isReward: Boolean(rewards[index]),
+  }));
+  return {
+    slots,
+    totalCents: slots.reduce((sum, slot) => sum + slot.priceCents, 0),
+  };
 }
 
 /**

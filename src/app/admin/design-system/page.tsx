@@ -524,9 +524,15 @@ export default function DesignSystemPage() {
                   {[20, 21, 22, 23, 24, 25, 26].map((day) => (
                     <span
                       key={day}
-                      className={`grid min-h-11 place-items-center rounded-md border ${day === 23 ? "border-accent-foreground bg-accent font-extrabold" : day < 22 ? "bg-muted text-muted-foreground line-through" : "bg-card"}`}
+                      className={`relative grid min-h-11 place-items-center rounded-md border ${day === 23 ? "border-accent-foreground bg-accent font-extrabold" : day < 22 ? "bg-muted text-muted-foreground line-through" : "bg-card"}`}
                     >
                       {day}
+                      {/* Slots picked on that day, for a multi-slot order. */}
+                      {day === 23 || day === 25 ? (
+                        <span className="absolute -right-1 -top-1 min-w-4 rounded-sm bg-primary px-1 text-center text-xs font-extrabold leading-4 text-primary-foreground ring-2 ring-card">
+                          {day === 23 ? 2 : 1}
+                        </span>
+                      ) : null}
                     </span>
                   ))}
                 </div>
@@ -536,16 +542,31 @@ export default function DesignSystemPage() {
               <CardContent className="grid gap-3 p-5 sm:grid-cols-2">
                 {/* Solid `border-primary` on a 10% fill: the border is the
                     control's only boundary and must clear 3:1 on its own. */}
-                <button className="min-h-12 rounded-md border border-primary bg-primary/10 px-4 text-left font-extrabold">
-                  <Clock3 className="mr-2 inline size-4" />
-                  08:00 až 09:15
-                </button>
                 <button
-                  className="min-h-12 rounded-md border-2 border-accent-foreground bg-accent px-4 text-left font-extrabold"
+                  className="flex min-h-16 items-center justify-between rounded-md border border-primary bg-primary/10 px-4 py-3 text-left"
+                  aria-pressed="false"
+                >
+                  <span>
+                    <span className="block font-extrabold">08:00 – 09:15</span>
+                    <span className="mt-0.5 block text-sm font-medium text-muted-foreground">
+                      75 min · 229 Kč
+                    </span>
+                  </span>
+                  <span className="text-sm font-extrabold text-accent-foreground">
+                    Vybrat
+                  </span>
+                </button>
+                {/* A picked slot stays a toggle: solid primary, two-pixel
+                    border and a visible "Vybráno", never colour alone. */}
+                <button
+                  className="flex min-h-12 items-center justify-between rounded-md border-2 border-primary bg-primary px-4 text-left font-extrabold text-primary-foreground"
                   aria-pressed="true"
                 >
-                  <Check className="mr-2 inline size-4" />
                   10:30 až 11:45
+                  <span className="inline-flex items-center gap-1 text-sm">
+                    <Check className="size-4" aria-hidden="true" />
+                    Vybráno
+                  </span>
                 </button>
                 <button
                   disabled
@@ -560,6 +581,62 @@ export default function DesignSystemPage() {
                 </div>
               </CardContent>
             </Card>
+            {/* Selection bar: sticky at the bottom of the calendar while
+                anything is picked, one primary action. */}
+            <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-lg border border-border bg-card px-5 py-3 shadow-md lg:col-span-2">
+              <p className="text-sm">
+                <span className="block text-base font-extrabold">
+                  Vybráno: 3 termíny · 687 Kč
+                </span>
+                <span className="block text-muted-foreground">
+                  Cena platí za celý prostor.
+                </span>
+              </p>
+              <div className="flex gap-2">
+                <Button type="button" variant="ghost">
+                  Zrušit výběr
+                </Button>
+                <Button type="button">Pokračovat</Button>
+              </div>
+            </div>
+            {/* Details step: one row per selected slot; a slot that can no
+                longer be booked says so in destructive text. */}
+            <ul className="grid gap-3 lg:col-span-2">
+              <li className="flex items-start gap-4 rounded-lg border border-border bg-card p-4">
+                <Clock3
+                  aria-hidden="true"
+                  className="mt-0.5 size-6 shrink-0 text-accent-foreground"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-extrabold">
+                    čtvrtek 1. října, 10:00 – 11:15
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    75 minut · 229 Kč
+                  </p>
+                </div>
+                <Button type="button" variant="ghost" size="sm">
+                  Odebrat
+                </Button>
+              </li>
+              <li className="flex items-start gap-4 rounded-lg border border-border bg-card p-4">
+                <Clock3
+                  aria-hidden="true"
+                  className="mt-0.5 size-6 shrink-0 text-accent-foreground"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-extrabold">
+                    sobota 3. října, 18:00 – 19:15
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-destructive">
+                    Tento termín už není volný. Odeberte ho z výběru.
+                  </p>
+                </div>
+                <Button type="button" variant="ghost" size="sm">
+                  Odebrat
+                </Button>
+              </li>
+            </ul>
           </div>
         </section>
 

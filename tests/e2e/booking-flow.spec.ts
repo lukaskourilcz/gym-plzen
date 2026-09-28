@@ -46,6 +46,7 @@ test.describe("Booking flow", () => {
   });
   test.beforeEach(async () => {
     await sql!`delete from reservation where contact_email like 'e2e-%@example.test'`;
+    await sql!`delete from booking_order where contact_email like 'e2e-%@example.test'`;
   });
 
   async function openFirstFreeSlot(page: Page): Promise<string> {
@@ -54,16 +55,20 @@ test.describe("Booking flow", () => {
       .getByTestId("tracking-consent")
       .getByRole("button", { name: "Pouze nezbytné" });
     if (await consent.isVisible().catch(() => false)) await consent.click();
-    const slots = page.locator('a[href^="/rezervace/udaje?start="]');
+    // A slot is a toggle; the selection bar leads on to the details step.
+    const slots = page.getByRole("button", { name: /Vybrat$/ });
     // A day is preselected; pick the last slot of that day so the two
     // scenarios never compete for the same time.
     const count = await slots.count();
     expect(count, "the calendar offers bookable slots").toBeGreaterThan(1);
-    const slot = slots.nth(count - 1);
-    const href = (await slot.getAttribute("href"))!;
-    await slot.click();
+    await slots.nth(count - 1).click();
+    await page
+      .getByRole("region", { name: "Vybrané termíny" })
+      .getByRole("link", { name: /Pokračovat/ })
+      .click();
     await expect(page).toHaveURL(/\/rezervace\/udaje\?start=/);
-    return href;
+    const url = new URL(page.url());
+    return `${url.pathname}${url.search}`;
   }
 
   async function fillDetails(page: Page, email: string) {
@@ -89,9 +94,7 @@ test.describe("Booking flow", () => {
     ).toBeEnabled();
     await page.getByRole("button", { name: /Potvrdit vstup zdarma/ }).click();
 
-    await expect(page).toHaveURL(
-      /\/rezervace\/hotovo\?reservation_id=.*&token=/,
-    );
+    await expect(page).toHaveURL(/\/rezervace\/hotovo\?order_id=.*&token=/);
     await expect(
       page.getByRole("heading", { name: "Rezervace je potvrzená" }),
     ).toBeVisible();

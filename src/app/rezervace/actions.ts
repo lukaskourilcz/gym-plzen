@@ -21,11 +21,11 @@ import {
   voucherQuoteSchema,
   type VoucherQuoteValues,
 } from "@/lib/validations/booking";
-import { booking, loyalty, vouchers } from "@/lib/services";
+import { orders, vouchers } from "@/lib/services";
 import { saveBookingPhone } from "@/lib/services/customer-profile";
 import { takeRateLimit } from "@/lib/security/rate-limit";
 
-/** Validate contact details and start hosted checkout. */
+/** Validate contact details and start hosted checkout of the selected slots. */
 const startImpl = defineAction({
   schema: bookingDetailsSchema,
   authorize: getSession,
@@ -54,9 +54,9 @@ const startImpl = defineAction({
 
     const cookieStore = await cookies();
     const hold = parseBookingHold(cookieStore.get(HOLD_COOKIE)?.value);
-    const outcome = await booking.startBooking({
+    const outcome = await orders.startOrder({
       userId: session?.user.id ?? null,
-      startsAt: new Date(input.startsAt),
+      starts: input.starts.map((start) => new Date(start)),
       details: {
         name: `${input.firstName.trim()} ${input.lastName.trim()}`,
         email: input.email.trim(),
@@ -89,8 +89,8 @@ const startImpl = defineAction({
       cookieStore.set(
         HOLD_COOKIE,
         serializeBookingHold({
-          kind: "reservation",
-          id: outcome.reservationId,
+          kind: "order",
+          id: outcome.orderId,
           token: outcome.token,
         }),
         bookingHoldCookieOptions(
@@ -106,7 +106,7 @@ const startImpl = defineAction({
 
 export async function startCheckoutAction(
   input: BookingDetailsValues,
-): Promise<Result<booking.BookingOutcome>> {
+): Promise<Result<orders.OrderOutcome>> {
   return startImpl(input);
 }
 
@@ -128,18 +128,17 @@ const quoteVoucherImpl = defineAction({
         "Příliš mnoho pokusů. Zkuste to znovu za několik minut.",
       );
     }
-    const priceCents = session
-      ? (
-          await loyalty.priceForNextEntry(
-            session.user.id,
-            new Date(input.startsAt),
-          )
-        ).priceCents
-      : await loyalty.getEntryPriceCents(new Date(input.startsAt));
-    if (priceCents === 0) {
-      throw new ActionError("Tento vstup už máte zdarma.");
+    const quote = await orders.quoteOrder({
+      userId: session?.user.id ?? null,
+      slots: await orders.resolveOrderSlots(
+        input.starts.map((start) => new Date(start)),
+      ),
+    });
+    if (quote.totalCents === 0) {
+      throw new ActionError("Vybrané vstupy už máte zdarma.");
     }
-    return vouchers.quoteVoucher(input.code, priceCents);
+    // One voucher per order, applied to the order's total.
+    return vouchers.quoteVoucher(input.code, quote.totalCents);
   },
 });
 
