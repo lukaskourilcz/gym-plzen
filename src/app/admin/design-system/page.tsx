@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth/guards";
 import { BookingCalendar } from "@/components/admin/booking-calendar";
 import { dateKeyInTimeZone, localDateTimeToDate } from "@/lib/helpers/datetime";
 import { CustomerAvatar } from "@/components/site/customer-avatar";
@@ -49,7 +50,8 @@ const designVariantTokens = [
   ["--header-lift", "0px", "24px"],
 ] as const;
 
-export default function DesignSystemPage() {
+export default async function DesignSystemPage() {
+  await requireAdmin();
   const calendarDate = dateKeyInTimeZone(new Date());
   return (
     <div>

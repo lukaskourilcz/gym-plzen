@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth/guards";
 import Link from "next/link";
 import { AlertTriangle, DoorOpen, MailWarning } from "lucide-react";
 import { alerts, entryLog, messages, stats } from "@/lib/services";
@@ -33,6 +34,7 @@ const DAY_FORMAT = new Intl.DateTimeFormat("cs-CZ", {
  * morning and see what today asks of them.
  */
 export default async function AdminDashboard() {
+  await requireAdmin();
   const now = new Date();
   const bounds = pragueDayBounds(now);
   const demo = await hasDemoAdminSession();

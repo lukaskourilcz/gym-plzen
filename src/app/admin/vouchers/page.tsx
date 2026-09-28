@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth/guards";
 import { vouchers } from "@/lib/services";
 import { formatDateTime, formatMoney } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
@@ -31,6 +32,7 @@ function voucherState(row: vouchers.VoucherOverview, now: Date) {
 }
 
 export default async function VouchersPage() {
+  await requireAdmin();
   const demo = await hasDemoAdminSession();
   const rows = demo ? [] : await vouchers.listVouchers();
   const now = new Date();

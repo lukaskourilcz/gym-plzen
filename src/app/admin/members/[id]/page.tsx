@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth/guards";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -110,6 +111,7 @@ export default async function MemberProfilePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const demo = await hasDemoAdminSession();
   const loaded = demo

@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth/guards";
 import { importRecentEmails } from "./actions";
 import { Button } from "@/components/ui/button";
 import { messages } from "@/lib/services";
@@ -33,6 +34,7 @@ export default async function MessagesPage({
     unavailable?: string;
   }>;
 }) {
+  await requireAdmin();
   const result = await searchParams;
   const demoEnabled = await hasDemoAdminSession();
   const [{ rows }, emails] = await Promise.all([
