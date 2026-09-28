@@ -125,7 +125,7 @@ export const SITE_DEFAULTS = {
   "home.about.title": "Jak to u nás funguje",
   "home.about.step1.title": "Vyber si termín",
   "home.about.step1.body":
-    "V rezervačním systému si vyber termín a časové okno, ve kterém chceš přijít zacvičit si. Potvrď, že ses seznámil s naším provozním řádem a obchodními podmínkami, a vyplň rezervaci.",
+    "V rezervačním systému si vyber termín a časové okno, ve kterém chceš přijít zacvičit si. Vybrat můžeš i více termínů najednou a zaplatit je jednou platbou. Potvrď, že ses seznámil s naším provozním řádem a obchodními podmínkami, a vyplň rezervaci.",
   "home.about.step2.title": "Po zaplacení",
   "home.about.step2.body":
     "Ti přijde společně s potvrzením tvojí rezervace veškeré potřebné info ke vstupu do našeho gymu do e-mailu, který jsi zadal při rezervaci.",
@@ -264,6 +264,9 @@ export const SITE_DEFAULTS = {
   "faq.20.question": "Je možné si ke cvičení pustit vlastní hudbu?",
   "faq.20.answer":
     "Ano. Ve studiu je reproduktor, ke kterému se připojíte přes Bluetooth. Protože jsou nad studiem byty, pouštějte hudbu ohleduplně. Od 22:00 do 6:00 je používání reproduktoru kvůli nočnímu klidu zakázáno.",
+  "faq.21.question": "Můžu si koupit více termínů najednou?",
+  "faq.21.answer":
+    "Ano. V kalendáři vyberete až 10 termínů, i v různých dnech, a zaplatíte je jednou platbou. Cena je součtem cen jednotlivých termínů a slevový kód se uplatní na celou objednávku. Vstupní kód dostanete ke každému termínu zvlášť a změnu nebo storno řešíte u každého termínu samostatně.",
 } as const;
 
 /**

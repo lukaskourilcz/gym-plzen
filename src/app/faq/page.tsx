@@ -19,7 +19,7 @@ export const revalidate = 300;
 
 export default async function FaqPage() {
   const content = await loadSiteContent();
-  const items = Array.from({ length: 20 }, (_, index) => {
+  const items = Array.from({ length: 21 }, (_, index) => {
     const number = index + 1;
     return {
       question: content.get(`faq.${number}.question` as SiteContentKey),

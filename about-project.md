@@ -2,8 +2,9 @@
 
 Rezervační a členský web pro samoobslužné soukromé fitness v plzeňské části
 Roudná.
-Jeden klient si rezervuje 75minutové časové okno, zaplatí jednorázový vstup a
-obdrží časově omezený přístupový kód. Součástí je veřejný web, členský účet,
+Jeden klient si rezervuje 75minutové časové okno (nebo až 10 oken najednou v
+jedné objednávce s jednou platbou), zaplatí jednorázový vstup a ke každému
+termínu obdrží časově omezený přístupový kód. Součástí je veřejný web, členský účet,
 obsahová i provozní administrace a věrnostní pravidlo každého 10. vstupu zdarma.
 
 ## Tech stack

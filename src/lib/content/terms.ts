@@ -73,6 +73,8 @@ web: [www.navigym.cz](https://www.navigym.cz/)
 
 4.5. Příjemcem plateb za rezervace a osobou vystavující příslušné účetní či daňové doklady je Poskytovatel uvedený v čl. 1.2 těchto VOP.
 
+4.6. Klient si může v jedné objednávce rezervovat více termínů najednou. Cena objednávky je součtem cen jednotlivých termínů a hradí se jednou platbou. Slevový kód se uplatní na objednávku jako celek.
+
 5. DOBA REZERVACE A VSTUP DO STUDIA
 
 5.1. Studio je Klientovi zpřístupněno pouze na dobu odpovídající rezervovanému časovému bloku.
@@ -132,6 +134,8 @@ web: [www.navigym.cz](https://www.navigym.cz/)
 8.7. Poskytovatel může ve výjimečném a odůvodněném případě umožnit změnu rezervace i později. Na takový postup však Klient nemá právní nárok.
 
 8.8. Nemůže-li být rezervace uskutečněna z důvodu na straně Poskytovatele, bude Klientovi nabídnut náhradní termín. Nebude-li možné vhodný náhradní termín dohodnout, bude Klientovi uhrazená cena vrácena.
+
+8.9. Obsahuje-li objednávka více termínů, posuzuje se změna i zrušení podle tohoto článku u každého termínu samostatně a ostatní termíny objednávky tím nejsou dotčeny. Vrací-li se uhrazená cena, vrací se cena připadající na dotčený termín.
 
 9. ODSTOUPENÍ SPOTŘEBITELE
 
