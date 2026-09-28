@@ -70,26 +70,35 @@ function foldLine(line: string): string {
   return parts.join("\r\n ");
 }
 
-/** Build a complete single-event calendar document. */
-export function buildIcs(event: CalendarEvent): string {
+/**
+ * Build a complete calendar document. A multi-slot order carries one event
+ * per slot, each with its reservation's own UID, so a later change of one
+ * term updates that entry in place.
+ */
+export function buildIcs(
+  events: CalendarEvent | readonly CalendarEvent[],
+): string {
+  const list = Array.isArray(events) ? events : [events as CalendarEvent];
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
     "PRODID:-//NAVI Private Gym//Rezervace//CS",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
-    "BEGIN:VEVENT",
-    `UID:${event.uid}`,
-    `DTSTAMP:${toIcsUtc(event.stamp ?? new Date())}`,
-    `DTSTART:${toIcsUtc(event.start)}`,
-    `DTEND:${toIcsUtc(event.end)}`,
-    `SUMMARY:${escapeText(event.summary)}`,
-    ...(event.location ? [`LOCATION:${escapeText(event.location)}`] : []),
-    ...(event.description
-      ? [`DESCRIPTION:${escapeText(event.description)}`]
-      : []),
-    ...(event.url ? [`URL:${escapeText(event.url)}`] : []),
-    "END:VEVENT",
+    ...list.flatMap((event) => [
+      "BEGIN:VEVENT",
+      `UID:${event.uid}`,
+      `DTSTAMP:${toIcsUtc(event.stamp ?? new Date())}`,
+      `DTSTART:${toIcsUtc(event.start)}`,
+      `DTEND:${toIcsUtc(event.end)}`,
+      `SUMMARY:${escapeText(event.summary)}`,
+      ...(event.location ? [`LOCATION:${escapeText(event.location)}`] : []),
+      ...(event.description
+        ? [`DESCRIPTION:${escapeText(event.description)}`]
+        : []),
+      ...(event.url ? [`URL:${escapeText(event.url)}`] : []),
+      "END:VEVENT",
+    ]),
     "END:VCALENDAR",
   ];
   // CRLF throughout, including the trailing break, as the spec requires.

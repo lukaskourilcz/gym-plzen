@@ -3,14 +3,23 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { profiles, messageDelivery } from "@/lib/db/schema";
 import type { MessageDelivery } from "@/lib/db/types";
-import { formatDateTime } from "@/lib/helpers/format";
+import {
+  formatDateTime,
+  formatMoney,
+  formatTimeRange,
+} from "@/lib/helpers/format";
+import type { BookingOrder, Reservation } from "@/lib/db/types";
 import {
   sendTemplateMessage,
   sendTextMessage,
 } from "@/lib/integrations/whatsapp";
 import { sendSms } from "@/lib/integrations/gosms";
 import { getSetting, getText } from "./cms";
-import { getLoyaltyStatus, loyaltyProgressSentence } from "./loyalty";
+import {
+  getLoyaltyStatus,
+  loyaltyProgressSentence,
+  orderLoyaltySentence,
+} from "./loyalty";
 import { buildIcs, reservationCalendarEvent } from "@/lib/helpers/ics";
 import { publicAddress } from "@/lib/content/site";
 import {
@@ -302,6 +311,105 @@ export async function sendReservationConfirmation(params: {
     },
     result,
   );
+}
+
+/** "středa 1. 10. 10:00 – 11:15 · 229 Kč", one line of an order e-mail. */
+export function orderSlotLine(slot: Reservation): string {
+  const day = new Intl.DateTimeFormat("cs-CZ", {
+    weekday: "long",
+    day: "numeric",
+    month: "numeric",
+    timeZone: "Europe/Prague",
+  }).format(slot.startsAt);
+  const price = !slot.priceCents
+    ? slot.loyaltyReward
+      ? "zdarma (věrnostní vstup)"
+      : "zdarma (voucher)"
+    : formatMoney(slot.priceCents, slot.currency);
+  return `• ${day} ${formatTimeRange(slot.startsAt, slot.endsAt)} · ${price}`;
+}
+
+/** "3 termíny" / "5 termínů" for the order e-mail. */
+function termCount(n: number): string {
+  if (n === 1) return "1 termín";
+  if (n >= 2 && n <= 4) return `${n} termíny`;
+  return `${n} termínů`;
+}
+
+/**
+ * The one confirmation of a paid multi-slot order: every slot with its price,
+ * the total, and a calendar file with one event per slot. Sent once per
+ * order; the delivery is filed under the order's first slot with the order's
+ * dedupe key. Like the single confirmation, it never holds back a PIN.
+ */
+export async function sendOrderConfirmation(params: {
+  order: BookingOrder;
+  slots: Reservation[];
+}): Promise<void> {
+  const { order, slots } = params;
+  const email = order.contactEmail;
+  const first = slots[0];
+  if (!email || !first) return;
+  const dedupeKey = `order-confirmation/${order.id}`;
+  const [alreadySent] = await db
+    .select({ id: messageDelivery.id })
+    .from(messageDelivery)
+    .where(eq(messageDelivery.dedupeKey, dedupeKey))
+    .limit(1);
+  if (alreadySent) return;
+
+  const loyalty = order.userId
+    ? orderLoyaltySentence(
+        await getLoyaltyStatus(order.userId),
+        slots.filter((slot) => slot.loyaltyReward).length,
+      )
+    : "";
+  const address = publicAddress(
+    await getText("contact.address").catch(() => ""),
+  );
+  const ics = buildIcs(
+    slots.map((slot) =>
+      reservationCalendarEvent({
+        reservationId: slot.id,
+        startsAt: slot.startsAt,
+        endsAt: slot.endsAt,
+        address,
+      }),
+    ),
+  );
+  const result = await sendTransactionalEmail({
+    id: "order_confirmation",
+    to: email,
+    attachments: [
+      {
+        filename: "rezervace.ics",
+        content: Buffer.from(ics, "utf8").toString("base64"),
+      },
+    ],
+    variables: {
+      name: order.contactName || "zákazníku",
+      count: termCount(slots.length),
+      slots: slots.map(orderSlotLine).join("\n"),
+      total:
+        order.totalCents === 0
+          ? "zdarma"
+          : formatMoney(order.totalCents, order.currency),
+      loyalty,
+    },
+  });
+  await db.insert(messageDelivery).values({
+    userId: order.userId,
+    reservationId: first.id,
+    channel: "email",
+    kind: "reservation_confirmation",
+    recipient: email,
+    status: result.sent ? "sent" : "failed",
+    providerMessageId: result.providerMessageId,
+    failureReason: result.error,
+    sentAt: result.sent ? new Date() : null,
+    // Only a delivered confirmation closes the order; a failure is retried.
+    dedupeKey: result.sent ? dedupeKey : null,
+  });
 }
 
 /**

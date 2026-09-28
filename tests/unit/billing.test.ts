@@ -168,6 +168,7 @@ test("both kinds of document render as a PDF with Czech text intact", async () =
     description: "Jednorázový vstup do NAVI Private Gym, 12. 10. 2026 v 18:00",
     customerName: "Žofie Křížová-Šťastná",
     customerEmail: "zofie@example.cz",
+    items: [],
   };
 
   const plain = await renderInvoicePdf({
@@ -188,6 +189,40 @@ test("both kinds of document render as a PDF with Czech text intact", async () =
   }
   // The two differ: one carries a tax breakdown the other must not invent.
   assert.notEqual(plain.length, vat.length);
+});
+
+test("a multi-slot order renders a line per slot", async () => {
+  const single = await renderInvoicePdf({
+    number: "2026-0002",
+    issuedAt: new Date("2026-10-04T08:00:00Z"),
+    suppliedAt: new Date("2026-10-04T08:00:00Z"),
+    description: "Jednorázový vstup do NAVI Private Gym, 12. 10. 2026 v 18:00",
+    items: [],
+    customerName: "Žofie Křížová-Šťastná",
+    customerEmail: "zofie@example.cz",
+    supplier: COMPLETE,
+    ...breakDownAmount(45_800, 0),
+  });
+  const order = await renderInvoicePdf({
+    number: "2026-0002",
+    issuedAt: new Date("2026-10-04T08:00:00Z"),
+    suppliedAt: new Date("2026-10-04T08:00:00Z"),
+    description: "Vstupy do NAVI Private Gym (3×)",
+    items: [
+      { description: "Vstup 12. 10. 2026 v 18:00", totalCents: 22_900 },
+      {
+        description: "Vstup 13. 10. 2026 v 18:00 (věrnostní vstup zdarma)",
+        totalCents: 0,
+      },
+      { description: "Vstup 14. 10. 2026 v 18:00", totalCents: 22_900 },
+    ],
+    customerName: "Žofie Křížová-Šťastná",
+    customerEmail: "zofie@example.cz",
+    supplier: COMPLETE,
+    ...breakDownAmount(45_800, 0),
+  });
+  assert.equal(order.subarray(0, 4).toString("latin1"), "%PDF");
+  assert.ok(order.length > single.length, "every slot adds a line");
 });
 
 test("the embedded font covers Czech, so no diacritic renders as .notdef", async () => {
@@ -219,13 +254,13 @@ test("a payment document never blocks the entry code", async () => {
   const fs = await import("node:fs/promises");
   const source = await fs.readFile("src/lib/services/fulfillment.ts", "utf8");
   // The call site, not the import above it.
-  const call = source.indexOf("await issueAndSend(");
+  const call = source.indexOf("await issueDocumentFor(");
   assert.ok(call > 0, "fulfillment issues the document");
   const before = source.slice(0, call);
   const tryIndex = before.lastIndexOf("try {");
   const catchAfter = source.indexOf("catch", call);
   assert.ok(
     tryIndex > 0 && catchAfter > call,
-    "issueAndSend must sit inside try/catch",
+    "issueDocumentFor must sit inside try/catch",
   );
 });

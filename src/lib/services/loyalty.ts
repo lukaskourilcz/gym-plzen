@@ -267,6 +267,30 @@ export function loyaltyProgressSentence(status: LoyaltyStatus): string {
   return `${visit}, do vstupu zdarma ${entriesRemainingPhrase(entriesUntilFree)}.`;
 }
 
+/**
+ * The loyalty sentence for a confirmed order of several slots, where "this
+ * was your Nth visit" would be wrong. Call it with the status after the
+ * order is counted and the number of the order's free slots. Empty for a
+ * guest, like `loyaltyProgressSentence`.
+ */
+export function orderLoyaltySentence(
+  status: LoyaltyStatus,
+  freeInOrder: number,
+): string {
+  if (status.totalEntries <= 0) return "";
+  const counted = `Se započtením této objednávky máte ${status.totalEntries} ${pluralEntries(status.totalEntries)}.`;
+  const free =
+    freeInOrder === 1
+      ? " Jeden termín v ní máte zdarma jako věrnostní vstup."
+      : freeInOrder > 1
+        ? ` ${freeInOrder} termíny v ní máte zdarma jako věrnostní vstupy.`
+        : "";
+  const next = status.nextEntryIsFree
+    ? " Příští vstup máte zdarma."
+    : ` Do dalšího vstupu zdarma ${entriesRemainingPhrase(status.entriesUntilFree)}.`;
+  return `${counted}${free}${next}`;
+}
+
 /** Active claim numbers prevent an older cancellation from reissuing a reward. */
 export async function hasClaimedReward(
   userId: string,

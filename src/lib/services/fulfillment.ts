@@ -3,7 +3,7 @@ import {
   isAccessCodeDeliveryDue,
   isAccessCodePreparationDue,
 } from "@/lib/config/access-code-delivery";
-import { withReservationLock } from "./operation-lock";
+import { withOperationLock, withReservationLock } from "./operation-lock";
 import { getOperations } from "./operations";
 import { logger } from "@/lib/helpers/logger";
 import { getReservation } from "./reservations";
@@ -14,11 +14,17 @@ import {
 } from "./access-codes";
 import {
   dispatchAccessCode,
+  sendOrderConfirmation,
   sendReservationConfirmation,
 } from "./notifications";
-import { notifyReservationConfirmed } from "./operator-notifications";
+import {
+  notifyOrderConfirmed,
+  notifyReservationConfirmed,
+} from "./operator-notifications";
 import { getPipeline, markStepFailed, markStepSucceeded } from "./pipeline";
-import { issueAndSend } from "./invoices";
+import { issueDocumentFor } from "./invoices";
+import { getOrder, listOrderReservations } from "./order-state";
+import type { BookingOrder, Reservation } from "@/lib/db/types";
 
 /**
  * Fulfillment orchestrator : runs a confirmed reservation through the reliability
@@ -31,6 +37,78 @@ import { issueAndSend } from "./invoices";
 export async function fulfillReservation(reservationId: string): Promise<void> {
   return withReservationLock(reservationId, () => fulfillLocked(reservationId));
 }
+/**
+ * The once-per-purchase side effects: the customer's confirmation, the
+ * operator's notice and the payment document. A slot of a multi-slot order
+ * shares them with its order, so they are sent once for the whole order and
+ * under a lock of their own: it is taken last and holds no other, which keeps
+ * it free of lock-order cycles with the payment and reservation locks.
+ */
+async function announceConfirmed(reservation: Reservation): Promise<void> {
+  const order = reservation.orderId
+    ? await getOrder(reservation.orderId)
+    : null;
+  if (order && order.status !== "confirmed") return;
+  const all = order ? await listOrderReservations(order.id) : [];
+  const slots = all.filter(
+    (slot) => slot.status === "confirmed" || slot.status === "completed",
+  );
+  // Decided by what was bought, not by what is still booked: a slot of a
+  // larger order cancelled later must not turn the watchdog's next retry into
+  // a single-slot confirmation of its sibling.
+  const perOrder = order !== null && all.length > 1;
+  const run = () =>
+    announceUnlocked(reservation, perOrder ? { order: order!, slots } : null);
+  return order
+    ? withOperationLock(`order-fulfillment:${order.id}`, run)
+    : run();
+}
+
+async function announceUnlocked(
+  reservation: Reservation,
+  order: { order: BookingOrder; slots: Reservation[] } | null,
+): Promise<void> {
+  const reservationId = reservation.id;
+  try {
+    if (order) await sendOrderConfirmation(order);
+    else
+      await sendReservationConfirmation({
+        userId: reservation.userId ?? null,
+        reservationId,
+        name: reservation.contactName,
+        startsAt: reservation.startsAt,
+        endsAt: reservation.endsAt,
+        priceCents: reservation.priceCents,
+        loyaltyReward: reservation.loyaltyReward,
+        email: reservation.contactEmail,
+      });
+  } catch (error) {
+    logger.error(error, {
+      where: "fulfillment.sendConfirmation",
+      reservationId,
+    });
+  }
+
+  // And the operator hears about the booking, if they asked to. The notice
+  // claims its scope once, so the watchdog's retries stay quiet.
+  if (order) await notifyOrderConfirmed(order);
+  else await notifyReservationConfirmed(reservation);
+
+  // The payment document is an accounting convenience and is issued at most
+  // once per reservation, or once per order. Every failure is logged and
+  // swallowed here.
+  try {
+    const outcome = await issueDocumentFor(reservation);
+    if (!outcome.issued && outcome.reason === "profile_incomplete") {
+      logger.warn("payment document skipped: billing profile incomplete", {
+        reservationId,
+      });
+    }
+  } catch (error) {
+    logger.error(error, { where: "fulfillment.issueDocument", reservationId });
+  }
+}
+
 async function fulfillLocked(reservationId: string): Promise<void> {
   const reservation = await getReservation(reservationId);
   if (
@@ -46,50 +124,10 @@ async function fulfillLocked(reservationId: string): Promise<void> {
   // Keep this step pending until initial fulfillment finishes, so a crash
   // after the payment commit is recoverable even while the lock is disabled.
 
-  // Confirmation is useful operationally, but must never hold back the entry
-  // code. Access-code delivery remains the reliability pipeline's invariant.
-  try {
-    await sendReservationConfirmation({
-      userId: reservation.userId ?? null,
-      reservationId,
-      name: reservation.contactName,
-      startsAt: reservation.startsAt,
-      endsAt: reservation.endsAt,
-      priceCents: reservation.priceCents,
-      loyaltyReward: reservation.loyaltyReward,
-      email: reservation.contactEmail,
-    });
-  } catch (error) {
-    logger.error(error, {
-      where: "fulfillment.sendReservationConfirmation",
-      reservationId,
-    });
-  }
-
-  // And the operator hears about the booking, if they asked to. The notice
-  // claims the reservation once, so the watchdog's retries stay quiet.
-  await notifyReservationConfirmed(reservation);
-
-  // The payment document is an accounting convenience and is issued at most
-  // once per reservation. Like the confirmation it must never hold back the
-  // entry code, so every failure is logged and swallowed here.
-  try {
-    const outcome = await issueAndSend({
-      reservationId,
-      userId: reservation.userId ?? null,
-      customerName: reservation.contactName,
-      customerEmail: reservation.contactEmail,
-      totalCents: reservation.priceCents,
-      startsAt: reservation.startsAt,
-    });
-    if (!outcome.issued && outcome.reason === "profile_incomplete") {
-      logger.warn("payment document skipped: billing profile incomplete", {
-        reservationId,
-      });
-    }
-  } catch (error) {
-    logger.error(error, { where: "fulfillment.issueAndSend", reservationId });
-  }
+  // Confirmation, the operator's notice and the payment document are useful
+  // operationally, but must never hold back the entry code. Access-code
+  // delivery remains the reliability pipeline's invariant.
+  await announceConfirmed(reservation);
 
   // The physical lock is a separately enabled phase. Paid reservations still
   // receive their confirmation/document while lock work remains dormant.
