@@ -1,3 +1,21 @@
+# Objednávky 1/7: datový model — 28. 9. 2026 večer
+
+Krok #77 hotový (PR #87). Nová tabulka `booking_order` (+ enum
+`booking_order_status`), nullable `order_id` na `reservation` (SET NULL),
+`payment` (SET NULL), `invoice` (RESTRICT), `voucher_redemption` (CASCADE);
+unikátní `payment_active_order_uidx`, `invoice_order_uidx`,
+`voucher_redemption_order_uidx`. `invoice.reservation_id` a
+`voucher_redemption.reservation_id` zůstávají NOT NULL — doklad/claim
+objednávky ukáže na první termín (rozhodnout v #78/#79). Migrace
+`drizzle/20260928220000_booking_orders.sql` aplikována na produkci před
+sloučením (Drizzle `select()` vyjmenovává nové sloupce). Lokální testovací DB
+`codex_navi_access_test` je migrovaná: `TEST_DATABASE_URL=postgres://$USER@localhost:5432/codex_navi_access_test`.
+Node 22 lokálně chybí, použit `npx -p node@22`. 208 unit, 44 integračních,
+SQL test indexů, typy, lint, build prošly; `npm audit --omit=dev` 0 (4 moderate
+esbuild jen v dev). Další krok: #78 služby objednávky.
+
+---
+
 # Test kliky, objednávka více termínů — 28. 9. 2026
 
 Kontext z WhatsAppu a dvou hlasovek: provozovatelky chtějí kupovat více

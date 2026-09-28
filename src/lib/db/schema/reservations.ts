@@ -11,7 +11,67 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { profiles } from "./members";
-import { blockReason, reservationStatus } from "./enums";
+import { voucher } from "./marketing";
+import { blockReason, bookingOrderStatus, reservationStatus } from "./enums";
+
+/**
+ * One checkout of one or more reservations, paid by a single payment. The
+ * reservation stays the unit of a training slot (access code, pipeline,
+ * rescheduling and cancellation are per reservation); the order is the unit
+ * of purchase: one payment, one document, one voucher, one confirmation.
+ * Reservations created before orders existed, and admin walk-ins, have none.
+ */
+export const bookingOrder = pgTable(
+  "booking_order",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    status: bookingOrderStatus("status").notNull().default("pending"),
+    totalCents: integer("total_cents").notNull(),
+    currency: text("currency").default("czk").notNull(),
+
+    // Contact snapshot shared by every reservation of the order.
+    contactName: text("contact_name"),
+    contactEmail: text("contact_email"),
+    contactPhone: text("contact_phone"),
+
+    confirmationTokenHash: text("confirmation_token_hash"),
+    voucherId: uuid("voucher_id").references(() => voucher.id, {
+      onDelete: "restrict",
+    }),
+
+    rulesAcceptedAt: timestamp("rules_accepted_at", { withTimezone: true }),
+    termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
+
+    createdByAdminId: uuid("created_by_admin_id").references(
+      () => profiles.id,
+      {
+        onDelete: "set null",
+      },
+    ),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    cancelReason: text("cancel_reason"),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("booking_order_user_created_id_idx").on(
+      t.userId,
+      t.createdAt.desc(),
+      t.id.desc(),
+    ),
+    index("booking_order_status_created_idx").on(t.status, t.createdAt),
+    index("booking_order_voucher_idx").on(t.voucherId),
+    index("booking_order_created_by_admin_idx").on(t.createdByAdminId),
+  ],
+);
 
 /**
  * A reservation is a single training slot. The gym holds one person at a time,
@@ -26,6 +86,11 @@ export const reservation = pgTable(
 
     // Null for admin-created walk-in bookings without an account.
     userId: uuid("user_id").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+
+    // The checkout this slot was bought in; null for older rows and walk-ins.
+    orderId: uuid("order_id").references(() => bookingOrder.id, {
       onDelete: "set null",
     }),
 
@@ -70,6 +135,7 @@ export const reservation = pgTable(
   (t) => [
     index("reservation_starts_at_idx").on(t.startsAt),
     index("reservation_user_idx").on(t.userId),
+    index("reservation_order_idx").on(t.orderId),
     index("reservation_user_created_id_idx").on(
       t.userId,
       t.createdAt.desc(),

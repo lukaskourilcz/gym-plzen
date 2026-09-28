@@ -89,6 +89,7 @@ const BOOKING_TABLES = [
   "blocked_slot",
   "pricing_period",
   "reservation",
+  "booking_order",
   "membership",
   "membership_plan",
 ];
