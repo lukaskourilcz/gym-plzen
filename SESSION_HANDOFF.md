@@ -1,3 +1,48 @@
+# Test kliky, objednávka více termínů — 28. 9. 2026
+
+Kontext z WhatsAppu a dvou hlasovek: provozovatelky chtějí kupovat více
+termínů najednou; Renča 28. 9. dopoledne kliku přeinstalovala (jiný typ
+otevírání) a kalibrovala, Wi‑Fi v gymu dál vypadává; 29. 9. tam budou od 13:00,
+obě ve 14:00.
+
+**Klika po kalibraci.** Nuki dohled v `site_setting` `nuki-health:22819692303`
+hlásí `online` (21:40). Kniha vstupů (sync z Nuki logu) ukazuje 28. 9.: dvě
+kalibrace (`action_253`, Renča, 09:53 a 10:01), poté klávesnicové `unlatch`
+kódem `999999` v 10:05, 10:05, 10:06 a 17:20 s následným `auto_lock`/ručním
+zamknutím. Klávesnice tedy po kalibraci otevírá. Přímé čtení Nuki API nešlo:
+lokální `NUKI_API_TOKEN` patří účtu bez zámků, produkční token je jen ve
+Vercelu (přístup zamítnut). Kódy jsou v produkci zapnuté od 20. 9.
+(`booking.operations.accessCodesEnabled=true`). Výpadek Wi‑Fi: příprava PINu
+běží −24 h, `recoverAccessCode` při `device_offline` jen opakuje; už potvrzený
+PIN (`provision_state=ready`) se doručí i při výpadku; nový PIN se bez zámku
+nepotvrdí a e‑mail nejde, dokud se zámek nepřipojí (alert po 5 pokusech).
+
+**Profil pro testy.** Telefon účtu `kouril.lukas@gmail.com` změněn přes Můj
+účet → Profil na `+3546117942` (DB ověřeno). Zkušební WhatsApp se ale řídí env
+`ZERNIO_TEST_RECIPIENT`/`ZERNIO_TEST_EMAIL` (`isZernioTestRecipient`), takže
+bez změny env + redeploy přijde jen e‑mail → NEEDED.
+
+**Zkušební rezervace 29. 9. 13:45–15:00 nezaložena.** Administrace odmítla:
+„Tento termín je blokovaný“ — blok `private_event` 20. 9. 13:45 → 1. 10. 00:00
+(`72444827…`), který stránka bloků nezobrazuje, protože filtruje jen bloky
+začínající v rozsahu (issue #84). Úprava bloků byla agentovi zamítnuta
+(sdílený zdroj); přesný postup pro vlastníka v NEEDED.md. Žádná změna bloků,
+rezervací ani env neproběhla; jediná produkční změna je telefon v profilu.
+
+**Nálezy.** Záměr kódu `bf2adc93…` (rezervace `2d1cbc47…`, 22. 9., stornovaná)
+se odebírá donekonečna: `submitted` bez `nuki_auth_id`, prošlá platnost,
+87 pokusů, dva otevřené alerty (issue #85). Testovací příjemce WhatsApp jen v
+env (issue #86). Otevřené alerty `refund-needed` pro `8e056780…` a `987fdf8b…`
+(refundace v Comgate ručně) zůstávají.
+
+**Objednávka více termínů.** Plán a rozhodnutí:
+[docs/MULTI_SLOT_ORDER_PLAN_2026_09_28.md](docs/MULTI_SLOT_ORDER_PLAN_2026_09_28.md).
+Epic #76, kroky #77–#83 (model → služby → platba → UI → e‑maily → účet/admin →
+texty). Kód se v této session neměnil; repo bylo o 190 commitů pozadu a je
+sjednocené s `origin/main`.
+
+---
+
 # Kompaktní admin kalendář — 25. 9. 2026
 
 Nasazeno PR #74, commit 1d251d8, deployment dpl_A4SVvJArSCLX7L4Tu51z8QwXm52f READY.
