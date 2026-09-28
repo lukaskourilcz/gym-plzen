@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { systemAlert } from "@/lib/db/schema";
 import type { SystemAlert } from "@/lib/db/types";
@@ -72,16 +72,51 @@ export async function raiseAlert(
       })
       .returning();
 
-    if (alert) {
-      await dispatchToWhatsApp(alert);
-      // The WhatsApp group is one way in; e-mail is the one that works today.
-      await notifyAlert(alert);
-    }
+    if (alert) await deliver(alert);
     return alert ?? null;
   } catch (e) {
     // Last-resort: at least get it into Sentry/console.
     logger.error(e, { where: "alerts.raiseAlert", title: params.title });
     return null;
+  }
+}
+
+/** Fan an alert out once and mark it delivered, whether or not WhatsApp is set up. */
+async function deliver(alert: SystemAlert): Promise<void> {
+  await dispatchToWhatsApp(alert);
+  // The WhatsApp group is one way in; e-mail is the one that works today.
+  await notifyAlert(alert);
+  await db
+    .update(systemAlert)
+    .set({ notifiedAt: new Date() })
+    .where(eq(systemAlert.id, alert.id));
+}
+
+/**
+ * Deliver alerts that were written inside a database transaction (a payment
+ * arriving for a booking that is no longer valid is recorded atomically with
+ * the payment) and so could not be sent there. Without this they sat in the
+ * administration unseen while a customer had paid for nothing. Never throws.
+ */
+export async function deliverPendingAlerts(limit = 10): Promise<number> {
+  try {
+    const pending = await db
+      .select()
+      .from(systemAlert)
+      .where(
+        and(
+          isNull(systemAlert.notifiedAt),
+          isNull(systemAlert.resolvedAt),
+          gt(systemAlert.createdAt, new Date(Date.now() - 24 * 3_600_000)),
+        ),
+      )
+      .orderBy(asc(systemAlert.createdAt))
+      .limit(limit);
+    for (const alert of pending) await deliver(alert);
+    return pending.length;
+  } catch (e) {
+    logger.error(e, { where: "alerts.deliverPendingAlerts" });
+    return 0;
   }
 }
 
@@ -108,11 +143,6 @@ async function dispatchToWhatsApp(alert: SystemAlert): Promise<void> {
   const body = `${emoji} ${alert.title}${alert.body ? `\n${alert.body}` : ""}`;
 
   await Promise.all(recipients.map((to) => sendTextMessage({ to, body })));
-
-  await db
-    .update(systemAlert)
-    .set({ notifiedAt: new Date() })
-    .where(eq(systemAlert.id, alert.id));
 }
 
 /** Recent alerts for the admin dashboard. */

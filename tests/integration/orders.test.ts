@@ -33,6 +33,7 @@ import {
   releaseExpiredPendingReservations,
 } from "../../src/lib/services/reservations";
 import { listCustomerOrders } from "../../src/lib/services/customer-orders";
+import { formatDateTime } from "../../src/lib/helpers/format";
 import {
   addDaysToDateKey,
   dateKeyInTimeZone,
@@ -318,10 +319,12 @@ describe(
       assert.equal(outcome.kind, "checkout");
       if (outcome.kind !== "checkout") return;
       assert.equal(outcome.totalCents, 3 * PRICE - 10_000);
+      // The discount is spread in proportion, the remainder on the last slot:
+      // each slot keeps the price a refund of it would return (VOP 8.9).
       const held = await slotsOf(outcome.orderId);
-      assert.equal(
-        held.reduce((sum, row) => sum + row.price_cents, 0),
-        3 * PRICE - 10_000,
+      assert.deepEqual(
+        held.map((row) => row.price_cents),
+        [19_567, 19_567, 19_566],
       );
       const claims = await rows<{ order_id: string; status: string }>(
         "select order_id, status from voucher_redemption",
@@ -375,7 +378,7 @@ describe(
           starts: [slot(3), slot(4)],
           details: details(),
         }),
-        /už není volný|je již rezervovaný/,
+        new RegExp(`Termín ${formatDateTime(slot(4))} už není volný`),
       );
       assert.equal(await count("reservation"), before);
       assert.equal(await count("booking_order"), 0);
@@ -430,27 +433,140 @@ describe(
       if (again.kind === "checkout") assert.equal(again.url, first.url);
       assert.equal(comgate.creates.length, 1);
       assert.equal(await count("reservation"), 2);
+    });
 
-      // A different selection replaces the earlier order.
+    test("a checkout whose gateway session is still open cannot be replaced", async () => {
+      const first = await startOrder({
+        userId: null,
+        starts: [slot(3), slot(4)],
+        details: details(),
+      });
+      if (first.kind !== "checkout") return assert.fail("expected checkout");
+      const hold = {
+        kind: "order" as const,
+        id: first.orderId,
+        token: first.token!,
+      };
+      // Paying the old tab after a replacement would charge twice.
+      await assert.rejects(
+        startOrder({
+          userId: null,
+          starts: [slot(3), slot(4), slot(5)],
+          details: details(),
+          hold,
+        }),
+        /otevřenou platbu/,
+      );
+      assert.equal((await orderRow(first.orderId)).status, "pending");
+      assert.equal(comgate.creates.length, 1);
+
+      // Once the gateway ends that session, the new selection goes through.
+      comgate.settle("TEST-0001", "CANCELLED");
       const changed = await startOrder({
         userId: null,
         starts: [slot(3), slot(4), slot(5)],
         details: details(),
-        hold: { kind: "order", id: first.orderId, token: first.token! },
+        hold,
       });
       assert.equal(changed.kind, "checkout");
-      const previous = await orderRow(first.orderId);
-      assert.equal(previous.status, "cancelled");
-      assert.equal(previous.cancel_reason, "superseded");
+      assert.equal((await orderRow(first.orderId)).status, "cancelled");
+    });
 
-      // The replaced order's payment arriving late is an alert, not a booking.
+    test("an e-mail alone never releases or reveals someone else's checkout", async () => {
+      const victim = await startOrder({
+        userId: null,
+        starts: [slot(3), slot(4)],
+        details: details(),
+      });
+      if (victim.kind !== "checkout") return assert.fail("expected checkout");
+      await seedVoucher({ code: "CIZI10", kind: "percentage", value: 10 });
+      // Same e-mail, no cookie, a different selection and a voucher: exactly
+      // what used to release the victim's hold.
+      await assert.rejects(
+        startOrder({
+          userId: null,
+          starts: [slot(3), slot(5)],
+          details: details(),
+          voucherCode: "CIZI10",
+        }),
+        /rozpracovaný v jiné platbě/,
+      );
+      assert.equal((await orderRow(victim.orderId)).status, "pending");
+      assert.ok(
+        (await slotsOf(victim.orderId)).every(
+          (row) => row.status === "pending",
+        ),
+      );
+    });
+
+    test("a payment for an order that was cancelled meanwhile alerts the operator", async () => {
+      const recipients = "provoz@example.test";
+      const [current] = await rows<{ value: { events: unknown } }>(
+        "select value from site_setting where key = 'notifications.operator'",
+      );
+      await setSetting("notifications.operator", {
+        recipients,
+        events: current?.value.events,
+      });
+      const outcome = await startOrder({
+        userId: null,
+        starts: [slot(3), slot(4)],
+        details: details(),
+      });
+      // The operator closes one of the held slots; the order cannot be
+      // confirmed as a whole any more, so none of it stays held.
+      const [first] = await slotsOf(outcome.orderId);
+      await cancelReservation({ id: first!.id, reason: "Úklid" });
+      assert.equal((await orderRow(outcome.orderId)).status, "cancelled");
+      assert.ok(
+        (await slotsOf(outcome.orderId)).every(
+          (row) => row.status === "cancelled",
+        ),
+      );
+      // The customer still pays in the open gateway tab.
       comgate.settle("TEST-0001", "PAID");
       await synchronizeComgatePayment("TEST-0001");
-      assert.equal((await orderRow(first.orderId)).status, "cancelled");
-      const [alert] = await rows<{ title: string }>(
-        "select title from system_alert where dedupe_key like 'late-payment:%'",
+      const [alert] = await rows<{ notified_at: Date | null }>(
+        "select notified_at from system_alert where dedupe_key like 'late-payment:%'",
       );
-      assert.match(alert?.title ?? "", /neplatné objednávce/);
+      assert.ok(alert?.notified_at, "the late payment alert was delivered");
+      assert.equal(
+        resend.sent.filter(
+          (mail) =>
+            mail.to === recipients && /objednávce/.test(mail.text ?? ""),
+        ).length,
+        1,
+      );
+    });
+
+    test("a confirmation that could not be e-mailed is retried until it is sent", async () => {
+      const outcome = await startOrder({
+        userId: null,
+        starts: [slot(3), slot(4)],
+        details: details(),
+      });
+      resend.rateLimitNext(50);
+      comgate.settle("TEST-0001", "PAID");
+      await synchronizeComgatePayment("TEST-0001");
+      const [first] = await slotsOf(outcome.orderId);
+      const [step] = await rows<{ status: string }>(
+        "select status from reservation_pipeline where reservation_id = $1 and step = 'payment'",
+        [first!.id],
+      );
+      assert.equal(step?.status, "retrying");
+      resend.rateLimitNext(0);
+      await fulfillReservation(first!.id);
+      const [done] = await rows<{ status: string }>(
+        "select status from reservation_pipeline where reservation_id = $1 and step = 'payment'",
+        [first!.id],
+      );
+      assert.equal(done?.status, "succeeded");
+      assert.equal(
+        resend.sent.filter((mail) =>
+          mail.subject.startsWith("Potvrzení objednávky"),
+        ).length,
+        1,
+      );
     });
 
     test("an order that never reached the gateway expires as a whole", async () => {
@@ -478,9 +594,9 @@ describe(
       });
       comgate.settle("TEST-0001", "PAID");
       await synchronizeComgatePayment("TEST-0001");
-      const [first, second] = await slotsOf(outcome.orderId);
+      const [first] = await slotsOf(outcome.orderId);
       await cancelReservation({ id: first!.id, reason: "test" });
-      assert.equal((await slotsOf(outcome.orderId))[1]?.status, "confirmed");
+      const [, second] = await slotsOf(outcome.orderId);
       const [alert] = await rows<{
         body: string;
         context: { amountCents: number };

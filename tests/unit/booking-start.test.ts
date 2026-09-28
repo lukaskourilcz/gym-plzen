@@ -31,3 +31,14 @@ test("no calendar can be paged back to a month before opening", () => {
   assert.equal(monthOf("2026-10-20T07:00:00Z"), "2026-10");
   assert.equal(monthOf("2026-11-03T07:00:00Z"), "2026-11");
 });
+
+test("no day before opening is bookable, whatever the operator's own start", async () => {
+  const { isDateOpenForBooking, DEFAULT_OPERATIONS } =
+    await import("../../src/lib/config/operations");
+  const open = { ...DEFAULT_OPERATIONS, bookingsFrom: "" };
+  assert.equal(isDateOpenForBooking("2026-09-30", open), false);
+  assert.equal(isDateOpenForBooking("2026-10-01", open), true);
+  const later = { ...DEFAULT_OPERATIONS, bookingsFrom: "2026-10-05" };
+  assert.equal(isDateOpenForBooking("2026-10-04", later), false);
+  assert.equal(isDateOpenForBooking("2026-10-05", later), true);
+});

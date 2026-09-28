@@ -26,6 +26,8 @@ import {
 import { claimVoucher } from "./vouchers";
 import { getOperations } from "./operations";
 import {
+  hasOpenOrderPayment,
+  hasOpenReservationPayment,
   refreshOrderPayment,
   refreshReservationPayment,
   resumeOrderCheckout,
@@ -74,6 +76,8 @@ export type OrderConfirmation =
 
 const STILL_PROCESSING =
   "Platbu za tyto termíny ještě ověřujeme. Zkuste to prosím za chvíli znovu.";
+const OPEN_PAYMENT =
+  "Za tyto termíny už máte otevřenou platbu. Dokončete ji, nebo počkejte, až za 30 minut vyprší, a vyberte termíny znovu.";
 const PAYMENTS_UNAVAILABLE =
   "Online platby teď nejsou dostupné. Zkuste to prosím později.";
 
@@ -241,11 +245,24 @@ async function continueOwnOrder(
       await refreshReservationPayment(row.id);
   own = await lookup();
 
+  /*
+   * Only the account or the hold cookie's token proves a reservation is the
+   * visitor's. A match on the typed e-mail alone may at most continue the very
+   * same checkout: it must never release someone else's hold, nor reveal
+   * whether that person's booking is confirmed.
+   */
+  const proves = (row: Reservation) =>
+    (params.userId !== null && row.userId === params.userId) ||
+    (params.hold?.kind === "order" && row.orderId === params.hold.id) ||
+    (params.hold?.kind === "reservation" && row.id === params.hold.id);
+
   const confirmed = own.find((row) => row.status === "confirmed");
   if (confirmed)
-    throw new ActionError(
-      `Termín ${formatDateTime(confirmed.startsAt)} už máte potvrzený. Odeberte ho prosím z výběru.`,
-    );
+    throw proves(confirmed)
+      ? new ActionError(
+          `Termín ${formatDateTime(confirmed.startsAt)} už máte potvrzený. Odeberte ho prosím z výběru.`,
+        )
+      : slotUnavailable(confirmed.startsAt);
   if (own.length === 0) return null;
 
   const orderIds = [...new Set(own.map((row) => row.orderId))];
@@ -261,11 +278,7 @@ async function continueOwnOrder(
           row.startsAt.getTime() === slots[index]!.startsAt.getTime(),
       );
     if (sameSelection) {
-      const order = await getOrder(onlyOrder);
-      const proven =
-        (params.userId !== null && order?.userId === params.userId) ||
-        (params.hold?.kind === "order" && params.hold.id === onlyOrder);
-      if (proven)
+      if (held.every(proves))
         return startOrderPayment({
           orderId: onlyOrder,
           userId: params.userId,
@@ -278,8 +291,22 @@ async function continueOwnOrder(
     }
   }
 
-  // Nothing to continue, or a different selection or price is wanted: the
-  // earlier holds give way, unless one was confirmed in the meantime.
+  const unproven = own.find((row) => !proves(row));
+  if (unproven)
+    throw new ActionError(
+      `Termín ${formatDateTime(unproven.startsAt)} je právě rozpracovaný v jiné platbě. Dokončete ji, nebo to zkuste znovu za 30 minut.`,
+    );
+  // A gateway session still open for the earlier checkout could be paid after
+  // it is released, charging the visitor twice. It has to end first.
+  for (const orderId of orderIds)
+    if (orderId && (await hasOpenOrderPayment(orderId)))
+      throw new ActionError(OPEN_PAYMENT);
+  for (const row of own)
+    if (!row.orderId && (await hasOpenReservationPayment(row.id)))
+      throw new ActionError(OPEN_PAYMENT);
+
+  // A different selection or price is wanted: the earlier holds give way,
+  // unless one was confirmed in the meantime.
   for (const orderId of orderIds) {
     if (orderId) {
       if (!(await releasePendingOrder(orderId, "superseded")))

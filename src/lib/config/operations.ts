@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { OPENING_DATE_KEY } from "./booking-start";
 
 export const OPERATIONS_SETTING_KEY = "booking.operations";
 export const operationsSchema = z.object({
@@ -22,6 +23,12 @@ export const DEFAULT_OPERATIONS: Operations = {
   accessCodesEnabled: false,
 };
 
+/**
+ * Whether a Prague date can be booked at all. Nothing before opening day is
+ * ever bookable, whatever the operator's own `bookingsFrom`: the calendar
+ * only hides those days, and a crafted details URL must not get past it.
+ */
 export function isDateOpenForBooking(date: string, operations: Operations) {
+  if (date < OPENING_DATE_KEY) return false;
   return !operations.bookingsFrom || date >= operations.bookingsFrom;
 }

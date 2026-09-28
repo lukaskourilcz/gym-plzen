@@ -326,6 +326,11 @@ export default async function BookingDetailsPage({
             ) : null}
             <div className="mt-8">
               <BookingDetailsForm
+                // A new selection is a new form: voucher quote and errors
+                // belonged to the previous one.
+                key={bookable
+                  .map((item) => item.startsAt.toISOString())
+                  .join(",")}
                 paymentsAvailable={paymentsAvailable}
                 startsISO={bookable.map((item) => item.startsAt.toISOString())}
                 totalCents={quote.totalCents}
