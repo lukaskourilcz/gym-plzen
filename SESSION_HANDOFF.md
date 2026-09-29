@@ -1,3 +1,32 @@
+# Audit před otevřením — 29. 9. 2026 (noc)
+
+Šest paralelních read-only review (rezervace, platby, přístupové kódy, administrace a
+bezpečnost, účet a web, testy) + read-only kontrola produkce (Supabase, Vercel logy).
+Opravy v PR #93–#97 (sloučeno a nasazeno). Produkční data zákazníků se neměnila,
+nikomu se nic neposlalo; jediný zápis agenta na produkci v této session jsou migrace
+z předchozí části (objednávky).
+
+**Nejdůležitější opravy.** Odebraný termín se dál účtoval (formulář držel první výběr);
+middleware čekal na Supabase Auth bez limitu (61× 504 za 48 h); pozdní platba nikoho
+neupozornila; e-mail sám mohl zrušit cizí rozpracovanou objednávku a otevřená platba
+šla nahradit (dvojí platba); PIN se ztraceným odesláním do Nuki se nikdy neopakoval
+(#85 – na produkci po nasazení uzavřen); skončené kódy zůstávaly v zámku; stránky
+administrace hlídal jen layout; otevřené přesměrování po přihlášení; chyby Postgresu z
+drizzle 0.45 se nerozpoznávaly; #84 probíhající blok; uzávěra/storno v administraci bez
+potvrzení; testy mohly sáhnout na vzdálenou DB a posílat e-maily (síťová pojistka).
+
+**Ověření.** 237 unit, 91 integračních (nové: objednávky, přístupové kódy, watchdog,
+změna termínu, webhook/cron autorizace, administrace), SQL test, typecheck, lint,
+formát, Vercel buildy. Produkce po nasazení: kalendář, údaje, přesměrování před
+otevřením, #85 uzavřen, PIN budoucí zákaznice (1. 10. 16:15) nedotčen, watchdog běží.
+UI nových potvrzení administrace neověřeno v prohlížeči (vyžaduje admin přihlášení).
+Vynecháno: omezení `/reset-password` (vráceno, k rozhodnutí).
+
+**K rozhodnutí vlastníka**: sekce „Audit před otevřením“ v NEEDED.md, nejdřív
+produkční admin `admin@namaste.demo`.
+
+---
+
 # Objednávky více termínů hotové — 29. 9. 2026
 
 Epic #76 dokončen, všech 7 kroků sloučeno a nasazeno: #87 model, #88 služby a
