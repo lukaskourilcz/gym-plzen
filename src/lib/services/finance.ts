@@ -23,14 +23,6 @@ export async function getFinanceOverview(
         count: sql<number>`count(*)`.mapWith(Number),
         grossCents:
           sql<number>`coalesce(sum(${payment.amountCents}), 0)`.mapWith(Number),
-        refundedCount:
-          sql<number>`count(*) filter (where ${payment.status} = 'refunded')`.mapWith(
-            Number,
-          ),
-        refundedCents:
-          sql<number>`coalesce(sum(${payment.amountCents}) filter (where ${payment.status} = 'refunded'), 0)`.mapWith(
-            Number,
-          ),
       })
       .from(payment)
       .where(

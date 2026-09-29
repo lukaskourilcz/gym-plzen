@@ -74,7 +74,6 @@ describe(
       const all = await getFinanceOverview("all", now);
       assert.equal(all.receipts.count, 3);
       assert.equal(all.receipts.grossCents, 17000);
-      assert.equal(all.receipts.refundedCents, 3000);
       assert.deepEqual(all.vouchers, { count: 1, discountCents: 5000 });
       assert.equal(all.cancellations.count, 1);
       assert.deepEqual(all.refundAlerts, {

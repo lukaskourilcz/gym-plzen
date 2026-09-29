@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, lt, ne } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   accessCode,
@@ -39,7 +39,7 @@ export async function getTomorrowOverview(now = new Date()) {
       and(
         gte(reservation.startsAt, start),
         lt(reservation.startsAt, end),
-        ne(reservation.status, "cancelled"),
+        inArray(reservation.status, ["pending", "confirmed"]),
       ),
     )
     .orderBy(asc(reservation.startsAt), asc(reservation.id));
@@ -88,7 +88,7 @@ export async function getTomorrowOverview(now = new Date()) {
     const codeCheck =
       booking.status === "confirmed"
         ? checkTomorrowCode(booking.startsAt, code, nuki, now)
-        : "scheduled";
+        : "awaiting_payment";
     const email =
       booking.status === "confirmed"
         ? checkTomorrowDelivery(
@@ -97,7 +97,7 @@ export async function getTomorrowOverview(now = new Date()) {
             latest("email"),
             now,
           )
-        : "scheduled";
+        : "awaiting_payment";
     const whatsApp =
       booking.status === "confirmed"
         ? checkTomorrowDelivery(
@@ -108,7 +108,7 @@ export async function getTomorrowOverview(now = new Date()) {
             latest("whatsapp"),
             now,
           )
-        : "scheduled";
+        : "awaiting_payment";
     return {
       id: booking.id,
       startsAt: booking.startsAt,

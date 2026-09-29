@@ -11,6 +11,7 @@ export const metadata = { title: "Zítra" };
 export const dynamic = "force-dynamic";
 
 const CODE_LABEL: Record<string, string> = {
+  awaiting_payment: "Čeká na platbu",
   scheduled: "Příprava ještě nezačala",
   missing: "Kód chybí",
   preparing: "Kód se připravuje",
@@ -19,6 +20,7 @@ const CODE_LABEL: Record<string, string> = {
   unavailable: "Nuki teď nelze ověřit",
 };
 const DELIVERY_LABEL: Record<string, string> = {
+  awaiting_payment: "Čeká na platbu",
   not_applicable: "Nepoužívá se",
   scheduled: "Odejde hodinu předem",
   pending: "Čeká na odeslání",
@@ -40,7 +42,7 @@ export default async function TomorrowPage() {
         month: "long",
         year: "numeric",
         timeZone: "Europe/Prague",
-      }).format(new Date(`${overview.dateKey}T12:00:00+02:00`))
+      }).format(new Date(`${overview.dateKey}T12:00:00Z`))
     : "";
 
   return (

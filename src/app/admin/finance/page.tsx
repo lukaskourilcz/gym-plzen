@@ -74,23 +74,13 @@ export default async function FinancePage({
                 label="Počet přijatých plateb"
                 value={overview.receipts.count}
               />
-              <StatCard
-                label="Vrátilo se podle stavu platby"
-                value={formatMoney(overview.receipts.refundedCents)}
-              />
-              <StatCard
-                label="Zůstává po potvrzených vratkách"
-                value={formatMoney(
-                  overview.receipts.grossCents -
-                    overview.receipts.refundedCents,
-                )}
-              />
             </div>
             <p className="mt-3 text-sm text-muted-foreground">
               Součet vychází ze skutečně dokončených jednorázových plateb, ne z
               cen v rezervacích. Členství a rezervace zdarma se nezapočítávají.
-              Vrácené platby jsou vedené zvlášť (
-              {overview.receipts.refundedCount}).
+              Jde o hrubě přijatou částku v evidenci. Ruční a částečné vratky
+              nejsou spolehlivě synchronizované; jejich skutečný stav ověřte v
+              Comgate. Případy vyžadující kontrolu jsou níže.
             </p>
           </section>
           <div className="grid gap-5 lg:grid-cols-2">
