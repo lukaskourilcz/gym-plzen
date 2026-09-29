@@ -3,6 +3,7 @@ import { schedule } from "@/lib/services";
 import { addMinutes } from "@/lib/helpers/datetime";
 import { formatDateTime } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -24,6 +25,13 @@ import {
 } from "@/lib/config/schedule";
 import { minutesToHHmm } from "@/lib/helpers/format";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
+
+const BLOCK_REASONS: Record<string, string> = {
+  maintenance: "Údržba",
+  holiday: "Svátek",
+  private_event: "Soukromá akce",
+  other: "Jiné",
+};
 
 export const metadata = { title: "Otevírací doba a bloky" };
 export const dynamic = "force-dynamic";
@@ -87,9 +95,16 @@ export default async function SchedulePage() {
             <TableBody>
               {blocks.map((b) => (
                 <TableRow key={b.id}>
-                  <TableCell>{formatDateTime(b.startsAt)}</TableCell>
+                  <TableCell>
+                    {formatDateTime(b.startsAt)}
+                    {b.startsAt <= now && (
+                      <Badge variant="accent" className="ml-2">
+                        Probíhá
+                      </Badge>
+                    )}
+                  </TableCell>
                   <TableCell>{formatDateTime(b.endsAt)}</TableCell>
-                  <TableCell>{b.reason}</TableCell>
+                  <TableCell>{BLOCK_REASONS[b.reason] ?? b.reason}</TableCell>
                   <TableCell>{b.note ?? "Bez poznámky"}</TableCell>
                   <TableCell>
                     <DeleteBlockButton id={b.id} />

@@ -1,4 +1,4 @@
-import { and, eq, gt, gte, lt, lte, ne, or, type SQL } from "drizzle-orm";
+import { and, eq, gt, lt, ne, or, type SQL } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
 import { db } from "@/lib/db";
 import { blockedSlot, openingHours, reservation } from "@/lib/db/schema";
@@ -112,26 +112,24 @@ export async function checkAvailability(
   return { available: true };
 }
 
-/** Fetch all reservations + blocks in a date range (for the admin calendar). */
+/**
+ * Fetch all reservations + blocks overlapping a date range (for the admin
+ * calendar). Overlap, not "starts inside": a closure that began before the
+ * range (e.g. a ten-day holiday) must still shade the days it covers.
+ */
 export async function listCalendarEntries(rangeStart: Date, rangeEnd: Date) {
   const reservations = await db
     .select()
     .from(reservation)
     .where(
-      and(
-        gte(reservation.startsAt, rangeStart),
-        lte(reservation.startsAt, rangeEnd),
-      ),
+      overlaps(reservation.startsAt, reservation.endsAt, rangeStart, rangeEnd),
     );
 
   const blocks = await db
     .select()
     .from(blockedSlot)
     .where(
-      and(
-        gte(blockedSlot.startsAt, rangeStart),
-        lte(blockedSlot.startsAt, rangeEnd),
-      ),
+      overlaps(blockedSlot.startsAt, blockedSlot.endsAt, rangeStart, rangeEnd),
     );
 
   return { reservations, blocks };

@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, gte, lt, lte, or } from "drizzle-orm";
+import { and, asc, eq, gt, lt, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   blockedSlot,
@@ -62,6 +62,11 @@ export async function setOpeningHours(input: {
 
 // ── Blocked slots ────────────────────────────────────────────────────────────
 
+/**
+ * Blocks overlapping [rangeStart, rangeEnd). Overlap rather than "starts
+ * inside": a closure that began before the range and is still running must
+ * stay visible, otherwise the admin cannot see or remove it.
+ */
 export async function listBlockedSlots(
   rangeStart: Date,
   rangeEnd: Date,
@@ -71,8 +76,8 @@ export async function listBlockedSlots(
     .from(blockedSlot)
     .where(
       and(
-        gte(blockedSlot.startsAt, rangeStart),
-        lte(blockedSlot.startsAt, rangeEnd),
+        lt(blockedSlot.startsAt, rangeEnd),
+        gt(blockedSlot.endsAt, rangeStart),
       ),
     )
     .orderBy(asc(blockedSlot.startsAt));
