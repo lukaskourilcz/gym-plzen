@@ -88,7 +88,9 @@ export async function stopEverything(): Promise<void> {
 }
 
 /**
- * Empty everything a booking touches; keep opening hours, content, settings.
+ * Empty everything a booking touches; reset opening hours to this suite's
+ * deliberate 60-minute schedule, independent of a prior 75-minute browser run.
+ * Keep content and unrelated settings.
  * Profiles are deleted rather than truncated: content and settings rows point
  * at their editor, and a cascading truncate would take the seed with them.
  */
@@ -98,6 +100,14 @@ export async function resetDatabase(): Promise<void> {
     `TRUNCATE ${BOOKING_TABLES.map((t) => `public.${t}`).join(", ")} RESTART IDENTITY CASCADE`,
   );
   await sql`delete from public.profiles`;
+  await sql`insert into public.opening_hours
+    (day_of_week, open_minute, close_minute, slot_minutes, is_closed)
+    select day, 0, 1439, 60, 0 from generate_series(0, 6) as weekday(day)
+    on conflict (day_of_week) do update set
+      open_minute = excluded.open_minute,
+      close_minute = excluded.close_minute,
+      slot_minutes = excluded.slot_minutes,
+      is_closed = excluded.is_closed`;
   await setSetting("booking.operations", {
     paymentsEnabled: true,
     bookingsFrom: "",
