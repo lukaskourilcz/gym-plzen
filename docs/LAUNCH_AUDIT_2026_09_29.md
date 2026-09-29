@@ -1,24 +1,56 @@
-# Audit před otevřením — 29. 9. 2026
+# Audit aplikace před otevřením — 29. 9. 2026
 
-Průběžný záznam kontroly na žádost vlastníka. Hlavní [issue #105](https://github.com/lukaskourilcz/gym-plzen/issues/105).
+Hlavní [issue #105](https://github.com/lukaskourilcz/gym-plzen/issues/105) sdružuje jednotlivé nálezy. Výchozí main byl 113a794; opravy jsou na větvi codex/launch-audit-20260929. Tento dokument popisuje lokálně ověřené změny, nikoli schválené produkční vydání.
 
-## Prostředí a ochrana produkce
+## Bezpečný rozsah
 
-- Výchozí commit `113a794`, samostatný worktree a větev `codex/launch-audit-20260929`.
-- Produkční `.env.local` není do worktree zkopírovaný. Kontroly běží s vyčištěným prostředím.
-- Node.js 22.23.3. Nový lokální Postgres na `127.0.0.1:55439`, databáze `navi_launch_audit_test`.
-- E-mail a platební brána používají lokální zaznamenávající náhrady. Žádný skutečný zákazník, platba, zámek nebo WhatsApp účet se v testech nepoužije.
-- Žádná produkční migrace, změna dat ani nasazení z této větve.
+- Samostatný worktree bez produkčních souborů prostředí; Node.js 22.23.3.
+- Tři zahoditelné databáze Postgres 17 na 127.0.0.1:55439 s názvy končícími _test. Migrováno všech 22 migrací; samostatná čistá databáze ověřila bootstrap, další sloužila browseru.
+- Integrační testy i browser runner odmítají vzdálenou databázi. Browser runner vyčistí zděděné credentials, vyžaduje vlastní značku lokálního serveru a blokuje externí serverové požadavky. Auth, Comgate a Resend mají lokální náhrady. Analytické browser testy blokují odchozí HTTPS.
+- Žádná změna produkční databáze, konfigurace ani rezervace; žádné odeslání skutečnému zákazníkovi, žádné nasazení ani merge do main.
 
-## Výchozí kontroly
+## Výsledek kontrol
 
-| Kontrola | Výsledek |
-| --- | --- |
-| Unit testy | 239 prošlo, 0 přeskočeno |
-| TypeScript | prošel |
-| ESLint | prošel |
-| Integrační a browser testy | probíhá příprava izolovaného prostředí |
+| Kontrola                                                   | Výsledek                                                             |
+| ---------------------------------------------------------- | -------------------------------------------------------------------- |
+| Formát, ESLint, TypeScript                                 | Prošlo bez chyb a varování                                           |
+| Unit testy                                                 | 256 prošlo, 0 selhalo, 0 přeskočeno                                  |
+| Integrační testy, lokální Postgres a falešní poskytovatelé | 114 prošlo, 0 selhalo, 0 přeskočeno                                  |
+| SQL scénáře                                                | Prošly: platby, webhooky, rollback/retry, kódy, objednávková omezení |
+| Browser, hlavní průchody aplikací                          | 49 prošlo, 0 selhalo; produkční build a Chromium                     |
+| Browser, souhlas se sledováním a vzhled                    | 18 prošlo, 0 selhalo; jiný běh stejného izolovaného runneru          |
+| Audit produkčních závislostí                               | 0 zranitelností při npm audit --omit=dev                             |
 
-## Rozsah
+Browser pokryl veřejné stránky a kalendář, voucher na 100 %, návrat z platební brány, hosta i přihlášeného člena, profil, objednávku dvou termínů, změnu a storno jen jednoho termínu, přístupová práva, všech 18 admin stránek a formuláře administrace. Kontrolní databázové dotazy ověřují stav objednávky, platby, rezervací, profilu a historie změn; test nespoléhá jen na zobrazený text. Lokální Resend zaznamenal pouze umělé adresy example.test.
 
-Rezervace, objednávky, platby, vouchery, věrnost, autentizace, profil, změny a storno, vstupní kódy, doručování, watchdog, administrace, veřejný web a skutečný význam testů. Závěrečné výsledky a jednotlivá issues budou doplněny průběžně.
+Unit testy ověřují hranice PINu a platnosti, změnu času, vouchery, cookies/redirecty, platební stavy, Nuki reconciliation, souhlas se sledováním a konfiguraci zpráv. Integrační testy doplňují souběh administrátorských rolí, obsazení/uzávěr, ztracené odpovědi poskytovatelů, opakování zpráv, idempotenci a monotónní stav doručení. Křehký test, který hledal přesný název funkce ve zdrojovém kódu, byl odstraněn; stejné chování nyní dokazuje skutečný DB a HTTP scénář.
+
+## Opravené nálezy
+
+| Issue                                                                                                                                                                                       | Oprava a důkaz                                                                                                                                                                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [#106](https://github.com/lukaskourilcz/gym-plzen/issues/106)                                                                                                                               | Obnovení rozpracované platby vyžaduje prokazatelný vlastní hold; cizí rezervace se nevydá a otevřený checkout se nenahradí.                                                                                                                   |
+| [#107](https://github.com/lukaskourilcz/gym-plzen/issues/107), [#112](https://github.com/lukaskourilcz/gym-plzen/issues/112)                                                                | Testy odmítají produkční DB a tiché přeskočení. CI připraví čistý Postgres a spustí bezpečný produkční build s lokálním Auth, Comgate, Resend a Chromium. Běžný příkaz npm run test:e2e nyní provádí 49 autentizovaných a veřejných průchodů. |
+| [#108](https://github.com/lukaskourilcz/gym-plzen/issues/108), [#110](https://github.com/lukaskourilcz/gym-plzen/issues/110), [#111](https://github.com/lukaskourilcz/gym-plzen/issues/111) | Globální zámek chrání posledního administrátora; vnořené zámky rezervace používají bezpečně jedno spojení; uzávěra znovu ověřuje rezervace pod zámkem před dopadem.                                                                           |
+| [#109](https://github.com/lukaskourilcz/gym-plzen/issues/109)                                                                                                                               | Neplatný telefon v administraci už nezmizí tiše; změna čísla nezdědí ověření původního.                                                                                                                                                       |
+| [#113](https://github.com/lukaskourilcz/gym-plzen/issues/113), [#125](https://github.com/lukaskourilcz/gym-plzen/issues/125)                                                                | Provozní upozornění se považuje za oznámené až po potvrzení odeslání. Záměr a přesný obsah jsou uloženy před POST a watchdog je opakuje idempotentně i po pádu po přijetí.                                                                    |
+| [#114](https://github.com/lukaskourilcz/gym-plzen/issues/114), [#122](https://github.com/lukaskourilcz/gym-plzen/issues/122)                                                                | WhatsApp watchdog nenechá nejasné pokusy hladovět za první stránkou; opožděný callback ani starší readback nesníží potvrzený stav delivered/read.                                                                                             |
+| [#115](https://github.com/lukaskourilcz/gym-plzen/issues/115), [#127](https://github.com/lukaskourilcz/gym-plzen/issues/127)                                                                | Text storna říká, že termín se uvolní po potvrzeném odebrání kódu; potvrzení admin storna zůstane viditelné po obnovení seznamu. Obojí prošlo browser testem.                                                                                 |
+| [#116](https://github.com/lukaskourilcz/gym-plzen/issues/116)                                                                                                                               | Serverové ověření Supabase Auth má limit čekání a při výpadku nepustí nepověřeného uživatele dál.                                                                                                                                             |
+| [#119](https://github.com/lukaskourilcz/gym-plzen/issues/119), [#120](https://github.com/lukaskourilcz/gym-plzen/issues/120)                                                                | CMS po uložení zachová zpětnou vazbu. Statistiky řadí posledních 12 měsíců a týden počítají v pražské časové zóně přes změnu letního času.                                                                                                    |
+| [#121](https://github.com/lukaskourilcz/gym-plzen/issues/121), [#130](https://github.com/lukaskourilcz/gym-plzen/issues/130)                                                                | Resend má timeout a za odesláno uzná jen odpověď s ID zprávy. Potvrzení změny termínu má trvalý záměr, stejný e-mail i ICS při retry a stejný idempotency key; test simuluje odmítnutí i pád po přijetí bez duplicity.                        |
+| [#123](https://github.com/lukaskourilcz/gym-plzen/issues/123), [#124](https://github.com/lukaskourilcz/gym-plzen/issues/124)                                                                | Watchdog vyřídí splatné PINy před pomalými platbami. Lokální rate limiter má omezenou paměť a při naplnění neotevře cestu pro další pokusy.                                                                                                   |
+| [#126](https://github.com/lukaskourilcz/gym-plzen/issues/126)                                                                                                                               | E2E test změny termínu čeká na navigaci a vybírá slot v příslušné sekci. Původně hlášené storno bylo chybou testového locatoru; chybná změna aplikace nebyla ponechána.                                                                       |
+| [#118](https://github.com/lukaskourilcz/gym-plzen/issues/118) – částečně                                                                                                                    | Opraven název WhatsApp šablony v administraci; věcné údaje níže čekají na potvrzení vlastníka.                                                                                                                                                |
+
+Původní [issue #64](https://github.com/lukaskourilcz/gym-plzen/issues/64) byl uzavřen jako zastaralý: již na výchozím main klient po asynchronním Nuki PUT čte autorizaci a testuje ztracenou odpověď. Fyzický průchod dveřmi tím ověřen není.
+
+## Před vydáním rozhodnout a ověřit
+
+1. [#128](https://github.com/lukaskourilcz/gym-plzen/issues/128) — bezpečnost hesla, P1: stránka obnovy umožňuje změnu hesla z libovolné platné session; nevyžaduje prokázání reset odkazu. Profil přitom požaduje staré heslo. Je třeba zvolit a otestovat opravu proti izolovanému Supabase Auth projektu a případné nastavení Require current password. Bez souhlasu nebylo změněno bezpečnostní nastavení.
+2. [#129](https://github.com/lukaskourilcz/gym-plzen/issues/129) — obnova platby hosta, P2: podle e-mailu a data lze získat pokračovací URL otevřené platby bez důkazu držení e-mailu. Přísnější pravidlo zlepší soukromí, ale změní současnou možnost hosta navázat na nákup; nutné produktové rozhodnutí.
+3. [#117](https://github.com/lukaskourilcz/gym-plzen/issues/117) — schválit vydání z této větve a provést oddělený test na účtu vlastníka s reálným Comgate, Nuki včetně otevření dveří, Supabase Auth/OAuth a WhatsApp v hodině před termínem. Lokální náhrady tyto provozní služby neověří.
+4. [#118](https://github.com/lukaskourilcz/gym-plzen/issues/118) — potvrdit provozní kontakty, lékárničku a pravidlo objednávky více termínů podle skutečného provozu a obchodních podmínek.
+5. [#131](https://github.com/lukaskourilcz/gym-plzen/issues/131) — nevolaný historický helper členství má latentní chybu při souběhu aktivních a neaktivních období. Není v současné rezervační cestě; opravit před zavedením členství.
+
+Předchozí potvrzení vlastníka, že WhatsApp s PINem dorazil, je cenný provozní signál; nebylo opakováno v tomto auditu. Žádný lokální test nemůže garantovat 100% dostupnost externích služeb ani odhalit každý možný bug. Po schváleném vydání je třeba sledovat skutečné logy, doručení a stav vstupních kódů; tento audit sám produkci nezměnil.

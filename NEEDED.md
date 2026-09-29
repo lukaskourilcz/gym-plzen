@@ -1,3 +1,9 @@
+# Aktuální stav před dalším vydáním
+
+Nový lokální audit a konkrétní rozhodnutí jsou v [docs/LAUNCH_AUDIT_2026_09_29.md](docs/LAUNCH_AUDIT_2026_09_29.md) a [issue #105](https://github.com/lukaskourilcz/gym-plzen/issues/105). Před vydáním řešit zejména [bezpečnost resetu hesla #128](https://github.com/lukaskourilcz/gym-plzen/issues/128), [obnovu platby hosta #129](https://github.com/lukaskourilcz/gym-plzen/issues/129) a [schválený provozní test #117](https://github.com/lukaskourilcz/gym-plzen/issues/117). Starší odstavce níže zachycují historický stav a některé již splněné úkoly.
+
+---
+
 ## Audit před otevřením — 29. 9. 2026 (k rozhodnutí)
 
 - [x] **BEZPEČNOST: produkční demo účty**: `admin@namaste.demo` (admin) a `klient@namaste.demo` smazány z produkčního Supabase 29. 9. (jen staré zrušené testovací rezervace, odkazy vynulovány); zbývají tři skuteční admini. `[imp:5]` `[owner:ai]` `[time:5m]` `[kind:setup]`
