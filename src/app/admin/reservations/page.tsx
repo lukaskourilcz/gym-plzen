@@ -165,7 +165,10 @@ export default async function ReservationsPage({
               </TableCell>
               <TableCell>
                 {!demo && isCancellableByAdmin(r, now) && (
-                  <CancelButton reservationId={r.id} />
+                  <CancelButton
+                    reservationId={r.id}
+                    startsAtLabel={formatDateTime(r.startsAt)}
+                  />
                 )}
               </TableCell>
             </TableRow>

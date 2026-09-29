@@ -11,19 +11,31 @@ import { cancelReservationAction } from "./actions";
 
 /**
  * Two-step cancel control for a reservation row (the same inline pattern as
- * removing a pricing period). Cancelling e-mails the customer, so the first
+ * removing a pricing period, see docs/DESIGN_SYSTEM.md). Cancelling e-mails the customer, so the first
  * click only opens the confirmation with an optional reason that the e-mail
  * carries; focus moves into it and returns to the trigger when kept.
  */
-export function CancelButton({ reservationId }: { reservationId: string }) {
+export function CancelButton({
+  reservationId,
+  startsAtLabel,
+}: {
+  reservationId: string;
+  /** The formatted start, so every row's control has a distinct name. */
+  startsAtLabel: string;
+}) {
   const [confirming, setConfirming] = useState(false);
+  const [done, setDone] = useState(false);
   const trigger = useRef<HTMLDivElement>(null);
   const reasonId = useId();
+  const noteId = useId();
   const { form, submit, serverError } = useActionForm({
     schema: cancelReservationSchema,
     action: cancelReservationAction,
     defaultValues: { id: reservationId, reason: "" },
-    onSuccess: () => setConfirming(false),
+    onSuccess: () => {
+      setConfirming(false);
+      setDone(true);
+    },
   });
   const isSubmitting = form.formState.isSubmitting;
 
@@ -36,6 +48,15 @@ export function CancelButton({ reservationId }: { reservationId: string }) {
     );
   }
 
+  if (done) {
+    // Announced before the refreshed row drops the control.
+    return (
+      <p role="status" className="text-sm font-medium">
+        Rezervace zrušena.
+      </p>
+    );
+  }
+
   if (!confirming) {
     return (
       <div ref={trigger}>
@@ -43,6 +64,7 @@ export function CancelButton({ reservationId }: { reservationId: string }) {
           type="button"
           variant="destructive"
           size="sm"
+          aria-label={`Zrušit rezervaci ${startsAtLabel}`}
           onClick={() => setConfirming(true)}
         >
           Zrušit
@@ -73,7 +95,7 @@ export function CancelButton({ reservationId }: { reservationId: string }) {
           {...form.register("reason")}
         />
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p id={noteId} className="text-xs text-muted-foreground">
         Zákazníkovi odejde e-mail o zrušení.
       </p>
       <div className="flex flex-wrap gap-2">
@@ -82,6 +104,7 @@ export function CancelButton({ reservationId }: { reservationId: string }) {
           variant="destructive"
           size="sm"
           disabled={isSubmitting}
+          aria-describedby={noteId}
         >
           {isSubmitting ? "Ruším…" : "Ano, zrušit rezervaci"}
         </Button>

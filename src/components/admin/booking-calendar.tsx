@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -44,6 +45,7 @@ export function BookingCalendar({
   const calendarId = useId();
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [scheduleHint, setScheduleHint] = useState(false);
 
   /*
    * A seven-column time grid is useful on tablets and desktops, but each day
@@ -152,6 +154,7 @@ export function BookingCalendar({
   async function onSelect(sel: DateSelectArg) {
     if (busy || readOnly) return;
     setActionError(null);
+    setScheduleHint(false);
     const label = `${sel.start.toLocaleString("cs-CZ")} – ${sel.end.toLocaleTimeString("cs-CZ")}`;
     if (!window.confirm(`Blokovat tento čas pro úklid?\n${label}`)) {
       sel.view.calendar.unselect();
@@ -164,23 +167,22 @@ export function BookingCalendar({
       reason: "maintenance" as const,
       note: "Úklid",
     };
-    let result = await createBlockedSlotAction(values);
-    // A drag cannot start over a booking (selectOverlap below), but one made
-    // since this page loaded is only known to the server. Cancelling it
-    // e-mails the customer, so it needs its own explicit confirmation.
-    if (result.ok && result.data.status === "needs_confirmation") {
-      const count = result.data.affectedCount;
-      result = window.confirm(result.data.message)
-        ? await createBlockedSlotAction({
-            ...values,
-            confirmCancellations: count,
-          })
-        : result;
-    }
+    const result = await createBlockedSlotAction(values);
     setBusy(false);
     sel.view.calendar.unselect();
     if (!result.ok) {
       setActionError(result.error ?? "Blok se nepodařilo vytvořit.");
+      return;
+    }
+    // A drag cannot start over a booking (selectOverlap below), but one made
+    // since this page loaded is only known to the server. Nothing was saved;
+    // closing time over bookings is the schedule form's deliberate path.
+    if (result.data.status === "needs_confirmation") {
+      setActionError(
+        `V tomto čase mezitím přibyla rezervace (${result.data.affectedCount}). Blok nebyl vytvořen. Pokud chcete čas uzavřít i s jejím zrušením, použijte formulář Blokované termíny.`,
+      );
+      setScheduleHint(true);
+      router.refresh();
       return;
     }
     if (result.data.status === "closed") {
@@ -255,6 +257,14 @@ export function BookingCalendar({
       {actionError ? (
         <p role="alert" className="mt-3 text-sm text-destructive">
           {actionError}
+          {scheduleHint ? (
+            <>
+              {" "}
+              <Link href="/admin/schedule" className="font-bold underline">
+                Otevřít otevírací dobu a bloky
+              </Link>
+            </>
+          ) : null}
         </p>
       ) : null}
     </div>

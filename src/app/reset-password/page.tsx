@@ -46,9 +46,9 @@ export default async function ResetPasswordPage() {
           </>
         ) : (
           <Notice tone="info" className="mt-5">
-            Nové heslo lze bez současného nastavit do 15 minut po otevření
-            odkazu pro obnovu hesla, a to v prohlížeči, ve kterém jste odkaz
-            otevřeli. Požádejte o{" "}
+            Bez zadání současného hesla lze nové heslo nastavit jen do 15 minut
+            po otevření odkazu pro obnovu hesla, a to v prohlížeči, ve kterém
+            jste odkaz otevřeli. Požádejte o{" "}
             <Link href="/forgot-password" className="font-bold underline">
               nový odkaz
             </Link>

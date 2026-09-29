@@ -22,16 +22,10 @@ import {
   DEFAULT_CLOSE_MINUTE,
   DEFAULT_OPEN_MINUTE,
   DEFAULT_SHOWER_MINUTES,
+  BLOCK_REASON_LABELS,
 } from "@/lib/config/schedule";
 import { minutesToHHmm } from "@/lib/helpers/format";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
-
-const BLOCK_REASONS: Record<string, string> = {
-  maintenance: "Údržba",
-  holiday: "Svátek",
-  private_event: "Soukromá akce",
-  other: "Jiné",
-};
 
 export const metadata = { title: "Otevírací doba a bloky" };
 export const dynamic = "force-dynamic";
@@ -104,7 +98,9 @@ export default async function SchedulePage() {
                     )}
                   </TableCell>
                   <TableCell>{formatDateTime(b.endsAt)}</TableCell>
-                  <TableCell>{BLOCK_REASONS[b.reason] ?? b.reason}</TableCell>
+                  <TableCell>
+                    {BLOCK_REASON_LABELS[b.reason] ?? b.reason}
+                  </TableCell>
                   <TableCell>{b.note ?? "Bez poznámky"}</TableCell>
                   <TableCell>
                     <DeleteBlockButton id={b.id} />

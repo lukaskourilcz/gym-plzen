@@ -21,6 +21,7 @@ import {
   DEFAULT_CLOSE_MINUTE,
   DEFAULT_OPEN_MINUTE,
   DEFAULT_SLOT_MINUTES,
+  BLOCK_REASON_LABELS,
 } from "@/lib/config/schedule";
 import {
   createBlockedSlotSchema,
@@ -196,10 +197,11 @@ export function BlockedSlotForm() {
       </Field>
       <Field name="reason" label="Důvod" error={errors.reason}>
         <Select id="reason" {...register("reason")}>
-          <option value="maintenance">Údržba</option>
-          <option value="holiday">Svátek</option>
-          <option value="private_event">Soukromá akce</option>
-          <option value="other">Jiné</option>
+          {Object.entries(BLOCK_REASON_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
         </Select>
       </Field>
       <Field name="note" label="Poznámka" error={errors.note}>

@@ -46,3 +46,11 @@ export function clampBookingHorizonDays(value: number): number {
     Math.max(MIN_BOOKING_HORIZON_DAYS, Math.round(value)),
   );
 }
+
+/** Czech labels for a blocked slot's reason, shared by the form and the list. */
+export const BLOCK_REASON_LABELS = {
+  maintenance: "Údržba",
+  holiday: "Svátek",
+  private_event: "Soukromá akce",
+  other: "Jiné",
+} as const;
