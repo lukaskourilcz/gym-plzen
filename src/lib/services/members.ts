@@ -1,4 +1,4 @@
-import { count, desc, eq } from "drizzle-orm";
+import { count, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
 import type { Profile } from "@/lib/db/types";
@@ -7,6 +7,7 @@ import { ActionError } from "@/lib/helpers/action";
 import { logger } from "@/lib/helpers/logger";
 import { hasMemberAction, record as recordActivity } from "./activity";
 import { notifyNewMember } from "./operator-notifications";
+import { withOperationLock } from "./operation-lock";
 
 /**
  * Member service over the Supabase-Auth `profiles` table. Supabase owns
@@ -116,19 +117,26 @@ export async function updateProfile(
     patch.phone !== undefined && patch.phone !== null
       ? toE164(patch.phone)
       : patch.phone;
+  if (patch.phone && !normalizedPhone)
+    throw new ActionError("Zadejte platné telefonní číslo.");
 
   const [updated] = await db
     .update(profiles)
     .set({
       ...patch,
       phone: normalizedPhone,
+      phoneVerified:
+        normalizedPhone !== undefined
+          ? sql`case when ${profiles.phone} is not distinct from ${normalizedPhone} then ${profiles.phoneVerified} else false end`
+          : undefined,
       marketingConsentAt:
         patch.marketingConsent === true ? new Date() : undefined,
       updatedAt: new Date(),
     })
     .where(eq(profiles.id, userId))
     .returning();
-  return updated!;
+  if (!updated) throw new ActionError("Člena se nepodařilo najít.");
+  return updated;
 }
 
 /** List all members (admin members view). */
@@ -172,6 +180,13 @@ export async function countAdmins(): Promise<number> {
  * administration would need database access to undo.
  */
 export async function setRole(
+  userId: string,
+  role: MemberRole,
+): Promise<Profile> {
+  return withOperationLock("admin-roles", () => setRoleLocked(userId, role));
+}
+
+async function setRoleLocked(
   userId: string,
   role: MemberRole,
 ): Promise<Profile> {

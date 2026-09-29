@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { publicEnv, supabasePublicKey } from "@/lib/public-env";
 import { ActionError } from "@/lib/helpers/action";
 import type { ChangePasswordValues } from "@/lib/validations/profile";
+import { createTimeoutFetch } from "@/lib/supabase/request-timeout";
 
 /** Reauthenticate in an isolated, non-persistent session; never replace browser cookies. */
 export async function changeCustomerPassword(
@@ -14,6 +15,7 @@ export async function changeCustomerPassword(
     publicEnv.NEXT_PUBLIC_SUPABASE_URL,
     supabasePublicKey,
     {
+      global: { fetch: createTimeoutFetch() },
       auth: {
         persistSession: false,
         autoRefreshToken: false,

@@ -18,6 +18,9 @@ import {
 import assert from "node:assert/strict";
 import { after, before, beforeEach, describe, test } from "node:test";
 import { db } from "../../src/lib/db";
+import { blockedSlot } from "../../src/lib/db/schema";
+import { lockSchedule } from "../../src/lib/services/availability";
+import { setTimeout } from "node:timers/promises";
 import { reservation as reservationTable } from "../../src/lib/db/schema";
 import type { NewReservation } from "../../src/lib/db/types";
 import { ActionError } from "../../src/lib/helpers/action";
@@ -96,6 +99,57 @@ describe(
     beforeEach(async () => {
       await resetDatabase();
       await seedProfile({ ...ADMIN, fullName: "Správce Testový" });
+    });
+
+    test("a booking appearing while a block is created requires fresh cancellation confirmation", async () => {
+      await rows(
+        "create function test_race_block() returns trigger language plpgsql as $$ begin insert into reservation(starts_at,ends_at,status,contact_email) values(NEW.starts_at, NEW.starts_at + interval '75 minutes', 'confirmed', 'race@example.test'); return NEW; end $$",
+      );
+      await rows(
+        "create trigger test_race_block before insert on blocked_slot for each row execute function test_race_block()",
+      );
+      try {
+        const result = await closeTimeRange({
+          startsAt: at(3),
+          endsAt: addMinutes(at(3), 75),
+          reason: "maintenance",
+          admin: ADMIN,
+        });
+        assert.equal(result.status, "needs_confirmation");
+        if (result.status === "needs_confirmation")
+          assert.equal(result.affectedCount, 1);
+        assert.equal(
+          (await rows<{ status: string }>("select status from reservation"))[0]!
+            .status,
+          "confirmed",
+        );
+        assert.equal((await rows("select id from blocked_slot")).length, 1);
+        assert.equal(resend.sent.length, 0);
+      } finally {
+        await rows("drop trigger test_race_block on blocked_slot");
+        await rows("drop function test_race_block()");
+      }
+    });
+
+    test("booking waits for an uncommitted block and rechecks availability after its commit", async () => {
+      const startsAt = at(3);
+      const endsAt = addMinutes(startsAt, 60);
+      let attempt!: Promise<string>;
+      await db.transaction(async (tx) => {
+        await lockSchedule(tx, "exclusive");
+        await tx.insert(blockedSlot).values({ startsAt, endsAt });
+        attempt = rejection(
+          createReservation({
+            startsAt,
+            endsAt,
+            contactEmail: "waiting@example.test",
+          }),
+        );
+        // Let the other connection start while the block is still uncommitted.
+        await setTimeout(30);
+      });
+      assert.equal(await attempt, "Tento termín je blokovaný.");
+      assert.equal((await rows("select id from reservation")).length, 0);
     });
 
     describe("constraint violations surface as Czech messages", () => {

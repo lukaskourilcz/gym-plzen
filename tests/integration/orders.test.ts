@@ -364,6 +364,58 @@ describe(
       assert.equal(claim?.status, "redeemed");
     });
 
+    test("order confirmation survives a lost provider response and edited template", async () => {
+      await seedVoucher({ code: "ZDARMA100", kind: "percentage", value: 100 });
+      resend.loseNextAcceptedResponse();
+      const outcome = await startOrder({
+        userId: null,
+        starts: [slot(3), slot(4)],
+        details: details(),
+        voucherCode: "ZDARMA100",
+      });
+      assert.equal(outcome.kind, "free");
+      assert.equal(resend.sent.length, 1);
+      const original = resend.sent[0]!;
+      await setSetting("messages.email.order_confirmation", {
+        subject: "Nová šablona",
+        body: "Změněný obsah {slots}",
+      });
+      const [first] = await slotsOf(outcome.orderId);
+      await fulfillReservation(first!.id);
+      assert.equal(resend.sent.length, 1);
+      assert.equal(resend.sent[0], original);
+      const [delivery] = await rows<{ status: string; n: string }>(
+        "select status, count(*) over ()::text as n from message_delivery where dedupe_key = $1",
+        [`order-confirmation/${outcome.orderId}`],
+      );
+      assert.equal(delivery?.status, "sent");
+      assert.equal(delivery?.n, "1");
+    });
+
+    test("operator restores an order voucher only after every slot is cancelled", async () => {
+      await seedVoucher({ code: "ZDARMA100", kind: "percentage", value: 100 });
+      const outcome = await startOrder({
+        userId: null,
+        starts: [slot(3), slot(4)],
+        details: details(),
+        voucherCode: "ZDARMA100",
+      });
+      assert.equal(outcome.kind, "free");
+      const [first, second] = await slotsOf(outcome.orderId);
+      await cancelReservation({ id: first!.id, byAdminId: MEMBER.id });
+      const [partial] = await rows<{ status: string }>(
+        "select status from voucher_redemption where order_id = $1",
+        [outcome.orderId],
+      );
+      assert.equal(partial?.status, "redeemed");
+      await cancelReservation({ id: second!.id, byAdminId: MEMBER.id });
+      const [complete] = await rows<{ status: string }>(
+        "select status from voucher_redemption where order_id = $1",
+        [outcome.orderId],
+      );
+      assert.equal(complete?.status, "released");
+    });
+
     test("a taken slot rejects the whole order and names the slot", async () => {
       const taken = await startBooking({
         userId: null,
@@ -497,6 +549,30 @@ describe(
           (row) => row.status === "pending",
         ),
       );
+    });
+
+    test("a forged cookie cannot replace an unpaid order found by email", async () => {
+      const victim = await startOrder({
+        userId: null,
+        starts: [slot(3), slot(4)],
+        details: details(),
+      });
+      // Model a crash before the gateway attempt was persisted.
+      await rows("delete from payment where order_id = $1", [victim.orderId]);
+      await seedVoucher({ code: "FORGED10", kind: "percentage", value: 10 });
+      await assert.rejects(
+        startOrder({
+          userId: null,
+          starts: [slot(3), slot(5)],
+          details: details(),
+          voucherCode: "FORGED10",
+          hold: { kind: "order", id: victim.orderId, token: "0".repeat(64) },
+        }),
+        /rozpracovaný v jiné platbě/,
+      );
+      assert.equal((await orderRow(victim.orderId)).status, "pending");
+      assert.equal(await count("booking_order"), 1);
+      assert.equal(await count("voucher_redemption"), 0);
     });
 
     test("a payment for an order that was cancelled meanwhile alerts the operator", async () => {

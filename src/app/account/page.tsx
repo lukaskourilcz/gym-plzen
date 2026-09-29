@@ -154,8 +154,9 @@ export default async function AccountPage({
                     className="mt-6"
                     role="status"
                   >
-                    Termín je znovu volný v kalendáři. Zaplacená cena se podle
-                    obchodních podmínek nevrací.
+                    Po dokončení odebrání vstupního kódu se termín uvolní v
+                    kalendáři. Zaplacená cena se podle obchodních podmínek
+                    nevrací.
                   </Notice>
                 ) : null}
                 {params.zmena === "uspesna" ? (

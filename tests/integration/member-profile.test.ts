@@ -23,6 +23,11 @@ import {
 import { listHistoryForUser } from "../../src/lib/services/reservations";
 import { listForUser } from "../../src/lib/services/messages";
 import { saveBookingPhone } from "../../src/lib/services/customer-profile";
+import {
+  countAdmins,
+  setRole,
+  updateProfile,
+} from "../../src/lib/services/members";
 
 const ANNA = {
   id: "22222222-2222-4222-8222-222222222222",
@@ -186,6 +191,61 @@ describe(
       await saveBookingPhone(ANNA.id, "+420608111222");
       assert.equal((await phoneOf(ANNA.id))?.phone, "+420608111222");
       assert.equal((await phoneOf(ANNA.id))?.phone_verified, false);
+    });
+
+    test("concurrent demotions preserve at least one administrator", async () => {
+      await rows("update profiles set role = 'admin'");
+      await rows(
+        "create function test_slow_role() returns trigger language plpgsql as $$ begin perform pg_sleep(0.1); return NEW; end $$",
+      );
+      await rows(
+        "create trigger test_slow_role before update of role on profiles for each row execute function test_slow_role()",
+      );
+      try {
+        const results = await Promise.allSettled([
+          setRole(ANNA.id, "member"),
+          setRole(BORIS.id, "member"),
+        ]);
+        assert.equal(await countAdmins(), 1);
+        assert.equal(results.filter((r) => r.status === "fulfilled").length, 1);
+        assert.equal(results.filter((r) => r.status === "rejected").length, 1);
+      } finally {
+        await rows("drop trigger test_slow_role on profiles");
+        await rows("drop function test_slow_role()");
+      }
+    });
+
+    test("admin edits validate phones and keep verification bound to the same number", async () => {
+      await rows(
+        "update profiles set phone = '+420777123456', phone_verified = true where id = $1",
+        [ANNA.id],
+      );
+      await assert.rejects(
+        updateProfile(ANNA.id, { phone: "abcdefghijkl" }),
+        /telefon/,
+      );
+      await updateProfile(ANNA.id, { note: "Interní poznámka" });
+      await updateProfile(ANNA.id, { phone: "+420 777 123 456" });
+      const read = async () =>
+        (
+          await rows<{ phone: string | null; phone_verified: boolean }>(
+            "select phone, phone_verified from profiles where id = $1",
+            [ANNA.id],
+          )
+        )[0]!;
+      assert.equal((await read()).phone_verified, true);
+      await updateProfile(ANNA.id, { phone: "+3546117942" });
+      assert.equal((await read()).phone, "+3546117942");
+      assert.equal((await read()).phone_verified, false);
+      assert.equal(
+        (
+          await rows<{ phone: string | null }>(
+            "select phone from profiles where id = $1",
+            [BORIS.id],
+          )
+        )[0]!.phone,
+        null,
+      );
     });
   },
 );

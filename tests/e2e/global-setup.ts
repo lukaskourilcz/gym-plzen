@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { randomBytes } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { isTestDatabaseUrl } from "../helpers/test-database";
 
 /**
  * Global setup for the auth/admin specs (Supabase Auth).
@@ -39,18 +40,33 @@ const USERS = [
 ];
 
 export function supabaseConfigured(): boolean {
+  if (process.env.E2E_LOCAL_AUTH === "true")
+    return (
+      process.env.NEXT_PUBLIC_SUPABASE_URL === "http://127.0.0.1:4549" &&
+      process.env.SUPABASE_SECRET_KEY === "local-admin-key" &&
+      isTestDatabaseUrl(process.env.TEST_DATABASE_URL)
+    );
   if (
     process.env.E2E_SUPABASE_PROJECT_REF === PRODUCTION_PROJECT_REF ||
     process.env.NEXT_PUBLIC_SUPABASE_URL?.includes(PRODUCTION_PROJECT_REF)
   )
     return false;
+  let matchingHost = false;
+  try {
+    const url = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "");
+    matchingHost =
+      url.protocol === "https:" &&
+      url.hostname === `${process.env.E2E_SUPABASE_PROJECT_REF}.supabase.co` &&
+      !url.username &&
+      !url.password;
+  } catch {
+    /* Unconfigured or invalid. */
+  }
   return Boolean(
     process.env.E2E_ALLOW_REMOTE_MUTATIONS === "true" &&
     process.env.E2E_SUPABASE_PROJECT_REF &&
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_URL.includes(
-      process.env.E2E_SUPABASE_PROJECT_REF ?? "never-match",
-    ) &&
+    matchingHost &&
     (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY),
   );
 }
@@ -61,7 +77,13 @@ export default async function globalSetup(config: FullConfig) {
   const empty = JSON.stringify({ cookies: [], origins: [] });
   for (const u of USERS) writeFileSync(join(dir, u.file), empty);
 
-  if (!supabaseConfigured()) return;
+  if (!supabaseConfigured()) {
+    if (process.env.REQUIRE_DB === "1")
+      throw new Error(
+        "Required Auth/admin E2E configuration is missing; refusing to skip authenticated flows.",
+      );
+    return;
+  }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const secret = (process.env.SUPABASE_SECRET_KEY ??
@@ -73,34 +95,63 @@ export default async function globalSetup(config: FullConfig) {
   const admin = createClient(url, secret, { auth: { persistSession: false } });
 
   for (const u of USERS) {
-    const { data } = await admin.auth.admin.createUser({
+    const { data, error } = await admin.auth.admin.createUser({
       email: u.email,
       password: CRED.password,
       email_confirm: true,
       user_metadata: { full_name: u.name },
     });
-    const id = data.user?.id;
-    if (id) {
-      await admin
+    let id = data.user?.id;
+    if (error) {
+      if (!["email_exists", "user_already_exists"].includes(error.code ?? ""))
+        throw new Error(
+          `E2E user creation failed (${error.code ?? "unknown"}).`,
+        );
+      const { data: listed, error: listError } =
+        await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      if (listError) throw new Error("E2E could not find existing test users.");
+      id = listed.users.find((user) => user.email === u.email)?.id;
+      if (!id)
+        throw new Error(
+          "Existing E2E account was not found; refusing an unauthenticated run.",
+        );
+      const { error: updateError } = await admin.auth.admin.updateUserById(id, {
+        password: CRED.password,
+        email_confirm: true,
+      });
+      if (updateError)
+        throw new Error("E2E could not reset the test account password.");
+    }
+    if (!id) throw new Error("E2E user creation returned no account.");
+    {
+      const { error: profileError } = await admin
         .from("profiles")
         .upsert({ id, email: u.email, full_name: u.name, role: u.role });
+      if (profileError) throw new Error("E2E profile/role setup failed.");
     }
   }
 
   const browser = await chromium.launch({
     executablePath: process.env.PW_CHROMIUM_PATH || undefined,
   });
-  for (const u of USERS) {
-    const page = await browser.newPage({ baseURL });
-    await page.goto("/login");
-    await page.getByLabel(/E-mail/i).fill(u.email);
-    await page.getByLabel(/Heslo/i).fill(CRED.password);
-    await page.getByRole("button", { name: /Přihlásit se/i }).click();
-    await page
-      .waitForURL(/\/(account|admin)/, { timeout: 15_000 })
-      .catch(() => {});
-    await page.context().storageState({ path: join(dir, u.file) });
-    await page.close();
+  try {
+    for (const u of USERS) {
+      const page = await browser.newPage({ baseURL });
+      await page.goto("/login");
+      const consent = page
+        .getByTestId("tracking-consent")
+        .getByRole("button", { name: "Pouze nezbytné" });
+      if (await consent.isVisible()) await consent.click();
+      await page.getByLabel(/E-mail/i).fill(u.email);
+      await page.getByLabel(/Heslo/i).fill(CRED.password);
+      await page.getByRole("button", { name: /Přihlásit se/i }).click();
+      await page.waitForURL(/\/(account|admin)(?:[/?#]|$)/, {
+        timeout: 15_000,
+      });
+      await page.context().storageState({ path: join(dir, u.file) });
+      await page.close();
+    }
+  } finally {
+    await browser.close();
   }
-  await browser.close();
 }

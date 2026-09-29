@@ -1,9 +1,25 @@
 import type { NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
+import {
+  CONFIRMATION_PROOF_COOKIE,
+  confirmationProofCookieOptions,
+  confirmationProofFromUrl,
+  serializeConfirmationProof,
+} from "@/lib/helpers/confirmation-proof";
 
 /** Keeps the Supabase Auth session cookie fresh across the app. */
 export async function middleware(request: NextRequest) {
-  return updateSession(request);
+  const response = await updateSession(request);
+  if (request.nextUrl.pathname === "/rezervace/hotovo") {
+    const proof = confirmationProofFromUrl(request.nextUrl.searchParams);
+    if (proof)
+      response.cookies.set(
+        CONFIRMATION_PROOF_COOKIE,
+        serializeConfirmationProof(proof),
+        confirmationProofCookieOptions(request.nextUrl.protocol === "https:"),
+      );
+  }
+  return response;
 }
 
 export const config = {

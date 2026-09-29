@@ -1,4 +1,5 @@
-import { eq } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
+import { and, asc, eq, inArray, isNull, lte, ne, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { messageDelivery } from "@/lib/db/schema";
 import type {
@@ -24,8 +25,10 @@ import {
 } from "@/lib/helpers/format";
 import { logger } from "@/lib/helpers/logger";
 import { siteUrl } from "@/lib/helpers/site-url";
+import { sendEmail, type SendEmailParams } from "@/lib/integrations/resend";
 import { getSetting, getText, setSetting } from "./cms";
-import { sendTransactionalEmail } from "./email-templates";
+import { prepareTransactionalEmail } from "./email-templates";
+import { withOperationLock } from "./operation-lock";
 
 /**
  * What the people who run the gym are told by e-mail: a booking arrived, a
@@ -107,13 +110,13 @@ export interface OperatorNotice {
 }
 
 /** Send one notice, if the operator asked for this event. Never throws. */
-export async function notify(notice: OperatorNotice): Promise<void> {
+export async function notify(notice: OperatorNotice): Promise<boolean> {
   try {
     const settings = await getOperatorNotifications();
-    if (!settings.events[notice.event]) return;
+    if (!settings.events[notice.event]) return true;
 
     const recipients = parseRecipients(settings.recipients);
-    if (recipients.length === 0) return;
+    if (recipients.length === 0) return true;
 
     const definition = operatorEventDefinition(notice.event);
     const detail = (notice.details ?? [])
@@ -122,14 +125,18 @@ export async function notify(notice: OperatorNotice): Promise<void> {
       .map(([label, value]) => `${label}: ${value}`)
       .join("\n");
 
-    for (const recipient of recipients) {
-      await sendToRecipient(notice, definition.label, detail, recipient);
-    }
+    let delivered = true;
+    for (const recipient of recipients)
+      delivered =
+        (await sendToRecipient(notice, definition.label, detail, recipient)) &&
+        delivered;
+    return delivered;
   } catch (error) {
     logger.error(error, {
       where: "operator-notifications.notify",
       event: notice.event,
     });
+    return false;
   }
 }
 
@@ -138,34 +145,164 @@ async function sendToRecipient(
   event: string,
   detail: string,
   recipient: string,
-): Promise<void> {
+): Promise<boolean> {
   const dedupeKey = notice.scope
     ? `${notice.event}:${notice.scope}:${recipient.toLowerCase()}`
     : null;
+  if (dedupeKey) {
+    const [existing] = await db
+      .select({ id: messageDelivery.id })
+      .from(messageDelivery)
+      .where(eq(messageDelivery.dedupeKey, dedupeKey))
+      .limit(1);
+    if (existing) return sendPreparedDelivery(existing.id);
+  }
 
-  const claimed = await claim(notice, recipient, dedupeKey);
-  if (!claimed) return;
-
-  const result = await sendTransactionalEmail({
+  const email = await prepareTransactionalEmail({
     id: "operator_notice",
     to: recipient,
     actionUrl: siteUrl(notice.path ?? "/admin"),
     variables: { event, summary: notice.summary, detail },
   });
+  const claimed = await claim(notice, recipient, dedupeKey, email);
+  if (!claimed) {
+    const [existing] = await db
+      .select()
+      .from(messageDelivery)
+      .where(eq(messageDelivery.dedupeKey, dedupeKey!))
+      .limit(1);
+    if (!existing) return false;
+    return sendPreparedDelivery(existing.id);
+  }
+  return sendPreparedDelivery(claimed.id, true);
+}
 
-  await db
-    .update(messageDelivery)
-    .set({
-      status: result.sent ? "sent" : "failed",
-      providerMessageId: result.providerMessageId ?? null,
-      failureReason: result.error ?? null,
-      sentAt: result.sent ? new Date() : null,
-      // A failed attempt keeps its record but gives the scope back, so the
-      // next run may try again instead of staying silent for good.
-      dedupeKey: result.sent ? dedupeKey : null,
-      updatedAt: new Date(),
-    })
-    .where(eq(messageDelivery.id, claimed.id));
+const RETRY_AFTER_MS = 5 * 60_000;
+// Resend accepts the same idempotency key for 24 hours. Leave one hour of
+// margin for clock skew and queue delay; after that, ask an operator to check.
+const SAFE_WINDOW_MS = 23 * 60 * 60_000;
+
+type PreparedNotice = {
+  event: OperatorEventId;
+  email: SendEmailParams;
+};
+
+function preparedNotice(row: MessageDelivery): PreparedNotice | null {
+  const value = row.providerResponse as Partial<PreparedNotice> | null;
+  if (
+    !value ||
+    !value.event ||
+    !value.email ||
+    typeof value.email.to !== "string" ||
+    value.email.to !== row.recipient ||
+    typeof value.email.subject !== "string" ||
+    typeof value.email.html !== "string"
+  )
+    return null;
+  return value as PreparedNotice;
+}
+
+/** Retry only a durable, unchanged payload with the row's stable provider key. */
+async function sendPreparedDelivery(
+  id: string,
+  immediate = false,
+): Promise<boolean> {
+  return withOperationLock(`operator-notice:${id}`, async () => {
+    const [row] = await db
+      .select()
+      .from(messageDelivery)
+      .where(eq(messageDelivery.id, id))
+      .limit(1);
+    if (!row) return false;
+    if (["sent", "delivered", "read"].includes(row.status)) return true;
+    const age = Date.now() - row.createdAt.getTime();
+    if (age >= SAFE_WINDOW_MS || age < 0) return false;
+    if (
+      row.status === "queued" &&
+      !immediate &&
+      Date.now() - row.updatedAt.getTime() < RETRY_AFTER_MS
+    )
+      return false;
+    const prepared = preparedNotice(row);
+    if (!prepared) return false; // Legacy ambiguous rows need human review.
+    const settings = await getOperatorNotifications();
+    if (
+      !settings.events[prepared.event] ||
+      !parseRecipients(settings.recipients).some(
+        (recipient) => recipient.toLowerCase() === row.recipient.toLowerCase(),
+      )
+    )
+      return false;
+    const result = await sendEmail({
+      ...prepared.email,
+      idempotencyKey: `operator-notice/${row.id}`,
+    });
+    await db
+      .update(messageDelivery)
+      .set({
+        status: result.sent ? "sent" : "failed",
+        providerMessageId: result.providerMessageId ?? null,
+        providerResponse: result.sent ? null : row.providerResponse,
+        failureReason: result.error ?? null,
+        sentAt: result.sent ? new Date() : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(messageDelivery.id, id));
+    return result.sent;
+  });
+}
+
+/** Watchdog recovery, including notices without a scope or original caller. */
+export async function retryPendingOperatorNotices(limit = 20): Promise<number> {
+  const pending = await db
+    .select()
+    .from(messageDelivery)
+    .where(
+      and(
+        eq(messageDelivery.channel, "email"),
+        eq(messageDelivery.kind, "operator_notice"),
+        inArray(messageDelivery.status, ["queued", "failed"]),
+        lte(messageDelivery.updatedAt, new Date(Date.now() - RETRY_AFTER_MS)),
+        or(
+          isNull(messageDelivery.failureReason),
+          ne(
+            messageDelivery.failureReason,
+            "operator_notice_reconcile_required",
+          ),
+        ),
+      ),
+    )
+    .orderBy(asc(messageDelivery.updatedAt))
+    .limit(limit);
+  let sent = 0;
+  for (const row of pending) {
+    if (
+      Date.now() - row.createdAt.getTime() >= SAFE_WINDOW_MS ||
+      !preparedNotice(row)
+    ) {
+      if (row.status === "queued" || preparedNotice(row)) {
+        const { raiseAlert } = await import("./alerts");
+        await raiseAlert({
+          title: "Provozní e-mail vyžaduje ruční ověření",
+          body: "Pokus už nelze bezpečně automaticky opakovat. Zkontrolujte doručení v Resend a vyřešte upozornění podle výsledku.",
+          dedupeKey: `operator-notice:ambiguous:${row.id}`,
+          context: { deliveryId: row.id },
+        });
+      }
+      await db
+        .update(messageDelivery)
+        .set({
+          status: "failed",
+          providerResponse: null,
+          failureReason: "operator_notice_reconcile_required",
+          updatedAt: new Date(),
+        })
+        .where(eq(messageDelivery.id, row.id));
+      continue;
+    }
+    if (await sendPreparedDelivery(row.id)) sent++;
+  }
+  return sent;
 }
 
 /**
@@ -177,10 +314,13 @@ async function claim(
   notice: OperatorNotice,
   recipient: string,
   dedupeKey: string | null,
+  email: SendEmailParams,
 ): Promise<MessageDelivery | null> {
+  const id = randomUUID();
   const [row] = await db
     .insert(messageDelivery)
     .values({
+      id,
       userId: null,
       reservationId: notice.reservationId ?? null,
       channel: "email",
@@ -188,6 +328,7 @@ async function claim(
       status: "queued",
       recipient,
       dedupeKey,
+      providerResponse: { event: notice.event, email },
     })
     .onConflictDoNothing({ target: messageDelivery.dedupeKey })
     .returning();
@@ -341,8 +482,8 @@ export async function notifyNewMember(params: {
 }
 
 /** An operational alert, which otherwise only reaches the WhatsApp group. */
-export async function notifyAlert(alert: SystemAlert): Promise<void> {
-  await notify({
+export async function notifyAlert(alert: SystemAlert): Promise<boolean> {
+  return notify({
     event: "systemAlert",
     scope: alert.id,
     path: "/admin/alerts",

@@ -267,8 +267,14 @@ async function continueOwnOrder(
    */
   const proves = (row: Reservation) =>
     (params.userId !== null && row.userId === params.userId) ||
-    (params.hold?.kind === "order" && row.orderId === params.hold.id) ||
-    (params.hold?.kind === "reservation" && row.id === params.hold.id);
+    Boolean(
+      params.hold &&
+      row.confirmationTokenHash &&
+      safeEqual(hashCode(params.hold.token), row.confirmationTokenHash) &&
+      (params.hold.kind === "order"
+        ? row.orderId === params.hold.id
+        : row.id === params.hold.id),
+    );
 
   const confirmed = own.find((row) => row.status === "confirmed");
   if (confirmed)

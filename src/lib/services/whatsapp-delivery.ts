@@ -104,6 +104,7 @@ async function sendLocked(input: WhatsAppInput) {
     .update(messageDelivery)
     .set({
       status: "queued",
+      recipient: phone,
       updatedAt: new Date(),
       providerResponse: { attempts, submitted: true, retrySafe: false },
     })
@@ -157,6 +158,8 @@ export async function reconcileReservationWhatsApp() {
     .where(
       and(
         eq(messageDelivery.channel, "whatsapp"),
+        eq(messageDelivery.kind, "access_code"),
+        sql`${messageDelivery.dedupeKey} like 'zernio-access/%'`,
         inArray(messageDelivery.status, ["sent", "queued"]),
         lte(messageDelivery.updatedAt, new Date(Date.now() - 5 * 60_000)),
       ),
@@ -180,15 +183,32 @@ export async function reconcileReservationWhatsApp() {
         body: "Zkontrolujte konverzaci v Zernio. Nejasný pokus se neopakuje, e-mail s kódem běží nezávisle.",
         context: { reservationId: message.reservationId },
       });
+      await db
+        .update(messageDelivery)
+        .set({ updatedAt: new Date() })
+        .where(eq(messageDelivery.id, message.id));
       continue;
     }
     try {
       await withReservationLock(message.reservationId, async () => {
+        const [current] = await db
+          .select()
+          .from(messageDelivery)
+          .where(eq(messageDelivery.id, message.id));
+        const currentMetadata = current?.providerResponse as {
+          conversationId?: string;
+        } | null;
+        if (
+          current?.providerMessageId !== message.providerMessageId ||
+          currentMetadata?.conversationId !== metadata.conversationId ||
+          !["sent", "queued"].includes(current.status)
+        )
+          return;
         const result = await readZernioDelivery(
           metadata.conversationId!,
           message.providerMessageId!,
         );
-        await db
+        const changed = await db
           .update(messageDelivery)
           .set({
             status: result.status === "unknown" ? "sent" : result.status,
@@ -208,7 +228,15 @@ export async function reconcileReservationWhatsApp() {
             },
             updatedAt: new Date(),
           })
-          .where(eq(messageDelivery.id, message.id));
+          .where(
+            and(
+              eq(messageDelivery.id, message.id),
+              eq(messageDelivery.providerMessageId, message.providerMessageId!),
+              inArray(messageDelivery.status, ["sent", "queued"]),
+            ),
+          )
+          .returning({ id: messageDelivery.id });
+        if (changed.length === 0) return;
         if (result.status === "failed")
           await raiseAlert({
             dedupeKey: `whatsapp:${message.reservationId}`,
@@ -224,6 +252,16 @@ export async function reconcileReservationWhatsApp() {
       });
     } catch {
       /* Read failure is not proof of delivery failure; retry the read. */
+      await db
+        .update(messageDelivery)
+        .set({ updatedAt: new Date() })
+        .where(
+          and(
+            eq(messageDelivery.id, message.id),
+            eq(messageDelivery.providerMessageId, message.providerMessageId!),
+            inArray(messageDelivery.status, ["sent", "queued"]),
+          ),
+        );
     }
   }
   const candidates = await db

@@ -23,9 +23,11 @@
     "rebrand:navi": "tsx scripts/rebrand-navi.ts",
     "set-promo": "tsx scripts/set-promo.ts",
     "test": "tsx --test tests/unit/*.test.ts",
-    "test:integration": "tsx --test --test-force-exit --test-concurrency=1 tests/integration/*.test.ts",
-    "test:sql": "psql \"$TEST_DATABASE_URL\" -v ON_ERROR_STOP=1 -f tests/integration/payment-reliability.sql",
-    "test:e2e": "playwright test"
+    "test:integration": "TZ=UTC REQUIRE_DB=1 tsx --test --test-force-exit --test-concurrency=1 tests/integration/*.test.ts",
+    "test:db:setup": "tsx scripts/setup-test-db.ts",
+    "test:sql": "tsx scripts/run-sql-tests.ts",
+    "test:e2e": "tsx scripts/run-local-e2e.ts",
+    "test:e2e:local": "tsx scripts/run-local-e2e.ts"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.21",

@@ -8,6 +8,7 @@ import {
 } from "@/lib/db/schema";
 import type { BlockedSlot, OpeningHours, Reservation } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
+import { lockSchedule } from "./availability";
 import {
   DEFAULT_SHOWER_MINUTES,
   SHOWER_MINUTES_SETTING_KEY,
@@ -36,28 +37,31 @@ export async function setOpeningHours(input: {
     throw new ActionError("Zavírací čas musí být po otevíracím čase.");
   }
   const now = new Date();
-  const [row] = await db
-    .insert(openingHours)
-    .values({
-      dayOfWeek: input.dayOfWeek,
-      openMinute: input.openMinute,
-      closeMinute: input.closeMinute,
-      slotMinutes: input.slotMinutes ?? 60,
-      isClosed: input.isClosed ? 1 : 0,
-      updatedAt: now,
-    })
-    .onConflictDoUpdate({
-      target: openingHours.dayOfWeek,
-      set: {
+  return db.transaction(async (tx) => {
+    await lockSchedule(tx, "exclusive");
+    const [row] = await tx
+      .insert(openingHours)
+      .values({
+        dayOfWeek: input.dayOfWeek,
         openMinute: input.openMinute,
         closeMinute: input.closeMinute,
         slotMinutes: input.slotMinutes ?? 60,
         isClosed: input.isClosed ? 1 : 0,
         updatedAt: now,
-      },
-    })
-    .returning();
-  return row!;
+      })
+      .onConflictDoUpdate({
+        target: openingHours.dayOfWeek,
+        set: {
+          openMinute: input.openMinute,
+          closeMinute: input.closeMinute,
+          slotMinutes: input.slotMinutes ?? 60,
+          isClosed: input.isClosed ? 1 : 0,
+          updatedAt: now,
+        },
+      })
+      .returning();
+    return row!;
+  });
 }
 
 // ── Blocked slots ────────────────────────────────────────────────────────────
@@ -93,17 +97,20 @@ export async function createBlockedSlot(input: {
   if (input.endsAt <= input.startsAt) {
     throw new ActionError("Konec bloku musí být po jeho začátku.");
   }
-  const [row] = await db
-    .insert(blockedSlot)
-    .values({
-      startsAt: input.startsAt,
-      endsAt: input.endsAt,
-      reason: input.reason ?? "other",
-      note: input.note ?? null,
-      createdByAdminId: input.createdByAdminId ?? null,
-    })
-    .returning();
-  return row!;
+  return db.transaction(async (tx) => {
+    await lockSchedule(tx, "exclusive");
+    const [row] = await tx
+      .insert(blockedSlot)
+      .values({
+        startsAt: input.startsAt,
+        endsAt: input.endsAt,
+        reason: input.reason ?? "other",
+        note: input.note ?? null,
+        createdByAdminId: input.createdByAdminId ?? null,
+      })
+      .returning();
+    return row!;
+  });
 }
 
 export async function getBlockedSlot(id: string): Promise<BlockedSlot | null> {

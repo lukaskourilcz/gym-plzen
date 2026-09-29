@@ -81,15 +81,16 @@ export async function raiseAlert(
   }
 }
 
-/** Fan an alert out once and mark it delivered, whether or not WhatsApp is set up. */
-async function deliver(alert: SystemAlert): Promise<void> {
+/** A failed operator e-mail stays pending so the watchdog can recover it. */
+async function deliver(alert: SystemAlert): Promise<boolean> {
   await dispatchToWhatsApp(alert);
   // The WhatsApp group is one way in; e-mail is the one that works today.
-  await notifyAlert(alert);
+  if (!(await notifyAlert(alert))) return false;
   await db
     .update(systemAlert)
     .set({ notifiedAt: new Date() })
     .where(eq(systemAlert.id, alert.id));
+  return true;
 }
 
 /**
@@ -112,8 +113,9 @@ export async function deliverPendingAlerts(limit = 10): Promise<number> {
       )
       .orderBy(asc(systemAlert.createdAt))
       .limit(limit);
-    for (const alert of pending) await deliver(alert);
-    return pending.length;
+    let delivered = 0;
+    for (const alert of pending) if (await deliver(alert)) delivered++;
+    return delivered;
   } catch (e) {
     logger.error(e, { where: "alerts.deliverPendingAlerts" });
     return 0;

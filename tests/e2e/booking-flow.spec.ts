@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
-import { existsSync } from "node:fs";
 import postgres from "postgres";
 import { createComgateMock } from "../integration/mocks";
+import { isTestDatabaseUrl } from "../helpers/test-database";
 
 /**
  * The public booking flow in a browser against a production build with a
@@ -16,11 +16,12 @@ import { createComgateMock } from "../integration/mocks";
  *   COMGATE_API_URL=http://127.0.0.1:4547/v2.0 COMGATE_MERCHANT_ID=test \
  *   COMGATE_SECRET=test COMGATE_TEST_MODE=true PORT=3131 npm start
  */
-if (existsSync(".env.local")) process.loadEnvFile(".env.local");
-const DATABASE_URL = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
-const LOCAL =
-  /^postgres(?:ql)?:\/\/[^/@]+@(?:127\.0\.0\.1|localhost)(?::\d+)?\//;
-const ready = Boolean(DATABASE_URL && LOCAL.test(DATABASE_URL));
+const DATABASE_URL = process.env.TEST_DATABASE_URL;
+const ready = isTestDatabaseUrl(DATABASE_URL);
+if (!ready && process.env.REQUIRE_DB === "1")
+  throw new Error(
+    "Booking E2E requires an explicit, dedicated local TEST_DATABASE_URL.",
+  );
 const GATEWAY_PORT = Number(process.env.E2E_COMGATE_PORT ?? 4547);
 const VOUCHER = "E2EFREE100";
 
@@ -94,7 +95,10 @@ test.describe("Booking flow", () => {
     ).toBeEnabled();
     await page.getByRole("button", { name: /Potvrdit vstup zdarma/ }).click();
 
-    await expect(page).toHaveURL(/\/rezervace\/hotovo\?order_id=.*&token=/);
+    // The proof token is consumed by the server and intentionally removed
+    // from the visible URL before analytics can read it. Its presence in the
+    // address bar is transient and varies with browser/server speed.
+    await expect(page).toHaveURL(/\/rezervace\/hotovo\?order_id=/);
     await expect(
       page.getByRole("heading", { name: "Rezervace je potvrzená" }),
     ).toBeVisible();
@@ -106,6 +110,37 @@ test.describe("Booking flow", () => {
       select status, price_cents from reservation where contact_email = 'e2e-voucher@example.test'`;
     expect(row?.status).toBe("confirmed");
     expect(row?.price_cents).toBe(0);
+    await expect
+      .poll(() => new URL(page.url()).searchParams.has("token"))
+      .toBe(false);
+    const proofCookie = (await page.context().cookies()).find(
+      (cookie) => cookie.name === "navi_confirmation",
+    );
+    expect(proofCookie?.httpOnly).toBe(true);
+    expect(proofCookie?.path).toBe("/rezervace/hotovo");
+    await page.reload();
+    await expect(
+      page.getByRole("heading", { name: "Rezervace je potvrzená" }),
+    ).toBeVisible();
+    const unproved = await page.context().browser()!.newContext();
+    try {
+      const copiedLink = await unproved.newPage();
+      await copiedLink.goto(page.url());
+      await expect(
+        copiedLink.getByRole("heading", {
+          name: "Potvrzení se nepodařilo ověřit",
+        }),
+      ).toBeVisible();
+    } finally {
+      await unproved.close();
+    }
+    await page.context().clearCookies();
+    await page.reload();
+    await expect(
+      page.getByRole("heading", {
+        name: "Potvrzení se nepodařilo ověřit",
+      }),
+    ).toBeVisible();
   });
 
   test("coming back from the gateway continues the visitor's own booking", async ({

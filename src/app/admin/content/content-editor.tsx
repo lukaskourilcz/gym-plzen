@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil } from "lucide-react";
@@ -56,12 +56,12 @@ export function ContentEditor({ values }: { values: Record<string, string> }) {
       defaultValues: { key: "", valueText: "" },
     });
 
-  useEffect(() => {
-    if (!editing) return;
-    reset({ key: editing.key, valueText: values[editing.key] ?? "" });
+  function startEditing(item: ContentEditorItem) {
+    reset({ key: item.key, valueText: values[item.key] ?? "" });
+    setEditing(item);
     setSaved(null);
     setServerError(null);
-  }, [editing, reset, values]);
+  }
 
   const submit = handleSubmit(async (input) => {
     setSaved(null);
@@ -98,7 +98,7 @@ export function ContentEditor({ values }: { values: Record<string, string> }) {
                 key={item.key}
                 item={item}
                 value={values[item.key] ?? ""}
-                onEdit={() => setEditing(item)}
+                onEdit={() => startEditing(item)}
               />
             ))}
           </div>
@@ -124,9 +124,20 @@ export function ContentEditor({ values }: { values: Record<string, string> }) {
           </div>
           <form onSubmit={submit}>
             <input type="hidden" {...register("key")} />
-            <Textarea rows={7} {...register("valueText")} />
+            <Textarea
+              rows={7}
+              aria-label={`Text: ${editing.label}`}
+              aria-invalid={!!formState.errors.valueText}
+              aria-describedby={
+                formState.errors.valueText ? "content-value-error" : undefined
+              }
+              {...register("valueText")}
+            />
             {formState.errors.valueText?.message ? (
-              <p className="mt-1 text-xs text-destructive">
+              <p
+                id="content-value-error"
+                className="mt-1 text-xs text-destructive"
+              >
                 {formState.errors.valueText.message}
               </p>
             ) : null}

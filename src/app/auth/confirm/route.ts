@@ -4,6 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/helpers/logger";
 import { members } from "@/lib/services";
 import { safeInternalPath } from "@/lib/security/redirects";
+import {
+  createRecoveryProof,
+  RECOVERY_PROOF_COOKIE,
+  recoveryProofCookieOptions,
+} from "@/lib/auth/recovery-proof";
 
 /**
  * E-mail confirmation and password-recovery links.
@@ -91,5 +96,15 @@ export async function GET(request: NextRequest) {
           : null,
     });
 
-  return NextResponse.redirect(new URL(next, origin));
+  const response = NextResponse.redirect(new URL(next, origin));
+  if (type === "recovery" && data.user && data.session) {
+    const proof = createRecoveryProof(data.user.id);
+    if (proof)
+      response.cookies.set(
+        RECOVERY_PROOF_COOKIE,
+        proof,
+        recoveryProofCookieOptions(request.nextUrl.protocol === "https:"),
+      );
+  }
+  return response;
 }

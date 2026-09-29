@@ -122,10 +122,7 @@ test.describe("Public site", () => {
     ).toBeVisible();
     await expect(
       page.getByRole("link", { name: "České obchodní inspekce" }),
-    ).toHaveAttribute(
-      "href",
-      "https://coi.gov.cz/informace-o-adr/?utm_source=chatgpt.com",
-    );
+    ).toHaveAttribute("href", "https://coi.gov.cz/informace-o-adr/");
 
     const target = page.locator("#clanek-21");
     await page.getByRole("link", { name: /21\. ZÁVĚREČNÁ USTANOVENÍ/ }).click();
@@ -396,6 +393,7 @@ test.describe("Public site", () => {
     ).toBeVisible();
     const calendar = page.getByRole("grid");
     const unavailable = page.getByText(/Termíny teď nelze načíst/i);
+    if (process.env.REQUIRE_DB === "1") await expect(calendar).toBeVisible();
     if (await calendar.isVisible().catch(() => false)) {
       await expect(calendar).toBeVisible();
       // The page opens on today, so nobody has to pick a day before seeing
@@ -428,10 +426,11 @@ test.describe("Public site", () => {
     await dismissTrackingConsentIfShown(page);
     // A slot is a toggle button whose accessible name ends with "Vybrat".
     const slot = page.getByRole("button", { name: /Vybrat$/ });
-    test.skip(
-      (await slot.count()) < 2,
-      "Not enough bookable slots in this environment",
-    );
+    const slotCount = await slot.count();
+    if (process.env.REQUIRE_DB === "1")
+      expect(slotCount).toBeGreaterThanOrEqual(2);
+    else
+      test.skip(slotCount < 2, "Not enough bookable slots in this environment");
     await slot.first().click();
     await expect(
       page.getByRole("button", { pressed: true }).first(),
@@ -477,10 +476,13 @@ test.describe("Public site", () => {
     );
     const availableCount = await available.count();
 
-    test.skip(
-      availableCount < 2,
-      "Live availability is not configured in this environment",
-    );
+    if (process.env.REQUIRE_DB === "1")
+      expect(availableCount).toBeGreaterThanOrEqual(2);
+    else
+      test.skip(
+        availableCount < 2,
+        "Live availability is not configured in this environment",
+      );
 
     const calendarEntry = page.locator('a[role="gridcell"][tabindex="0"]');
     await expect(calendarEntry).toHaveCount(1);
@@ -514,10 +516,13 @@ test.describe("Public site", () => {
       .locator('a[role="gridcell"][aria-label*="dostupné termíny"]')
       .count();
     await probe.close();
-    test.skip(
-      availableCount < 2,
-      "Live availability is not configured in this environment",
-    );
+    if (process.env.REQUIRE_DB === "1")
+      expect(availableCount).toBeGreaterThanOrEqual(2);
+    else
+      test.skip(
+        availableCount < 2,
+        "Live availability is not configured in this environment",
+      );
 
     for (const attempt of [1, 2, 3, 4]) {
       const page = await browser.newPage();
@@ -685,7 +690,16 @@ test.describe("Public site", () => {
     await page.goto("/login");
     await expect(page.getByLabel(/E-mail/i)).toBeVisible();
     await expect(page.getByLabel(/Heslo/i)).toBeVisible();
-    await expect(page.getByText(/Pokračovat přes/i)).toHaveCount(0);
+    const googleConfigured = (process.env.NEXT_PUBLIC_OAUTH_PROVIDERS ?? "")
+      .split(",")
+      .includes("google");
+    await expect(
+      page.getByRole("link", { name: "Pokračovat přes Google" }),
+    ).toHaveCount(googleConfigured ? 1 : 0);
+    if (googleConfigured)
+      await expect(
+        page.getByRole("link", { name: "Pokračovat přes Google" }),
+      ).toHaveAttribute("href", /\/auth\/signin\?provider=google/);
     await page.setViewportSize({ width: 390, height: 844 });
     const backLink = page.getByRole("link", { name: /NAVI Private Gym/i });
     await expect(backLink).toBeVisible();

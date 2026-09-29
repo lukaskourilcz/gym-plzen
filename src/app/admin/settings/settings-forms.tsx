@@ -243,7 +243,7 @@ export function SmsTemplateForm({ template }: { template: string }) {
       <p className="mb-2 text-xs text-muted-foreground">
         Zástupné symboly: <code>{"{code}"}</code> = kód, <code>{"{time}"}</code>{" "}
         = čas rezervace. WhatsApp používá šablonu schválenou v Meta (název{" "}
-        <code>access_code</code>).
+        <code>navi_rezervace_vstup_cs</code>).
       </p>
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={form.formState.isSubmitting}>

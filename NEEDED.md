@@ -1,17 +1,23 @@
+# Aktuální stav před dalším vydáním
+
+Nový lokální audit a rozhodnutí vlastníka jsou v [docs/LAUNCH_AUDIT_2026_09_29.md](docs/LAUNCH_AUDIT_2026_09_29.md) a [issue #105](https://github.com/lukaskourilcz/gym-plzen/issues/105). Opravy resetu hesla #128, potvrzovacích e-mailů #134 a voucheru #133 jsou na auditní větvi; vlastník schválil jejich sloučení po kontrolách. U #129 přijal pokračování hosta bez ověřovacího e-mailu. Starší odstavce níže zachycují i historický stav.
+
+---
+
 ## Audit před otevřením — 29. 9. 2026 (k rozhodnutí)
 
 - [x] **BEZPEČNOST: produkční demo účty**: `admin@namaste.demo` (admin) a `klient@namaste.demo` smazány z produkčního Supabase 29. 9. (jen staré zrušené testovací rezervace, odkazy vynulovány); zbývají tři skuteční admini. `[imp:5]` `[owner:ai]` `[time:5m]` `[kind:setup]`
 - [x] **Storno a změna termínu**: jedna bezplatná změna do 24 h; nově tlačítko „Zrušit rezervaci“ v Můj účet (termín se uvolní, platba se nevrací, zapisuje se do historie akcí); VOP 8.10, provozní řád 2.4 a FAQ 12 sjednoceny (CMS na produkci upraven). Host bez účtu ruší e-mailem. `[imp:5]` `[owner:ai]` `[time:1h]` `[kind:legal]`
 - [x] **Kapacita 5 osob** všude (VOP 7.1, provozní řád 2.3 a 7.4 v kódu i v CMS, FAQ). `[imp:4]` `[owner:ai]` `[time:5m]` `[kind:legal]`
-- [x] **Telefon ve VOP**: +420 732 817 217. Kontakty na webu (CMS: 731 737 355 a 721 560 150) zůstaly beze změny – potvrdit, zda i tam má být 732 817 217. `[imp:3]` `[owner:me]` `[time:2m]` `[kind:decision]`
+- [x] **Telefon ve VOP a kontaktech**: +420 732 817 217 ve VOP; čísla na webu 731 737 355 a 721 560 150 vlastník potvrdil jako správná. `[imp:3]` `[owner:me]` `[time:0m]` `[kind:decision]`
 - [ ] **Umístění lékárničky**: provozní řád 5.4 „Lékárnička první pomoci je umístěna: ......“ – doplnit místo (hotovo: FAQ 11 platby přes Comgate, FAQ 3 ponechána se zněním vlastníka „videorádce (chystáme)“, odkaz na ČOI bez `utm_source=chatgpt.com`). `[imp:3]` `[owner:me]` `[time:2m]` `[kind:content]`
 - [x] **Cena při změně termínu se nemění** (i přes cenová období) – VOP 8.4 upraveno podle chování systému. `[imp:3]` `[owner:ai]` `[time:5m]` `[kind:legal]`
 - [x] **PIN platí 15 min po konci termínu** – schváleno vlastníkem jako správné. `[imp:1]` `[owner:me]` `[time:0m]` `[kind:decision]`
 - [ ] **Vrátit 2 platby v Comgate**: otevřené alerty `refund-needed` pro rezervace `8e056780…` a `987fdf8b…`. Po refundaci je nově lze zavřít v administraci → Upozornění → „Vyřešeno“. `[imp:4]` `[owner:me]` `[time:10m]` `[kind:setup]`
 - [ ] **Supabase: zapnout Leaked password protection** (Authentication → Policies / Password security). Agent to nastavit nemůže: MCP nástroje Supabase konfiguraci Auth neumí, management token je jen ve Vercelu a měnit bezpečnostní nastavení přes prohlížeč agent nesmí. Pozn.: funkce je dostupná jen v placeném plánu. `[imp:3]` `[owner:me]` `[time:2m]` `[kind:setup]`
-- [ ] **Reset hesla bez ověření odkazu**: přihlášená relace může na `/reset-password` nastavit nové heslo bez současného. Oprava (podepsaná 15min cookie po ověření odkazu) je hotová, ale vrácena, protože nešla ověřit proti skutečnému Supabase – rozbitý reset těsně před otevřením by byl horší. Schválit nasazení s ruční zkouškou resetu na účtu vlastníka. `[imp:3]` `[owner:me]` `[time:10m]` `[kind:decision]`
+- [x] **Reset hesla bez ověření odkazu**: oprava vyžaduje podepsaný 15min důkaz po ověřeném recovery odkazu. Prošla integračním testem i browser testem proti izolovanému skutečnému lokálnímu Supabase Auth; vlastník schválil vydání. `[imp:3]` `[owner:ai]` `[time:0m]` `[kind:deploy]`
 - [x] **Odhlášení newsletteru**: osobní podepsaný odkaz `/newsletter/odhlaseni` (potvrzení tlačítkem), v administraci tlačítko „Odhlásit“ a odkaz k vložení do rozesílky; obojí se zapisuje do historie akcí. `[imp:3]` `[owner:ai]` `[time:1h]` `[kind:legal]`
-- [ ] **Ostrý test na produkci jen s účtem vlastníka**: po schválení udělat zkušební objednávku (2 termíny, 100% voucher) na `kouril.lukas@gmail.com` – ověří skutečné e-maily, doklad a přípravu PINů. Pozor: odejde i provozní upozornění provozovatelkám a PINy se zapíší do zámku; rezervace se pak stornují. `[imp:4]` `[owner:me]` `[time:10m]` `[kind:decision]`
+- [ ] **Ostrý test na produkci jen s účtem vlastníka**: vlastník schválil test pro `kouril.lukas@gmail.com` a WhatsApp `+3546117942`. Před založením rezervace ověřit příjemce všech automatických e-mailů; běžná objednávka může poslat i provozní upozornění provozovatelkám. Cizí zákazníky ani jejich rezervace neměnit a nikoho jiného nekontaktovat. `[imp:4]` `[owner:ai]` `[time:10m]` `[kind:deploy]`
 - [ ] **Projít nové potvrzovací prvky administrace**: dvoukrokové storno s důvodem, potvrzení uzávěry, tlačítko „Vyřešeno“ – logika je pokrytá testy, v prohlížeči je agent bez admin přihlášení neviděl. `[imp:3]` `[owner:me]` `[time:10m]` `[kind:setup]`
 - [ ] **Sdílený limit pokusů (rate limit)**: limit přihlášení/rezervací je v paměti jedné instance Vercelu; při útoku ho lze obejít. Po otevření zvážit sdílené úložiště (Upstash/Postgres). `[imp:2]` `[owner:ai]` `[time:1h]` `[kind:decision]`
 

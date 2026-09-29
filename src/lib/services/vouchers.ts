@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
-import { and, asc, count, desc, eq, inArray, lt, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, lt, ne, sql } from "drizzle-orm";
 import { db, type DatabaseExecutor } from "@/lib/db";
-import { voucher, voucherRedemption } from "@/lib/db/schema";
+import { reservation, voucher, voucherRedemption } from "@/lib/db/schema";
 import type { Voucher } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
 import { pgConstraint } from "@/lib/helpers/pg-error";
@@ -210,6 +210,46 @@ export async function releaseForReservation(
         eq(voucherRedemption.status, "reserved"),
       ),
     );
+}
+
+/** Give back a redeemed voucher only when the operator cancelled its whole purchase. */
+export async function restoreRedeemedForOperatorCancellation(
+  reservationId: string,
+  orderId: string | null,
+  executor: DatabaseExecutor,
+): Promise<void> {
+  const [claim] = await executor
+    .select({ id: voucherRedemption.id })
+    .from(voucherRedemption)
+    .where(
+      and(
+        orderId
+          ? eq(voucherRedemption.orderId, orderId)
+          : eq(voucherRedemption.reservationId, reservationId),
+        eq(voucherRedemption.status, "redeemed"),
+      ),
+    )
+    .for("update")
+    .limit(1);
+  if (!claim) return;
+  if (orderId) {
+    const [remaining] = await executor
+      .select({ id: reservation.id })
+      .from(reservation)
+      .where(
+        and(
+          eq(reservation.orderId, orderId),
+          ne(reservation.status, "cancelled"),
+        ),
+      )
+      .limit(1);
+    if (remaining) return;
+  }
+  const now = new Date();
+  await executor
+    .update(voucherRedemption)
+    .set({ status: "released", releasedAt: now, updatedAt: now })
+    .where(eq(voucherRedemption.id, claim.id));
 }
 
 /** Consume an order's claim, together with the order's confirmation. */

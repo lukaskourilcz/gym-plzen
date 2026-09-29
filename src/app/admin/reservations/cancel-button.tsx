@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useActionForm } from "@/components/admin/use-action-form";
 import { FormFeedback } from "@/components/admin/form-controls";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ export function CancelButton({
 }) {
   const [confirming, setConfirming] = useState(false);
   const [done, setDone] = useState(false);
+  const router = useRouter();
   const trigger = useRef<HTMLDivElement>(null);
   const reasonId = useId();
   const noteId = useId();
@@ -35,6 +37,7 @@ export function CancelButton({
     onSuccess: () => {
       setConfirming(false);
       setDone(true);
+      router.replace("/admin/reservations?cancelled=1");
     },
   });
   const isSubmitting = form.formState.isSubmitting;

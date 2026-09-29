@@ -8,11 +8,10 @@
  * database on this machine named in `TEST_DATABASE_URL`, and skip themselves
  * otherwise (or fail with `REQUIRE_DB=1`, so an empty run cannot look green).
  */
-import { existsSync } from "node:fs";
 import postgres from "postgres";
 import { createComgateMock, createResendMock } from "./mocks";
-
-if (existsSync(".env.local")) process.loadEnvFile(".env.local");
+import { isTestDatabaseUrl } from "../helpers/test-database";
+import { BOOKING_TABLES } from "../helpers/booking-tables";
 
 /*
  * Only an explicitly named database on this machine is ever truncated. The
@@ -20,9 +19,7 @@ if (existsSync(".env.local")) process.loadEnvFile(".env.local");
  * project) is never used as a fallback, and there is no remote override.
  */
 const url = process.env.TEST_DATABASE_URL ?? "";
-const LOCAL_DATABASE =
-  /^postgres(?:ql)?:\/\/[^/@]+@(?:127\.0\.0\.1|localhost)(?::\d+)?\//;
-export const databaseReady = Boolean(url) && LOCAL_DATABASE.test(url);
+export const databaseReady = isTestDatabaseUrl(url);
 if (!databaseReady && process.env.REQUIRE_DB === "1")
   throw new Error(
     "REQUIRE_DB=1 but TEST_DATABASE_URL is not a local Postgres URL; refusing to report a skipped suite as green.",
@@ -90,27 +87,6 @@ export async function stopEverything(): Promise<void> {
   await sql?.end({ timeout: 2 });
 }
 
-const BOOKING_TABLES = [
-  "reservation_reschedule",
-  "reservation_pipeline",
-  "message_delivery",
-  "access_code",
-  "entry_log",
-  "invoice",
-  "document_counter",
-  "voucher_redemption",
-  "voucher",
-  "payment",
-  "webhook_event",
-  "system_alert",
-  "blocked_slot",
-  "pricing_period",
-  "reservation",
-  "booking_order",
-  "membership",
-  "membership_plan",
-];
-
 /**
  * Empty everything a booking touches; keep opening hours, content, settings.
  * Profiles are deleted rather than truncated: content and settings rows point
@@ -129,6 +105,10 @@ export async function resetDatabase(): Promise<void> {
   });
   await setSetting("pricing.entry_price_cents", 22_900);
   await setSetting("billing.send_documents", false);
+  // Test cases may edit the CMS between provider retries. A new case must
+  // start with the shipping templates, just like the rest of its fixtures.
+  await setSetting("messages.email.reservation_confirmation", null);
+  await setSetting("messages.email.order_confirmation", null);
   // The operator's own notifications are on by default in production and have
   // their own suite; here they would add a second recipient to every booking
   // and blur what the customer actually received.
@@ -136,8 +116,7 @@ export async function resetDatabase(): Promise<void> {
     recipients: "",
     events: DEFAULT_OPERATOR_NOTIFICATIONS.events,
   });
-  resend.sent.length = 0;
-  resend.rateLimitNext(0);
+  resend.reset();
   comgate.creates.length = 0;
   comgate.payments.clear();
 }

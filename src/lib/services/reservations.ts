@@ -28,14 +28,17 @@ import {
 import type { NewReservation, Reservation } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
 import { PG_EXCLUSION_VIOLATION, pgErrorCode } from "@/lib/helpers/pg-error";
-import { checkAvailability } from "./availability";
+import { checkAvailability, lockSchedule } from "./availability";
 import { closePipeline, initPipeline } from "./pipeline";
 import {
   listCodesForReservation,
   revokeAccessCode,
   requestCodeRevocations,
 } from "./access-codes";
-import { releaseForReservation } from "./vouchers";
+import {
+  releaseForReservation,
+  restoreRedeemedForOperatorCancellation,
+} from "./vouchers";
 import { cancelOrdersOfReleased, cancelPendingOrderIn } from "./order-state";
 import { notifyReservationCancelled } from "./operator-notifications";
 import { formatDateTime, formatMoney } from "@/lib/helpers/format";
@@ -84,7 +87,15 @@ export async function createReservation(
   input: CreateReservationInput,
   executor: DatabaseExecutor = db,
 ): Promise<Reservation> {
-  const availability = await checkAvailability(input.startsAt, input.endsAt);
+  if (executor === db)
+    return db.transaction((tx) => createReservation(input, tx));
+  await lockSchedule(executor);
+  const availability = await checkAvailability(
+    input.startsAt,
+    input.endsAt,
+    {},
+    executor,
+  );
   if (!availability.available) {
     throw new ActionError(
       AVAILABILITY_MESSAGES[availability.reason ?? "invalid_range"] ??
@@ -205,6 +216,12 @@ async function cancelReservationLocked(
         updatedAt: new Date(),
       })
       .where(eq(reservation.id, params.id));
+    if (params.byAdminId && before.status === "confirmed")
+      await restoreRedeemedForOperatorCancellation(
+        before.id,
+        before.orderId,
+        tx,
+      );
     if (before.status === "confirmed" && email && !params.byCustomer) {
       await tx
         .insert(messageDelivery)

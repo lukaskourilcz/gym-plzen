@@ -1,11 +1,22 @@
 import Link from "next/link";
-import { requireUser } from "@/lib/auth/guards";
+import { getSessionUser } from "@/lib/auth/guards";
+import { cookies } from "next/headers";
+import {
+  RECOVERY_PROOF_COOKIE,
+  validRecoveryProof,
+} from "@/lib/auth/recovery-proof";
 import { ResetPasswordForm } from "./reset-password-form";
 
 export const metadata = { title: "Nastavit nové heslo" };
 
 export default async function ResetPasswordPage() {
-  await requireUser("/reset-password");
+  // A temporary Auth timeout must not send a verified recovery link to the
+  // login form, where a customer who forgot their password cannot continue.
+  const user = await getSessionUser();
+  const cookieStore = await cookies();
+  const hasRecoveryLink =
+    user !== null &&
+    validRecoveryProof(cookieStore.get(RECOVERY_PROOF_COOKIE)?.value, user.id);
 
   return (
     <main
@@ -23,12 +34,21 @@ export default async function ResetPasswordPage() {
         <h1 className="text-[28px] font-extrabold tracking-[-.01em]">
           Nastavit nové heslo
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Zvolte nové heslo pro svůj účet.
-        </p>
-        <div className="mt-7">
-          <ResetPasswordForm />
-        </div>
+        {hasRecoveryLink ? (
+          <>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Zvolte nové heslo pro svůj účet.
+            </p>
+            <div className="mt-7">
+              <ResetPasswordForm />
+            </div>
+          </>
+        ) : (
+          <p className="mt-2 text-sm text-muted-foreground">
+            Obnovovací odkaz nelze ověřit. Obnovte tuto stránku; pokud potíže
+            trvají, požádejte o nový odkaz na přihlašovací stránce.
+          </p>
+        )}
       </div>
     </main>
   );

@@ -1,139 +1,41 @@
-# End-to-end testy
+# Browser testy
 
-Playwright pokrývá veřejný web, měsíční rezervace, lokální demo účty, Supabase
-Auth a administrační formuláře. Testy mají tři odlišné režimy.
+`npm run test:e2e` (stejně jako `npm run test:e2e:local`) spustí produkční build v Node.js 22, lokální náhrady
+Supabase Auth, Resend a Comgate a skutečný Chromium. Testy procházejí veřejný
+kalendář, obě objednávkové cesty, přihlášení, profil, administraci a změnu i
+storno rezervace. Serverové požadavky na cizí domény jsou zablokované. Nejde o
+test produkčních služeb.
 
-## 1. Veřejný produkční smoke test
-
-Produkční build bez databáze musí zobrazit transparentní nedostupný stav a nikdy
-fiktivní dostupnost.
-
-Měřicí ID se do buildu vkládají (`NEXT_PUBLIC_*`), a bez nich se lišta souhlasu
-vůbec nezobrazí. Testy, které lištu odklikávají, proto potřebují build s
-nastavenými ID:
+Použij **novou, zahoditelnou** databázi Postgres na `127.0.0.1`/`localhost`,
+jejíž název končí `_test`. V čistém worktree bez `.env*` spusť:
 
 ```bash
-NEXT_PUBLIC_GA_MEASUREMENT_ID="G-E2ETEST000" \
-NEXT_PUBLIC_META_PIXEL_ID="1000000000000000" \
-  npm run build
-PORT=3131 npm start
-E2E_PORT=3131 npx playwright test tests/e2e/public.spec.ts
+TEST_DATABASE_URL=postgres://postgres@127.0.0.1:5432/navi_browser_test npm run test:db:setup
+TEST_DATABASE_URL=postgres://postgres@127.0.0.1:5432/navi_browser_test npm run test:e2e
 ```
 
-Chování bez ID (žádný skript, žádná lišta) pokrývají unit testy v
-`tests/unit/analytics.test.ts`.
+Název databáze a port přizpůsob svému izolovanému Postgresu. Runner maže
+rezervační **testovací** tabulky a obnovuje výchozí lokální CMS/cenu před každým
+průchodem; odmítne vzdálenou DB a `.env`, `.env.local`, `.env.production` a
+`.env.production.local`. Kontroluje vlastní značku
+serveru, aby si nespletl již běžící aplikaci na portu 3131. Volitelné argumenty
+za `test:e2e` vyberou konkrétní Playwright specs. CI připravuje vlastní
+novou databázi, spouští stejný runner a nedovolí tiché přeskočení Auth/test DB.
 
-## 2. Lokální demo bez Supabase
+Auth náhrada testuje UI a aplikační autorská oprávnění; kryptografii hostovaného
+Supabase Auth, skutečné e-mailové odkazy, RLS a OAuth vyžaduje oddělený testovací
+projekt a finální kontrolu vlastníka.
 
-V `.env.local` zapni `DEMO_AUTH_ENABLED`, bezpečný `DEMO_AUTH_SECRET` a volitelně
-`BOOKING_PREVIEW_FIXTURE`. Potom spusť dev server a jen demo specifikace:
+`analytics.spec.ts` a varianty designu lze dodat jako volitelné specs stejnému
+runneru. `admin-demo.spec.ts`, `customer-demo.spec.ts` a `loyalty-variant.spec.ts`
+testují vývojový demo režim, který je v produkčním buildu záměrně vypnutý. Lze
+je spustit přímo přes Playwright v záměrně zapnutém lokálním demo režimu; nejsou
+součástí běžného `test:e2e` ani náhradou za autentizované produkční průchody.
 
-```bash
-npm run dev
-E2E_PORT=3000 npx playwright test \
-  tests/e2e/admin-demo.spec.ts \
-  tests/e2e/customer-demo.spec.ts \
-  tests/e2e/public.spec.ts
-```
+Vzdálené mutační E2E mají v `global-setup.ts` samostatnou pojistku: vyžadují
+výslovné povolení, přesně shodný host potvrzeného testovacího Supabase projektu
+a blokují produkční ref. Pro tento audit nebyly povoleny ani spuštěny.
 
-Demo auth je v produkci vždy vypnutý, proto demo specifikace nepatří proti
-`npm start` s `NODE_ENV=production`.
-
-## 3. Plná Supabase Auth a admin suite
-
-`global-setup.ts` smí založit testovací účty a zapisovat do vzdáleného projektu
-jen při explicitním splnění všech podmínek:
-
-```dotenv
-E2E_ALLOW_REMOTE_MUTATIONS="true"
-E2E_SUPABASE_PROJECT_REF="potvrzeny-testovaci-ref"
-NEXT_PUBLIC_SUPABASE_URL="https://potvrzeny-testovaci-ref.supabase.co"
-SUPABASE_SECRET_KEY="serverovy-testovaci-klic"
-```
-
-Project ref musí být obsažený v URL. Bez tohoto souhlasu se auth/admin testy
-přeskočí a žádný vzdálený účet se nevytvoří.
-
-```bash
-PORT=3131 npm start
-E2E_PORT=3131 npm run test:e2e
-```
-
-Používej samostatný testovací projekt. Nikdy nepovoluj mutační E2E proti
-produkční databázi. Auth storage states jsou v `tests/e2e/.auth` a jsou
-ignorované Gitem.
-
-## Chromium
-
-Pokud prostředí používá vlastní Chromium, nastav `PW_CHROMIUM_PATH`. Jinak použij
+Playwright ukládá storage state testovacích účtů jen do ignorovaného
+`tests/e2e/.auth`. Vlastní Chromium lze zadat přes `PW_CHROMIUM_PATH`; jinak
 `npx playwright install chromium`.
-
-## Stav checkpointu 2026-08-01
-
-- Lokální demo a veřejný balík: **10 passed, 0 failed**.
-- FAQ regresní kontrola ověřuje všech 20 klientských položek a otevření první
-  odpovědi.
-- Produkční skip navigation stress test: **5/5 passed**.
-- Mobilní 44px cíl zpětného odkazu na loginu: **3/3** v nezávislém review.
-- Produkční veřejný smoke test bez databáze: **8 passed, 1 expected skipped**.
-  Homepage test navíc kontroluje, že metadata odkazují na nový PNG favicon s
-  oficiální klientskou lotusovou značkou.
-  Přeskočený scénář vyžaduje živou dostupnost a produkce ji správně
-  nenahrazuje fikcí.
-- Produkční Node 22 build prošel. Poslední Lighthouse checkpoint z 23. 7. 2026:
-  performance 94, accessibility 100, best practices 100 a SEO 100.
-- Poslední změny administrace, FAQ a CTA prošly `format:check`, lintem,
-  TypeScriptem, 20 unit testy a produkčním buildem. Nevyžadovaly změnu
-  vzdáleného mutačního E2E scénáře.
-- Vzdálené mutační testy nebyly spuštěné, protože nakonfigurovaný Supabase
-  projekt nebyl potvrzený jako projekt této aplikace.
-- Aktuální blokátory a další kroky jsou v kořenovém `SESSION_HANDOFF.md` a
-  `NEEDED.md`.
-
-## 5. Rezervační průchod s lokální databází a náhradní bránou
-
-`booking-flow.spec.ts` projde v prohlížeči obě cesty zákazníka: voucher na
-celou cenu (potvrzení bez platby) a placenou rezervaci, ze které se návštěvník
-vrátí z brány a odešle formulář znovu — tedy přesně situaci, která 17. 9. 2026
-hlásila vlastní rezervaci jako obsazený termín. Potřebuje lokální Postgres
-(`DATABASE_URL` v `.env.local` na `127.0.0.1`/`localhost`; proti vzdálené
-databázi se test sám přeskočí) a produkční build s Comgate nasměrovaným na
-náhradní bránu, kterou spec sám spustí na portu 4547. Build musí mít HTTPS
-`NEXT_PUBLIC_APP_URL`, jinak adaptér Comgate odmítne návratovou adresu:
-
-```bash
-NEXT_PUBLIC_APP_URL=https://localhost:3131 npm run build
-COMGATE_API_URL=http://127.0.0.1:4547/v2.0 COMGATE_MERCHANT_ID=test \
-COMGATE_SECRET=test COMGATE_TEST_MODE=true PORT=3131 npm start
-E2E_PORT=3131 npx playwright test tests/e2e/booking-flow.spec.ts
-```
-
-Stejnou databázi a stejné náhrady za Resend a Comgate používají integrační
-testy služeb (`npm run test:integration`, `tests/integration/`), které
-pokrývají celý `startBooking` včetně e-mailu s přílohou, vyrovnání platby,
-opakovaného odeslání s cookie i bez ní, voucheru na pokusu navíc a expirace
-holdu. Obojí maže rezervační tabulky, proto běží jen proti lokální databázi.
-
-## 4. Varianty vzhledu a věrnostní ukazatel
-
-`design-preview-gate.spec.ts`, `design-variant.spec.ts` a
-`design-variant-audit.spec.ts` patří k produkčnímu smoke testu (režim 1).
-Gate spec ověřuje, že běžný návštěvník přepínač nikde nevidí ani na něj
-nedosáhne klávesnicí a že ho odemkne až otevření `/dev`. Zbylé dva ověřují
-přepínání, persistenci, obě varianty na osmi šířkách, kontrast, focus, 200%
-zoom a reduced motion; obě si proto nastavují cookie `ns_design`.
-
-```bash
-npm run build
-PORT=3131 npm start
-E2E_PORT=3131 npx playwright test \
-  tests/e2e/design-preview-gate.spec.ts \
-  tests/e2e/design-variant.spec.ts tests/e2e/design-variant-audit.spec.ts
-```
-
-`loyalty-variant.spec.ts` potřebuje demo přihlášení, takže patří do režimu 2
-(dev server s `DEMO_AUTH_ENABLED`).
-
-**Pozor:** nikdy nespouštěj `npm run build` proti běžícímu `npm start` ze
-stejného `.next`. Server pak servíruje HTML s hashe chunků, které už na disku
-nejsou, stránka se nezhydratuje a testy padají na zdánlivě nefunkčním JS.

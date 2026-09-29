@@ -1,3 +1,9 @@
+# Aktuální audit vydání — 29. 9. 2026
+
+Samostatná větev `codex/launch-audit-20260929` obsahuje lokálně otestované opravy a reprodukovatelné browser testy. Výsledky, limity a rozhodnutí před vydáním jsou v [závěrečném auditu](docs/LAUNCH_AUDIT_2026_09_29.md) a hlavním [GitHub issue #105](https://github.com/lukaskourilcz/gym-plzen/issues/105). Níže jsou historické zápisy z dřívějších auditů; staré položky o Nuki #64 a chybějícím WhatsApp propojení už nejsou aktuální. V tomto auditu nebyla měněna produkční data ani nic nasazeno.
+
+---
+
 # Rozhodnutí vlastníka po auditu — 29. 9. 2026
 
 PR #98 (nasazeno). Smazány produkční demo účty `admin@namaste.demo` a

@@ -30,11 +30,11 @@ export function toE164(
     digits = defaultCountryCode + digits;
   }
 
-  if (!/^\d{8,15}$/.test(digits)) return null;
+  if (!/^[1-9]\d{7,14}$/.test(digits)) return null;
   return `+${digits}`;
 }
 
 /** True when a string is already a valid E.164 number. */
 export function isE164(value: string): boolean {
-  return /^\+\d{8,15}$/.test(value);
+  return /^\+[1-9]\d{7,14}$/.test(value);
 }

@@ -12,6 +12,9 @@ import { env } from "@/lib/env";
 import { isAuthorizedCron } from "@/lib/helpers/cron";
 import { logger } from "@/lib/helpers/logger";
 import { pipeline, fulfillment, reservations } from "@/lib/services";
+import { runPriorityWatchdogStages } from "@/lib/services/watchdog-priority";
+import { retryPendingOperatorNotices } from "@/lib/services/operator-notifications";
+import { retryRescheduleConfirmations } from "@/lib/services/reschedule-delivery";
 
 /**
  * Reliability watchdog. Runs on a schedule (Vercel Cron : see NEEDED.md), picks
@@ -42,33 +45,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const reconciledPayments = await stage(
-    "reconcilePendingPayments",
-    () => reconcilePendingPayments(),
-    0,
-  );
-  const released = await stage(
-    "releaseExpiredPendingReservations",
-    () => reservations.releaseExpiredPendingReservations(),
-    0,
-  );
-
   // PIN creation and delivery come first: a slow Nuki API or a busy lock in
   // revocation or cleanup below must never starve another customer's PIN.
   // This read is the watchdog's core: if it fails, the request fails and the
   // missing heartbeat below raises the alarm.
-  const due = await pipeline.dueForRetry(50);
-  const reservationIds = [...new Set(due.map((d) => d.reservationId))];
-
-  let processed = 0;
-  for (const id of reservationIds) {
-    try {
-      await fulfillment.fulfillReservation(id);
-      processed++;
-    } catch (e) {
-      logger.error(e, { where: "cron.watchdog", reservationId: id });
-    }
-  }
+  const priority = await runPriorityWatchdogStages({
+    dueForRetry: () => pipeline.dueForRetry(50),
+    fulfillReservation: (id) => fulfillment.fulfillReservation(id),
+    reconcilePendingPayments,
+    releaseExpiredPendingReservations: () =>
+      reservations.releaseExpiredPendingReservations(),
+  });
 
   const revocations = await stage(
     "reconcileRevocations",
@@ -87,6 +74,16 @@ export async function GET(request: NextRequest) {
   );
   await stage("monitorLockConnectivity", () => monitorLockConnectivity(), null);
   await stage("retryCancellationEmails", () => retryCancellationEmails(), null);
+  await stage(
+    "retryRescheduleConfirmations",
+    () => retryRescheduleConfirmations(),
+    0,
+  );
+  await stage(
+    "retryPendingOperatorNotices",
+    () => retryPendingOperatorNotices(),
+    0,
+  );
   await stage(
     "reconcileReservationWhatsApp",
     () => reconcileReservationWhatsApp(),
@@ -115,9 +112,6 @@ export async function GET(request: NextRequest) {
     revocations,
     expiredCodes,
     closedPipelines,
-    reconciledPayments,
-    releasedPendingReservations: released,
-    dueSteps: due.length,
-    processed,
+    ...priority,
   });
 }

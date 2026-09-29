@@ -18,9 +18,11 @@ import { createBlockedSlot, findOverlappingReservations } from "./schedule";
  * repeat it confirming exactly that number.
  *
  * Each booking takes the full cancellation path (`cancelReservation`): the
- * reservation lock is held and any access code is revoked, voucher claims are
- * released, and a paid reservation raises a critical refund alert, because the
- * money has to be returned by hand in the Comgate portal.
+ * reservation lock is held and any access code is revoked. Unpaid voucher
+ * claims are released; redeemed uses stay consumed until the operator decides
+ * the refund policy (including multi-slot orders). A paid reservation raises a
+ * critical refund alert, because the money has to be returned by hand in the
+ * Comgate portal.
  */
 
 export interface ClosureAdmin {
@@ -114,6 +116,22 @@ export async function closeTimeRange(
     input.startsAt,
     input.endsAt,
   );
+  if (toCancel.length > 0 && input.confirmCancellations !== toCancel.length) {
+    if (!existing)
+      await recordActivity({
+        action: "blocked_slot.created",
+        actorType: "admin",
+        actorId: input.admin.id,
+        actorLabel: input.admin.email,
+        summary: `Termíny od ${formatDateTime(input.startsAt)} do ${formatDateTime(input.endsAt)} uzavřeny; storno ${toCancel.length} rezervací čeká na potvrzení.`,
+        context: { blockedSlotId: block.id, reason: input.reason },
+      });
+    return {
+      status: "needs_confirmation",
+      affectedCount: toCancel.length,
+      message: closureConfirmationMessage(toCancel.length),
+    };
+  }
   const cancelled: Reservation[] = [];
   const failed: Array<{ id: string; startsAt: Date }> = [];
   for (const row of toCancel) {

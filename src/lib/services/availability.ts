@@ -1,6 +1,6 @@
-import { and, eq, gt, lt, ne, or, type SQL } from "drizzle-orm";
+import { and, eq, gt, lt, ne, or, sql, type SQL } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
-import { db } from "@/lib/db";
+import { db, type DatabaseExecutor } from "@/lib/db";
 import { blockedSlot, openingHours, reservation } from "@/lib/db/schema";
 import { dayOfWeek, minuteOfDay, minutesBetween } from "@/lib/helpers/datetime";
 
@@ -17,6 +17,18 @@ import { dayOfWeek, minuteOfDay, minutesBetween } from "@/lib/helpers/datetime";
  */
 
 const ACTIVE_STATUSES = ["pending", "confirmed"] as const;
+
+/** Acquire inside the writer's transaction; it stays held through commit. */
+export async function lockSchedule(
+  executor: DatabaseExecutor,
+  mode: "shared" | "exclusive" = "shared",
+): Promise<void> {
+  await executor.execute(
+    mode === "exclusive"
+      ? sql`select pg_advisory_xact_lock(hashtextextended('booking-schedule', 0))`
+      : sql`select pg_advisory_xact_lock_shared(hashtextextended('booking-schedule', 0))`,
+  );
+}
 
 export interface AvailabilityResult {
   available: boolean;
@@ -44,9 +56,10 @@ function overlaps(
 async function isWithinOpeningHours(
   startsAt: Date,
   endsAt: Date,
+  executor: DatabaseExecutor,
 ): Promise<boolean> {
   const dow = dayOfWeek(startsAt);
-  const [hours] = await db
+  const [hours] = await executor
     .select()
     .from(openingHours)
     .where(eq(openingHours.dayOfWeek, dow))
@@ -69,16 +82,17 @@ export async function checkAvailability(
   startsAt: Date,
   endsAt: Date,
   opts: { excludeReservationId?: string } = {},
+  executor: DatabaseExecutor = db,
 ): Promise<AvailabilityResult> {
   if (minutesBetween(startsAt, endsAt) <= 0) {
     return { available: false, reason: "invalid_range" };
   }
 
-  if (!(await isWithinOpeningHours(startsAt, endsAt))) {
+  if (!(await isWithinOpeningHours(startsAt, endsAt, executor))) {
     return { available: false, reason: "closed" };
   }
 
-  const reservationConflict = await db
+  const reservationConflict = await executor
     .select({ id: reservation.id })
     .from(reservation)
     .where(
@@ -99,7 +113,7 @@ export async function checkAvailability(
     return { available: false, reason: "overlap_reservation" };
   }
 
-  const blockConflict = await db
+  const blockConflict = await executor
     .select({ id: blockedSlot.id })
     .from(blockedSlot)
     .where(overlaps(blockedSlot.startsAt, blockedSlot.endsAt, startsAt, endsAt))

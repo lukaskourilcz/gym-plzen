@@ -1,5 +1,5 @@
 import { emailRetentionCutoff } from "@/lib/helpers/email-retention";
-import { and, desc, eq, gt, isNull } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { emailArchive, messageDelivery } from "@/lib/db/schema";
 import type { MessageDelivery } from "@/lib/db/types";
@@ -52,17 +52,39 @@ export async function updateStatusByProviderId(params: {
   status: MessageDelivery["status"];
   at?: Date;
 }): Promise<void> {
+  const timestamp = (params.at ?? new Date()).toISOString();
   const timestampField =
     params.status === "delivered"
-      ? { deliveredAt: params.at ?? new Date() }
+      ? {
+          deliveredAt: sql`coalesce(${messageDelivery.deliveredAt}, ${timestamp}::timestamptz)`,
+        }
       : params.status === "read"
-        ? { readAt: params.at ?? new Date() }
+        ? {
+            deliveredAt: sql`coalesce(${messageDelivery.deliveredAt}, ${timestamp}::timestamptz)`,
+            readAt: sql`coalesce(${messageDelivery.readAt}, ${timestamp}::timestamptz)`,
+          }
         : {};
+
+  const predecessors: Record<
+    MessageDelivery["status"],
+    MessageDelivery["status"][]
+  > = {
+    queued: ["queued"],
+    sent: ["queued", "sent"],
+    failed: ["queued", "sent", "failed"],
+    delivered: ["queued", "sent", "failed", "delivered"],
+    read: ["queued", "sent", "failed", "delivered", "read"],
+  };
 
   await db
     .update(messageDelivery)
     .set({ status: params.status, ...timestampField, updatedAt: new Date() })
-    .where(eq(messageDelivery.providerMessageId, params.providerMessageId));
+    .where(
+      and(
+        eq(messageDelivery.providerMessageId, params.providerMessageId),
+        inArray(messageDelivery.status, predecessors[params.status]),
+      ),
+    );
 }
 
 /** Metadata only: never load hundreds of HTML bodies for the list page. */

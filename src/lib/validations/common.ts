@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { toE164 } from "@/lib/helpers/phone";
 
 /**
  * Reusable primitive schemas shared across forms.
@@ -21,8 +22,8 @@ export const emailSchema = z.string().email("Neplatný e-mail.");
 
 export const phoneSchema = z
   .string()
-  .min(9, "Neplatné telefonní číslo.")
-  .max(20);
+  .max(40)
+  .refine((value) => toE164(value) !== null, "Neplatné telefonní číslo.");
 
 /**
  * A datetime as produced by an `<input type="datetime-local">` or an ISO

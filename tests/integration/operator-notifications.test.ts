@@ -24,10 +24,14 @@ import {
   cancelReservation,
   getReservation,
 } from "../../src/lib/services/reservations";
-import { raiseAlert } from "../../src/lib/services/alerts";
+import {
+  deliverPendingAlerts,
+  raiseAlert,
+} from "../../src/lib/services/alerts";
 import {
   getOperatorNotifications,
   notifyReservationRescheduled,
+  retryPendingOperatorNotices,
   saveOperatorNotifications,
 } from "../../src/lib/services/operator-notifications";
 import {
@@ -278,6 +282,107 @@ describe(
         ).length,
         1,
       );
+    });
+
+    test("an alert remains pending after email failure and the watchdog delivers it once", async () => {
+      await configure(OPERATOR);
+      resend.rateLimitNext(2);
+      const alert = await raiseAlert({
+        title: "Testovací výpadek doručení",
+        dedupeKey: "test:alert-retry",
+      });
+      assert.ok(alert);
+      const [failed] = await rows<{ notified_at: Date | null }>(
+        "select notified_at from system_alert where id = $1",
+        [alert.id],
+      );
+      assert.equal(
+        failed?.notified_at,
+        null,
+        "a refused email is not a notification",
+      );
+      assert.equal(operatorEmails().length, 0);
+      assert.equal(await deliverPendingAlerts(), 1);
+      const [delivered] = await rows<{ notified_at: Date | null }>(
+        "select notified_at from system_alert where id = $1",
+        [alert.id],
+      );
+      assert.ok(delivered?.notified_at);
+      assert.equal(operatorEmails().length, 1);
+      assert.equal(await deliverPendingAlerts(), 0);
+      assert.equal(operatorEmails().length, 1);
+    });
+
+    test("a crash after provider acceptance recovers the same operator notice only once", async () => {
+      await configure(OPERATOR);
+      // The provider accepts the POST, then this local DB trigger simulates a
+      // process dying before its success marker can be committed.
+      await rows(`create function test_operator_write_crash() returns trigger language plpgsql as $$
+        begin raise exception 'local operator write crash'; end; $$`);
+      await rows(`create trigger test_operator_write_crash before update of status on message_delivery
+        for each row when (old.kind = 'operator_notice' and new.status = 'sent')
+        execute function test_operator_write_crash()`);
+      let alertId: string;
+      try {
+        const alert = await raiseAlert({
+          title: "Izolovaný test obnovy e-mailu",
+          dedupeKey: "test:operator-crash",
+        });
+        assert.ok(alert);
+        alertId = alert.id;
+      } finally {
+        await rows(
+          "drop trigger if exists test_operator_write_crash on message_delivery",
+        );
+        await rows("drop function if exists test_operator_write_crash()");
+      }
+      assert.equal(operatorEmails().length, 1);
+      const [pending] = await rows<{
+        id: string;
+        status: string;
+        provider_response: unknown;
+      }>(
+        "select id, status, provider_response from message_delivery where kind = 'operator_notice'",
+      );
+      assert.equal(pending?.status, "queued");
+      assert.ok(pending?.provider_response);
+      const [unnotified] = await rows<{ notified_at: Date | null }>(
+        "select notified_at from system_alert where id = $1",
+        [alertId!],
+      );
+      assert.equal(unnotified?.notified_at, null);
+      await rows(
+        "update message_delivery set updated_at = now() - interval '6 minutes' where id = $1",
+        [pending!.id],
+      );
+      assert.equal(await retryPendingOperatorNotices(), 1);
+      assert.equal(
+        operatorEmails().length,
+        1,
+        "Resend accepted one actual message",
+      );
+      const [recovered] = await rows<{
+        status: string;
+        provider_message_id: string;
+        provider_response: unknown;
+      }>(
+        "select status, provider_message_id, provider_response from message_delivery where id = $1",
+        [pending!.id],
+      );
+      assert.equal(recovered?.status, "sent");
+      assert.ok(recovered?.provider_message_id);
+      assert.equal(
+        recovered?.provider_response,
+        null,
+        "payload is erased after acceptance",
+      );
+      assert.equal(await deliverPendingAlerts(), 1);
+      const [notified] = await rows<{ notified_at: Date | null }>(
+        "select notified_at from system_alert where id = $1",
+        [alertId!],
+      );
+      assert.ok(notified?.notified_at);
+      assert.equal(operatorEmails().length, 1);
     });
 
     test("what the administration saves is what the next booking uses", async () => {
