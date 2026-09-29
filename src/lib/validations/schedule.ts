@@ -24,6 +24,11 @@ export const createBlockedSlotSchema = z
     endsAt: dateTimeStringSchema,
     reason: z.enum(["maintenance", "holiday", "private_event", "other"]),
     note: optionalText(300),
+    /**
+     * How many bookings the admin agreed to cancel. Absent on the first
+     * submit; the server answers with the count and the form resends it.
+     */
+    confirmCancellations: z.number().int().nonnegative().optional(),
   })
   .refine((v) => Date.parse(v.endsAt) > Date.parse(v.startsAt), {
     message: "Konec musí být po začátku.",

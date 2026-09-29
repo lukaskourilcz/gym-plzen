@@ -10,6 +10,7 @@ import csLocale from "@fullcalendar/core/locales/cs";
 import type { DateSelectArg, EventInput } from "@fullcalendar/core";
 import { createBlockedSlotAction } from "@/app/admin/schedule/actions";
 import { minutesToHHmm } from "@/lib/helpers/format";
+import { closureFailureMessage } from "@/lib/helpers/closure-copy";
 import {
   DEFAULT_CLOSE_MINUTE,
   DEFAULT_OPEN_MINUTE,
@@ -157,16 +158,36 @@ export function BookingCalendar({
       return;
     }
     setBusy(true);
-    const result = await createBlockedSlotAction({
+    const values = {
       startsAt: sel.start.toISOString(),
       endsAt: sel.end.toISOString(),
-      reason: "maintenance",
+      reason: "maintenance" as const,
       note: "Úklid",
-    });
+    };
+    let result = await createBlockedSlotAction(values);
+    // A drag cannot start over a booking (selectOverlap below), but one made
+    // since this page loaded is only known to the server. Cancelling it
+    // e-mails the customer, so it needs its own explicit confirmation.
+    if (result.ok && result.data.status === "needs_confirmation") {
+      const count = result.data.affectedCount;
+      result = window.confirm(result.data.message)
+        ? await createBlockedSlotAction({
+            ...values,
+            confirmCancellations: count,
+          })
+        : result;
+    }
     setBusy(false);
     sel.view.calendar.unselect();
-    if (result.ok) router.refresh();
-    else setActionError(result.error ?? "Blok se nepodařilo vytvořit.");
+    if (!result.ok) {
+      setActionError(result.error ?? "Blok se nepodařilo vytvořit.");
+      return;
+    }
+    if (result.data.status === "closed") {
+      if (result.data.failed.length > 0)
+        setActionError(closureFailureMessage(result.data.failed));
+      router.refresh();
+    }
   }
 
   return (
@@ -216,6 +237,10 @@ export function BookingCalendar({
         allDaySlot={false}
         nowIndicator
         selectable={!busy && !readOnly}
+        // A block over a booking cancels it and e-mails the customer, so a
+        // drag may cross only other blocks (background events), never a
+        // reservation. The form on /admin/schedule is the deliberate path.
+        selectOverlap={(event) => event.display === "background"}
         selectMirror
         select={onSelect}
         height="auto"

@@ -14,7 +14,8 @@ import {
   type CreateBlockedSlotValues,
   type OpeningHoursValues,
 } from "@/lib/validations/schedule";
-import { activity, schedule, reservations } from "@/lib/services";
+import { activity, closures, schedule } from "@/lib/services";
+import type { CloseTimeRangeOutcome } from "@/lib/services/closures";
 import { formatDateTime } from "@/lib/helpers/format";
 
 /** Save opening hours for one weekday (converts "HH:mm" → minutes). */
@@ -33,50 +34,30 @@ const saveOpeningHoursImpl = defineAction({
   },
 });
 
-/** Block a time range (maintenance, holiday, …). */
+/**
+ * Block a time range (maintenance, holiday, …). Over existing bookings the
+ * first call only returns `needs_confirmation` with their count; the booking
+ * cancellations (and customer e-mails) happen once the admin resends the
+ * request confirming that count.
+ */
 const createBlockedSlotImpl = defineAction({
   schema: createBlockedSlotSchema,
   authorize: assertAdmin,
   handler: async (input, admin) => {
-    const start = formDateTimeToInstant(input.startsAt);
-    const end = formDateTimeToInstant(input.endsAt);
-    const block = await schedule.createBlockedSlot({
-      startsAt: start,
-      endsAt: end,
+    const outcome = await closures.closeTimeRange({
+      startsAt: formDateTimeToInstant(input.startsAt),
+      endsAt: formDateTimeToInstant(input.endsAt),
       reason: input.reason,
       note: input.note || null,
-      createdByAdminId: admin.id,
+      admin: { id: admin.id, email: admin.email },
+      confirmCancellations: input.confirmCancellations,
     });
-
-    // Closing a slot that already has bookings: cancel them (full cancellation,
-    // voucher release, refund alert for paid ones) and notify each member.
-    const affected = await schedule.findOverlappingReservations(start, end);
-    await reservations.cancelReservationsForClosure(affected, {
-      reason: input.note || "Termín byl uzavřen provozovatelem.",
-      byAdminId: admin.id,
-    });
-    await activity.record({
-      action: "blocked_slot.created",
-      actorType: "admin",
-      actorId: admin.id,
-      actorLabel: admin.email,
-      summary: `Termíny od ${formatDateTime(start)} do ${formatDateTime(end)} uzavřeny${input.note ? ` (${input.note})` : ""}; zrušeno rezervací: ${affected.length}.`,
-      context: { blockedSlotId: block.id, reason: input.reason },
-    });
-    for (const r of affected) {
-      await activity.record({
-        action: "reservation.cancelled",
-        actorType: "admin",
-        actorId: admin.id,
-        actorLabel: admin.email,
-        memberId: r.userId,
-        reservationId: r.id,
-        summary: `Rezervace na ${formatDateTime(r.startsAt)} zrušena uzavřením termínů${input.note ? ` (${input.note})` : ""}.`,
-      });
+    if (outcome.status === "closed") {
+      revalidatePath("/admin/schedule");
+      revalidatePath("/admin/calendar");
+      revalidatePath("/admin/reservations");
     }
-
-    revalidatePath("/admin/schedule");
-    revalidatePath("/admin/calendar");
+    return outcome;
   },
 });
 
@@ -122,7 +103,7 @@ export async function saveShowerMinutesAction(input: {
 
 export async function createBlockedSlotAction(
   input: CreateBlockedSlotValues,
-): Promise<Result<unknown>> {
+): Promise<Result<CloseTimeRangeOutcome>> {
   return createBlockedSlotImpl(input);
 }
 

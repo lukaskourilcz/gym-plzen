@@ -266,27 +266,6 @@ async function cancelReservationLocked(params: {
 }
 
 /**
- * Cancel reservations the operator is closing (a block placed over a range
- * that already has bookings). Each one takes the full cancellation path, so
- * the reservation lock is held and any access code is revoked; voucher claims
- * are released; and a paid reservation raises a critical alert, because the
- * money has to be returned by hand in the Comgate portal and nothing else
- * would tell the operator that.
- */
-export async function cancelReservationsForClosure(
-  affected: Reservation[],
-  params: { reason: string; byAdminId?: string },
-): Promise<void> {
-  for (const row of affected) {
-    await cancelReservation({
-      id: row.id,
-      reason: params.reason,
-      byAdminId: params.byAdminId,
-    });
-  }
-}
-
-/**
  * Give up a checkout hold that its own visitor is replacing with a fresh
  * attempt (they came back to add a voucher, or the hold never reached the
  * gateway). Only a row that is still pending is touched: a payment settling
