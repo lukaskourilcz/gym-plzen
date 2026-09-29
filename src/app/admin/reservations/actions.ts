@@ -11,8 +11,7 @@ import {
   type CancelReservationValues,
 } from "@/lib/validations/reservations";
 import { formDateTimeToInstant } from "@/lib/helpers/datetime";
-import { activity, reservations, fulfillment } from "@/lib/services";
-import { formatDateTime } from "@/lib/helpers/format";
+import { adminReservations, fulfillment } from "@/lib/services";
 
 /**
  * Server actions for the reservations admin. Each: authorize (admin) → validate
@@ -24,25 +23,16 @@ const createImpl = defineAction({
   schema: createReservationSchema,
   authorize: assertAdmin,
   handler: async (input, admin) => {
-    const reservation = await reservations.createReservation({
+    // The service refuses a past start and derives the end from the
+    // configured window, so the form only chooses where the booking begins.
+    const reservation = await adminReservations.createManualReservation({
       userId: input.userId || null,
       startsAt: formDateTimeToInstant(input.startsAt),
-      endsAt: formDateTimeToInstant(input.endsAt),
       contactName: input.contactName || null,
       contactEmail: input.contactEmail || null,
       contactPhone: input.contactPhone || null,
       priceCents: input.priceCents ?? null,
-      status: "confirmed", // admin bookings are confirmed immediately
-      createdByAdminId: admin.id,
-    });
-    await activity.record({
-      action: "reservation.created",
-      actorType: "admin",
-      actorId: admin.id,
-      actorLabel: admin.email,
-      memberId: reservation.userId,
-      reservationId: reservation.id,
-      summary: `Rezervace na ${formatDateTime(reservation.startsAt)} vytvořena ručně pro ${reservation.contactName ?? reservation.contactEmail ?? "neuvedený kontakt"}.`,
+      admin: { id: admin.id, email: admin.email },
     });
     // Provision + deliver the access code straight away.
     await fulfillment.fulfillReservation(reservation.id);
@@ -54,24 +44,15 @@ const cancelImpl = defineAction({
   schema: cancelReservationSchema,
   authorize: assertAdmin,
   handler: async (input, admin) => {
-    const current = await reservations.getReservation(input.id);
-    await reservations.cancelReservation({
+    // Refuses a reservation that has already ended; the shared cancellation
+    // used by system paths is deliberately left without that rule.
+    const current = await adminReservations.cancelByAdmin({
       id: input.id,
-      reason: input.reason || undefined,
-      byAdminId: admin.id,
+      reason: input.reason,
+      admin: { id: admin.id, email: admin.email },
     });
-    if (current)
-      await activity.record({
-        action: "reservation.cancelled",
-        actorType: "admin",
-        actorId: admin.id,
-        actorLabel: admin.email,
-        memberId: current.userId,
-        reservationId: current.id,
-        summary: `Rezervace na ${formatDateTime(current.startsAt)} zrušena správcem${input.reason ? ` (${input.reason})` : ""}.`,
-      });
     revalidatePath("/admin/reservations");
-    revalidatePath(`/admin/members/${current?.userId ?? ""}`);
+    if (current.userId) revalidatePath(`/admin/members/${current.userId}`);
   },
 });
 

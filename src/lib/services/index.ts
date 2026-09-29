@@ -11,6 +11,7 @@
  */
 export * as availability from "./availability";
 export * as reservations from "./reservations";
+export * as adminReservations from "./admin-reservations";
 export * as rescheduling from "./rescheduling";
 export * as booking from "./booking";
 export * as orders from "./orders";

@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth/guards";
 import { idSchema } from "@/lib/validations/common";
 import Link from "next/link";
 import { reservations } from "@/lib/services";
+import { isCancellableByAdmin } from "@/lib/services/admin-reservations";
 import {
   formatDateTime,
   formatMoney,
@@ -34,6 +35,7 @@ export default async function ReservationsPage({
   searchParams: Promise<{ id?: string }>;
 }) {
   await requireAdmin();
+  const now = new Date();
   const query = await searchParams;
   const parsedId = idSchema.safeParse(query.id);
   const selectedId = parsedId.success ? parsedId.data : undefined;
@@ -162,7 +164,7 @@ export default async function ReservationsPage({
                 )}
               </TableCell>
               <TableCell>
-                {!demo && r.status !== "cancelled" && (
+                {!demo && isCancellableByAdmin(r, now) && (
                   <CancelButton reservationId={r.id} />
                 )}
               </TableCell>

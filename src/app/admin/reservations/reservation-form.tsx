@@ -27,11 +27,22 @@ export function ReservationForm() {
   return (
     <form onSubmit={submit}>
       <Field name="startsAt" label="Začátek" error={errors.startsAt}>
-        <Input id="startsAt" type="datetime-local" {...register("startsAt")} />
+        <Input
+          id="startsAt"
+          type="datetime-local"
+          aria-describedby={
+            errors.startsAt ? "startsAt-error startsAt-help" : "startsAt-help"
+          }
+          {...register("startsAt")}
+        />
       </Field>
-      <Field name="endsAt" label="Konec" error={errors.endsAt}>
-        <Input id="endsAt" type="datetime-local" {...register("endsAt")} />
-      </Field>
+      <p
+        id="startsAt-help"
+        className="-mt-2 mb-4 text-sm text-muted-foreground"
+      >
+        Zadejte začátek okna podle otevírací doby. Konec se dopočítá z nastavené
+        délky okna.
+      </p>
       <Field
         name="contactName"
         label="Jméno zákazníka"

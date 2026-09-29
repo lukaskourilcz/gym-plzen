@@ -253,6 +253,17 @@ export function resolveSlotFromHours(
 export async function resolveBookableSlot(startsAt: Date) {
   if (!isDateOpenForBooking(dateKeyInTimeZone(startsAt), await getOperations()))
     return null;
+  return resolveConfiguredSlot(startsAt);
+}
+
+/**
+ * The opening-hours window starting at `startsAt`, or null when it is not the
+ * start of one. Unlike `resolveBookableSlot` it ignores the public "bookings
+ * from" date: an administrator's manual booking keeps to the same grid as the
+ * public calendar (so it can never straddle two public slots) but may be made
+ * before public booking opens.
+ */
+export async function resolveConfiguredSlot(startsAt: Date) {
   const [hours] = await db
     .select()
     .from(openingHours)
