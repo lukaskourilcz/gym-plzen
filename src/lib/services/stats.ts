@@ -3,7 +3,6 @@ import { db } from "@/lib/db";
 import { reservation } from "@/lib/db/schema";
 import type { Reservation } from "@/lib/db/types";
 import {
-  MINUTE_MS,
   addDaysToDateKey,
   dateKeyInTimeZone,
   dayOfWeek,
@@ -58,7 +57,7 @@ export function aggregateStats(
   const counted = rows.filter((r) => r.status !== "cancelled");
   const weekday = new Array(7).fill(0) as number[]; // index 0=Mon .. 6=Sun
   const hour = new Map<number, number>();
-  const month = new Map<string, number>();
+  const month = new Map<string, Bucket>();
   const monthFmt = new Intl.DateTimeFormat("cs-CZ", {
     month: "short",
     year: "numeric",
@@ -76,8 +75,11 @@ export function aggregateStats(
     const h = Math.floor(minuteOfDay(r.startsAt, TZ) / 60);
     hour.set(h, (hour.get(h) ?? 0) + 1);
 
-    const mKey = monthFmt.format(r.startsAt);
-    month.set(mKey, (month.get(mKey) ?? 0) + 1);
+    const mKey = dateKeyInTimeZone(r.startsAt, TZ).slice(0, 7);
+    month.set(mKey, {
+      label: monthFmt.format(r.startsAt),
+      count: (month.get(mKey)?.count ?? 0) + 1,
+    });
 
     if (
       r.startsAt.getTime() >= thirtyAgo &&
@@ -97,8 +99,9 @@ export function aggregateStats(
       count,
     }));
   const byMonth: Bucket[] = [...month.entries()]
-    .map(([label, count]) => ({ label, count }))
-    .slice(-12);
+    .sort(([left], [right]) => left.localeCompare(right))
+    .slice(-12)
+    .map(([, bucket]) => bucket);
 
   const busiestWeekday = [...byWeekday].sort((a, b) => b.count - a.count)[0];
   const busiestHour = [...byHour].sort((a, b) => b.count - a.count)[0];
@@ -157,7 +160,11 @@ export async function getDayOverview(
   now: Date = new Date(),
 ): Promise<DayOverview> {
   const { start, end } = pragueDayBounds(now);
-  const windowStart = new Date(start.getTime() - 13 * 24 * 60 * MINUTE_MS);
+  const windowStart = localDateTimeToDate(
+    addDaysToDateKey(dateKeyInTimeZone(now, TZ), -13),
+    0,
+    TZ,
+  );
 
   // One query: the fourteen-day window already contains today, so the day is
   // a filter over these rows rather than a second round trip.
@@ -183,8 +190,9 @@ export function aggregateDayOverview(
   now: Date = new Date(),
 ): DayOverview {
   const { start, end } = pragueDayBounds(now);
-  const sevenAgo = new Date(start.getTime() - 6 * 24 * 60 * MINUTE_MS);
-  const fourteenAgo = new Date(start.getTime() - 13 * 24 * 60 * MINUTE_MS);
+  const day = dateKeyInTimeZone(now, TZ);
+  const sevenAgo = localDateTimeToDate(addDaysToDateKey(day, -6), 0, TZ);
+  const fourteenAgo = localDateTimeToDate(addDaysToDateKey(day, -13), 0, TZ);
 
   const today = window.filter((r) => r.startsAt >= start && r.startsAt < end);
   const live = today.filter((r) => LIVE_STATUSES.has(r.status));
