@@ -9,6 +9,7 @@ import {
 import { safeInternalPath } from "@/lib/security/redirects";
 import { siteOrigin } from "@/lib/helpers/site-url";
 import { members } from "@/lib/services";
+import { attachRecoveryGrant } from "@/lib/auth/recovery-grant";
 
 /**
  * OAuth / email-confirmation callback. Supabase redirects here with a `code`;
@@ -100,7 +101,13 @@ export async function GET(request: NextRequest) {
           : null,
     });
 
-  return NextResponse.redirect(new URL(next, origin));
+  const response = NextResponse.redirect(new URL(next, origin));
+  // Recovery links sent before the templates moved to /auth/confirm come back
+  // through this exchange. A code only exists after a completed e-mail or
+  // provider sign-in in this browser, so it is as fresh a proof as the link.
+  if (next === "/reset-password" && data.user)
+    attachRecoveryGrant(response, data.user.id);
+  return response;
 }
 
 /** Created in the last few minutes, i.e. by the sign-in that just happened. */
