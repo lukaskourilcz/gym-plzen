@@ -24,6 +24,7 @@ import {
 import { recordIn as recordActivityIn } from "./activity";
 import type { NewReservation, Reservation } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
+import { PG_EXCLUSION_VIOLATION, pgErrorCode } from "@/lib/helpers/pg-error";
 import { checkAvailability } from "./availability";
 import { initPipeline } from "./pipeline";
 import {
@@ -109,11 +110,7 @@ export async function createReservation(
   try {
     [created] = await executor.insert(reservation).values(values).returning();
   } catch (error) {
-    const code =
-      typeof error === "object" && error !== null && "code" in error
-        ? String(error.code)
-        : "";
-    if (code === "23P01") {
+    if (pgErrorCode(error) === PG_EXCLUSION_VIOLATION) {
       throw new ActionError(
         "Tento termín právě rezervoval jiný zákazník. Vyberte prosím jiný čas.",
       );

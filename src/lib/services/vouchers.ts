@@ -4,6 +4,7 @@ import { db, type DatabaseExecutor } from "@/lib/db";
 import { voucher, voucherRedemption } from "@/lib/db/schema";
 import type { Voucher } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
+import { pgConstraint } from "@/lib/helpers/pg-error";
 
 const CHECKOUT_HOLD_MS = 35 * 60 * 1000;
 const CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -286,7 +287,7 @@ export async function createVoucher(input: {
       .returning();
     return created!;
   } catch (error) {
-    if (String(error).includes("voucher_code_normalized_uidx")) {
+    if (pgConstraint(error) === "voucher_code_normalized_uidx") {
       throw new ActionError("Voucher s tímto kódem už existuje.");
     }
     throw error;
