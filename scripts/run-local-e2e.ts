@@ -76,7 +76,12 @@ try {
   await sql`delete from content_block where key = 'home.hero.title' and locale = 'cs'`;
   for (let weekday = 0; weekday < 7; weekday++)
     await sql`insert into opening_hours (day_of_week, open_minute, close_minute, slot_minutes)
-      values (${weekday}, 300, 1425, 75) on conflict (day_of_week) do nothing`;
+      values (${weekday}, 300, 1425, 75)
+      on conflict (day_of_week) do update set
+        open_minute = excluded.open_minute,
+        close_minute = excluded.close_minute,
+        slot_minutes = excluded.slot_minutes,
+        is_closed = 0`;
   for (const [key, value] of [
     [
       "booking.operations",
