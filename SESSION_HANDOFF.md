@@ -1,3 +1,18 @@
+# Rozhodnutí vlastníka po auditu — 29. 9. 2026
+
+PR #98 (nasazeno). Smazány produkční demo účty `admin@namaste.demo` a
+`klient@namaste.demo` (jen staré zrušené rezervace). Zákaznické storno v Můj účet
+(`reservations.cancelByCustomer`: termín se uvolní, PIN se odebere, platba se
+nevrací, bez refund alertu a storno e-mailu, záznam v historii akcí). VOP: telefon
++420 732 817 217, 5 osob, 8.4 cena se změnou termínu nemění, 8.10 storno, ČOI bez
+utm. Provozní řád 2.3/2.4/7.4 a FAQ 11/12 upraveny v kódu i v produkčním CMS
+(`content_block`), FAQ 3 vyřazena (`src/lib/content/faq.ts`). Newsletter:
+podepsaný odkaz `/newsletter/odhlaseni` + admin „Odhlásit“, oba logované.
+Leaked password protection agent zapnout nemůže (NEEDED). Kontakty webu (731…/721…)
+beze změny – čeká na potvrzení. 239 unit, 94 integračních; produkce ověřena.
+
+---
+
 # Audit před otevřením — 29. 9. 2026 (noc)
 
 Šest paralelních read-only review (rezervace, platby, přístupové kódy, administrace a
