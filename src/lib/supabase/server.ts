@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { publicEnv, supabasePublicKey } from "@/lib/public-env";
+import { SUPABASE_COOKIE_OPTIONS } from "./cookie-options";
 
 /**
  * Server-side Supabase client bound to the request cookies (for Supabase Auth).
@@ -14,18 +15,8 @@ export async function createClient(): Promise<SupabaseClient | null> {
 
   const cookieStore = await cookies();
   return createServerClient(url, supabasePublicKey, {
-    /*
-     * `@supabase/ssr` defaults to SameSite=Lax without Secure. Lax is required:
-     * the OAuth callback is a cross-site top-level navigation and a Strict
-     * cookie would not be sent with it. Secure is added because Safari's
-     * tracking prevention is markedly stricter with cookies that are not, and
-     * the site is HTTPS-only (HSTS) in every deployed environment. `httpOnly`
-     * stays off on purpose: the browser client reads the session cookie.
-     */
-    cookieOptions: {
-      sameSite: "lax",
-      secure: publicEnv.NEXT_PUBLIC_APP_URL.startsWith("https://"),
-    },
+    // SameSite=Lax + Secure on HTTPS; see the shared constant for why.
+    cookieOptions: SUPABASE_COOKIE_OPTIONS,
     cookies: {
       getAll: () => cookieStore.getAll(),
       setAll: (cookiesToSet) => {

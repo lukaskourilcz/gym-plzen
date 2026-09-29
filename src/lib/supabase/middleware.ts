@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { publicEnv, supabasePublicKey } from "@/lib/public-env";
+import { SUPABASE_COOKIE_OPTIONS } from "./cookie-options";
 
 /**
  * Refreshes the Supabase Auth session on every request and forwards the updated
@@ -17,6 +18,9 @@ export async function updateSession(
     return protectSensitiveCache(request, response);
 
   const supabase = createServerClient(url, supabasePublicKey, {
+    // The same attributes as the server client: a refresh here rewrites the
+    // session cookie, and without them it would lose Secure.
+    cookieOptions: SUPABASE_COOKIE_OPTIONS,
     cookies: {
       getAll: () => request.cookies.getAll(),
       setAll: (cookiesToSet) => {

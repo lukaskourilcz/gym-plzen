@@ -347,14 +347,14 @@ export function BillingProfileForm({
           <>
             Doklady se zatím nevystavují. Chybí:{" "}
             <strong>{missing.join(", ")}</strong>. Systém údaje nikdy nedoplní
-            za vás : doklad s vymyšleným IČO by byl horší než žádný.
+            za vás: doklad s vymyšleným IČO by byl horší než žádný.
           </>
         ) : (
           <>
             Předvyplněno podle článku 1.2 vašich obchodních podmínek, kde je
             jako osoba vystavující účetní a daňové doklady uvedena{" "}
             <strong>Renáta Janoušková</strong>. Zkontrolujte údaje a případně
-            upravte : co uložíte tady, má přednost.
+            upravte: co uložíte tady, má přednost.
           </>
         )}
       </p>

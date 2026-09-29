@@ -30,7 +30,7 @@ export function EntryPriceForm({ currentCzk }: { currentCzk: number }) {
         <Input
           id="priceCzk"
           type="number"
-          min={0}
+          min={1}
           step={1}
           {...register("priceCzk", { valueAsNumber: true })}
         />
