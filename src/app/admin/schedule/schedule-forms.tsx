@@ -135,7 +135,9 @@ export function BlockedSlotForm() {
     count: number;
     message: string;
   } | null>(null);
-  const [declinedMessage, setDeclinedMessage] = useState<string | null>(null);
+  // The confirmation request travels as a refused result so the form stays
+  // filled in; it is shown in the notice below, never as an error.
+  const confirmationMessage = useRef<string | null>(null);
   const { form, submit, serverError, success } = useActionForm({
     schema: createBlockedSlotSchema,
     action: async (values: CreateBlockedSlotValues) => {
@@ -147,7 +149,7 @@ export function BlockedSlotForm() {
       if (!result.ok) return result;
       const outcome = result.data;
       if (outcome.status === "needs_confirmation") {
-        setDeclinedMessage(null);
+        confirmationMessage.current = outcome.message;
         setPendingConfirmation({
           count: outcome.affectedCount,
           message: outcome.message,
@@ -229,7 +231,6 @@ export function BlockedSlotForm() {
               size="sm"
               disabled={isSubmitting}
               onClick={() => {
-                setDeclinedMessage(pendingConfirmation.message);
                 setPendingConfirmation(null);
                 form.setFocus("startsAt");
               }}
@@ -240,7 +241,9 @@ export function BlockedSlotForm() {
         </Notice>
       ) : (
         <FormFeedback
-          error={serverError === declinedMessage ? null : serverError}
+          error={
+            serverError === confirmationMessage.current ? null : serverError
+          }
           success={success}
         />
       )}
