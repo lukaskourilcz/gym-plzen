@@ -1,4 +1,4 @@
-import { reconcileTestWhatsApp } from "@/lib/services/whatsapp-test";
+import { reconcileReservationWhatsApp } from "@/lib/services/whatsapp-delivery";
 import { retryCancellationEmails } from "@/lib/services/cancellation-delivery";
 import { monitorLockConnectivity } from "@/lib/services/lock-health";
 import {
@@ -87,7 +87,11 @@ export async function GET(request: NextRequest) {
   );
   await stage("monitorLockConnectivity", () => monitorLockConnectivity(), null);
   await stage("retryCancellationEmails", () => retryCancellationEmails(), null);
-  await stage("reconcileTestWhatsApp", () => reconcileTestWhatsApp(), null);
+  await stage(
+    "reconcileReservationWhatsApp",
+    () => reconcileReservationWhatsApp(),
+    null,
+  );
   // Alerts written inside a transaction (a late payment) reach the operator
   // here if the request that wrote them died before sending.
   await stage("deliverPendingAlerts", () => deliverPendingAlerts(), 0);
