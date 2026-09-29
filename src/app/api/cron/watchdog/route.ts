@@ -6,6 +6,7 @@ import {
   reconcileRevocations,
 } from "@/lib/services/access-codes";
 import { reconcilePendingPayments } from "@/lib/services/payments";
+import { deliverPendingAlerts } from "@/lib/services/alerts";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
 import { isAuthorizedCron } from "@/lib/helpers/cron";
@@ -87,6 +88,9 @@ export async function GET(request: NextRequest) {
   await stage("monitorLockConnectivity", () => monitorLockConnectivity(), null);
   await stage("retryCancellationEmails", () => retryCancellationEmails(), null);
   await stage("reconcileTestWhatsApp", () => reconcileTestWhatsApp(), null);
+  // Alerts written inside a transaction (a late payment) reach the operator
+  // here if the request that wrote them died before sending.
+  await stage("deliverPendingAlerts", () => deliverPendingAlerts(), 0);
 
   // Fire-and-forget heartbeat to UptimeRobot. Never blocks the watchdog or
   // fails the request; if the cron itself throws before reaching this line,
