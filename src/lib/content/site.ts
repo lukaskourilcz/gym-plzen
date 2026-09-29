@@ -209,6 +209,9 @@ export const SITE_DEFAULTS = {
   "faq.2.question": "Dá se u vás zaparkovat?",
   "faq.2.answer":
     "Ano, přímo před studiem je k dispozici dostatek parkovacích míst.",
+  "faq.3.question": "Jsem začátečník, mohu si vaše studio pronajmout?",
+  "faq.3.answer":
+    "Samozřejmě! Naše studio je navrženo pro každého – od naprostých začátečníků po zkušené sportovce. Pokud si nebudete vědět rady s ovládáním strojů, můžete si s sebou vzít vlastního trenéra nebo využít našeho videorádce (chystáme).",
   "faq.4.question": "Je vstup do studia omezen věkem?",
   "faq.4.answer":
     "Ano, rezervaci může vytvořit pouze osoba starší 18 let. V jejím doprovodu však mohou přijít také děti nebo mladiství.",
