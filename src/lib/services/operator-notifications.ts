@@ -107,13 +107,13 @@ export interface OperatorNotice {
 }
 
 /** Send one notice, if the operator asked for this event. Never throws. */
-export async function notify(notice: OperatorNotice): Promise<void> {
+export async function notify(notice: OperatorNotice): Promise<boolean> {
   try {
     const settings = await getOperatorNotifications();
-    if (!settings.events[notice.event]) return;
+    if (!settings.events[notice.event]) return true;
 
     const recipients = parseRecipients(settings.recipients);
-    if (recipients.length === 0) return;
+    if (recipients.length === 0) return true;
 
     const definition = operatorEventDefinition(notice.event);
     const detail = (notice.details ?? [])
@@ -122,14 +122,18 @@ export async function notify(notice: OperatorNotice): Promise<void> {
       .map(([label, value]) => `${label}: ${value}`)
       .join("\n");
 
-    for (const recipient of recipients) {
-      await sendToRecipient(notice, definition.label, detail, recipient);
-    }
+    let delivered = true;
+    for (const recipient of recipients)
+      delivered =
+        (await sendToRecipient(notice, definition.label, detail, recipient)) &&
+        delivered;
+    return delivered;
   } catch (error) {
     logger.error(error, {
       where: "operator-notifications.notify",
       event: notice.event,
     });
+    return false;
   }
 }
 
@@ -138,13 +142,22 @@ async function sendToRecipient(
   event: string,
   detail: string,
   recipient: string,
-): Promise<void> {
+): Promise<boolean> {
   const dedupeKey = notice.scope
     ? `${notice.event}:${notice.scope}:${recipient.toLowerCase()}`
     : null;
 
   const claimed = await claim(notice, recipient, dedupeKey);
-  if (!claimed) return;
+  if (!claimed) {
+    const [existing] = await db
+      .select({ status: messageDelivery.status })
+      .from(messageDelivery)
+      .where(eq(messageDelivery.dedupeKey, dedupeKey!))
+      .limit(1);
+    return Boolean(
+      existing && ["sent", "delivered", "read"].includes(existing.status),
+    );
+  }
 
   const result = await sendTransactionalEmail({
     id: "operator_notice",
@@ -166,6 +179,7 @@ async function sendToRecipient(
       updatedAt: new Date(),
     })
     .where(eq(messageDelivery.id, claimed.id));
+  return result.sent;
 }
 
 /**
@@ -341,8 +355,8 @@ export async function notifyNewMember(params: {
 }
 
 /** An operational alert, which otherwise only reaches the WhatsApp group. */
-export async function notifyAlert(alert: SystemAlert): Promise<void> {
-  await notify({
+export async function notifyAlert(alert: SystemAlert): Promise<boolean> {
+  return notify({
     event: "systemAlert",
     scope: alert.id,
     path: "/admin/alerts",

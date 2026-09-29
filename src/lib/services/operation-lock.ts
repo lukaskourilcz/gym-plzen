@@ -7,7 +7,7 @@ import { requireEnv } from "@/lib/env";
 let locks: ReturnType<typeof postgres> | undefined;
 type LockContext = {
   keys: ReadonlySet<string>;
-  tx: postgres.TransactionSql<{}>;
+  tx: postgres.TransactionSql<Record<string, never>>;
   siblings: Map<string, Promise<void>>;
 };
 const held = new AsyncLocalStorage<LockContext>();

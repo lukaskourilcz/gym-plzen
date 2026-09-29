@@ -24,7 +24,10 @@ import {
   cancelReservation,
   getReservation,
 } from "../../src/lib/services/reservations";
-import { raiseAlert } from "../../src/lib/services/alerts";
+import {
+  deliverPendingAlerts,
+  raiseAlert,
+} from "../../src/lib/services/alerts";
 import {
   getOperatorNotifications,
   notifyReservationRescheduled,
@@ -278,6 +281,35 @@ describe(
         ).length,
         1,
       );
+    });
+
+    test("an alert remains pending after email failure and the watchdog delivers it once", async () => {
+      await configure(OPERATOR);
+      resend.rateLimitNext(2);
+      const alert = await raiseAlert({
+        title: "Testovací výpadek doručení",
+        dedupeKey: "test:alert-retry",
+      });
+      assert.ok(alert);
+      const [failed] = await rows<{ notified_at: Date | null }>(
+        "select notified_at from system_alert where id = $1",
+        [alert.id],
+      );
+      assert.equal(
+        failed?.notified_at,
+        null,
+        "a refused email is not a notification",
+      );
+      assert.equal(operatorEmails().length, 0);
+      assert.equal(await deliverPendingAlerts(), 1);
+      const [delivered] = await rows<{ notified_at: Date | null }>(
+        "select notified_at from system_alert where id = $1",
+        [alert.id],
+      );
+      assert.ok(delivered?.notified_at);
+      assert.equal(operatorEmails().length, 1);
+      assert.equal(await deliverPendingAlerts(), 0);
+      assert.equal(operatorEmails().length, 1);
     });
 
     test("what the administration saves is what the next booking uses", async () => {

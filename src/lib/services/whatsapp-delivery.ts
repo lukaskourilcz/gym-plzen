@@ -104,6 +104,7 @@ async function sendLocked(input: WhatsAppInput) {
     .update(messageDelivery)
     .set({
       status: "queued",
+      recipient: phone,
       updatedAt: new Date(),
       providerResponse: { attempts, submitted: true, retrySafe: false },
     })
@@ -157,6 +158,8 @@ export async function reconcileReservationWhatsApp() {
     .where(
       and(
         eq(messageDelivery.channel, "whatsapp"),
+        eq(messageDelivery.kind, "access_code"),
+        sql`${messageDelivery.dedupeKey} like 'zernio-access/%'`,
         inArray(messageDelivery.status, ["sent", "queued"]),
         lte(messageDelivery.updatedAt, new Date(Date.now() - 5 * 60_000)),
       ),
@@ -180,6 +183,10 @@ export async function reconcileReservationWhatsApp() {
         body: "Zkontrolujte konverzaci v Zernio. Nejasný pokus se neopakuje, e-mail s kódem běží nezávisle.",
         context: { reservationId: message.reservationId },
       });
+      await db
+        .update(messageDelivery)
+        .set({ updatedAt: new Date() })
+        .where(eq(messageDelivery.id, message.id));
       continue;
     }
     try {
@@ -224,6 +231,10 @@ export async function reconcileReservationWhatsApp() {
       });
     } catch {
       /* Read failure is not proof of delivery failure; retry the read. */
+      await db
+        .update(messageDelivery)
+        .set({ updatedAt: new Date() })
+        .where(eq(messageDelivery.id, message.id));
     }
   }
   const candidates = await db
