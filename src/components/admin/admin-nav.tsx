@@ -7,9 +7,11 @@ import {
   Bell,
   CalendarDays,
   ChartNoAxesColumnIncreasing,
+  CircleHelp,
   ChevronDown,
   Clock3,
   FileText,
+  HandCoins,
   History,
   Home,
   KeyRound,
@@ -32,6 +34,7 @@ const NAV_GROUPS = [
     label: "Provoz",
     items: [
       ["/admin", "Dnes", Home],
+      ["/admin/tomorrow", "Zítra", CalendarDays],
       ["/admin/calendar", "Kalendář", CalendarDays],
       ["/admin/reservations", "Rezervace", ListChecks],
       ["/admin/schedule", "Otevírací doba a bloky", Clock3],
@@ -63,6 +66,8 @@ const NAV_GROUPS = [
     label: "Systém",
     items: [
       ["/admin/statistics", "Statistiky", ChartNoAxesColumnIncreasing],
+      ["/admin/finance", "Finance", HandCoins],
+      ["/admin/how-it-works", "Jak co funguje?", CircleHelp],
       ["/admin/activity", "Historie akcí", History],
       ["/admin/alerts", "Upozornění", Bell],
     ],

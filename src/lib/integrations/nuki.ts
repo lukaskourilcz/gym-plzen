@@ -235,7 +235,18 @@ export async function fetchLog(limit = 50): Promise<NukiLogEntry[]> {
 
 /** Server-only admin read: no mutation, and no PINs in logs or persistent cache. */
 export async function readKeypadCodes(): Promise<
-  Array<{ id: string; code: string }>
+  Array<{
+    id: string;
+    code: string;
+    enabled: boolean;
+    allowedFromDate?: string;
+    allowedUntilDate?: string;
+    allowedWeekDays?: number;
+    allowedFromTime?: number;
+    allowedUntilTime?: number;
+    pending: boolean;
+    rejected: boolean;
+  }>
 > {
   if (!isNukiConfigured()) throw new Error("Nuki not configured");
   const lockId = smartlockId();
@@ -254,7 +265,18 @@ export async function readKeypadCodes(): Promise<
         String(auth.smartlockId) === lockId &&
         /^[1-9]{6}$/.test(String(auth.code)),
     )
-    .map((auth) => ({ id: auth.id, code: String(auth.code) }));
+    .map((auth) => ({
+      id: auth.id,
+      code: String(auth.code),
+      enabled: auth.enabled,
+      allowedFromDate: auth.allowedFromDate,
+      allowedUntilDate: auth.allowedUntilDate,
+      allowedWeekDays: auth.allowedWeekDays,
+      allowedFromTime: auth.allowedFromTime,
+      allowedUntilTime: auth.allowedUntilTime,
+      pending: Boolean(auth.operationId),
+      rejected: Boolean(auth.error),
+    }));
 }
 
 /** Paginate the retained activity history; never turn an API failure into "unused". */
