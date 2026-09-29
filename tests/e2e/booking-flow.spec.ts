@@ -95,7 +95,10 @@ test.describe("Booking flow", () => {
     ).toBeEnabled();
     await page.getByRole("button", { name: /Potvrdit vstup zdarma/ }).click();
 
-    await expect(page).toHaveURL(/\/rezervace\/hotovo\?order_id=.*&token=/);
+    // The proof token is consumed by the server and intentionally removed
+    // from the visible URL before analytics can read it. Its presence in the
+    // address bar is transient and varies with browser/server speed.
+    await expect(page).toHaveURL(/\/rezervace\/hotovo\?order_id=/);
     await expect(
       page.getByRole("heading", { name: "Rezervace je potvrzená" }),
     ).toBeVisible();
@@ -107,6 +110,21 @@ test.describe("Booking flow", () => {
       select status, price_cents from reservation where contact_email = 'e2e-voucher@example.test'`;
     expect(row?.status).toBe("confirmed");
     expect(row?.price_cents).toBe(0);
+    await expect
+      .poll(() => new URL(page.url()).searchParams.has("token"))
+      .toBe(false);
+    const unproved = await page.context().browser()!.newContext();
+    try {
+      const copiedLink = await unproved.newPage();
+      await copiedLink.goto(page.url());
+      await expect(
+        copiedLink.getByRole("heading", {
+          name: "Potvrzení se nepodařilo ověřit",
+        }),
+      ).toBeVisible();
+    } finally {
+      await unproved.close();
+    }
   });
 
   test("coming back from the gateway continues the visitor's own booking", async ({
