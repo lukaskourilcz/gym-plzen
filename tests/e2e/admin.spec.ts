@@ -116,7 +116,7 @@ test.describe("Admin : forms", () => {
     await form.locator('input[type="datetime-local"]').first().fill(start);
     await form.locator('input[type="datetime-local"]').nth(1).fill(end);
     await form.getByLabel(/Jméno zákazníka/i).fill("E2E Zákazník");
-    await form.getByLabel(/E-mail/i).fill("e2e@test.cz");
+    await form.getByLabel(/E-mail/i).fill("e2e@example.test");
     await form.getByRole("button", { name: /Vytvořit rezervaci/i }).click();
     await expect(page.getByText(/Rezervace vytvořena/i)).toBeVisible();
     // The new booking appears in the list.

@@ -5,9 +5,8 @@
  * here, synchronously, before any service module is evaluated.
  *
  * The tests truncate booking tables. They therefore run only against a
- * database on this machine, or against one explicitly allowed with
- * `E2E_ALLOW_REMOTE_MUTATIONS=true` (the same consent the e2e suite requires),
- * and skip themselves otherwise.
+ * database on this machine named in `TEST_DATABASE_URL`, and skip themselves
+ * otherwise (or fail with `REQUIRE_DB=1`, so an empty run cannot look green).
  */
 import { existsSync } from "node:fs";
 import postgres from "postgres";
@@ -15,15 +14,22 @@ import { createComgateMock, createResendMock } from "./mocks";
 
 if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 
-const url = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL ?? "";
+/*
+ * Only an explicitly named database on this machine is ever truncated. The
+ * application's own DATABASE_URL (which `.env.local` may point at the live
+ * project) is never used as a fallback, and there is no remote override.
+ */
+const url = process.env.TEST_DATABASE_URL ?? "";
 const LOCAL_DATABASE =
   /^postgres(?:ql)?:\/\/[^/@]+@(?:127\.0\.0\.1|localhost)(?::\d+)?\//;
-export const databaseReady =
-  Boolean(url) &&
-  (LOCAL_DATABASE.test(url) ||
-    process.env.E2E_ALLOW_REMOTE_MUTATIONS === "true");
+export const databaseReady = Boolean(url) && LOCAL_DATABASE.test(url);
+if (!databaseReady && process.env.REQUIRE_DB === "1")
+  throw new Error(
+    "REQUIRE_DB=1 but TEST_DATABASE_URL is not a local Postgres URL; refusing to report a skipped suite as green.",
+  );
 if (databaseReady) process.env.DATABASE_URL = url;
 else delete process.env.DATABASE_URL;
+delete process.env.DIRECT_URL;
 
 /* Provider stand-ins on ports derived from the process, so parallel runs
  * cannot collide; both must be known before the provider modules load.
@@ -42,19 +48,30 @@ process.env.COMGATE_TEST_MODE = "true";
 process.env.NEXT_PUBLIC_APP_URL = "https://navigym.test";
 // `NODE_ENV` is typed read-only; the test runner's process is ours to configure.
 (process.env as Record<string, string | undefined>).NODE_ENV = "test";
-for (const key of [
-  "VERCEL_ENV",
-  "SENTRY_DSN",
-  "NEXT_PUBLIC_SENTRY_DSN",
-  "ALERT_WHATSAPP_RECIPIENTS",
-  "WHATSAPP_ACCESS_TOKEN",
-  "NUKI_API_TOKEN",
-  "NUKI_SMARTLOCK_ID",
-  "GOSMS_CLIENT_ID",
-  "DEMO_AUTH_ENABLED",
-  "BOOKING_PREVIEW_FIXTURE",
-])
-  delete process.env[key];
+// Every real provider credential goes, whatever `.env.local` holds: a test
+// must never reach a live lock, inbox, phone or project.
+for (const key of Object.keys(process.env))
+  if (
+    /^(SUPABASE_|NEXT_PUBLIC_SUPABASE_|NUKI_|ZERNIO_|WHATSAPP_|GOSMS_|STRIPE_|SENTRY_|NEXT_PUBLIC_SENTRY_|UPTIMEROBOT_|ALERT_|CRON_SECRET|VERCEL_|DEMO_AUTH_|BOOKING_PREVIEW_)/.test(
+      key,
+    )
+  )
+    delete process.env[key];
+
+/*
+ * Network kill-switch: the only hosts a test may reach are the local
+ * stand-ins. Anything else is a bug that would otherwise send a real e-mail or
+ * touch a real device, so it fails loudly instead.
+ */
+const realFetch = globalThis.fetch;
+globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+  const target = new URL(
+    typeof input === "string" || input instanceof URL ? input : input.url,
+  );
+  if (!["127.0.0.1", "localhost"].includes(target.hostname))
+    throw new Error(`Test tried to reach ${target.hostname}; blocked.`);
+  return realFetch(input, init);
+}) as typeof fetch;
 
 const { DEFAULT_OPERATOR_NOTIFICATIONS, OPERATOR_NOTIFICATIONS_SETTING_KEY } =
   await import("../../src/lib/config/operator-notifications");
