@@ -160,6 +160,8 @@ export default async function BookingPage({
       startISO: slot.start.toISOString(),
       label: formatTimeRange(slot.start, slot.end),
       durationMinutes: minutesBetween(slot.start, slot.end),
+      // A price period can start or end mid-day: each slot has its own price.
+      priceCents: content.entryPriceForDate(slot.start),
     }));
 
   return (
@@ -224,7 +226,6 @@ export default async function BookingPage({
                 selected={selected}
                 loyalty={loyalty}
                 source={availability.source}
-                priceCents={content.entryPriceCents}
               />
             </div>
           </Container>

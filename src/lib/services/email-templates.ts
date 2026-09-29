@@ -122,7 +122,8 @@ const TEST_VARIABLES: Record<string, string> = {
   duration: "75 minut",
   price: "229 Kč",
   reason: "Úprava provozní doby",
-  loyalty: "Tohle byla vaše 7. návštěva, do vstupu zdarma zbývají 3 vstupy.",
+  loyalty:
+    "Toto je váš 7. započítaný vstup, do vstupu zdarma zbývají 3 vstupy.",
   number: "2026-0042",
   amount: "229 Kč",
   date: "3. srpna 2026",

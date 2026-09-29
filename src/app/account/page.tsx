@@ -154,8 +154,8 @@ export default async function AccountPage({
                     role="status"
                   >
                     Původní čas je znovu volný. Potvrzení nového termínu s
-                    aktualizovanou pozvánkou do kalendáře jsme vám poslali
-                    e-mailem.
+                    pozvánkou do kalendáře posíláme e-mailem; pokud máte v
+                    kalendáři původní termín, zkontrolujte, že se přesunul.
                   </Notice>
                 ) : null}
 

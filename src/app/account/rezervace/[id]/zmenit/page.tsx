@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { uuidSchema } from "@/lib/validations/common";
 import { requireUser } from "@/lib/auth/guards";
 import { footerProps, loadSiteContent } from "@/lib/content/site";
 import {
@@ -51,6 +52,8 @@ export default async function ReschedulePage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  // A mistyped link is "not found", never a database error page.
+  if (!uuidSchema.safeParse(id).success) notFound();
   const query = await searchParams;
   const user = await requireUser(`/account/rezervace/${id}/zmenit`);
   const [current, content] = await Promise.all([

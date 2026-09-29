@@ -1,4 +1,5 @@
 import { getSession } from "@/lib/auth/guards";
+import { uuidSchema } from "@/lib/validations/common";
 import { booking, reservations } from "@/lib/services";
 import { loadSiteContent, publicAddress } from "@/lib/content/site";
 import { buildIcs, reservationCalendarEvent } from "@/lib/helpers/ics";
@@ -17,6 +18,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  if (!uuidSchema.safeParse(id).success)
+    return new Response("Not found", { status: 404 });
   const token = new URL(request.url).searchParams.get("token") ?? undefined;
   const session = await getSession();
   const userId = session?.user.id ?? null;

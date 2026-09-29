@@ -46,24 +46,30 @@ test("the loyalty sentence stays truthful and grammatical in Czech", () => {
   // 5 and up take the singular verb with the genitive plural.
   assert.equal(
     loyaltyProgressSentence(deriveLoyaltyStatus(1)),
-    "Tohle byla vaše 1. návštěva, do vstupu zdarma zbývá 9 vstupů.",
+    "Toto je váš 1. započítaný vstup, do vstupu zdarma zbývá 9 vstupů.",
   );
   // 2 to 4 take the plural verb.
   assert.equal(
     loyaltyProgressSentence(deriveLoyaltyStatus(8)),
-    "Tohle byla vaše 8. návštěva, do vstupu zdarma zbývají 2 vstupy.",
+    "Toto je váš 8. započítaný vstup, do vstupu zdarma zbývají 2 vstupy.",
   );
   assert.equal(
     loyaltyProgressSentence(deriveLoyaltyStatus(7)),
-    "Tohle byla vaše 7. návštěva, do vstupu zdarma zbývají 3 vstupy.",
+    "Toto je váš 7. započítaný vstup, do vstupu zdarma zbývají 3 vstupy.",
   );
   assert.equal(
     loyaltyProgressSentence(deriveLoyaltyStatus(9)),
-    "Tohle byla vaše 9. návštěva. Příští vstup máte zdarma.",
+    "Toto je váš 9. započítaný vstup. Příští vstup máte zdarma.",
   );
   assert.match(
     loyaltyProgressSentence(deriveLoyaltyStatus(10)),
-    /^Tohle byla vaše 10\. návštěva a byla zdarma\./,
+    /^Toto je váš 10\. započítaný vstup a máte ho zdarma\./,
+  );
+  // A tenth entry that was paid (its reward went to a concurrent checkout)
+  // must not be called free.
+  assert.doesNotMatch(
+    loyaltyProgressSentence(deriveLoyaltyStatus(10), false),
+    /zdarma\. Další/,
   );
 });
 

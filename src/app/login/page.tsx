@@ -1,12 +1,26 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth/guards";
+import { postLoginDestination } from "@/lib/security/redirects";
 import { BrandLockup } from "@/components/site/brand";
 import { LoginForm } from "./login-form";
 
 export const metadata = { title: "Přihlášení" };
 
-/** Login and registration page using Supabase Auth (email/password + OAuth). */
-export default function LoginPage() {
+/**
+ * Login and registration page using Supabase Auth (email/password + OAuth).
+ * The public header links here for everyone (those pages are cached without a
+ * session), so a visitor who is already signed in goes straight on to where
+ * they were heading instead of being asked to log in again.
+ */
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const [session, params] = await Promise.all([getSession(), searchParams]);
+  if (session) redirect(postLoginDestination(params.next, session.user.role));
   return (
     <main
       id="main-content"

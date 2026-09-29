@@ -1,6 +1,6 @@
-import { desc, eq, sql } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { documentCounter, invoice } from "@/lib/db/schema";
+import { and, desc, eq, sql } from "drizzle-orm";
+import { db, type DatabaseExecutor } from "@/lib/db";
+import { documentCounter, invoice, payment } from "@/lib/db/schema";
 import type { InvoiceItem } from "@/lib/db/schema";
 import type { Invoice, Reservation } from "@/lib/db/types";
 import {
@@ -15,7 +15,7 @@ import {
   parseBillingProfile,
   type BillingProfile,
 } from "@/lib/config/billing";
-import { formatDateTime } from "@/lib/helpers/format";
+import { formatDateTime, formatMoney } from "@/lib/helpers/format";
 import { logger } from "@/lib/helpers/logger";
 import { renderInvoicePdf, type InvoiceDocument } from "@/lib/pdf/invoice-pdf";
 import { getSetting, setSetting } from "./cms";
@@ -93,9 +93,12 @@ export async function getBillingReadiness(): Promise<{
  * atomic statement, so two payments landing at the same moment cannot be
  * handed the same number.
  */
-async function nextSequence(year: number): Promise<number> {
+async function nextSequence(
+  year: number,
+  executor: DatabaseExecutor = db,
+): Promise<number> {
   const key = documentCounterKey(year);
-  const [row] = await db
+  const [row] = await executor
     .insert(documentCounter)
     .values({ key, value: 1 })
     .onConflictDoUpdate({
@@ -202,30 +205,48 @@ export async function issueForReservation(
   );
   const amounts = breakDownAmount(params.totalCents, supplier.vatRatePercent);
 
-  const [row] = await db
-    .insert(invoice)
-    .values({
-      number: formatDocumentNumber(year, await nextSequence(year)),
-      year,
-      reservationId: params.reservationId,
-      orderId: params.orderId ?? null,
-      userId: params.userId,
-      suppliedAt: paidAt,
-      totalCents: amounts.totalCents,
-      baseCents: amounts.baseCents,
-      vatCents: amounts.vatCents,
-      vatRatePercent: amounts.vatRatePercent,
-      description:
-        params.description ??
-        `Jednorázový vstup do NAVI Private Gym, ${formatDateTime(
-          params.startsAt,
-        )}`,
-      items: params.items ?? null,
-      customerName: params.customerName,
-      customerEmail: params.customerEmail,
-      supplier,
-    })
-    .returning();
+  /*
+   * The number is taken and the document written in one transaction, so a
+   * failed insert (another process issued this purchase's document a moment
+   * earlier) gives the number back instead of leaving a gap in the series.
+   */
+  let row: Invoice | undefined;
+  try {
+    row = await db.transaction(async (tx) => {
+      const [inserted] = await tx
+        .insert(invoice)
+        .values({
+          number: formatDocumentNumber(year, await nextSequence(year, tx)),
+          year,
+          reservationId: params.reservationId,
+          orderId: params.orderId ?? null,
+          userId: params.userId,
+          suppliedAt: paidAt,
+          totalCents: amounts.totalCents,
+          baseCents: amounts.baseCents,
+          vatCents: amounts.vatCents,
+          vatRatePercent: amounts.vatRatePercent,
+          description:
+            params.description ??
+            `Jednorázový vstup do NAVI Private Gym, ${formatDateTime(
+              params.startsAt,
+            )}`,
+          items: params.items ?? null,
+          customerName: params.customerName,
+          customerEmail: params.customerEmail,
+          supplier,
+        })
+        .returning();
+      return inserted;
+    });
+  } catch (error) {
+    const raced =
+      (params.orderId && (await getInvoiceForOrder(params.orderId))) ||
+      (await getInvoiceForReservation(params.reservationId));
+    if (raced)
+      return { issued: false, reason: "already_issued", invoice: raced };
+    throw error;
+  }
   if (!row) throw new Error("invoice insert did not return a row");
 
   return { issued: true, invoice: row };
@@ -245,8 +266,14 @@ export async function issueDocumentFor(
   const order = reservation.orderId
     ? await getOrder(reservation.orderId)
     : null;
+  // The date of taxable supply is when the customer paid, not when the
+  // document happens to be issued (a later manual issue, a New Year retry).
+  const paidAt = await paidAtFor(
+    order ? { orderId: order.id } : { reservationId: reservation.id },
+  );
   if (!order) {
     return issue({
+      paidAt,
       reservationId: reservation.id,
       userId: reservation.userId ?? null,
       customerName: reservation.contactName,
@@ -259,6 +286,7 @@ export async function issueDocumentFor(
   const slots = await listOrderReservations(order.id);
   const first = slots[0] ?? reservation;
   return issue({
+    paidAt,
     reservationId: first.id,
     orderId: order.id,
     userId: order.userId ?? null,
@@ -279,6 +307,26 @@ export async function issueDocumentFor(
             totalCents: slot.priceCents ?? 0,
           })),
   });
+}
+
+/** When the purchase's successful payment arrived, if it did. */
+async function paidAtFor(
+  target: { orderId: string } | { reservationId: string },
+): Promise<Date | undefined> {
+  const [row] = await db
+    .select({ paidAt: payment.paidAt })
+    .from(payment)
+    .where(
+      and(
+        "orderId" in target
+          ? eq(payment.orderId, target.orderId)
+          : eq(payment.reservationId, target.reservationId),
+        eq(payment.status, "succeeded"),
+      ),
+    )
+    .orderBy(desc(payment.paidAt))
+    .limit(1);
+  return row?.paidAt ?? undefined;
 }
 
 // ── Rendering ───────────────────────────────────────────────────────────────
@@ -326,7 +374,7 @@ export async function sendInvoiceEmail(row: Invoice): Promise<boolean> {
     variables: {
       name: row.customerName || "zákazníku",
       number: row.number,
-      amount: `${Math.round(row.totalCents / 100).toLocaleString("cs-CZ")} Kč`,
+      amount: formatMoney(row.totalCents, row.currency),
       date: new Intl.DateTimeFormat("cs-CZ", {
         day: "numeric",
         month: "numeric",

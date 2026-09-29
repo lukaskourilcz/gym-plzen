@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { splitPage } from "@/lib/helpers/pagination";
 import {
@@ -74,7 +74,7 @@ export async function Orders({
                 </div>
                 <p className="font-bold">
                   {row.totalCents === null
-                    ? "V ceně členství"
+                    ? "Cena neuvedena"
                     : formatMoney(row.totalCents, row.currency)}
                 </p>
               </div>
@@ -96,7 +96,7 @@ export async function Orders({
                             ? "zdarma, věrnost"
                             : "zdarma"
                           : slot.priceCents === null
-                            ? "v ceně členství"
+                            ? "cena neuvedena"
                             : formatMoney(slot.priceCents, row.currency)}
                       </span>
                     </li>
@@ -114,13 +114,18 @@ export async function Orders({
                       : "Bez záznamu platby"}
                 </span>
                 {row.invoiceId ? (
-                  <Button
+                  // A plain anchor: the response is a PDF, not a page to
+                  // prefetch or navigate to client-side.
+                  <a
                     href={`/api/account/invoices/${row.invoiceId}`}
-                    variant="outline"
-                    size="sm"
+                    download
+                    className={buttonVariants({
+                      variant: "outline",
+                      size: "sm",
+                    })}
                   >
                     Stáhnout doklad {row.invoiceNumber}
-                  </Button>
+                  </a>
                 ) : null}
               </div>
             </article>

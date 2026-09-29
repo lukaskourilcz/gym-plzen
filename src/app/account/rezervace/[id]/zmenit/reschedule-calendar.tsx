@@ -248,12 +248,19 @@ export function RescheduleCalendar({
                 <Link
                   key={cell.dateKey}
                   href={buildHref({ month: monthKey, date: cell.dateKey })}
-                  aria-label={displayDate(cell.dateKey, {
+                  // The dot and the fill are visual only; the name says both.
+                  aria-label={`${displayDate(cell.dateKey, {
                     weekday: "long",
                     day: "numeric",
                     month: "long",
-                  })}
-                  aria-current={cell.dateKey === todayKey ? "date" : undefined}
+                  })}${hasAvailable ? ", volné termíny" : ", bez volných termínů"}${selected ? ", vybráno" : ""}`}
+                  aria-current={
+                    selected
+                      ? "true"
+                      : cell.dateKey === todayKey
+                        ? "date"
+                        : undefined
+                  }
                   className={cn(
                     "relative grid min-h-12 place-items-center rounded-sm border text-sm font-bold transition-colors sm:min-h-14",
                     selected

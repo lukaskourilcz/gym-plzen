@@ -42,6 +42,7 @@ export interface BookingSlotView {
   startISO: string;
   label: string;
   durationMinutes: number;
+  priceCents: number;
 }
 
 /** A slot in the visitor's selection, possibly on another day. */
@@ -93,7 +94,6 @@ export function BookingCalendar({
   selected,
   loyalty,
   source,
-  priceCents,
 }: {
   monthKey: string;
   selectedDateKey: string | null;
@@ -110,8 +110,6 @@ export function BookingCalendar({
   /** Present for a signed-in member. */
   loyalty: SelectionLoyalty | null;
   source: "live" | "preview" | "unavailable";
-  /** Price of a slot on the selected day, in cents. */
-  priceCents: number;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -238,7 +236,7 @@ export function BookingCalendar({
       {
         startISO: slot.startISO,
         label: `${dayPrefix}, ${slot.label}`,
-        priceCents,
+        priceCents: slot.priceCents,
       },
     ]);
   };
@@ -588,7 +586,8 @@ export function BookingCalendar({
                           : "text-muted-foreground",
                       )}
                     >
-                      {slot.durationMinutes} min · {formatMoney(priceCents)}
+                      {slot.durationMinutes} min ·{" "}
+                      {formatMoney(slot.priceCents)}
                     </span>
                   </span>
                   <span
