@@ -1,5 +1,6 @@
 import { listCodesForReservation, revokeAccessCode } from "./access-codes";
 import { withReservationLock } from "./operation-lock";
+import { lockSchedule } from "./availability";
 import { getOperations } from "./operations";
 import { isDateOpenForBooking } from "@/lib/config/operations";
 import { or, and, eq, gt, inArray, lt, ne } from "drizzle-orm";
@@ -132,6 +133,7 @@ async function rescheduleLocked(
   let previousStartsAt: Date;
   try {
     ({ moved: updated, previousStartsAt } = await db.transaction(async (tx) => {
+      await lockSchedule(tx);
       const [current] = await tx
         .select()
         .from(reservation)

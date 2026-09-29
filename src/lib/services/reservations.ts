@@ -28,7 +28,7 @@ import {
 import type { NewReservation, Reservation } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
 import { PG_EXCLUSION_VIOLATION, pgErrorCode } from "@/lib/helpers/pg-error";
-import { checkAvailability } from "./availability";
+import { checkAvailability, lockSchedule } from "./availability";
 import { closePipeline, initPipeline } from "./pipeline";
 import {
   listCodesForReservation,
@@ -84,7 +84,15 @@ export async function createReservation(
   input: CreateReservationInput,
   executor: DatabaseExecutor = db,
 ): Promise<Reservation> {
-  const availability = await checkAvailability(input.startsAt, input.endsAt);
+  if (executor === db)
+    return db.transaction((tx) => createReservation(input, tx));
+  await lockSchedule(executor);
+  const availability = await checkAvailability(
+    input.startsAt,
+    input.endsAt,
+    {},
+    executor,
+  );
   if (!availability.available) {
     throw new ActionError(
       AVAILABILITY_MESSAGES[availability.reason ?? "invalid_range"] ??

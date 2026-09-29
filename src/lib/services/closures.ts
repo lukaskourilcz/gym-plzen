@@ -114,6 +114,22 @@ export async function closeTimeRange(
     input.startsAt,
     input.endsAt,
   );
+  if (toCancel.length > 0 && input.confirmCancellations !== toCancel.length) {
+    if (!existing)
+      await recordActivity({
+        action: "blocked_slot.created",
+        actorType: "admin",
+        actorId: input.admin.id,
+        actorLabel: input.admin.email,
+        summary: `Termíny od ${formatDateTime(input.startsAt)} do ${formatDateTime(input.endsAt)} uzavřeny; storno ${toCancel.length} rezervací čeká na potvrzení.`,
+        context: { blockedSlotId: block.id, reason: input.reason },
+      });
+    return {
+      status: "needs_confirmation",
+      affectedCount: toCancel.length,
+      message: closureConfirmationMessage(toCancel.length),
+    };
+  }
   const cancelled: Reservation[] = [];
   const failed: Array<{ id: string; startsAt: Date }> = [];
   for (const row of toCancel) {
