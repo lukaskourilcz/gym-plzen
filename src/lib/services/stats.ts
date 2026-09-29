@@ -159,7 +159,7 @@ export function pragueDayBounds(now: Date): { start: Date; end: Date } {
 export async function getDayOverview(
   now: Date = new Date(),
 ): Promise<DayOverview> {
-  const { start, end } = pragueDayBounds(now);
+  const { end } = pragueDayBounds(now);
   const windowStart = localDateTimeToDate(
     addDaysToDateKey(dateKeyInTimeZone(now, TZ), -13),
     0,
