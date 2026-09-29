@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { env, hasEnv, requireEnv } from "@/lib/env";
+import { PAYMENT_SESSION_MINUTES } from "@/lib/config/checkout";
 import { httpRequest, HttpError } from "@/lib/helpers/http";
 import { safeEqual } from "@/lib/helpers/crypto";
 import { logger } from "@/lib/helpers/logger";
@@ -179,7 +180,7 @@ export function createComgateClient(
             category: "OTHER",
             delivery: "ELECTRONIC_DELIVERY",
             lang: "cs",
-            expirationTime: "30m",
+            expirationTime: `${PAYMENT_SESSION_MINUTES}m`,
             dynamicExpiration: false,
             url_paid: params.returnUrl,
             url_cancelled: params.returnUrl,

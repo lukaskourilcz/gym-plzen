@@ -1,4 +1,5 @@
 import { deliverCancellation } from "./cancellation-delivery";
+import { UNSTARTED_HOLD_MINUTES } from "@/lib/config/checkout";
 import { raiseAlert } from "./alerts";
 import {
   and,
@@ -377,7 +378,7 @@ export async function releasePendingHold(
 /** Release stale Checkout holds so abandoned payments cannot block the gym. */
 export async function releaseExpiredPendingReservations(
   now = new Date(),
-  holdMinutes = 32,
+  holdMinutes = UNSTARTED_HOLD_MINUTES,
 ): Promise<number> {
   const cutoff = pendingHoldCutoff(now, holdMinutes);
   return db.transaction(async (tx) => {
@@ -474,7 +475,10 @@ export async function releaseExpiredPendingReservations(
   });
 }
 
-export function pendingHoldCutoff(now: Date, holdMinutes = 32): Date {
+export function pendingHoldCutoff(
+  now: Date,
+  holdMinutes = UNSTARTED_HOLD_MINUTES,
+): Date {
   return new Date(now.getTime() - holdMinutes * 60_000);
 }
 
