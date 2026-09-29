@@ -2,6 +2,7 @@ import { cache } from "react";
 import { googleAvatarUrl } from "@/lib/helpers/profile";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { verifiedAuthUser } from "@/lib/supabase/request-timeout";
 import { ensureProfileForUser } from "@/lib/services/members";
 import {
   DEMO_ADMIN_EMAIL,
@@ -69,9 +70,7 @@ async function resolveSessionUser(): Promise<SessionUser | null> {
   const supabase = await createClient();
   if (!supabase) return null;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await verifiedAuthUser(supabase.auth.getUser());
   if (!user) return null;
 
   // The fixture credentials are intentionally committed for local previews.
