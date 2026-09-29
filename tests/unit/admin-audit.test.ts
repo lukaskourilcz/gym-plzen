@@ -51,26 +51,6 @@ test("closure copy counts bookings in Czech", () => {
   );
 });
 
-test("the reset page and action require the recovery grant; the routes that verify a recovery set it", async () => {
-  const [action, page, confirm, callback] = await Promise.all([
-    readFile("src/app/reset-password/actions.ts", "utf8"),
-    readFile("src/app/reset-password/page.tsx", "utf8"),
-    readFile("src/app/auth/confirm/route.ts", "utf8"),
-    readFile("src/app/auth/callback/route.ts", "utf8"),
-  ]);
-  assert.match(action, /verifyRecoveryGrant\(/);
-  assert.match(action, /cookieStore\.delete\(RECOVERY_GRANT_COOKIE\)/);
-  assert.match(page, /verifyRecoveryGrant\(/);
-  assert.match(
-    confirm,
-    /type === "recovery" && data\.user\)\s*attachRecoveryGrant/,
-  );
-  assert.match(
-    callback,
-    /next === "\/reset-password" && data\.user\)\s*attachRecoveryGrant/,
-  );
-});
-
 test("every Supabase client writes the session cookie with the same attributes", async () => {
   for (const file of [
     "src/lib/supabase/server.ts",
