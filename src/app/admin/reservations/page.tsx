@@ -32,7 +32,7 @@ export const dynamic = "force-dynamic";
 export default async function ReservationsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ id?: string }>;
+  searchParams: Promise<{ id?: string; cancelled?: string }>;
 }) {
   await requireAdmin();
   const now = new Date();
@@ -81,6 +81,14 @@ export default async function ReservationsPage({
         title="Rezervace"
         description="Kód připravujeme 24 hodin před termínem a posíláme e-mailem hodinu před začátkem. U bližších rezervací začne příprava ihned po potvrzení."
       />
+      {query.cancelled === "1" ? (
+        <p
+          role="status"
+          className="mb-5 rounded-lg border border-primary/30 bg-primary/10 p-4 font-bold"
+        >
+          Rezervace zrušena.
+        </p>
+      ) : null}
       {selectedId && (
         <Link
           href="/admin/reservations"
