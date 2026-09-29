@@ -7,7 +7,7 @@ Hlavní [issue #105](https://github.com/lukaskourilcz/gym-plzen/issues/105) sdru
 - Samostatný worktree bez produkčních souborů prostředí; Node.js 22.23.3.
 - Tři zahoditelné databáze Postgres 17 na 127.0.0.1:55439 s názvy končícími _test. Migrováno všech 22 migrací; samostatná čistá databáze ověřila bootstrap, další sloužila browseru.
 - Integrační testy i browser runner odmítají vzdálenou databázi. Browser runner vyčistí zděděné credentials, vyžaduje vlastní značku lokálního serveru a blokuje externí serverové požadavky. Auth, Comgate a Resend mají lokální náhrady. Analytické browser testy blokují odchozí HTTPS.
-- Žádná změna produkční databáze, konfigurace ani rezervace; žádné odeslání skutečnému zákazníkovi, žádné nasazení ani merge do main.
+- Žádná změna produkční databáze, konfigurace ani rezervace; žádné odeslání skutečnému zákazníkovi, žádný merge do main ani nasazení na produkční doménu. Vercel po pushi větve automaticky vytvořil Preview deployment; nebyl použit k testům a nepředstavuje produkční vydání.
 
 ## Výsledek kontrol
 
