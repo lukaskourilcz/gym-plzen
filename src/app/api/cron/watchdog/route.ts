@@ -13,6 +13,7 @@ import { isAuthorizedCron } from "@/lib/helpers/cron";
 import { logger } from "@/lib/helpers/logger";
 import { pipeline, fulfillment, reservations } from "@/lib/services";
 import { runPriorityWatchdogStages } from "@/lib/services/watchdog-priority";
+import { retryPendingOperatorNotices } from "@/lib/services/operator-notifications";
 
 /**
  * Reliability watchdog. Runs on a schedule (Vercel Cron : see NEEDED.md), picks
@@ -72,6 +73,11 @@ export async function GET(request: NextRequest) {
   );
   await stage("monitorLockConnectivity", () => monitorLockConnectivity(), null);
   await stage("retryCancellationEmails", () => retryCancellationEmails(), null);
+  await stage(
+    "retryPendingOperatorNotices",
+    () => retryPendingOperatorNotices(),
+    0,
+  );
   await stage(
     "reconcileReservationWhatsApp",
     () => reconcileReservationWhatsApp(),

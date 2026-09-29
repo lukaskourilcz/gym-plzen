@@ -14,6 +14,7 @@ import {
   sendEmail,
   type EmailAttachment,
   type SendEmailResult,
+  type SendEmailParams,
 } from "@/lib/integrations/resend";
 import {
   checkSupabaseAuthTemplateSync,
@@ -75,7 +76,7 @@ export async function saveEmailTemplate(params: {
   return { supabaseSync };
 }
 
-export async function sendTransactionalEmail(params: {
+export interface TransactionalEmailParams {
   id: EmailTemplateId;
   to: string;
   variables: Record<string, string>;
@@ -83,7 +84,12 @@ export async function sendTransactionalEmail(params: {
   idempotencyKey?: string;
   /** Where the template's button leads, when the caller knows better. */
   actionUrl?: string;
-}): Promise<SendEmailResult> {
+}
+
+/** Render once for an outbox; retries reuse these exact bytes. */
+export async function prepareTransactionalEmail(
+  params: TransactionalEmailParams,
+): Promise<SendEmailParams> {
   const template = await getEmailTemplate(params.id);
   const rendered = renderEmailTemplateText(template, params.variables);
   const definition = getEmailTemplateDefinition(params.id);
@@ -100,7 +106,7 @@ export async function sendTransactionalEmail(params: {
             : siteUrl("/reset-password")),
       }
     : undefined;
-  return sendEmail({
+  return {
     to: params.to,
     subject: rendered.subject,
     // The button exists only in the HTML part, so the plain-text alternative
@@ -111,7 +117,13 @@ export async function sendTransactionalEmail(params: {
     attachments: params.attachments,
     idempotencyKey: params.idempotencyKey,
     html: emailTextToHtml(rendered.body, action),
-  });
+  };
+}
+
+export async function sendTransactionalEmail(
+  params: TransactionalEmailParams,
+): Promise<SendEmailResult> {
+  return sendEmail(await prepareTransactionalEmail(params));
 }
 
 const TEST_VARIABLES: Record<string, string> = {

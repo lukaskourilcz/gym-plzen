@@ -33,6 +33,7 @@ export interface SentEmail {
 /** Resend: `POST /emails` answers with an id, like the real API. */
 export function createResendMock(port: number) {
   const sent: SentEmail[] = [];
+  const accepted = new Map<string, { body: string; id: string }>();
   // How many of the next requests are refused for rate limiting, which is
   // what Resend does when a confirmed booking sends several e-mails at once.
   let refusals = 0;
@@ -51,9 +52,27 @@ export function createResendMock(port: number) {
         );
         return;
       }
+      const key = request.headers["idempotency-key"];
+      const bodyText = JSON.stringify(body);
+      const prior = typeof key === "string" ? accepted.get(key) : null;
+      if (prior) {
+        response.writeHead(prior.body === bodyText ? 200 : 409, {
+          "content-type": "application/json",
+        });
+        response.end(
+          JSON.stringify(
+            prior.body === bodyText
+              ? { id: prior.id }
+              : { name: "idempotency_conflict" },
+          ),
+        );
+        return;
+      }
       sent.push(body);
+      const id = `email-${sent.length}`;
+      if (typeof key === "string") accepted.set(key, { body: bodyText, id });
       response.writeHead(200, { "content-type": "application/json" });
-      response.end(JSON.stringify({ id: `email-${sent.length}` }));
+      response.end(JSON.stringify({ id }));
       return;
     }
     response.writeHead(404).end();
@@ -63,6 +82,11 @@ export function createResendMock(port: number) {
     /** Refuse the next `count` sends with 429, as the real API would. */
     rateLimitNext: (count = 1) => {
       refusals = count;
+    },
+    reset: () => {
+      sent.length = 0;
+      accepted.clear();
+      refusals = 0;
     },
     start: () => listen(server, port),
     stop: () => new Promise<void>((resolve) => server.close(() => resolve())),
