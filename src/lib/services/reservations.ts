@@ -35,7 +35,10 @@ import {
   revokeAccessCode,
   requestCodeRevocations,
 } from "./access-codes";
-import { releaseForReservation } from "./vouchers";
+import {
+  releaseForReservation,
+  restoreRedeemedForOperatorCancellation,
+} from "./vouchers";
 import { cancelOrdersOfReleased, cancelPendingOrderIn } from "./order-state";
 import { notifyReservationCancelled } from "./operator-notifications";
 import { formatDateTime, formatMoney } from "@/lib/helpers/format";
@@ -213,6 +216,12 @@ async function cancelReservationLocked(
         updatedAt: new Date(),
       })
       .where(eq(reservation.id, params.id));
+    if (params.byAdminId && before.status === "confirmed")
+      await restoreRedeemedForOperatorCancellation(
+        before.id,
+        before.orderId,
+        tx,
+      );
     if (before.status === "confirmed" && email && !params.byCustomer) {
       await tx
         .insert(messageDelivery)

@@ -37,6 +37,7 @@ export function createResendMock(port: number) {
   // How many of the next requests are refused for rate limiting, which is
   // what Resend does when a confirmed booking sends several e-mails at once.
   let refusals = 0;
+  let lostAcceptedResponses = 0;
   const server = createServer(async (request, response) => {
     if (request.method === "POST" && request.url === "/emails") {
       const body = (await readJson(request)) as SentEmail;
@@ -71,6 +72,11 @@ export function createResendMock(port: number) {
       sent.push(body);
       const id = `email-${sent.length}`;
       if (typeof key === "string") accepted.set(key, { body: bodyText, id });
+      if (lostAcceptedResponses > 0) {
+        lostAcceptedResponses -= 1;
+        response.destroy();
+        return;
+      }
       response.writeHead(200, { "content-type": "application/json" });
       response.end(JSON.stringify({ id }));
       return;
@@ -83,10 +89,15 @@ export function createResendMock(port: number) {
     rateLimitNext: (count = 1) => {
       refusals = count;
     },
+    /** The provider accepted the mail but its answer never reached the app. */
+    loseNextAcceptedResponse: (count = 1) => {
+      lostAcceptedResponses = count;
+    },
     reset: () => {
       sent.length = 0;
       accepted.clear();
       refusals = 0;
+      lostAcceptedResponses = 0;
     },
     start: () => listen(server, port),
     stop: () => new Promise<void>((resolve) => server.close(() => resolve())),

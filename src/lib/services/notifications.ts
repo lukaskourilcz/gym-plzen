@@ -22,6 +22,8 @@ import {
 } from "./loyalty";
 import { buildIcs, reservationCalendarEvent } from "@/lib/helpers/ics";
 import { publicAddress } from "@/lib/content/site";
+import { sendEmail, type SendEmailParams } from "@/lib/integrations/resend";
+import { withOperationLock } from "./operation-lock";
 import {
   DEFAULT_SMS_ACCESS_TEMPLATE,
   SMS_ACCESS_TEMPLATE_KEY,
@@ -68,6 +70,70 @@ async function record(
     })
     .returning();
   return row!;
+}
+
+const CONFIRMATION_RETRY_WINDOW_MS = 23 * 60 * 60_000;
+
+/** Persist the exact provider request before POST, including its calendar file. */
+async function sendPreparedConfirmation(params: {
+  key: string;
+  userId: string | null;
+  reservationId: string;
+  recipient: string;
+  prepare: () => Promise<SendEmailParams>;
+}): Promise<boolean> {
+  return withOperationLock(`confirmation:${params.key}`, async () => {
+    const [existing] = await db
+      .select()
+      .from(messageDelivery)
+      .where(eq(messageDelivery.dedupeKey, params.key))
+      .limit(1);
+    if (existing && ["sent", "delivered", "read"].includes(existing.status))
+      return true;
+
+    let row = existing;
+    if (!row) {
+      const email = await params.prepare();
+      [row] = await db
+        .insert(messageDelivery)
+        .values({
+          userId: params.userId,
+          reservationId: params.reservationId,
+          channel: "email",
+          kind: "reservation_confirmation",
+          recipient: params.recipient,
+          status: "queued",
+          dedupeKey: params.key,
+          providerResponse: { email },
+        })
+        .returning();
+    }
+    if (!row) return false;
+    const prepared = row.providerResponse as { email?: SendEmailParams } | null;
+    const email = prepared?.email;
+    if (
+      !email ||
+      email.to !== row.recipient ||
+      typeof email.subject !== "string" ||
+      typeof email.html !== "string" ||
+      Date.now() - row.createdAt.getTime() >= CONFIRMATION_RETRY_WINDOW_MS
+    )
+      return false;
+
+    const result = await sendEmail({ ...email, idempotencyKey: params.key });
+    await db
+      .update(messageDelivery)
+      .set({
+        status: result.sent ? "sent" : "failed",
+        providerMessageId: result.providerMessageId ?? null,
+        failureReason: result.error ?? null,
+        providerResponse: result.sent ? null : row.providerResponse,
+        sentAt: result.sent ? new Date() : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(messageDelivery.id, row.id));
+    return result.sent;
+  });
 }
 
 export interface AccessCodeMessageContext {
@@ -279,47 +345,39 @@ export async function sendReservationConfirmation(params: {
     }),
   );
 
-  const result = await sendTransactionalEmail({
-    id: "reservation_confirmation",
-    to: params.email,
-    // An answer lost after Resend accepted the mail must not send it twice.
-    idempotencyKey: `confirmation/${params.reservationId}`,
-    attachments: [
-      {
-        filename: "rezervace.ics",
-        content: Buffer.from(ics, "utf8").toString("base64"),
-      },
-    ],
-    variables: {
-      name: params.name || "zákazníku",
-      loyalty,
-      time: formatDateTime(params.startsAt),
-      duration: `${Math.round(
-        (params.endsAt.getTime() - params.startsAt.getTime()) / 60_000,
-      )} minut`,
-      // A free entry is either the loyalty reward or a voucher that covered
-      // the whole price; the e-mail must not call one the other.
-      price:
-        params.priceCents === 0
-          ? params.loyaltyReward
-            ? "zdarma (věrnostní vstup)"
-            : "zdarma (voucher)"
-          : params.priceCents === null
-            ? "v ceně členství"
-            : formatMoney(params.priceCents),
-    },
+  return sendPreparedConfirmation({
+    key: `confirmation/${params.reservationId}`,
+    userId: params.userId,
+    reservationId: params.reservationId,
+    recipient: params.email,
+    prepare: () =>
+      prepareTransactionalEmail({
+        id: "reservation_confirmation",
+        to: params.email!,
+        attachments: [
+          {
+            filename: "rezervace.ics",
+            content: Buffer.from(ics, "utf8").toString("base64"),
+          },
+        ],
+        variables: {
+          name: params.name || "zákazníku",
+          loyalty,
+          time: formatDateTime(params.startsAt),
+          duration: `${Math.round(
+            (params.endsAt.getTime() - params.startsAt.getTime()) / 60_000,
+          )} minut`,
+          price:
+            params.priceCents === 0
+              ? params.loyaltyReward
+                ? "zdarma (věrnostní vstup)"
+                : "zdarma (voucher)"
+              : params.priceCents === null
+                ? "v ceně členství"
+                : formatMoney(params.priceCents),
+        },
+      }),
   });
-  await record(
-    {
-      userId: params.userId,
-      reservationId: params.reservationId,
-      channel: "email",
-      kind: "reservation_confirmation",
-      recipient: params.email,
-    },
-    result,
-  );
-  return result.sent;
 }
 
 /** "středa 1. 10. 10:00 – 11:15 · 229 Kč", one line of an order e-mail. */
@@ -360,13 +418,6 @@ export async function sendOrderConfirmation(params: {
   const first = slots[0];
   if (!email || !first) return true;
   const dedupeKey = `order-confirmation/${order.id}`;
-  const [alreadySent] = await db
-    .select({ id: messageDelivery.id })
-    .from(messageDelivery)
-    .where(eq(messageDelivery.dedupeKey, dedupeKey))
-    .limit(1);
-  if (alreadySent) return true;
-
   const loyalty = order.userId
     ? orderLoyaltySentence(
         await getLoyaltyStatus(order.userId),
@@ -386,41 +437,33 @@ export async function sendOrderConfirmation(params: {
       }),
     ),
   );
-  const result = await sendTransactionalEmail({
-    id: "order_confirmation",
-    to: email,
-    idempotencyKey: dedupeKey,
-    attachments: [
-      {
-        filename: "rezervace.ics",
-        content: Buffer.from(ics, "utf8").toString("base64"),
-      },
-    ],
-    variables: {
-      name: order.contactName || "zákazníku",
-      count: termCount(slots.length),
-      slots: slots.map(orderSlotLine).join("\n"),
-      total:
-        order.totalCents === 0
-          ? "zdarma"
-          : formatMoney(order.totalCents, order.currency),
-      loyalty,
-    },
-  });
-  await db.insert(messageDelivery).values({
+  return sendPreparedConfirmation({
+    key: dedupeKey,
     userId: order.userId,
     reservationId: first.id,
-    channel: "email",
-    kind: "reservation_confirmation",
     recipient: email,
-    status: result.sent ? "sent" : "failed",
-    providerMessageId: result.providerMessageId,
-    failureReason: result.error,
-    sentAt: result.sent ? new Date() : null,
-    // Only a delivered confirmation closes the order; a failure is retried.
-    dedupeKey: result.sent ? dedupeKey : null,
+    prepare: () =>
+      prepareTransactionalEmail({
+        id: "order_confirmation",
+        to: email,
+        attachments: [
+          {
+            filename: "rezervace.ics",
+            content: Buffer.from(ics, "utf8").toString("base64"),
+          },
+        ],
+        variables: {
+          name: order.contactName || "zákazníku",
+          count: termCount(slots.length),
+          slots: slots.map(orderSlotLine).join("\n"),
+          total:
+            order.totalCents === 0
+              ? "zdarma"
+              : formatMoney(order.totalCents, order.currency),
+          loyalty,
+        },
+      }),
   });
-  return result.sent;
 }
 
 /**

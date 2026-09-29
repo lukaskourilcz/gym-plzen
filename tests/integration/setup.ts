@@ -105,6 +105,10 @@ export async function resetDatabase(): Promise<void> {
   });
   await setSetting("pricing.entry_price_cents", 22_900);
   await setSetting("billing.send_documents", false);
+  // Test cases may edit the CMS between provider retries. A new case must
+  // start with the shipping templates, just like the rest of its fixtures.
+  await setSetting("messages.email.reservation_confirmation", null);
+  await setSetting("messages.email.order_confirmation", null);
   // The operator's own notifications are on by default in production and have
   // their own suite; here they would add a second recipient to every booking
   // and blur what the customer actually received.
