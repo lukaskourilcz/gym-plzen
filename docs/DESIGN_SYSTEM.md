@@ -384,6 +384,18 @@ shrink-0 accent-primary`, the pointer and hover treatment every control
   showing them to customers.
 - Dialogs require a title, focus trap, Escape close, focus return, and a clear
   destructive-action distinction.
+- A destructive administration action on a table row confirms inline instead
+  of in a modal (reference: the reservation cancel control; removing a pricing
+  period uses the same two steps without the reason):
+  the first button expands the row control into a `destructive` confirm with an
+  explicit verb ("Ano, zrušit rezervaci") beside an `outline` keep action
+  ("Ponechat"). Focus moves into the expanded control, Escape or the keep
+  action collapses it and returns focus to the trigger. When the action e-mails
+  a customer, say so next to the confirm and offer the optional reason there.
+- An action whose side effects the operator may not foresee (a closure that
+  cancels bookings) is refused by the server until it is repeated with the
+  count it reported; the form shows that count in a `warning` notice with the
+  confirm and keep buttons, and the confirm names the number it will cancel.
 - Tables keep headers visible and become readable stacked summaries or a
   horizontally contained region on small screens. The page must not overflow.
   The shared `Table` wraps itself in a named, focusable scroll region
@@ -466,7 +478,9 @@ than spending a line on a repeated time. Missing names have a Czech fallback,
 never a contact e-mail. Rows start at 44px; only a row containing a wrapped name grows to fit its
 content. Background blocks are shaded without visible text. Semantic status
 colours are preserved. Phones start in day view. `/admin/design-system` includes a read-only
-example with explicitly illustrative names.
+example with explicitly illustrative names. A drag-selection that creates a
+block may cross other blocks but never a reservation; closing time over
+existing bookings is done from the schedule form, which asks for confirmation.
 
 ## Transactional e-mail
 
