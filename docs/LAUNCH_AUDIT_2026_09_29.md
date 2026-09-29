@@ -14,7 +14,7 @@ Hlavní [issue #105](https://github.com/lukaskourilcz/gym-plzen/issues/105) sdru
 | Kontrola                                                   | Výsledek                                                             |
 | ---------------------------------------------------------- | -------------------------------------------------------------------- |
 | Formát, ESLint, TypeScript                                 | Prošlo bez chyb a varování                                           |
-| Unit testy                                                 | 257 prošlo, 0 selhalo, 0 přeskočeno                                  |
+| Unit testy                                                 | 260 prošlo, 0 selhalo, 0 přeskočeno                                  |
 | Integrační testy, lokální Postgres a falešní poskytovatelé | 114 prošlo, 0 selhalo, 0 přeskočeno                                  |
 | SQL scénáře                                                | Prošly: platby, webhooky, rollback/retry, kódy, objednávková omezení |
 | Browser, hlavní průchody aplikací                          | 49 prošlo, 0 selhalo; produkční build a Chromium                     |
@@ -47,6 +47,8 @@ Původní [issue #64](https://github.com/lukaskourilcz/gym-plzen/issues/64) byl 
 
 [Issue #135](https://github.com/lukaskourilcz/gym-plzen/issues/135): GitHub CI našlo rozdíl oproti lokálnímu běhu v testu databázové pojistky. Explicitní undefined se kvůli výchozímu parametru nahrazovalo hodnotou z prostředí; oprava a nový test teď rozlišují výslovně chybějící argument od volání bez argumentu.
 
+[Issue #136](https://github.com/lukaskourilcz/gym-plzen/issues/136): host teď může obnovit stránku potvrzení po odstranění tokenu z adresního řádku. Middleware uloží 24hodinový HttpOnly důkaz omezený na tuto stránku; server jej použije jen pro přesně odpovídající objednávku. Browser test ověřil reload, zkopírovaný odkaz v cizím prohlížeči i chybějící cookie.
+
 ## Před vydáním rozhodnout a ověřit
 
 1. [#128](https://github.com/lukaskourilcz/gym-plzen/issues/128) — bezpečnost hesla, P1: stránka obnovy umožňuje změnu hesla z libovolné platné session; nevyžaduje prokázání reset odkazu. Profil přitom požaduje staré heslo. Je třeba zvolit a otestovat opravu proti izolovanému Supabase Auth projektu a případné nastavení Require current password. Bez souhlasu nebylo změněno bezpečnostní nastavení.
@@ -55,7 +57,6 @@ Původní [issue #64](https://github.com/lukaskourilcz/gym-plzen/issues/64) byl 
 4. [#118](https://github.com/lukaskourilcz/gym-plzen/issues/118) — potvrdit provozní kontakty, lékárničku a pravidlo objednávky více termínů podle skutečného provozu a obchodních podmínek.
 5. [#133](https://github.com/lukaskourilcz/gym-plzen/issues/133) — rozhodnout, zda po zákaznickém a provozním stornu vracet použití voucheru. Potvrzené použití se dnes neuvolňuje; u objednávky více termínů se musí zachovat nárok na zbývající vstupy. Zavádějící komentář v kódu byl opraven.
 6. [#134](https://github.com/lukaskourilcz/gym-plzen/issues/134) — první potvrzení rezervace či celé objednávky skládá na každém retry e-mail znovu. Při ztracené odpovědi Resend a mezitím změněné šabloně může stejný idempotency key nést jiné tělo a být odmítnut. Potřebuje stejný trvalý přesný payload jako nově opravené zprávy.
-7. [#136](https://github.com/lukaskourilcz/gym-plzen/issues/136) — host po načtení potvrzení při reloadu ztratí přístup: token se správně odstraní z viditelné URL kvůli analytice, ale server nemá jiný krátkodobý důkaz vlastnictví. Opravit bez zveřejnění tokenu a otestovat nový i cizí prohlížeč.
-8. [#131](https://github.com/lukaskourilcz/gym-plzen/issues/131) — nevolaný historický helper členství má latentní chybu při souběhu aktivních a neaktivních období. Není v současné rezervační cestě; opravit před zavedením členství.
+7. [#131](https://github.com/lukaskourilcz/gym-plzen/issues/131) — nevolaný historický helper členství má latentní chybu při souběhu aktivních a neaktivních období. Není v současné rezervační cestě; opravit před zavedením členství.
 
 Předchozí potvrzení vlastníka, že WhatsApp s PINem dorazil, je cenný provozní signál; nebylo opakováno v tomto auditu. Žádný lokální test nemůže garantovat 100% dostupnost externích služeb ani odhalit každý možný bug. Po schváleném vydání je třeba sledovat skutečné logy, doručení a stav vstupních kódů; tento audit sám produkci nezměnil.

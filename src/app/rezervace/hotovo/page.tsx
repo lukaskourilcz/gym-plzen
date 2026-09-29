@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import {
   CalendarPlus,
   CheckCircle2,
@@ -14,6 +15,10 @@ import {
 } from "@/lib/content/site";
 import { formatMoney, formatTimeRange } from "@/lib/helpers/format";
 import { detailsHref } from "@/lib/helpers/booking-selection";
+import {
+  CONFIRMATION_PROOF_COOKIE,
+  confirmationProofForBooking,
+} from "@/lib/helpers/confirmation-proof";
 import { StripUrlToken } from "@/components/site/strip-url-token";
 import { Container, Section } from "@/components/ui/container";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -138,14 +143,28 @@ export default async function BookingDonePage({
     reservation_id?: string;
   }>;
 }) {
-  const [session, params] = await Promise.all([getSession(), searchParams]);
+  const [session, params, cookieStore] = await Promise.all([
+    getSession(),
+    searchParams,
+    cookies(),
+  ]);
+  const savedProof = cookieStore.get(CONFIRMATION_PROOF_COOKIE)?.value;
+  const token =
+    params.token ??
+    (params.order_id
+      ? confirmationProofForBooking(savedProof, "order", params.order_id)
+      : confirmationProofForBooking(
+          savedProof,
+          "reservation",
+          params.reservation_id,
+        ));
   const [content, view] = await Promise.all([
     loadSiteContent(),
     resolveView({
       userId: session?.user.id ?? null,
       orderId: params.order_id,
       reservationId: params.reservation_id,
-      token: params.token,
+      token,
     }),
   ]);
   const many = view.state === "confirmed" && view.slots.length > 1;

@@ -113,6 +113,15 @@ test.describe("Booking flow", () => {
     await expect
       .poll(() => new URL(page.url()).searchParams.has("token"))
       .toBe(false);
+    const proofCookie = (await page.context().cookies()).find(
+      (cookie) => cookie.name === "navi_confirmation",
+    );
+    expect(proofCookie?.httpOnly).toBe(true);
+    expect(proofCookie?.path).toBe("/rezervace/hotovo");
+    await page.reload();
+    await expect(
+      page.getByRole("heading", { name: "Rezervace je potvrzená" }),
+    ).toBeVisible();
     const unproved = await page.context().browser()!.newContext();
     try {
       const copiedLink = await unproved.newPage();
@@ -125,6 +134,13 @@ test.describe("Booking flow", () => {
     } finally {
       await unproved.close();
     }
+    await page.context().clearCookies();
+    await page.reload();
+    await expect(
+      page.getByRole("heading", {
+        name: "Potvrzení se nepodařilo ověřit",
+      }),
+    ).toBeVisible();
   });
 
   test("coming back from the gateway continues the visitor's own booking", async ({

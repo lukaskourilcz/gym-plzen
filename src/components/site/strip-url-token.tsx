@@ -6,8 +6,9 @@ import { useLayoutEffect } from "react";
  * The confirmation token proves a guest's booking. It arrives in the address
  * from the payment gateway, where analytics would otherwise report it as part
  * of the page URL. The page has already been rendered from it, so it is taken
- * out of the address bar before any page view can be measured; the links on
- * the page that still need it carry their own copy.
+ * out of the address bar before any page view can be measured. Middleware
+ * retains a short-lived, HttpOnly proof for this browser's refresh; links
+ * that need the token carry their own copy.
  */
 export function StripUrlToken() {
   useLayoutEffect(() => {
