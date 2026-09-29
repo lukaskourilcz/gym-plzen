@@ -8,11 +8,9 @@
  * database on this machine named in `TEST_DATABASE_URL`, and skip themselves
  * otherwise (or fail with `REQUIRE_DB=1`, so an empty run cannot look green).
  */
-import { existsSync } from "node:fs";
 import postgres from "postgres";
 import { createComgateMock, createResendMock } from "./mocks";
-
-if (existsSync(".env.local")) process.loadEnvFile(".env.local");
+import { isTestDatabaseUrl } from "../helpers/test-database";
 
 /*
  * Only an explicitly named database on this machine is ever truncated. The
@@ -20,9 +18,7 @@ if (existsSync(".env.local")) process.loadEnvFile(".env.local");
  * project) is never used as a fallback, and there is no remote override.
  */
 const url = process.env.TEST_DATABASE_URL ?? "";
-const LOCAL_DATABASE =
-  /^postgres(?:ql)?:\/\/[^/@]+@(?:127\.0\.0\.1|localhost)(?::\d+)?\//;
-export const databaseReady = Boolean(url) && LOCAL_DATABASE.test(url);
+export const databaseReady = isTestDatabaseUrl(url);
 if (!databaseReady && process.env.REQUIRE_DB === "1")
   throw new Error(
     "REQUIRE_DB=1 but TEST_DATABASE_URL is not a local Postgres URL; refusing to report a skipped suite as green.",

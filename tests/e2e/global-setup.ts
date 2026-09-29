@@ -44,13 +44,22 @@ export function supabaseConfigured(): boolean {
     process.env.NEXT_PUBLIC_SUPABASE_URL?.includes(PRODUCTION_PROJECT_REF)
   )
     return false;
+  let matchingHost = false;
+  try {
+    const url = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "");
+    matchingHost =
+      url.protocol === "https:" &&
+      url.hostname === `${process.env.E2E_SUPABASE_PROJECT_REF}.supabase.co` &&
+      !url.username &&
+      !url.password;
+  } catch {
+    /* Unconfigured or invalid. */
+  }
   return Boolean(
     process.env.E2E_ALLOW_REMOTE_MUTATIONS === "true" &&
     process.env.E2E_SUPABASE_PROJECT_REF &&
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_URL.includes(
-      process.env.E2E_SUPABASE_PROJECT_REF ?? "never-match",
-    ) &&
+    matchingHost &&
     (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY),
   );
 }
@@ -73,17 +82,39 @@ export default async function globalSetup(config: FullConfig) {
   const admin = createClient(url, secret, { auth: { persistSession: false } });
 
   for (const u of USERS) {
-    const { data } = await admin.auth.admin.createUser({
+    const { data, error } = await admin.auth.admin.createUser({
       email: u.email,
       password: CRED.password,
       email_confirm: true,
       user_metadata: { full_name: u.name },
     });
-    const id = data.user?.id;
-    if (id) {
-      await admin
+    let id = data.user?.id;
+    if (error) {
+      if (error.code !== "email_exists")
+        throw new Error(
+          `E2E user creation failed (${error.code ?? "unknown"}).`,
+        );
+      const { data: listed, error: listError } =
+        await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      if (listError) throw new Error("E2E could not find existing test users.");
+      id = listed.users.find((user) => user.email === u.email)?.id;
+      if (!id)
+        throw new Error(
+          "Existing E2E account was not found; refusing an unauthenticated run.",
+        );
+      const { error: updateError } = await admin.auth.admin.updateUserById(id, {
+        password: CRED.password,
+        email_confirm: true,
+      });
+      if (updateError)
+        throw new Error("E2E could not reset the test account password.");
+    }
+    if (!id) throw new Error("E2E user creation returned no account.");
+    {
+      const { error: profileError } = await admin
         .from("profiles")
         .upsert({ id, email: u.email, full_name: u.name, role: u.role });
+      if (profileError) throw new Error("E2E profile/role setup failed.");
     }
   }
 
@@ -96,9 +127,7 @@ export default async function globalSetup(config: FullConfig) {
     await page.getByLabel(/E-mail/i).fill(u.email);
     await page.getByLabel(/Heslo/i).fill(CRED.password);
     await page.getByRole("button", { name: /Přihlásit se/i }).click();
-    await page
-      .waitForURL(/\/(account|admin)/, { timeout: 15_000 })
-      .catch(() => {});
+    await page.waitForURL(/\/(account|admin)(?:[/?#]|$)/, { timeout: 15_000 });
     await page.context().storageState({ path: join(dir, u.file) });
     await page.close();
   }

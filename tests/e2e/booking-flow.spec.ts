@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
-import { existsSync } from "node:fs";
 import postgres from "postgres";
 import { createComgateMock } from "../integration/mocks";
+import { isTestDatabaseUrl } from "../helpers/test-database";
 
 /**
  * The public booking flow in a browser against a production build with a
@@ -16,11 +16,12 @@ import { createComgateMock } from "../integration/mocks";
  *   COMGATE_API_URL=http://127.0.0.1:4547/v2.0 COMGATE_MERCHANT_ID=test \
  *   COMGATE_SECRET=test COMGATE_TEST_MODE=true PORT=3131 npm start
  */
-if (existsSync(".env.local")) process.loadEnvFile(".env.local");
-const DATABASE_URL = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
-const LOCAL =
-  /^postgres(?:ql)?:\/\/[^/@]+@(?:127\.0\.0\.1|localhost)(?::\d+)?\//;
-const ready = Boolean(DATABASE_URL && LOCAL.test(DATABASE_URL));
+const DATABASE_URL = process.env.TEST_DATABASE_URL;
+const ready = isTestDatabaseUrl(DATABASE_URL);
+if (!ready && process.env.REQUIRE_DB === "1")
+  throw new Error(
+    "Booking E2E requires an explicit, dedicated local TEST_DATABASE_URL.",
+  );
 const GATEWAY_PORT = Number(process.env.E2E_COMGATE_PORT ?? 4547);
 const VOUCHER = "E2EFREE100";
 
