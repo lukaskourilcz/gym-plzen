@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth/guards";
 import { entryLog } from "@/lib/services";
 import {
   formatDateTime,
@@ -21,6 +22,7 @@ export const dynamic = "force-dynamic";
 
 /** Actual unlocks read from the Nuki lock (synced by webhook + cron). */
 export default async function EntryLogPage() {
+  await requireAdmin();
   const demoEnabled = await hasDemoAdminSession();
   const { rows } = await withDemoFallback(
     entryLog.listRecentEntries(200),

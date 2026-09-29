@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth/guards";
 import Link from "next/link";
 import { invoices } from "@/lib/services";
 import { PageHeader } from "@/components/admin/page-header";
@@ -28,6 +29,7 @@ function czk(cents: number, decimals: boolean): string {
 
 /** Issued payment documents: what went out, to whom, and when. */
 export default async function DocumentsPage() {
+  await requireAdmin();
   const demo = await hasDemoAdminSession();
   const [rows, billing] = demo
     ? [

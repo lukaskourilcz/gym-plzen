@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth/guards";
 import { loadSiteContent, SITE_DEFAULTS } from "@/lib/content/site";
 import { PageHeader } from "@/components/admin/page-header";
 import { ContentEditor } from "./content-editor";
@@ -8,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 /** Client-safe content editor. It shows rendered values, never internal CMS keys. */
 export default async function ContentPage() {
+  await requireAdmin();
   const demo = await hasDemoAdminSession();
   const content = await loadSiteContent("cs", {
     strict: !demo,

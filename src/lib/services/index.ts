@@ -11,6 +11,7 @@
  */
 export * as availability from "./availability";
 export * as reservations from "./reservations";
+export * as adminReservations from "./admin-reservations";
 export * as rescheduling from "./rescheduling";
 export * as booking from "./booking";
 export * as orders from "./orders";
@@ -28,6 +29,7 @@ export * as memberships from "./memberships";
 export * as loyalty from "./loyalty";
 export * as pricingPeriods from "./pricing-periods";
 export * as schedule from "./schedule";
+export * as closures from "./closures";
 export * as cms from "./cms";
 export * as media from "./media";
 export * as messages from "./messages";

@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth/guards";
 import { emailTemplates } from "@/lib/services";
 import {
   EMAIL_BRAND,
@@ -105,6 +106,7 @@ function SupabaseAuthSyncNotice({
 }
 
 export default async function EmailsPage() {
+  await requireAdmin();
   const demo = await hasDemoAdminSession();
   const templates = demo
     ? (Object.fromEntries(

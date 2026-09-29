@@ -1,7 +1,9 @@
+import { requireAdmin } from "@/lib/auth/guards";
 import { schedule } from "@/lib/services";
 import { addMinutes } from "@/lib/helpers/datetime";
 import { formatDateTime } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -20,6 +22,7 @@ import {
   DEFAULT_CLOSE_MINUTE,
   DEFAULT_OPEN_MINUTE,
   DEFAULT_SHOWER_MINUTES,
+  BLOCK_REASON_LABELS,
 } from "@/lib/config/schedule";
 import { minutesToHHmm } from "@/lib/helpers/format";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
@@ -29,6 +32,7 @@ export const dynamic = "force-dynamic";
 
 /** Weekly opening hours + one-off blocked slots (maintenance, holidays). */
 export default async function SchedulePage() {
+  await requireAdmin();
   const now = new Date();
   const demo = await hasDemoAdminSession();
   const [hours, blocks, showerMinutes] = demo
@@ -85,9 +89,18 @@ export default async function SchedulePage() {
             <TableBody>
               {blocks.map((b) => (
                 <TableRow key={b.id}>
-                  <TableCell>{formatDateTime(b.startsAt)}</TableCell>
+                  <TableCell>
+                    {formatDateTime(b.startsAt)}
+                    {b.startsAt <= now && (
+                      <Badge variant="accent" className="ml-2">
+                        Probíhá
+                      </Badge>
+                    )}
+                  </TableCell>
                   <TableCell>{formatDateTime(b.endsAt)}</TableCell>
-                  <TableCell>{b.reason}</TableCell>
+                  <TableCell>
+                    {BLOCK_REASON_LABELS[b.reason] ?? b.reason}
+                  </TableCell>
                   <TableCell>{b.note ?? "Bez poznámky"}</TableCell>
                   <TableCell>
                     <DeleteBlockButton id={b.id} />

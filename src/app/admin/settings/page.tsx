@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth/guards";
 import { getOperations } from "@/lib/services/operations";
 import { getOperatorNotifications } from "@/lib/services/operator-notifications";
 import { DEFAULT_OPERATIONS } from "@/lib/config/operations";
@@ -46,6 +47,7 @@ export const dynamic = "force-dynamic";
 
 /** Configure the front-end assets (logo, terms PDF) and message templates. */
 export default async function SettingsPage() {
+  await requireAdmin();
   const demo = await hasDemoAdminSession();
   const operations = demo ? DEFAULT_OPERATIONS : await getOperations();
   const operatorNotifications = demo

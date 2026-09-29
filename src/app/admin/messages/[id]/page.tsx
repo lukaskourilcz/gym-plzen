@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth/guards";
 import { notFound } from "next/navigation";
 import { getAdminEmail } from "@/lib/services/messages";
 import { formatDateTime } from "@/lib/helpers/format";
@@ -12,6 +13,7 @@ export default async function EmailDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const email = await getAdminEmail(id);
   if (!email) notFound();

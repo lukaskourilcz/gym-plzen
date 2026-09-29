@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth/guards";
 import { loyalty, members, pricingPeriods, slots } from "@/lib/services";
 import { deriveLoyaltyStatus } from "@/lib/services/loyalty";
 import {
@@ -65,6 +66,7 @@ export default async function PricingPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await requireAdmin();
   const [demo, query] = await Promise.all([
     hasDemoAdminSession(),
     searchParams,

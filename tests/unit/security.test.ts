@@ -23,6 +23,33 @@ test("authentication return target accepts only same-origin paths", () => {
   assert.equal(safeInternalPath("/ok\\evil"), "/account");
 });
 
+test("return targets that normalise to a protocol-relative URL are refused", () => {
+  for (const crafted of [
+    "/.//evil.com",
+    "/%2e//evil.com",
+    "/%2E//evil.com",
+    "/a/..//evil.com",
+    "/a/%2e%2e//evil.com",
+    "/././/evil.com/path?x=1",
+  ]) {
+    const result = safeInternalPath(crafted);
+    assert.equal(result, "/account", crafted);
+    assert.ok(!result.startsWith("//"), crafted);
+  }
+  assert.equal(safeInternalPath("/.//evil.com", "/admin"), "/admin");
+});
+
+test("legitimate return targets keep their path, query and hash", () => {
+  assert.equal(safeInternalPath("/account"), "/account");
+  assert.equal(safeInternalPath("/admin/members/abc"), "/admin/members/abc");
+  const order =
+    "/rezervace/udaje?start=2026-10-01T05%3A00%3A00.000Z&start=2026-10-01T06%3A15%3A00.000Z";
+  assert.equal(safeInternalPath(order), order);
+  assert.equal(safeInternalPath("/faq#platba"), "/faq#platba");
+  // A dot segment that stays on this origin still resolves normally.
+  assert.equal(safeInternalPath("/a/../account"), "/account");
+});
+
 test("administrators land in the admin workspace after a default login", () => {
   assert.equal(postLoginDestination(undefined, "admin"), "/admin");
   assert.equal(postLoginDestination("/account", "admin"), "/admin");

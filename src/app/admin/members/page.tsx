@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth/guards";
 import Link from "next/link";
 import { loyalty, members } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
@@ -19,6 +20,7 @@ export const dynamic = "force-dynamic";
 
 /** Members admin : every registered user with their editable profile. */
 export default async function MembersPage() {
+  await requireAdmin();
   const demoEnabled = await hasDemoAdminSession();
   const { rows, demo } = await withDemoFallback(
     members.listMembers(200),

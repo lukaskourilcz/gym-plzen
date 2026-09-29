@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { pricingPeriod } from "@/lib/db/schema";
 import type { PricingPeriod } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
+import { PG_EXCLUSION_VIOLATION, pgErrorCode } from "@/lib/helpers/pg-error";
 
 /** All configured periods, chronologically, for the administration. */
 export async function listPricingPeriods(): Promise<PricingPeriod[]> {
@@ -64,11 +65,7 @@ export async function savePricingPeriod(
     if (!saved) throw new ActionError("Cenové období nebylo nalezeno.");
     return saved;
   } catch (error) {
-    const code =
-      typeof error === "object" && error !== null && "code" in error
-        ? String(error.code)
-        : "";
-    if (code === "23P01") {
+    if (pgErrorCode(error) === PG_EXCLUSION_VIOLATION) {
       throw new ActionError(
         "Toto cenové období se překrývá s jiným. Upravte prosím data tak, aby se období nepřekrývala.",
       );
