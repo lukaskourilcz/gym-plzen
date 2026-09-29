@@ -155,3 +155,37 @@ test("429 is retried once with the same payload and key; 500 is not blindly repe
   );
   assert.equal(failures, 1);
 });
+
+test("a DB JSON round-trip cannot alter idempotent attachment bytes", async () => {
+  const raw: string[] = [];
+  await fixture(
+    async (request, response) => {
+      const chunks = [];
+      for await (const chunk of request) chunks.push(chunk);
+      raw.push(Buffer.concat(chunks).toString());
+      response.setHeader("content-type", "application/json");
+      response.end(JSON.stringify({ id: "one-accepted-id" }));
+    },
+    async (baseUrl) => {
+      const send = createResendSender({
+        apiKey: "fake",
+        from: "fake",
+        baseUrl,
+      });
+      const first = {
+        ...email,
+        idempotencyKey: "fixed",
+        attachments: [{ filename: "event.ics", content: "VEVTVA==" }],
+      };
+      const second = {
+        ...email,
+        idempotencyKey: "fixed",
+        attachments: [{ content: "VEVTVA==", filename: "event.ics" }],
+      };
+      assert.equal((await send(first)).sent, true);
+      assert.equal((await send(second)).sent, true);
+    },
+  );
+  assert.equal(raw.length, 2);
+  assert.equal(raw[0], raw[1]);
+});

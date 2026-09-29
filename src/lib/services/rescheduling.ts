@@ -9,6 +9,7 @@ import {
   blockedSlot,
   openingHours,
   reservation,
+  messageDelivery,
   reservationPipeline,
   reservationReschedule,
 } from "@/lib/db/schema";
@@ -27,7 +28,7 @@ import {
   resolveSlotFromHours,
 } from "./slots";
 import { fulfillReservation } from "./fulfillment";
-import { sendRescheduleConfirmation } from "./notifications";
+import { deliverRescheduleConfirmation } from "./reschedule-delivery";
 import { notifyReservationRescheduled } from "./operator-notifications";
 import { recordIn as recordActivityIn } from "./activity";
 import { formatDateTime } from "@/lib/helpers/format";
@@ -258,6 +259,17 @@ async function rescheduleLocked(
         newEndsAt: moved.endsAt,
         changedAt,
       });
+      if (current.contactEmail)
+        await tx.insert(messageDelivery).values({
+          reservationId: current.id,
+          userId: input.userId,
+          channel: "email",
+          kind: "reservation_confirmation",
+          status: "queued",
+          recipient: current.contactEmail,
+          dedupeKey: `reschedule-confirmation/${current.id}`,
+          providerResponse: { submitted: false },
+        });
       await recordActivityIn(tx, {
         action: "reservation.rescheduled",
         actorType: "customer",
@@ -311,18 +323,10 @@ async function rescheduleLocked(
   // fulfillment sends the booking confirmation only once per reservation, so
   // on its own it would say nothing about the new time. Never fails the change.
   try {
-    await sendRescheduleConfirmation({
-      userId: input.userId,
-      reservationId: updated.id,
-      name: updated.contactName,
-      previousStartsAt,
-      startsAt: updated.startsAt,
-      endsAt: updated.endsAt,
-      email: updated.contactEmail,
-    });
+    await deliverRescheduleConfirmation(updated.id);
   } catch (error) {
     logger.error(error, {
-      where: "rescheduleReservation.sendRescheduleConfirmation",
+      where: "rescheduleReservation.deliverRescheduleConfirmation",
       reservationId: updated.id,
     });
   }

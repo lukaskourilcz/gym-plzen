@@ -27,7 +27,10 @@ import {
   SMS_ACCESS_TEMPLATE_KEY,
   renderTemplate,
 } from "@/lib/config/branding";
-import { sendTransactionalEmail } from "./email-templates";
+import {
+  prepareTransactionalEmail,
+  sendTransactionalEmail,
+} from "./email-templates";
 
 /**
  * Multi-channel notification dispatch. The access code is sent over every
@@ -427,7 +430,7 @@ export async function sendOrderConfirmation(params: {
  * holds the new time in writing. The attached .ics keeps the reservation's
  * UID, so a calendar that imported the original entry updates it in place.
  */
-export async function sendRescheduleConfirmation(params: {
+export async function prepareRescheduleConfirmation(params: {
   userId: string | null;
   reservationId: string;
   name?: string | null;
@@ -435,8 +438,8 @@ export async function sendRescheduleConfirmation(params: {
   startsAt: Date;
   endsAt: Date;
   email?: string | null;
-}): Promise<void> {
-  if (!params.email) return;
+}) {
+  if (!params.email) return null;
 
   const ics = buildIcs(
     reservationCalendarEvent({
@@ -449,7 +452,7 @@ export async function sendRescheduleConfirmation(params: {
     }),
   );
 
-  const result = await sendTransactionalEmail({
+  return prepareTransactionalEmail({
     id: "reservation_rescheduled",
     to: params.email,
     attachments: [
@@ -467,16 +470,6 @@ export async function sendRescheduleConfirmation(params: {
       )} minut`,
     },
   });
-  await record(
-    {
-      userId: params.userId,
-      reservationId: params.reservationId,
-      channel: "email",
-      kind: "reservation_confirmation",
-      recipient: params.email,
-    },
-    result,
-  );
 }
 
 /** Load member contact + channel prefs for building an AccessCodeMessageContext. */

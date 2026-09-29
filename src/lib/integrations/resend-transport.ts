@@ -32,7 +32,10 @@ export function createResendSender(
             text: params.text,
             reply_to: params.replyTo,
             attachments: params.attachments?.length
-              ? params.attachments
+              ? params.attachments.map(({ filename, content }) => ({
+                  filename,
+                  content,
+                }))
               : undefined,
           },
           timeoutMs: config.timeoutMs ?? 15_000,

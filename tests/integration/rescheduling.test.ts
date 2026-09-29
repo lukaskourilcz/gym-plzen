@@ -20,6 +20,7 @@ import { after, before, beforeEach, describe, test } from "node:test";
 import { startOrder } from "../../src/lib/services/orders";
 import { synchronizeComgatePayment } from "../../src/lib/services/payments";
 import { rescheduleReservation } from "../../src/lib/services/rescheduling";
+import { retryRescheduleConfirmations } from "../../src/lib/services/reschedule-delivery";
 import {
   CUSTOMER_CANCEL_REASON,
   cancelByCustomer,
@@ -129,6 +130,99 @@ describe(
         { message: "Tuto rezervaci už jste jednou změnili." },
       );
       assert.equal(await startsOf(id), slot(6).getTime());
+    });
+
+    test("a refused change email is retried once with the same calendar event", async () => {
+      const id = await paidBooking(slot(5));
+      resend.rateLimitNext(2);
+      await rescheduleReservation({
+        reservationId: id,
+        userId: MEMBER.id,
+        startsAt: slot(6),
+      });
+      const [failed] = await rows<{
+        id: string;
+        status: string;
+        provider_response: unknown;
+      }>(
+        "select id, status, provider_response from message_delivery where dedupe_key = $1",
+        [`reschedule-confirmation/${id}`],
+      );
+      assert.equal(failed?.status, "failed");
+      assert.ok(failed?.provider_response, "the exact payload is durable");
+      assert.equal(
+        resend.sent.filter((mail) => mail.to === MEMBER.email).length,
+        0,
+      );
+      await rows(
+        "update message_delivery set updated_at = now() - interval '6 minutes' where id = $1",
+        [failed!.id],
+      );
+      assert.equal(await retryRescheduleConfirmations(), 1);
+      const [sent] = await rows<{ status: string; provider_response: unknown }>(
+        "select status, provider_response from message_delivery where id = $1",
+        [failed!.id],
+      );
+      assert.equal(sent?.status, "sent");
+      assert.equal(sent?.provider_response, null);
+      const mails = resend.sent.filter((mail) => mail.to === MEMBER.email);
+      assert.equal(mails.length, 1);
+      const ics = Buffer.from(
+        mails[0]!.attachments![0]!.content,
+        "base64",
+      ).toString("utf8");
+      assert.match(ics, new RegExp(`UID:${id}@`));
+      assert.match(ics, /\r\nSEQUENCE:1\r\n/);
+      assert.equal(await retryRescheduleConfirmations(), 0);
+    });
+
+    test("a crash after Resend acceptance repeats the same intent without a second email", async () => {
+      const id = await paidBooking(slot(5));
+      await rows(`create function test_reschedule_write_crash() returns trigger language plpgsql as $$
+        begin raise exception 'local reschedule write crash'; end; $$`);
+      await rows(`create trigger test_reschedule_write_crash before update of status on message_delivery
+        for each row when (old.dedupe_key like 'reschedule-confirmation/%' and new.status = 'sent')
+        execute function test_reschedule_write_crash()`);
+      try {
+        await rescheduleReservation({
+          reservationId: id,
+          userId: MEMBER.id,
+          startsAt: slot(6),
+        });
+      } finally {
+        await rows(
+          "drop trigger if exists test_reschedule_write_crash on message_delivery",
+        );
+        await rows("drop function if exists test_reschedule_write_crash()");
+      }
+      const [pending] = await rows<{
+        id: string;
+        status: string;
+        provider_response: unknown;
+      }>(
+        "select id, status, provider_response from message_delivery where dedupe_key = $1",
+        [`reschedule-confirmation/${id}`],
+      );
+      assert.equal(pending?.status, "queued");
+      assert.ok(pending?.provider_response);
+      assert.equal(
+        resend.sent.filter((mail) => mail.to === MEMBER.email).length,
+        1,
+      );
+      await rows(
+        "update message_delivery set updated_at = now() - interval '6 minutes' where id = $1",
+        [pending!.id],
+      );
+      assert.equal(await retryRescheduleConfirmations(), 1);
+      const [recovered] = await rows<{ status: string }>(
+        "select status from message_delivery where id = $1",
+        [pending!.id],
+      );
+      assert.equal(recovered?.status, "sent");
+      assert.equal(
+        resend.sent.filter((mail) => mail.to === MEMBER.email).length,
+        1,
+      );
     });
 
     test("someone else's booking cannot be moved, nor its existence revealed", async () => {
