@@ -28,11 +28,13 @@ if (databaseReady) process.env.DATABASE_URL = url;
 else delete process.env.DATABASE_URL;
 delete process.env.DIRECT_URL;
 
-/* Provider stand-ins on ports derived from the process, so parallel runs
- * cannot collide; both must be known before the provider modules load.
+/* Provider stand-ins on ports derived from the process, below Linux's usual
+ * ephemeral TCP range (32768+). A mock listening in that range can collide
+ * with the runner's outbound connections even when test files run serially.
+ * Both ports must be known before the provider modules load.
  * `npm run test:integration` additionally runs one file at a time, because
  * every file truncates the same database (see `resetDatabase`). */
-const base = 40_000 + (process.pid % 10_000);
+const base = 10_000 + (process.pid % 10_000);
 export const RESEND_PORT = base;
 export const COMGATE_PORT = base + 1;
 process.env.RESEND_BASE_URL = `http://127.0.0.1:${RESEND_PORT}`;
