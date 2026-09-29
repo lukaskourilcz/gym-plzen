@@ -18,9 +18,11 @@ import { createBlockedSlot, findOverlappingReservations } from "./schedule";
  * repeat it confirming exactly that number.
  *
  * Each booking takes the full cancellation path (`cancelReservation`): the
- * reservation lock is held and any access code is revoked, voucher claims are
- * released, and a paid reservation raises a critical refund alert, because the
- * money has to be returned by hand in the Comgate portal.
+ * reservation lock is held and any access code is revoked. Unpaid voucher
+ * claims are released; redeemed uses stay consumed until the operator decides
+ * the refund policy (including multi-slot orders). A paid reservation raises a
+ * critical refund alert, because the money has to be returned by hand in the
+ * Comgate portal.
  */
 
 export interface ClosureAdmin {
