@@ -237,6 +237,53 @@ describe("discussion followup", { skip: !databaseReady }, () => {
     assert.ok(!JSON.stringify(m).includes("333444"));
     globalThis.fetch = nativeFetch;
   });
+  test("a rejected WhatsApp (unknown account) is sent again once the account works", async () => {
+    env.ZERNIO_API_KEY = "test";
+    env.ZERNIO_ACCOUNT_ID = "account";
+    const member = await optedInMember();
+    const [r] = await rows<{ id: string }>(
+      "insert into reservation(user_id,starts_at,ends_at,status) values ($1,'2035-10-05 10:00','2035-10-05 11:00','confirmed') returning id",
+      [member],
+    );
+    let accountExists = false;
+    let sends = 0;
+    globalThis.fetch = async (url, options) => {
+      if (!String(url).startsWith("https://zernio.com/"))
+        return nativeFetch(url, options);
+      sends++;
+      return accountExists
+        ? Response.json({
+            success: true,
+            data: { messageId: "msg-ok", conversationId: "c" },
+          })
+        : Response.json(
+            { error: "Account not found", code: "account_not_found" },
+            { status: 404 },
+          );
+    };
+    const input = {
+      reservationId: r!.id,
+      accessCodeId: "code-rejected",
+      userId: member,
+      pin: "555666",
+      startsAt: new Date("2035-10-05T10:00Z"),
+      validFrom: new Date("2035-10-05T10:00Z"),
+      validUntil: new Date("2035-10-05T11:15Z"),
+    };
+    await sendReservationWhatsApp(input);
+    accountExists = true;
+    // Failures wait 15 minutes before the next attempt.
+    await rows(
+      "update message_delivery set updated_at = now() - interval '16 minutes' where channel = 'whatsapp'",
+    );
+    await sendReservationWhatsApp(input);
+    const [m] = await rows<{ status: string }>(
+      "select status from message_delivery where channel = 'whatsapp'",
+    );
+    assert.equal(m?.status, "sent");
+    assert.equal(sends, 2);
+    globalThis.fetch = nativeFetch;
+  });
   test("ambiguous WhatsApp response never resends", async () => {
     env.ZERNIO_API_KEY = "test";
     env.ZERNIO_ACCOUNT_ID = "account";

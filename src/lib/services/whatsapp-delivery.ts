@@ -33,6 +33,10 @@ type WhatsAppInput = {
   validUntil: Date;
 };
 
+const DEFINITE_REJECTIONS = new Set(
+  [400, 401, 403, 404, 422, 429].map((status) => `zernio_http_${status}`),
+);
+
 export function isWhatsAppConfigured(): boolean {
   return Boolean(env.ZERNIO_API_KEY && env.ZERNIO_ACCOUNT_ID);
 }
@@ -118,7 +122,10 @@ async function sendLocked(input: WhatsAppInput) {
         attempts,
         submitted: true,
         conversationId: result.sent ? result.conversationId : null,
-        retrySafe: !result.sent && result.error === "zernio_http_429",
+        // A definite rejection (bad account or template, rate limit) means
+        // nothing reached the customer, so a later attempt cannot duplicate
+        // the PIN; a network error or an unconfirmed answer stays ambiguous.
+        retrySafe: !result.sent && DEFINITE_REJECTIONS.has(result.error),
       },
       status: result.sent ? "sent" : "failed",
       providerMessageId: result.sent ? result.providerMessageId : null,
