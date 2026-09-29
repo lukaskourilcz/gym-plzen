@@ -49,6 +49,8 @@ Původní [issue #64](https://github.com/lukaskourilcz/gym-plzen/issues/64) byl 
 
 [Issue #136](https://github.com/lukaskourilcz/gym-plzen/issues/136): host teď může obnovit stránku potvrzení po odstranění tokenu z adresního řádku. Middleware uloží 24hodinový HttpOnly důkaz omezený na tuto stránku; server jej použije jen pro přesně odpovídající objednávku. Browser test ověřil reload, zkopírovaný odkaz v cizím prohlížeči i chybějící cookie.
 
+[Issue #137](https://github.com/lukaskourilcz/gym-plzen/issues/137): GitHub Chromium odhalilo spor testu s hydratací při druhém uložení ceny. Test nyní před interakcí čeká na načtení stránky a kromě viditelného potvrzení ověřuje i skutečnou hodnotu v lokální databázi.
+
 ## Před vydáním rozhodnout a ověřit
 
 1. [#128](https://github.com/lukaskourilcz/gym-plzen/issues/128) — bezpečnost hesla, P1: stránka obnovy umožňuje změnu hesla z libovolné platné session; nevyžaduje prokázání reset odkazu. Profil přitom požaduje staré heslo. Je třeba zvolit a otestovat opravu proti izolovanému Supabase Auth projektu a případné nastavení Require current password. Bez souhlasu nebylo změněno bezpečnostní nastavení.

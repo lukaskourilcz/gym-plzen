@@ -110,17 +110,25 @@ test.describe("Admin : forms", () => {
   });
 
   test("pricing form saves the entry price", async ({ page }) => {
-    await page.goto("/admin/memberships");
+    await page.goto("/admin/memberships", { waitUntil: "networkidle" });
     const input = page.getByLabel(/Cena jednorázového vstupu/i);
     const original = await input.inputValue();
     await input.fill("300");
     await page.getByRole("button", { name: /Uložit cenu/i }).click();
     await expect(page.getByText(/Cena vstupného uložena/i)).toBeVisible();
-    await page.reload();
+    await page.reload({ waitUntil: "networkidle" });
     await expect(input).toHaveValue("300");
     await input.fill(original);
     await page.getByRole("button", { name: /Uložit cenu/i }).click();
     await expect(page.getByText(/Cena vstupného uložena/i)).toBeVisible();
+    await expect
+      .poll(async () => {
+        const [saved] = await sql!<
+          { value: number }[]
+        >`select value from site_setting where key = 'pricing.entry_price_cents'`;
+        return saved?.value;
+      })
+      .toBe(Number(original) * 100);
   });
 
   test("settings saves the SMS template", async ({ page }) => {
