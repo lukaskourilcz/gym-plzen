@@ -27,6 +27,7 @@ import { claimVoucher } from "./vouchers";
 import { getOperations } from "./operations";
 import {
   hasOpenOrderPayment,
+  hasUnknownPaymentCreation,
   hasOpenReservationPayment,
   refreshOrderPayment,
   refreshReservationPayment,
@@ -71,7 +72,20 @@ export type OrderConfirmation =
       currency: string;
       slots: OrderSlotView[];
     }
-  | { state: "processing" | "cancelled"; orderId: string }
+  | {
+      state: "processing";
+      orderId: string;
+      /** The gateway may never have received the payment at all. */
+      creationUnknown: boolean;
+    }
+  | {
+      state: "cancelled";
+      orderId: string;
+      /** The payment was abandoned or declined, not the booking withdrawn. */
+      unpaid: boolean;
+      /** The slots, so the visitor can pick them again in one step. */
+      starts: Date[];
+    }
   | { state: "invalid" };
 
 const STILL_PROCESSING =
@@ -616,26 +630,44 @@ export async function getOrderConfirmation(params: {
   let order: BookingOrder | null = await getOrder(params.orderId);
   if (!order) return { state: "invalid" };
   const owns = Boolean(params.userId) && order.userId === params.userId;
-  const provesToken =
-    !order.userId &&
-    Boolean(
-      params.token &&
-      order.confirmationTokenHash &&
-      safeEqual(hashCode(params.token), order.confirmationTokenHash),
-    );
+  // The token proves the order for members too: a banking app may bring the
+  // return from the gateway into a browser without the member's session.
+  const provesToken = Boolean(
+    params.token &&
+    order.confirmationTokenHash &&
+    safeEqual(hashCode(params.token), order.confirmationTokenHash),
+  );
   if (!owns && !provesToken) return { state: "invalid" };
   if (order.status === "pending") {
     await refreshOrderPayment(order.id);
     order = await getOrder(order.id);
     if (!order) return { state: "invalid" };
   }
-  if (order.status === "cancelled")
-    return { state: "cancelled", orderId: order.id };
-  if (order.status === "pending")
-    return { state: "processing", orderId: order.id };
-  const slots = (await listOrderReservations(order.id)).filter(
+  const rows = await listOrderReservations(order.id);
+  const slots = rows.filter(
     (row) => row.status === "confirmed" || row.status === "completed",
   );
+  if (order.status === "pending")
+    return {
+      state: "processing",
+      orderId: order.id,
+      creationUnknown: await hasUnknownPaymentCreation(order.id),
+    };
+  // A confirmed order whose every slot was cancelled later is not "confirmed"
+  // to the customer any more.
+  if (order.status === "cancelled" || slots.length === 0)
+    return {
+      state: "cancelled",
+      orderId: order.id,
+      unpaid:
+        order.status === "cancelled" &&
+        [
+          "payment_cancelled",
+          "checkout_expired",
+          "payment_creation_failed",
+        ].includes(order.cancelReason ?? ""),
+      starts: rows.map((row) => row.startsAt),
+    };
   return {
     state: "confirmed",
     orderId: order.id,

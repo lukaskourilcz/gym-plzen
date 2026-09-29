@@ -256,7 +256,10 @@ export async function sendReservationConfirmation(params: {
    * confirmed, so the count includes it : "this was your Nth visit".
    */
   const loyalty = params.userId
-    ? loyaltyProgressSentence(await getLoyaltyStatus(params.userId))
+    ? loyaltyProgressSentence(
+        await getLoyaltyStatus(params.userId),
+        Boolean(params.loyaltyReward),
+      )
     : "";
 
   /*
@@ -276,6 +279,8 @@ export async function sendReservationConfirmation(params: {
   const result = await sendTransactionalEmail({
     id: "reservation_confirmation",
     to: params.email,
+    // An answer lost after Resend accepted the mail must not send it twice.
+    idempotencyKey: `confirmation/${params.reservationId}`,
     attachments: [
       {
         filename: "rezervace.ics",
@@ -298,7 +303,7 @@ export async function sendReservationConfirmation(params: {
             : "zdarma (voucher)"
           : params.priceCents === null
             ? "v ceně členství"
-            : `${Math.round(params.priceCents / 100)} Kč`,
+            : formatMoney(params.priceCents),
     },
   });
   await record(
@@ -381,6 +386,7 @@ export async function sendOrderConfirmation(params: {
   const result = await sendTransactionalEmail({
     id: "order_confirmation",
     to: email,
+    idempotencyKey: dedupeKey,
     attachments: [
       {
         filename: "rezervace.ics",
@@ -438,6 +444,8 @@ export async function sendRescheduleConfirmation(params: {
       startsAt: params.startsAt,
       endsAt: params.endsAt,
       address: publicAddress(await getText("contact.address").catch(() => "")),
+      // One change is allowed; revision 1 replaces the original entry.
+      sequence: 1,
     }),
   );
 

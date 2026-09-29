@@ -147,3 +147,17 @@ test("the Google link carries the same instant and place", () => {
   );
   assert.equal(url.searchParams.get("location"), "Křížkova 424/23");
 });
+
+test("a changed term carries a higher revision so calendars replace the entry", async () => {
+  const { buildIcs, reservationCalendarEvent } =
+    await import("../../src/lib/helpers/ics");
+  const base = {
+    reservationId: "00000000-0000-4000-8000-000000000001",
+    startsAt: new Date("2026-10-05T08:00:00Z"),
+    endsAt: new Date("2026-10-05T09:15:00Z"),
+  };
+  assert.match(buildIcs(reservationCalendarEvent(base)), /\r\nSEQUENCE:0\r\n/);
+  const moved = buildIcs(reservationCalendarEvent({ ...base, sequence: 1 }));
+  assert.match(moved, /\r\nSEQUENCE:1\r\n/);
+  assert.match(moved, /\r\nLAST-MODIFIED:\d{8}T\d{6}Z\r\n/);
+});

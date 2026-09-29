@@ -13,6 +13,8 @@ import {
   publicAddress,
 } from "@/lib/content/site";
 import { formatMoney, formatTimeRange } from "@/lib/helpers/format";
+import { detailsHref } from "@/lib/helpers/booking-selection";
+import { StripUrlToken } from "@/components/site/strip-url-token";
 import { Container, Section } from "@/components/ui/container";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -46,7 +48,8 @@ type View =
       slots: ConfirmedSlot[];
       orderId: string | null;
     }
-  | { state: "processing"; retryHref: string }
+  | { state: "processing"; retryHref: string; creationUnknown: boolean }
+  | { state: "unpaid"; retryHref: string | null }
   | { state: "cancelled" | "invalid" };
 
 const dayFormat = new Intl.DateTimeFormat("cs-CZ", {
@@ -86,7 +89,17 @@ async function resolveView(params: {
       return {
         state: "processing",
         retryHref: `/rezervace/hotovo?${new URLSearchParams({ order_id: confirmation.orderId, ...tokenParam })}`,
+        creationUnknown: confirmation.creationUnknown,
       };
+    // Backing out of the gateway, or a declined card, is not a withdrawn
+    // booking: offer the same slots again, if they are still in the future.
+    if (confirmation.state === "cancelled" && confirmation.unpaid) {
+      const future = confirmation.starts.filter((at) => at > new Date());
+      return {
+        state: "unpaid",
+        retryHref: future.length > 0 ? detailsHref(future) : null,
+      };
+    }
     return { state: confirmation.state };
   }
   const confirmation = await booking.getBookingConfirmation(params);
@@ -111,6 +124,7 @@ async function resolveView(params: {
     return {
       state: "processing",
       retryHref: `/rezervace/hotovo?${new URLSearchParams({ reservation_id: confirmation.reservationId, ...tokenParam })}`,
+      creationUnknown: false,
     };
   return { state: confirmation.state };
 }
@@ -148,7 +162,10 @@ export default async function BookingDonePage({
           status,
           view.slots.filter((slot) => slot.loyaltyReward).length,
         )
-      : loyalty.loyaltyProgressSentence(status);
+      : loyalty.loyaltyProgressSentence(
+          status,
+          view.orderId ? Boolean(view.slots[0]?.loyaltyReward) : undefined,
+        );
   }
 
   const state = {
@@ -167,6 +184,11 @@ export default async function BookingDonePage({
       icon: TriangleAlert,
       title: "Rezervace byla zrušena",
       body: "Tento termín už není potvrzený. Pokud jste platbu odeslali, kontaktujte nás a neopakujte ji.",
+    },
+    unpaid: {
+      icon: TriangleAlert,
+      title: "Platba nebyla dokončena",
+      body: "Platba neproběhla, a proto jsme termíny uvolnili. Nic jste nezaplatili. Pokud o ně máte stále zájem, vyberte je prosím znovu.",
     },
     processing: {
       icon: Clock3,
@@ -201,6 +223,8 @@ export default async function BookingDonePage({
           quantity={view.slots.length}
         />
       ) : null}
+      {/* While payment is still being verified, a reload must keep working. */}
+      {view.state !== "processing" ? <StripUrlToken /> : null}
       <main id="main-content" tabIndex={-1}>
         <Section>
           <Container className="max-w-xl text-center">
@@ -219,7 +243,9 @@ export default async function BookingDonePage({
             ) : null}
             {view.state === "processing" ? (
               <Notice className="mt-7 text-left" role="status">
-                Stav platby průběžně ověřujeme. Platbu prosím neopakujte.
+                {view.creationUnknown
+                  ? "Platební bránu se nepodařilo spolehlivě otevřít. Pokud jste nic nezaplatili, nic nehradíte; stav ověřujeme a v případě potřeby se vám ozveme."
+                  : "Stav platby průběžně ověřujeme. Platbu prosím neopakujte."}
               </Notice>
             ) : null}
             {view.state === "confirmed" && many ? (
@@ -278,6 +304,9 @@ export default async function BookingDonePage({
                 <Button href={view.retryHref} variant="outline">
                   Ověřit stav platby
                 </Button>
+              ) : null}
+              {view.state === "unpaid" && view.retryHref ? (
+                <Button href={view.retryHref}>Vybrat termíny znovu</Button>
               ) : null}
               {session ? <Button href="/account">Můj účet</Button> : null}
               <Button

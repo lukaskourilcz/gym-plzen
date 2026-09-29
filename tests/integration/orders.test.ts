@@ -643,5 +643,115 @@ describe(
         ),
       );
     });
+
+    test("backing out of the gateway reads as unpaid and offers the same slots again", async () => {
+      const outcome = await startOrder({
+        userId: null,
+        starts: [slot(3), slot(4)],
+        details: details(),
+      });
+      if (outcome.kind !== "checkout") return assert.fail("expected checkout");
+      comgate.settle("TEST-0001", "CANCELLED");
+      const view = await getOrderConfirmation({
+        userId: null,
+        orderId: outcome.orderId,
+        token: outcome.token,
+      });
+      assert.equal(view.state, "cancelled");
+      if (view.state !== "cancelled") return;
+      assert.equal(view.unpaid, true);
+      assert.deepEqual(
+        view.starts.map((at) => at.getTime()),
+        [slot(3), slot(4)].map((at) => at.getTime()),
+      );
+    });
+
+    test("a member's order opens with its token even without the session", async () => {
+      await seedProfile(MEMBER);
+      const outcome = await startOrder({
+        userId: MEMBER.id,
+        starts: [slot(3)],
+        details: details({ email: MEMBER.email }),
+      });
+      if (outcome.kind !== "checkout") return assert.fail("expected checkout");
+      comgate.settle("TEST-0001", "PAID");
+      const view = await getOrderConfirmation({
+        userId: null,
+        orderId: outcome.orderId,
+        token: outcome.token,
+      });
+      assert.equal(view.state, "confirmed");
+      assert.equal(
+        (
+          await getOrderConfirmation({
+            userId: "33333333-3333-4333-8333-333333333333",
+            orderId: outcome.orderId,
+          })
+        ).state,
+        "invalid",
+      );
+    });
+
+    test("an order whose every slot was later cancelled no longer reads as confirmed", async () => {
+      const outcome = await startOrder({
+        userId: null,
+        starts: [slot(3)],
+        details: details(),
+      });
+      if (outcome.kind !== "checkout") return assert.fail("expected checkout");
+      comgate.settle("TEST-0001", "PAID");
+      await synchronizeComgatePayment("TEST-0001");
+      const [only] = await slotsOf(outcome.orderId);
+      await cancelReservation({ id: only!.id, reason: "test" });
+      const view = await getOrderConfirmation({
+        userId: null,
+        orderId: outcome.orderId,
+        token: outcome.token,
+      });
+      assert.equal(view.state, "cancelled");
+      if (view.state === "cancelled") assert.equal(view.unpaid, false);
+    });
+
+    test("the document is dated by the payment, not by when it is issued", async () => {
+      await setSetting("billing.send_documents", true);
+      await setSetting("billing.profile", {
+        legalName: "Ukázka Fitness s.r.o.",
+        street: "Americká 1234/56",
+        city: "Plzeň",
+        zip: "301 00",
+        ico: "12345678",
+        dic: "",
+        vatRatePercent: 0,
+        bankAccount: "",
+        registryNote: "",
+      });
+      const outcome = await startOrder({
+        userId: null,
+        starts: [slot(3), slot(4)],
+        details: details(),
+      });
+      await setSetting("billing.send_documents", false);
+      comgate.settle("TEST-0001", "PAID");
+      await synchronizeComgatePayment("TEST-0001");
+      const paidAt = new Date("2026-09-15T10:00:00Z");
+      await rows("update payment set paid_at = $1", [paidAt]);
+      const [first] = await slotsOf(outcome.orderId);
+      const { issueDocumentFor } =
+        await import("../../src/lib/services/invoices");
+      const { getReservation } =
+        await import("../../src/lib/services/reservations");
+      const issued = await issueDocumentFor(
+        (await getReservation(first!.id))!,
+        {
+          force: true,
+        },
+      );
+      assert.equal(issued.issued, true);
+      const [document] = await rows<{ supplied_at: Date; year: number }>(
+        "select supplied_at, year from invoice",
+      );
+      assert.equal(document?.supplied_at.getTime(), paidAt.getTime());
+      assert.equal(document?.year, 2026);
+    });
   },
 );

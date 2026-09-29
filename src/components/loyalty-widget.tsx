@@ -73,7 +73,7 @@ export function LoyaltyWidget({ status }: { status: LoyaltyStatus }) {
           <div>
             <div className="text-3xl font-extrabold">{status.totalEntries}</div>
             <div className="mt-1 text-xs text-ink-foreground/80">
-              celkem návštěv
+              započítaných vstupů
             </div>
           </div>
           <div>

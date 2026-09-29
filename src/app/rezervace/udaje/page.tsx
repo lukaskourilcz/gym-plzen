@@ -140,8 +140,29 @@ export default async function BookingDetailsPage({
   }
   const blocked = selection.length - bookable.length;
   const quote = await orders.quoteOrder({ userId, slots: bookable });
+  /*
+   * A slot the visitor already holds keeps the price it was held at (a reward
+   * or a voucher share); continuing that checkout charges exactly that, so a
+   * fresh quote here would show one amount and charge another.
+   */
   const priceAt = new Map(
-    quote.slots.map((slot) => [slot.startsAt.getTime(), slot]),
+    quote.slots.map((slot) => {
+      const held = ownAt.get(slot.startsAt.getTime());
+      return [
+        slot.startsAt.getTime(),
+        held?.status === "pending"
+          ? {
+              ...slot,
+              priceCents: held.priceCents ?? 0,
+              isReward: Boolean(held.loyaltyReward),
+            }
+          : slot,
+      ] as const;
+    }),
+  );
+  const totalCents = [...priceAt.values()].reduce(
+    (sum, slot) => sum + slot.priceCents,
+    0,
   );
 
   const member = session ? await members.getMember(session.user.id) : null;
@@ -262,9 +283,7 @@ export default async function BookingDetailsPage({
                 <p className="text-sm">
                   <span className="font-extrabold">
                     Celkem za {termCount(bookable.length)}:{" "}
-                    {quote.totalCents === 0
-                      ? "zdarma"
-                      : formatMoney(quote.totalCents)}
+                    {totalCents === 0 ? "zdarma" : formatMoney(totalCents)}
                   </span>
                   <span className="block text-muted-foreground">
                     Cena platí za celý prostor, nikoli za osobu.
@@ -318,7 +337,7 @@ export default async function BookingDetailsPage({
               </Notice>
             )}
 
-            {!paymentsAvailable && quote.totalCents > 0 ? (
+            {!paymentsAvailable && totalCents > 0 ? (
               <Notice className="mt-6">
                 Online platby se připravují. Můžete si vytvořit účet a
                 prohlédnout termíny. Rezervace bude platná až po úhradě.
@@ -333,7 +352,7 @@ export default async function BookingDetailsPage({
                   .join(",")}
                 paymentsAvailable={paymentsAvailable}
                 startsISO={bookable.map((item) => item.startsAt.toISOString())}
-                totalCents={quote.totalCents}
+                totalCents={totalCents}
                 blocked={blocked > 0}
                 canSavePhone={Boolean(member) && !session?.user.isDemo}
                 defaultValues={{

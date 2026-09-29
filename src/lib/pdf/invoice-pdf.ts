@@ -54,9 +54,12 @@ const RULE = "#c9d3ce";
  * 289 Kč at 21% gives a base of 238,84 Kč, so rounding the rows to whole crowns
  * would both misstate the base and let base + VAT print as one crown more than
  * the total. Documents carrying a breakdown therefore use two decimals
- * throughout; without VAT every amount is a whole number of crowns already.
+ * throughout. Without VAT an amount is shown in whole crowns only when it is
+ * one: a voucher split over an order's slots can leave haléře, and rounding
+ * those would print lines that do not add up to what was charged.
  */
 function czk(cents: number, decimals: boolean): string {
+  decimals ||= cents % 100 !== 0;
   const value = cents / 100;
   return `${value.toLocaleString("cs-CZ", {
     minimumFractionDigits: decimals ? 2 : 0,
@@ -292,7 +295,7 @@ export async function renderInvoicePdf(doc: InvoiceDocument): Promise<Buffer> {
     .font(regular)
     .fontSize(9)
     .fillColor(MUTED)
-    .text("Uhrazeno platební kartou.", left, pdf.y + 16, {
+    .text("Uhrazeno online přes platební bránu Comgate.", left, pdf.y + 16, {
       width,
       align: "right",
     });

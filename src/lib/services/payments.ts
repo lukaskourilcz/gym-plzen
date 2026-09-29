@@ -270,6 +270,24 @@ export async function hasOpenOrderPayment(orderId: string): Promise<boolean> {
   return Boolean(row);
 }
 
+/** An attempt whose creation at the gateway timed out with no answer. */
+export async function hasUnknownPaymentCreation(
+  orderId: string,
+): Promise<boolean> {
+  const [row] = await db
+    .select({ id: payment.id })
+    .from(payment)
+    .where(
+      and(
+        eq(payment.orderId, orderId),
+        eq(payment.status, "processing"),
+        eq(payment.failureReason, "creation_unknown"),
+      ),
+    )
+    .limit(1);
+  return Boolean(row);
+}
+
 /** The single-reservation counterpart of `hasOpenOrderPayment`. */
 export async function hasOpenReservationPayment(
   reservationId: string,
@@ -638,7 +656,7 @@ async function synchronizeOrderPayment(
   orderId: string,
   providerId: string,
 ): Promise<boolean> {
-  return withOrderLock(orderId, async () => {
+  const paid = await withOrderLock(orderId, async () => {
     const outcome = await getComgatePayment(providerId);
     if (!outcome.found) throw new Error("Payment status unavailable");
     if (!paymentMatches(known, outcome.payment))
@@ -744,11 +762,16 @@ async function synchronizeOrderPayment(
       .set({ lastCheckedAt: new Date() })
       .where(eq(payment.id, known.id));
     await deliverPendingAlerts();
-    if (snapshot.state === "PAID")
-      for (const slot of await listOrderReservations(orderId))
-        if (slot.status === "confirmed") await fulfillReservation(slot.id);
-    return true;
+    return snapshot.state === "PAID";
   });
+  // Fulfilment runs after the order lock is released: it takes each slot's
+  // lock and the order-fulfilment lock, and holding three pooled lock
+  // connections per confirmation could exhaust the pool. Everything it needs
+  // is already committed, and the watchdog retries it if this process dies.
+  if (paid)
+    for (const slot of await listOrderReservations(orderId))
+      if (slot.status === "confirmed") await fulfillReservation(slot.id);
+  return true;
 }
 
 export async function refreshReservationPayment(reservationId: string) {

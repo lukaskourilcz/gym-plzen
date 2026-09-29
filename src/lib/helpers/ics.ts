@@ -19,6 +19,11 @@ export interface CalendarEvent {
   location?: string;
   description?: string;
   url?: string;
+  /**
+   * Revision of the event. Calendars (Outlook, Google) replace an event with
+   * the same UID only when this grows, so a changed term carries 1.
+   */
+  sequence?: number;
   /** Injectable for tests; defaults to now. */
   stamp?: Date;
 }
@@ -89,6 +94,8 @@ export function buildIcs(
       "BEGIN:VEVENT",
       `UID:${event.uid}`,
       `DTSTAMP:${toIcsUtc(event.stamp ?? new Date())}`,
+      `LAST-MODIFIED:${toIcsUtc(event.stamp ?? new Date())}`,
+      `SEQUENCE:${event.sequence ?? 0}`,
       `DTSTART:${toIcsUtc(event.start)}`,
       `DTEND:${toIcsUtc(event.end)}`,
       `SUMMARY:${escapeText(event.summary)}`,
@@ -135,6 +142,7 @@ export function reservationCalendarEvent(params: {
   startsAt: Date;
   endsAt: Date;
   address?: string | null;
+  sequence?: number;
   stamp?: Date;
 }): CalendarEvent {
   return {
@@ -145,6 +153,7 @@ export function reservationCalendarEvent(params: {
     location: params.address ?? undefined,
     description:
       "Soukromý trénink v NAVI Private Gym. Vstupní kód vám pošleme e-mailem před začátkem rezervace.",
+    ...(params.sequence ? { sequence: params.sequence } : {}),
     stamp: params.stamp,
   };
 }

@@ -1,4 +1,4 @@
-import { and, eq, inArray, like, lte, asc } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, like, lte } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { messageDelivery, reservation } from "@/lib/db/schema";
 import { withReservationLock } from "./operation-lock";
@@ -65,6 +65,10 @@ export async function retryCancellationEmails() {
         like(messageDelivery.dedupeKey, "cancellation/%"),
         inArray(messageDelivery.status, ["queued", "failed"]),
         lte(messageDelivery.updatedAt, new Date(Date.now() - 5 * 60_000)),
+        // Retries stop after a day, inside Resend's idempotency window: an
+        // address that still bounces is left to the operator's open alert,
+        // and an earlier send that did land can never be repeated.
+        gt(messageDelivery.createdAt, new Date(Date.now() - 24 * 3_600_000)),
       ),
     )
     .orderBy(asc(messageDelivery.updatedAt))

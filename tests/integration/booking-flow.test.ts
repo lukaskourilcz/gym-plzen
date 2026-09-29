@@ -223,7 +223,10 @@ describe(
       });
       assert.equal(confirmation.state, "confirmed");
       assert.equal(resend.sent.length, 1);
-      assert.match(resend.sent[0]!.text ?? "", /Tohle byla vaše 1\. návštěva/);
+      assert.match(
+        resend.sent[0]!.text ?? "",
+        /Toto je váš 1\. započítaný vstup/,
+      );
     });
 
     test("a member's tenth entry is free without any voucher", async () => {
@@ -405,7 +408,7 @@ describe(
       assert.equal(attempt?.status, "succeeded");
       assert.ok(attempt?.paid_at);
       assert.equal(resend.sent.length, 1);
-      assert.match(resend.sent[0]!.text ?? "", /Cena: 229 Kč|Cena: 199 Kč/);
+      assert.match(resend.sent[0]!.text ?? "", /Cena: 229\sKč/);
 
       // A second delivery of the same notification changes nothing.
       assert.equal(await synchronizeComgatePayment("TEST-0001"), true);

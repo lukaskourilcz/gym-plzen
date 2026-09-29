@@ -250,21 +250,27 @@ export function entriesRemainingPhrase(n: number): string {
  * the surrounding template must collapse the empty paragraph.
  *
  * Call it with the status *after* the reservation being confirmed is counted.
+ * Confirmed future bookings count, so the visit may not have happened yet:
+ * the sentence speaks of counted entries, not of past visits. Whether this
+ * entry was the free one comes from the reservation itself when known (a
+ * reward can be skipped when two checkouts raced), otherwise from the cycle.
  */
-export function loyaltyProgressSentence(status: LoyaltyStatus): string {
-  const { totalEntries, positionInCycle, entriesUntilFree, cadence } = status;
+export function loyaltyProgressSentence(
+  status: LoyaltyStatus,
+  thisEntryFree: boolean = status.positionInCycle === 0,
+): string {
+  const { totalEntries, entriesUntilFree, cadence } = status;
   if (totalEntries <= 0) return "";
 
-  const visit = `Tohle byla vaše ${totalEntries}. návštěva`;
+  const entry = `Toto je váš ${totalEntries}. započítaný vstup`;
 
-  // A completed cycle: this very entry was the free one.
-  if (positionInCycle === 0) {
-    return `${visit} a byla zdarma. Další vstup zdarma vás čeká po ${cadence} návštěvách.`;
+  if (thisEntryFree) {
+    return `${entry} a máte ho zdarma. Další vstup zdarma vás čeká po ${cadence} vstupech.`;
   }
   if (status.nextEntryIsFree) {
-    return `${visit}. Příští vstup máte zdarma.`;
+    return `${entry}. Příští vstup máte zdarma.`;
   }
-  return `${visit}, do vstupu zdarma ${entriesRemainingPhrase(entriesUntilFree)}.`;
+  return `${entry}, do vstupu zdarma ${entriesRemainingPhrase(entriesUntilFree)}.`;
 }
 
 /**
