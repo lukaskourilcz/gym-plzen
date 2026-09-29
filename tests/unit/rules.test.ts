@@ -29,3 +29,15 @@ test("manually wrapped CMS clauses keep their continuation text", () => {
 
   assert.equal(section?.clauses[0]?.text, "První část věty. Pokračování věty.");
 });
+
+test("house rules agree with the terms on capacity and storno", async () => {
+  const { DEFAULT_RULES_BODY } = await import("../../src/lib/content/rules");
+  assert.doesNotMatch(DEFAULT_RULES_BODY, /6 osob/);
+  assert.match(DEFAULT_RULES_BODY, /maximálně 5 osob/);
+  assert.match(DEFAULT_RULES_BODY, /kapacitu \(5 osob\)/);
+  assert.doesNotMatch(DEFAULT_RULES_BODY, /kreditu/);
+  assert.match(
+    DEFAULT_RULES_BODY,
+    /zaplacená částka se v takovém případě nevrací/,
+  );
+});

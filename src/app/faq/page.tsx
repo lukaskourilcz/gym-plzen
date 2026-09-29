@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { footerProps, loadSiteContent } from "@/lib/content/site";
+import { FAQ_NUMBERS, footerProps, loadSiteContent } from "@/lib/content/site";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site/site-header";
@@ -19,8 +19,7 @@ export const revalidate = 300;
 
 export default async function FaqPage() {
   const content = await loadSiteContent();
-  const items = Array.from({ length: 21 }, (_, index) => {
-    const number = index + 1;
+  const items = FAQ_NUMBERS.map((number) => {
     return {
       question: content.get(`faq.${number}.question` as SiteContentKey),
       answer: content.get(`faq.${number}.answer` as SiteContentKey),

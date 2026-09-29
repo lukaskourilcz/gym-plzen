@@ -20,6 +20,10 @@ import { after, before, beforeEach, describe, test } from "node:test";
 import { startOrder } from "../../src/lib/services/orders";
 import { synchronizeComgatePayment } from "../../src/lib/services/payments";
 import { rescheduleReservation } from "../../src/lib/services/rescheduling";
+import {
+  CUSTOMER_CANCEL_REASON,
+  cancelByCustomer,
+} from "../../src/lib/services/reservations";
 import { checkAvailability } from "../../src/lib/services/availability";
 import {
   addDaysToDateKey,
@@ -196,6 +200,65 @@ describe(
         (await rows("select * from reservation_reschedule")).length,
         0,
         "a refused change does not use up the one allowed change",
+      );
+    });
+
+    test("the customer's own storno frees the slot, refunds nothing and is logged", async () => {
+      const id = await paidBooking(slot(5));
+      await cancelByCustomer({ reservationId: id, userId: MEMBER.id });
+      const [row] = await rows<{ status: string; cancel_reason: string }>(
+        "select status, cancel_reason from reservation where id = $1",
+        [id],
+      );
+      assert.equal(row?.status, "cancelled");
+      assert.equal(row?.cancel_reason, CUSTOMER_CANCEL_REASON);
+      const free = await checkAvailability(
+        slot(5),
+        new Date(slot(5).getTime() + 75 * 60_000),
+      );
+      assert.equal(free.available, true, "the slot is back in the calendar");
+      assert.equal(
+        (
+          await rows(
+            "select * from system_alert where dedupe_key like 'refund-needed:%'",
+          )
+        ).length,
+        0,
+        "no refund is due, so none is requested",
+      );
+      assert.equal(
+        resend.sent.filter((mail) => mail.to === MEMBER.email).length,
+        0,
+        "no 'your booking was cancelled' e-mail for the customer's own storno",
+      );
+      const log = await rows<{ actor_type: string; summary: string }>(
+        "select actor_type, summary from activity_log where reservation_id = $1 and action = 'reservation.cancelled'",
+        [id],
+      );
+      assert.equal(log.length, 1);
+      assert.equal(log[0]?.actor_type, "customer");
+      assert.match(log[0]!.summary, /Zákazník zrušil rezervaci/);
+      assert.match(log[0]!.summary, /nevrací/);
+    });
+
+    test("a storno is refused for someone else's, a cancelled or a started booking", async () => {
+      const id = await paidBooking(slot(5));
+      await assert.rejects(
+        cancelByCustomer({ reservationId: id, userId: STRANGER }),
+        { message: "Rezervaci se nepodařilo najít." },
+      );
+      await assert.rejects(
+        cancelByCustomer({
+          reservationId: id,
+          userId: MEMBER.id,
+          now: new Date(slot(5).getTime() + 60_000),
+        }),
+        { message: "Probíhající nebo uplynulý termín už nelze zrušit." },
+      );
+      await cancelByCustomer({ reservationId: id, userId: MEMBER.id });
+      await assert.rejects(
+        cancelByCustomer({ reservationId: id, userId: MEMBER.id }),
+        { message: "Zrušit lze pouze potvrzenou rezervaci." },
       );
     });
   },

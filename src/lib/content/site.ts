@@ -209,9 +209,6 @@ export const SITE_DEFAULTS = {
   "faq.2.question": "Dá se u vás zaparkovat?",
   "faq.2.answer":
     "Ano, přímo před studiem je k dispozici dostatek parkovacích míst.",
-  "faq.3.question": "Jsem začátečník, mohu si vaše studio pronajmout?",
-  "faq.3.answer":
-    "Samozřejmě. Studio je navrženo pro každého, od úplných začátečníků po zkušené sportovce. Pokud si nebudete vědět rady s ovládáním strojů, můžete přijít s vlastním trenérem nebo později využít připravovaného videorádce.",
   "faq.4.question": "Je vstup do studia omezen věkem?",
   "faq.4.answer":
     "Ano, rezervaci může vytvořit pouze osoba starší 18 let. V jejím doprovodu však mohou přijít také děti nebo mladiství.",
@@ -236,10 +233,10 @@ export const SITE_DEFAULTS = {
     "Ihned zavolejte na telefonní číslo uvedené v kontaktech. Problém vyřešíme na dálku.",
   "faq.11.question": "Jaké jsou způsoby platby?",
   "faq.11.answer":
-    "Rezervace je platná až po zaplacení. Online platby přes Comgate připravujeme; dostupné platební metody se zobrazí při úhradě.",
+    "Rezervace je platná až po zaplacení. Platí se online přes platební bránu Comgate; dostupné platební metody uvidíte při úhradě.",
   "faq.12.question": "Je možné rezervaci stornovat?",
   "faq.12.answer":
-    "Ano. Bezplatné storno nebo změnu termínu lze provést nejpozději 24 hodin před začátkem rezervace.",
+    "Termín rezervace můžete jednou bezplatně změnit nejpozději 24 hodin před jeho začátkem. Rezervaci můžete také kdykoli před začátkem zrušit v sekci Můj účet; zaplacená cena se v takovém případě nevrací. Pokud jste rezervovali bez registrace, napište nám na e-mail v kontaktech.",
   "faq.13.question": "Jaká je otevírací doba NAVI Private Gym?",
   "faq.13.answer": "Otevřeno máme každý den od 5:00 do 23:45.",
   "faq.14.question": "Jak je ve studiu řešena bezpečnost?",
@@ -268,6 +265,15 @@ export const SITE_DEFAULTS = {
   "faq.21.answer":
     "Ano. V kalendáři vyberete až 10 termínů, i v různých dnech, a zaplatíte je jednou platbou. Cena je součtem cen jednotlivých termínů a slevový kód se uplatní na celou objednávku. Vstupní kód dostanete ke každému termínu zvlášť a změnu nebo storno řešíte u každého termínu samostatně.",
 } as const;
+
+/**
+ * The FAQ entries shown, in order. Content is keyed by number so edits saved
+ * in the CMS stay attached to their question; a retired question (3, the
+ * beginner/video-guide one, removed 29. 9. 2026) is simply left out here.
+ */
+export const FAQ_NUMBERS = [
+  1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+] as const;
 
 /**
  * Early seed values that were intentionally superseded by the client-approved

@@ -663,7 +663,7 @@ test.describe("Public site", () => {
     await expect(
       page.getByRole("heading", { name: "Často kladené otázky" }),
     ).toBeVisible();
-    await expect(page.locator("details")).toHaveCount(21);
+    await expect(page.locator("details")).toHaveCount(20);
     const firstFaqItem = page
       .locator("details")
       .filter({ hasText: "Jak se k nám dostanete?" });

@@ -26,6 +26,7 @@ export const ACTIVITY_ACTIONS = {
   "voucher.activated": "Voucher aktivován",
   "voucher.deactivated": "Voucher deaktivován",
   "member.registered": "Nová registrace",
+  "newsletter.unsubscribed": "Odhlášení z novinek",
   "member.profile_updated": "Profil člena upraven",
   "member.role_changed": "Role člena změněna",
   "settings.operations_saved": "Provozní nastavení uloženo",

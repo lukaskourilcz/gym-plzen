@@ -22,7 +22,7 @@ Renáta Janoušková, IČO: 29619998, sídlo: Úhlavská 546/2, 326 00, Plzeň -
 1.3. Kontaktní údaje Studia:
 Web: www.navigym.cz
 E-mail: info@navigym.cz
-telefon: +420 731 737 557 | +420 721 560 150
+telefon: +420 732 817 217
 web: [www.navigym.cz](https://www.navigym.cz/)
 
 1.4. Tyto všeobecné obchodní podmínky (dále jen „VOP“) upravují práva a povinnosti vznikající v souvislosti s rezervací a užíváním Studia.
@@ -103,7 +103,7 @@ web: [www.navigym.cz](https://www.navigym.cz/)
 
 7. POČET OSOB A EXTERNÍ TRENÉŘI
 
-7.1. Maximální počet osob současně přítomných ve Studiu v rámci jedné rezervace činí 4 osoby, není-li u konkrétní služby stanoveno jinak.
+7.1. Maximální počet osob současně přítomných ve Studiu v rámci jedné rezervace činí 5 osob (včetně dětí), není-li u konkrétní služby stanoveno jinak.
 
 7.2. Do maximálního počtu osob se započítává také externí trenér.
 
@@ -125,7 +125,7 @@ web: [www.navigym.cz](https://www.navigym.cz/)
 
 8.3. Uhrazená cena původní rezervace bude použita na náhradní termín.
 
-8.4. Je-li cena nového termínu vyšší, je Klient povinen rozdíl doplatit. Je-li cena nového termínu nižší, rozdíl se nevrací, není-li Poskytovatelem stanoveno jinak.
+8.4. Cena rezervace se změnou termínu nemění, a to ani tehdy, platí-li pro nový termín jiná cena. Nic se nedoplácí ani nevrací.
 
 8.5. Méně než 24 hodin před začátkem rezervovaného termínu již nelze rezervaci bezplatně změnit.
 
@@ -136,6 +136,8 @@ web: [www.navigym.cz](https://www.navigym.cz/)
 8.8. Nemůže-li být rezervace uskutečněna z důvodu na straně Poskytovatele, bude Klientovi nabídnut náhradní termín. Nebude-li možné vhodný náhradní termín dohodnout, bude Klientovi uhrazená cena vrácena.
 
 8.9. Obsahuje-li objednávka více termínů, posuzuje se změna i zrušení podle tohoto článku u každého termínu samostatně a ostatní termíny objednávky tím nejsou dotčeny. Vrací-li se uhrazená cena, vrací se cena připadající na dotčený termín.
+
+8.10. Klient může potvrzenou rezervaci kdykoli před jejím začátkem zrušit ve svém uživatelském účtu v rezervačním systému (Můj účet). Zrušením se termín uvolní pro ostatní klienty a vstupní kód přestane platit. Uhrazená cena se při zrušení Klientem nevrací. Ustanovení čl. 8.8 tím není dotčeno.
 
 9. ODSTOUPENÍ SPOTŘEBITELE
 
@@ -293,7 +295,7 @@ jiné jednání, které může způsobit závažnou škodu nebo újmu.
 
 20.2. Subjektem mimosoudního řešení spotřebitelských sporů je Česká obchodní inspekce, Štěpánská 567/15, 120 00 Praha 2.
 
-20.3. Informace o mimosoudním řešení spotřebitelských sporů jsou dostupné prostřednictvím [České obchodní inspekce](https://coi.gov.cz/informace-o-adr/?utm_source=chatgpt.com).
+20.3. Informace o mimosoudním řešení spotřebitelských sporů jsou dostupné prostřednictvím [České obchodní inspekce](https://coi.gov.cz/informace-o-adr/).
 
 21. ZÁVĚREČNÁ USTANOVENÍ
 

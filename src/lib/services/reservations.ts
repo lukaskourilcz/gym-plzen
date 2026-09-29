@@ -21,7 +21,10 @@ import {
   messageDelivery,
   profiles,
 } from "@/lib/db/schema";
-import { recordIn as recordActivityIn } from "./activity";
+import {
+  record as recordActivity,
+  recordIn as recordActivityIn,
+} from "./activity";
 import type { NewReservation, Reservation } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
 import { PG_EXCLUSION_VIOLATION, pgErrorCode } from "@/lib/helpers/pg-error";
@@ -155,19 +158,27 @@ export async function updateReservationPrice(
 }
 
 /** Cancel a reservation, recording who/why. */
-export async function cancelReservation(params: {
+export interface CancelReservationParams {
   id: string;
   reason?: string;
   byAdminId?: string;
-}): Promise<void> {
+  /**
+   * The customer's own storno (VOP 8.10): they chose it in their account and
+   * see it confirmed there, so no "your booking was cancelled" e-mail, and no
+   * refund is due, so no refund alert either.
+   */
+  byCustomer?: boolean;
+}
+
+export async function cancelReservation(
+  params: CancelReservationParams,
+): Promise<void> {
   return withReservationLock(params.id, () => cancelReservationLocked(params));
 }
 
-async function cancelReservationLocked(params: {
-  id: string;
-  reason?: string;
-  byAdminId?: string;
-}): Promise<void> {
+async function cancelReservationLocked(
+  params: CancelReservationParams,
+): Promise<void> {
   // Read it before it changes: only a confirmed reservation disappearing is
   // news for the operator. A pending hold that expired or a rejected voucher
   // is the system tidying up after itself.
@@ -194,7 +205,7 @@ async function cancelReservationLocked(params: {
         updatedAt: new Date(),
       })
       .where(eq(reservation.id, params.id));
-    if (before.status === "confirmed" && email) {
+    if (before.status === "confirmed" && email && !params.byCustomer) {
       await tx
         .insert(messageDelivery)
         .values({
@@ -241,7 +252,7 @@ async function cancelReservationLocked(params: {
       ? (before.priceCents ?? 0)
       : paid.amountCents
     : 0;
-  if (paid && paidForSlot > 0)
+  if (paid && paidForSlot > 0 && !params.byCustomer)
     await raiseAlert({
       severity: "critical",
       dedupeKey: `refund-needed:${params.id}`,
@@ -273,6 +284,48 @@ async function cancelReservationLocked(params: {
       reservation: before,
       reason: params.reason,
     });
+}
+
+export const CUSTOMER_CANCEL_REASON = "Zrušeno zákazníkem (bez vrácení platby)";
+
+/**
+ * The customer cancels their own confirmed booking before it starts (VOP
+ * 8.10): the slot goes back to the calendar, any door code is revoked, and the
+ * price is not refunded. Recorded in the activity log like every storno.
+ */
+export async function cancelByCustomer(params: {
+  reservationId: string;
+  userId: string;
+  actorLabel?: string | null;
+  now?: Date;
+}): Promise<Reservation> {
+  return withReservationLock(params.reservationId, async () => {
+    const row = await getReservation(params.reservationId);
+    // Do not reveal whether an arbitrary reservation id exists.
+    if (!row || row.userId !== params.userId)
+      throw new ActionError("Rezervaci se nepodařilo najít.");
+    if (row.status !== "confirmed")
+      throw new ActionError("Zrušit lze pouze potvrzenou rezervaci.");
+    if (row.startsAt <= (params.now ?? new Date()))
+      throw new ActionError(
+        "Probíhající nebo uplynulý termín už nelze zrušit.",
+      );
+    await cancelReservation({
+      id: row.id,
+      reason: CUSTOMER_CANCEL_REASON,
+      byCustomer: true,
+    });
+    await recordActivity({
+      action: "reservation.cancelled",
+      actorType: "customer",
+      actorId: params.userId,
+      actorLabel: params.actorLabel ?? row.contactEmail,
+      memberId: params.userId,
+      reservationId: row.id,
+      summary: `Zákazník zrušil rezervaci na ${formatDateTime(row.startsAt)}; termín se uvolnil, platba${row.priceCents ? ` ${formatMoney(row.priceCents, row.currency)}` : ""} se nevrací.`,
+    });
+    return row;
+  });
 }
 
 /**
