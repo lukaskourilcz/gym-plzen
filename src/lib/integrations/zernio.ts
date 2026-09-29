@@ -1,9 +1,33 @@
 import { requireEnv } from "@/lib/env";
 import { HttpError, httpRequest } from "@/lib/helpers/http";
+import { logger } from "@/lib/helpers/logger";
 import {
   zernioAccessPayload,
   zernioMessageId,
 } from "@/lib/helpers/zernio-access";
+
+/** The provider's error text with every run of digits removed (PINs, phones). */
+export function redactedReason(body: unknown): string {
+  const record =
+    body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+  const nested =
+    record.error && typeof record.error === "object"
+      ? (record.error as Record<string, unknown>)
+      : {};
+  const text = [
+    record.code,
+    record.error && typeof record.error !== "object" ? record.error : null,
+    record.message,
+    nested.code,
+    nested.message,
+    nested.type,
+  ]
+    .filter((part) => typeof part === "string" || typeof part === "number")
+    .join(" | ");
+  return (text || (typeof body === "string" ? body : ""))
+    .replace(/\d+/g, "#")
+    .slice(0, 300);
+}
 
 /** No automatic POST retries: a timeout may mean Meta already accepted the PIN. */
 export async function sendZernioAccessCode(
@@ -40,7 +64,12 @@ export async function sendZernioAccessCode(
         };
   } catch (e) {
     if (e instanceof HttpError) {
-      // Provider responses may echo template variables (including the PIN).
+      // Provider responses may echo template variables (including the PIN),
+      // so only a redacted summary of the reason is ever logged.
+      logger.warn("Zernio rejected a WhatsApp message", {
+        status: e.status,
+        reason: redactedReason(e.body),
+      });
       return { sent: false as const, error: `zernio_http_${e.status}` };
     }
     return {
