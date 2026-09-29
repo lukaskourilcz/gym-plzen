@@ -8,12 +8,14 @@ import {
 import { before, after, beforeEach, describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { env } from "../../src/lib/env";
+import { raiseAlert } from "../../src/lib/services/alerts";
 import { reconcileReservationWhatsApp } from "../../src/lib/services/whatsapp-delivery";
 
 describe("WhatsApp reconciliation fairness", { skip: !databaseReady }, () => {
   const savedFetch = globalThis.fetch;
   const gets: string[] = [];
   const posts: string[] = [];
+  let onGet: ((url: URL) => Promise<Response> | Response) | null = null;
   before(async () => {
     await startProviders();
     env.ZERNIO_ACCOUNT_ID = "local-account";
@@ -25,6 +27,7 @@ describe("WhatsApp reconciliation fairness", { skip: !databaseReady }, () => {
       if (url.hostname !== "zernio.com") return savedFetch(input, init);
       if (init?.method === "POST") posts.push(url.pathname);
       else gets.push(url.pathname);
+      if (init?.method !== "POST" && onGet) return onGet(url);
       return Response.json({
         messages: [
           {
@@ -47,6 +50,7 @@ describe("WhatsApp reconciliation fairness", { skip: !databaseReady }, () => {
     await resetDatabase();
     gets.length = 0;
     posts.length = 0;
+    onGet = null;
   });
 
   async function seedDelivery(index: number, ambiguous: boolean) {
@@ -66,7 +70,10 @@ describe("WhatsApp reconciliation fairness", { skip: !databaseReady }, () => {
         JSON.stringify(
           ambiguous
             ? { submitted: true, retrySafe: false }
-            : { conversationId: "local-conversation", submitted: true },
+            : {
+                conversationId: `local-conversation-${index}`,
+                submitted: true,
+              },
         ),
         index,
       ],
@@ -101,5 +108,72 @@ describe("WhatsApp reconciliation fairness", { skip: !databaseReady }, () => {
     assert.equal(row?.status, "delivered");
     assert.equal(gets.length, 1);
     assert.equal(posts.length, 0);
+  });
+
+  test("failed readbacks rotate; a later valid PIN is not starved", async () => {
+    for (let index = 0; index < 12; index++) await seedDelivery(index, false);
+    const deliverable = await seedDelivery(12, false);
+    onGet = (url) => {
+      if (!url.pathname.includes("local-conversation-12"))
+        return Response.json({ message: "temporary outage" }, { status: 503 });
+      return Response.json({
+        messages: [
+          {
+            id: "local-message",
+            accountId: "local-account",
+            direction: "outgoing",
+            deliveryStatus: "delivered",
+          },
+        ],
+      });
+    };
+    await reconcileReservationWhatsApp();
+    await reconcileReservationWhatsApp();
+    const [row] = await rows<{ status: string }>(
+      "select status from message_delivery where id = $1",
+      [deliverable],
+    );
+    assert.equal(row?.status, "delivered");
+    assert.equal(posts.length, 0);
+  });
+
+  test("a readback for an old attempt cannot overwrite a newer WhatsApp attempt", async () => {
+    const id = await seedDelivery(2, false);
+    const [original] = await rows<{ reservation_id: string }>(
+      "select reservation_id from message_delivery where id = $1",
+      [id],
+    );
+    await raiseAlert({
+      title: "Kontrola WhatsAppu",
+      dedupeKey: `whatsapp:${original!.reservation_id}`,
+    });
+    onGet = async () => {
+      await rows(
+        "update message_delivery set provider_message_id = 'new-message', provider_response = '{\"conversationId\":\"new-conversation\",\"submitted\":true}'::jsonb, status = 'queued' where id = $1",
+        [id],
+      );
+      return Response.json({
+        messages: [
+          {
+            id: "local-message",
+            accountId: "local-account",
+            direction: "outgoing",
+            deliveryStatus: "delivered",
+          },
+        ],
+      });
+    };
+    await reconcileReservationWhatsApp();
+    const [row] = await rows<{ status: string; provider_message_id: string }>(
+      "select status, provider_message_id from message_delivery where id = $1",
+      [id],
+    );
+    const [alert] = await rows<{ resolved_at: Date | null }>(
+      "select resolved_at from system_alert where dedupe_key = $1",
+      [`whatsapp:${original!.reservation_id}`],
+    );
+    assert.equal(row?.status, "queued");
+    assert.equal(row?.provider_message_id, "new-message");
+    assert.equal(alert?.resolved_at, null);
   });
 });

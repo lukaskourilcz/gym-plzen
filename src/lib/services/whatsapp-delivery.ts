@@ -191,11 +191,24 @@ export async function reconcileReservationWhatsApp() {
     }
     try {
       await withReservationLock(message.reservationId, async () => {
+        const [current] = await db
+          .select()
+          .from(messageDelivery)
+          .where(eq(messageDelivery.id, message.id));
+        const currentMetadata = current?.providerResponse as {
+          conversationId?: string;
+        } | null;
+        if (
+          current?.providerMessageId !== message.providerMessageId ||
+          currentMetadata?.conversationId !== metadata.conversationId ||
+          !["sent", "queued"].includes(current.status)
+        )
+          return;
         const result = await readZernioDelivery(
           metadata.conversationId!,
           message.providerMessageId!,
         );
-        await db
+        const changed = await db
           .update(messageDelivery)
           .set({
             status: result.status === "unknown" ? "sent" : result.status,
@@ -215,7 +228,15 @@ export async function reconcileReservationWhatsApp() {
             },
             updatedAt: new Date(),
           })
-          .where(eq(messageDelivery.id, message.id));
+          .where(
+            and(
+              eq(messageDelivery.id, message.id),
+              eq(messageDelivery.providerMessageId, message.providerMessageId!),
+              inArray(messageDelivery.status, ["sent", "queued"]),
+            ),
+          )
+          .returning({ id: messageDelivery.id });
+        if (changed.length === 0) return;
         if (result.status === "failed")
           await raiseAlert({
             dedupeKey: `whatsapp:${message.reservationId}`,
@@ -234,7 +255,13 @@ export async function reconcileReservationWhatsApp() {
       await db
         .update(messageDelivery)
         .set({ updatedAt: new Date() })
-        .where(eq(messageDelivery.id, message.id));
+        .where(
+          and(
+            eq(messageDelivery.id, message.id),
+            eq(messageDelivery.providerMessageId, message.providerMessageId!),
+            inArray(messageDelivery.status, ["sent", "queued"]),
+          ),
+        );
     }
   }
   const candidates = await db
