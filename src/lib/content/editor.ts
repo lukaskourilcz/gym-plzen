@@ -1,4 +1,5 @@
-import { FAQ_NUMBERS } from "./site";
+// Dependency-free on purpose: this map is bundled into a client component.
+import { FAQ_NUMBERS } from "./faq";
 
 export type ContentEditorKey = string;
 
