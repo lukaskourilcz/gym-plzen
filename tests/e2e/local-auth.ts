@@ -12,10 +12,15 @@ export function createLocalAuth(port: number) {
     password: string;
     user_metadata: Record<string, unknown>;
     created_at: string;
+    confirmed_at: string | null;
   };
   const users = new Map<string, User>();
   const sessions = new Map<string, string>();
   const refreshTokens = new Map<string, string>();
+  const emailTokens = new Map<
+    string,
+    { userId: string; type: "signup" | "recovery" }
+  >();
   const publicUser = (user: User) => ({
     id: user.id,
     email: user.email,
@@ -24,7 +29,7 @@ export function createLocalAuth(port: number) {
     aud: "authenticated",
     role: "authenticated",
     app_metadata: { provider: "email", providers: ["email"] },
-    email_confirmed_at: user.created_at,
+    email_confirmed_at: user.confirmed_at,
     updated_at: user.created_at,
     identities: [],
   });
@@ -63,6 +68,15 @@ export function createLocalAuth(port: number) {
     try {
       const url = new URL(request.url ?? "/", "http://127.0.0.1");
       const token = request.headers.authorization?.replace(/^Bearer /i, "");
+      if (url.pathname === "/_test/email-token" && request.method === "GET") {
+        const email = url.searchParams.get("email");
+        const type = url.searchParams.get("type");
+        const found = [...emailTokens].find(
+          ([, value]) =>
+            users.get(value.userId)?.email === email && value.type === type,
+        );
+        return found ? reply(200, { token_hash: found[0] }) : reply(404, {});
+      }
       if (url.pathname.startsWith("/auth/v1/admin/users")) {
         if (token !== "local-admin-key") return reply(403, {});
         if (request.method === "GET")
@@ -86,9 +100,44 @@ export function createLocalAuth(port: number) {
           password: String(input.password),
           user_metadata: (input.user_metadata ?? {}) as Record<string, unknown>,
           created_at: new Date().toISOString(),
+          confirmed_at: new Date().toISOString(),
         };
         users.set(user.id, user);
         return reply(200, publicUser(user));
+      }
+      if (url.pathname === "/auth/v1/signup" && request.method === "POST") {
+        const input = await body(request);
+        const email = String(input.email ?? "").toLowerCase();
+        if ([...users.values()].some((user) => user.email === email))
+          return reply(422, {
+            code: "user_already_exists",
+            msg: "Already registered",
+          });
+        const user: User = {
+          id: randomUUID(),
+          email,
+          password: String(input.password ?? ""),
+          user_metadata: (input.data ?? {}) as Record<string, unknown>,
+          created_at: new Date().toISOString(),
+          confirmed_at: null,
+        };
+        users.set(user.id, user);
+        emailTokens.set(randomUUID(), { userId: user.id, type: "signup" });
+        return reply(200, { user: publicUser(user), session: null });
+      }
+      if (url.pathname === "/auth/v1/verify" && request.method === "POST") {
+        const input = await body(request);
+        const tokenHash = String(input.token_hash ?? "");
+        const pending = emailTokens.get(tokenHash);
+        if (!pending || pending.type !== input.type)
+          return reply(403, { code: "otp_expired", msg: "Expired token" });
+        const user = users.get(pending.userId);
+        if (!user)
+          return reply(403, { code: "otp_expired", msg: "Expired token" });
+        emailTokens.delete(tokenHash);
+        if (pending.type === "signup")
+          user.confirmed_at = new Date().toISOString();
+        return reply(200, session(user));
       }
       if (url.pathname === "/auth/v1/token" && request.method === "POST") {
         const input = await body(request);
@@ -98,7 +147,7 @@ export function createLocalAuth(port: number) {
             : [...users.values()].find(
                 (u) => u.email === input.email && u.password === input.password,
               );
-        return user
+        return user?.confirmed_at
           ? reply(200, session(user))
           : reply(400, {
               code: "invalid_credentials",
@@ -118,7 +167,15 @@ export function createLocalAuth(port: number) {
         sessions.delete(token ?? "");
         return reply(204, null);
       }
-      if (url.pathname === "/auth/v1/recover") return reply(200, {});
+      if (url.pathname === "/auth/v1/recover") {
+        const input = await body(request);
+        const user = [...users.values()].find(
+          (item) => item.email === input.email,
+        );
+        if (user)
+          emailTokens.set(randomUUID(), { userId: user.id, type: "recovery" });
+        return reply(200, {});
+      }
       if (url.pathname === "/rest/v1/profiles" && request.method === "POST") {
         if (token !== "local-admin-key") return reply(403, {});
         const input = await body(request);

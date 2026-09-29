@@ -86,6 +86,13 @@ export async function recordRegistration(params: {
   name?: string | null;
 }): Promise<void> {
   try {
+    // The history row references profiles. The Auth trigger normally creates
+    // that row; ensure it here as well if the trigger is unavailable.
+    await ensureProfileForUser({
+      id: params.userId,
+      email: params.email ?? null,
+      fullName: params.name ?? null,
+    });
     if (await hasMemberAction(params.userId, "member.registered")) return;
     const label = params.name?.trim() || params.email?.trim() || "";
     await recordActivity({
