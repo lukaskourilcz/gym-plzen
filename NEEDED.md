@@ -4,7 +4,7 @@
 - [x] **Storno a změna termínu**: jedna bezplatná změna do 24 h; nově tlačítko „Zrušit rezervaci“ v Můj účet (termín se uvolní, platba se nevrací, zapisuje se do historie akcí); VOP 8.10, provozní řád 2.4 a FAQ 12 sjednoceny (CMS na produkci upraven). Host bez účtu ruší e-mailem. `[imp:5]` `[owner:ai]` `[time:1h]` `[kind:legal]`
 - [x] **Kapacita 5 osob** všude (VOP 7.1, provozní řád 2.3 a 7.4 v kódu i v CMS, FAQ). `[imp:4]` `[owner:ai]` `[time:5m]` `[kind:legal]`
 - [x] **Telefon ve VOP**: +420 732 817 217. Kontakty na webu (CMS: 731 737 355 a 721 560 150) zůstaly beze změny – potvrdit, zda i tam má být 732 817 217. `[imp:3]` `[owner:me]` `[time:2m]` `[kind:decision]`
-- [ ] **Umístění lékárničky**: provozní řád 5.4 „Lékárnička první pomoci je umístěna: ......“ – doplnit místo (hotovo: FAQ 11 platby přes Comgate, FAQ 3 odebrána, odkaz na ČOI bez `utm_source=chatgpt.com`). `[imp:3]` `[owner:me]` `[time:2m]` `[kind:content]`
+- [ ] **Umístění lékárničky**: provozní řád 5.4 „Lékárnička první pomoci je umístěna: ......“ – doplnit místo (hotovo: FAQ 11 platby přes Comgate, FAQ 3 ponechána se zněním vlastníka „videorádce (chystáme)“, odkaz na ČOI bez `utm_source=chatgpt.com`). `[imp:3]` `[owner:me]` `[time:2m]` `[kind:content]`
 - [x] **Cena při změně termínu se nemění** (i přes cenová období) – VOP 8.4 upraveno podle chování systému. `[imp:3]` `[owner:ai]` `[time:5m]` `[kind:legal]`
 - [x] **PIN platí 15 min po konci termínu** – schváleno vlastníkem jako správné. `[imp:1]` `[owner:me]` `[time:0m]` `[kind:decision]`
 - [ ] **Vrátit 2 platby v Comgate**: otevřené alerty `refund-needed` pro rezervace `8e056780…` a `987fdf8b…`. Po refundaci je nově lze zavřít v administraci → Upozornění → „Vyřešeno“. `[imp:4]` `[owner:me]` `[time:10m]` `[kind:setup]`
