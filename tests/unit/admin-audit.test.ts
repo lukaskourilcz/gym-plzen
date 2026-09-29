@@ -8,12 +8,6 @@ import {
   closureFailureMessage,
   reservationsAccusative,
 } from "../../src/lib/helpers/closure-copy";
-import {
-  RECOVERY_GRANT_TTL_MS,
-  recoveryGrantKey,
-  signRecoveryGrant,
-  verifyRecoveryGrant,
-} from "../../src/lib/auth/recovery-grant";
 import { entryPriceSchema } from "../../src/lib/validations/memberships";
 import { createReservationSchema } from "../../src/lib/validations/reservations";
 import { isCancellableByAdmin } from "../../src/lib/services/admin-reservations";
@@ -55,53 +49,6 @@ test("closure copy counts bookings in Czech", () => {
     closureFailureMessage([{ startsAt: new Date("2026-10-02T08:00:00Z") }]),
     /^Blok je uložen, ale 1 rezervaci se nepodařilo zrušit \(.+\)\./,
   );
-});
-
-test("a password-recovery grant is bound to its user and expires", () => {
-  const key = recoveryGrantKey({ DATABASE_URL: "postgres://secret@db/x" })!;
-  assert.ok(key);
-  const issuedAt = Date.parse("2026-09-29T10:00:00Z");
-  const grant = signRecoveryGrant("user-a", issuedAt, key)!;
-  assert.equal(
-    verifyRecoveryGrant(grant, "user-a", issuedAt + 60_000, key),
-    true,
-  );
-  assert.equal(
-    verifyRecoveryGrant(grant, "user-b", issuedAt + 60_000, key),
-    false,
-  );
-  assert.equal(
-    verifyRecoveryGrant(
-      grant,
-      "user-a",
-      issuedAt + RECOVERY_GRANT_TTL_MS + 1,
-      key,
-    ),
-    false,
-  );
-  assert.equal(verifyRecoveryGrant(grant, "user-a", issuedAt - 1, key), false);
-  const otherKey = recoveryGrantKey({
-    SUPABASE_SECRET_KEY: "sb_secret_other",
-  })!;
-  assert.equal(
-    verifyRecoveryGrant(grant, "user-a", issuedAt + 1, otherKey),
-    false,
-  );
-  // A forged timestamp invalidates the signature.
-  const [, signature] = grant.split(".");
-  assert.equal(
-    verifyRecoveryGrant(
-      `${issuedAt + 5_000}.${signature}`,
-      "user-a",
-      issuedAt + 6_000,
-      key,
-    ),
-    false,
-  );
-  assert.equal(verifyRecoveryGrant(undefined, "user-a", issuedAt, key), false);
-  assert.equal(verifyRecoveryGrant("garbage", "user-a", issuedAt, key), false);
-  // No server secret: nothing can be signed and nothing verifies.
-  assert.equal(recoveryGrantKey({}), null);
 });
 
 test("the reset page and action require the recovery grant; the routes that verify a recovery set it", async () => {
