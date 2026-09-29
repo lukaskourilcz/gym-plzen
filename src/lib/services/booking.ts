@@ -37,6 +37,7 @@ import {
 } from "./vouchers";
 import { getOperations } from "./operations";
 import {
+  hasOpenReservationPayment,
   refreshReservationPayment,
   resumeReservationCheckout,
   startReservationPayment,
@@ -281,16 +282,23 @@ async function continueOwnBooking(params: {
     await refreshReservationPayment(own.id);
     own = (await getReservation(own.id)) ?? own;
   }
+  const proven =
+    (params.userId !== null && own.userId === params.userId) ||
+    Boolean(
+      params.hold?.kind === "reservation" &&
+      params.hold.id === own.id &&
+      own.confirmationTokenHash &&
+      safeEqual(hashCode(params.hold.token), own.confirmationTokenHash),
+    );
   if (own.status === "confirmed" || own.status === "completed")
-    throw new ActionError(ALREADY_CONFIRMED);
+    throw new ActionError(
+      proven ? ALREADY_CONFIRMED : "Tento termín už není volný.",
+    );
   // Released in the meantime: the slot is free again.
   if (own.status !== "pending") return null;
 
   // A voucher on the retry asks for a different price than the hold carries.
   if (!params.voucherCode?.trim()) {
-    const proven =
-      (params.userId !== null && own.userId === params.userId) ||
-      (params.hold?.kind === "reservation" && params.hold.id === own.id);
     if (proven)
       // Proof of ownership allows the full path, a fresh gateway session
       // included, should the earlier one never have been created.
@@ -303,6 +311,14 @@ async function continueOwnBooking(params: {
     if (resumed.state === "checkout") return resumed.outcome;
     if (resumed.state === "processing") throw new ActionError(STILL_PROCESSING);
   }
+  if (!proven)
+    throw new ActionError(
+      "Tento termín je rozpracovaný v jiné platbě. Dokončete ji, nebo to zkuste znovu za 30 minut.",
+    );
+  if (await hasOpenReservationPayment(own.id))
+    throw new ActionError(
+      "Za tento termín už máte otevřenou platbu. Dokončete ji, nebo počkejte, až za 30 minut vyprší, a vyberte termín znovu.",
+    );
   // Nothing to continue, or a new price is wanted: the earlier hold gives way
   // to this attempt, unless it was confirmed in the meantime.
   if (!(await releasePendingHold(own.id, "superseded")))

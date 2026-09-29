@@ -416,7 +416,7 @@ describe(
 
       await assert.rejects(
         startBooking({ userId: null, startsAt, details: guestDetails() }),
-        { message: /Tento termín už máte potvrzený/ },
+        { message: /Tento termín už není volný/ },
       );
       const confirmation = await getBookingConfirmation({
         userId: null,
@@ -453,7 +453,7 @@ describe(
       assert.equal(comgate.creates.length, 2);
     });
 
-    test("a voucher entered on the retry replaces the hold instead of ignoring the voucher", async () => {
+    test("a voucher cannot replace a hold while its original gateway session is open", async () => {
       const startsAt = slot(13);
       const first = await startBooking({
         userId: null,
@@ -461,6 +461,28 @@ describe(
         details: guestDetails(),
       });
       assert.equal(first.kind, "checkout");
+
+      await assert.rejects(
+        startBooking({
+          userId: null,
+          startsAt,
+          details: guestDetails(),
+          voucherCode: VOUCHER,
+          hold: {
+            kind: "reservation",
+            id: first.reservationId,
+            token: first.token!,
+          },
+        }),
+        /otevřenou platbu/,
+      );
+      assert.equal(
+        (await reservationRow(first.reservationId)).status,
+        "pending",
+      );
+      assert.equal(comgate.creates.length, 1);
+
+      comgate.settle("TEST-0001", "CANCELLED");
 
       const second = await startBooking({
         userId: null,
@@ -477,10 +499,46 @@ describe(
       assert.notEqual(second.reservationId, first.reservationId);
       const old = await reservationRow(first.reservationId);
       assert.equal(old.status, "cancelled");
-      assert.equal(old.cancel_reason, "superseded");
+      assert.equal(old.cancel_reason, "payment_cancelled");
       const fresh = await reservationRow(second.reservationId);
       assert.equal(fresh.status, "confirmed");
       assert.equal(fresh.price_cents, 0);
+    });
+
+    test("email and a forged cookie never release another guest's legacy hold", async () => {
+      const startsAt = slot(13);
+      const victim = await startBooking({
+        userId: null,
+        startsAt,
+        details: guestDetails(),
+      });
+      await rows("delete from payment where reservation_id = $1", [
+        victim.reservationId,
+      ]);
+      for (const hold of [
+        undefined,
+        {
+          kind: "reservation" as const,
+          id: victim.reservationId,
+          token: "0".repeat(64),
+        },
+      ]) {
+        await assert.rejects(
+          startBooking({
+            userId: null,
+            startsAt,
+            details: guestDetails(),
+            voucherCode: VOUCHER,
+            hold,
+          }),
+          /rozpracovaný v jiné platbě/,
+        );
+        assert.equal(
+          (await reservationRow(victim.reservationId)).status,
+          "pending",
+        );
+      }
+      assert.equal(await reservationCount(), 1);
     });
 
     test("a rejected voucher leaves no hold behind", async () => {

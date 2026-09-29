@@ -499,6 +499,30 @@ describe(
       );
     });
 
+    test("a forged cookie cannot replace an unpaid order found by email", async () => {
+      const victim = await startOrder({
+        userId: null,
+        starts: [slot(3), slot(4)],
+        details: details(),
+      });
+      // Model a crash before the gateway attempt was persisted.
+      await rows("delete from payment where order_id = $1", [victim.orderId]);
+      await seedVoucher({ code: "FORGED10", kind: "percentage", value: 10 });
+      await assert.rejects(
+        startOrder({
+          userId: null,
+          starts: [slot(3), slot(5)],
+          details: details(),
+          voucherCode: "FORGED10",
+          hold: { kind: "order", id: victim.orderId, token: "0".repeat(64) },
+        }),
+        /rozpracovaný v jiné platbě/,
+      );
+      assert.equal((await orderRow(victim.orderId)).status, "pending");
+      assert.equal(await count("booking_order"), 1);
+      assert.equal(await count("voucher_redemption"), 0);
+    });
+
     test("a payment for an order that was cancelled meanwhile alerts the operator", async () => {
       const recipients = "provoz@example.test";
       const [current] = await rows<{ value: { events: unknown } }>(
