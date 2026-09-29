@@ -5,7 +5,12 @@ import { requireEnv } from "@/lib/env";
 // Separate pool: provider requests cannot exhaust the ordinary query pool.
 // Transaction locks work through Supabase's transaction pooler as well.
 let locks: ReturnType<typeof postgres> | undefined;
-const held = new AsyncLocalStorage<ReadonlySet<string>>();
+type LockContext = {
+  keys: ReadonlySet<string>;
+  tx: postgres.TransactionSql<{}>;
+  siblings: Map<string, Promise<void>>;
+};
+const held = new AsyncLocalStorage<LockContext>();
 
 /*
  * A locked operation keeps its connection for the whole provider round trip
@@ -21,7 +26,31 @@ export async function withOperationLock<T>(
   key: string,
   work: () => Promise<T>,
 ): Promise<T> {
-  if (held.getStore()?.has(key)) return work();
+  const context = held.getStore();
+  if (context?.keys.has(key)) return work();
+  if (context) {
+    // Keep one connection for the complete call chain. Otherwise five outer
+    // operations can consume the pool and all wait forever for nested locks.
+    // Sibling calls still need a local queue: a transaction's advisory lock
+    // is reentrant, so the DB alone cannot serialize those siblings.
+    const previous = context.siblings.get(key);
+    let release!: () => void;
+    const finished = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    context.siblings.set(key, finished);
+    try {
+      await previous;
+      await context.tx`select pg_advisory_xact_lock(hashtextextended(${key}, 0))`;
+      return await held.run(
+        { ...context, keys: new Set([...context.keys, key]) },
+        work,
+      );
+    } finally {
+      release();
+      if (context.siblings.get(key) === finished) context.siblings.delete(key);
+    }
+  }
   locks ??= postgres(requireEnv("DATABASE_URL").DATABASE_URL, {
     prepare: false,
     max: LOCK_POOL_SIZE,
@@ -33,7 +62,7 @@ export async function withOperationLock<T>(
     await tx`select pg_advisory_xact_lock(hashtextextended(${key}, 0))`;
     // Business writes commit independently: never roll back a provider intent
     // after that provider may have performed an external side effect.
-    return held.run(new Set([...(held.getStore() ?? []), key]), work);
+    return held.run({ keys: new Set([key]), tx, siblings: new Map() }, work);
   }) as Promise<T>;
 }
 
