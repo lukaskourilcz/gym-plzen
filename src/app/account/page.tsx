@@ -4,6 +4,7 @@ import { getMember } from "@/lib/services/members";
 import { splitFullName } from "@/lib/helpers/profile";
 import { ProfileForm, PasswordForm } from "./profile-form";
 import { Orders } from "./orders";
+import { CancelReservationButton } from "./cancel-reservation-button";
 import { requireUser } from "@/lib/auth/guards";
 import { loyalty, reservations, rescheduling } from "@/lib/services";
 import {
@@ -146,6 +147,17 @@ export default async function AccountPage({
               <Orders userId={user.id} page={page} isDemo={isDemoCustomer} />
             ) : (
               <>
+                {params.storno === "hotovo" ? (
+                  <Notice
+                    tone="success"
+                    title="Rezervace byla zrušena"
+                    className="mt-6"
+                    role="status"
+                  >
+                    Termín je znovu volný v kalendáři. Zaplacená cena se podle
+                    obchodních podmínek nevrací.
+                  </Notice>
+                ) : null}
                 {params.zmena === "uspesna" ? (
                   <Notice
                     tone="success"
@@ -225,6 +237,12 @@ export default async function AccountPage({
                           >
                             Změnit termín
                           </Button>
+                        ) : null}
+                        {!isDemoCustomer && r.startsAt > new Date() ? (
+                          <CancelReservationButton
+                            reservationId={r.id}
+                            startsAtLabel={`${formatDate(r.startsAt)} ${formatTimeRange(r.startsAt, r.endsAt)}`}
+                          />
                         ) : null}
                       </div>
                       {/* Demo reservations have no row behind them to authorise. */}

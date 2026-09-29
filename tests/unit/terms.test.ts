@@ -21,8 +21,9 @@ test("approved terms contain 21 structured sections", () => {
   );
   assert.equal(
     sections.find((section) => section.number === "20")?.clauses.at(-1)?.text,
-    "Informace o mimosoudním řešení spotřebitelských sporů jsou dostupné prostřednictvím [České obchodní inspekce](https://coi.gov.cz/informace-o-adr/?utm_source=chatgpt.com).",
+    "Informace o mimosoudním řešení spotřebitelských sporů jsou dostupné prostřednictvím [České obchodní inspekce](https://coi.gov.cz/informace-o-adr/).",
   );
+  assert.doesNotMatch(DEFAULT_TERMS_BODY, /utm_source/);
   assert.match(DEFAULT_TERMS_BODY, /údajůdostupných/);
   assert.doesNotMatch(DEFAULT_TERMS_BODY, /údajů dostupných/);
 });
@@ -56,4 +57,16 @@ test("manually wrapped identity details remain in their clause", () => {
     firstSection?.clauses[2]?.text ?? "",
     /\[www\.navigym\.cz\]\(https:\/\/www\.navigym\.cz\/\)/,
   );
+});
+
+test("terms state the owners' decisions of 29. 9. 2026", () => {
+  const clause = (section: string, number: string) =>
+    parseTermsBody(DEFAULT_TERMS_BODY)
+      .find((item) => item.number === section)
+      ?.clauses.find((item) => item.number === number)?.text ?? "";
+  assert.match(DEFAULT_TERMS_BODY, /telefon: \+420 732 817 217/);
+  assert.match(clause("7", "7.1"), /5 osob/);
+  assert.match(clause("8", "8.4"), /nemění/);
+  assert.match(clause("8", "8.10"), /zrušit/);
+  assert.match(clause("8", "8.10"), /nevrací/);
 });

@@ -86,6 +86,9 @@ neobsahuje banner s hesly.
 
 - Administrace: `admin@namaste.demo`, heslo `namaste2026`
 - Klientský účet: `klient@namaste.demo`, heslo `namaste2026`
+- Tyto účty fungují jen v lokálním demo režimu (`DEMO_AUTH_ENABLED`, mimo
+  produkci). Ve skutečném Supabase projektu nesmí existovat; produkční kopie
+  byly 29. 9. 2026 smazány.
 
 OAuth tlačítka se zobrazí jen pro poskytovatele uvedené v
 `NEXT_PUBLIC_OAUTH_PROVIDERS`, například `google,apple,azure`. Stejné

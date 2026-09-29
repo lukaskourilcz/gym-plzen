@@ -1,3 +1,6 @@
+// Dependency-free on purpose: this map is bundled into a client component.
+import { FAQ_NUMBERS } from "./faq";
+
 export type ContentEditorKey = string;
 
 export interface ContentEditorItem {
@@ -16,13 +19,10 @@ const item = (key: ContentEditorKey, label: string): ContentEditorItem => ({
   label,
 });
 
-const FAQ_ITEMS = Array.from({ length: 21 }, (_, index) => {
-  const number = index + 1;
-  return [
-    item(`faq.${number}.question`, `Otázka ${number}`),
-    item(`faq.${number}.answer`, `Odpověď ${number}`),
-  ] as const;
-}).flat();
+const FAQ_ITEMS = FAQ_NUMBERS.flatMap((number, index) => [
+  item(`faq.${number}.question`, `Otázka ${index + 1}`),
+  item(`faq.${number}.answer`, `Odpověď ${index + 1}`),
+]);
 
 /**
  * The client-facing content map. It intentionally contains human labels only;

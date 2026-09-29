@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
+import { UnsubscribeButton } from "./unsubscribe-button";
 
 export const metadata = { title: "Odběratelé novinek" };
 export const dynamic = "force-dynamic";
@@ -26,7 +27,7 @@ export default async function NewsletterPage() {
     <div>
       <PageHeader
         title="Odběratelé novinek"
-        description="E-mailové adresy získané přes formulář pod mapou na úvodní stránce."
+        description="E-mailové adresy získané přes formulář pod mapou na úvodní stránce. Do každého e-mailu s novinkami vložte odběrateli jeho odkaz pro odhlášení."
       />
       <div className="mb-8 flex flex-wrap gap-4">
         <StatCard label="Odběratelů celkem" value={rows.length} />
@@ -39,6 +40,7 @@ export default async function NewsletterPage() {
             <TableHead>Stav</TableHead>
             <TableHead>Souhlas udělen</TableHead>
             <TableHead>Zdroj</TableHead>
+            <TableHead>Odhlášení</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -56,11 +58,28 @@ export default async function NewsletterPage() {
               <TableCell>
                 {row.source === "homepage" ? "Úvodní stránka" : row.source}
               </TableCell>
+              <TableCell>
+                {row.status === "subscribed" ? (
+                  <div className="grid gap-1">
+                    <UnsubscribeButton email={row.email} />
+                    {newsletter.unsubscribeUrl(row.email) ? (
+                      <span className="break-all text-xs text-muted-foreground">
+                        Odkaz do rozesílky:{" "}
+                        {newsletter.unsubscribeUrl(row.email)}
+                      </span>
+                    ) : null}
+                  </div>
+                ) : row.unsubscribedAt ? (
+                  formatDateTime(row.unsubscribedAt)
+                ) : (
+                  "Odhlášený"
+                )}
+              </TableCell>
             </TableRow>
           ))}
           {rows.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={4} className="text-muted-foreground">
+              <TableCell colSpan={5} className="text-muted-foreground">
                 Zatím se nikdo nepřihlásil k odběru.
               </TableCell>
             </TableRow>

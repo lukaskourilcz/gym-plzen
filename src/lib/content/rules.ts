@@ -23,9 +23,9 @@ export const DEFAULT_RULES_BODY = `1. Všeobecná ustanovení a definice
 
 2.2. Jednotná cena za pronájem: Cena za vybraný časový slot je fixní a platí pro celou skupinu. Provozovatel neúčtuje žádné poplatky za další osoby v rámci povolené kapacity.
 
-2.3. Kapacitní omezení: V prostorech studia se v rámci jednoho zaplaceného slotu může pohybovat maximálně 6 osob (a to včetně dětí v zóně dětského koutku). Osoba, která provedla rezervaci (objednatel/nájemce), nese plnou odpovědnost za chování, jednání a bezpečnost všech osob, kterým do prostoru umožnila přístup.
+2.3. Kapacitní omezení: V prostorech studia se v rámci jednoho zaplaceného slotu může pohybovat maximálně 5 osob (a to včetně dětí v zóně dětského koutku). Osoba, která provedla rezervaci (objednatel/nájemce), nese plnou odpovědnost za chování, jednání a bezpečnost všech osob, kterým do prostoru umožnila přístup.
 
-2.4. Storno podmínky: Bezplatné storno rezervace lze provést nejpozději 24 hodin před jejím začátkem. Částka bude vrácena formou kreditu do rezervačního systému či na bankovní účet. Při zrušení méně než 24 hodin před termínem zaplacená částka propadá v plné výši jako náhrada škody za blokaci termínu.
+2.4. Změna a storno: Termín rezervace lze jednou bezplatně změnit nejpozději 24 hodin před jejím začátkem. Rezervaci lze také kdykoli před jejím začátkem zrušit v uživatelském účtu; zaplacená částka se v takovém případě nevrací. Podrobnosti upravují obchodní podmínky.
 
 2.5. Uživatel je povinen striktně dodržet čas své rezervace a prostor opustit nejpozději před koncem zakoupeného 75 minutového slotu, aby mohl systém vygenerovat přístup pro dalšího klienta.
 
@@ -73,7 +73,7 @@ export const DEFAULT_RULES_BODY = `1. Všeobecná ustanovení a definice
 
 7.3. Oznámení závad: Před použitím jakéhokoliv stroje je uživatel povinen se ujistit o jeho technickém stavu. Pokud zjistí poškození, je povinen to neprodleně nahlásit provozovateli (SMS/e-mail s fotkou) a stroj nepoužívat. Pokud uživatel zjevné poškození nenahlásí před začátkem svého slotu, nese plnou finanční odpovědnost za škodu zjištěnou po jeho odchodu. Uživatel odpovídá za způsobenou škodu na majetku v plné výši, a to i v případě neúmyslného zavinění.
 
-7.4. Zneužití kódu a pokuty: Přístupový kód je nepřenosný. Pokud zákazník prokazatelně zneužije svůj kód, umožní vstup neoprávněným osobám mimo svou rezervaci nebo překročí max. povolenou kapacitu (6 osob), bude po něm vyžadována smluvní pokuta ve výši 10 000 Kč a jeho účet bude trvale zablokován.
+7.4. Zneužití kódu a pokuty: Přístupový kód je nepřenosný. Pokud zákazník prokazatelně zneužije svůj kód, umožní vstup neoprávněným osobám mimo svou rezervaci nebo překročí max. povolenou kapacitu (5 osob), bude po něm vyžadována smluvní pokuta ve výši 10 000 Kč a jeho účet bude trvale zablokován.
 
 7.5. Před odchodem ze studia je klient povinen zhasnout doplňková světla, zavřít okna, zkontrolovat, zda neteče voda, a ujistit se, že se vstupní dveře za ním bezpečně uzamkly.
 

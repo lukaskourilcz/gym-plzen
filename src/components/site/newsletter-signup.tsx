@@ -65,7 +65,8 @@ export function NewsletterSignup() {
       <FormFeedback error={serverError} success={success} />
       <p className="mt-3 text-xs leading-5 text-ink-foreground/70">
         Odesláním souhlasíte se zpracováním e-mailu pro zasílání novinek.
-        Souhlas můžete kdykoli odvolat. Podrobnosti najdete v{" "}
+        Souhlas můžete kdykoli odvolat odkazem v každém e-mailu s novinkami nebo
+        e-mailem na nás. Podrobnosti najdete v{" "}
         <Link href="/ochrana-soukromi" className="underline hover:text-white">
           zásadách ochrany soukromí
         </Link>

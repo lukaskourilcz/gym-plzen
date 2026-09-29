@@ -6,6 +6,9 @@ import { ActionError, defineAction } from "@/lib/helpers/action";
 import { takeRateLimit } from "@/lib/security/rate-limit";
 import { saveCustomerProfile } from "@/lib/services/customer-profile";
 import { changeCustomerPassword } from "@/lib/services/customer-password";
+import { cancelByCustomer } from "@/lib/services/reservations";
+import { uuidSchema } from "@/lib/validations/common";
+import { z } from "zod";
 import {
   profileSchema,
   changePasswordSchema,
@@ -53,4 +56,25 @@ const changePassword = defineAction({
 });
 export async function changePasswordAction(input: ChangePasswordValues) {
   return changePassword(input);
+}
+
+const cancelMyReservationSchema = z.object({ id: uuidSchema });
+
+/** The customer's own storno: the slot is released, the price is not refunded. */
+const cancelMyReservation = defineAction({
+  schema: cancelMyReservationSchema,
+  authorize: authorizeCustomer,
+  handler: async ({ id }, user) => {
+    await cancelByCustomer({
+      reservationId: id,
+      userId: user.id,
+      actorLabel: user.email,
+    });
+    revalidatePath("/account");
+    revalidatePath("/rezervace");
+    revalidatePath(`/admin/members/${user.id}`);
+  },
+});
+export async function cancelMyReservationAction(input: { id: string }) {
+  return cancelMyReservation(input);
 }
