@@ -7,6 +7,13 @@ test.describe("Auth", () => {
     !supabaseConfigured(),
     "requires a configured Supabase (auth) instance",
   );
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/login");
+    const consent = page
+      .getByTestId("tracking-consent")
+      .getByRole("button", { name: "Pouze nezbytné" });
+    if (await consent.isVisible()) await consent.click();
+  });
 
   test("member can sign in and reach their account", async ({ page }) => {
     await page.goto("/login?next=/account");
@@ -16,7 +23,7 @@ test.describe("Auth", () => {
 
     await expect(page).toHaveURL(/\/account/);
     await expect(
-      page.getByRole("heading", { name: /Můj účet/i }),
+      page.getByRole("heading", { name: /Dobrý den, Member/i }),
     ).toBeVisible();
     // Loyalty widget renders.
     await expect(page.getByText(/Věrnostní program/i)).toBeVisible();

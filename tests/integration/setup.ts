@@ -11,6 +11,7 @@
 import postgres from "postgres";
 import { createComgateMock, createResendMock } from "./mocks";
 import { isTestDatabaseUrl } from "../helpers/test-database";
+import { BOOKING_TABLES } from "../helpers/booking-tables";
 
 /*
  * Only an explicitly named database on this machine is ever truncated. The
@@ -86,27 +87,6 @@ export async function stopEverything(): Promise<void> {
   await sql?.end({ timeout: 2 });
 }
 
-const BOOKING_TABLES = [
-  "reservation_reschedule",
-  "reservation_pipeline",
-  "message_delivery",
-  "access_code",
-  "entry_log",
-  "invoice",
-  "document_counter",
-  "voucher_redemption",
-  "voucher",
-  "payment",
-  "webhook_event",
-  "system_alert",
-  "blocked_slot",
-  "pricing_period",
-  "reservation",
-  "booking_order",
-  "membership",
-  "membership_plan",
-];
-
 /**
  * Empty everything a booking touches; keep opening hours, content, settings.
  * Profiles are deleted rather than truncated: content and settings rows point
@@ -132,8 +112,7 @@ export async function resetDatabase(): Promise<void> {
     recipients: "",
     events: DEFAULT_OPERATOR_NOTIFICATIONS.events,
   });
-  resend.sent.length = 0;
-  resend.rateLimitNext(0);
+  resend.reset();
   comgate.creates.length = 0;
   comgate.payments.clear();
 }

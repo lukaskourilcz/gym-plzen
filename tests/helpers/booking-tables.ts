@@ -1,0 +1,21 @@
+/** Tables touched by booking scenarios in a disposable local test database. */
+export const BOOKING_TABLES = [
+  "reservation_reschedule",
+  "reservation_pipeline",
+  "message_delivery",
+  "access_code",
+  "entry_log",
+  "invoice",
+  "document_counter",
+  "voucher_redemption",
+  "voucher",
+  "payment",
+  "webhook_event",
+  "system_alert",
+  "blocked_slot",
+  "pricing_period",
+  "reservation",
+  "booking_order",
+  "membership",
+  "membership_plan",
+] as const;
