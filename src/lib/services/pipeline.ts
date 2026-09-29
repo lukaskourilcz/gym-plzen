@@ -9,8 +9,10 @@ import {
   eq,
   getTableColumns,
   gt,
+  inArray,
   isNull,
   lte,
+  ne,
   or,
 } from "drizzle-orm";
 import { db, type DatabaseExecutor } from "@/lib/db";
@@ -187,6 +189,64 @@ export async function dueForRetry(limit = 50): Promise<ReservationPipeline[]> {
       asc(reservationPipeline.id),
     )
     .limit(limit);
+}
+
+/**
+ * A cancelled or ended reservation has no step left to do: close its
+ * unfinished steps for good (`failed` with no retry time) and resolve their
+ * alerts. A reservation confirmed again is still picked up by `dueForRetry`.
+ */
+export async function closePipeline(
+  reservationId: string,
+  reason: string,
+): Promise<void> {
+  await db
+    .update(reservationPipeline)
+    .set({
+      status: "failed",
+      lastError: reason,
+      nextRetryAt: null,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(reservationPipeline.reservationId, reservationId),
+        ne(reservationPipeline.status, "succeeded"),
+      ),
+    );
+  for (const step of STEPS) await resolveAlert(dedupeKey(reservationId, step));
+}
+
+/** Watchdog sweep: close the pipelines of cancelled and ended reservations. */
+export async function closeFinishedPipelines(limit = 50): Promise<number> {
+  const now = new Date();
+  const finished = await db
+    .selectDistinct({
+      id: reservation.id,
+      status: reservation.status,
+    })
+    .from(reservationPipeline)
+    .innerJoin(
+      reservation,
+      eq(reservation.id, reservationPipeline.reservationId),
+    )
+    .where(
+      and(
+        inArray(reservationPipeline.status, [
+          "pending",
+          "in_progress",
+          "retrying",
+        ]),
+        or(eq(reservation.status, "cancelled"), lte(reservation.endsAt, now)),
+      ),
+    )
+    .limit(limit);
+  for (const row of finished)
+    await closePipeline(
+      row.id,
+      row.status === "cancelled" ? "Rezervace zrušena" : "Rezervace skončila",
+    );
+  return finished.length;
 }
 
 /** Full pipeline state for one reservation (admin drill-down). */

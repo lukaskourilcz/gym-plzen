@@ -1,8 +1,12 @@
 import { reconcileTestWhatsApp } from "@/lib/services/whatsapp-test";
 import { retryCancellationEmails } from "@/lib/services/cancellation-delivery";
 import { monitorLockConnectivity } from "@/lib/services/lock-health";
-import { reconcileRevocations } from "@/lib/services/access-codes";
+import {
+  expireEndedCodes,
+  reconcileRevocations,
+} from "@/lib/services/access-codes";
 import { reconcilePendingPayments } from "@/lib/services/payments";
+import { deliverPendingAlerts } from "@/lib/services/alerts";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
 import { isAuthorizedCron } from "@/lib/helpers/cron";
@@ -17,24 +21,42 @@ import { pipeline, fulfillment, reservations } from "@/lib/services";
  */
 export const maxDuration = 300;
 
+/** Runs one watchdog stage; a failing stage never stops the ones after it. */
+async function stage<T>(
+  name: string,
+  work: () => Promise<T>,
+  fallback: T,
+): Promise<T> {
+  try {
+    return await work();
+  } catch (e) {
+    logger.warn(`Watchdog stage deferred: ${name}`, {
+      error: e instanceof Error ? e.message : "unknown",
+    });
+    return fallback;
+  }
+}
+
 export async function GET(request: NextRequest) {
   if (!isAuthorizedCron(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  try {
-    await monitorLockConnectivity();
-  } catch {
-    logger.warn("Lock connectivity check deferred");
-  }
-  try {
-    await retryCancellationEmails();
-  } catch {
-    logger.warn("Cancellation email retry deferred");
-  }
-  const revocations = await reconcileRevocations();
-  const reconciledPayments = await reconcilePendingPayments();
-  const released = await reservations.releaseExpiredPendingReservations();
+  const reconciledPayments = await stage(
+    "reconcilePendingPayments",
+    () => reconcilePendingPayments(),
+    0,
+  );
+  const released = await stage(
+    "releaseExpiredPendingReservations",
+    () => reservations.releaseExpiredPendingReservations(),
+    0,
+  );
+
+  // PIN creation and delivery come first: a slow Nuki API or a busy lock in
+  // revocation or cleanup below must never starve another customer's PIN.
+  // This read is the watchdog's core: if it fails, the request fails and the
+  // missing heartbeat below raises the alarm.
   const due = await pipeline.dueForRetry(50);
   const reservationIds = [...new Set(due.map((d) => d.reservationId))];
 
@@ -48,11 +70,27 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  try {
-    await reconcileTestWhatsApp();
-  } catch {
-    logger.warn("WhatsApp reconciliation deferred");
-  }
+  const revocations = await stage(
+    "reconcileRevocations",
+    () => reconcileRevocations(),
+    0,
+  );
+  const expiredCodes = await stage(
+    "expireEndedCodes",
+    () => expireEndedCodes(),
+    0,
+  );
+  const closedPipelines = await stage(
+    "closeFinishedPipelines",
+    () => pipeline.closeFinishedPipelines(),
+    0,
+  );
+  await stage("monitorLockConnectivity", () => monitorLockConnectivity(), null);
+  await stage("retryCancellationEmails", () => retryCancellationEmails(), null);
+  await stage("reconcileTestWhatsApp", () => reconcileTestWhatsApp(), null);
+  // Alerts written inside a transaction (a late payment) reach the operator
+  // here if the request that wrote them died before sending.
+  await stage("deliverPendingAlerts", () => deliverPendingAlerts(), 0);
 
   // Fire-and-forget heartbeat to UptimeRobot. Never blocks the watchdog or
   // fails the request; if the cron itself throws before reaching this line,
@@ -71,6 +109,8 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     ok: true,
     revocations,
+    expiredCodes,
+    closedPipelines,
     reconciledPayments,
     releasedPendingReservations: released,
     dueSteps: due.length,

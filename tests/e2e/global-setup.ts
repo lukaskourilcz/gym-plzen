@@ -1,5 +1,6 @@
 import { chromium, type FullConfig } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
+import { randomBytes } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -14,16 +15,23 @@ import { join } from "node:path";
  * set the admin role in `profiles`, then drive the login form in a browser to
  * capture each user's Supabase session cookies as a storage state.
  */
-const CRED = { password: "password123" };
+// A fresh password per run: the accounts may outlive the run on the test
+// project, and a well-known admin password there would be a standing risk.
+// Shared with the specs through the environment (Playwright passes what global
+// setup sets on to the workers).
+process.env.E2E_TEST_PASSWORD ??= `e2e-${randomBytes(18).toString("base64url")}`;
+const CRED = { password: process.env.E2E_TEST_PASSWORD };
+/** The live project; e2e never creates accounts or writes there. */
+const PRODUCTION_PROJECT_REF = "rkmunagymohxtclymacm";
 const USERS = [
   {
-    email: "admin@test.cz",
+    email: "admin@example.test",
     role: "admin",
     name: "Admin Test",
     file: "admin.json",
   },
   {
-    email: "member@test.cz",
+    email: "member@example.test",
     role: "member",
     name: "Member Test",
     file: "member.json",
@@ -31,6 +39,11 @@ const USERS = [
 ];
 
 export function supabaseConfigured(): boolean {
+  if (
+    process.env.E2E_SUPABASE_PROJECT_REF === PRODUCTION_PROJECT_REF ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.includes(PRODUCTION_PROJECT_REF)
+  )
+    return false;
   return Boolean(
     process.env.E2E_ALLOW_REMOTE_MUTATIONS === "true" &&
     process.env.E2E_SUPABASE_PROJECT_REF &&

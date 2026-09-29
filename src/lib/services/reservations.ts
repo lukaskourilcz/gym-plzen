@@ -25,7 +25,7 @@ import { recordIn as recordActivityIn } from "./activity";
 import type { NewReservation, Reservation } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
 import { checkAvailability } from "./availability";
-import { initPipeline } from "./pipeline";
+import { closePipeline, initPipeline } from "./pipeline";
 import {
   listCodesForReservation,
   revokeAccessCode,
@@ -212,6 +212,8 @@ async function cancelReservationLocked(params: {
         .onConflictDoNothing();
     }
   });
+  // Nothing is left to fulfil: stop retries and resolve their alerts.
+  await closePipeline(params.id, "Rezervace zrušena");
   await releaseForReservation(params.id);
   // An unpaid order is bought as a whole: one slot gone means the order can no
   // longer be confirmed, so its other held slots must not stay blocked.
