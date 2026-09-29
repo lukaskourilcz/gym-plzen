@@ -14,16 +14,19 @@ Hlavní [issue #105](https://github.com/lukaskourilcz/gym-plzen/issues/105) sdru
 | Kontrola                                                   | Výsledek                                                             |
 | ---------------------------------------------------------- | -------------------------------------------------------------------- |
 | Formát, ESLint, TypeScript                                 | Prošlo bez chyb a varování                                           |
-| Unit testy                                                 | 260 prošlo, 0 selhalo, 0 přeskočeno                                  |
-| Integrační testy, lokální Postgres a falešní poskytovatelé | 114 prošlo, 0 selhalo, 0 přeskočeno                                  |
+| Unit testy                                                 | 262 prošlo, 0 selhalo, 0 přeskočeno                                  |
+| Integrační testy, lokální Postgres a falešní poskytovatelé | 118 prošlo, 0 selhalo, 0 přeskočeno                                  |
 | SQL scénáře                                                | Prošly: platby, webhooky, rollback/retry, kódy, objednávková omezení |
 | Browser, hlavní průchody aplikací                          | 49 prošlo, 0 selhalo; produkční build a Chromium                     |
 | Browser, souhlas se sledováním a vzhled                    | 18 prošlo, 0 selhalo; jiný běh stejného izolovaného runneru          |
+| Browser s reálným lokálním Supabase Auth                   | Obnova hesla prošla na umělém účtu bez odeslání zprávy               |
 | Audit produkčních závislostí                               | 0 zranitelností při npm audit --omit=dev                             |
 
 Browser pokryl veřejné stránky a kalendář, voucher na 100 %, návrat z platební brány, hosta i přihlášeného člena, profil, objednávku dvou termínů, změnu a storno jen jednoho termínu, přístupová práva, všech 18 admin stránek a formuláře administrace. Kontrolní databázové dotazy ověřují stav objednávky, platby, rezervací, profilu a historie změn; test nespoléhá jen na zobrazený text. Lokální Resend zaznamenal pouze umělé adresy example.test.
 
 Unit testy ověřují hranice PINu a platnosti, změnu času, vouchery, cookies/redirecty, platební stavy, Nuki reconciliation, souhlas se sledováním a konfiguraci zpráv. Integrační testy doplňují souběh administrátorských rolí, obsazení/uzávěr, ztracené odpovědi poskytovatelů, opakování zpráv, idempotenci a monotónní stav doručení. Křehký test, který hledal přesný název funkce ve zdrojovém kódu, byl odstraněn; stejné chování nyní dokazuje skutečný DB a HTTP scénář.
+
+Po souhlasu vlastníka prošel i volitelný `tests/manual/recovery-browser.mjs` proti samostatnému lokálnímu Supabase Auth a umělému účtu. Prohlížeč ověřil, že běžná session reset neotevře, ověřený recovery odkaz ano, po změně hesla důkaz zmizí a nové heslo funguje. Test získal odkaz z lokálního Auth admin API v paměti; žádný e-mail neodešel. První pokusy testu měnily hostname mezi `127.0.0.1` a `localhost`, což oddělilo cookies; finální průchod používal jeden hostname.
 
 ## Opravené nálezy
 
@@ -51,14 +54,17 @@ Původní [issue #64](https://github.com/lukaskourilcz/gym-plzen/issues/64) byl 
 
 [Issue #137](https://github.com/lukaskourilcz/gym-plzen/issues/137): GitHub Chromium odhalilo spor testu s hydratací při druhém uložení ceny. Test nyní před interakcí čeká na načtení stránky a kromě viditelného potvrzení ověřuje i skutečnou hodnotu v lokální databázi.
 
-## Před vydáním rozhodnout a ověřit
+[Issue #128](https://github.com/lukaskourilcz/gym-plzen/issues/128): reset hesla vyžaduje 15minutový HttpOnly důkaz podepsaný serverem, vytvořený jen po úspěšném `verifyOtp` typu recovery a vázaný na konkrétní účet. Serverová akce jej znovu ověří a po úspěchu smaže. Stránka při dočasně nedostupné Auth kontrole zůstane u obnovy s bezpečným vysvětlením místo přesměrování na přihlášení. Produkční nastavení Supabase Auth se neměnilo.
 
-1. [#128](https://github.com/lukaskourilcz/gym-plzen/issues/128) — bezpečnost hesla, P1: stránka obnovy umožňuje změnu hesla z libovolné platné session; nevyžaduje prokázání reset odkazu. Profil přitom požaduje staré heslo. Je třeba zvolit a otestovat opravu proti izolovanému Supabase Auth projektu a případné nastavení Require current password. Bez souhlasu nebylo změněno bezpečnostní nastavení.
-2. [#129](https://github.com/lukaskourilcz/gym-plzen/issues/129) — obnova platby hosta, P2: podle e-mailu a data lze získat pokračovací URL otevřené platby bez důkazu držení e-mailu. Přísnější pravidlo zlepší soukromí, ale změní současnou možnost hosta navázat na nákup; nutné produktové rozhodnutí.
-3. [#117](https://github.com/lukaskourilcz/gym-plzen/issues/117) — schválit vydání z této větve a provést oddělený test na účtu vlastníka s reálným Comgate, Nuki včetně otevření dveří, Supabase Auth/OAuth a WhatsApp v hodině před termínem. Lokální náhrady tyto provozní služby neověří.
-4. [#118](https://github.com/lukaskourilcz/gym-plzen/issues/118) — potvrdit provozní kontakty, lékárničku a pravidlo objednávky více termínů podle skutečného provozu a obchodních podmínek.
-5. [#133](https://github.com/lukaskourilcz/gym-plzen/issues/133) — rozhodnout, zda po zákaznickém a provozním stornu vracet použití voucheru. Potvrzené použití se dnes neuvolňuje; u objednávky více termínů se musí zachovat nárok na zbývající vstupy. Zavádějící komentář v kódu byl opraven.
-6. [#134](https://github.com/lukaskourilcz/gym-plzen/issues/134) — první potvrzení rezervace či celé objednávky skládá na každém retry e-mail znovu. Při ztracené odpovědi Resend a mezitím změněné šabloně může stejný idempotency key nést jiné tělo a být odmítnut. Potřebuje stejný trvalý přesný payload jako nově opravené zprávy.
-7. [#131](https://github.com/lukaskourilcz/gym-plzen/issues/131) — nevolaný historický helper členství má latentní chybu při souběhu aktivních a neaktivních období. Není v současné rezervační cestě; opravit před zavedením členství.
+[Issue #134](https://github.com/lukaskourilcz/gym-plzen/issues/134): první potvrzení rezervace i vícetermínové objednávky uloží přesný e-mail včetně `.ics` před prvním POST. Po ztracené odpovědi a změně CMS se opakuje stejné tělo pod stejným klíčem; lokální Resend potvrdil jedinou zprávu.
+
+[Issue #133](https://github.com/lukaskourilcz/gym-plzen/issues/133): zákaznické storno uplatněný voucher nevrací. Storno provozovatelem jej u samostatné rezervace vrátí; u objednávky až po zrušení všech jejích termínů, aby zbývající vstupy nepřišly o slevu. Změna probíhá v téže transakci jako storno a byla ověřena v lokálním Postgresu.
+
+## Rozhodnutí vlastníka a zbývající provozní ověření
+
+1. [#129](https://github.com/lukaskourilcz/gym-plzen/issues/129) — vlastník vědomě zvolil pohodlné pokračování v platbě hosta podle e-mailu a termínu bez dalšího ověřovacího e-mailu. Ochrana proti převzetí rezervace z #106 zůstává.
+2. [#117](https://github.com/lukaskourilcz/gym-plzen/issues/117) — vlastník schválil sloučení ověřeného PR do `main` a test jen na svém účtu `kouril.lukas@gmail.com` / WhatsApp `+3546117942`. Test nesmí poslat zprávu jinému zákazníkovi ani měnit jeho rezervaci. Skutečná Comgate platba, Nuki dveře, OAuth a T−60 WhatsApp stále čekají na oddělené provozní ověření; lokální náhrady je neprokazují.
+3. [#118](https://github.com/lukaskourilcz/gym-plzen/issues/118) — vlastník potvrdil stávající provozní telefonní čísla. Umístění lékárničky doplní sám později. Znění a datum účinnosti VOP k více termínům výslovně nepotvrdil, takže zůstává k jeho kontrole.
+4. [#131](https://github.com/lukaskourilcz/gym-plzen/issues/131) — členství není současná známá funkce provozu; nevolaný historický helper má latentní chybu. Opravit před případným budoucím zavedením členství, není blokátorem nynějších rezervací.
 
 Předchozí potvrzení vlastníka, že WhatsApp s PINem dorazil, je cenný provozní signál; nebylo opakováno v tomto auditu. Žádný lokální test nemůže garantovat 100% dostupnost externích služeb ani odhalit každý možný bug. Po schváleném vydání je třeba sledovat skutečné logy, doručení a stav vstupních kódů; tento audit sám produkci nezměnil.
