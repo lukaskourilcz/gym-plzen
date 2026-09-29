@@ -74,5 +74,32 @@ describe(
       );
       assert.equal("codeHash" in overview.rows[0]!, false);
     });
+
+    test("flags a historical early PIN send without sending another message", async () => {
+      const [booking] = await rows<{ id: string }>(
+        `insert into reservation (starts_at, ends_at, status, contact_name, contact_email)
+         values ('2026-10-01 20:00+00', '2026-10-01 21:15+00', 'confirmed', 'Historical', 'historical@example.test') returning id`,
+      );
+      assert.ok(booking);
+      await rows(
+        `insert into message_delivery (reservation_id, channel, kind, recipient, status, sent_at)
+         values ($1, 'email', 'access_code', 'historical@example.test', 'sent', '2026-09-20 10:30+00')`,
+        [booking.id],
+      );
+
+      const overview = await getTomorrowOverview(now);
+      assert.equal(overview.rows[0]?.codeCheck, "scheduled");
+      assert.equal(overview.rows[0]?.email, "sent_early");
+      assert.equal(overview.needsAttention, 1);
+      assert.equal(
+        (
+          await rows<{ count: string }>(
+            "select count(*) from message_delivery where reservation_id = $1",
+            [booking.id],
+          )
+        )[0]?.count,
+        "1",
+      );
+    });
   },
 );

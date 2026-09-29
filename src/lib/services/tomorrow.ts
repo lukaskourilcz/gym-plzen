@@ -55,6 +55,7 @@ export async function getTomorrowOverview(now = new Date()) {
         channel: messageDelivery.channel,
         status: messageDelivery.status,
         createdAt: messageDelivery.createdAt,
+        sentAt: messageDelivery.sentAt,
       })
       .from(messageDelivery)
       .where(
@@ -84,7 +85,9 @@ export async function getTomorrowOverview(now = new Date()) {
           (item) =>
             item.reservationId === booking.id && item.channel === channel,
         )
-        .at(-1)?.status ?? null;
+        .at(-1) ?? null;
+    const emailDelivery = latest("email");
+    const whatsAppDelivery = latest("whatsapp");
     const codeCheck =
       booking.status === "confirmed"
         ? checkTomorrowCode(booking.startsAt, code, nuki, now)
@@ -94,8 +97,9 @@ export async function getTomorrowOverview(now = new Date()) {
         ? checkTomorrowDelivery(
             booking.startsAt,
             Boolean(booking.contactEmail),
-            latest("email"),
+            emailDelivery?.status ?? null,
             now,
+            emailDelivery?.sentAt ?? null,
           )
         : "awaiting_payment";
     const whatsApp =
@@ -105,8 +109,9 @@ export async function getTomorrowOverview(now = new Date()) {
             Boolean(
               booking.userId && booking.whatsAppOptIn && booking.whatsAppPhone,
             ),
-            latest("whatsapp"),
+            whatsAppDelivery?.status ?? null,
             now,
+            whatsAppDelivery?.sentAt ?? null,
           )
         : "awaiting_payment";
     return {
@@ -131,8 +136,8 @@ export async function getTomorrowOverview(now = new Date()) {
       (row) =>
         row.status === "confirmed" &&
         (["missing", "mismatch"].includes(row.codeCheck) ||
-          row.email === "failed" ||
-          row.whatsApp === "failed"),
+          ["failed", "sent_early"].includes(row.email) ||
+          ["failed", "sent_early"].includes(row.whatsApp)),
     ).length,
   };
 }

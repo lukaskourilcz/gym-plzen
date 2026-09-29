@@ -28,6 +28,7 @@ const DELIVERY_LABEL: Record<string, string> = {
   sent: "Odesláno",
   delivered: "Doručeno",
   read: "Přečteno",
+  sent_early: "Kód odeslán předčasně – zkontrolovat",
   failed: "Chyba odeslání",
 };
 
@@ -59,7 +60,9 @@ export default async function TomorrowPage() {
         Tady večer uvidíte, zda je pro zítřejší rezervace připravený kód a zda
         se shoduje s Nuki. E-mail s kódem a případný WhatsApp se posílají až
         hodinu před začátkem rezervace. „Odesláno“ ještě neznamená, že
-        poskytovatel potvrdil doručení.
+        poskytovatel potvrdil doručení. Pokud se dříve odeslaná zpráva ukáže
+        jako „předčasně“, zkontrolujte konkrétní rezervaci v Odeslaných
+        zprávách.
       </p>
       {demo ? (
         <p className="rounded-lg border border-border p-5 text-sm">

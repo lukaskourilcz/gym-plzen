@@ -96,3 +96,25 @@ test("delivery waits until one hour before start and WhatsApp can be inapplicabl
     "not_applicable",
   );
 });
+
+test("a PIN sent long before the promised hour is flagged, including when delivered", () => {
+  const early = new Date("2026-09-20T10:30:00Z");
+  assert.equal(
+    checkTomorrowDelivery(startsAt, true, "sent", now, early),
+    "sent_early",
+  );
+  assert.equal(
+    checkTomorrowDelivery(startsAt, true, "delivered", now, early),
+    "sent_early",
+  );
+  assert.equal(
+    checkTomorrowDelivery(
+      startsAt,
+      true,
+      "sent",
+      now,
+      new Date("2026-10-01T06:59:30Z"),
+    ),
+    "sent",
+  );
+});
