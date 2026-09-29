@@ -24,9 +24,9 @@ const META_TAG_SELECTOR =
 
 test.describe("tracking consent", () => {
   test.beforeEach(async ({ page }) => {
-    await page.route("https://connect.facebook.net/**", (route) =>
-      route.abort(),
-    );
+    // The test observes injected tags and queued consent commands. Never
+    // contact a real analytics or advertising endpoint from the local run.
+    await page.route(/^https:\/\//, (route) => route.abort());
     await page.addInitScript(
       ({ current, legacyTracking, legacy }) => {
         window.localStorage.removeItem(current);

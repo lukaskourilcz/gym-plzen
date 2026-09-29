@@ -44,6 +44,6 @@ jobs:
         env:
           TEST_DATABASE_URL: postgres://postgres:local-test-only@127.0.0.1:5432/navi_browser_test
       - name: Build and verify real browser flows against local services
-        run: npm run test:e2e:local
+        run: npm run test:e2e
         env:
           TEST_DATABASE_URL: postgres://postgres:local-test-only@127.0.0.1:5432/navi_browser_test

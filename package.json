@@ -26,7 +26,7 @@
     "test:integration": "TZ=UTC REQUIRE_DB=1 tsx --test --test-force-exit --test-concurrency=1 tests/integration/*.test.ts",
     "test:db:setup": "tsx scripts/setup-test-db.ts",
     "test:sql": "tsx scripts/run-sql-tests.ts",
-    "test:e2e": "playwright test",
+    "test:e2e": "tsx scripts/run-local-e2e.ts",
     "test:e2e:local": "tsx scripts/run-local-e2e.ts"
   },
   "dependencies": {
