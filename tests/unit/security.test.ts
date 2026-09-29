@@ -132,6 +132,12 @@ test("log redaction hides phone numbers without corrupting timestamps", () => {
     redactForLogs("Kontakt +420 777 123 456 nebo 777123456"),
     "Kontakt [redacted-phone] nebo [redacted-phone]",
   );
+  assert.equal(
+    redactForLogs(
+      'params: {"email":"test@example.test","code":"654 321"}, Nuki 654321',
+    ),
+    'params: {"email":"[redacted-email]","code":"[redacted-pin]"}, Nuki [redacted-pin]',
+  );
 });
 
 test("errors reported to Sentry keep their class and stack but not the raw message", async () => {
