@@ -94,6 +94,7 @@ async function sendPreparedConfirmation(params: {
     let row = existing;
     if (!row) {
       const email = await params.prepare();
+      const preparedAt = new Date();
       [row] = await db
         .insert(messageDelivery)
         .values({
@@ -105,6 +106,8 @@ async function sendPreparedConfirmation(params: {
           status: "queued",
           dedupeKey: params.key,
           providerResponse: { email },
+          createdAt: preparedAt,
+          updatedAt: preparedAt,
         })
         .returning();
     }
