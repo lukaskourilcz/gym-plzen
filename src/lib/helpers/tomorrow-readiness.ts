@@ -14,6 +14,7 @@ export type DeliveryCheck =
   | "sent"
   | "delivered"
   | "read"
+  | "sent_early"
   | "failed";
 
 type StoredCode = {
@@ -74,10 +75,19 @@ export function checkTomorrowDelivery(
   applicable: boolean,
   storedStatus: string | null,
   now: Date,
+  sentAt: Date | null = null,
 ): DeliveryCheck {
   if (!applicable) return "not_applicable";
   if (!storedStatus)
     return now < accessCodeDeliveryAt(startsAt) ? "scheduled" : "pending";
+  // Allow a minute for harmless clock skew, but expose historical deliveries
+  // that predate the promised T-60 window instead of treating them as ready.
+  if (
+    sentAt &&
+    ["sent", "delivered", "read"].includes(storedStatus) &&
+    sentAt.getTime() < accessCodeDeliveryAt(startsAt).getTime() - 60_000
+  )
+    return "sent_early";
   if (["queued", "sent", "delivered", "read", "failed"].includes(storedStatus))
     return storedStatus as DeliveryCheck;
   return "pending";
