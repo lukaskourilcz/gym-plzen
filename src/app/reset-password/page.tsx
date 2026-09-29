@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireUser } from "@/lib/auth/guards";
+import { getSessionUser } from "@/lib/auth/guards";
 import { cookies } from "next/headers";
 import {
   RECOVERY_PROOF_COOKIE,
@@ -10,12 +10,13 @@ import { ResetPasswordForm } from "./reset-password-form";
 export const metadata = { title: "Nastavit nové heslo" };
 
 export default async function ResetPasswordPage() {
-  const user = await requireUser("/reset-password");
+  // A temporary Auth timeout must not send a verified recovery link to the
+  // login form, where a customer who forgot their password cannot continue.
+  const user = await getSessionUser();
   const cookieStore = await cookies();
-  const hasRecoveryLink = validRecoveryProof(
-    cookieStore.get(RECOVERY_PROOF_COOKIE)?.value,
-    user.id,
-  );
+  const hasRecoveryLink =
+    user !== null &&
+    validRecoveryProof(cookieStore.get(RECOVERY_PROOF_COOKIE)?.value, user.id);
 
   return (
     <main
@@ -44,8 +45,8 @@ export default async function ResetPasswordPage() {
           </>
         ) : (
           <p className="mt-2 text-sm text-muted-foreground">
-            Odkaz pro obnovu hesla už není platný. Požádejte o nový na
-            přihlašovací stránce.
+            Obnovovací odkaz nelze ověřit. Obnovte tuto stránku; pokud potíže
+            trvají, požádejte o nový odkaz na přihlašovací stránce.
           </p>
         )}
       </div>
