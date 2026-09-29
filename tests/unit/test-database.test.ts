@@ -29,3 +29,19 @@ test("destructive tests accept only a dedicated, explicit local database", () =>
   ])
     assert.equal(requireTestDatabaseUrl(value), value);
 });
+
+test("the explicit undefined argument is rejected even when CI has a test URL", () => {
+  const previous = process.env.TEST_DATABASE_URL;
+  const local = "postgres://postgres@127.0.0.1:55439/navi_launch_test";
+  try {
+    process.env.TEST_DATABASE_URL = local;
+    assert.equal(requireTestDatabaseUrl(), local);
+    assert.throws(
+      () => requireTestDatabaseUrl(undefined),
+      /dedicated local database/,
+    );
+  } finally {
+    if (previous === undefined) delete process.env.TEST_DATABASE_URL;
+    else process.env.TEST_DATABASE_URL = previous;
+  }
+});

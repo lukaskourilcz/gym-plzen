@@ -18,12 +18,14 @@ export function isTestDatabaseUrl(value: string | undefined): boolean {
   }
 }
 
-export function requireTestDatabaseUrl(
-  value = process.env.TEST_DATABASE_URL,
-): string {
-  if (!isTestDatabaseUrl(value))
+export function requireTestDatabaseUrl(value?: string): string {
+  // An explicitly supplied undefined is invalid even when the process has a
+  // valid test URL (as CI does). Only the zero-argument form reads the env.
+  const candidate =
+    arguments.length === 0 ? process.env.TEST_DATABASE_URL : value;
+  if (!isTestDatabaseUrl(candidate))
     throw new Error(
       "TEST_DATABASE_URL must name a dedicated local database containing a test name segment, without query parameters. No application DATABASE_URL fallback is allowed.",
     );
-  return value!;
+  return candidate!;
 }
