@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
+import { ResolveAlertButton } from "./resolve-alert-button";
 
 export const metadata = { title: "Upozornění" };
 export const dynamic = "force-dynamic";
@@ -30,7 +31,7 @@ export default async function AlertsPage() {
             <TableHead>Čas</TableHead>
             <TableHead>Závažnost</TableHead>
             <TableHead>Titulek</TableHead>
-            <TableHead>Odesláno na WhatsApp</TableHead>
+            <TableHead>Odesláno</TableHead>
             <TableHead>Vyřešeno</TableHead>
           </TableRow>
         </TableHeader>
@@ -52,7 +53,11 @@ export default async function AlertsPage() {
                 {a.notifiedAt ? formatDateTime(a.notifiedAt) : "Neodesláno"}
               </TableCell>
               <TableCell>
-                {a.resolvedAt ? formatDateTime(a.resolvedAt) : "Neuzavřené"}
+                {a.resolvedAt ? (
+                  formatDateTime(a.resolvedAt)
+                ) : (
+                  <ResolveAlertButton id={a.id} title={a.title} />
+                )}
               </TableCell>
             </TableRow>
           ))}

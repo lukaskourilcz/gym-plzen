@@ -120,6 +120,14 @@ export async function deliverPendingAlerts(limit = 10): Promise<number> {
   }
 }
 
+/** Close one alert the operator has dealt with. */
+export async function resolveAlertById(id: string): Promise<void> {
+  await db
+    .update(systemAlert)
+    .set({ resolvedAt: new Date() })
+    .where(and(eq(systemAlert.id, id), isNull(systemAlert.resolvedAt)));
+}
+
 /** Mark an alert (by dedupeKey) resolved so future occurrences alert again. */
 export async function resolveAlert(dedupeKey: string): Promise<void> {
   await db

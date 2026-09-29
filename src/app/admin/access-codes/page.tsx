@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/guards";
+import { getShowerMinutes } from "@/lib/services/schedule";
 import { listAdminAccessCodes } from "@/lib/services/admin-access-codes";
 import { accessCodeStatusLabel } from "@/lib/helpers/access-code-status";
 import { formatDateTime, formatStatus } from "@/lib/helpers/format";
@@ -45,6 +46,8 @@ export default async function AccessCodesPage({
       }
     : await listAdminAccessCodes(page);
   const now = new Date();
+  // The grace after a booking is an admin setting, not a constant.
+  const showerMinutes = await getShowerMinutes();
   return (
     <div>
       <PageHeader
@@ -52,8 +55,8 @@ export default async function AccessCodesPage({
         description="Přehled vytvořených kódů, jejich platnosti a zákazníků. Časy jsou uvedené v českém čase."
       />
       <p className="mb-4 text-sm text-muted-foreground">
-        Kód platí od začátku rezervace do 15 minut po jejím konci. E-mail
-        odchází hodinu před začátkem. Plný kód je dostupný, dokud ho Nuki
+        Kód platí od začátku rezervace do {showerMinutes} minut po jejím konci.
+        E-mail odchází hodinu před začátkem. Plný kód je dostupný, dokud ho Nuki
         uchovává; u odstraněných kódů vidíte poslední dvě číslice.
       </p>
       {nukiUnavailable && (
