@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth/guards";
 import Link from "next/link";
 import { activity } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
@@ -33,6 +34,7 @@ export default async function ActivityPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const page = pageFromParam(params.page);
   const demo = await hasDemoAdminSession();

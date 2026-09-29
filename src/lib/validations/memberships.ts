@@ -18,7 +18,9 @@ export const upsertPlanSchema = z.object({
 export const entryPriceSchema = z.object({
   priceCzk: z
     .number({ invalid_type_error: "Zadejte číslo." })
-    .min(0, "Cena nesmí být záporná."),
+    // Zero is not "free entry": it would skip payment for every booking and
+    // issue access codes to anyone. Free entries come from loyalty rewards.
+    .positive("Cena musí být větší než nula."),
 });
 
 /** A named booking-time price period, expressed as inclusive Prague dates. */

@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth/guards";
 import { BookingCalendar } from "@/components/admin/booking-calendar";
 import { dateKeyInTimeZone, localDateTimeToDate } from "@/lib/helpers/datetime";
 import { CustomerAvatar } from "@/components/site/customer-avatar";
@@ -14,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Notice } from "@/components/ui/notice";
 import { Pagination } from "@/components/ui/pagination";
 import { BrandLockup, BrandLogo, BrandMark } from "@/components/site/brand";
@@ -49,7 +51,8 @@ const designVariantTokens = [
   ["--header-lift", "0px", "24px"],
 ] as const;
 
-export default function DesignSystemPage() {
+export default async function DesignSystemPage() {
+  await requireAdmin();
   const calendarDate = dateKeyInTimeZone(new Date());
   return (
     <div>
@@ -187,6 +190,74 @@ export default function DesignSystemPage() {
               </p>
             </CardContent>
           </Card>
+        </section>
+
+        <section aria-labelledby="kit-confirm">
+          <h2 id="kit-confirm" className="mb-4 text-xl font-extrabold">
+            Potvrzení destruktivní akce
+          </h2>
+          <div className="grid gap-5 xl:grid-cols-2">
+            <Card>
+              <CardContent className="p-5">
+                <p className="mb-3 text-sm text-muted-foreground">
+                  Zrušení rezervace po prvním kliknutí (ukázka, bez akce).
+                  Escape nebo Ponechat vrátí fokus na tlačítko Zrušit.
+                </p>
+                <div className="flex max-w-sm flex-col gap-2">
+                  <div>
+                    <Label htmlFor="kit-cancel-reason">
+                      Důvod pro zákazníka (nepovinné)
+                    </Label>
+                    <Input id="kit-cancel-reason" maxLength={300} />
+                  </div>
+                  <p
+                    id="kit-cancel-note"
+                    className="text-xs text-muted-foreground"
+                  >
+                    Zákazníkovi odejde e-mail o zrušení.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      aria-describedby="kit-cancel-note"
+                    >
+                      Ano, zrušit rezervaci
+                    </Button>
+                    <Button type="button" variant="outline" size="sm">
+                      Ponechat
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-5">
+                <p className="mb-3 text-sm text-muted-foreground">
+                  Uzavření času nad existujícími rezervacemi (ukázka, bez akce).
+                  Server nejdřív vrátí jejich počet.
+                </p>
+                <Notice tone="warning">
+                  <p>
+                    Uzavření zruší 2 rezervace a zákazníkům odejde e-mail.
+                    Potvrďte znovu.
+                  </p>
+                  <p className="mt-1">
+                    Poznámka se zákazníkům pošle jako důvod zrušení.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button type="button" variant="destructive" size="sm">
+                      Uzavřít a zrušit 2 rezervace
+                    </Button>
+                    <Button type="button" variant="outline" size="sm">
+                      Ponechat rezervace
+                    </Button>
+                  </div>
+                </Notice>
+              </CardContent>
+            </Card>
+          </div>
         </section>
 
         <section aria-labelledby="kit-patterns">

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/helpers/logger";
 import { members } from "@/lib/services";
 import { safeInternalPath } from "@/lib/security/redirects";
+import { attachRecoveryGrant } from "@/lib/auth/recovery-grant";
 
 /**
  * E-mail confirmation and password-recovery links.
@@ -91,5 +92,10 @@ export async function GET(request: NextRequest) {
           : null,
     });
 
-  return NextResponse.redirect(new URL(next, origin));
+  const response = NextResponse.redirect(new URL(next, origin));
+  // Only a verified recovery link lets /reset-password skip the current
+  // password, and only for this user, in this browser, for a short while.
+  if (type === "recovery" && data.user)
+    attachRecoveryGrant(response, data.user.id);
+  return response;
 }

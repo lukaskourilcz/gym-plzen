@@ -1,6 +1,12 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { useActionForm } from "@/components/admin/use-action-form";
+import { Notice } from "@/components/ui/notice";
+import {
+  closureFailureMessage,
+  reservationsAccusative,
+} from "@/lib/helpers/closure-copy";
 import {
   Field,
   FormFeedback,
@@ -15,12 +21,14 @@ import {
   DEFAULT_CLOSE_MINUTE,
   DEFAULT_OPEN_MINUTE,
   DEFAULT_SLOT_MINUTES,
+  BLOCK_REASON_LABELS,
 } from "@/lib/config/schedule";
 import {
   createBlockedSlotSchema,
   deleteBlockedSlotSchema,
   openingHoursSchema,
   showerMinutesSchema,
+  type CreateBlockedSlotValues,
 } from "@/lib/validations/schedule";
 import type { OpeningHours } from "@/lib/db/types";
 import {
@@ -116,17 +124,68 @@ export function OpeningHoursRow({
   );
 }
 
-/** Form to add a blocked time range. */
+/**
+ * Form to add a blocked time range. Over existing bookings the server first
+ * answers with their count; the form then asks the admin to confirm exactly
+ * that many cancellations before sending the block again.
+ */
 export function BlockedSlotForm() {
+  // A ref, not state: the confirm button sets it and submits in one handler.
+  const confirmedCount = useRef<number | undefined>(undefined);
+  const [pendingConfirmation, setPendingConfirmation] = useState<{
+    count: number;
+    message: string;
+  } | null>(null);
+  // The confirmation request travels as a refused result so the form stays
+  // filled in; it is shown in the notice below, never as an error.
+  const confirmationMessage = useRef<string | null>(null);
   const { form, submit, serverError, success } = useActionForm({
     schema: createBlockedSlotSchema,
-    action: createBlockedSlotAction,
+    action: async (values: CreateBlockedSlotValues) => {
+      const result = await createBlockedSlotAction({
+        ...values,
+        confirmCancellations: confirmedCount.current,
+      });
+      confirmedCount.current = undefined;
+      if (!result.ok) return result;
+      const outcome = result.data;
+      if (outcome.status === "needs_confirmation") {
+        confirmationMessage.current = outcome.message;
+        setPendingConfirmation({
+          count: outcome.affectedCount,
+          message: outcome.message,
+        });
+        return { ok: false as const, error: outcome.message };
+      }
+      setPendingConfirmation(null);
+      if (outcome.failed.length > 0)
+        return {
+          ok: false as const,
+          error: closureFailureMessage(outcome.failed),
+        };
+      return result;
+    },
     successMessage: "Blok vytvořen.",
     resetOnSuccess: true,
     defaultValues: { reason: "other" },
   });
   const { register, formState } = form;
   const { errors, isSubmitting } = formState;
+
+  // Editing the range after the warning voids it: the count was for the old one.
+  useEffect(() => {
+    const subscription = form.watch((_, { name }) => {
+      if (name === "startsAt" || name === "endsAt")
+        setPendingConfirmation(null);
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
+  function confirmAndSubmit() {
+    if (!pendingConfirmation) return;
+    confirmedCount.current = pendingConfirmation.count;
+    void submit();
+  }
 
   return (
     <form onSubmit={submit} className="max-w-md">
@@ -138,17 +197,64 @@ export function BlockedSlotForm() {
       </Field>
       <Field name="reason" label="Důvod" error={errors.reason}>
         <Select id="reason" {...register("reason")}>
-          <option value="maintenance">Údržba</option>
-          <option value="holiday">Svátek</option>
-          <option value="private_event">Soukromá akce</option>
-          <option value="other">Jiné</option>
+          {Object.entries(BLOCK_REASON_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
         </Select>
       </Field>
       <Field name="note" label="Poznámka" error={errors.note}>
         <Input id="note" {...register("note")} />
       </Field>
-      <FormFeedback error={serverError} success={success} />
-      <SubmitButton isSubmitting={isSubmitting}>Přidat blok</SubmitButton>
+      {pendingConfirmation ? (
+        <Notice tone="warning" role="alert" className="mb-4">
+          <p>{pendingConfirmation.message}</p>
+          <p className="mt-1">
+            Poznámka se zákazníkům pošle jako důvod zrušení.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              // Focus moves to the decision the warning asks for.
+              autoFocus
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={isSubmitting}
+              onClick={confirmAndSubmit}
+            >
+              {isSubmitting
+                ? "Ukládám…"
+                : `Uzavřít a zrušit ${reservationsAccusative(pendingConfirmation.count)}`}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isSubmitting}
+              onClick={() => {
+                setPendingConfirmation(null);
+                form.setFocus("startsAt");
+              }}
+            >
+              Ponechat rezervace
+            </Button>
+          </div>
+        </Notice>
+      ) : (
+        <FormFeedback
+          error={
+            serverError === confirmationMessage.current ? null : serverError
+          }
+          success={success}
+        />
+      )}
+      <SubmitButton
+        isSubmitting={isSubmitting}
+        disabled={!!pendingConfirmation}
+      >
+        Přidat blok
+      </SubmitButton>
     </form>
   );
 }

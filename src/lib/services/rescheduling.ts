@@ -14,6 +14,11 @@ import {
 import type { Reservation } from "@/lib/db/types";
 import { dateKeyInTimeZone, dayOfWeek } from "@/lib/helpers/datetime";
 import { ActionError } from "@/lib/helpers/action";
+import {
+  PG_EXCLUSION_VIOLATION,
+  PG_UNIQUE_VIOLATION,
+  pgErrorCode,
+} from "@/lib/helpers/pg-error";
 import { logger } from "@/lib/helpers/logger";
 import {
   getBookingHorizonDays,
@@ -288,16 +293,13 @@ async function rescheduleLocked(
       return { moved, previousStartsAt: current.startsAt };
     }));
   } catch (error) {
-    const code =
-      typeof error === "object" && error !== null && "code" in error
-        ? String(error.code)
-        : "";
-    if (code === "23P01") {
+    const code = pgErrorCode(error);
+    if (code === PG_EXCLUSION_VIOLATION) {
       throw new ActionError(
         "Tento termín právě rezervoval jiný zákazník. Vyberte prosím jiný čas.",
       );
     }
-    if (code === "23505") {
+    if (code === PG_UNIQUE_VIOLATION) {
       throw new ActionError("Tuto rezervaci už jste jednou změnili.");
     }
     throw error;

@@ -47,7 +47,7 @@ export default async function DesignPreviewPage() {
             <p className="mt-8 text-sm leading-6 text-muted-foreground">
               Volba se ukládá do prohlížeče, takže vydrží i po zavření okna a
               nijak neovlivní ostatní. Po výběru se vraťte na úvodní stránku,
-              Vybavení nebo do účtu : web se zobrazí ve zvolené podobě. Až se
+              Vybavení nebo do účtu: web se zobrazí ve zvolené podobě. Až se
               rozhodnete, nastavíme ji jako výchozí a tuhle stránku odstraníme.
             </p>
           </Container>
