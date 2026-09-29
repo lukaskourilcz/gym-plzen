@@ -1,28 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  isZernioTestRecipient,
   zernioAccessPayload,
   zernioMessageId,
 } from "../../src/lib/helpers/zernio-access";
 
-test("WhatsApp test requires both allowlisted email and phone and fails closed", () => {
-  const base = {
-    email: "test@example.com",
-    phone: "777111222",
-    allowedEmail: "test@example.com",
-    allowedPhone: "+420777111222",
-  };
-  assert.equal(isZernioTestRecipient(base), true);
-  for (const patch of [
-    { allowedPhone: undefined },
-    { allowedEmail: undefined },
-    { phone: null },
-    { email: "other@example.com" },
-    { phone: "777111223" },
-  ])
-    assert.equal(isZernioTestRecipient({ ...base, ...patch }), false);
-});
 test("Zernio uses approved Czech template and exact Nuki validity in the right order", () => {
   const result = zernioAccessPayload({
     accountId: "account",

@@ -1,21 +1,5 @@
 import { toE164 } from "./phone";
 
-export function isZernioTestRecipient(input: {
-  phone?: string | null;
-  email?: string | null;
-  allowedPhone?: string;
-  allowedEmail?: string;
-}) {
-  const allowed = input.allowedPhone ? toE164(input.allowedPhone) : null;
-  return (
-    !!allowed &&
-    !!input.allowedEmail &&
-    toE164(input.phone ?? "") === allowed &&
-    input.email?.trim().toLowerCase() ===
-      input.allowedEmail.trim().toLowerCase()
-  );
-}
-
 export function zernioAccessPayload(input: {
   accountId: string;
   phone: string;

@@ -3,41 +3,61 @@ import { recoverAccessCode } from "./access-codes";
 import { raiseAlert, resolveAlert } from "./alerts";
 import { and, asc, eq, gt, inArray, lte, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { messageDelivery, accessCode, reservation } from "@/lib/db/schema";
+import {
+  messageDelivery,
+  accessCode,
+  profiles,
+  reservation,
+} from "@/lib/db/schema";
 import { env } from "@/lib/env";
 import { formatDateTime } from "@/lib/helpers/format";
-import { isZernioTestRecipient } from "@/lib/helpers/zernio-access";
+import { toE164 } from "@/lib/helpers/phone";
 import {
   readZernioDelivery,
   sendZernioAccessCode,
 } from "@/lib/integrations/zernio";
 
-/** Explicit, temporary allowlist. Unrelated customers remain on email only. */
+/**
+ * The door PIN over WhatsApp (Zernio), sent with the mandatory e-mail an hour
+ * before the booking to every member who ticked "Také přes WhatsApp" in their
+ * profile and has a phone there. Guests and members without the choice stay
+ * on e-mail only; e-mail never depends on this channel.
+ */
 type WhatsAppInput = {
   reservationId: string;
   accessCodeId: string;
   userId: string | null;
-  phone: string | null;
-  email: string | null;
   pin: string;
   startsAt: Date;
   validFrom: Date;
   validUntil: Date;
 };
 
-export async function sendTestReservationWhatsApp(input: WhatsAppInput) {
+export function isWhatsAppConfigured(): boolean {
+  return Boolean(env.ZERNIO_API_KEY && env.ZERNIO_ACCOUNT_ID);
+}
+
+/** The member's WhatsApp number, if they asked for PINs there. */
+export async function whatsAppRecipient(
+  userId: string | null,
+): Promise<string | null> {
+  if (!userId) return null;
+  const [profile] = await db
+    .select({ phone: profiles.phone, optedIn: profiles.notifyByWhatsapp })
+    .from(profiles)
+    .where(eq(profiles.id, userId))
+    .limit(1);
+  if (!profile?.optedIn || !profile.phone) return null;
+  return toE164(profile.phone);
+}
+
+export async function sendReservationWhatsApp(input: WhatsAppInput) {
   return withReservationLock(input.reservationId, () => sendLocked(input));
 }
 async function sendLocked(input: WhatsAppInput) {
-  if (
-    !isZernioTestRecipient({
-      phone: input.phone,
-      email: input.email,
-      allowedPhone: env.ZERNIO_TEST_RECIPIENT,
-      allowedEmail: env.ZERNIO_TEST_EMAIL,
-    })
-  )
-    return;
+  if (!isWhatsAppConfigured()) return;
+  const phone = await whatsAppRecipient(input.userId);
+  if (!phone) return;
   const key = `zernio-access/${input.accessCodeId}`;
   await db
     .insert(messageDelivery)
@@ -46,7 +66,7 @@ async function sendLocked(input: WhatsAppInput) {
       userId: input.userId,
       channel: "whatsapp",
       kind: "access_code",
-      recipient: input.phone!,
+      recipient: phone,
       status: "queued",
       dedupeKey: key,
       providerResponse: { attempts: 0, submitted: false },
@@ -85,7 +105,7 @@ async function sendLocked(input: WhatsAppInput) {
     })
     .where(eq(messageDelivery.id, claim.id));
   const result = await sendZernioAccessCode({
-    phone: input.phone!,
+    phone,
     pin: input.pin,
     reservationTime: formatDateTime(input.startsAt),
     validFrom: formatDateTime(input.validFrom),
@@ -111,15 +131,19 @@ async function sendLocked(input: WhatsAppInput) {
     await raiseAlert({
       dedupeKey: `whatsapp:${input.reservationId}`,
       title: "WhatsApp čeká na ověření odeslání",
-      body: "E-mail se odesílá nezávisle. Zkontrolujte stav v Zernio; nejasný výsledek se automaticky neopakuje.",
+      body: "E-mail s kódem se odesílá nezávisle. Zkontrolujte stav v Zernio; nejasný výsledek se automaticky neopakuje.",
       context: { reservationId: input.reservationId, reason: result.error },
     });
 }
 
-/** Independent from mandatory email success; only the explicitly allowlisted tester. */
-export async function reconcileTestWhatsApp() {
-  if (!env.ZERNIO_TEST_EMAIL || !env.ZERNIO_API_KEY || !env.ZERNIO_ACCOUNT_ID)
-    return;
+/**
+ * Watchdog step: read back the delivery status of sent PINs, and send the
+ * PIN to opted-in members whose booking starts within the hour but whose
+ * WhatsApp has not gone yet (a later opt-in, or a failed run). Independent
+ * from the mandatory e-mail.
+ */
+export async function reconcileReservationWhatsApp() {
+  if (!isWhatsAppConfigured()) return;
   const pending = await db
     .select()
     .from(messageDelivery)
@@ -146,7 +170,7 @@ export async function reconcileTestWhatsApp() {
       await raiseAlert({
         dedupeKey: `whatsapp:${message.reservationId}`,
         title: "Výsledek odeslání WhatsAppu nelze ověřit",
-        body: "Zkontrolujte testovací konverzaci v Zernio. Nejasný pokus se neopakuje, e-mail běží nezávisle.",
+        body: "Zkontrolujte konverzaci v Zernio. Nejasný pokus se neopakuje, e-mail s kódem běží nezávisle.",
         context: { reservationId: message.reservationId },
       });
       continue;
@@ -199,10 +223,12 @@ export async function reconcileTestWhatsApp() {
     .select({ booking: reservation, code: accessCode })
     .from(reservation)
     .innerJoin(accessCode, eq(accessCode.reservationId, reservation.id))
+    .innerJoin(profiles, eq(profiles.id, reservation.userId))
     .where(
       and(
         eq(reservation.status, "confirmed"),
-        sql`lower(trim(${reservation.contactEmail})) = ${env.ZERNIO_TEST_EMAIL.trim().toLowerCase()}`,
+        eq(profiles.notifyByWhatsapp, true),
+        sql`${profiles.phone} is not null`,
         lte(reservation.startsAt, new Date(Date.now() + 60 * 60_000)),
         gt(reservation.endsAt, new Date()),
         inArray(accessCode.status, ["scheduled", "active"]),
@@ -231,12 +257,10 @@ export async function reconcileTestWhatsApp() {
         return;
       const pin = await recoverAccessCode(code);
       if (pin)
-        await sendTestReservationWhatsApp({
+        await sendReservationWhatsApp({
           reservationId: booking.id,
           accessCodeId: code.id,
           userId: booking.userId,
-          phone: booking.contactPhone,
-          email: booking.contactEmail,
           pin,
           startsAt: booking.startsAt,
           validFrom: code.validFrom,

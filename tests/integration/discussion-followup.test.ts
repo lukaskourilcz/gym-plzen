@@ -13,10 +13,20 @@ import { retryCancellationEmails } from "../../src/lib/services/cancellation-del
 import { monitorLockConnectivity } from "../../src/lib/services/lock-health";
 import { env } from "../../src/lib/env";
 import {
-  sendTestReservationWhatsApp,
-  reconcileTestWhatsApp,
-} from "../../src/lib/services/whatsapp-test";
+  sendReservationWhatsApp,
+  reconcileReservationWhatsApp,
+} from "../../src/lib/services/whatsapp-delivery";
 const nativeFetch = globalThis.fetch;
+/** A member who ticked "Také přes WhatsApp" and has a phone. */
+async function optedInMember(): Promise<string> {
+  const id = "66666666-6666-4666-8666-666666666666";
+  await rows(
+    "insert into profiles (id,email,full_name,phone,role,notify_by_whatsapp) values ($1,'test@example.test','WhatsApp Člen','+420737875367','member',true) on conflict (id) do nothing",
+    [id],
+  );
+  return id;
+}
+
 describe("discussion followup", { skip: !databaseReady }, () => {
   before(startProviders);
   after(stopEverything);
@@ -124,13 +134,57 @@ describe("discussion followup", { skip: !databaseReady }, () => {
     );
     globalThis.fetch = nativeFetch;
   });
+  test("only a member who opted in with a phone gets the PIN on WhatsApp", async () => {
+    env.ZERNIO_API_KEY = "test";
+    env.ZERNIO_ACCOUNT_ID = "account";
+    const member = await optedInMember();
+    await rows(
+      "insert into profiles (id,email,full_name,phone,role,notify_by_whatsapp) values ('77777777-7777-4777-8777-777777777777','bez@example.test','Bez WhatsAppu','+420777000777','member',false)",
+    );
+    const recipients: string[] = [];
+    globalThis.fetch = async (url, options) => {
+      if (!String(url).startsWith("https://zernio.com/"))
+        return nativeFetch(url, options);
+      recipients.push(String(options?.body ?? ""));
+      return Response.json({
+        success: true,
+        data: { messageId: `msg-${recipients.length}`, conversationId: "c" },
+      });
+    };
+    const send = async (userId: string | null, day: string) => {
+      const [r] = await rows<{ id: string }>(
+        `insert into reservation(user_id,starts_at,ends_at,status) values ($1,'${day} 10:00','${day} 11:00','confirmed') returning id`,
+        [userId],
+      );
+      await sendReservationWhatsApp({
+        reservationId: r!.id,
+        accessCodeId: `code-${day}`,
+        userId,
+        pin: "444555",
+        startsAt: new Date(`${day}T10:00Z`),
+        validFrom: new Date(`${day}T10:00Z`),
+        validUntil: new Date(`${day}T11:15Z`),
+      });
+    };
+    await send(member, "2035-11-01");
+    await send("77777777-7777-4777-8777-777777777777", "2035-11-02");
+    await send(null, "2035-11-03");
+    assert.equal(recipients.length, 1, "only the opted-in member");
+    assert.match(recipients[0]!, /420737875367/);
+    const [delivery] = await rows<{ recipient: string; status: string }>(
+      "select recipient, status from message_delivery where channel='whatsapp'",
+    );
+    assert.equal(delivery?.recipient, "+420737875367");
+    assert.equal(delivery?.status, "sent");
+    globalThis.fetch = nativeFetch;
+  });
   test("Zernio acceptance is reconciled to failure without storing PIN or billing retry", async () => {
     env.ZERNIO_API_KEY = "test";
     env.ZERNIO_ACCOUNT_ID = "account";
-    env.ZERNIO_TEST_EMAIL = "test@example.test";
-    env.ZERNIO_TEST_RECIPIENT = "+420737875367";
+    const member = await optedInMember();
     const [r] = await rows<{ id: string }>(
-      "insert into reservation(starts_at,ends_at,status,contact_email) values ('2035-10-03 10:00','2035-10-03 11:00','confirmed','test@example.test') returning id",
+      "insert into reservation(user_id,starts_at,ends_at,status,contact_email) values ($1,'2035-10-03 10:00','2035-10-03 11:00','confirmed','test@example.test') returning id",
+      [member],
     );
     let sends = 0;
     globalThis.fetch = async (url, options) => {
@@ -159,20 +213,18 @@ describe("discussion followup", { skip: !databaseReady }, () => {
     const input = {
       reservationId: r!.id,
       accessCodeId: "test-code",
-      userId: null,
-      phone: "+420737875367",
-      email: "test@example.test",
+      userId: member,
       pin: "333444",
       startsAt: new Date("2035-10-03T10:00Z"),
       validFrom: new Date("2035-10-03T10:00Z"),
       validUntil: new Date("2035-10-03T11:00Z"),
     };
-    await sendTestReservationWhatsApp(input);
+    await sendReservationWhatsApp(input);
     await rows(
       "update message_delivery set updated_at=now()-interval '6 minutes' where channel='whatsapp'",
     );
-    await reconcileTestWhatsApp();
-    await sendTestReservationWhatsApp(input);
+    await reconcileReservationWhatsApp();
+    await sendReservationWhatsApp(input);
     const [m] = await rows<{
       status: string;
       provider_response: unknown;
@@ -188,10 +240,10 @@ describe("discussion followup", { skip: !databaseReady }, () => {
   test("ambiguous WhatsApp response never resends", async () => {
     env.ZERNIO_API_KEY = "test";
     env.ZERNIO_ACCOUNT_ID = "account";
-    env.ZERNIO_TEST_EMAIL = "test@example.test";
-    env.ZERNIO_TEST_RECIPIENT = "+420737875367";
+    const member = await optedInMember();
     const [r] = await rows<{ id: string }>(
-      "insert into reservation(starts_at,ends_at,status,contact_email) values ('2035-10-04 10:00','2035-10-04 11:00','confirmed','test@example.test') returning id",
+      "insert into reservation(user_id,starts_at,ends_at,status,contact_email) values ($1,'2035-10-04 10:00','2035-10-04 11:00','confirmed','test@example.test') returning id",
+      [member],
     );
     let sends = 0;
     globalThis.fetch = async (url, options) => {
@@ -203,16 +255,14 @@ describe("discussion followup", { skip: !databaseReady }, () => {
     const input = {
       reservationId: r!.id,
       accessCodeId: "test-code",
-      userId: null,
-      phone: "+420737875367",
-      email: "test@example.test",
+      userId: member,
       pin: "333444",
       startsAt: new Date("2035-10-04T10:00Z"),
       validFrom: new Date("2035-10-04T10:00Z"),
       validUntil: new Date("2035-10-04T11:00Z"),
     };
-    await sendTestReservationWhatsApp(input);
-    await sendTestReservationWhatsApp(input);
+    await sendReservationWhatsApp(input);
+    await sendReservationWhatsApp(input);
     assert.equal(sends, 1);
     globalThis.fetch = nativeFetch;
   });

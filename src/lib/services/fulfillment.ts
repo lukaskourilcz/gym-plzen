@@ -1,4 +1,4 @@
-import { sendTestReservationWhatsApp } from "./whatsapp-test";
+import { sendReservationWhatsApp } from "./whatsapp-delivery";
 import {
   isAccessCodeDeliveryDue,
   isAccessCodePreparationDue,
@@ -230,27 +230,25 @@ async function fulfillLocked(reservationId: string): Promise<void> {
       code: plaintext,
       startsAt: reservation.startsAt,
       email: reservation.contactEmail,
-      // Email is the only enabled delivery channel for access codes.
+      // WhatsApp goes separately below (Zernio), never instead of e-mail.
       notifyByWhatsapp: false,
       notifyBySms: false,
     });
 
     if (accessCodeId && codeValidity) {
       try {
-        await sendTestReservationWhatsApp({
+        await sendReservationWhatsApp({
           reservationId,
           accessCodeId,
           userId: reservation.userId ?? null,
-          phone: reservation.contactPhone,
-          email: reservation.contactEmail,
           pin: plaintext,
           startsAt: reservation.startsAt,
           ...codeValidity,
         });
       } catch {
-        // An optional test channel must never hold back the mandatory email.
-        logger.error("WhatsApp test failed", {
-          where: "fulfillment.whatsappTest",
+        // The optional channel must never hold back the mandatory e-mail.
+        logger.error("WhatsApp delivery failed", {
+          where: "fulfillment.whatsapp",
           reservationId,
         });
       }
