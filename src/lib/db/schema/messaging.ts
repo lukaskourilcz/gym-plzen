@@ -56,6 +56,7 @@ export const messageDelivery = pgTable(
     index("message_delivery_reservation_idx").on(t.reservationId),
     index("message_delivery_provider_idx").on(t.providerMessageId),
     index("message_delivery_status_idx").on(t.status),
+    index("message_delivery_created_idx").on(t.createdAt),
     // Null keys stay distinct in Postgres, so only the messages that carry a
     // key are constrained: the claim is taken by whoever inserts first.
     uniqueIndex("message_delivery_dedupe_uidx").on(t.dedupeKey),

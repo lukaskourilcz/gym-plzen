@@ -54,15 +54,13 @@ function overlaps(
 
 /** Includes the second, durable window of an unfinished access-code change. */
 export function reservationOverlaps(startsAt: Date, endsAt: Date): SQL {
-  return or(
-    overlaps(reservation.startsAt, reservation.endsAt, startsAt, endsAt),
-    overlaps(
-      reservation.rescheduleStartsAt,
-      reservation.rescheduleEndsAt,
-      startsAt,
-      endsAt,
-    ),
-  )!;
+  // Match the exclusion constraint's expression so active-window reads can
+  // use its GiST index, including a hold whose original is outside the range.
+  return sql`(case when ${reservation.rescheduleStartsAt} is null
+    then tstzmultirange(tstzrange(${reservation.startsAt}, ${reservation.endsAt}, '[)'))
+    else tstzmultirange(tstzrange(${reservation.startsAt}, ${reservation.endsAt}, '[)'),
+      tstzrange(${reservation.rescheduleStartsAt}, ${reservation.rescheduleEndsAt}, '[)'))
+    end) && tstzmultirange(tstzrange(${startsAt.toISOString()}::timestamptz, ${endsAt.toISOString()}::timestamptz, '[)'))`;
 }
 
 /** Check whether a requested window is within opening hours. */
