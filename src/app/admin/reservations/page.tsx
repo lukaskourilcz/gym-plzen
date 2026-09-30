@@ -37,6 +37,8 @@ import {
 import { ReservationForm } from "./reservation-form";
 import { CancelButton } from "./cancel-button";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
+import { reservationInvoiceStates } from "@/lib/services/invoice-delivery";
+import { ReservationInvoice } from "@/components/admin/reservation-invoice";
 
 export const metadata = { title: "Rezervace" };
 export const dynamic = "force-dynamic";
@@ -84,6 +86,9 @@ export default async function ReservationsPage({
     : await reservations.countOrderSlots([
         ...new Set(rows.flatMap((r) => (r.orderId ? [r.orderId] : []))),
       ]);
+  const invoiceStates = demo
+    ? new Map()
+    : await reservationInvoiceStates(rows.map((r) => r.id));
 
   const access = demo
     ? new Map(
@@ -153,6 +158,7 @@ export default async function ReservationsPage({
             <TableHead>Cena</TableHead>
             <TableHead>Stav</TableHead>
             <TableHead>Vstupní kód</TableHead>
+            <TableHead>Faktura</TableHead>
             <TableHead />
           </TableRow>
         </TableHeader>
@@ -207,6 +213,14 @@ export default async function ReservationsPage({
                 )}
               </TableCell>
               <TableCell>
+                {!demo && invoiceStates.has(r.id) && (
+                  <ReservationInvoice
+                    reservationId={r.id}
+                    state={invoiceStates.get(r.id)!}
+                  />
+                )}
+              </TableCell>
+              <TableCell>
                 {!demo && isCancellableByAdmin(r, now) && (
                   <CancelButton
                     reservationId={r.id}
@@ -218,7 +232,7 @@ export default async function ReservationsPage({
           ))}
           {rows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={7} className="text-muted-foreground">
+              <TableCell colSpan={8} className="text-muted-foreground">
                 Zatím žádné rezervace.
               </TableCell>
             </TableRow>

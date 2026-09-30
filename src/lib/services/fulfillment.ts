@@ -22,7 +22,6 @@ import {
   notifyReservationConfirmed,
 } from "./operator-notifications";
 import { getPipeline, markStepFailed, markStepSucceeded } from "./pipeline";
-import { issueDocumentFor } from "./invoices";
 import { getOrder, listOrderReservations } from "./order-state";
 import type { BookingOrder, Reservation } from "@/lib/db/types";
 
@@ -39,7 +38,8 @@ export async function fulfillReservation(reservationId: string): Promise<void> {
 }
 /**
  * The once-per-purchase side effects: the customer's confirmation, the
- * operator's notice and the payment document. A slot of a multi-slot order
+ * operator's notice. Accounting documents are issued manually by an admin.
+ * A slot of a multi-slot order
  * shares them with its order, so they are sent once for the whole order and
  * under a lock of their own: it is taken last and holds no other, which keeps
  * it free of lock-order cycles with the payment and reservation locks.
@@ -95,19 +95,6 @@ async function announceUnlocked(
   if (order) await notifyOrderConfirmed(order);
   else await notifyReservationConfirmed(reservation);
 
-  // The payment document is an accounting convenience and is issued at most
-  // once per reservation, or once per order. Every failure is logged and
-  // swallowed here.
-  try {
-    const outcome = await issueDocumentFor(reservation);
-    if (!outcome.issued && outcome.reason === "profile_incomplete") {
-      logger.warn("payment document skipped: billing profile incomplete", {
-        reservationId,
-      });
-    }
-  } catch (error) {
-    logger.error(error, { where: "fulfillment.issueDocument", reservationId });
-  }
   return confirmationSent;
 }
 

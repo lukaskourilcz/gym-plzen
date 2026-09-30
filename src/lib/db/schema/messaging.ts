@@ -41,8 +41,9 @@ export const messageDelivery = pgTable(
     failureReason: text("failure_reason"),
 
     // What this message was about, for messages that must be sent at most
-    // once: "reservationConfirmed:<reservation>:<address>". A failed attempt
-    // releases its key (sets it back to null) so a retry may claim it again.
+    // once: "reservationConfirmed:<reservation>:<address>". Durable email
+    // outboxes retain their key even after an uncertain provider response,
+    // so retrying cannot silently create another accepted message.
     dedupeKey: text("dedupe_key"),
 
     sentAt: timestamp("sent_at"),

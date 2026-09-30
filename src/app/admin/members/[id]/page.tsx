@@ -2,6 +2,8 @@ import {
   AdminListFilters,
   AdminListPagination,
 } from "@/components/admin/list-filters";
+import { reservationInvoiceStates } from "@/lib/services/invoice-delivery";
+import { ReservationInvoice } from "@/components/admin/reservation-invoice";
 import {
   ADMIN_PAGE_SIZE,
   demoAdminPage,
@@ -165,6 +167,9 @@ export default async function MemberProfilePage({
     : splitPage(loaded.deliveries, ADMIN_PAGE_SIZE);
   const entriesPage = splitPage(loaded.entries, ADMIN_PAGE_SIZE);
   const { rows: history } = historyPage;
+  const invoiceStates = demo
+    ? new Map()
+    : await reservationInvoiceStates(history.map((r) => r.id));
   const { rows: deliveries } = deliveryPage;
   const { rows: entries } = entriesPage;
   const totals =
@@ -336,6 +341,12 @@ export default async function MemberProfilePage({
                 <TableCell>
                   {row.invoiceNumber ?? (
                     <span className="text-muted-foreground">Bez dokladu</span>
+                  )}
+                  {!demo && invoiceStates.has(row.id) && (
+                    <ReservationInvoice
+                      reservationId={row.id}
+                      state={invoiceStates.get(row.id)!}
+                    />
                   )}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">

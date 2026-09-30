@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { resendDocumentAction } from "./actions";
 
@@ -17,6 +17,7 @@ export function ResendDocumentButton({
   number: string;
 }) {
   const [pending, start] = useTransition();
+  const requestId = useRef<string | null>(null);
   const [message, setMessage] = useState<{
     text: string;
     isError: boolean;
@@ -31,11 +32,23 @@ export function ResendDocumentButton({
         disabled={pending}
         onClick={() =>
           start(async () => {
-            const result = await resendDocumentAction({ id });
-            setMessage({
-              text: result.ok ? `Doklad ${number} odeslán.` : result.error,
-              isError: !result.ok,
-            });
+            try {
+              requestId.current ??= crypto.randomUUID();
+              const result = await resendDocumentAction({
+                id,
+                requestId: requestId.current,
+              });
+              if (result.ok) requestId.current = null;
+              setMessage({
+                text: result.ok ? `Doklad ${number} odeslán.` : result.error,
+                isError: !result.ok,
+              });
+            } catch {
+              setMessage({
+                text: "Došlo k neočekávané chybě. Zkuste to prosím znovu.",
+                isError: true,
+              });
+            }
           })
         }
       >

@@ -80,6 +80,7 @@ export const messageKind = pgEnum("message_kind", [
   "system_alert",
   // Informational e-mail to the operator: a booking arrived, a time moved.
   "operator_notice",
+  "payment_document",
 ]);
 
 /** Lifecycle of a Nuki access code. */

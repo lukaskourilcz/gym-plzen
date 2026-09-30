@@ -193,7 +193,7 @@ describe(
       );
     });
 
-    test("a paid order sends one confirmation, one document and one operator notice", async () => {
+    test("a paid order sends confirmation and operator notice; its document is issued only on request", async () => {
       await setSetting("billing.send_documents", true);
       await setSetting("billing.profile", {
         legalName: "Ukázka Fitness s.r.o.",
@@ -244,6 +244,17 @@ describe(
       );
       assert.equal(ics.match(/BEGIN:VEVENT/g)?.length, 3);
 
+      assert.equal((await rows("select id from invoice")).length, 0);
+      assert.equal(
+        toCustomer.filter((mail) => mail.subject.startsWith("Doklad")).length,
+        0,
+      );
+      const { createAndSendInvoice } =
+        await import("../../src/lib/services/invoice-delivery");
+      const slots = await slotsOf(outcome.orderId);
+      await createAndSendInvoice(slots[1]!.id, "both");
+      await createAndSendInvoice(slots[2]!.id, "both");
+
       const documents = await rows<{
         order_id: string;
         total_cents: number;
@@ -257,7 +268,10 @@ describe(
         [PRICE, PRICE, PRICE],
       );
       assert.equal(
-        toCustomer.filter((mail) => mail.subject.startsWith("Doklad")).length,
+        resend.sent.filter(
+          (mail) =>
+            mail.to === GUEST.email && mail.subject.startsWith("Doklad"),
+        ).length,
         1,
       );
 
@@ -823,6 +837,10 @@ describe(
         },
       );
       assert.equal(issued.issued, true);
+      assert.equal(
+        resend.sent.filter((mail) => mail.subject.startsWith("Doklad")).length,
+        0,
+      );
       const [document] = await rows<{ supplied_at: Date; year: number }>(
         "select supplied_at, year from invoice",
       );

@@ -1,5 +1,7 @@
 # Administrace a potvrzený úklid testů – navazující práce 30. 9. 2026
 
+Následující požadavek na ruční faktury ve stejném PR #193 a jeho aktuální výsledky jsou v [reportu ručních faktur](MANUAL_INVOICES_FOLLOWUP_2026_10_01.md). Níže uvedené testové počty zachycují dokončení samotného stránkování a filtrů.
+
 Větev: `codex/final-launch-audit-20260930`. Rozhodnutí a následné důkazy: [#178](https://github.com/lukaskourilcz/gym-plzen/issues/178).
 
 Původní auditní [PR #180](https://github.com/lukaskourilcz/gym-plzen/pull/180) už byl po výslovném schválení sloučen a nasazen. P1 přesunů je opravený v produkci. Původní auditní report zachycuje stav před tímto schválením; aktuální produkční stav, migrace a odložené úkony vlastníka jsou v #178. Toto navazující rozšíření administrace vychází z nového požadavku vlastníka.
