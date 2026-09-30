@@ -79,6 +79,36 @@ test.describe("Admin : pages load", () => {
     await page.goto("/admin/calendar");
     await expect(page.locator(".fc")).toBeVisible();
   });
+
+  test("finance switches cash and booking value without losing the selected period", async ({
+    page,
+  }) => {
+    await page.goto("/admin/finance?period=7d");
+    await expect(
+      page.getByRole("heading", { name: "Skutečně přijaté peníze" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Vouchery", exact: true }),
+    ).toHaveCount(0);
+    await page
+      .getByRole("navigation", { name: "Pohled financí" })
+      .getByRole("link", { name: "Hodnota rezervací" })
+      .click();
+    await expect(page).toHaveURL(/period=7d&view=bookings/);
+    await expect(
+      page.getByRole("heading", {
+        name: "Hodnota rezervací včetně voucherových slev",
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Vouchery", exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("navigation", { name: "Období financí" })
+      .getByRole("link", { name: "Celkem" })
+      .click();
+    await expect(page).toHaveURL(/period=all&view=bookings/);
+  });
 });
 
 test.describe("Admin : forms", () => {

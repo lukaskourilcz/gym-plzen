@@ -1,4 +1,4 @@
-import { and, eq, gte, inArray, isNotNull, like, sql } from "drizzle-orm";
+import { and, eq, gt, gte, isNotNull, like, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   payment,
@@ -11,24 +11,47 @@ import {
   type FinancePeriod,
 } from "@/lib/helpers/finance-period";
 
-/** Money is counted once per captured payment, never once per booked slot. */
+/**
+ * Cash is counted once per successful live Comgate payment, not per slot and
+ * never from the voucher discount. A discounted booking may still have a real
+ * cash top-up; report that cash separately in the breakdown.
+ */
 export async function getFinanceOverview(
   period: FinancePeriod,
   now = new Date(),
 ) {
   const start = financePeriodStart(period, now);
+  const paymentUsedVoucher = sql`exists (
+    select 1 from public.voucher_redemption receipt_voucher
+    where receipt_voucher.status = 'redeemed'
+      and (
+        (${payment.orderId} is not null and receipt_voucher.order_id = ${payment.orderId})
+        or (${payment.reservationId} is not null and receipt_voucher.reservation_id = ${payment.reservationId})
+      )
+  )`;
   const [receipts, vouchers, cancellations, refundAlerts] = await Promise.all([
     db
       .select({
         count: sql<number>`count(*)`.mapWith(Number),
         grossCents:
           sql<number>`coalesce(sum(${payment.amountCents}), 0)`.mapWith(Number),
+        voucherTopUpCount:
+          sql<number>`count(*) filter (where ${paymentUsedVoucher})`.mapWith(
+            Number,
+          ),
+        voucherTopUpCents:
+          sql<number>`coalesce(sum(${payment.amountCents}) filter (where ${paymentUsedVoucher}), 0)`.mapWith(
+            Number,
+          ),
       })
       .from(payment)
       .where(
         and(
           eq(payment.type, "one_off"),
-          inArray(payment.status, ["succeeded", "refunded"]),
+          eq(payment.status, "succeeded"),
+          eq(payment.provider, "comgate"),
+          eq(payment.providerEnvironment, "false"),
+          gt(payment.amountCents, 0),
           isNotNull(payment.paidAt),
           start ? gte(payment.paidAt, start) : undefined,
         ),
@@ -88,6 +111,7 @@ export async function getFinanceOverview(
     since: start,
     receipts: paid,
     vouchers: vouchers[0]!,
+    bookingValueCents: paid.grossCents + vouchers[0]!.discountCents,
     cancellations: cancellations[0]!,
     refundAlerts: refundAlerts[0]!,
   };

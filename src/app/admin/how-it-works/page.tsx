@@ -283,10 +283,9 @@ export default async function HowItWorksPage() {
           <Question title="Co se stane s PINem při změně termínu?">
             <p>
               Pokud starý PIN ještě nevznikl, přesune se jen čas rezervace.
-              Pokud už vznikl, systém ho nejprve odebere z Nuki a teprve pak
-              potvrdí změnu. Starý PIN už nový termín neotevře. Pro nový termín
-              vznikne jiný PIN podle stejného pravidla{" "}
-              {ACCESS_CODE_PREPARE_MINUTES / 60}
+              Pokud už vznikl, systém jeho oprávnění nejprve odebere z Nuki a
+              teprve pak potvrdí změnu. Pro nový termín připraví nové oprávnění
+              s PINem podle stejného pravidla {ACCESS_CODE_PREPARE_MINUTES / 60}
               hodin; pokud je nový termín už tak blízko, začne příprava hned.
               E-mail potvrzující změnu může odejít dříve než e-mail s novým
               PINem. Když Nuki odebrání starého kódu nepotvrdí, změna se
@@ -295,10 +294,11 @@ export default async function HowItWorksPage() {
           </Question>
           <Question title="Maže se starý PIN při přesunu nebo stornu?">
             <p>
-              Z Nuki se odebere, takže jej už nelze použít. V evidenci zůstane
-              záznam o zrušeném kódu kvůli kontrole, ale jeho uložená šifrovaná
-              podoba se odstraní. Při stornu se nový PIN nevytváří. Pokud Nuki
-              odebrání nepotvrdí, systém ho dále zkouší a upozorní obsluhu.
+              Původní oprávnění se z Nuki odebere, takže pro původní čas už
+              neplatí. V evidenci zůstane záznam o zrušeném kódu kvůli kontrole,
+              ale jeho uložená šifrovaná podoba se odstraní. Při stornu se nový
+              PIN nevytváří. Pokud Nuki odebrání nepotvrdí, systém ho dále
+              zkouší a upozorní obsluhu.
             </p>
           </Question>
           <Question title="Co když Nuki přípravu nepotvrdí?">
@@ -496,7 +496,7 @@ export default async function HowItWorksPage() {
               [
                 "/admin/finance",
                 "Finance",
-                "Přijaté platby, slevy a vratky k ověření.",
+                "Přepínač skutečných plateb a hodnoty rezervací.",
               ],
               [
                 "/admin/statistics",
@@ -552,6 +552,16 @@ export default async function HowItWorksPage() {
               </Card>
             ))}
           </div>
+          <Question title="Jak číst dva pohledy ve Financích?">
+            <p>
+              „Skutečně přijaté platby“ ukazují úspěšné platby z ostrého
+              Comgate, včetně částky doplacené po voucheru. Samotná sleva není
+              příjem. Pohled „Hodnota rezervací“ k přijatým penězům přidá
+              hodnotu uplatněných voucherových slev, aby bylo vidět, kolik
+              vstupů pokryly; tuto částku nelze považovat za výdělek. Skutečně
+              provedené ruční nebo částečné vratky je potřeba ověřit v Comgate.
+            </p>
+          </Question>
         </Section>
 
         <Section id="potize" title="Když něco nefunguje">

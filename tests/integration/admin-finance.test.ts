@@ -18,7 +18,7 @@ describe(
     after(stopEverything);
     beforeEach(resetDatabase);
 
-    test("one multi-slot payment counts once; failed attempts, released vouchers and resolved refund alerts stay distinct", async () => {
+    test("live cash excludes refunded and test payments; voucher value stays separate and a paid top-up counts once", async () => {
       const [order] = await rows<{ id: string }>(
         "insert into booking_order (total_cents, status) values (10000, 'confirmed') returning id",
       );
@@ -36,17 +36,27 @@ describe(
        values ('2026-10-02 08:00+00', '2026-10-02 09:15+00', 'cancelled', '2026-09-30 10:00+00') returning id`,
       );
       assert.ok(cancelled);
+      const [fullyDiscounted] = await rows<{ id: string }>(
+        `insert into reservation (starts_at, ends_at, status, price_cents)
+         values ('2026-10-03 08:00+00', '2026-10-03 09:15+00', 'confirmed', 0) returning id`,
+      );
+      assert.ok(fullyDiscounted);
       await rows(
-        `insert into payment (order_id, type, status, amount_cents, paid_at, provider)
-       values ($1, 'one_off', 'succeeded', 10000, '2026-09-30 10:00+00', 'comgate'),
-              ($1, 'one_off', 'failed', 10000, null, 'comgate')`,
+        `insert into payment (order_id, type, status, amount_cents, paid_at, provider, provider_environment)
+       values ($1, 'one_off', 'succeeded', 10000, '2026-09-30 10:00+00', 'comgate', 'false'),
+              ($1, 'one_off', 'failed', 10000, null, 'comgate', 'false')`,
         [order.id],
       );
       await rows(
-        `insert into payment (reservation_id, type, status, amount_cents, paid_at, provider)
-       values ($1, 'one_off', 'refunded', 3000, '2026-09-30 10:00+00', 'legacy'),
-              ($1, 'one_off', 'succeeded', 4000, '2026-09-20 10:00+00', 'legacy')`,
+        `insert into payment (reservation_id, type, status, amount_cents, paid_at, provider, provider_environment)
+       values ($1, 'one_off', 'refunded', 3000, '2026-09-30 10:00+00', 'comgate', 'false'),
+              ($1, 'one_off', 'succeeded', 4000, '2026-09-20 10:00+00', 'comgate', 'false'),
+              ($1, 'one_off', 'succeeded', 9000, '2026-09-30 10:00+00', 'legacy', null)`,
         [cancelled.id],
+      );
+      await rows(
+        `insert into payment (type, status, amount_cents, paid_at, provider, provider_environment)
+         values ('one_off', 'succeeded', 7000, '2026-09-30 10:00+00', 'comgate', 'true')`,
       );
       await seedVoucher({
         code: "TEST-FINANCE",
@@ -61,8 +71,15 @@ describe(
         `insert into voucher_redemption
          (voucher_id, reservation_id, order_id, status, original_price_cents, discount_cents, final_price_cents, reserved_until, redeemed_at)
        values ($1, $2, $3, 'redeemed', 15000, 5000, 10000, '2026-10-01 00:00+00', '2026-09-30 10:00+00'),
-              ($1, $4, null, 'released', 1000, 1000, 0, '2026-10-01 00:00+00', '2026-09-30 10:00+00')`,
-        [voucher.id, reservations[0]!.id, order.id, reservations[1]!.id],
+              ($1, $4, null, 'redeemed', 20000, 20000, 0, '2026-10-01 00:00+00', '2026-09-30 10:00+00'),
+              ($1, $5, null, 'released', 1000, 1000, 0, '2026-10-01 00:00+00', '2026-09-30 10:00+00')`,
+        [
+          voucher.id,
+          reservations[0]!.id,
+          order.id,
+          fullyDiscounted.id,
+          reservations[1]!.id,
+        ],
       );
       await rows(
         `insert into system_alert (dedupe_key, title, context, resolved_at, created_at)
@@ -72,9 +89,14 @@ describe(
       );
 
       const all = await getFinanceOverview("all", now);
-      assert.equal(all.receipts.count, 3);
-      assert.equal(all.receipts.grossCents, 17000);
-      assert.deepEqual(all.vouchers, { count: 1, discountCents: 5000 });
+      assert.deepEqual(all.receipts, {
+        count: 2,
+        grossCents: 14000,
+        voucherTopUpCount: 1,
+        voucherTopUpCents: 10000,
+      });
+      assert.deepEqual(all.vouchers, { count: 2, discountCents: 25000 });
+      assert.equal(all.bookingValueCents, 39000);
       assert.equal(all.cancellations.count, 1);
       assert.deepEqual(all.refundAlerts, {
         count: 2,
@@ -84,9 +106,10 @@ describe(
       });
 
       const seven = await getFinanceOverview("7d", now);
-      assert.equal(seven.receipts.grossCents, 13000);
-      assert.equal(seven.receipts.count, 2);
-      assert.equal(seven.vouchers.count, 1);
+      assert.equal(seven.receipts.grossCents, 10000);
+      assert.equal(seven.receipts.count, 1);
+      assert.equal(seven.vouchers.count, 2);
+      assert.equal(seven.bookingValueCents, 35000);
     });
   },
 );
