@@ -1,4 +1,4 @@
-import { and, desc, gte, lt } from "drizzle-orm";
+import { and, gte, lt, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { reservation } from "@/lib/db/schema";
 import type { Reservation } from "@/lib/db/types";
@@ -13,8 +13,8 @@ import {
 /**
  * Statistics service : aggregates reservations into insights for the admin
  * (sessions per weekday, most frequent hours, monthly trend, status mix).
- * Aggregation is done in JS over a bounded fetch so weekday/hour buckets are
- * computed in the gym's local timezone without SQL timezone pitfalls.
+ * The live service groups the complete history in PostgreSQL using the gym's
+ * timezone. The pure JavaScript version remains available for demo fixtures.
  */
 
 export interface Bucket {
@@ -39,14 +39,78 @@ export interface Stats {
 const WEEKDAY_LABELS = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
 const TZ = "Europe/Prague";
 
+/** Aggregate the complete history in PostgreSQL without transferring customer rows. */
 export async function getStats(now: Date = new Date()): Promise<Stats> {
-  const rows = await db
-    .select({ startsAt: reservation.startsAt, status: reservation.status })
-    .from(reservation)
-    .orderBy(desc(reservation.startsAt))
-    .limit(5000);
-
-  return aggregateStats(rows, now);
+  const thirtyAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const [result] = await db.execute<{
+    total: number;
+    confirmed: number;
+    cancelled: number;
+    no_show: number;
+    completed: number;
+    last30: number;
+    weekdays: { key: number; count: number }[];
+    hours: { key: number; count: number }[];
+    months: { key: string; count: number }[];
+  }>(sql`
+    with history as materialized (
+      select starts_at, status, starts_at at time zone 'Europe/Prague' as local_time
+      from reservation
+    )
+    select count(*)::int as total,
+      count(*) filter (where status='confirmed')::int as confirmed,
+      count(*) filter (where status='cancelled')::int as cancelled,
+      count(*) filter (where status='no_show')::int as no_show,
+      count(*) filter (where status='completed')::int as completed,
+      count(*) filter (where status<>'cancelled' and starts_at>=${thirtyAgo.toISOString()}::timestamptz and starts_at<=${now.toISOString()}::timestamptz)::int as last30,
+      coalesce((select jsonb_agg(bucket order by key) from (
+        select extract(isodow from local_time)::int-1 as key,count(*)::int as count
+        from history where status<>'cancelled' group by 1
+      ) bucket),'[]'::jsonb) as weekdays,
+      coalesce((select jsonb_agg(bucket order by key) from (
+        select extract(hour from local_time)::int as key,count(*)::int as count
+        from history where status<>'cancelled' group by 1
+      ) bucket),'[]'::jsonb) as hours,
+      coalesce((select jsonb_agg(bucket order by key) from (
+        select to_char(local_time,'YYYY-MM') as key,count(*)::int as count
+        from history where status<>'cancelled' group by 1 order by 1 desc limit 12
+      ) bucket),'[]'::jsonb) as months
+    from history
+  `);
+  const byWeekday = WEEKDAY_LABELS.map((label, index) => ({
+    label,
+    count: result!.weekdays.find((item) => item.key === index)?.count ?? 0,
+  }));
+  const byHour = result!.hours.map(({ key, count }) => ({
+    label: `${String(key).padStart(2, "0")}:00`,
+    count,
+  }));
+  const monthFmt = new Intl.DateTimeFormat("cs-CZ", {
+    month: "short",
+    year: "numeric",
+    timeZone: TZ,
+  });
+  const byMonth = result!.months.map(({ key, count }) => ({
+    label: monthFmt.format(new Date(`${key}-01T12:00:00Z`)),
+    count,
+  }));
+  return {
+    total: result!.total,
+    confirmed: result!.confirmed,
+    cancelled: result!.cancelled,
+    noShow: result!.no_show,
+    completed: result!.completed,
+    last30: result!.last30,
+    byWeekday,
+    byHour,
+    byMonth,
+    busiestWeekday: [...byWeekday]
+      .sort((a, b) => b.count - a.count)
+      .find((item) => item.count > 0)?.label,
+    busiestHour: [...byHour]
+      .sort((a, b) => b.count - a.count)
+      .find((item) => item.count > 0)?.label,
+  };
 }
 
 /** Pure aggregation of reservation rows into stats : reused by the demo layer. */
