@@ -23,7 +23,8 @@ const TOPICS = [
   ["prehled", "Rezervace v pěti krocích"],
   ["vyber", "Výběr termínu a souběh"],
   ["platba", "Platba a potvrzení"],
-  ["kod", "Kód, e-mail a WhatsApp"],
+  ["kod", "Životní cyklus vstupního PINu"],
+  ["doruceni", "Doručení PINu"],
   ["zmena", "Změna a zrušení"],
   ["ucet", "Účet, ceny a vouchery"],
   ["administrace", "Co najdu v administraci"],
@@ -118,7 +119,11 @@ export default async function HowItWorksPage() {
                 "Platba",
                 "Termíny jsou dočasně obsazené; po zaplacení se potvrdí.",
               ],
-              ["4", "Příprava", "Systém připraví kód v Nuki a zkontroluje ho."],
+              [
+                "4",
+                "Příprava",
+                "Nejdříve 24 hodin před termínem systém připraví PIN v Nuki.",
+              ],
               [
                 "5",
                 "Vstup",
@@ -219,37 +224,115 @@ export default async function HowItWorksPage() {
           </Question>
         </Section>
 
-        <Section id="kod" title="Kód, e-mail a WhatsApp">
+        <Section id="kod" title="Životní cyklus vstupního PINu">
           <Card>
             <CardContent className="p-5">
-              <h3 className="font-bold">
-                Časová osa jedné potvrzené rezervace
-              </h3>
+              <h3 className="font-bold">Tři různé okamžiky</h3>
               <ol className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
                 <li>
                   <strong>
-                    {ACCESS_CODE_PREPARE_MINUTES / 60} hodin předem:
+                    Nejdříve {ACCESS_CODE_PREPARE_MINUTES / 60} hodin předem:
                   </strong>{" "}
-                  vytvoří se PIN a ověří se, že je v Nuki se správnou platností.
+                  vznikne PIN pro tuto rezervaci. Systém ho uloží do Nuki a
+                  zpětně ověří stejný kód i dobu jeho platnosti.
                 </li>
                 <li>
-                  <strong>{ACCESS_CODE_NOTICE_MINUTES} minut předem:</strong>{" "}
-                  odejde e-mail s PINem a případně také WhatsApp.
+                  <strong>
+                    Nejdříve {ACCESS_CODE_NOTICE_MINUTES} minut předem:
+                  </strong>{" "}
+                  ověřený PIN odejde zákazníkovi e-mailem a případně WhatsAppem.
                 </li>
                 <li>
-                  <strong>Během návštěvy:</strong> PIN funguje od začátku
+                  <strong>Až během návštěvy:</strong> Nuki PIN přijme od začátku
                   rezervace do jejího konce a ještě po dobu na sprchu (výchozí
-                  nastavení {DEFAULT_SHOWER_MINUTES} minut).
+                  nastavení {DEFAULT_SHOWER_MINUTES} minut). Dříve dveře
+                  neotevře.
                 </li>
               </ol>
             </CardContent>
           </Card>
-          <Question title="Vzniká kód i u rezervace na poslední chvíli?">
+          <Question title="Vygeneruje se PIN hned po zaplacení?">
             <p>
-              Ano. Pokud je potvrzená rezervace už blíž než 24 hodin, systém
-              zahájí přípravu hned. PIN se ale neposílá předčasně: běžně až
-              hodinu před začátkem. U rezervace vytvořené v poslední hodině
-              začne odeslání po potvrzení, jakmile je kód ověřený.
+              Po úspěšné platbě se rezervace potvrdí a potvrzovací e-mail může
+              odejít hned. Vstupní PIN je samostatný krok: připravuje se až v
+              posledních {ACCESS_CODE_PREPARE_MINUTES / 60} hodinách před
+              začátkem. Pokud už tento čas nastal, příprava začne po potvrzení
+              rezervace. Dokud Nuki nepotvrdí správný kód a časové okno,
+              zákazníkovi se PIN nepošle.
+            </p>
+          </Question>
+          <Question title="Jaký je rozdíl mezi termínem za týden a termínem během příštích 24 hodin?">
+            <p>
+              U termínu za týden dostane zákazník potvrzení rezervace hned, ale
+              PIN ještě neexistuje. Automatická kontrola ho začne připravovat
+              přibližně {ACCESS_CODE_PREPARE_MINUTES / 60} hodin před návštěvou.
+              U termínu třeba za 18 hodin začne příprava ihned po potvrzení.
+              Oběma přijde PIN běžně až {ACCESS_CODE_NOTICE_MINUTES} minut před
+              začátkem. Pokud někdo rezervuje v poslední hodině, odešle se po
+              ověření v Nuki co nejdříve.
+            </p>
+          </Question>
+          <Question title="Má každý termín vlastní PIN a kdy přestane fungovat?">
+            <p>
+              Ano, i v objednávce více termínů má každá rezervace svůj PIN.
+              Platí pouze od jejího začátku do konce plus nastavený čas na
+              sprchu. Po skončení platnosti systém autorizaci ze zámku uklidí;
+              neúspěšné odebrání znovu zkouší a oznámí obsluze.
+            </p>
+          </Question>
+          <Question title="Co se stane s PINem při změně termínu?">
+            <p>
+              Pokud starý PIN ještě nevznikl, přesune se jen čas rezervace.
+              Pokud už vznikl, systém ho nejprve odebere z Nuki a teprve pak
+              potvrdí změnu. Starý PIN už nový termín neotevře. Pro nový termín
+              vznikne jiný PIN podle stejného pravidla{" "}
+              {ACCESS_CODE_PREPARE_MINUTES / 60}
+              hodin; pokud je nový termín už tak blízko, začne příprava hned.
+              E-mail potvrzující změnu může odejít dříve než e-mail s novým
+              PINem. Když Nuki odebrání starého kódu nepotvrdí, změna se
+              nedokončí a původní termín zůstane blokovaný.
+            </p>
+          </Question>
+          <Question title="Maže se starý PIN při přesunu nebo stornu?">
+            <p>
+              Z Nuki se odebere, takže jej už nelze použít. V evidenci zůstane
+              záznam o zrušeném kódu kvůli kontrole, ale jeho uložená šifrovaná
+              podoba se odstraní. Při stornu se nový PIN nevytváří. Pokud Nuki
+              odebrání nepotvrdí, systém ho dále zkouší a upozorní obsluhu.
+            </p>
+          </Question>
+          <Question title="Co když Nuki přípravu nepotvrdí?">
+            <p>
+              Neověřený PIN se neposílá. Automatická kontrola zkouší obnovit
+              stejný připravený PIN, aby na zámku nevznikly dva různé kódy pro
+              jeden termín. Potíže jsou vidět ve stránkách{" "}
+              <Link
+                href="/admin/tomorrow"
+                className="text-accent-foreground hover:underline"
+              >
+                Zítra
+              </Link>{" "}
+              a{" "}
+              <Link
+                href="/admin/alerts"
+                className="text-accent-foreground hover:underline"
+              >
+                Upozornění
+              </Link>
+              .
+            </p>
+          </Question>
+        </Section>
+
+        <Section id="doruceni" title="Doručení PINu">
+          <Question title="Kdy PIN přijde a co když odeslání selže?">
+            <p>
+              Ověřený PIN se e-mailem odesílá nejdříve hodinu před začátkem;
+              WhatsApp může odejít současně. Při chybě e-mailu automatická
+              kontrola pokus opakuje a upozorní obsluhu. WhatsApp se při
+              prokazatelném odmítnutí opakuje nejdříve po 15 minutách, nejvýše
+              třikrát. Pokud není jasné, zda první pokus došel, systém raději
+              kontroluje jeho stav, aby neposlal PIN dvakrát.
             </p>
           </Question>
           <Question title="Komu přijde WhatsApp?">
@@ -272,26 +355,11 @@ export default async function HowItWorksPage() {
               zůstat na „odesláno“, i když zpráva už dorazila.
             </p>
           </Question>
-          <Question title="Co když Nuki nebo odeslání selže?">
-            <p>
-              Web neposílá neověřený kód. Automatická kontrola chybu opakuje a v{" "}
-              <Link
-                href="/admin/alerts"
-                className="text-accent-foreground hover:underline"
-              >
-                Upozorněních
-              </Link>{" "}
-              ukáže, co vyžaduje zásah. Stav každé zítřejší rezervace uvidíte na
-              stránce{" "}
-              <Link
-                href="/admin/tomorrow"
-                className="text-accent-foreground hover:underline"
-              >
-                Zítra
-              </Link>
-              . Chyba WhatsAppu neblokuje odeslání e-mailu.
-            </p>
-          </Question>
+          <p className="text-sm text-muted-foreground">
+            E-mail je povinný a pokračuje i při chybě WhatsAppu. Podrobný stav
+            každé zprávy je v Odeslaných zprávách; zítřejší termíny lze rychle
+            zkontrolovat na stránce Zítra.
+          </p>
         </Section>
 
         <Section id="zmena" title="Změna a zrušení rezervace">
@@ -300,8 +368,12 @@ export default async function HowItWorksPage() {
               Přihlášený zákazník může potvrzenou rezervaci změnit nejvýše{" "}
               {MAX_CUSTOMER_RESCHEDULES}×, a to nejpozději{" "}
               {RESCHEDULE_CUTOFF_HOURS} hodin před začátkem. Vybere jiný volný
-              termín. Starý kód se odebere, nový se připraví pro nový čas a
-              zákazník dostane potvrzení změny.
+              termín a dostane potvrzení změny. Co se stane se starým a novým
+              PINem, je podrobně popsané v části{" "}
+              <a href="#kod" className="text-accent-foreground hover:underline">
+                Životní cyklus vstupního PINu
+              </a>
+              .
             </p>
           </Question>
           <Question title="Co se stane při zrušení zákazníkem?">
