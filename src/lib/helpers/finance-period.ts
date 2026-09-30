@@ -5,6 +5,11 @@ import {
 } from "@/lib/helpers/datetime";
 
 export type FinancePeriod = "7d" | "30d" | "all";
+export type FinanceView = "cash" | "bookings";
+
+export function parseFinanceView(value: string | undefined): FinanceView {
+  return value === "bookings" ? "bookings" : "cash";
+}
 
 export function parseFinancePeriod(value: string | undefined): FinancePeriod {
   return value === "7d" || value === "30d" ? value : "all";
