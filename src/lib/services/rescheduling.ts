@@ -37,6 +37,7 @@ import {
   resolveSlotFromHours,
 } from "./slots";
 import { fulfillReservation } from "./fulfillment";
+import { initPipeline } from "./pipeline";
 import { deliverRescheduleConfirmation } from "./reschedule-delivery";
 import { notifyReservationRescheduled } from "./operator-notifications";
 import { recordIn as recordActivityIn } from "./activity";
@@ -243,6 +244,7 @@ async function rescheduleLocked(
         .where(eq(reservation.id, current.id));
       // This commits with the two-window hold: a crashed request is picked up
       // by fulfillment and cleans the abandoned target before delivering a PIN.
+      await initPipeline(current.id, tx);
       await tx
         .update(reservationPipeline)
         .set({

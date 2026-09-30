@@ -239,6 +239,10 @@ describe(
 
     test("uncertain target access holds both windows at the database until restart cleanup (#170)", async () => {
       const b = await movableBooking();
+      // Legacy/imported rows must gain retry work in the same hold transaction.
+      await rows("delete from reservation_pipeline where reservation_id=$1", [
+        b.id,
+      ]);
       mode = "pending";
       await assert.rejects(
         rescheduleReservation({
