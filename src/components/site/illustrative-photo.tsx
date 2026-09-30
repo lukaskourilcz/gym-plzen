@@ -58,6 +58,7 @@ export function IllustrativePhoto({
   priority = false,
   illustrative,
   className,
+  imageClassName,
   children,
 }: {
   src: string;
@@ -66,6 +67,7 @@ export function IllustrativePhoto({
   priority?: boolean;
   illustrative: boolean;
   className?: string;
+  imageClassName?: string;
   /** Rendered when there is no photograph yet. */
   children?: React.ReactNode;
 }) {
@@ -82,7 +84,7 @@ export function IllustrativePhoto({
         fill
         sizes={sizes}
         priority={priority}
-        className="object-cover"
+        className={cn("object-cover", imageClassName)}
       />
       <IllustrativePhotoMarker illustrative={illustrative} />
     </div>

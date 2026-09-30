@@ -189,14 +189,13 @@ test.describe("Public site", () => {
     await expect(
       page.getByRole("link", { name: "Rezervovat", exact: true }).first(),
     ).toBeVisible();
-    // The hero and shared background already carry overlaid content, so only
-    // the four unobstructed gallery photographs receive labels here.
+    // The gallery now shows photographs of the actual gym.
     await expect(page.locator("[data-illustrative-photo-marker]")).toHaveCount(
-      4,
+      0,
     );
     await expect(
       page.getByRole("button", { name: "Ilustrační foto" }),
-    ).toHaveCount(4);
+    ).toHaveCount(0);
     // Two icon links now: the PNG the metadata declares and the classic
     // /favicon.ico that browsers and link-preview tools request unprompted.
     await expect(
@@ -348,40 +347,118 @@ test.describe("Public site", () => {
     ).toHaveCount(0);
   });
 
-  test("equipment photos use mobile labels and desktop tooltips", async ({
+  test("real equipment photos load without illustrative labels", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/vybaveni", { waitUntil: "domcontentloaded" });
 
-    // The batch hero plus all six equipment-zone photographs.
-    const markers = page.locator("[data-illustrative-photo-marker]");
-    await expect(markers).toHaveCount(7);
-    const heroMarker = markers.first();
-    await expect(
-      page.locator("[data-illustrative-photo-mobile-label]"),
-    ).toHaveCount(7);
-    await expect(
-      page.locator('button[aria-label="Ilustrační foto"]'),
-    ).toHaveCount(7);
-    await expect(
-      heroMarker.locator("[data-illustrative-photo-mobile-label]"),
-    ).toBeVisible();
-    await expect(
-      heroMarker.locator('button[aria-label="Ilustrační foto"]'),
-    ).toBeHidden();
+    // The page hero plus all six equipment-zone photographs.
+    const photos = page.locator("main img");
+    await expect(photos).toHaveCount(7);
+    const mobileRatios = await page
+      .locator("li[data-zone] img")
+      .evaluateAll((images) =>
+        images.map((image) => {
+          const box = image.parentElement!.getBoundingClientRect();
+          return box.height / box.width;
+        }),
+      );
+    expect(mobileRatios).toHaveLength(6);
+    expect(mobileRatios[0]).toBeGreaterThan(0.8);
+    expect(mobileRatios[0]).toBeLessThan(0.9);
+    expect(mobileRatios.slice(1).every((ratio) => ratio >= 1.25)).toBe(true);
+    const stretchZoom = await page
+      .locator("li[data-zone]")
+      .nth(2)
+      .locator("img")
+      .evaluate((image) => Number.parseFloat(getComputedStyle(image).scale));
+    expect(stretchZoom).toBeGreaterThan(1.5);
+    for (const photo of await photos.all()) {
+      await photo.scrollIntoViewIfNeeded();
+      await expect
+        .poll(async () =>
+          photo.evaluate(
+            (image) =>
+              image instanceof HTMLImageElement &&
+              image.complete &&
+              image.naturalWidth > 0,
+          ),
+        )
+        .toBe(true);
+    }
+    await expect(page.locator("[data-illustrative-photo-marker]")).toHaveCount(
+      0,
+    );
 
     await page.setViewportSize({ width: 1280, height: 900 });
-    const heroTooltip = heroMarker.locator('[role="tooltip"]');
-    await expect(heroTooltip).toHaveCSS("opacity", "0");
-    await heroMarker.getByRole("button", { name: "Ilustrační foto" }).focus();
-    await expect(heroTooltip).toHaveCSS("opacity", "1");
-    await expect(heroTooltip).toHaveText("Ilustrační foto");
+    await expect(page.locator("[data-illustrative-photo-marker]")).toHaveCount(
+      0,
+    );
 
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - window.innerWidth,
     );
     expect(overflow).toBeLessThanOrEqual(1);
+  });
+
+  test("mobile gallery arranges three gym details and the fridge in a grid", async ({
+    page,
+  }) => {
+    test.setTimeout(60_000);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/", { waitUntil: "domcontentloaded", timeout: 60_000 });
+
+    const galleryPhotos = page.locator("#prostor img");
+    await expect(galleryPhotos).toHaveCount(5);
+    await expect(
+      page.locator('#prostor img[alt="Vybavená lednice"]'),
+    ).toBeVisible();
+    const mobileTiles = await galleryPhotos.evaluateAll((images) =>
+      images.slice(1).map((image) => {
+        const box = image.parentElement!.getBoundingClientRect();
+        return {
+          alt: image.getAttribute("alt"),
+          x: box.x,
+          y: box.y,
+          width: box.width,
+          height: box.height,
+        };
+      }),
+    );
+    expect(mobileTiles.map((tile) => tile.alt)).toEqual([
+      "Detail tréninkové zóny",
+      "Zázemí a vstup",
+      "Vybavená lednice",
+      "Další pohled na prostor",
+    ]);
+    expect(mobileTiles[0]!.y).toBeCloseTo(mobileTiles[1]!.y, 0);
+    expect(mobileTiles[2]!.y).toBeCloseTo(mobileTiles[3]!.y, 0);
+    expect(mobileTiles[0]!.x).toBeCloseTo(mobileTiles[2]!.x, 0);
+    expect(mobileTiles[1]!.x).toBeCloseTo(mobileTiles[3]!.x, 0);
+    expect(mobileTiles.every((tile) => tile.height >= tile.width)).toBe(true);
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await expect(
+      page.locator('#prostor img[alt="Vybavená lednice"]'),
+    ).toBeHidden();
+    await expect(galleryPhotos).toHaveCount(5);
+    const desktopOrder = await galleryPhotos.evaluateAll((images) =>
+      images
+        .slice(1)
+        .map((image) => ({
+          alt: image.getAttribute("alt"),
+          box: image.parentElement!.getBoundingClientRect(),
+        }))
+        .filter(({ box }) => box.width > 0)
+        .sort((a, b) => a.box.y - b.box.y)
+        .map(({ alt }) => alt),
+    );
+    expect(desktopOrder).toEqual([
+      "Další pohled na prostor",
+      "Detail tréninkové zóny",
+      "Zázemí a vstup",
+    ]);
   });
 
   test("booking uses a monthly date-first calendar or a transparent unavailable state", async ({
