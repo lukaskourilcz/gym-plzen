@@ -256,6 +256,37 @@ export async function resolveBookableSlot(startsAt: Date) {
   return resolveConfiguredSlot(startsAt);
 }
 
+/** Read one consistent configuration for a selection spanning several days. */
+export async function resolveBookableSlots(starts: Date[]) {
+  if (starts.length === 0) return [];
+  const [operations, hoursRows] = await Promise.all([
+    getOperations(),
+    db
+      .select()
+      .from(openingHours)
+      .where(
+        inArray(openingHours.dayOfWeek, [
+          ...new Set(starts.map((start) => dayOfWeek(start))),
+        ]),
+      ),
+  ]);
+  const byDay = new Map(hoursRows.map((hours) => [hours.dayOfWeek, hours]));
+  return starts.map((startsAt) => {
+    const hours = byDay.get(dayOfWeek(startsAt));
+    if (
+      !hours ||
+      !isDateOpenForBooking(dateKeyInTimeZone(startsAt), operations)
+    )
+      return null;
+    return resolveSlotFromHours(startsAt, {
+      openMinute: hours.openMinute,
+      closeMinute: hours.closeMinute,
+      slotMinutes: hours.slotMinutes,
+      isClosed: hours.isClosed === 1,
+    });
+  });
+}
+
 /**
  * The opening-hours window starting at `startsAt`, or null when it is not the
  * start of one. Unlike `resolveBookableSlot` it ignores the public "bookings
