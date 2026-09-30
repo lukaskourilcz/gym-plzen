@@ -65,9 +65,7 @@ test("database outage never offers invented availability or a usable checkout (#
     await page.goto("http://localhost:3132/rezervace");
     await expect(page.getByRole("button", { name: /Vybrat$/ })).toHaveCount(0);
     await expect(page.getByRole("link", { name: /Pokračovat/ })).toHaveCount(0);
-    await expect(
-      page.getByRole("status").or(page.getByRole("alert")),
-    ).toBeVisible();
+    await expect(page.locator("main").getByRole("alert")).toBeVisible();
   } finally {
     if (child.exitCode === null) {
       const stopped = new Promise<void>((resolve) =>
