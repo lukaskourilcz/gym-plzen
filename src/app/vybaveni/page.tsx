@@ -97,8 +97,13 @@ export default async function EquipmentPage() {
                     alt={zone.title}
                     sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 25vw"
                     illustrative={content.illustrativePhotos}
+                    imageClassName={
+                      index === 2
+                        ? "origin-[72%_25%] object-[center_20%] scale-[1.55] sm:scale-[1.8]"
+                        : undefined
+                    }
                     className={cn(
-                      "min-h-44",
+                      "aspect-[3/4] min-h-0 sm:aspect-auto sm:min-h-44",
                       index % 2 === 0 ? "bg-ink-elevated" : "bg-sage",
                     )}
                   >

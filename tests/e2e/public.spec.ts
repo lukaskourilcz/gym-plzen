@@ -356,6 +356,22 @@ test.describe("Public site", () => {
     // The page hero plus all six equipment-zone photographs.
     const photos = page.locator("main img");
     await expect(photos).toHaveCount(7);
+    const mobileRatios = await page
+      .locator("li[data-zone] img")
+      .evaluateAll((images) =>
+        images.map((image) => {
+          const box = image.parentElement!.getBoundingClientRect();
+          return box.height / box.width;
+        }),
+      );
+    expect(mobileRatios).toHaveLength(6);
+    expect(mobileRatios.every((ratio) => ratio >= 1.25)).toBe(true);
+    const stretchZoom = await page
+      .locator("li[data-zone]")
+      .nth(2)
+      .locator("img")
+      .evaluate((image) => Number.parseFloat(getComputedStyle(image).scale));
+    expect(stretchZoom).toBeGreaterThan(1.5);
     for (const photo of await photos.all()) {
       await photo.scrollIntoViewIfNeeded();
       await expect
@@ -382,6 +398,37 @@ test.describe("Public site", () => {
       () => document.documentElement.scrollWidth - window.innerWidth,
     );
     expect(overflow).toBeLessThanOrEqual(1);
+  });
+
+  test("mobile gallery arranges three gym details and the fridge in a grid", async ({
+    page,
+  }) => {
+    test.setTimeout(60_000);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/", { waitUntil: "domcontentloaded", timeout: 60_000 });
+
+    const galleryPhotos = page.locator("#prostor img");
+    await expect(galleryPhotos).toHaveCount(5);
+    await expect(
+      page.locator('#prostor img[alt="Vybavená lednice"]'),
+    ).toBeVisible();
+    const mobileTiles = await galleryPhotos.evaluateAll((images) =>
+      images.slice(1).map((image) => {
+        const box = image.parentElement!.getBoundingClientRect();
+        return { x: box.x, y: box.y, width: box.width, height: box.height };
+      }),
+    );
+    expect(mobileTiles[0]!.y).toBeCloseTo(mobileTiles[1]!.y, 0);
+    expect(mobileTiles[2]!.y).toBeCloseTo(mobileTiles[3]!.y, 0);
+    expect(mobileTiles[0]!.x).toBeCloseTo(mobileTiles[2]!.x, 0);
+    expect(mobileTiles[1]!.x).toBeCloseTo(mobileTiles[3]!.x, 0);
+    expect(mobileTiles.every((tile) => tile.height >= tile.width)).toBe(true);
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await expect(
+      page.locator('#prostor img[alt="Vybavená lednice"]'),
+    ).toBeHidden();
+    await expect(galleryPhotos).toHaveCount(5);
   });
 
   test("booking uses a monthly date-first calendar or a transparent unavailable state", async ({

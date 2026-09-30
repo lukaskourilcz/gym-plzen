@@ -42,6 +42,7 @@ import {
   DEFAULT_GALLERY_IMAGE_URLS,
   DEFAULT_HERO_IMAGE_URL,
   DEFAULT_SECTIONS_IMAGE_URL,
+  DEFAULT_ZONE_IMAGE_URLS,
 } from "@/lib/config/branding";
 /** Verified position of the entrance, used as the map's marker. */
 const GYM_POSITION = { lat: 49.7550669, lng: 13.3785039 } as const;
@@ -493,9 +494,9 @@ export default async function HomePage() {
                 alt={t("home.gallery.mainImageAlt")}
                 sizes="(max-width: 1023px) 100vw, 66vw"
                 illustrative={content.illustrativePhotos}
-                className="min-h-[420px] rounded-lg bg-muted lg:h-full lg:min-h-0"
+                className="aspect-[4/3] rounded-lg bg-muted lg:aspect-auto lg:h-full"
               />
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 lg:grid-rows-3">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-1 lg:grid-rows-3">
                 {[
                   t("home.gallery.image2"),
                   t("home.gallery.image3"),
@@ -508,13 +509,20 @@ export default async function HomePage() {
                       DEFAULT_GALLERY_IMAGE_URLS[index + 1]!
                     }
                     alt={label}
-                    sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 34vw"
+                    sizes="(max-width: 1023px) 50vw, 34vw"
                     illustrative={content.illustrativePhotos}
-                    className="min-h-44 rounded-md bg-muted lg:min-h-0"
+                    className="aspect-square rounded-md bg-muted lg:aspect-auto"
                   >
                     <GalleryPlaceholder label={label} />
                   </IllustrativePhoto>
                 ))}
+                <IllustrativePhoto
+                  src={content.zoneImageUrls[4] || DEFAULT_ZONE_IMAGE_URLS[4]!}
+                  alt={t("equipment.zone5.title")}
+                  sizes="50vw"
+                  illustrative={content.illustrativePhotos}
+                  className="aspect-square rounded-md bg-muted lg:hidden"
+                />
               </div>
             </div>
             <div className="mt-7 border-t border-border pt-7">
