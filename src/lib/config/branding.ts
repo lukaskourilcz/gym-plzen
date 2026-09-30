@@ -10,7 +10,7 @@ export const HERO_IMAGE_ALT_KEY = "branding.hero_image_alt";
 /** Photograph pinned behind the operating-steps and pricing bands. */
 export const SECTIONS_IMAGE_URL_KEY = "branding.sections_image_url";
 
-/** Built-in illustrative assets committed with the application. */
+/** Optimized photographs of the actual NAVI space, committed with the app. */
 export const DEFAULT_HERO_IMAGE_URL = "/images/photos/hero.webp";
 export const DEFAULT_SECTIONS_IMAGE_URL = "/images/photos/sections.webp";
 export const DEFAULT_GALLERY_IMAGE_URLS = [
