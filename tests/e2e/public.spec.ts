@@ -371,7 +371,7 @@ test.describe("Public site", () => {
       .nth(2)
       .locator("img")
       .evaluate((image) => Number.parseFloat(getComputedStyle(image).scale));
-    expect(stretchZoom).toBeGreaterThan(1.2);
+    expect(stretchZoom).toBeGreaterThan(1.5);
     for (const photo of await photos.all()) {
       await photo.scrollIntoViewIfNeeded();
       await expect

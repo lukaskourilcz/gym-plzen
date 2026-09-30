@@ -99,7 +99,7 @@ export default async function EquipmentPage() {
                     illustrative={content.illustrativePhotos}
                     imageClassName={
                       index === 2
-                        ? "origin-[72%_25%] object-[center_20%] scale-[1.25] sm:scale-[1.5]"
+                        ? "origin-[72%_25%] object-[center_20%] scale-[1.55] sm:scale-[1.8]"
                         : undefined
                     }
                     className={cn(
