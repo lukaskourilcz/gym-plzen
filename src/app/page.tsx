@@ -170,7 +170,7 @@ export default async function HomePage() {
             fill
             priority
             sizes="100vw"
-            className="-z-10 object-cover"
+            className="-z-10 object-cover object-left sm:object-center"
           />
           {/* Solid brand veil: white hero copy must stay legible over any photo. */}
           <div
