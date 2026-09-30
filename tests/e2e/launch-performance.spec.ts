@@ -1,15 +1,22 @@
 import { test, expect } from "@playwright/test";
 import { join } from "node:path";
+import {
+  addDaysToDateKey,
+  dateKeyInTimeZone,
+  localDateTimeToDate,
+} from "../../src/lib/helpers/datetime";
 
 test("local launch timing, transferred bytes and route transitions (#173)", async ({
   browser,
 }) => {
   test.setTimeout(180_000);
   const samples: object[] = [];
+  const detailsRoute = `/rezervace/udaje?start=${encodeURIComponent(localDateTimeToDate(addDaysToDateKey(dateKeyInTimeZone(new Date()), 7), 300).toISOString())}`;
   for (const width of [390, 1280]) {
     for (const [state, route] of [
       [null, "/"],
       [null, "/rezervace"],
+      [null, detailsRoute],
       ["member", "/account"],
       ["admin", "/admin"],
       ["admin", "/admin/calendar"],
@@ -76,6 +83,8 @@ test("local launch timing, transferred bytes and route transitions (#173)", asyn
               : await page.reload();
           expect(response?.status()).toBe(200);
           await expect(page.locator("main")).toBeVisible();
+          await expect(page.locator("main h1").first()).toBeVisible();
+          await expect(page).toHaveTitle(/\S/);
           await page.waitForLoadState("networkidle");
           const measured = await page.evaluate(() => {
             const navigation = performance.getEntriesByType(
@@ -130,6 +139,10 @@ test("local launch timing, transferred bytes and route transitions (#173)", asyn
             .getByRole("link", { name: /Pokračovat/ })
             .click();
           await expect(page).toHaveURL(/\/rezervace\/udaje\?start=/);
+          await expect(
+            page.getByLabel("E-mail", { exact: true }),
+          ).toBeVisible();
+          await expect(page).toHaveTitle(/\S/);
           await page.waitForLoadState("networkidle");
           currentRoute = new URL(page.url()).pathname;
           samples.push({
@@ -171,11 +184,9 @@ test("local launch timing, transferred bytes and route transitions (#173)", asyn
     null,
     2,
   );
-  await test
-    .info()
-    .attach("launch-performance.json", {
-      body,
-      contentType: "application/json",
-    });
+  await test.info().attach("launch-performance.json", {
+    body,
+    contentType: "application/json",
+  });
   console.log(`LAUNCH_METRICS ${body}`);
 });
