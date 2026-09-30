@@ -1,14 +1,26 @@
+import {
+  AdminListFilters,
+  AdminListPagination,
+} from "@/components/admin/list-filters";
+import {
+  ADMIN_PAGE_SIZE,
+  demoAdminPage,
+  readAdminFilters,
+  type AdminFilters,
+  type AdminSearchParams,
+} from "@/lib/helpers/admin-list";
+import {
+  pageFromParam,
+  pageLimit,
+  pageOffset,
+  splitPage,
+} from "@/lib/helpers/pagination";
+import { activityPage, memberMessagePage } from "@/lib/services/admin-lists";
 import { requireAdmin } from "@/lib/auth/guards";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import {
-  activity,
-  loyalty,
-  members,
-  messages,
-  reservations,
-} from "@/lib/services";
+import { activity, loyalty, members, reservations } from "@/lib/services";
 import {
   formatChannel,
   formatDate,
@@ -88,16 +100,24 @@ function Detail({
   );
 }
 
-async function loadMember(id: string) {
+async function loadMember(
+  id: string,
+  filters: AdminFilters,
+  pages: { reservations: number; activity: number; messages: number },
+) {
   const member = await members.getMember(id);
   if (!member) return null;
-  const [status, history, deliveries, entries] = await Promise.all([
+  const [status, history, deliveries, entries, totals] = await Promise.all([
     loyalty.getLoyaltyStatus(id),
-    reservations.listHistoryForUser(id),
-    messages.listForUser(id),
-    activity.listForMember(id),
+    reservations.listHistoryForUser(id, pageLimit(ADMIN_PAGE_SIZE), {
+      offset: pageOffset(pages.reservations, ADMIN_PAGE_SIZE),
+      filters,
+    }),
+    memberMessagePage(id, pages.messages, filters),
+    activityPage(pages.activity, filters, id),
+    reservations.historyTotalsForUser(id),
   ]);
-  return { member, status, history, deliveries, entries };
+  return { member, status, history, deliveries, entries, totals };
 }
 
 /**
@@ -108,26 +128,53 @@ async function loadMember(id: string) {
  */
 export default async function MemberProfilePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<AdminSearchParams>;
 }) {
   await requireAdmin();
   const { id } = await params;
   const demo = await hasDemoAdminSession();
+  const query = await searchParams;
+  const filters = readAdminFilters(query);
+  const pages = {
+    reservations: pageFromParam(query.reservationPage),
+    activity: pageFromParam(query.activityPage),
+    messages: pageFromParam(query.messagePage),
+  };
   const loaded = demo
     ? await loadDemoMember(id)
     : UUID.test(id)
-      ? await loadMember(id)
+      ? await loadMember(id, filters, pages)
       : null;
   if (!loaded) notFound();
-  const { member, status, history, deliveries, entries } = loaded;
+  const { member, status } = loaded;
+  const historyPage = demo
+    ? demoAdminPage(loaded.history, pages.reservations, filters, (r) => ({
+        text: `${r.contactName ?? ""} ${r.contactEmail ?? ""}`,
+        date: r.startsAt,
+        status: r.status,
+      }))
+    : splitPage(loaded.history, ADMIN_PAGE_SIZE);
+  const deliveryPage = demo
+    ? demoAdminPage(loaded.deliveries, pages.messages, filters, (m) => ({
+        text: m.recipient,
+        date: m.sentAt ?? m.createdAt,
+      }))
+    : splitPage(loaded.deliveries, ADMIN_PAGE_SIZE);
+  const entriesPage = splitPage(loaded.entries, ADMIN_PAGE_SIZE);
+  const { rows: history } = historyPage;
+  const { rows: deliveries } = deliveryPage;
+  const { rows: entries } = entriesPage;
+  const totals =
+    "totals" in loaded
+      ? loaded.totals
+      : { count: loaded.history.length, spentCents: 0 };
+  const path = `/admin/members/${id}`;
   const profile = member.profile;
   const name = member.user.name || member.user.email;
-  // Only money that actually arrived counts as paid: a hold whose payment
-  // never settled carries a price too.
-  const spentCents = history
-    .filter((row) => row.paymentStatus === "succeeded")
-    .reduce((sum, row) => sum + (row.priceCents ?? 0), 0);
+  const spentCents = totals.spentCents;
 
   return (
     <div>
@@ -227,9 +274,15 @@ export default async function MemberProfilePage({
         </div>
       </section>
 
+      <AdminListFilters
+        path={path}
+        filters={filters}
+        placeholder="E-mail nebo popis"
+        dateLabel="Datum"
+      />
       <section aria-labelledby="member-reservations" className="mt-10">
         <h2 id="member-reservations" className="mb-3 text-lg font-semibold">
-          Rezervace ({history.length})
+          Rezervace ({totals.count})
         </h2>
         <Table label="Rezervace člena">
           <TableHeader>
@@ -299,6 +352,14 @@ export default async function MemberProfilePage({
             )}
           </TableBody>
         </Table>
+        <AdminListPagination
+          path={path}
+          params={query}
+          page={pages.reservations}
+          hasNext={historyPage.hasNext}
+          pageKey="reservationPage"
+          label="Stránkování rezervací člena"
+        />
       </section>
 
       <section aria-labelledby="member-activity" className="mt-10">
@@ -340,6 +401,14 @@ export default async function MemberProfilePage({
             )}
           </TableBody>
         </Table>
+        <AdminListPagination
+          path={path}
+          params={query}
+          page={pages.activity}
+          hasNext={entriesPage.hasNext}
+          pageKey="activityPage"
+          label="Stránkování akcí člena"
+        />
       </section>
 
       <section aria-labelledby="member-messages" className="mt-10">
@@ -383,6 +452,14 @@ export default async function MemberProfilePage({
             )}
           </TableBody>
         </Table>
+        <AdminListPagination
+          path={path}
+          params={query}
+          page={pages.messages}
+          hasNext={deliveryPage.hasNext}
+          pageKey="messagePage"
+          label="Stránkování zpráv člena"
+        />
       </section>
 
       {demo ? null : (

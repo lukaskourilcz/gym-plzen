@@ -43,6 +43,10 @@ import {
 import { cancelOrdersOfReleased, cancelPendingOrderIn } from "./order-state";
 import { notifyReservationCancelled } from "./operator-notifications";
 import { formatDateTime, formatMoney } from "@/lib/helpers/format";
+import type { AdminFilters } from "@/lib/helpers/admin-list";
+import { allowedValue } from "@/lib/helpers/admin-list";
+import { reservationStatus } from "@/lib/db/schema/enums";
+import { adminDateFilter, adminTextSearch } from "./admin-list-query";
 
 /**
  * Reservation service : the write-side business logic for bookings. All
@@ -528,7 +532,12 @@ export interface ReservationHistoryRow extends Reservation {
 export async function listHistoryForUser(
   userId: string,
   limit = 200,
+  options?: { offset: number; filters: AdminFilters },
 ): Promise<ReservationHistoryRow[]> {
+  const filters = options?.filters;
+  const status = filters
+    ? allowedValue(filters.status, reservationStatus.enumValues)
+    : undefined;
   const rows = await db
     .select({
       reservation,
@@ -555,9 +564,23 @@ export async function listHistoryForUser(
         ),
       ),
     )
-    .where(eq(reservation.userId, userId))
+    .where(
+      and(
+        eq(reservation.userId, userId),
+        filters ? adminDateFilter(reservation.startsAt, filters) : undefined,
+        filters
+          ? adminTextSearch(
+              filters.q,
+              reservation.contactName,
+              reservation.contactEmail,
+            )
+          : undefined,
+        status ? eq(reservation.status, status) : undefined,
+      ),
+    )
     .orderBy(desc(reservation.startsAt), desc(reservation.id))
-    .limit(limit);
+    .limit(limit)
+    .offset(options?.offset ?? 0);
   return rows.map((row) => ({
     ...row.reservation,
     paymentStatus: row.paymentStatus,
@@ -567,6 +590,24 @@ export async function listHistoryForUser(
     rescheduled: Boolean(row.rescheduled),
     orderSlots: Number(row.orderSlots ?? 0),
   }));
+}
+
+/** Profile cards describe the complete history, independently of table filters. */
+export async function historyTotalsForUser(userId: string) {
+  const [row] = await db
+    .select({
+      count: sql<number>`count(*)::int`,
+      spentCents: sql<number>`coalesce(sum(case when
+      (select p.status::text from public.payment p where p.reservation_id=reservation.id
+        or (reservation.order_id is not null and p.order_id=reservation.order_id)
+        order by p.created_at desc,p.id desc limit 1)='succeeded'
+      then coalesce(${reservation.priceCents},0) else 0 end),0)::bigint`.mapWith(
+        Number,
+      ),
+    })
+    .from(reservation)
+    .where(eq(reservation.userId, userId));
+  return row!;
 }
 
 /** How many slots each of the given orders holds, for list annotations. */

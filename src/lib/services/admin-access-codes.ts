@@ -1,8 +1,10 @@
+import { accessCodePage } from "./admin-lists";
+import { readAdminFilters, type AdminFilters } from "@/lib/helpers/admin-list";
 import "server-only";
 import { desc, eq, inArray, sql, or, like } from "drizzle-orm";
 import { assertAdmin } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
-import { accessCode, reservation, profiles, entryLog } from "@/lib/db/schema";
+import { accessCode, reservation, entryLog } from "@/lib/db/schema";
 import { readKeypadCodes, readKeypadUsageLog } from "@/lib/integrations/nuki";
 import { hashCode } from "@/lib/helpers/crypto";
 
@@ -15,27 +17,12 @@ import {
 export const ACCESS_CODE_PAGE_SIZE = 50;
 
 /** Authorize before either database or Nuki access; never persist fetched PINs. */
-export async function listAdminAccessCodes(page: number) {
+export async function listAdminAccessCodes(
+  page: number,
+  filters: AdminFilters = readAdminFilters({}),
+) {
   await assertAdmin();
-  const records = await db
-    .select({
-      code: accessCode,
-      reservationId: reservation.id,
-      reservationStart: reservation.startsAt,
-      reservationEnd: reservation.endsAt,
-      reservationStatus: reservation.status,
-      userId: reservation.userId,
-      name: reservation.contactName,
-      email: reservation.contactEmail,
-      memberName: profiles.fullName,
-      memberEmail: profiles.email,
-    })
-    .from(accessCode)
-    .innerJoin(reservation, eq(reservation.id, accessCode.reservationId))
-    .leftJoin(profiles, eq(profiles.id, reservation.userId))
-    .orderBy(desc(accessCode.createdAt), desc(accessCode.id))
-    .offset((page - 1) * ACCESS_CODE_PAGE_SIZE)
-    .limit(ACCESS_CODE_PAGE_SIZE + 1);
+  const records = await accessCodePage(page, filters);
   let nukiUnavailable = false;
   const pins = records.length
     ? await readKeypadCodes().catch(() => {

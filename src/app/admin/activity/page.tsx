@@ -1,3 +1,13 @@
+import {
+  AdminListFilters,
+  AdminListPagination,
+} from "@/components/admin/list-filters";
+import {
+  ADMIN_PAGE_SIZE,
+  readAdminFilters,
+  type AdminSearchParams,
+} from "@/lib/helpers/admin-list";
+import { activityPage } from "@/lib/services/admin-lists";
 import { requireAdmin } from "@/lib/auth/guards";
 import Link from "next/link";
 import { activity } from "@/lib/services";
@@ -12,7 +22,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Pagination } from "@/components/ui/pagination";
 import { pageFromParam, splitPage } from "@/lib/helpers/pagination";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
 import { ActivityActor } from "@/components/admin/activity-actor";
@@ -32,15 +41,16 @@ export const dynamic = "force-dynamic";
 export default async function ActivityPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<AdminSearchParams>;
 }) {
   await requireAdmin();
   const params = await searchParams;
   const page = pageFromParam(params.page);
+  const filters = readAdminFilters(params);
   const demo = await hasDemoAdminSession();
   const { rows, hasNext } = splitPage(
-    demo ? [] : await activity.listPage(page),
-    activity.ACTIVITY_PAGE_SIZE,
+    demo ? [] : await activityPage(page, filters),
+    ADMIN_PAGE_SIZE,
   );
 
   return (
@@ -48,6 +58,20 @@ export default async function ActivityPage({
       <PageHeader
         title="Historie akcí"
         description="Potvrzené, zrušené a přesunuté rezervace, přijaté platby a změny provedené v administraci. Nejnovější nahoře."
+      />
+      <AdminListFilters
+        path="/admin/activity"
+        filters={filters}
+        placeholder="Jméno, e-mail nebo popis"
+        selects={[
+          {
+            name: "action",
+            label: "Akce",
+            options: Object.entries(activity.ACTIVITY_ACTIONS).map(
+              ([value, label]) => ({ value, label }),
+            ),
+          },
+        ]}
       />
       <Table label="Historie akcí">
         <TableHeader>
@@ -104,10 +128,11 @@ export default async function ActivityPage({
           )}
         </TableBody>
       </Table>
-      <Pagination
+      <AdminListPagination
+        path="/admin/activity"
+        params={params}
         page={page}
         hasNext={hasNext}
-        hrefForPage={(next) => `/admin/activity?page=${next}`}
         label="Stránkování historie akcí"
       />
     </div>

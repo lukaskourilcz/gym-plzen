@@ -1,3 +1,14 @@
+import {
+  AdminListFilters,
+  AdminListPagination,
+} from "@/components/admin/list-filters";
+import {
+  ADMIN_PAGE_SIZE,
+  readAdminFilters,
+  type AdminSearchParams,
+} from "@/lib/helpers/admin-list";
+import { pageFromParam, splitPage } from "@/lib/helpers/pagination";
+import { invoicePage } from "@/lib/services/admin-lists";
 import { requireAdmin } from "@/lib/auth/guards";
 import Link from "next/link";
 import { invoices } from "@/lib/services";
@@ -28,10 +39,17 @@ function czk(cents: number, decimals: boolean): string {
 }
 
 /** Issued payment documents: what went out, to whom, and when. */
-export default async function DocumentsPage() {
+export default async function DocumentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<AdminSearchParams>;
+}) {
   await requireAdmin();
   const demo = await hasDemoAdminSession();
-  const [rows, billing] = demo
+  const query = await searchParams;
+  const filters = readAdminFilters(query);
+  const page = pageFromParam(query.page);
+  const [loaded, billing] = demo
     ? [
         [],
         {
@@ -42,9 +60,11 @@ export default async function DocumentsPage() {
         },
       ]
     : await Promise.all([
-        invoices.listInvoices(),
+        invoicePage(page, filters),
         invoices.getBillingReadiness(),
       ]);
+
+  const { rows, hasNext } = splitPage(loaded, ADMIN_PAGE_SIZE);
 
   return (
     <div>
@@ -90,6 +110,22 @@ export default async function DocumentsPage() {
           <CardTitle>Vystavené doklady</CardTitle>
         </CardHeader>
         <CardContent>
+          <AdminListFilters
+            path="/admin/doklady"
+            filters={filters}
+            placeholder="Jméno, e-mail nebo číslo dokladu"
+            dateLabel="Vystaveno"
+            selects={[
+              {
+                name: "delivery",
+                label: "Odesláno",
+                options: [
+                  { value: "sent", label: "Odesláno" },
+                  { value: "unsent", label: "Neodesláno" },
+                ],
+              },
+            ]}
+          />
           {rows.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Zatím žádný doklad. První se vystaví po nejbližší zaplacené
@@ -151,6 +187,12 @@ export default async function DocumentsPage() {
               </table>
             </div>
           )}
+          <AdminListPagination
+            path="/admin/doklady"
+            params={query}
+            page={page}
+            hasNext={hasNext}
+          />
         </CardContent>
       </Card>
     </div>

@@ -2,6 +2,8 @@
 
 Řídicí issue: [#105](https://github.com/lukaskourilcz/gym-plzen/issues/105). PR: [#180](https://github.com/lukaskourilcz/gym-plzen/pull/180). Rozhodnutí vlastníka: [#178](https://github.com/lukaskourilcz/gym-plzen/issues/178).
 
+**Historický report před schválením:** PR #180 bylo následně výslovně schváleno, sloučeno a nasazeno; P1 přesunů je v produkci opravený. Aktuální stav a odložené úkony jsou v #178. Nové stránkování administrace a potvrzený úklid 41 testovacích rezervací jsou popsány v [navazujícím reportu](ADMIN_LISTS_FOLLOWUP_2026_09_30.md).
+
 ## Výsledek a rozsah
 
 **Produkční vydání: NO-GO do schválení a nasazení opravy přesunů a ověření externích poskytovatelů/fyzického vstupu.** Reprodukovaný P1 je opraven v auditní větvi; původní produkční commit `493f2c5` jej obsahoval a aktuální `e67b90a` mění pouze samostatnou fotografickou práci, takže oprava přesunů dosud nasazená není. Žádný merge ani produkční migrace nebyly provedeny. Finální technický výsledek pro PR a CI je uveden v části Ověření.

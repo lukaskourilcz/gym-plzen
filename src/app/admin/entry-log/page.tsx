@@ -1,5 +1,16 @@
+import {
+  AdminListFilters,
+  AdminListPagination,
+} from "@/components/admin/list-filters";
+import {
+  ADMIN_PAGE_SIZE,
+  readAdminFilters,
+  demoAdminPage,
+  type AdminSearchParams,
+} from "@/lib/helpers/admin-list";
+import { pageFromParam, splitPage } from "@/lib/helpers/pagination";
+import { entryPage } from "@/lib/services/admin-lists";
 import { requireAdmin } from "@/lib/auth/guards";
-import { entryLog } from "@/lib/services";
 import {
   formatDateTime,
   formatLockAction,
@@ -21,20 +32,65 @@ export const metadata = { title: "Kniha vstupů" };
 export const dynamic = "force-dynamic";
 
 /** Actual unlocks read from the Nuki lock (synced by webhook + cron). */
-export default async function EntryLogPage() {
+export default async function EntryLogPage({
+  searchParams,
+}: {
+  searchParams: Promise<AdminSearchParams>;
+}) {
   await requireAdmin();
   const demoEnabled = await hasDemoAdminSession();
-  const { rows } = await withDemoFallback(
-    entryLog.listRecentEntries(200),
+  const query = await searchParams;
+  const filters = readAdminFilters(query);
+  const page = pageFromParam(query.page);
+  const { rows: loaded, demo } = await withDemoFallback(
+    demoEnabled ? Promise.resolve([]) : entryPage(page, filters),
     (d) => d.entries,
     demoEnabled,
   );
+
+  const { rows, hasNext } = demo
+    ? demoAdminPage(loaded, page, filters, (e) => ({
+        text: e.nukiName ?? "",
+        date: e.occurredAt,
+        action: e.action ?? "",
+        trigger: e.trigger ?? "",
+      }))
+    : splitPage(loaded, ADMIN_PAGE_SIZE);
 
   return (
     <div>
       <PageHeader
         title="Kniha vstupů"
         description="Přehled skutečných odemčení načtený ze zámku Nuki."
+      />
+      <AdminListFilters
+        path="/admin/entry-log"
+        filters={filters}
+        placeholder="Jméno nebo autorizace"
+        selects={[
+          {
+            name: "action",
+            label: "Akce",
+            options: ["unlock", "lock", "unlatch", "lock_n_go", "keypad_open"]
+              .map((value) => ({ value, label: formatLockAction(value) }))
+              .concat([{ value: "keypad_failure", label: "Neúspěšný vstup" }]),
+          },
+          {
+            name: "trigger",
+            label: "Spouštěč",
+            options: [
+              "system",
+              "manual",
+              "button",
+              "automatic",
+              "web",
+              "app",
+              "auto_lock",
+              "accessory",
+              "keypad",
+            ].map((value) => ({ value, label: formatLockTrigger(value) })),
+          },
+        ]}
       />
       <Table>
         <TableHeader>
@@ -67,6 +123,12 @@ export default async function EntryLogPage() {
           )}
         </TableBody>
       </Table>
+      <AdminListPagination
+        path="/admin/entry-log"
+        params={query}
+        page={page}
+        hasNext={hasNext}
+      />
     </div>
   );
 }

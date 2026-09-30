@@ -161,6 +161,7 @@ try {
           "public.spec.ts",
           "auth.spec.ts",
           "admin.spec.ts",
+          "admin-filtering.spec.ts",
           "booking-flow.spec.ts",
           "customer.spec.ts",
           "analytics.spec.ts",

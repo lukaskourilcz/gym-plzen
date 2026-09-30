@@ -1,3 +1,14 @@
+import {
+  AdminListFilters,
+  AdminListPagination,
+} from "@/components/admin/list-filters";
+import {
+  ADMIN_PAGE_SIZE,
+  readAdminFilters,
+  type AdminSearchParams,
+} from "@/lib/helpers/admin-list";
+import { pageFromParam, splitPage } from "@/lib/helpers/pagination";
+import { newsletterPage } from "@/lib/services/admin-lists";
 import { requireAdmin } from "@/lib/auth/guards";
 import { newsletter } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
@@ -18,11 +29,20 @@ import { UnsubscribeButton } from "./unsubscribe-button";
 export const metadata = { title: "Odběratelé novinek" };
 export const dynamic = "force-dynamic";
 
-export default async function NewsletterPage() {
+export default async function NewsletterPage({
+  searchParams,
+}: {
+  searchParams: Promise<AdminSearchParams>;
+}) {
   await requireAdmin();
   const demo = await hasDemoAdminSession();
-  const rows = demo ? [] : await newsletter.listSubscribers();
-  const active = rows.filter((row) => row.status === "subscribed").length;
+  const query = await searchParams;
+  const filters = readAdminFilters(query);
+  const page = pageFromParam(query.page);
+  const { rows: loaded, totals } = demo
+    ? { rows: [], totals: { total: 0, active: 0 } }
+    : await newsletterPage(page, filters);
+  const { rows, hasNext } = splitPage(loaded, ADMIN_PAGE_SIZE);
   return (
     <div>
       <PageHeader
@@ -30,9 +50,25 @@ export default async function NewsletterPage() {
         description="E-mailové adresy získané přes formulář pod mapou na úvodní stránce. Do každého e-mailu s novinkami vložte odběrateli jeho odkaz pro odhlášení."
       />
       <div className="mb-8 flex flex-wrap gap-4">
-        <StatCard label="Odběratelů celkem" value={rows.length} />
-        <StatCard label="Aktivních" value={active} />
+        <StatCard label="Odběratelů celkem" value={totals.total} />
+        <StatCard label="Aktivních" value={totals.active} />
       </div>
+      <AdminListFilters
+        path="/admin/newsletter"
+        filters={filters}
+        placeholder="Jméno, e-mail nebo zdroj"
+        dateLabel="Souhlas udělen"
+        selects={[
+          {
+            name: "status",
+            label: "Stav",
+            options: [
+              { value: "subscribed", label: "Odebírá" },
+              { value: "unsubscribed", label: "Odhlášen" },
+            ],
+          },
+        ]}
+      />
       <Table>
         <TableHeader>
           <TableRow>
@@ -86,6 +122,12 @@ export default async function NewsletterPage() {
           ) : null}
         </TableBody>
       </Table>
+      <AdminListPagination
+        path="/admin/newsletter"
+        params={query}
+        page={page}
+        hasNext={hasNext}
+      />
     </div>
   );
 }
