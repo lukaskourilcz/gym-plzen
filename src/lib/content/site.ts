@@ -352,8 +352,9 @@ export async function loadSiteContent(
   let sectionsImageUrl: string | null = DEFAULT_SECTIONS_IMAGE_URL;
   const galleryImageUrls: string[] = [...DEFAULT_GALLERY_IMAGE_URLS];
   const zoneImageUrls: string[] = [...DEFAULT_ZONE_IMAGE_URLS];
-  // Default on: the photographs in place today are stand-ins.
-  let illustrativePhotos = true;
+  // Built-in photographs now show the real NAVI space. The operator can still
+  // label future stand-in images explicitly through the CMS setting.
+  let illustrativePhotos = false;
   /*
    * Only a real instant is accepted here: `resolveEntryPrice` tolerates
    * anything else by quoting the standard price, but the intent of a caller

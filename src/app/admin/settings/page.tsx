@@ -70,13 +70,13 @@ export default async function SettingsPage() {
         null,
         null,
         DEFAULT_HERO_IMAGE_URL,
-        "Ilustrační fotografie soukromého fitness",
+        "Interiér NAVI Private Gym v Plzni",
         DEFAULT_SECTIONS_IMAGE_URL,
         DEFAULT_SMS_ACCESS_TEMPLATE,
         {
           galleryImageUrls: [...DEFAULT_GALLERY_IMAGE_URLS],
           zoneImageUrls: [...DEFAULT_ZONE_IMAGE_URLS],
-          illustrativePhotos: true,
+          illustrativePhotos: false,
         },
         {
           profile: DEFAULT_BILLING_PROFILE,

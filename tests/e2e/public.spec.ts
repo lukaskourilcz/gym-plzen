@@ -189,14 +189,13 @@ test.describe("Public site", () => {
     await expect(
       page.getByRole("link", { name: "Rezervovat", exact: true }).first(),
     ).toBeVisible();
-    // The hero and shared background already carry overlaid content, so only
-    // the four unobstructed gallery photographs receive labels here.
+    // The gallery now shows photographs of the actual gym.
     await expect(page.locator("[data-illustrative-photo-marker]")).toHaveCount(
-      4,
+      0,
     );
     await expect(
       page.getByRole("button", { name: "Ilustrační foto" }),
-    ).toHaveCount(4);
+    ).toHaveCount(0);
     // Two icon links now: the PNG the metadata declares and the classic
     // /favicon.ico that browsers and link-preview tools request unprompted.
     await expect(
@@ -348,35 +347,36 @@ test.describe("Public site", () => {
     ).toHaveCount(0);
   });
 
-  test("equipment photos use mobile labels and desktop tooltips", async ({
+  test("real equipment photos load without illustrative labels", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/vybaveni", { waitUntil: "domcontentloaded" });
 
-    // The batch hero plus all six equipment-zone photographs.
-    const markers = page.locator("[data-illustrative-photo-marker]");
-    await expect(markers).toHaveCount(7);
-    const heroMarker = markers.first();
-    await expect(
-      page.locator("[data-illustrative-photo-mobile-label]"),
-    ).toHaveCount(7);
-    await expect(
-      page.locator('button[aria-label="Ilustrační foto"]'),
-    ).toHaveCount(7);
-    await expect(
-      heroMarker.locator("[data-illustrative-photo-mobile-label]"),
-    ).toBeVisible();
-    await expect(
-      heroMarker.locator('button[aria-label="Ilustrační foto"]'),
-    ).toBeHidden();
+    // The page hero plus all six equipment-zone photographs.
+    const photos = page.locator("main img");
+    await expect(photos).toHaveCount(7);
+    for (const photo of await photos.all()) {
+      await photo.scrollIntoViewIfNeeded();
+      await expect
+        .poll(async () =>
+          photo.evaluate(
+            (image) =>
+              image instanceof HTMLImageElement &&
+              image.complete &&
+              image.naturalWidth > 0,
+          ),
+        )
+        .toBe(true);
+    }
+    await expect(page.locator("[data-illustrative-photo-marker]")).toHaveCount(
+      0,
+    );
 
     await page.setViewportSize({ width: 1280, height: 900 });
-    const heroTooltip = heroMarker.locator('[role="tooltip"]');
-    await expect(heroTooltip).toHaveCSS("opacity", "0");
-    await heroMarker.getByRole("button", { name: "Ilustrační foto" }).focus();
-    await expect(heroTooltip).toHaveCSS("opacity", "1");
-    await expect(heroTooltip).toHaveText("Ilustrační foto");
+    await expect(page.locator("[data-illustrative-photo-marker]")).toHaveCount(
+      0,
+    );
 
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - window.innerWidth,

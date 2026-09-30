@@ -174,7 +174,7 @@ export default async function HomePage() {
           {/* Solid brand veil: white hero copy must stay legible over any photo. */}
           <div
             aria-hidden="true"
-            className="absolute inset-0 -z-10 bg-ink/60"
+            className="absolute inset-0 -z-10 bg-ink/50"
           />
           <Container
             data-hero
@@ -332,7 +332,7 @@ export default async function HomePage() {
                 className="object-cover"
               />
               {/* Match the hero veil so the shared room photograph stays visible. */}
-              <div className="absolute inset-0 bg-ink/60" />
+              <div className="absolute inset-0 bg-ink/50" />
             </div>
           </div>
 

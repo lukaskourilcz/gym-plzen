@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { SITE_DEFAULTS } from "../../src/lib/content/site";
+import { SITE_DEFAULTS, loadSiteContent } from "../../src/lib/content/site";
 import {
   EMAIL_TEMPLATE_DEFINITIONS,
   emailTextToHtml,
@@ -91,7 +91,9 @@ test("the content rebrand leaves real addresses and handles intact", async () =>
   assert.equal(rebrand("Beze změny"), "Beze změny");
 });
 
-test("illustrative photos are labelled and never claim to be the gym", async () => {
+test("real built-in photos are unlabelled while stand-ins can still be marked", async () => {
+  const content = await loadSiteContent("cs", { defaultsOnly: true });
+  assert.equal(content.illustrativePhotos, false);
   const fs = await import("node:fs/promises");
   const component = await fs.readFile(
     "src/components/site/illustrative-photo.tsx",
