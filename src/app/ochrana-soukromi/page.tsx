@@ -414,7 +414,12 @@ export default async function PrivacyPage() {
                   spustí se až po aktivním souhlasu. Odmítnutí je stejně snadné
                   jako přijetí a nemá vliv na možnost rezervovat studio.
                 </p>
-                <div className="overflow-x-auto rounded-lg border border-border bg-background">
+                <div
+                  tabIndex={0}
+                  role="region"
+                  aria-labelledby="cookies-title"
+                  className="overflow-x-auto rounded-lg border border-border bg-background"
+                >
                   <table className="w-full min-w-[42rem] border-collapse text-left text-sm leading-6">
                     <thead className="bg-muted/50 text-foreground">
                       <tr>
