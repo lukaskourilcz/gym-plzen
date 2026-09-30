@@ -271,8 +271,15 @@ async function rescheduleLocked(
     // A failed/ambiguous PUT cannot release either time window or confirm a move.
     for (const code of (await listCodesForReservation(current.id)).filter(
       (code) => !["revoked", "expired"].includes(code.status),
-    ))
-      await revokeAccessCode(code.id);
+    )) {
+      try {
+        await revokeAccessCode(code.id);
+      } catch {
+        throw new ActionError(
+          "Změna termínu čeká na ověření odebrání vstupního kódu. Kontaktujte prosím obsluhu.",
+        );
+      }
+    }
     if (
       (await getOperations()).accessCodesEnabled &&
       isAccessCodePreparationDue(target.startsAt)

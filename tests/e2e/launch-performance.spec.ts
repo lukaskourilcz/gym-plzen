@@ -37,14 +37,17 @@ test("local launch timing, transferred bytes and route transitions (#173)", asyn
           : {}),
       });
       try {
-        await context.route("**/*", (request) =>
-          ["localhost", "127.0.0.1"].includes(
-            new URL(request.request().url()).hostname,
-          )
-            ? request.continue()
-            : request.abort(),
-        );
         const page = await context.newPage();
+        // Playwright routing disables the HTTP cache. Block external HTTPS
+        // providers through Chromium instead, so reload measures a warm cache.
+        const network = await context.newCDPSession(page);
+        await network.send("Network.enable");
+        await network.send("Network.setBlockedURLs", {
+          urls: ["https://*", "wss://*", "ws://*"],
+        });
+        await network.send("Network.setCacheDisabled", {
+          cacheDisabled: false,
+        });
         await page.addInitScript(() => {
           const metrics = { lcp: 0, cls: 0, interaction: 0 };
           Object.assign(window, { launchMetrics: metrics });
@@ -85,7 +88,15 @@ test("local launch timing, transferred bytes and route transitions (#173)", asyn
           await expect(page.locator("#main-content")).toBeVisible();
           await expect(page.locator("#main-content h1").first()).toBeVisible();
           await expect(page).toHaveTitle(/\S/);
-          await page.waitForLoadState("networkidle");
+          await page.waitForLoadState("load");
+          await page.evaluate(async () => {
+            await document.fonts.ready;
+            await new Promise<void>((resolve) =>
+              requestAnimationFrame(() =>
+                requestAnimationFrame(() => resolve()),
+              ),
+            );
+          });
           const measured = await page.evaluate(() => {
             const navigation = performance.getEntriesByType(
               "navigation",
@@ -100,6 +111,10 @@ test("local launch timing, transferred bytes and route transitions (#173)", asyn
                   (total, resource) => total + resource.encodedBodySize,
                   0,
                 );
+            const transferred = (type: string) =>
+              resources
+                .filter((resource) => resource.name.includes(type))
+                .reduce((total, resource) => total + resource.transferSize, 0);
             return {
               ttfb: Math.round(
                 navigation.responseStart - navigation.requestStart,
@@ -107,6 +122,9 @@ test("local launch timing, transferred bytes and route transitions (#173)", asyn
               documentBytes: navigation.encodedBodySize,
               jsBytes: bytes(".js"),
               cssBytes: bytes(".css"),
+              documentTransferBytes: navigation.transferSize,
+              jsTransferBytes: transferred(".js"),
+              cssTransferBytes: transferred(".css"),
               requests: resources.length,
               ...(window as unknown as { launchMetrics: object }).launchMetrics,
               waterfall: resources.map(
@@ -143,7 +161,15 @@ test("local launch timing, transferred bytes and route transitions (#173)", asyn
             page.getByLabel("E-mail", { exact: true }),
           ).toBeVisible();
           await expect(page).toHaveTitle(/\S/);
-          await page.waitForLoadState("networkidle");
+          await page.waitForLoadState("load");
+          await page.evaluate(async () => {
+            await document.fonts.ready;
+            await new Promise<void>((resolve) =>
+              requestAnimationFrame(() =>
+                requestAnimationFrame(() => resolve()),
+              ),
+            );
+          });
           currentRoute = new URL(page.url()).pathname;
           samples.push({
             width,
@@ -178,7 +204,7 @@ test("local launch timing, transferred bytes and route transitions (#173)", asyn
   const body = JSON.stringify(
     {
       conditions:
-        "loopback PostgreSQL and provider fixtures, Chromium, no CPU/network throttling; LCP/CLS lab samples and observed event durations, not field INP",
+        "loopback PostgreSQL and provider fixtures, Chromium, HTTP cache enabled, external HTTPS/WebSocket providers blocked, measurements after load/visible heading/fonts/two frames, no CPU/network throttling; LCP/CLS lab samples and observed event durations, not field INP",
       samples,
     },
     null,
