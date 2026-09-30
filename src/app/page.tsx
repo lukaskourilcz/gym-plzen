@@ -316,7 +316,7 @@ export default async function HomePage() {
          * fixed` would be simpler but breaks on iOS Safari and cannot use
          * next/image.
          */}
-        <div className="relative isolate">
+        <div className="relative isolate bg-ink">
           <div
             aria-hidden="true"
             /* No `overflow-hidden` here: it would become the scrollport for the

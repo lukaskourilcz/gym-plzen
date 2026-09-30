@@ -144,3 +144,27 @@ test("mobile privacy table can receive keyboard focus and scroll", async ({
     .poll(() => table.evaluate((element) => element.scrollLeft))
     .toBeGreaterThan(0);
 });
+
+test("pricing copy has a solid contrasting background when its photograph fails", async ({
+  page,
+}) => {
+  await page.route("**/_next/image**", (request) => request.abort());
+  await page.goto("/");
+  const consent = page.getByRole("button", { name: "Pouze nezbytné" });
+  if (await consent.isVisible()) await consent.click();
+  const pricing = page.locator("#cenik");
+  await pricing.scrollIntoViewIfNeeded();
+  expect(
+    await pricing.evaluate(
+      (element) => getComputedStyle(element.parentElement!).backgroundColor,
+    ),
+  ).not.toBe("rgba(0, 0, 0, 0)");
+  expect(
+    (
+      await new AxeBuilder({ page })
+        .include("#cenik")
+        .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+        .analyze()
+    ).violations,
+  ).toEqual([]);
+});

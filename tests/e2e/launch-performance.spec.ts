@@ -82,8 +82,8 @@ test("local launch timing, transferred bytes and route transitions (#173)", asyn
                 )
               : await page.reload();
           expect(response?.status()).toBe(200);
-          await expect(page.locator("main")).toBeVisible();
-          await expect(page.locator("main h1").first()).toBeVisible();
+          await expect(page.locator("#main-content")).toBeVisible();
+          await expect(page.locator("#main-content h1").first()).toBeVisible();
           await expect(page).toHaveTitle(/\S/);
           await page.waitForLoadState("networkidle");
           const measured = await page.evaluate(() => {

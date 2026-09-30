@@ -59,6 +59,7 @@ const ADMIN_PAGES: { path: string; heading: RegExp }[] = [
   { path: "/admin/tomorrow", heading: /Zítra/i },
   { path: "/admin/finance", heading: /Finance/i },
   { path: "/admin/how-it-works", heading: /Jak co funguje/i },
+  { path: "/admin/design-system", heading: /Design systém/i },
 ];
 
 test.describe("Admin : pages load", () => {
