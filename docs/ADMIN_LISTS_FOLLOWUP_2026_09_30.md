@@ -4,6 +4,8 @@ Větev: `codex/final-launch-audit-20260930`. Rozhodnutí a následné důkazy: [
 
 Původní auditní [PR #180](https://github.com/lukaskourilcz/gym-plzen/pull/180) už byl po výslovném schválení sloučen a nasazen. P1 přesunů je opravený v produkci. Původní auditní report zachycuje stav před tímto schválením; aktuální produkční stav, migrace a odložené úkony vlastníka jsou v #178. Toto navazující rozšíření administrace vychází z nového požadavku vlastníka.
 
+Nové rozšíření je v [PR #193](https://github.com/lukaskourilcz/gym-plzen/pull/193), **nesloučené a nenasazené**. **NO-GO pro jeho nasazení:** GitHub Actions se nespustí kvůli billing/spending-limit bloku účtu. Vlastník musí napravit účtování/limit a poté musí projít CI na aktuálním headu. Agent nemění finanční limity, neprovádí platbu a neobchází CI bránu. Původní produkce zůstává funkční a beze změny Nuki konfigurace.
+
 ## Úplný rozsah nového stránkování a filtrů
 
 Každá tabulka načítá nejvýše 51 řádků a zobrazuje 50. Filtry se provádějí v SQL před limitem, nikoli jen nad právě zobrazenou stránkou. Řazení obsahuje i ID, takže stejné časové značky nezpůsobí překryv sousedních stránek ve stejné datové sadě. Odkazy uchovávají filtry; nový filtr resetuje stránkování. Formuláře používají GET a lze sdílet jejich URL.
@@ -48,8 +50,10 @@ Poslední doplnění úklidu nezměnilo ostré příjmy: **49 úspěšných plat
 ## Ověření a omezení
 
 - **271 unit testů**, **145 integračních testů**, bez přeskočení; lokální SQL invarianty prošly.
-- Produkční build, typy, lint, formát a kontrola diffu prošly. Prohlížečové ověření a finální CI jsou doplněné přímo v navazujícím PR a #178.
-- Lokální celá sada: 101/102 browser scénářů prošlo; jediný zbývající test očekával u člena login namísto následného přesměrování na účet. Po opravě očekávání a lokálního čekání na souhlasový banner nová sada prošla 4/4, bez přeskočení. Předchozí neúspěšné meziběhy nejsou označené za úspěšné; kompletní finální běh je povinný v CI.
+- **102/102 browser scénářů**, bez přeskočení, v posledním celém lokálním běhu. Zahrnuje aktuální samostatnou mobilní fotografii z `main` (`3e77d9e`) doplněnou do auditní větve.
+- Produkční build, typy, lint, formát a kontrola diffu prošly. Plný i produkční npm audit: **0 nálezů**. Vercel preview na aplikačním headu `b059e48` úspěšně sestavené.
+- Historie ověřování: starší celá sada 101/102, protože test očekával u člena login namísto následného přesměrování na účet. Po opravě očekávání a lokálního čekání na souhlasový banner prošla nová sada 4/4 a poté celá finální sada 102/102. Neúspěšné meziběhy nejsou označené za úspěšné.
+- [PR CI na aplikačním headu](https://github.com/lukaskourilcz/gym-plzen/actions/runs/36780212592) a [push CI](https://github.com/lukaskourilcz/gym-plzen/actions/runs/36780207655) se zastavily před startem runneru: selhaná platba účtu nebo nedostatečný spending limit dle GitHub annotation. API nerozlišuje přesnou příčinu. Žádný CI test v těchto bězích nebyl vykonaný; lokální výsledky se nevydávají za úspěšnou CI bránu.
 - Regresní scénáře zahrnují 205 archivovaných e-mailů a 205 doručení, dohledání záznamu za původním limitem, stabilní řazení, jméno hosta i profilu, odpojený archiv, kombinované filtry, skutečné datum odeslání, retenční hranici, doslovné zvláštní znaky, globální souhrny a zachování dat při čtení voucherů.
 - Všechny mutační a formulářové testy probíhají na izolované lokální databázi s lokálními náhradami Auth, Resend a Comgate a blokováním externího síťového přístupu. Produkční administrace nebyla používána k mutačnímu testování.
 - Tato změna přidává ovládání vyžádaných filtrů a stránkování; nezavádí žádný z dosud neschválených návrhů T1–T11 ani změny FAQ, právních dokumentů, e-mailů či administrační nápovědy.
