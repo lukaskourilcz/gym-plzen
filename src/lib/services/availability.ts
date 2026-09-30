@@ -52,6 +52,17 @@ function overlaps(
   return and(lt(startCol, endsAt), gt(endCol, startsAt))!;
 }
 
+/** Includes the second, durable window of an unfinished access-code change. */
+export function reservationOverlaps(startsAt: Date, endsAt: Date): SQL {
+  // Match the exclusion constraint's expression so active-window reads can
+  // use its GiST index, including a hold whose original is outside the range.
+  return sql`(case when ${reservation.rescheduleStartsAt} is null
+    then tstzmultirange(tstzrange(${reservation.startsAt}, ${reservation.endsAt}, '[)'))
+    else tstzmultirange(tstzrange(${reservation.startsAt}, ${reservation.endsAt}, '[)'),
+      tstzrange(${reservation.rescheduleStartsAt}, ${reservation.rescheduleEndsAt}, '[)'))
+    end) && tstzmultirange(tstzrange(${startsAt.toISOString()}::timestamptz, ${endsAt.toISOString()}::timestamptz, '[)'))`;
+}
+
 /** Check whether a requested window is within opening hours. */
 async function isWithinOpeningHours(
   startsAt: Date,
@@ -97,7 +108,7 @@ export async function checkAvailability(
     .from(reservation)
     .where(
       and(
-        overlaps(reservation.startsAt, reservation.endsAt, startsAt, endsAt),
+        reservationOverlaps(startsAt, endsAt),
         or(
           ...ACTIVE_STATUSES.map((s) => eq(reservation.status, s)),
           eq(reservation.accessRevocationPending, true),
@@ -135,9 +146,7 @@ export async function listCalendarEntries(rangeStart: Date, rangeEnd: Date) {
   const reservations = await db
     .select()
     .from(reservation)
-    .where(
-      overlaps(reservation.startsAt, reservation.endsAt, rangeStart, rangeEnd),
-    );
+    .where(reservationOverlaps(rangeStart, rangeEnd));
 
   const blocks = await db
     .select()

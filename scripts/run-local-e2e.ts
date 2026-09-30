@@ -163,6 +163,10 @@ try {
           "admin.spec.ts",
           "booking-flow.spec.ts",
           "customer.spec.ts",
+          "analytics.spec.ts",
+          "design-preview-gate.spec.ts",
+          "accessibility.spec.ts",
+          "outage.spec.ts",
         ]),
   ]);
   console.log(

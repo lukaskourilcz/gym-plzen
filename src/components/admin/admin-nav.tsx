@@ -133,7 +133,7 @@ export function AdminNav() {
       >
         {NAV_GROUPS.map((group) => (
           <div key={group.label}>
-            <div className="mb-1 px-2.5 text-[10px] font-extrabold uppercase tracking-[.14em] text-white/45">
+            <div className="mb-1 px-2.5 text-[10px] font-extrabold uppercase tracking-[.14em] text-white/55">
               {group.label}
             </div>
             <div className="grid gap-px">

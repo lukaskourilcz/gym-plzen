@@ -1,4 +1,4 @@
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, lte } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { membership, membershipPlan, payment } from "@/lib/db/schema";
 import type { Membership, MembershipPlan, Payment } from "@/lib/db/types";
@@ -74,20 +74,30 @@ export async function upsertPlan(input: {
 /** The member's current active/trialing membership, if any. */
 export async function getActiveMembership(
   userId: string,
+  now = new Date(),
 ): Promise<Membership | null> {
   const [row] = await db
     .select()
     .from(membership)
-    .where(eq(membership.userId, userId))
+    .where(
+      and(
+        eq(membership.userId, userId),
+        inArray(membership.status, ["active", "trialing"]),
+        lte(membership.currentPeriodStart, now),
+        gt(membership.currentPeriodEnd, now),
+      ),
+    )
     .orderBy(desc(membership.currentPeriodEnd))
     .limit(1);
-  if (!row) return null;
-  return ["active", "trialing"].includes(row.status) ? row : null;
+  return row ?? null;
 }
 
 /** True when the member can book without paying per session. */
-export async function hasActiveMembership(userId: string): Promise<boolean> {
-  return (await getActiveMembership(userId)) !== null;
+export async function hasActiveMembership(
+  userId: string,
+  now = new Date(),
+): Promise<boolean> {
+  return (await getActiveMembership(userId, now)) !== null;
 }
 
 // ── Payments (history) ───────────────────────────────────────────────────────

@@ -112,7 +112,19 @@ async function announceUnlocked(
 }
 
 async function fulfillLocked(reservationId: string): Promise<void> {
-  const reservation = await getReservation(reservationId);
+  let reservation = await getReservation(reservationId);
+  if (reservation?.rescheduleStartsAt) {
+    const { abortPendingReschedule } = await import("./rescheduling");
+    if (!(await abortPendingReschedule(reservationId))) {
+      await markStepFailed(
+        reservationId,
+        "code_created",
+        "Nuki zatím nepotvrdilo správný kód a jeho platnost. Další kód se nevytváří.",
+      );
+      return;
+    }
+    reservation = await getReservation(reservationId);
+  }
   if (
     !reservation ||
     reservation.status !== "confirmed" ||

@@ -1,3 +1,4 @@
+import { reservationOverlaps } from "./availability";
 import { and, asc, eq, gt, lt, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
@@ -139,8 +140,7 @@ export async function findOverlappingReservations(
     .where(
       and(
         // start < otherEnd AND end > otherStart, using operators so Dates bind.
-        lt(reservation.startsAt, end),
-        gt(reservation.endsAt, start),
+        reservationOverlaps(start, end),
         or(
           eq(reservation.status, "pending"),
           eq(reservation.status, "confirmed"),

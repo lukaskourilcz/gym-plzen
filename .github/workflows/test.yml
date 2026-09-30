@@ -36,6 +36,7 @@ jobs:
       - run: npm run test:integration
       - run: npm run test:sql
       - run: npm audit --omit=dev --audit-level=high
+      - run: npm audit --audit-level=moderate
       - run: npx playwright install --with-deps chromium
       - name: Create a separate browser database
         run: psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE DATABASE navi_browser_test'

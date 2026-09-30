@@ -81,6 +81,11 @@ export function BookingCalendar({
     const observedNames = new Set<HTMLElement>();
     const resizeRows = () => {
       frame = 0;
+      // Toolbar buttons already carry localized names. Their icon fonts are
+      // decoration, including after a FullCalendar view/navigation redraw.
+      container
+        .querySelectorAll<HTMLElement>(".fc-toolbar .fc-icon[role='img']")
+        .forEach((icon) => icon.setAttribute("aria-hidden", "true"));
       const heights = new Map<number, number>();
       for (const name of observedNames) {
         if (!container.contains(name)) {

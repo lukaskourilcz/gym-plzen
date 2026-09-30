@@ -388,6 +388,11 @@ export function BookingCalendar({
                   <div
                     key={weekIndex}
                     role="row"
+                    aria-hidden={
+                      !grid
+                        .slice(weekIndex * 7, weekIndex * 7 + 7)
+                        .some((cell) => cell.inMonth)
+                    }
                     className="grid grid-cols-7 gap-1"
                   >
                     {grid

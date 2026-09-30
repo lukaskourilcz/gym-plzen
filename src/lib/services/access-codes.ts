@@ -72,11 +72,15 @@ export async function issueAccessCode(params: {
 }): Promise<IssueCodeResult> {
   return withReservationLock(params.reservationId, async () => {
     const booking = await getReservation(params.reservationId);
+    const startsAt = booking?.rescheduleStartsAt ?? booking?.startsAt;
+    const endsAt = booking?.rescheduleEndsAt ?? booking?.endsAt;
     if (
       !(await getOperations()).accessCodesEnabled ||
       booking?.status !== "confirmed" ||
       booking.endsAt <= new Date() ||
-      !isAccessCodePreparationDue(booking.startsAt)
+      !startsAt ||
+      !endsAt ||
+      !isAccessCodePreparationDue(startsAt)
     )
       throw new Error("Reservation not eligible for access preparation");
     const live = (await listCodesForReservation(booking.id)).find(
@@ -102,11 +106,7 @@ export async function issueAccessCode(params: {
           identity(values),
           ACCESS_CODE_ENCRYPTION_KEY,
         ),
-        ...accessCodeValidity(
-          booking.startsAt,
-          booking.endsAt,
-          await getShowerMinutes(),
-        ),
+        ...accessCodeValidity(startsAt, endsAt, await getShowerMinutes()),
         status: "failed",
         provisionState: "prepared",
         failureReason: "awaiting_device",

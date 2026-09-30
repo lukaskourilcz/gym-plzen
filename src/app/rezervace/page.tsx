@@ -14,9 +14,9 @@ import {
   getBookingHorizonDays,
   getSlotsForRange,
   isWithinBookingHorizon,
-  resolveBookableSlot,
+  resolveBookableSlots,
 } from "@/lib/services/slots";
-import { getEntryPriceCents, getLoyaltyStatus } from "@/lib/services/loyalty";
+import { getLoyaltyStatus } from "@/lib/services/loyalty";
 import { parseSelectedStarts } from "@/lib/helpers/booking-selection";
 import { Container, Section } from "@/components/ui/container";
 import { Notice } from "@/components/ui/notice";
@@ -117,22 +117,22 @@ export default async function BookingPage({
     month: "numeric",
     timeZone: "Europe/Prague",
   });
-  const selected = (
-    await Promise.all(
-      parseSelectedStarts(params.start).map(async (startsAt) => {
-        const resolved = await resolveBookableSlot(startsAt);
-        if (!resolved || startsAt <= now) return null;
-        return {
-          startISO: startsAt.toISOString(),
-          label: `${shortDay.format(startsAt)}, ${formatTimeRange(startsAt, resolved.endsAt)}`,
-          priceCents: await getEntryPriceCents(startsAt),
-        };
-      }),
-    )
-  ).filter((slot) => slot !== null);
-  const loyaltyStatus = session
-    ? await getLoyaltyStatus(session.user.id)
-    : null;
+  const starts = parseSelectedStarts(params.start);
+  const [resolvedSlots, loyaltyStatus] = await Promise.all([
+    resolveBookableSlots(starts),
+    session ? getLoyaltyStatus(session.user.id) : null,
+  ]);
+  const selected = starts
+    .map((startsAt, index) => {
+      const resolved = resolvedSlots[index];
+      if (!resolved || startsAt <= now) return null;
+      return {
+        startISO: startsAt.toISOString(),
+        label: `${shortDay.format(startsAt)}, ${formatTimeRange(startsAt, resolved.endsAt)}`,
+        priceCents: content.entryPriceForDate(startsAt),
+      };
+    })
+    .filter((slot) => slot !== null);
   // A reward already claimed by a pending checkout moves the next free slot
   // one full cycle on, as the order itself would.
   const loyalty = loyaltyStatus

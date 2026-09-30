@@ -222,7 +222,9 @@ test("booking, details and voucher quotes all pass the visit date to pricing", a
   );
   assert.match(details, /orders\.quoteOrder\(/);
   assert.match(vouchers, /orders\.quoteOrder\(/);
-  assert.match(calendar, /getEntryPriceCents\(startsAt\)/);
+  // The page reuses the already-loaded date resolver; the integration test
+  // compares all selected prices with the server authority at period edges.
+  assert.match(calendar, /content\.entryPriceForDate\(startsAt\)/);
 });
 
 test("rescheduling never re-prices a reservation", async () => {

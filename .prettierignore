@@ -4,3 +4,4 @@ playwright-report
 test-results
 coverage
 public
+.claude/settings.local.json*

@@ -1,6 +1,15 @@
-import { listCodesForReservation, revokeAccessCode } from "./access-codes";
+import {
+  issueAccessCode,
+  listCodesForReservation,
+  revokeAccessCode,
+} from "./access-codes";
 import { withReservationLock } from "./operation-lock";
-import { lockSchedule } from "./availability";
+import {
+  checkAvailability,
+  lockSchedule,
+  reservationOverlaps,
+} from "./availability";
+import { isAccessCodePreparationDue } from "@/lib/config/access-code-delivery";
 import { getOperations } from "./operations";
 import { isDateOpenForBooking } from "@/lib/config/operations";
 import { or, and, eq, gt, inArray, lt, ne } from "drizzle-orm";
@@ -28,6 +37,7 @@ import {
   resolveSlotFromHours,
 } from "./slots";
 import { fulfillReservation } from "./fulfillment";
+import { initPipeline } from "./pipeline";
 import { deliverRescheduleConfirmation } from "./reschedule-delivery";
 import { notifyReservationRescheduled } from "./operator-notifications";
 import { recordIn as recordActivityIn } from "./activity";
@@ -96,9 +106,9 @@ export interface RescheduleReservationInput {
 }
 
 /**
- * Atomically claim the new slot and release the old one on the same reservation
- * row. The row lock serializes double-clicks; the exclusion constraint remains
- * the final guard when a different customer concurrently claims the target.
+ * Persist a hold on both windows, verify any due access change, then commit
+ * the move. The operation lock serializes requests; the exclusion constraint
+ * guards the target against other customers throughout provider calls.
  */
 export async function rescheduleReservation(
   input: RescheduleReservationInput,
@@ -117,6 +127,15 @@ async function rescheduleLocked(
     )
   )
     throw new ActionError("Tento den zatím není možné rezervovat.");
+  const original = await getReservationForMove(
+    input.reservationId,
+    input.userId,
+  );
+  if (
+    original.rescheduleStartsAt &&
+    !(await abortPendingReschedule(original.id))
+  )
+    throw new ActionError("Rezervaci se nepodařilo změnit.");
   const now = input.now ?? new Date();
   if (Number.isNaN(input.startsAt.getTime()) || input.startsAt <= now) {
     throw new ActionError("Vyberte platný budoucí termín.");
@@ -133,7 +152,7 @@ async function rescheduleLocked(
   let updated: Reservation;
   let previousStartsAt: Date;
   try {
-    ({ moved: updated, previousStartsAt } = await db.transaction(async (tx) => {
+    const { current, target } = await db.transaction(async (tx) => {
       await lockSchedule(tx);
       const [current] = await tx
         .select()
@@ -186,8 +205,7 @@ async function rescheduleLocked(
         .from(reservation)
         .where(
           and(
-            lt(reservation.startsAt, target.endsAt),
-            gt(reservation.endsAt, target.startsAt),
+            reservationOverlaps(target.startsAt, target.endsAt),
             or(
               inArray(reservation.status, ["pending", "confirmed"]),
               eq(reservation.accessRevocationPending, true),
@@ -216,26 +234,83 @@ async function rescheduleLocked(
         throw new ActionError("Tento termín není k dispozici.");
       }
 
-      // A code prepared at the 24-hour boundary must be revoked before releasing
-      // the old window. On uncertainty the transaction leaves that window booked.
-      const liveCodes = (await listCodesForReservation(current.id)).filter(
-        (c) => !["revoked", "expired"].includes(c.status),
-      );
-      for (const code of liveCodes) {
-        try {
-          await revokeAccessCode(code.id);
-        } catch {
-          throw new ActionError(
-            "Změna termínu čeká na ověření odebrání vstupního kódu. Kontaktujte prosím obsluhu.",
-          );
-        }
+      await tx
+        .update(reservation)
+        .set({
+          rescheduleStartsAt: target.startsAt,
+          rescheduleEndsAt: target.endsAt,
+          updatedAt: new Date(),
+        })
+        .where(eq(reservation.id, current.id));
+      // This commits with the two-window hold: a crashed request is picked up
+      // by fulfillment and cleans the abandoned target before delivering a PIN.
+      await initPipeline(current.id, tx);
+      await tx
+        .update(reservationPipeline)
+        .set({
+          status: "pending",
+          attempts: 0,
+          nextRetryAt: new Date(),
+          completedAt: null,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(reservationPipeline.reservationId, current.id),
+            inArray(reservationPipeline.step, [
+              "code_created",
+              "code_delivered",
+            ]),
+          ),
+        );
+      return { current, target };
+    });
+    previousStartsAt = current.startsAt;
+
+    // Durable device writes happen after the hold commits and before the move.
+    // A failed/ambiguous PUT cannot release either time window or confirm a move.
+    for (const code of (await listCodesForReservation(current.id)).filter(
+      (code) => !["revoked", "expired"].includes(code.status),
+    )) {
+      try {
+        await revokeAccessCode(code.id);
+      } catch {
+        throw new ActionError(
+          "Změna termínu čeká na ověření odebrání vstupního kódu. Kontaktujte prosím obsluhu.",
+        );
       }
+    }
+    if (
+      (await getOperations()).accessCodesEnabled &&
+      isAccessCodePreparationDue(target.startsAt)
+    ) {
+      const issued = await issueAccessCode({
+        reservationId: current.id,
+        startsAt: target.startsAt,
+        endsAt: target.endsAt,
+      });
+      if (!issued.provisionedOnLock)
+        throw new ActionError("Rezervaci se nepodařilo změnit.");
+    }
+
+    updated = await db.transaction(async (tx) => {
+      await lockSchedule(tx);
+      const available = await checkAvailability(
+        target.startsAt,
+        target.endsAt,
+        { excludeReservationId: current.id },
+        tx,
+      );
+      if (!available.available || target.startsAt <= new Date())
+        throw new ActionError("Tento termín není k dispozici.");
       const changedAt = new Date();
       const [moved] = await tx
         .update(reservation)
         .set({
           startsAt: target.startsAt,
           endsAt: target.endsAt,
+          rescheduleStartsAt: null,
+          rescheduleEndsAt: null,
           updatedAt: changedAt,
         })
         .where(
@@ -243,6 +318,7 @@ async function rescheduleLocked(
             eq(reservation.id, current.id),
             eq(reservation.userId, input.userId),
             eq(reservation.status, "confirmed"),
+            eq(reservation.rescheduleStartsAt, target.startsAt),
           ),
         )
         .returning();
@@ -282,8 +358,8 @@ async function rescheduleLocked(
       });
 
       // Commit the retryable code-refresh intent together with the new slot.
-      // New-code creation happens after commit; old-code revocation above
-      // must finish before releasing the original slot.
+      // Codes outside the preparation horizon are created later; any code due
+      // now was already verified before releasing the original slot.
       await tx
         .update(reservationPipeline)
         .set({
@@ -304,9 +380,12 @@ async function rescheduleLocked(
           ),
         );
 
-      return { moved, previousStartsAt: current.startsAt };
-    }));
+      return moved;
+    });
   } catch (error) {
+    // Confirm absence before freeing the target. If readback is uncertain the
+    // persisted hold and pending pipeline survive for the watchdog to clean.
+    await abortPendingReschedule(input.reservationId).catch(() => false);
     const code = pgErrorCode(error);
     if (code === PG_EXCLUSION_VIOLATION) {
       throw new ActionError(
@@ -349,6 +428,53 @@ async function rescheduleLocked(
   }
 
   return updated;
+}
+
+async function getReservationForMove(
+  id: string,
+  userId: string,
+): Promise<Reservation> {
+  const [row] = await db
+    .select()
+    .from(reservation)
+    .where(and(eq(reservation.id, id), eq(reservation.userId, userId)))
+    .limit(1);
+  if (!row) throw new ActionError("Rezervaci se nepodařilo najít.");
+  return row;
+}
+
+/** Abort an unfinished move; its original reservation has never moved. */
+export async function abortPendingReschedule(id: string): Promise<boolean> {
+  return withReservationLock(id, async () => {
+    const [row] = await db
+      .select()
+      .from(reservation)
+      .where(eq(reservation.id, id))
+      .limit(1);
+    if (!row?.rescheduleStartsAt) return true;
+    const target = row.rescheduleStartsAt;
+    const codes = (await listCodesForReservation(id)).filter(
+      (code) =>
+        code.validFrom.getTime() === target.getTime() &&
+        !["revoked", "expired"].includes(code.status),
+    );
+    try {
+      for (const code of codes) await revokeAccessCode(code.id);
+    } catch {
+      return false;
+    }
+    await db
+      .update(reservation)
+      .set({
+        rescheduleStartsAt: null,
+        rescheduleEndsAt: null,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(eq(reservation.id, id), eq(reservation.rescheduleStartsAt, target)),
+      );
+    return true;
+  });
 }
 
 /** Reservations that already consumed their one customer-initiated change. */
