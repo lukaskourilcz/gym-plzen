@@ -47,16 +47,30 @@ export default async function CalendarPage() {
 
   const events: EventInput[] = [
     ...reservations
-      .filter((r) => r.status !== "cancelled")
-      .map((r) => ({
-        id: r.id,
-        title: r.contactName?.trim() || "Zákazník bez jména",
-        start: r.startsAt.toISOString(),
-        end: r.endsAt.toISOString(),
-        backgroundColor:
-          r.status === "confirmed" ? "var(--success)" : "var(--warning)",
-        borderColor: "transparent",
-      })),
+      .filter((r) => r.status !== "cancelled" || r.accessRevocationPending)
+      .flatMap((r) => [
+        {
+          id: r.id,
+          title: r.contactName?.trim() || "Zákazník bez jména",
+          start: r.startsAt.toISOString(),
+          end: r.endsAt.toISOString(),
+          backgroundColor:
+            r.status === "confirmed" ? "var(--success)" : "var(--warning)",
+          borderColor: "transparent",
+        },
+        ...(r.rescheduleStartsAt && r.rescheduleEndsAt
+          ? [
+              {
+                id: `${r.id}/reschedule`,
+                title: r.contactName?.trim() || "Zákazník bez jména",
+                start: r.rescheduleStartsAt.toISOString(),
+                end: r.rescheduleEndsAt.toISOString(),
+                backgroundColor: "var(--warning)",
+                borderColor: "transparent",
+              },
+            ]
+          : []),
+      ]),
     ...blocks.map((b) => ({
       id: b.id,
       title: b.note ?? "Blok",

@@ -11,6 +11,7 @@ import {
   gt,
   inArray,
   isNull,
+  isNotNull,
   lte,
   ne,
   or,
@@ -151,9 +152,13 @@ export async function dueForRetry(limit = 50): Promise<ReservationPipeline[]> {
         eq(reservation.status, "confirmed"),
         accessCodesEnabled
           ? undefined
-          : eq(reservationPipeline.step, "payment"),
+          : or(
+              eq(reservationPipeline.step, "payment"),
+              isNotNull(reservation.rescheduleStartsAt),
+            ),
         // Future PIN steps must not occupy the retry batch and starve due ones.
         or(
+          isNotNull(reservation.rescheduleStartsAt),
           eq(reservationPipeline.step, "payment"),
           and(
             eq(reservationPipeline.step, "code_created"),
@@ -171,7 +176,10 @@ export async function dueForRetry(limit = 50): Promise<ReservationPipeline[]> {
             ),
           ),
         ),
-        gt(reservation.endsAt, now),
+        or(
+          gt(reservation.endsAt, now),
+          isNotNull(reservation.rescheduleStartsAt),
+        ),
         or(
           eq(reservationPipeline.status, "retrying"),
           eq(reservationPipeline.status, "failed"),
@@ -184,7 +192,9 @@ export async function dueForRetry(limit = 50): Promise<ReservationPipeline[]> {
       ),
     )
     .orderBy(
-      asc(reservation.startsAt),
+      asc(
+        sql`coalesce(${reservation.rescheduleStartsAt}, ${reservation.startsAt})`,
+      ),
       asc(reservationPipeline.nextRetryAt),
       asc(reservationPipeline.id),
     )
@@ -237,7 +247,13 @@ export async function closeFinishedPipelines(limit = 50): Promise<number> {
           "in_progress",
           "retrying",
         ]),
-        or(eq(reservation.status, "cancelled"), lte(reservation.endsAt, now)),
+        or(
+          eq(reservation.status, "cancelled"),
+          and(
+            lte(reservation.endsAt, now),
+            isNull(reservation.rescheduleStartsAt),
+          ),
+        ),
       ),
     )
     .limit(limit);

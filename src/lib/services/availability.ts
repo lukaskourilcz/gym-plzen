@@ -52,6 +52,19 @@ function overlaps(
   return and(lt(startCol, endsAt), gt(endCol, startsAt))!;
 }
 
+/** Includes the second, durable window of an unfinished access-code change. */
+export function reservationOverlaps(startsAt: Date, endsAt: Date): SQL {
+  return or(
+    overlaps(reservation.startsAt, reservation.endsAt, startsAt, endsAt),
+    overlaps(
+      reservation.rescheduleStartsAt,
+      reservation.rescheduleEndsAt,
+      startsAt,
+      endsAt,
+    ),
+  )!;
+}
+
 /** Check whether a requested window is within opening hours. */
 async function isWithinOpeningHours(
   startsAt: Date,
@@ -97,7 +110,7 @@ export async function checkAvailability(
     .from(reservation)
     .where(
       and(
-        overlaps(reservation.startsAt, reservation.endsAt, startsAt, endsAt),
+        reservationOverlaps(startsAt, endsAt),
         or(
           ...ACTIVE_STATUSES.map((s) => eq(reservation.status, s)),
           eq(reservation.accessRevocationPending, true),
@@ -135,9 +148,7 @@ export async function listCalendarEntries(rangeStart: Date, rangeEnd: Date) {
   const reservations = await db
     .select()
     .from(reservation)
-    .where(
-      overlaps(reservation.startsAt, reservation.endsAt, rangeStart, rangeEnd),
-    );
+    .where(reservationOverlaps(rangeStart, rangeEnd));
 
   const blocks = await db
     .select()

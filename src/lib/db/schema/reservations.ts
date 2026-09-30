@@ -97,6 +97,13 @@ export const reservation = pgTable(
     startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
     endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
 
+    // A move holds both windows until the new access is verified. An abandoned
+    // intent is cleaned up before the original window can be fulfilled again.
+    rescheduleStartsAt: timestamp("reschedule_starts_at", {
+      withTimezone: true,
+    }),
+    rescheduleEndsAt: timestamp("reschedule_ends_at", { withTimezone: true }),
+
     status: reservationStatus("status").notNull().default("pending"),
     accessRevocationPending: boolean("access_revocation_pending")
       .notNull()

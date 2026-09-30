@@ -216,6 +216,8 @@ export function buildDemoReservations(
       startsAt,
       endsAt,
       status,
+      rescheduleStartsAt: null,
+      rescheduleEndsAt: null,
       confirmationTokenHash: null,
       accessRevocationPending: false,
       loyaltyReward: null,

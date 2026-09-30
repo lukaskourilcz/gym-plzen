@@ -1,5 +1,6 @@
 import {
   databaseReady,
+  seedProfile,
   resetDatabase,
   rows,
   setSetting,
@@ -26,6 +27,10 @@ import {
 import { checkAvailability } from "../../src/lib/services/availability";
 import { decryptPin } from "../../src/lib/helpers/pin-vault";
 import { GET as watchdog } from "../../src/app/api/cron/watchdog/route";
+
+import { rescheduleReservation } from "../../src/lib/services/rescheduling";
+import { getSlotsForRange } from "../../src/lib/services/slots";
+import { findOverlappingReservations } from "../../src/lib/services/schedule";
 
 const nativeFetch = globalThis.fetch;
 let online = true,
@@ -146,6 +151,204 @@ describe(
       mode = "ok";
       deleteWorks = true;
     });
+    async function movableBooking() {
+      const user = {
+        id: "22222222-2222-4222-8222-222222222222",
+        email: "move@example.test",
+        fullName: "Synthetic Move",
+      };
+      await seedProfile(user);
+      const original = new Date("2030-10-05T10:00:00Z");
+      const target = new Date("2030-10-01T13:00:00Z");
+      const [row] = await rows<{ id: string }>(
+        `insert into reservation (user_id, starts_at, ends_at, status, price_cents, contact_email) values ($1,$2,$3,'confirmed',19900,$4) returning id`,
+        [
+          user.id,
+          original,
+          new Date(original.getTime() + 60 * 60000),
+          user.email,
+        ],
+      );
+      await initPipeline(row!.id);
+      return { id: row!.id, userId: user.id, original, target };
+    }
+    async function storedMove(id: string) {
+      return (
+        await rows<{
+          status: string;
+          starts_at: Date;
+          reschedule_starts_at: Date | null;
+        }>(
+          "select status,starts_at,reschedule_starts_at from reservation where id=$1",
+          [id],
+        )
+      )[0]!;
+    }
+
+    test("offline move refuses success, preserves the original and does not consume the change (#170)", async () => {
+      const b = await movableBooking();
+      online = false;
+      await assert.rejects(
+        rescheduleReservation({
+          reservationId: b.id,
+          userId: b.userId,
+          startsAt: b.target,
+        }),
+      );
+      const row = await storedMove(b.id);
+      assert.equal(row.status, "confirmed");
+      assert.equal(row.starts_at.getTime(), b.original.getTime());
+      assert.equal(row.reschedule_starts_at, null);
+      assert.equal(
+        (await rows("select id from reservation_reschedule")).length,
+        0,
+      );
+      assert.equal(
+        (
+          await rows(
+            "select id from message_delivery where dedupe_key like 'reschedule-confirmation/%'",
+          )
+        ).length,
+        0,
+      );
+      assert.equal(
+        (
+          await checkAvailability(
+            b.target,
+            new Date(b.target.getTime() + 60 * 60000),
+          )
+        ).available,
+        true,
+      );
+      online = true;
+      const moved = await rescheduleReservation({
+        reservationId: b.id,
+        userId: b.userId,
+        startsAt: b.target,
+      });
+      assert.equal(moved.startsAt.getTime(), b.target.getTime());
+      const active = await rows<{ provision_state: string }>(
+        "select provision_state from access_code where reservation_id=$1 and status not in ('revoked','expired')",
+        [b.id],
+      );
+      assert.deepEqual(
+        active.map((row) => row.provision_state),
+        ["ready"],
+      );
+    });
+
+    test("uncertain target access holds both windows at the database until restart cleanup (#170)", async () => {
+      const b = await movableBooking();
+      mode = "pending";
+      await assert.rejects(
+        rescheduleReservation({
+          reservationId: b.id,
+          userId: b.userId,
+          startsAt: b.target,
+        }),
+      );
+      const row = await storedMove(b.id);
+      assert.equal(row.starts_at.getTime(), b.original.getTime());
+      assert.equal(row.reschedule_starts_at?.getTime(), b.target.getTime());
+      assert.equal(
+        (await dueForRetry()).some((step) => step.reservationId === b.id),
+        true,
+      );
+      for (const start of [b.original, b.target]) {
+        await assert.rejects(
+          rows(
+            `insert into reservation (starts_at,ends_at,status,price_cents) values ($1,$2,'confirmed',19900)`,
+            [start, new Date(start.getTime() + 60 * 60000)],
+          ),
+          (error: unknown) =>
+            typeof error === "object" &&
+            error !== null &&
+            "code" in error &&
+            error.code === "23P01",
+        );
+        assert.equal(
+          (
+            await checkAvailability(
+              start,
+              new Date(start.getTime() + 60 * 60000),
+            )
+          ).available,
+          false,
+        );
+      }
+      assert.equal(
+        (
+          await findOverlappingReservations(
+            b.target,
+            new Date(b.target.getTime() + 60 * 60000),
+          )
+        )[0]?.id,
+        b.id,
+      );
+      const calendar = await getSlotsForRange("2030-10-01", "2030-10-02", now);
+      assert.equal(
+        calendar.days[0]!.slots.find(
+          (slot) => slot.start.getTime() === b.target.getTime(),
+        )?.available,
+        false,
+      );
+      // The device eventually reports a definite authorization; cleanup can
+      // now revoke it and release the rejected target, without moving the user.
+      auths = auths.map((auth) => {
+        const settled = { ...auth };
+        delete settled.operationId;
+        return settled;
+      });
+      mode = "ok";
+      await fulfillReservation(b.id);
+      assert.equal((await storedMove(b.id)).reschedule_starts_at, null);
+      assert.equal(
+        (await storedMove(b.id)).starts_at.getTime(),
+        b.original.getTime(),
+      );
+      assert.equal(
+        (
+          await checkAvailability(
+            b.target,
+            new Date(b.target.getTime() + 60 * 60000),
+          )
+        ).available,
+        true,
+      );
+      assert.equal(auths.length, 0);
+      assert.equal((await code(b.id)).encrypted_pin, null);
+    });
+
+    test("successful near-term move verifies its exact window before recording confirmation (#170)", async () => {
+      const b = await movableBooking();
+      const moved = await rescheduleReservation({
+        reservationId: b.id,
+        userId: b.userId,
+        startsAt: b.target,
+      });
+      const ready = await code(b.id);
+      assert.equal(ready.provision_state, "ready");
+      assert.equal(ready.valid_from.getTime(), b.target.getTime());
+      assert.equal(
+        ready.valid_until.getTime(),
+        moved.endsAt.getTime() + 15 * 60000,
+      );
+      assert.equal(moved.rescheduleStartsAt, null);
+      assert.equal(
+        (
+          await checkAvailability(
+            b.original,
+            new Date(b.original.getTime() + 60 * 60000),
+          )
+        ).available,
+        true,
+      );
+      assert.equal(
+        (await rows("select id from reservation_reschedule")).length,
+        1,
+      );
+    });
+
     test("48-hour booking confirms without PIN or lock request", async () => {
       const id = await booking(2880);
       await fulfillReservation(id);
@@ -181,6 +384,80 @@ describe(
         0,
       );
     });
+    for (const hours of [1, 6, 24]) {
+      test(`recovery after ${hours}h outage prepares upcoming access and never delivers an ended visit (#171)`, async (t) => {
+        const upcoming = await booking(hours * 60 + 30);
+        const ended = await booking(-120);
+        online = false;
+        await fulfillReservation(upcoming);
+        const saved = await rows<{ id: string }>(
+          "select id from access_code where reservation_id=$1",
+          [upcoming],
+        );
+        t.mock.timers.setTime(now.getTime() + hours * 60 * 60_000);
+        online = true;
+        await fulfillReservation(upcoming);
+        await fulfillReservation(ended);
+        await closeFinishedPipelines();
+        assert.equal((await code(upcoming)).provision_state, "ready");
+        if (saved.length) assert.equal((await code(upcoming)).id, saved[0]!.id);
+        assert.equal(
+          (
+            await rows(
+              "select id from message_delivery where reservation_id=$1 and kind='access_code' and status='sent'",
+              [upcoming],
+            )
+          ).length,
+          1,
+        );
+        assert.equal(
+          (
+            await rows("select id from access_code where reservation_id=$1", [
+              ended,
+            ])
+          ).length,
+          0,
+        );
+        assert.equal(
+          (
+            await rows(
+              "select id from message_delivery where reservation_id=$1 and kind='access_code'",
+              [ended],
+            )
+          ).length,
+          0,
+        );
+      });
+    }
+
+    test("crashed far-future move is cleaned even with code preparation disabled (#170)", async () => {
+      const b = await movableBooking();
+      const target = new Date("2030-10-07T13:00:00Z");
+      await rows(
+        "update reservation set reschedule_starts_at=$1,reschedule_ends_at=$2 where id=$3",
+        [target, new Date(target.getTime() + 60 * 60_000), b.id],
+      );
+      await setSetting("booking.operations", {
+        paymentsEnabled: true,
+        bookingsFrom: "",
+        accessCodesEnabled: false,
+      });
+      assert.ok(
+        (await dueForRetry()).some((step) => step.reservationId === b.id),
+      );
+      await fulfillReservation(b.id);
+      assert.equal((await storedMove(b.id)).reschedule_starts_at, null);
+      assert.equal(
+        (await storedMove(b.id)).starts_at.getTime(),
+        b.original.getTime(),
+      );
+      assert.equal(
+        (await rows("select id from reservation_reschedule")).length,
+        0,
+      );
+      assert.equal(nukiCalls, 0);
+    });
+
     test("long outage recovers same saved PIN after more than five failures", async () => {
       const id = await booking();
       online = false;

@@ -23,7 +23,7 @@ import {
 import { getSetting } from "./cms";
 import { getOperations } from "./operations";
 import { isDateOpenForBooking } from "@/lib/config/operations";
-import { releaseExpiredPendingReservations } from "./reservations";
+import { reservationOverlaps } from "./availability";
 
 export interface Slot {
   start: Date;
@@ -101,28 +101,6 @@ export function buildDaySlots(
   return slots;
 }
 
-/*
- * Abandoned checkout holds are released by the watchdog every five minutes.
- * The calendar used to run the same write transaction on every render, which
- * put a write in front of every public read for a case that is almost always
- * empty. One release per minute per instance keeps availability fresh
- * without that cost; a failure here must never hide the calendar.
- */
-const RELEASE_INTERVAL_MS = 60_000;
-let lastReleaseAt = 0;
-async function releaseExpiredHoldsThrottled(now: Date): Promise<void> {
-  if (now.getTime() - lastReleaseAt < RELEASE_INTERVAL_MS) return;
-  lastReleaseAt = now.getTime();
-  try {
-    await releaseExpiredPendingReservations(now);
-  } catch (error) {
-    lastReleaseAt = 0;
-    logger.warn("releaseExpiredPendingReservations skipped", {
-      error: String(error),
-    });
-  }
-}
-
 /** Load a visible calendar range without ever substituting fictional slots. */
 export async function getSlotsForRange(
   startDateKey: string,
@@ -133,17 +111,20 @@ export async function getSlotsForRange(
   const rangeEnd = localDateTimeToDate(endDateKeyExclusive, 0);
 
   try {
-    await releaseExpiredHoldsThrottled(now);
     const operations = await getOperations();
     const [hoursRows, reservations, blocks] = await Promise.all([
       db.select().from(openingHours),
       db
-        .select({ startsAt: reservation.startsAt, endsAt: reservation.endsAt })
+        .select({
+          startsAt: reservation.startsAt,
+          endsAt: reservation.endsAt,
+          rescheduleStartsAt: reservation.rescheduleStartsAt,
+          rescheduleEndsAt: reservation.rescheduleEndsAt,
+        })
         .from(reservation)
         .where(
           and(
-            lt(reservation.startsAt, rangeEnd),
-            gt(reservation.endsAt, rangeStart),
+            reservationOverlaps(rangeStart, rangeEnd),
             or(
               inArray(reservation.status, ["pending", "confirmed"]),
               eq(reservation.accessRevocationPending, true),
@@ -172,10 +153,17 @@ export async function getSlotsForRange(
         },
       ]),
     );
-    const busy = [...reservations, ...blocks].map((item) => ({
-      start: item.startsAt,
-      end: item.endsAt,
-    }));
+    const pendingWindows = reservations.flatMap((item) =>
+      item.rescheduleStartsAt && item.rescheduleEndsAt
+        ? [{ startsAt: item.rescheduleStartsAt, endsAt: item.rescheduleEndsAt }]
+        : [],
+    );
+    const busy = [...reservations, ...pendingWindows, ...blocks].map(
+      (item) => ({
+        start: item.startsAt,
+        end: item.endsAt,
+      }),
+    );
 
     const days: DaySlots[] = [];
     for (
