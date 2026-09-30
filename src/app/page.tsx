@@ -550,6 +550,11 @@ export default async function HomePage() {
                     alt={tile.alt}
                     sizes="(max-width: 1023px) 50vw, 34vw"
                     illustrative={content.illustrativePhotos}
+                    imageClassName={
+                      tile.key === "children-corner"
+                        ? "object-bottom lg:object-center"
+                        : undefined
+                    }
                     className={cn(
                       "aspect-square rounded-md bg-muted lg:aspect-auto",
                       tile.desktopClass,
