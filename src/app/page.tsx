@@ -175,7 +175,7 @@ export default async function HomePage() {
           {/* Solid brand veil: white hero copy must stay legible over any photo. */}
           <div
             aria-hidden="true"
-            className="absolute inset-0 -z-10 bg-ink/60"
+            className="absolute inset-0 -z-10 bg-ink/70"
           />
           <Container
             data-hero
@@ -333,7 +333,7 @@ export default async function HomePage() {
                 className="object-cover"
               />
               {/* Match the hero veil so the shared room photograph stays visible. */}
-              <div className="absolute inset-0 bg-ink/60" />
+              <div className="absolute inset-0 bg-ink/70" />
             </div>
           </div>
 
@@ -498,31 +498,52 @@ export default async function HomePage() {
               />
               <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-1 lg:grid-rows-3">
                 {[
-                  t("home.gallery.image2"),
-                  t("home.gallery.image3"),
-                  t("home.gallery.image4"),
-                ].map((label, index) => (
+                  {
+                    key: "training-detail",
+                    src:
+                      content.galleryImageUrls[2] ||
+                      DEFAULT_GALLERY_IMAGE_URLS[2]!,
+                    alt: t("home.gallery.image3"),
+                    desktopClass: "",
+                  },
+                  {
+                    key: "lounge",
+                    src:
+                      content.galleryImageUrls[3] ||
+                      DEFAULT_GALLERY_IMAGE_URLS[3]!,
+                    alt: t("home.gallery.image4"),
+                    desktopClass: "",
+                  },
+                  {
+                    key: "fridge",
+                    src:
+                      content.zoneImageUrls[4] || DEFAULT_ZONE_IMAGE_URLS[4]!,
+                    alt: t("equipment.zone5.title"),
+                    desktopClass: "lg:hidden",
+                  },
+                  {
+                    key: "children-corner",
+                    src:
+                      content.galleryImageUrls[1] ||
+                      DEFAULT_GALLERY_IMAGE_URLS[1]!,
+                    alt: t("home.gallery.image2"),
+                    desktopClass: "lg:order-first",
+                  },
+                ].map((tile) => (
                   <IllustrativePhoto
-                    key={label}
-                    src={
-                      content.galleryImageUrls[index + 1] ||
-                      DEFAULT_GALLERY_IMAGE_URLS[index + 1]!
-                    }
-                    alt={label}
+                    key={tile.key}
+                    src={tile.src}
+                    alt={tile.alt}
                     sizes="(max-width: 1023px) 50vw, 34vw"
                     illustrative={content.illustrativePhotos}
-                    className="aspect-square rounded-md bg-muted lg:aspect-auto"
+                    className={cn(
+                      "aspect-square rounded-md bg-muted lg:aspect-auto",
+                      tile.desktopClass,
+                    )}
                   >
-                    <GalleryPlaceholder label={label} />
+                    <GalleryPlaceholder label={tile.alt} />
                   </IllustrativePhoto>
                 ))}
-                <IllustrativePhoto
-                  src={content.zoneImageUrls[4] || DEFAULT_ZONE_IMAGE_URLS[4]!}
-                  alt={t("equipment.zone5.title")}
-                  sizes="50vw"
-                  illustrative={content.illustrativePhotos}
-                  className="aspect-square rounded-md bg-muted lg:hidden"
-                />
               </div>
             </div>
             <div className="mt-7 border-t border-border pt-7">

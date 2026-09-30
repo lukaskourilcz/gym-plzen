@@ -103,7 +103,8 @@ export default async function EquipmentPage() {
                         : undefined
                     }
                     className={cn(
-                      "aspect-[3/4] min-h-0 sm:aspect-auto sm:min-h-44",
+                      "min-h-0 sm:aspect-auto sm:min-h-44",
+                      index === 0 ? "aspect-[6/5]" : "aspect-[3/4]",
                       index % 2 === 0 ? "bg-ink-elevated" : "bg-sage",
                     )}
                   >

@@ -365,7 +365,9 @@ test.describe("Public site", () => {
         }),
       );
     expect(mobileRatios).toHaveLength(6);
-    expect(mobileRatios.every((ratio) => ratio >= 1.25)).toBe(true);
+    expect(mobileRatios[0]).toBeGreaterThan(0.8);
+    expect(mobileRatios[0]).toBeLessThan(0.9);
+    expect(mobileRatios.slice(1).every((ratio) => ratio >= 1.25)).toBe(true);
     const stretchZoom = await page
       .locator("li[data-zone]")
       .nth(2)
@@ -415,9 +417,21 @@ test.describe("Public site", () => {
     const mobileTiles = await galleryPhotos.evaluateAll((images) =>
       images.slice(1).map((image) => {
         const box = image.parentElement!.getBoundingClientRect();
-        return { x: box.x, y: box.y, width: box.width, height: box.height };
+        return {
+          alt: image.getAttribute("alt"),
+          x: box.x,
+          y: box.y,
+          width: box.width,
+          height: box.height,
+        };
       }),
     );
+    expect(mobileTiles.map((tile) => tile.alt)).toEqual([
+      "Detail tréninkové zóny",
+      "Zázemí a vstup",
+      "Vybavená lednice",
+      "Další pohled na prostor",
+    ]);
     expect(mobileTiles[0]!.y).toBeCloseTo(mobileTiles[1]!.y, 0);
     expect(mobileTiles[2]!.y).toBeCloseTo(mobileTiles[3]!.y, 0);
     expect(mobileTiles[0]!.x).toBeCloseTo(mobileTiles[2]!.x, 0);
@@ -429,6 +443,22 @@ test.describe("Public site", () => {
       page.locator('#prostor img[alt="Vybavená lednice"]'),
     ).toBeHidden();
     await expect(galleryPhotos).toHaveCount(5);
+    const desktopOrder = await galleryPhotos.evaluateAll((images) =>
+      images
+        .slice(1)
+        .map((image) => ({
+          alt: image.getAttribute("alt"),
+          box: image.parentElement!.getBoundingClientRect(),
+        }))
+        .filter(({ box }) => box.width > 0)
+        .sort((a, b) => a.box.y - b.box.y)
+        .map(({ alt }) => alt),
+    );
+    expect(desktopOrder).toEqual([
+      "Další pohled na prostor",
+      "Detail tréninkové zóny",
+      "Zázemí a vstup",
+    ]);
   });
 
   test("booking uses a monthly date-first calendar or a transparent unavailable state", async ({
