@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { existsSync } from "node:fs";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import postgres from "postgres";
 import { requireTestDatabaseUrl } from "../tests/helpers/test-database";
 import { createLocalAuth } from "../tests/e2e/local-auth";
@@ -44,6 +44,7 @@ const testEnv: NodeJS.ProcessEnv = {
   RESEND_BASE_URL: "http://127.0.0.1:4548",
   RESEND_API_KEY: "re_local_test_only",
   RESEND_FROM_EMAIL: "noreply@example.test",
+  ACCESS_CODE_ENCRYPTION_KEY: randomBytes(32).toString("hex"),
   COMGATE_API_URL: "http://127.0.0.1:4547/v2.0",
   COMGATE_MERCHANT_ID: "test-merchant",
   COMGATE_SECRET: "test-secret",
@@ -76,7 +77,12 @@ try {
   await sql`delete from content_block where key = 'home.hero.title' and locale = 'cs'`;
   for (let weekday = 0; weekday < 7; weekday++)
     await sql`insert into opening_hours (day_of_week, open_minute, close_minute, slot_minutes)
-      values (${weekday}, 300, 1425, 75) on conflict (day_of_week) do nothing`;
+      values (${weekday}, 300, 1425, 75)
+      on conflict (day_of_week) do update set
+        open_minute = excluded.open_minute,
+        close_minute = excluded.close_minute,
+        slot_minutes = excluded.slot_minutes,
+        is_closed = 0`;
   for (const [key, value] of [
     [
       "booking.operations",

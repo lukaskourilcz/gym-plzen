@@ -56,6 +56,9 @@ const ADMIN_PAGES: { path: string; heading: RegExp }[] = [
   { path: "/admin/newsletter", heading: /Odběratelé novinek/i },
   { path: "/admin/doklady", heading: /^Doklady$/i },
   { path: "/admin/emails", heading: /^E-maily$/i },
+  { path: "/admin/tomorrow", heading: /Zítra/i },
+  { path: "/admin/finance", heading: /Finance/i },
+  { path: "/admin/how-it-works", heading: /Jak co funguje/i },
 ];
 
 test.describe("Admin : pages load", () => {
@@ -141,13 +144,70 @@ test.describe("Admin : forms", () => {
 
   test("schedule adds a blocked slot", async ({ page }) => {
     await page.goto("/admin/schedule");
-    const { start, end } = futureSlot(13);
+    const { start, end, date } = futureSlot(13);
     // The blocked-slot form is the one with a "Přidat blok" button.
     const form = page.locator("form").filter({ hasText: "Přidat blok" });
     await form.locator('input[type="datetime-local"]').first().fill(start);
     await form.locator('input[type="datetime-local"]').nth(1).fill(end);
     await form.getByRole("button", { name: /Přidat blok/i }).click();
     await expect(page.getByText(/Blok vytvořen|Úklid/i).first()).toBeVisible();
+    const [created] = await sql!<{ id: string }[]>`
+      select id from blocked_slot where starts_at = ${date}`;
+    expect(created?.id).toBeTruthy();
+    await page.reload();
+    await page.getByRole("button", { name: "Odstranit", exact: true }).click();
+    await expect
+      .poll(async () => {
+        const [remaining] = await sql!<{ count: number }[]>`
+        select count(*)::int as count from blocked_slot where id = ${created!.id}`;
+        return remaining?.count;
+      })
+      .toBe(0);
+  });
+
+  test("a voucher is created, deactivated and reactivated", async ({
+    page,
+  }) => {
+    await page.goto("/admin/vouchers");
+    await page.getByLabel("Kód voucheru").fill("E2EAUDIT25");
+    await page.getByLabel("Sleva (%)").fill("25");
+    await page.getByLabel("Maximální počet použití").fill("1");
+    await page.getByRole("button", { name: "Vytvořit voucher" }).click();
+    await expect(page.getByText("Voucher byl vytvořen.")).toBeVisible();
+    await page.reload();
+    const row = page.getByRole("row").filter({ hasText: "E2EAUDIT25" });
+    await expect(row).toContainText("25 %");
+    await expect(row).toContainText("1");
+    await row.getByRole("button", { name: "Deaktivovat" }).click();
+    await expect(row).toContainText("Neaktivní");
+    const [inactive] = await sql!<{ is_active: boolean }[]>`
+      select is_active from voucher where code = 'E2EAUDIT25'`;
+    expect(inactive?.is_active).toBe(false);
+    await row.getByRole("button", { name: "Aktivovat" }).click();
+    await expect(row).toContainText("Aktivní");
+  });
+
+  test("an operator resolves only the selected alert", async ({ page }) => {
+    const [created] = await sql!<{ id: string }[]>`
+      insert into system_alert (title, body, dedupe_key)
+      values ('Lokální kontrola E2E', 'Pouze lokální test.', 'e2e:audit:alert')
+      returning id`;
+    await page.goto("/admin/alerts");
+    const row = page
+      .getByRole("row")
+      .filter({ hasText: "Lokální kontrola E2E" });
+    await row
+      .getByRole("button", {
+        name: "Označit jako vyřešené: Lokální kontrola E2E",
+      })
+      .click();
+    await expect
+      .poll(async () => {
+        const [saved] = await sql!<{ resolved: boolean }[]>`
+        select resolved_at is not null as resolved from system_alert where id = ${created!.id}`;
+        return saved?.resolved;
+      })
+      .toBe(true);
   });
 
   test("reservations : admin creates a manual booking", async ({ page }) => {

@@ -125,9 +125,6 @@ describe(
         );
       };
       await startProviders();
-      await rows(
-        "insert into opening_hours(day_of_week,open_minute,close_minute,slot_minutes) select n,0,1439,60 from generate_series(0,6) n on conflict(day_of_week) do nothing",
-      );
     });
     after(async () => {
       globalThis.fetch = nativeFetch;
