@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import Image, { getImageProps } from "next/image";
 import { ArrowRight, Check, Clock3, ImageIcon, MapPin } from "lucide-react";
 import {
   footerProps,
@@ -109,6 +109,12 @@ export default async function HomePage() {
   const heroImageUrl = content.heroImageUrl || DEFAULT_HERO_IMAGE_URL;
   const heroImageAlt =
     content.heroImageAlt || "Prostor NAVI Private Gym v Plzni";
+  const mobileHeroImage = getImageProps({
+    src: content.zoneImageUrls[0] || DEFAULT_ZONE_IMAGE_URLS[0]!,
+    alt: heroImageAlt,
+    fill: true,
+    sizes: "100vw",
+  }).props;
   const sectionsImageUrl =
     content.sectionsImageUrl || DEFAULT_SECTIONS_IMAGE_URL;
   const steps = STEP_KEYS.map(([titleKey, bodyKey]) => ({
@@ -164,14 +170,22 @@ export default async function HomePage() {
       <SiteHeader brand={brand} />
       <main id="main-content" tabIndex={-1}>
         <section className="relative isolate overflow-hidden bg-ink text-ink-foreground">
-          <Image
-            src={heroImageUrl}
-            alt={heroImageAlt}
-            fill
-            priority
-            sizes="100vw"
-            className="-z-10 object-cover object-left sm:object-center"
-          />
+          <picture className="absolute inset-x-0 top-0 -z-10 h-[630px] sm:inset-0 sm:h-full">
+            <source
+              media="(max-width: 639px)"
+              sizes={mobileHeroImage.sizes}
+              srcSet={mobileHeroImage.srcSet}
+            />
+            <Image
+              src={heroImageUrl}
+              alt={heroImageAlt}
+              fill
+              loading="eager"
+              fetchPriority="high"
+              sizes="100vw"
+              className="object-cover object-[95%_center] sm:object-center"
+            />
+          </picture>
           {/* Solid brand veil: white hero copy must stay legible over any photo. */}
           <div
             aria-hidden="true"
