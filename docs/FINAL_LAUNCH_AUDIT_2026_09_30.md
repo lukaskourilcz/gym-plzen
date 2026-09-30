@@ -4,7 +4,7 @@
 
 ## Výsledek a rozsah
 
-**Produkční vydání: NO-GO do schválení a nasazení opravy přesunů a ověření externích poskytovatelů/fyzického vstupu.** Reprodukovaný P1 je opraven v auditní větvi; produkční commit `493f2c5` jej dosud obsahuje. Žádný merge ani produkční migrace nebyly provedeny. Finální technický výsledek pro PR a CI je uveden v části Ověření.
+**Produkční vydání: NO-GO do schválení a nasazení opravy přesunů a ověření externích poskytovatelů/fyzického vstupu.** Reprodukovaný P1 je opraven v auditní větvi; původní produkční commit `493f2c5` jej obsahoval a aktuální `e67b90a` mění pouze samostatnou fotografickou práci, takže oprava přesunů dosud nasazená není. Žádný merge ani produkční migrace nebyly provedeny. Finální technický výsledek pro PR a CI je uveden v části Ověření.
 
 Všechny commity jsou na jediné větvi `codex/final-launch-audit-20260930`. Produkce byla pouze čtena přes transakce `BEGIN READ ONLY`, bezpečné veřejné stránky a agregované logy. Žádná skutečná rezervace, platba, refundace, zpráva zákazníkovi ani mutace Nuki. Testovací rezervace, obsahové formuláře a náhrady poskytovatelů běžely pouze v odděleném lokálním Postgresu 17.11 a sterilních kopiích zdrojů bez `.env*`. Kopie pro běh testů nejsou další git větve.
 
@@ -29,7 +29,7 @@ Všechny commity jsou na jediné větvi `codex/final-launch-audit-20260930`. Pro
 
 Baseline: 268 unit, 121 integration, SQL invarianty, 65 browser testů; bez přeskočení. Reprodukce P1 přesunu navíc očekávaně selhala na původním kódu.
 
-CI na commitu `14e073f`: [push](https://github.com/lukaskourilcz/gym-plzen/actions/runs/36714381041), [PR](https://github.com/lukaskourilcz/gym-plzen/actions/runs/36714386071), oba success: **268/268 unit, 135/135 integration, 97/97 browser, 0 skipped**, format, lint, typecheck, SQL invarianty, replay všech 24 migrací a produkční build. Finální commit a jeho CI jsou navíc doložené v PR a při uzavření pracovních issues. Plný i produkční `npm audit` mají nulu nálezů; obě kontroly jsou nově povinné v CI.
+CI na aplikačním commitu `da298a2`: [push](https://github.com/lukaskourilcz/gym-plzen/actions/runs/36717817004), [PR](https://github.com/lukaskourilcz/gym-plzen/actions/runs/36717822852), oba success: **268/268 unit, 135/135 integration, 97/97 browser, 0 skipped**, format, lint, typecheck, SQL invarianty, replay všech 24 migrací a produkční build. Finální commit a jeho CI jsou navíc doložené v PR a při uzavření pracovních issues. Plný i produkční `npm audit` mají nulu nálezů; obě kontroly jsou nově povinné v CI.
 
 Finální lokální produkční build a rozšířená browser sada prošly **98/98**, bez skipped (včetně 30 kontrol přístupnosti, photo failure, Design systému a výkonového měření). Cílená poslední access/reschedule sada má **34/34** testů. Starší společný browser běh měl 94 pass a dva lokální failures: pomalý zákaznický submit a přechodnou existenci loading `main` vedle final `main` při měření. Zákaznický retry i opravené měření prošly 4/4. První měření se zapnutou HTTP cache překročilo celkový limit kvůli čekání na `networkidle`; konečné měření čeká na load, skutečný nadpis, fonty a dvě vykreslení. Meziběhy nejsou vykazované jako pass.
 
@@ -124,7 +124,9 @@ Read-only konfigurace: 75min sloty, 05:00–23:45 všech sedm dní, horizont 180
 
 Produkčně načteno sedm bezpečných stránek: FAQ, vybavení, doprava/platba, pravidla, VOP, soukromí a login, všechny HTTP 200. Home/rezervace s původním GET cleanup nebyly použity k produkčnímu auditu dostupnosti. Přihlášené UI se ověřuje lokálně, ne produkčními mutačními kliky.
 
-Vercel aktuální production deploy `dpl_GwvRSjjaxZxb9CJHY4BV3WdJf7cm` / `493f2c5`: dostupný scoped výřez 94 watchdog, 6 entry-log a 2 purge requestů; 5xx agregace prázdná. Produkční historie eviduje 17 migrací, chybí 0006–0010, ačkoli jejich tabulky/unikátní payment index i oba accepted-at sloupce jsou read-only doložené. Lokální replay všech 24 SQL souborů prošel. Drizzle journal není autoritou této vlastní migrační historie; nové SQL se musí aplikovat řízeně po schválení, nikoli slepě přes `db:push`/`db:migrate`. Srovnání produkční historie je v #178.
+Vercel při původním čtení production deploy `dpl_GwvRSjjaxZxb9CJHY4BV3WdJf7cm` / `493f2c5`: dostupný scoped výřez 94 watchdog, 6 entry-log a 2 purge requestů; 5xx agregace prázdná. Produkční historie eviduje 17 migrací, chybí 0006–0010, ačkoli jejich tabulky/unikátní payment index i oba accepted-at sloupce jsou read-only doložené. Lokální replay všech 24 SQL souborů prošel. Drizzle journal není autoritou této vlastní migrační historie; nové SQL se musí aplikovat řízeně po schválení, nikoli slepě přes `db:push`/`db:migrate`. Srovnání produkční historie je v #178.
+
+Po obnovení relace je read-only doložený nejnovější READY production deploy `dpl_CQKpxXycJ83haxjjiGv2cXB2SkdM` / `e67b90a`. Samostatné #179 / PR #181 a #182 dodaly skutečné fotografie a upravily jejich filtr; nejsou součástí oprav tohoto auditního PR. Porovnání změn proti `493f2c5` potvrzuje, že neobsahují službu přesunu ani auditní migrace. PR CI `da298a2` již testovalo kombinaci auditní větve s fotografickým PR #181; poslední změna #182 vrátila překryv na původních 60 %, které audit rovněž testoval. Oprava P1 tedy v produkci stále chybí.
 
 Starší error cluster měl function timeouty 20/300 s, 12 výskytů a 6 uživatelů; interval clusteru není všechno chyba nového deploye. Logy mají omezenou retenci/výřez, nulový výsledek není důkaz nikdy nezaznamenaného problému.
 
@@ -169,4 +171,4 @@ Ostatní kontrolovaná tvrzení: 75 min, 05:00–23:45, max 10 slotů, potvrzen�
 - Nejprve záloha/obvyklý schvalovaný postup migrací; `20260930111500_reschedule_access_hold.sql` aplikovat **atomicky**. Nové sloupce jsou nullable a původní kód s nimi může koexistovat. Exclusion constraint přestavba vyžaduje DB lock; zvolit provozní okno. `20260930120000_message_history_index.sql` přidá index; lokálně malé, produkční doba/lock musí být sledovány.
 - Poté nasadit PR kód, bez změny aktuální encryption key; ověřit provider konfiguraci, cron secret, žádné zaseklé hold intents, health a přístup.
 - Při návratu na starší aplikaci **nejprve bezpečně zreconcileovat všechny `reschedule_starts_at IS NOT NULL`**. Starý watchdog druhý interval neumí uklízet. Neodstraňovat bezpečnostní constraint ani sloupce při nejasném Nuki intentu; původní okno musí zůstat chráněné.
-- Rozhodnutí a skutečné provozní úkony se evidují v #178. Vlastník výslovně ponechal novou fotografickou práci #179 samostatně mimo auditní backlog. Pracovní issue lze uzavřít důkazem opravy v auditním PR; není to tvrzení, že se oprava již dostala do produkce.
+- Rozhodnutí a skutečné provozní úkony se evidují v #178. Vlastník výslovně ponechal fotografickou práci #179 samostatně mimo auditní backlog; mezitím byla nezávisle dokončená a uzavřená. Pracovní issue lze uzavřít důkazem opravy v auditním PR; není to tvrzení, že se oprava již dostala do produkce.

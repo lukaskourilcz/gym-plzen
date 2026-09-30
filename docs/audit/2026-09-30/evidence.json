@@ -9,8 +9,8 @@
       "browser": 65,
       "skipped": 0
     },
-    "verifiedCiCommit": "14e073f",
-    "verifiedCiUrl": "https://github.com/lukaskourilcz/gym-plzen/actions/runs/36714386071",
+    "verifiedCiCommit": "da298a2",
+    "verifiedCiUrl": "https://github.com/lukaskourilcz/gym-plzen/actions/runs/36717822852",
     "unit": 268,
     "integration": 135,
     "browser": 97,
@@ -22,7 +22,9 @@
     "migrationSqlFiles": 24,
     "localBrowser": 98,
     "cacheBenchmarkBefore": 1,
-    "cacheBenchmarkAfter": 1
+    "cacheBenchmarkAfter": 1,
+    "verifiedPushCiUrl": "https://github.com/lukaskourilcz/gym-plzen/actions/runs/36717817004",
+    "fullAuditRequiredCi": true
   },
   "selectedTenSlots": {
     "beforeQueries": 40,
@@ -1136,5 +1138,14 @@
     "Database baseline runs against compatible migrated test schema; GiST timing is not a pre-migration production-schema comparison.",
     "Wall-clock timings include local runtime variance; no general frontend speedup claim.",
     "Production is read-only. Sentry event access returned 403. Hosted providers and physical access require owner verification."
-  ]
+  ],
+  "productionResumeRead": {
+    "commit": "e67b90a",
+    "deployment": "dpl_CQKpxXycJ83haxjjiGv2cXB2SkdM",
+    "state": "READY",
+    "independentPhotoIssues": [179],
+    "independentPhotoPullRequests": [181, 182],
+    "reschedulingFixDeployed": false,
+    "auditPullRequestMerged": false
+  }
 }
