@@ -145,15 +145,6 @@ export default async function ReservationsPage({
           Zobrazit všechny rezervace
         </Link>
       )}
-      <Card className="mb-8 max-w-lg">
-        <CardHeader>
-          <CardTitle>Nová rezervace (ručně)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ReservationForm />
-        </CardContent>
-      </Card>
-
       <h2 className="mb-3 text-lg font-semibold">
         {selectedId ? "Vybraná rezervace" : "Poslední rezervace"}
       </h2>
@@ -264,6 +255,14 @@ export default async function ReservationsPage({
           hasNext={hasNext}
         />
       ) : null}
+      <Card className="mt-8 max-w-lg">
+        <CardHeader>
+          <CardTitle>Nová rezervace (ručně)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ReservationForm />
+        </CardContent>
+      </Card>
     </div>
   );
 }
