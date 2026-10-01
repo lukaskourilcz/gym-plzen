@@ -47,7 +47,7 @@ import { record as recordActivity } from "./activity";
 import type { BookingDetails } from "./booking";
 
 /**
- * Multi-slot checkout (docs/MULTI_SLOT_ORDER_PLAN_2026_09_28.md). The visitor
+ * Multi-slot checkout. The visitor
  * picks up to `MAX_SLOTS_PER_ORDER` slots, pays once and receives one
  * confirmation. Every slot stays a reservation of its own, so access codes,
  * rescheduling and cancellation keep working per slot; the order is only the

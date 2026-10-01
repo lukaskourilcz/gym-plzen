@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
  * genuinely different shape rather than a token change: both presentations ship
  * in the DOM and CSS reveals one.
  *
- * Runs against the local demo mode (see tests/e2e/README), whose customer has
+ * Runs against the local demo mode, whose customer has
  * six entries, so the ring must read 6/10.
  */
 test.describe("Loyalty progress across variants", () => {

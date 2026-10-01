@@ -2,11 +2,7 @@
 
 Aktualizováno **1. 10. 2026**. Tento soubor obsahuje pouze otevřené kroky a rozhodnutí. Auditní rozhodnutí a důkazy jsou v [#178](https://github.com/lukaskourilcz/gym-plzen/issues/178); očištění veřejného repozitáře má samostatnou [#195](https://github.com/lukaskourilcz/gym-plzen/issues/195).
 
-## 1. Dokončení vydání PR #193
-
-- [ ] Dokončit povinné CI na aktuálním headu [PR #193](https://github.com/lukaskourilcz/gym-plzen/pull/193), aplikovat a ověřit `drizzle/20260930230000_manual_invoice_delivery.sql`, sloučit schválené PR a ověřit produkční nasazení.
-
-## 2. Rozhodnutí a podklady vlastníka
+## 1. Rozhodnutí a podklady vlastníka
 
 - [ ] **R1 — Jak evidovat skutečné refundace?** Zvolit zdroj v Comgate (ledger/API), nebo doložený ruční záznam částky, data, platebního ID a dokladu; zahrnout plné i částečné vratky. Doložit případné nevyřízené zákaznické vratky přímo u poskytovatele. Rozhodnutí [#147](https://github.com/lukaskourilcz/gym-plzen/issues/147) je soustředěné v #178. Storno ani „Vyřešeno“ u upozornění nepotvrzuje vrácení peněz; Finance zatím nejsou čistý bankovní výpis.
 - [ ] **R2 — Zapnout ochranu proti uniklým heslům v Supabase Auth?** Poslední audit doložil vypnuté nastavení. Vlastník potvrdí jeho zapnutí, případně vědomé ponechání vypnutého stavu. Po změně ověřit registraci, reset a změnu hesla.
@@ -16,14 +12,14 @@ Aktualizováno **1. 10. 2026**. Tento soubor obsahuje pouze otevřené kroky a r
 - [ ] **Očištění veřejného repozitáře — #195:** zkontrolovat a vyřešit osobní/provozní údaje v aktuálních souborech, historii, issues, PR a Actions logách; zkontrolovat demo tajemství, ignorování `.env` variant a secret scanning/push protection. Podrobnosti v [#195](https://github.com/lukaskourilcz/gym-plzen/issues/195). Samotná veřejná viditelnost toto očištění nedokládá.
 - [ ] **Podklad: zdrojové logo ve vektoru.** Dodat SVG/PDF znaku, wordmarku a společného loga pro nahrazení současných rastrových podkladů.
 
-## 3. Ověření dohledu a externích služeb
+## 2. Ověření dohledu a externích služeb
 
 - [ ] **Sentry:** připojit přislíbený MCP s oprávněním ke čtení. Ověřit produkční události, zapojení serverového i prohlížečového sběru, pravidla alertů, příjemce a skutečné doručení upozornění. Doložit přístup ke čtení a výsledky ověření.
 - [ ] **Hosting:** doložit skutečné edge/WAF limity pro přihlášení a checkout a ověřit sdílenou ochranu mezi instancemi. Procesový rate limit ji nezajišťuje. Posoudit využití Auth connection poolu podle měření; samotný advisor INFO není důvod automaticky měnit pool.
 - [ ] **Search Console:** ověřit dokončení zbývajícího oznámení přesunu `namastegym.cz` bez `www` na `navigym.cz`. Poslední doložené potvrzení tohoto konkrétního přesunu chybí; stará chyba validace se nepovažuje za nově ověřenou závadu.
 - [ ] **GA4 a Meta:** zpřístupnit správnou GA4 službu `G-8FN17RXP1T`, ověřit atribuci UTM a událost nákupu po souhlasu. V Meta doložit ověření domény a příjem událostí u správného datasetu. Před publikováním reklamy dodat konečnou kreativu, příjemce a plátce reklamy. Skutečnou platbu či publikování provádí vlastník.
 
-## 4. Fyzické a provozní ověření vlastníkem
+## 3. Fyzické a provozní ověření vlastníkem
 
 Tyto kroky vlastník odložil. Agent je nenahrazuje produkčními rezervacemi, zprávami, platbami ani akcemi na Nuki. **Současná platnost PINů do konce slotu +15 minut zůstává podle posledního pokynu beze změny.** Výhradní užívání celého prostoru zaplacenou skupinou zůstává požadovaným pravidlem; souběžné užívání další skupinou nebylo schválené.
 
@@ -32,7 +28,7 @@ Tyto kroky vlastník odložil. Agent je nenahrazuje produkčními rezervacemi, z
 - [ ] **Hosted Auth a skutečná zařízení:** registrace/potvrzení, reset včetně expirovaného a opakovaného odkazu, nové heslo, odhlášení a Google přihlášení na ostré doméně, zejména Safari/iPhone. Ověřit SMTP, povolené callback URL a Google consent. U hosted šablon ověřit skutečně doručený obsah; nepřepisovat je automaticky starým návodem.
 - [ ] **E-maily, kalendář a ruční faktura:** ověřit zobrazení v Gmailu, Outlooku a iPhonu; import `.ics` do Google i Apple kalendáře se správným letním/zimním časem. Po vydání PR #193 vlastník ověří doklad ke skutečně zaplacené rezervaci, údaje/částku/číslování, zvolené příjemce a záznam v Odeslaných e-mailech. Přijetí Resendem není důkaz doručení do inboxu. Doklady se vystavují pouze ručně, jeden na společnou objednávku; u vstupů zdarma se nevystavují.
 
-## 5. Texty ke schválení nebo doplnění
+## 4. Texty ke schválení nebo doplnění
 
 **Následující návrhy nejsou schválené ani publikované.** Úplné důkazy nesouladů a původní návrhy jsou v [#178](https://github.com/lukaskourilcz/gym-plzen/issues/178), převzaté z [#175](https://github.com/lukaskourilcz/gym-plzen/issues/175). Schválení provozního chování nebo archivu neznamená schválení jeho textové formulace.
 
@@ -82,7 +78,7 @@ Popisek stránky:
 - [ ] **Finální právní znění a účinnost:** potvrdit VOP, provozní řád a soukromí, zejména více termínů v jedné objednávce (VOP 4.6), změnu/storno jednotlivého termínu (8.9), vratku při důvodu na straně provozovatele (8.8) a zákaznické storno bez vrácení platby (8.10). Rozhodnout o datu účinnosti; v kódu je nyní 17. 8. 2026. Konečná formulace musí odpovídat zvolenému refund modelu R1.
 - [ ] **Název kosmetiky:** dodat značku české přírodní kosmetiky, má-li být uvedena, nebo potvrdit současné obecné označení jako konečné. Název nebyl dodán.
 
-## 6. Zbývající konkrétní technické drobnosti
+## 5. Zbývající konkrétní technické drobnosti
 
 - [ ] **Zaškrtávátka administrace:** zbývající `CheckboxField` v profilu člena a nastavení má stále malý řádek bez minimálního 44px cíle. Sjednotit se sdíleným přístupným ovládáním a ověřit klávesnici/focus; zachovat texty.
 - [ ] **Barvy PDF:** v `src/lib/pdf/invoice-pdf.ts` zůstává `MUTED` `#5a6b64` a `RULE` `#c9d3ce`, odlišné od palety `#5b6360` / `#dcd7cc`. Sjednotit a vizuálně ověřit PDF bez změny jeho textu či údajů.
