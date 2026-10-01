@@ -1,22 +1,18 @@
 import {
+  AdminListTotal,
   AdminListFilters,
   AdminListPagination,
 } from "@/components/admin/list-filters";
 import { reservationInvoiceStates } from "@/lib/services/invoice-delivery";
 import { ReservationInvoice } from "@/components/admin/reservation-invoice";
 import {
-  ADMIN_PAGE_SIZE,
+  splitAdminPage,
   demoAdminPage,
   readAdminFilters,
   type AdminFilters,
   type AdminSearchParams,
 } from "@/lib/helpers/admin-list";
-import {
-  pageFromParam,
-  pageLimit,
-  pageOffset,
-  splitPage,
-} from "@/lib/helpers/pagination";
+import { pageFromParam, pageLimit, pageOffset } from "@/lib/helpers/pagination";
 import { activityPage, memberMessagePage } from "@/lib/services/admin-lists";
 import { requireAdmin } from "@/lib/auth/guards";
 import Link from "next/link";
@@ -74,6 +70,7 @@ async function loadDemoMember(id: string) {
     ),
     history: owned.map((row) => ({
       ...row,
+      totalCount: owned.length,
       paymentStatus: null,
       voucherCode: null,
       invoiceId: null,
@@ -81,7 +78,12 @@ async function loadDemoMember(id: string) {
       rescheduled: false,
       orderSlots: 0,
     })),
-    deliveries: data.messages.filter((row) => row.userId === id),
+    deliveries: data.messages
+      .filter((row) => row.userId === id)
+      .map((row) => ({
+        ...row,
+        totalCount: data.messages.filter((m) => m.userId === id).length,
+      })),
     entries: [],
   };
 }
@@ -111,8 +113,8 @@ async function loadMember(
   if (!member) return null;
   const [status, history, deliveries, entries, totals] = await Promise.all([
     loyalty.getLoyaltyStatus(id),
-    reservations.listHistoryForUser(id, pageLimit(ADMIN_PAGE_SIZE), {
-      offset: pageOffset(pages.reservations, ADMIN_PAGE_SIZE),
+    reservations.listHistoryForUser(id, pageLimit(filters.pageSize), {
+      offset: pageOffset(pages.reservations, filters.pageSize),
       filters,
     }),
     memberMessagePage(id, pages.messages, filters),
@@ -158,14 +160,23 @@ export default async function MemberProfilePage({
         date: r.startsAt,
         status: r.status,
       }))
-    : splitPage(loaded.history, ADMIN_PAGE_SIZE);
+    : await splitAdminPage(loaded.history, pages.reservations, filters, () =>
+        reservations.listHistoryForUser(id, 1, { offset: 0, filters }),
+      );
   const deliveryPage = demo
     ? demoAdminPage(loaded.deliveries, pages.messages, filters, (m) => ({
         text: m.recipient,
         date: m.sentAt ?? m.createdAt,
       }))
-    : splitPage(loaded.deliveries, ADMIN_PAGE_SIZE);
-  const entriesPage = splitPage(loaded.entries, ADMIN_PAGE_SIZE);
+    : await splitAdminPage(loaded.deliveries, pages.messages, filters, () =>
+        memberMessagePage(id, 1, filters),
+      );
+  const entriesPage = await splitAdminPage(
+    loaded.entries,
+    pages.activity,
+    filters,
+    () => (demo ? Promise.resolve([]) : activityPage(1, filters, id)),
+  );
   const { rows: history } = historyPage;
   const invoiceStates = demo
     ? new Map()
@@ -289,6 +300,7 @@ export default async function MemberProfilePage({
         <h2 id="member-reservations" className="mb-3 text-lg font-semibold">
           Rezervace ({totals.count})
         </h2>
+        <AdminListTotal total={historyPage.totalCount} />
         <Table label="Rezervace člena">
           <TableHeader>
             <TableRow>
@@ -377,6 +389,7 @@ export default async function MemberProfilePage({
         <h2 id="member-activity" className="mb-3 text-lg font-semibold">
           Historie akcí
         </h2>
+        <AdminListTotal total={entriesPage.totalCount} />
         <Table label="Historie akcí člena">
           <TableHeader>
             <TableRow>
@@ -426,6 +439,7 @@ export default async function MemberProfilePage({
         <h2 id="member-messages" className="mb-3 text-lg font-semibold">
           Odeslané zprávy
         </h2>
+        <AdminListTotal total={deliveryPage.totalCount} />
         <Table label="Zprávy odeslané členovi">
           <TableHeader>
             <TableRow>

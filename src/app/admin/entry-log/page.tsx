@@ -1,14 +1,15 @@
 import {
+  AdminListTotal,
   AdminListFilters,
   AdminListPagination,
 } from "@/components/admin/list-filters";
 import {
-  ADMIN_PAGE_SIZE,
+  splitAdminPage,
   readAdminFilters,
   demoAdminPage,
   type AdminSearchParams,
 } from "@/lib/helpers/admin-list";
-import { pageFromParam, splitPage } from "@/lib/helpers/pagination";
+import { pageFromParam } from "@/lib/helpers/pagination";
 import { entryPage } from "@/lib/services/admin-lists";
 import { requireAdmin } from "@/lib/auth/guards";
 import {
@@ -48,14 +49,16 @@ export default async function EntryLogPage({
     demoEnabled,
   );
 
-  const { rows, hasNext } = demo
+  const { rows, hasNext, totalCount } = demo
     ? demoAdminPage(loaded, page, filters, (e) => ({
         text: e.nukiName ?? "",
         date: e.occurredAt,
         action: e.action ?? "",
         trigger: e.trigger ?? "",
+        name: e.nukiName ?? "",
+        sortValues: { action: e.action, trigger: e.trigger },
       }))
-    : splitPage(loaded, ADMIN_PAGE_SIZE);
+    : await splitAdminPage(loaded, page, filters, () => entryPage(1, filters));
 
   return (
     <div>
@@ -92,6 +95,7 @@ export default async function EntryLogPage({
           },
         ]}
       />
+      <AdminListTotal total={totalCount} label="Celkem záznamů" />
       <Table>
         <TableHeader>
           <TableRow>

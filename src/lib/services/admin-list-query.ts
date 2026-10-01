@@ -46,3 +46,17 @@ export function adminOverlapFilter(
       : undefined,
   );
 }
+
+/** SQL expressions come only from the caller's allowlist; URL input is never SQL. */
+export function adminOrder(
+  filters: AdminFilters,
+  columns: Record<string, SQLWrapper>,
+  id: SQLWrapper,
+) {
+  const field = Object.hasOwn(columns, filters.sort)
+    ? columns[filters.sort]!
+    : columns.date!;
+  const direction = filters.direction === "asc" ? sql`asc` : sql`desc`;
+  return [sql`${field} ${direction} nulls last`, sql`${id} ${direction}`];
+}
+export const adminTotalCount = sql<number>`count(*) over ()`.mapWith(Number);

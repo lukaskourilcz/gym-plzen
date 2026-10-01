@@ -1,13 +1,14 @@
 import {
+  AdminListTotal,
   AdminListFilters,
   AdminListPagination,
 } from "@/components/admin/list-filters";
 import {
-  ADMIN_PAGE_SIZE,
+  splitAdminPage,
   readAdminFilters,
   type AdminSearchParams,
 } from "@/lib/helpers/admin-list";
-import { pageFromParam, splitPage } from "@/lib/helpers/pagination";
+import { pageFromParam } from "@/lib/helpers/pagination";
 import { demoAdminPage } from "@/lib/helpers/admin-list";
 import { memberPage } from "@/lib/services/admin-lists";
 import { memberFilters } from "@/components/admin/list-filter-options";
@@ -87,6 +88,7 @@ export default async function PricingPage({
   const filters = readAdminFilters(query);
   const page = pageFromParam(query.page);
   let hasNext = false;
+  let totalCount = 0;
   const now = new Date();
   const [standardPriceCents, entryPrice, periods, horizonDays, liveMembers] =
     demo
@@ -105,7 +107,7 @@ export default async function PricingPage({
     : undefined;
 
   let withLoyalty: {
-    member: (typeof liveMembers)[number];
+    member: Omit<(typeof liveMembers)[number], "totalCount">;
     status: ReturnType<typeof deriveLoyaltyStatus>;
   }[];
 
@@ -125,18 +127,25 @@ export default async function PricingPage({
       }
     }
     const paged = demoAdminPage(data.members, page, filters, (m) => ({
+      name: m.user.name,
+      email: m.user.email,
+      whatsapp: m.profile?.notifyByWhatsapp ? "enabled" : "disabled",
       text: `${m.user.name} ${m.user.email} ${m.profile?.phone ?? ""}`,
       date: m.user.createdAt,
       role: m.user.role,
     }));
     hasNext = paged.hasNext;
+    totalCount = paged.totalCount;
     withLoyalty = paged.rows.map((member) => ({
       member,
       status: deriveLoyaltyStatus(counts.get(member.user.id) ?? 0),
     }));
   } else {
-    const paged = splitPage(liveMembers, ADMIN_PAGE_SIZE);
+    const paged = await splitAdminPage(liveMembers, page, filters, () =>
+      memberPage(1, filters),
+    );
     hasNext = paged.hasNext;
+    totalCount = paged.totalCount;
     // Two grouped queries for the whole list rather than two per member.
     const statuses = await loyalty.getLoyaltyStatusForUsers(
       paged.rows.map((member) => member.user.id),
@@ -296,6 +305,7 @@ export default async function PricingPage({
         selects={memberFilters}
         dateLabel="Registrace"
       />
+      <AdminListTotal total={totalCount} label="Celkem členů" />
       <Table>
         <TableHeader>
           <TableRow>

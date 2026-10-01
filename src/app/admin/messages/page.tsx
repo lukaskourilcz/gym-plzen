@@ -1,14 +1,15 @@
 import {
+  AdminListTotal,
   AdminListFilters,
   AdminListPagination,
 } from "@/components/admin/list-filters";
 import {
-  ADMIN_PAGE_SIZE,
+  splitAdminPage,
   readAdminFilters,
   demoAdminPage,
   type AdminSearchParams,
 } from "@/lib/helpers/admin-list";
-import { pageFromParam, splitPage } from "@/lib/helpers/pagination";
+import { pageFromParam } from "@/lib/helpers/pagination";
 import { messageFilters } from "@/components/admin/list-filter-options";
 import { emailPage, messagePage } from "@/lib/services/admin-lists";
 import { requireAdmin } from "@/lib/auth/guards";
@@ -57,11 +58,18 @@ export default async function MessagesPage({
     demoEnabled ? Promise.resolve([]) : emailPage(emailNumber, filters),
   ]);
 
-  const { rows: emails, hasNext: moreEmails } = splitPage(
-    loadedEmails,
-    ADMIN_PAGE_SIZE,
+  const {
+    rows: emails,
+    hasNext: moreEmails,
+    totalCount: emailTotal,
+  } = await splitAdminPage(loadedEmails, emailNumber, filters, () =>
+    demoEnabled ? Promise.resolve([]) : emailPage(1, filters),
   );
-  const { rows, hasNext: moreMessages } = demo
+  const {
+    rows,
+    hasNext: moreMessages,
+    totalCount,
+  } = demo
     ? demoAdminPage(loaded, messageNumber, filters, (m) => ({
         text: m.recipient,
         date: m.sentAt ?? m.createdAt,
@@ -69,7 +77,9 @@ export default async function MessagesPage({
         status: m.status,
         kind: m.kind,
       }))
-    : splitPage(loaded, ADMIN_PAGE_SIZE);
+    : await splitAdminPage(loaded, messageNumber, filters, () =>
+        messagePage(1, filters),
+      );
 
   return (
     <div>
@@ -110,7 +120,8 @@ export default async function MessagesPage({
         dateLabel="Odesláno"
       />
       <h2 className="mb-3 text-xl font-bold">Odeslané e-maily</h2>
-      <Table>
+      <AdminListTotal total={emailTotal} />
+      <Table label="Odeslané e-maily">
         <TableHeader>
           <TableRow>
             <TableHead>Odesláno</TableHead>
@@ -164,7 +175,8 @@ export default async function MessagesPage({
       <h2 className="mb-3 mt-8 text-xl font-bold">
         Ostatní zprávy a záznamy bez náhledu
       </h2>
-      <Table>
+      <AdminListTotal total={totalCount} />
+      <Table label="Další zprávy">
         <TableHeader>
           <TableRow>
             <TableHead>Vytvořeno</TableHead>

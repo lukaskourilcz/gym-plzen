@@ -1,3 +1,4 @@
+import { adminSortOptions } from "./list-sort-options";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -104,6 +105,40 @@ export function AdminListFilters({
             </Select>
           </label>
         ))}
+        <label className="grid gap-1 text-sm font-semibold">
+          Řadit podle
+          <Select
+            name="sort"
+            defaultValue={
+              adminSortOptions(path).some((o) => o.value === filters.sort)
+                ? filters.sort
+                : "date"
+            }
+          >
+            {adminSortOptions(path).map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </Select>
+        </label>
+        <label className="grid gap-1 text-sm font-semibold">
+          Směr řazení
+          <Select name="direction" defaultValue={filters.direction}>
+            <option value="desc">Sestupně</option>
+            <option value="asc">Vzestupně</option>
+          </Select>
+        </label>
+        <label className="grid gap-1 text-sm font-semibold">
+          Záznamů na stránku
+          <Select name="pageSize" defaultValue={String(filters.pageSize)}>
+            {[20, 50, 100].map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </Select>
+        </label>
         <div className="flex flex-wrap gap-2">
           <Button type="submit">Filtrovat</Button>
           <Button href={path} variant="outline">
@@ -117,5 +152,22 @@ export function AdminListFilters({
         </p>
       ) : null}
     </form>
+  );
+}
+
+export function AdminListTotal({
+  total,
+  label = "Celkem záznamů",
+}: {
+  total: number;
+  label?: string;
+}) {
+  return (
+    <p className="mb-3 text-sm text-muted-foreground">
+      {label}:{" "}
+      <strong className="text-foreground tabular-nums">
+        {total.toLocaleString("cs-CZ")}
+      </strong>
+    </p>
   );
 }

@@ -1,13 +1,14 @@
 import {
+  AdminListTotal,
   AdminListFilters,
   AdminListPagination,
 } from "@/components/admin/list-filters";
 import {
-  ADMIN_PAGE_SIZE,
+  splitAdminPage,
   readAdminFilters,
   type AdminSearchParams,
 } from "@/lib/helpers/admin-list";
-import { pageFromParam, splitPage } from "@/lib/helpers/pagination";
+import { pageFromParam } from "@/lib/helpers/pagination";
 import { newsletterPage } from "@/lib/services/admin-lists";
 import { requireAdmin } from "@/lib/auth/guards";
 import { newsletter } from "@/lib/services";
@@ -42,7 +43,12 @@ export default async function NewsletterPage({
   const { rows: loaded, totals } = demo
     ? { rows: [], totals: { total: 0, active: 0 } }
     : await newsletterPage(page, filters);
-  const { rows, hasNext } = splitPage(loaded, ADMIN_PAGE_SIZE);
+  const { rows, hasNext, totalCount } = await splitAdminPage(
+    loaded,
+    page,
+    filters,
+    async () => (demo ? [] : (await newsletterPage(1, filters)).rows),
+  );
   return (
     <div>
       <PageHeader
@@ -69,6 +75,7 @@ export default async function NewsletterPage({
           },
         ]}
       />
+      <AdminListTotal total={totalCount} label="Celkem záznamů" />
       <Table>
         <TableHeader>
           <TableRow>

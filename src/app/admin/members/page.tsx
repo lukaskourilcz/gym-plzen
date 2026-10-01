@@ -1,14 +1,15 @@
 import {
+  AdminListTotal,
   AdminListFilters,
   AdminListPagination,
 } from "@/components/admin/list-filters";
 import {
-  ADMIN_PAGE_SIZE,
+  splitAdminPage,
   readAdminFilters,
   demoAdminPage,
   type AdminSearchParams,
 } from "@/lib/helpers/admin-list";
-import { pageFromParam, splitPage } from "@/lib/helpers/pagination";
+import { pageFromParam } from "@/lib/helpers/pagination";
 import { memberFilters } from "@/components/admin/list-filter-options";
 import { memberPage } from "@/lib/services/admin-lists";
 import { requireAdmin } from "@/lib/auth/guards";
@@ -48,13 +49,17 @@ export default async function MembersPage({
     demoEnabled,
   );
 
-  const { rows, hasNext } = demo
+  const { rows, hasNext, totalCount } = demo
     ? demoAdminPage(loaded, page, filters, (m) => ({
+        name: m.user.name,
+        email: m.user.email,
+        whatsapp: m.profile?.notifyByWhatsapp ? "enabled" : "disabled",
         text: `${m.user.name} ${m.user.email} ${m.profile?.phone ?? ""}`,
         date: m.user.createdAt,
         role: m.user.role,
+        sortValues: { phone: m.profile?.phone ?? null, role: m.user.role },
       }))
-    : splitPage(loaded, ADMIN_PAGE_SIZE);
+    : await splitAdminPage(loaded, page, filters, () => memberPage(1, filters));
 
   /*
    * One grouped query for the whole page rather than a count per row. Demo data
@@ -78,6 +83,7 @@ export default async function MembersPage({
         selects={memberFilters}
         dateLabel="Registrace"
       />
+      <AdminListTotal total={totalCount} label="Celkem členů" />
       <Table>
         <TableHeader>
           <TableRow>

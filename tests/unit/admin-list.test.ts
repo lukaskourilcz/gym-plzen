@@ -56,3 +56,31 @@ test("invalid or repeated dates and unbounded search cannot crash list parsing",
     true,
   );
 });
+
+test("page sizes are bounded, default to 20 and survive navigation with sorting and WhatsApp", () => {
+  assert.equal(readAdminFilters({}).pageSize, 20);
+  for (const pageSize of ["20", "50", "100"])
+    assert.equal(readAdminFilters({ pageSize }).pageSize, Number(pageSize));
+  for (const pageSize of ["0", "1", "1000", "-20", "20.5", ["20", "100"]])
+    assert.equal(readAdminFilters({ pageSize }).pageSize, 20);
+  const url = new URL(
+    adminPageHref(
+      "/admin/members",
+      {
+        pageSize: "100",
+        sort: "name",
+        direction: "asc",
+        whatsapp: "enabled",
+        page: "3",
+        saved: "1",
+      },
+      2,
+    ),
+    "https://example.test",
+  );
+  assert.equal(url.searchParams.get("pageSize"), "100");
+  assert.equal(url.searchParams.get("sort"), "name");
+  assert.equal(url.searchParams.get("direction"), "asc");
+  assert.equal(url.searchParams.get("whatsapp"), "enabled");
+  assert.equal(url.searchParams.has("saved"), false);
+});

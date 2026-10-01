@@ -2,7 +2,7 @@ import { addDaysToDateKey, isDateKey, localDateTimeToDate } from "./datetime";
 import { pageFromParam, pageOffset, splitPage } from "./pagination";
 
 export type AdminSearchParams = Record<string, string | string[] | undefined>;
-export const ADMIN_PAGE_SIZE = 50;
+export const ADMIN_PAGE_SIZE = 20;
 const FILTER_KEYS = [
   "q",
   "from",
@@ -17,10 +17,14 @@ const FILTER_KEYS = [
   "delivery",
   "action",
   "trigger",
+  "whatsapp",
 ] as const;
 export type AdminFilterKey = (typeof FILTER_KEYS)[number];
 export type AdminFilters = Record<AdminFilterKey, string> & {
   invalidDates: boolean;
+  pageSize: number;
+  sort: string;
+  direction: "asc" | "desc";
 };
 
 export function stringParam(value: string | string[] | undefined): string {
@@ -36,7 +40,15 @@ export function readAdminFilters(params: AdminSearchParams): AdminFilters {
     (fields.to && (!isDateKey(fields.to) || fields.to === "9999-12-31")) ||
     (fields.from && fields.to && fields.from > fields.to),
   );
-  return { ...fields, invalidDates };
+  return {
+    ...fields,
+    invalidDates,
+    pageSize: ["20", "50", "100"].includes(stringParam(params.pageSize))
+      ? Number(params.pageSize)
+      : ADMIN_PAGE_SIZE,
+    sort: stringParam(params.sort) || "date",
+    direction: params.direction === "asc" ? "asc" : "desc",
+  };
 }
 
 /** Inclusive Czech calendar days, including the 23/25-hour DST days. */
@@ -82,6 +94,10 @@ export function adminPageHref(
     const value = stringParam(params[key]);
     if (value) query.set(key, value);
   }
+  for (const key of ["pageSize", "sort", "direction"]) {
+    const value = stringParam(params[key]);
+    if (value) query.set(key, value);
+  }
   for (const key of [
     "emailPage",
     "messagePage",
@@ -109,6 +125,10 @@ export function demoAdminPage<T>(
     role?: string;
     action?: string;
     trigger?: string;
+    whatsapp?: string;
+    name?: string;
+    email?: string;
+    sortValues?: Record<string, string | number | Date | null>;
   },
 ) {
   const bounds = adminDateBounds(filters);
@@ -124,7 +144,15 @@ export function demoAdminPage<T>(
           (!bounds.start || value.date >= bounds.start) &&
           (!bounds.end || value.date < bounds.end) &&
           (
-            ["status", "channel", "kind", "role", "action", "trigger"] as const
+            [
+              "status",
+              "channel",
+              "kind",
+              "role",
+              "action",
+              "trigger",
+              "whatsapp",
+            ] as const
           ).every(
             (key) =>
               !filters[key] ||
@@ -133,11 +161,55 @@ export function demoAdminPage<T>(
           )
         );
       });
-  return splitPage(
-    filtered.slice(
-      pageOffset(page, ADMIN_PAGE_SIZE),
-      pageOffset(page, ADMIN_PAGE_SIZE) + ADMIN_PAGE_SIZE + 1,
+  const value = (row: T) => {
+    const f = fields(row);
+    if (f.sortValues && Object.hasOwn(f.sortValues, filters.sort))
+      return f.sortValues[filters.sort];
+    return filters.sort === "name"
+      ? (f.name ?? f.text)
+      : filters.sort === "email"
+        ? (f.email ?? f.text)
+        : f.date;
+  };
+  filtered.sort((a, b) => {
+    const x = value(a),
+      y = value(b);
+    if (x == null) return y == null ? 0 : 1;
+    if (y == null) return -1;
+    const compared =
+      x instanceof Date && y instanceof Date
+        ? x.getTime() - y.getTime()
+        : typeof x === "number" && typeof y === "number"
+          ? x - y
+          : String(x ?? "").localeCompare(String(y ?? ""), "cs");
+    return filters.direction === "asc" ? compared : -compared;
+  });
+  return {
+    totalCount: filtered.length,
+    ...splitPage(
+      filtered.slice(
+        pageOffset(page, filters.pageSize),
+        pageOffset(page, filters.pageSize) + filters.pageSize + 1,
+      ),
+      filters.pageSize,
     ),
-    ADMIN_PAGE_SIZE,
-  );
+  };
+}
+
+/** Window counts describe the complete filtered list, even on an empty later page. */
+export async function splitAdminPage<T>(
+  rows: T[],
+  page: number,
+  filters: AdminFilters,
+  readFirst: () => Promise<readonly unknown[]>,
+) {
+  const totalFrom = (items: readonly unknown[]) => {
+    const first = items[0];
+    return first && typeof first === "object" && "totalCount" in first
+      ? Number(first.totalCount)
+      : 0;
+  };
+  const totalCount =
+    rows.length || page === 1 ? totalFrom(rows) : totalFrom(await readFirst());
+  return { ...splitPage(rows, filters.pageSize), totalCount };
 }

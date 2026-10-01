@@ -8,6 +8,8 @@ import {
 import assert from "node:assert/strict";
 import { after, beforeEach, describe, test } from "node:test";
 import { readAdminFilters } from "../../src/lib/helpers/admin-list";
+import { splitAdminPage } from "../../src/lib/helpers/admin-list";
+import { programmeCodeStates } from "../../src/lib/services/admin-programme";
 import { splitPage } from "../../src/lib/helpers/pagination";
 import {
   accessCodePage,
@@ -35,7 +37,8 @@ const member = {
   fullName: "Jana Černá",
 };
 const now = new Date("2026-09-30T20:00:00Z");
-const filters = readAdminFilters;
+const filters = (params: Parameters<typeof readAdminFilters>[0]) =>
+  readAdminFilters({ pageSize: "50", ...params });
 async function booking(name = "Host Žluťoučký") {
   const [row] = await rows<{ id: string }>(
     `insert into reservation (user_id, starts_at, ends_at, status, contact_name, contact_email, price_cents)
@@ -133,6 +136,125 @@ describe(
       assert.equal(found.length, 1);
       assert.equal("html" in found[0]!, false);
       assert.equal("bodyText" in found[0]!, false);
+    });
+
+    test("sorts the complete member set before paging, bounds size and counts filtered empty pages", async () => {
+      await rows(`insert into profiles(id,email,full_name,notify_by_whatsapp,created_at)
+        select md5('sort-'||n)::uuid,'sort-'||n||'@example.test','Sort '||lpad(n::text,3,'0'),n%2=0,'2026-09-01'::timestamp+n*interval '1 hour' from generate_series(1,105) n`);
+      for (const size of [20, 50, 100]) {
+        const f = filters({
+          q: "sort-",
+          sort: "name",
+          direction: "asc",
+          pageSize: String(size),
+        });
+        const first = await memberPage(1, f),
+          second = await memberPage(2, f);
+        assert.equal(first.length, size + 1);
+        assert.equal(first[0]!.user.name, "Sort 001");
+        assert.equal(
+          second[0]!.user.name,
+          `Sort ${String(size + 1).padStart(3, "0")}`,
+        );
+        assert.equal(first[0]!.totalCount, 105);
+      }
+      const whatsapp = filters({
+        q: "sort-",
+        whatsapp: "enabled",
+        sort: "name",
+        direction: "desc",
+        pageSize: "20",
+      });
+      const result = await splitAdminPage(
+        await memberPage(1, whatsapp),
+        1,
+        whatsapp,
+        () => memberPage(1, whatsapp),
+      );
+      assert.equal(result.totalCount, 52);
+      assert.equal(result.rows.length, 20);
+      assert.equal(result.rows[0]!.user.name, "Sort 104");
+      assert.ok(result.rows.every((r) => r.profile?.notifyByWhatsapp));
+      const empty = await splitAdminPage(
+        await memberPage(9, whatsapp),
+        9,
+        whatsapp,
+        () => memberPage(1, whatsapp),
+      );
+      assert.equal(empty.rows.length, 0);
+      assert.equal(empty.totalCount, 52);
+      assert.equal(
+        (await memberPage(1, filters({ q: "sort-", whatsapp: "disabled" })))[0]!
+          .totalCount,
+        53,
+      );
+      // URL values cannot become an ORDER BY expression or escape the allowlist.
+      assert.deepEqual(
+        (
+          await memberPage(
+            1,
+            filters({ q: "sort-", sort: "name; delete from profiles" }),
+          )
+        ).map((r) => r.user.id),
+        (await memberPage(1, filters({ q: "sort-" }))).map((r) => r.user.id),
+      );
+      assert.equal(
+        (await rows<{ n: number }>("select count(*)::int n from profiles"))[0]!
+          .n,
+        106,
+      );
+    });
+
+    test("programme states require the current confirmed code, recorded sending and successful keypad use", async () => {
+      const ids: string[] = [];
+      for (let n = 0; n < 7; n++) {
+        const [r] = await rows<{ id: string }>(
+          `insert into reservation(user_id,starts_at,ends_at,status,contact_name)
+          values ($1,'2026-10-01 00:00+00'::timestamptz+$2*interval '20 minutes','2026-10-01 00:10+00'::timestamptz+$2*interval '20 minutes',$3,'Programme fixture') returning id`,
+          [
+            member.id,
+            n,
+            n === 5 ? "cancelled" : n === 6 ? "pending" : "confirmed",
+          ],
+        );
+        ids.push(r!.id);
+        const [code] = await rows<{ id: string }>(
+          `insert into access_code(reservation_id,code_hash,valid_from,valid_until,status,created_at)
+          select id,'TEST',starts_at,ends_at+interval '15 minutes',case when $2=4 then 'revoked'::access_code_status else 'expired'::access_code_status end,'2026-09-30 12:00' from reservation where id=$1 returning id`,
+          [r!.id, n],
+        );
+        if (n !== 2)
+          await rows(
+            `insert into message_delivery(reservation_id,kind,channel,status,recipient,sent_at) values ($1,'access_code','email',$2,'fixture@example.test',$3)`,
+            [
+              r!.id,
+              n === 3 ? "failed" : "sent",
+              n === 3
+                ? null
+                : n === 4
+                  ? "2026-09-30 11:00"
+                  : "2026-09-30 13:00",
+            ],
+          );
+        await rows(
+          `insert into entry_log(reservation_id,access_code_id,trigger,action,occurred_at) values ($1,$2,$3,$4,'2026-10-01 01:00+00')`,
+          [
+            r!.id,
+            code!.id,
+            n === 1 ? "app" : "keypad",
+            n === 2 || n === 3 ? "keypad_failure_224" : "unlock",
+          ],
+        );
+      }
+      const states = await programmeCodeStates(ids);
+      assert.deepEqual(states.get(ids[0]!), { sent: true, used: true });
+      assert.deepEqual(states.get(ids[1]!), { sent: true, used: false });
+      assert.deepEqual(states.get(ids[2]!), { sent: false, used: false });
+      assert.deepEqual(states.get(ids[3]!), { sent: false, used: false });
+      assert.equal(states.has(ids[4]!), false);
+      assert.equal(states.has(ids[5]!), false);
+      assert.equal(states.has(ids[6]!), false);
+      assert.equal((await programmeCodeStates([])).size, 0);
     });
 
     test("name lookup supports diacritics, guests, detached archives and duplicate provider attempts", async () => {

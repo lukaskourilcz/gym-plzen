@@ -401,16 +401,18 @@ shrink-0 accent-primary`, the pointer and hover treatment every control
   (`role="region"`, `tabIndex=0`, `label` prop), so a wide table with no
   interactive cells can still be scrolled from the keyboard; pass a `label`
   that names the table's content when a page holds more than one.
-- A list that grows without bound is paged rather than cut to an arbitrary
-  limit. The shared `Pagination` renders a previous control, the page number
-  and a next control inside a `nav` whose `aria-label` names the list, and
-  renders nothing when there is only one page. Whether a next page exists comes
-  from reading one row beyond the page size, so no page pays for a count query
-  over the whole table. The activity history and the customer's order history
-  work this way; members, reservations, sent messages and the activity list on
-  a member's profile still read a fixed limit, and `NEEDED.md` carries the task
-  of giving them the same treatment. A new or reworked list uses the shared
-  control.
+- Growing administration tables use the full width available beside the 248px
+  navigation. Their GET filters offer server-side sorting, a stable row-id tie
+  breaker and 20 rows by default, with 50 and 100 as alternatives. Changing
+  filters, sorting or page size resets pagination. Shared pagination retains
+  list state and the independent page numbers of other tables on the screen.
+- Each table displays the total number of matching records before pagination.
+  Database window counts use the same filters as the rows; an empty later page
+  retrieves the matching total without exposing unbounded data. Global finance
+  and loyalty summaries remain independent of table filters.
+- The daily programme contains confirmed reservations only. Sent and used code
+  badges require recorded delivery or successful keypad evidence. A used code
+  adds a success tint to the reservation card; text also conveys the state.
 - Navigation exposes the current route with `aria-current`. Mobile navigation
   has a labelled toggle, closes with Escape and restores focus when closed.
 - The first focusable control is a native skip link to the route-level `main`.
