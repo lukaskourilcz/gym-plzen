@@ -14,8 +14,6 @@ import {
   keypadFailureReason,
 } from "@/lib/helpers/nuki-usage";
 
-export const ACCESS_CODE_PAGE_SIZE = 50;
-
 /** Authorize before either database or Nuki access; never persist fetched PINs. */
 export async function listAdminAccessCodes(
   page: number,
@@ -31,7 +29,7 @@ export async function listAdminAccessCodes(
       })
     : [];
   let usageUnavailable = false;
-  const visible = records.slice(0, ACCESS_CODE_PAGE_SIZE);
+  const visible = records.slice(0, filters.pageSize);
   const usage = await readKeypadUsageLog(
     new Date(
       Math.min(
@@ -131,39 +129,37 @@ export async function listAdminAccessCodes(
   const unassignedFailures = failures
     .filter((use) => !use.codeId)
     .map(failureDetail);
-  const rows = records
-    .slice(0, ACCESS_CODE_PAGE_SIZE)
-    .map(({ code, ...row }) => {
-      const auth = pins.find(
-        (pin) =>
-          pin.id === code.nukiAuthId && hashCode(pin.code) === code.codeHash,
-      );
-      return {
-        ...row,
-        id: code.id,
-        status: code.status,
-        validFrom: code.validFrom,
-        validUntil: code.validUntil,
-        createdAt: code.createdAt,
-        pin: auth?.code ?? null,
-        last2: code.codeLast2,
-        usedAt: storedUses
-          .filter(
-            (use) =>
-              use.codeId === code.id &&
-              !use.action?.startsWith("keypad_failure_"),
-          )
-          .map((use) => use.at),
-        failures: failures
-          .filter((use) => use.codeId === code.id)
-          .map(failureDetail),
-      };
-    });
+  const rows = records.slice(0, filters.pageSize).map(({ code, ...row }) => {
+    const auth = pins.find(
+      (pin) =>
+        pin.id === code.nukiAuthId && hashCode(pin.code) === code.codeHash,
+    );
+    return {
+      ...row,
+      id: code.id,
+      status: code.status,
+      validFrom: code.validFrom,
+      validUntil: code.validUntil,
+      createdAt: code.createdAt,
+      pin: auth?.code ?? null,
+      last2: code.codeLast2,
+      usedAt: storedUses
+        .filter(
+          (use) =>
+            use.codeId === code.id &&
+            !use.action?.startsWith("keypad_failure_"),
+        )
+        .map((use) => use.at),
+      failures: failures
+        .filter((use) => use.codeId === code.id)
+        .map(failureDetail),
+    };
+  });
   return {
     rows,
     unassignedFailures,
     nukiUnavailable,
     usageUnavailable,
-    hasNext: records.length > ACCESS_CODE_PAGE_SIZE,
+    hasNext: records.length > filters.pageSize,
   };
 }

@@ -1,9 +1,10 @@
 import {
+  AdminListTotal,
   AdminListFilters,
   AdminListPagination,
 } from "@/components/admin/list-filters";
 import {
-  ADMIN_PAGE_SIZE,
+  splitAdminPage,
   readAdminFilters,
   type AdminSearchParams,
 } from "@/lib/helpers/admin-list";
@@ -22,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { pageFromParam, splitPage } from "@/lib/helpers/pagination";
+import { pageFromParam } from "@/lib/helpers/pagination";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
 import { ActivityActor } from "@/components/admin/activity-actor";
 
@@ -48,9 +49,11 @@ export default async function ActivityPage({
   const page = pageFromParam(params.page);
   const filters = readAdminFilters(params);
   const demo = await hasDemoAdminSession();
-  const { rows, hasNext } = splitPage(
+  const { rows, hasNext, totalCount } = await splitAdminPage(
     demo ? [] : await activityPage(page, filters),
-    ADMIN_PAGE_SIZE,
+    page,
+    filters,
+    () => (demo ? Promise.resolve([]) : activityPage(1, filters)),
   );
 
   return (
@@ -73,6 +76,7 @@ export default async function ActivityPage({
           },
         ]}
       />
+      <AdminListTotal total={totalCount} />
       <Table label="Historie akcí">
         <TableHeader>
           <TableRow>

@@ -48,7 +48,7 @@ export default async function AdminLayout({
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto w-full max-w-[1164px] p-4 sm:p-6 lg:ml-[248px] lg:w-[calc(100%_-_248px)] lg:px-8 lg:pb-12 lg:pt-7"
+        className="min-w-0 w-full p-4 sm:p-6 lg:ml-[248px] lg:w-[calc(100%_-_248px)] lg:px-8 lg:pb-12 lg:pt-7"
       >
         {admin.isDemo ? <DemoBanner /> : null}
         {children}

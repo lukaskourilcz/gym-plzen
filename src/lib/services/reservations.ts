@@ -1,3 +1,4 @@
+import { adminOrder, adminTotalCount } from "./admin-list-query";
 import { deliverCancellation } from "./cancellation-delivery";
 import { UNSTARTED_HOLD_MINUTES } from "@/lib/config/checkout";
 import { raiseAlert } from "./alerts";
@@ -515,6 +516,7 @@ export async function listUpcomingForUser(
 
 /** One reservation with what the administration wants to see beside it. */
 export interface ReservationHistoryRow extends Reservation {
+  totalCount: number;
   paymentStatus: string | null;
   voucherCode: string | null;
   invoiceId: string | null;
@@ -541,6 +543,7 @@ export async function listHistoryForUser(
   const rows = await db
     .select({
       reservation,
+      totalCount: adminTotalCount,
       invoiceId: invoice.id,
       invoiceNumber: invoice.number,
       paymentStatus: sql<
@@ -578,11 +581,16 @@ export async function listHistoryForUser(
         status ? eq(reservation.status, status) : undefined,
       ),
     )
-    .orderBy(desc(reservation.startsAt), desc(reservation.id))
+    .orderBy(
+      ...(filters
+        ? adminOrder(filters, { date: reservation.startsAt }, reservation.id)
+        : [desc(reservation.startsAt), desc(reservation.id)]),
+    )
     .limit(limit)
     .offset(options?.offset ?? 0);
   return rows.map((row) => ({
     ...row.reservation,
+    totalCount: row.totalCount,
     paymentStatus: row.paymentStatus,
     voucherCode: row.voucherCode,
     invoiceId: row.invoiceId,

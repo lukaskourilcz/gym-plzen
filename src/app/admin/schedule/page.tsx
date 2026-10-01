@@ -1,13 +1,14 @@
 import {
+  AdminListTotal,
   AdminListFilters,
   AdminListPagination,
 } from "@/components/admin/list-filters";
 import {
-  ADMIN_PAGE_SIZE,
+  splitAdminPage,
   readAdminFilters,
   type AdminSearchParams,
 } from "@/lib/helpers/admin-list";
-import { pageFromParam, splitPage } from "@/lib/helpers/pagination";
+import { pageFromParam } from "@/lib/helpers/pagination";
 import { blockPage } from "@/lib/services/admin-lists";
 import { requireAdmin } from "@/lib/auth/guards";
 import { schedule } from "@/lib/services";
@@ -50,7 +51,10 @@ export default async function SchedulePage({
   const now = new Date();
   const demo = await hasDemoAdminSession();
   const query = await searchParams;
-  const filters = readAdminFilters(query);
+  const filters = readAdminFilters({
+    ...query,
+    direction: query.direction ?? "asc",
+  });
   const page = pageFromParam(query.page);
   const [hours, loaded, showerMinutes] = demo
     ? [[], [], DEFAULT_SHOWER_MINUTES]
@@ -59,7 +63,13 @@ export default async function SchedulePage({
         blockPage(page, filters),
         schedule.getShowerMinutes(),
       ]);
-  const { rows: blocks, hasNext } = splitPage(loaded, ADMIN_PAGE_SIZE);
+  const {
+    rows: blocks,
+    hasNext,
+    totalCount,
+  } = await splitAdminPage(loaded, page, filters, () =>
+    demo ? Promise.resolve([]) : blockPage(1, filters),
+  );
   const byDay = new Map(hours.map((h) => [h.dayOfWeek, h]));
 
   return (
@@ -109,6 +119,7 @@ export default async function SchedulePage({
               },
             ]}
           />
+          <AdminListTotal total={totalCount} label="Celkem záznamů" />
           <Table>
             <TableHeader>
               <TableRow>

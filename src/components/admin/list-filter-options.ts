@@ -13,6 +13,14 @@ import type { AdminSelectFilter } from "./list-filters";
 
 export const memberFilters: AdminSelectFilter[] = [
   {
+    name: "whatsapp",
+    label: "WhatsApp",
+    options: [
+      { value: "enabled", label: "Zapnuto" },
+      { value: "disabled", label: "Vypnuto" },
+    ],
+  },
+  {
     name: "role",
     label: "Role",
     options: [

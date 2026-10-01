@@ -1,4 +1,9 @@
-import { AdminListFilters } from "@/components/admin/list-filters";
+import { accessCodePage } from "@/lib/services/admin-lists";
+import { splitAdminPage } from "@/lib/helpers/admin-list";
+import {
+  AdminListTotal,
+  AdminListFilters,
+} from "@/components/admin/list-filters";
 import {
   adminPageHref,
   readAdminFilters,
@@ -49,6 +54,9 @@ export default async function AccessCodesPage({
         usageUnavailable: false,
       }
     : await listAdminAccessCodes(page, filters);
+  const { totalCount } = await splitAdminPage(rows, page, filters, () =>
+    admin.isDemo ? Promise.resolve([]) : accessCodePage(1, filters),
+  );
   const now = new Date();
   // The grace after a booking is an admin setting, not a constant.
   const showerMinutes = await getShowerMinutes();
@@ -104,6 +112,7 @@ export default async function AccessCodesPage({
           },
         ]}
       />
+      <AdminListTotal total={totalCount} />
       <Table>
         <TableHeader>
           <TableRow>

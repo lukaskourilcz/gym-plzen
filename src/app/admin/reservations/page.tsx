@@ -1,9 +1,10 @@
 import {
+  AdminListTotal,
   AdminListFilters,
   AdminListPagination,
 } from "@/components/admin/list-filters";
 import {
-  ADMIN_PAGE_SIZE,
+  splitAdminPage,
   readAdminFilters,
   demoAdminPage,
   type AdminSearchParams,
@@ -69,15 +70,30 @@ export default async function ReservationsPage({
     demoEnabled,
   );
 
-  const { rows, hasNext } = demo
+  const { rows, hasNext, totalCount } = demo
     ? selectedId
-      ? { rows: loaded.filter((r) => r.id === selectedId), hasNext: false }
+      ? {
+          rows: loaded.filter((r) => r.id === selectedId),
+          hasNext: false,
+          totalCount: loaded.filter((r) => r.id === selectedId).length,
+        }
       : demoAdminPage(loaded, page, filters, (r) => ({
           text: `${r.contactName ?? ""} ${r.contactEmail ?? ""}`,
           date: r.startsAt,
           status: r.status,
+          name: r.contactName ?? "",
+          email: r.contactEmail ?? "",
+          sortValues: {
+            price: r.priceCents,
+            status: r.status,
+            created: r.createdAt,
+          },
         }))
-    : splitPage(loaded, ADMIN_PAGE_SIZE);
+    : selectedId
+      ? { ...splitPage(loaded, filters.pageSize), totalCount: loaded.length }
+      : await splitAdminPage(loaded, page, filters, () =>
+          reservationPage(1, filters),
+        );
 
   // Slots bought together in one checkout carry a note, so cancelling one of
   // them is not mistaken for cancelling the whole purchase.
@@ -149,6 +165,7 @@ export default async function ReservationsPage({
           dateLabel="Termín"
         />
       ) : null}
+      <AdminListTotal total={totalCount} label="Celkem rezervací" />
       <Table>
         <TableHeader>
           <TableRow>

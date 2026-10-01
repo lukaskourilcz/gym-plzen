@@ -1,3 +1,5 @@
+import { programmeCodeStates } from "@/lib/services/admin-programme";
+import { cn } from "@/lib/utils";
 import { requireAdmin } from "@/lib/auth/guards";
 import Link from "next/link";
 import { AlertTriangle, DoorOpen, MailWarning } from "lucide-react";
@@ -53,7 +55,12 @@ export default async function AdminDashboard() {
   const day = demoData
     ? aggregateDayOverview(demoData.reservations, now)
     : overview;
-  const todaysReservations = day.reservations;
+  const todaysReservations = day.reservations.filter(
+    (r) => r.status === "confirmed",
+  );
+  const codeStates = demo
+    ? new Map<string, { sent: boolean; used: boolean }>()
+    : await programmeCodeStates(todaysReservations.map((r) => r.id));
   const entries = demoData
     ? demoData.entries.filter(
         (e) => e.occurredAt >= bounds.start && e.occurredAt < bounds.end,
@@ -63,9 +70,7 @@ export default async function AdminDashboard() {
     ? demoData.messages.slice(0, 12)
     : recentMessages;
 
-  const upcoming = todaysReservations.filter(
-    (r) => r.startsAt > now && r.status !== "cancelled",
-  );
+  const upcoming = todaysReservations.filter((r) => r.startsAt > now);
   const openAlerts = recentAlerts.filter((a) => !a.resolvedAt);
   const failedMessages = messageRows.filter((m) => m.status === "failed");
   const trend = day.last7 - day.previous7;
@@ -83,9 +88,7 @@ export default async function AdminDashboard() {
               ? `Dnešní rezervace · další ${formatTime(upcoming[0].startsAt)}`
               : "Dnešní rezervace"
           }
-          value={
-            todaysReservations.filter((r) => r.status !== "cancelled").length
-          }
+          value={todaysReservations.length}
         />
         <StatCard
           label={
@@ -107,8 +110,15 @@ export default async function AdminDashboard() {
           <div className="grid gap-2">
             {todaysReservations.map((r) => {
               const running = r.startsAt <= now && now < r.endsAt;
+              const code = codeStates.get(r.id);
               return (
-                <Card key={r.id} className={running ? "border-primary" : ""}>
+                <Card
+                  key={r.id}
+                  className={cn(
+                    running && "border-primary",
+                    code?.used && "border-success/40 bg-success/10",
+                  )}
+                >
                   <CardContent className="flex flex-wrap items-center gap-3 p-4">
                     <span className="font-bold tabular-nums">
                       {formatTimeRange(r.startsAt, r.endsAt)}
@@ -116,6 +126,15 @@ export default async function AdminDashboard() {
                     <span className="min-w-32 flex-1 text-sm text-muted-foreground">
                       {r.contactName ?? r.contactEmail ?? "Neuvedeno"}
                     </span>
+                    {code?.sent && <Badge variant="outline">Kód odeslán</Badge>}
+                    {code?.used && (
+                      <Badge
+                        variant="outline"
+                        className="border-transparent bg-success text-success-foreground"
+                      >
+                        Kód použit
+                      </Badge>
+                    )}
                     {running && <Badge variant="accent">Právě probíhá</Badge>}
                     {r.priceCents === 0 && (
                       <Badge variant="muted">Zdarma (věrnost)</Badge>

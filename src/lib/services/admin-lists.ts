@@ -1,8 +1,7 @@
 import {
+  getTableColumns,
   and,
   count,
-  asc,
-  desc,
   eq,
   gt,
   isNotNull,
@@ -38,14 +37,12 @@ import {
   reservationStatus,
   voucherKind,
 } from "@/lib/db/schema/enums";
-import {
-  ADMIN_PAGE_SIZE,
-  allowedValue,
-  type AdminFilters,
-} from "@/lib/helpers/admin-list";
+import { allowedValue, type AdminFilters } from "@/lib/helpers/admin-list";
 import { pageLimit, pageOffset } from "@/lib/helpers/pagination";
 import { emailRetentionCutoff } from "@/lib/helpers/email-retention";
 import {
+  adminOrder,
+  adminTotalCount,
   adminDateFilter,
   adminOverlapFilter,
   adminTextSearch,
@@ -56,7 +53,7 @@ import { toMember } from "./members";
 export async function reservationPage(page: number, filters: AdminFilters) {
   const status = allowedValue(filters.status, reservationStatus.enumValues);
   const rows = await db
-    .select({ row: reservation })
+    .select({ row: reservation, totalCount: adminTotalCount })
     .from(reservation)
     .leftJoin(profiles, eq(profiles.id, reservation.userId))
     .where(
@@ -72,10 +69,23 @@ export async function reservationPage(page: number, filters: AdminFilters) {
         status ? eq(reservation.status, status) : undefined,
       ),
     )
-    .orderBy(desc(reservation.startsAt), desc(reservation.id))
-    .limit(pageLimit(ADMIN_PAGE_SIZE))
-    .offset(pageOffset(page, ADMIN_PAGE_SIZE));
-  return rows.map((r) => r.row);
+    .orderBy(
+      ...adminOrder(
+        filters,
+        {
+          date: reservation.startsAt,
+          name: sql`coalesce(${reservation.contactName},${profiles.fullName})`,
+          email: sql`coalesce(${reservation.contactEmail},${profiles.email})`,
+          price: reservation.priceCents,
+          status: reservation.status,
+          created: reservation.createdAt,
+        },
+        reservation.id,
+      ),
+    )
+    .limit(pageLimit(filters.pageSize))
+    .offset(pageOffset(page, filters.pageSize));
+  return rows.map((r) => ({ ...r.row, totalCount: r.totalCount }));
 }
 
 /** SQL uses the same time-based precedence as accessCodeStatusLabel. */
@@ -98,6 +108,7 @@ export function accessCodePage(
   ]);
   return db
     .select({
+      totalCount: adminTotalCount,
       code: accessCode,
       reservationId: reservation.id,
       reservationStart: reservation.startsAt,
@@ -129,15 +140,28 @@ export function accessCodePage(
         wanted ? sql`${state}=${wanted}` : undefined,
       ),
     )
-    .orderBy(desc(accessCode.createdAt), desc(accessCode.id))
-    .limit(pageLimit(ADMIN_PAGE_SIZE))
-    .offset(pageOffset(page, ADMIN_PAGE_SIZE));
+    .orderBy(
+      ...adminOrder(
+        filters,
+        {
+          date: accessCode.createdAt,
+          name: sql`coalesce(${reservation.contactName},${profiles.fullName})`,
+          email: sql`coalesce(${reservation.contactEmail},${profiles.email})`,
+          start: accessCode.validFrom,
+          end: accessCode.validUntil,
+          status: state,
+        },
+        accessCode.id,
+      ),
+    )
+    .limit(pageLimit(filters.pageSize))
+    .offset(pageOffset(page, filters.pageSize));
 }
 
 export async function memberPage(page: number, filters: AdminFilters) {
   const role = allowedValue(filters.role, ["admin", "member"] as const);
   const rows = await db
-    .select()
+    .select({ ...getTableColumns(profiles), totalCount: adminTotalCount })
     .from(profiles)
     .where(
       and(
@@ -149,12 +173,29 @@ export async function memberPage(page: number, filters: AdminFilters) {
         ),
         adminDateFilter(profiles.createdAt, filters),
         role ? eq(profiles.role, role) : undefined,
+        filters.whatsapp === "enabled"
+          ? eq(profiles.notifyByWhatsapp, true)
+          : filters.whatsapp === "disabled"
+            ? eq(profiles.notifyByWhatsapp, false)
+            : undefined,
       ),
     )
-    .orderBy(desc(profiles.createdAt), desc(profiles.id))
-    .limit(pageLimit(ADMIN_PAGE_SIZE))
-    .offset(pageOffset(page, ADMIN_PAGE_SIZE));
-  return rows.map(toMember);
+    .orderBy(
+      ...adminOrder(
+        filters,
+        {
+          date: profiles.createdAt,
+          name: profiles.fullName,
+          email: profiles.email,
+          phone: profiles.phone,
+          role: profiles.role,
+        },
+        profiles.id,
+      ),
+    )
+    .limit(pageLimit(filters.pageSize))
+    .offset(pageOffset(page, filters.pageSize));
+  return rows.map((row) => ({ ...toMember(row), totalCount: row.totalCount }));
 }
 
 /** Scalar lookup avoids duplicating rows when a provider has several attempts. */
@@ -187,6 +228,7 @@ export async function emailPage(
       : undefined;
   return db
     .select({
+      totalCount: adminTotalCount,
       id: emailArchive.id,
       subject: emailArchive.subject,
       recipient: emailArchive.recipient,
@@ -208,9 +250,19 @@ export async function emailPage(
         matchingDelivery,
       ),
     )
-    .orderBy(desc(emailArchive.sentAt), desc(emailArchive.id))
-    .limit(pageLimit(ADMIN_PAGE_SIZE))
-    .offset(pageOffset(page, ADMIN_PAGE_SIZE));
+    .orderBy(
+      ...adminOrder(
+        filters,
+        {
+          date: emailArchive.sentAt,
+          name: emailCustomerName,
+          email: emailArchive.recipient,
+        },
+        emailArchive.id,
+      ),
+    )
+    .limit(pageLimit(filters.pageSize))
+    .offset(pageOffset(page, filters.pageSize));
 }
 
 /** Delivery attempts without a retained preview, including failures/WhatsApp/SMS. */
@@ -234,6 +286,7 @@ export async function messagePage(
     );
   const rows = await db
     .select({
+      totalCount: adminTotalCount,
       message: messageDelivery,
       customerName: sql<
         string | null
@@ -263,10 +316,24 @@ export async function messagePage(
         channel ? eq(messageDelivery.channel, channel) : undefined,
       ),
     )
-    .orderBy(desc(messageDelivery.createdAt), desc(messageDelivery.id))
-    .limit(pageLimit(ADMIN_PAGE_SIZE))
-    .offset(pageOffset(page, ADMIN_PAGE_SIZE));
-  return rows.map((r) => ({ ...r.message, customerName: r.customerName }));
+    .orderBy(
+      ...adminOrder(
+        filters,
+        {
+          date: sql`coalesce(${messageDelivery.sentAt},${messageDelivery.createdAt})`,
+          name: sql`coalesce(${reservation.contactName},${profiles.fullName})`,
+          email: messageDelivery.recipient,
+        },
+        messageDelivery.id,
+      ),
+    )
+    .limit(pageLimit(filters.pageSize))
+    .offset(pageOffset(page, filters.pageSize));
+  return rows.map((r) => ({
+    ...r.message,
+    totalCount: r.totalCount,
+    customerName: r.customerName,
+  }));
 }
 
 export async function activityPage(
@@ -275,7 +342,7 @@ export async function activityPage(
   memberId?: string,
 ) {
   const rows = await db
-    .select({ row: activityLog })
+    .select({ row: activityLog, totalCount: adminTotalCount })
     .from(activityLog)
     .leftJoin(profiles, eq(profiles.id, activityLog.memberId))
     .where(
@@ -292,10 +359,20 @@ export async function activityPage(
         filters.action ? eq(activityLog.action, filters.action) : undefined,
       ),
     )
-    .orderBy(desc(activityLog.occurredAt), desc(activityLog.id))
-    .limit(pageLimit(ADMIN_PAGE_SIZE))
-    .offset(pageOffset(page, ADMIN_PAGE_SIZE));
-  return rows.map((r) => r.row);
+    .orderBy(
+      ...adminOrder(
+        filters,
+        {
+          date: activityLog.occurredAt,
+          name: activityLog.actorLabel,
+          action: activityLog.action,
+        },
+        activityLog.id,
+      ),
+    )
+    .limit(pageLimit(filters.pageSize))
+    .offset(pageOffset(page, filters.pageSize));
+  return rows.map((r) => ({ ...r.row, totalCount: r.totalCount }));
 }
 
 export function memberMessagePage(
@@ -305,6 +382,7 @@ export function memberMessagePage(
 ) {
   return db
     .select({
+      totalCount: adminTotalCount,
       id: messageDelivery.id,
       createdAt: messageDelivery.createdAt,
       sentAt: messageDelivery.sentAt,
@@ -324,9 +402,18 @@ export function memberMessagePage(
         ),
       ),
     )
-    .orderBy(desc(messageDelivery.createdAt), desc(messageDelivery.id))
-    .limit(pageLimit(ADMIN_PAGE_SIZE))
-    .offset(pageOffset(page, ADMIN_PAGE_SIZE));
+    .orderBy(
+      ...adminOrder(
+        filters,
+        {
+          date: sql`coalesce(${messageDelivery.sentAt},${messageDelivery.createdAt})`,
+          email: messageDelivery.recipient,
+        },
+        messageDelivery.id,
+      ),
+    )
+    .limit(pageLimit(filters.pageSize))
+    .offset(pageOffset(page, filters.pageSize));
 }
 
 export async function entryPage(page: number, filters: AdminFilters) {
@@ -350,7 +437,7 @@ export async function entryPage(page: number, filters: AdminFilters) {
     "keypad",
   ]);
   const rows = await db
-    .select({ row: entryLog })
+    .select({ row: entryLog, totalCount: adminTotalCount })
     .from(entryLog)
     .leftJoin(reservation, eq(reservation.id, entryLog.reservationId))
     .leftJoin(profiles, eq(profiles.id, entryLog.userId))
@@ -373,16 +460,27 @@ export async function entryPage(page: number, filters: AdminFilters) {
         trigger ? eq(entryLog.trigger, trigger) : undefined,
       ),
     )
-    .orderBy(desc(entryLog.occurredAt), desc(entryLog.id))
-    .limit(pageLimit(ADMIN_PAGE_SIZE))
-    .offset(pageOffset(page, ADMIN_PAGE_SIZE));
-  return rows.map((r) => r.row);
+    .orderBy(
+      ...adminOrder(
+        filters,
+        {
+          date: entryLog.occurredAt,
+          name: entryLog.nukiName,
+          action: entryLog.action,
+          trigger: entryLog.trigger,
+        },
+        entryLog.id,
+      ),
+    )
+    .limit(pageLimit(filters.pageSize))
+    .offset(pageOffset(page, filters.pageSize));
+  return rows.map((r) => ({ ...r.row, totalCount: r.totalCount }));
 }
 
 export function alertPage(page: number, filters: AdminFilters) {
   const severity = allowedValue(filters.severity, alertseverity.enumValues);
   return db
-    .select()
+    .select({ ...getTableColumns(systemAlert), totalCount: adminTotalCount })
     .from(systemAlert)
     .where(
       and(
@@ -396,14 +494,25 @@ export function alertPage(page: number, filters: AdminFilters) {
             : undefined,
       ),
     )
-    .orderBy(desc(systemAlert.createdAt), desc(systemAlert.id))
-    .limit(pageLimit(ADMIN_PAGE_SIZE))
-    .offset(pageOffset(page, ADMIN_PAGE_SIZE));
+    .orderBy(
+      ...adminOrder(
+        filters,
+        {
+          date: systemAlert.createdAt,
+          name: systemAlert.title,
+          severity: systemAlert.severity,
+          resolved: systemAlert.resolvedAt,
+        },
+        systemAlert.id,
+      ),
+    )
+    .limit(pageLimit(filters.pageSize))
+    .offset(pageOffset(page, filters.pageSize));
 }
 
 export function invoicePage(page: number, filters: AdminFilters) {
   return db
-    .select()
+    .select({ ...getTableColumns(invoice), totalCount: adminTotalCount })
     .from(invoice)
     .where(
       and(
@@ -421,9 +530,22 @@ export function invoicePage(page: number, filters: AdminFilters) {
             : undefined,
       ),
     )
-    .orderBy(desc(invoice.issuedAt), desc(invoice.id))
-    .limit(pageLimit(ADMIN_PAGE_SIZE))
-    .offset(pageOffset(page, ADMIN_PAGE_SIZE));
+    .orderBy(
+      ...adminOrder(
+        filters,
+        {
+          date: invoice.issuedAt,
+          name: invoice.customerName,
+          email: invoice.customerEmail,
+          number: invoice.number,
+          price: invoice.totalCents,
+          sent: invoice.sentAt,
+        },
+        invoice.id,
+      ),
+    )
+    .limit(pageLimit(filters.pageSize))
+    .offset(pageOffset(page, filters.pageSize));
 }
 
 export async function newsletterPage(page: number, filters: AdminFilters) {
@@ -434,7 +556,10 @@ export async function newsletterPage(page: number, filters: AdminFilters) {
   const name = sql`(select p.full_name from public.profiles p where lower(p.email)=lower(${newsletterSubscriber.email}) order by p.created_at desc,p.id desc limit 1)`;
   const [rows, totals] = await Promise.all([
     db
-      .select()
+      .select({
+        ...getTableColumns(newsletterSubscriber),
+        totalCount: adminTotalCount,
+      })
       .from(newsletterSubscriber)
       .where(
         and(
@@ -449,11 +574,19 @@ export async function newsletterPage(page: number, filters: AdminFilters) {
         ),
       )
       .orderBy(
-        desc(newsletterSubscriber.createdAt),
-        desc(newsletterSubscriber.id),
+        ...adminOrder(
+          filters,
+          {
+            date: newsletterSubscriber.createdAt,
+            email: newsletterSubscriber.email,
+            status: newsletterSubscriber.status,
+            source: newsletterSubscriber.source,
+          },
+          newsletterSubscriber.id,
+        ),
       )
-      .limit(pageLimit(ADMIN_PAGE_SIZE))
-      .offset(pageOffset(page, ADMIN_PAGE_SIZE)),
+      .limit(pageLimit(filters.pageSize))
+      .offset(pageOffset(page, filters.pageSize)),
     db
       .select({
         total: count(),
@@ -474,7 +607,7 @@ export function blockPage(
 ) {
   const reason = allowedValue(filters.reason, blockReason.enumValues);
   return db
-    .select()
+    .select({ ...getTableColumns(blockedSlot), totalCount: adminTotalCount })
     .from(blockedSlot)
     .where(
       and(
@@ -486,9 +619,20 @@ export function blockPage(
         reason ? eq(blockedSlot.reason, reason) : undefined,
       ),
     )
-    .orderBy(asc(blockedSlot.startsAt), asc(blockedSlot.id))
-    .limit(pageLimit(ADMIN_PAGE_SIZE))
-    .offset(pageOffset(page, ADMIN_PAGE_SIZE));
+    .orderBy(
+      ...adminOrder(
+        filters,
+        {
+          date: blockedSlot.startsAt,
+          end: blockedSlot.endsAt,
+          reason: blockedSlot.reason,
+          name: blockedSlot.note,
+        },
+        blockedSlot.id,
+      ),
+    )
+    .limit(pageLimit(filters.pageSize))
+    .offset(pageOffset(page, filters.pageSize));
 }
 
 export async function voucherPage(
@@ -528,7 +672,12 @@ export async function voucherPage(
   const kind = allowedValue(filters.kind, voucherKind.enumValues);
   const [rows, totals] = await Promise.all([
     db
-      .select({ voucher, redeemedCount: redeemed, reservedCount: reserved })
+      .select({
+        totalCount: adminTotalCount,
+        voucher,
+        redeemedCount: redeemed,
+        reservedCount: reserved,
+      })
       .from(voucher)
       .leftJoin(usage, eq(usage.voucherId, voucher.id))
       .where(
@@ -539,9 +688,22 @@ export async function voucherPage(
           kind ? eq(voucher.kind, kind) : undefined,
         ),
       )
-      .orderBy(desc(voucher.createdAt), desc(voucher.id))
-      .limit(pageLimit(ADMIN_PAGE_SIZE))
-      .offset(pageOffset(page, ADMIN_PAGE_SIZE)),
+      .orderBy(
+        ...adminOrder(
+          filters,
+          {
+            date: voucher.createdAt,
+            name: voucher.code,
+            start: voucher.validFrom,
+            end: voucher.validUntil,
+            usage: redeemed,
+            status: state,
+          },
+          voucher.id,
+        ),
+      )
+      .limit(pageLimit(filters.pageSize))
+      .offset(pageOffset(page, filters.pageSize)),
     db
       .select({
         total: count(),
@@ -556,6 +718,7 @@ export async function voucherPage(
   return {
     rows: rows.map((r) => ({
       ...r.voucher,
+      totalCount: r.totalCount,
       redeemedCount: r.redeemedCount,
       reservedCount: r.reservedCount,
     })),

@@ -1,13 +1,14 @@
 import {
+  AdminListTotal,
   AdminListFilters,
   AdminListPagination,
 } from "@/components/admin/list-filters";
 import {
-  ADMIN_PAGE_SIZE,
+  splitAdminPage,
   readAdminFilters,
   type AdminSearchParams,
 } from "@/lib/helpers/admin-list";
-import { pageFromParam, splitPage } from "@/lib/helpers/pagination";
+import { pageFromParam } from "@/lib/helpers/pagination";
 import { alertPage } from "@/lib/services/admin-lists";
 import { alertseverity } from "@/lib/db/schema/enums";
 import { requireAdmin } from "@/lib/auth/guards";
@@ -38,9 +39,11 @@ export default async function AlertsPage({
   const query = await searchParams;
   const filters = readAdminFilters(query);
   const page = pageFromParam(query.page);
-  const { rows, hasNext } = splitPage(
+  const { rows, hasNext, totalCount } = await splitAdminPage(
     demo ? [] : await alertPage(page, filters),
-    ADMIN_PAGE_SIZE,
+    page,
+    filters,
+    () => (demo ? Promise.resolve([]) : alertPage(1, filters)),
   );
 
   return (
@@ -69,6 +72,7 @@ export default async function AlertsPage({
           },
         ]}
       />
+      <AdminListTotal total={totalCount} label="Celkem záznamů" />
       <Table>
         <TableHeader>
           <TableRow>

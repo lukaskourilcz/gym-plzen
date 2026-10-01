@@ -1,13 +1,14 @@
 import {
+  AdminListTotal,
   AdminListFilters,
   AdminListPagination,
 } from "@/components/admin/list-filters";
 import {
-  ADMIN_PAGE_SIZE,
+  splitAdminPage,
   readAdminFilters,
   type AdminSearchParams,
 } from "@/lib/helpers/admin-list";
-import { pageFromParam, splitPage } from "@/lib/helpers/pagination";
+import { pageFromParam } from "@/lib/helpers/pagination";
 import { invoicePage } from "@/lib/services/admin-lists";
 import { requireAdmin } from "@/lib/auth/guards";
 import Link from "next/link";
@@ -64,7 +65,12 @@ export default async function DocumentsPage({
         invoices.getBillingReadiness(),
       ]);
 
-  const { rows, hasNext } = splitPage(loaded, ADMIN_PAGE_SIZE);
+  const { rows, hasNext, totalCount } = await splitAdminPage(
+    loaded,
+    page,
+    filters,
+    () => (demo ? Promise.resolve([]) : invoicePage(1, filters)),
+  );
 
   return (
     <div>
@@ -126,6 +132,7 @@ export default async function DocumentsPage({
               },
             ]}
           />
+          <AdminListTotal total={totalCount} />
           {rows.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Zatím žádný doklad. První se vystaví po nejbližší zaplacené
