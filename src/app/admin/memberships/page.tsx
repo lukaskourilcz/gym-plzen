@@ -1,5 +1,18 @@
+import {
+  AdminListFilters,
+  AdminListPagination,
+} from "@/components/admin/list-filters";
+import {
+  ADMIN_PAGE_SIZE,
+  readAdminFilters,
+  type AdminSearchParams,
+} from "@/lib/helpers/admin-list";
+import { pageFromParam, splitPage } from "@/lib/helpers/pagination";
+import { demoAdminPage } from "@/lib/helpers/admin-list";
+import { memberPage } from "@/lib/services/admin-lists";
+import { memberFilters } from "@/components/admin/list-filter-options";
 import { requireAdmin } from "@/lib/auth/guards";
-import { loyalty, members, pricingPeriods, slots } from "@/lib/services";
+import { loyalty, pricingPeriods, slots } from "@/lib/services";
 import { deriveLoyaltyStatus } from "@/lib/services/loyalty";
 import {
   DEFAULT_ENTRY_PRICE_CENTS,
@@ -64,13 +77,16 @@ function periodStatus(period: PricingPeriod, now: Date) {
 export default async function PricingPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<AdminSearchParams>;
 }) {
   await requireAdmin();
   const [demo, query] = await Promise.all([
     hasDemoAdminSession(),
     searchParams,
   ]);
+  const filters = readAdminFilters(query);
+  const page = pageFromParam(query.page);
+  let hasNext = false;
   const now = new Date();
   const [standardPriceCents, entryPrice, periods, horizonDays, liveMembers] =
     demo
@@ -80,7 +96,7 @@ export default async function PricingPage({
           loyalty.getEntryPrice(now),
           pricingPeriods.listPricingPeriods(),
           slots.getBookingHorizonDays(),
-          members.listMembers(200),
+          memberPage(page, filters),
         ]);
 
   const editId = typeof query.edit === "string" ? query.edit : null;
@@ -108,16 +124,24 @@ export default async function PricingPage({
         );
       }
     }
-    withLoyalty = data.members.map((member) => ({
+    const paged = demoAdminPage(data.members, page, filters, (m) => ({
+      text: `${m.user.name} ${m.user.email} ${m.profile?.phone ?? ""}`,
+      date: m.user.createdAt,
+      role: m.user.role,
+    }));
+    hasNext = paged.hasNext;
+    withLoyalty = paged.rows.map((member) => ({
       member,
       status: deriveLoyaltyStatus(counts.get(member.user.id) ?? 0),
     }));
   } else {
+    const paged = splitPage(liveMembers, ADMIN_PAGE_SIZE);
+    hasNext = paged.hasNext;
     // Two grouped queries for the whole list rather than two per member.
     const statuses = await loyalty.getLoyaltyStatusForUsers(
-      liveMembers.map((member) => member.user.id),
+      paged.rows.map((member) => member.user.id),
     );
-    withLoyalty = liveMembers.map((member) => ({
+    withLoyalty = paged.rows.map((member) => ({
       member,
       status: statuses.get(member.user.id) ?? deriveLoyaltyStatus(0),
     }));
@@ -266,6 +290,12 @@ export default async function PricingPage({
       </Card>
 
       <h2 className="mb-3 text-lg font-semibold">Věrnostní přehled členů</h2>
+      <AdminListFilters
+        path="/admin/memberships"
+        filters={filters}
+        selects={memberFilters}
+        dateLabel="Registrace"
+      />
       <Table>
         <TableHeader>
           <TableRow>
@@ -301,6 +331,12 @@ export default async function PricingPage({
           ) : null}
         </TableBody>
       </Table>
+      <AdminListPagination
+        path="/admin/memberships"
+        params={query}
+        page={page}
+        hasNext={hasNext}
+      />
     </div>
   );
 }

@@ -1,3 +1,14 @@
+import {
+  AdminListFilters,
+  AdminListPagination,
+} from "@/components/admin/list-filters";
+import {
+  ADMIN_PAGE_SIZE,
+  readAdminFilters,
+  type AdminSearchParams,
+} from "@/lib/helpers/admin-list";
+import { pageFromParam, splitPage } from "@/lib/helpers/pagination";
+import { voucherPage } from "@/lib/services/admin-lists";
 import { requireAdmin } from "@/lib/auth/guards";
 import { vouchers } from "@/lib/services";
 import { formatDateTime, formatMoney } from "@/lib/helpers/format";
@@ -31,15 +42,21 @@ function voucherState(row: vouchers.VoucherOverview, now: Date) {
   return { label: "Aktivní", variant: "accent" as const };
 }
 
-export default async function VouchersPage() {
+export default async function VouchersPage({
+  searchParams,
+}: {
+  searchParams: Promise<AdminSearchParams>;
+}) {
   await requireAdmin();
   const demo = await hasDemoAdminSession();
-  const rows = demo ? [] : await vouchers.listVouchers();
+  const query = await searchParams;
+  const filters = readAdminFilters(query);
+  const page = pageFromParam(query.page);
   const now = new Date();
-  const redeemed = rows.reduce((sum, row) => sum + row.redeemedCount, 0);
-  const active = rows.filter(
-    (row) => voucherState(row, now).label === "Aktivní",
-  ).length;
+  const { rows: loaded, totals } = demo
+    ? { rows: [], totals: { total: 0, active: 0, redeemed: 0 } }
+    : await voucherPage(page, filters, now);
+  const { rows, hasNext } = splitPage(loaded, ADMIN_PAGE_SIZE);
 
   return (
     <div>
@@ -48,9 +65,9 @@ export default async function VouchersPage() {
         description="Slevové kódy se ověřují při rezervaci a výsledná částka se předává platební bráně Comgate."
       />
       <div className="mb-8 flex flex-wrap gap-4">
-        <StatCard label="Voucherů celkem" value={rows.length} />
-        <StatCard label="Aktivních" value={active} />
-        <StatCard label="Dokončených použití" value={redeemed} />
+        <StatCard label="Voucherů celkem" value={totals.total} />
+        <StatCard label="Aktivních" value={totals.active} />
+        <StatCard label="Dokončených použití" value={totals.redeemed} />
       </div>
 
       <Card className="mb-8 max-w-3xl">
@@ -63,6 +80,33 @@ export default async function VouchersPage() {
       </Card>
 
       <h2 className="mb-3 text-lg font-semibold">Přehled voucherů</h2>
+      <AdminListFilters
+        path="/admin/vouchers"
+        filters={filters}
+        placeholder="Kód voucheru"
+        dateLabel="Vytvořeno"
+        selects={[
+          {
+            name: "state",
+            label: "Stav",
+            options: [
+              { value: "active", label: "Aktivní" },
+              { value: "inactive", label: "Neaktivní" },
+              { value: "scheduled", label: "Naplánovaný" },
+              { value: "expired", label: "Expirovaný" },
+              { value: "exhausted", label: "Vyčerpaný" },
+            ],
+          },
+          {
+            name: "kind",
+            label: "Sleva",
+            options: [
+              { value: "percentage", label: "Procentní" },
+              { value: "fixed_amount", label: "Pevná částka" },
+            ],
+          },
+        ]}
+      />
       <Table>
         <TableHeader>
           <TableRow>
@@ -119,6 +163,12 @@ export default async function VouchersPage() {
           ) : null}
         </TableBody>
       </Table>
+      <AdminListPagination
+        path="/admin/vouchers"
+        params={query}
+        page={page}
+        hasNext={hasNext}
+      />
     </div>
   );
 }

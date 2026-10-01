@@ -135,6 +135,7 @@ const MESSAGE_KIND_LABELS: Record<string, string> = {
   marketing: "Novinky",
   system_alert: "Systémové upozornění",
   operator_notice: "Upozornění pro provozovatele",
+  payment_document: "Faktura",
 };
 
 /** What a message was about, for the administration. */

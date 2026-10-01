@@ -30,7 +30,7 @@ export interface MemberWithProfile {
   profile: Profile | null;
 }
 
-function toMember(p: Profile): MemberWithProfile {
+export function toMember(p: Profile): MemberWithProfile {
   return {
     user: {
       id: p.id,

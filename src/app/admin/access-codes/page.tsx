@@ -1,3 +1,10 @@
+import { AdminListFilters } from "@/components/admin/list-filters";
+import {
+  adminPageHref,
+  readAdminFilters,
+  type AdminSearchParams,
+} from "@/lib/helpers/admin-list";
+import { pageFromParam } from "@/lib/helpers/pagination";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/guards";
 import { getShowerMinutes } from "@/lib/services/schedule";
@@ -21,15 +28,12 @@ export const dynamic = "force-dynamic";
 export default async function AccessCodesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<AdminSearchParams>;
 }) {
   const admin = await requireAdmin();
   const params = await searchParams;
-  const rawPage = Number(params.page);
-  const page =
-    Number.isSafeInteger(rawPage) && rawPage > 0 && rawPage <= 100000
-      ? rawPage
-      : 1;
+  const page = pageFromParam(params.page);
+  const filters = readAdminFilters(params);
   const {
     rows,
     unassignedFailures,
@@ -44,7 +48,7 @@ export default async function AccessCodesPage({
         nukiUnavailable: false,
         usageUnavailable: false,
       }
-    : await listAdminAccessCodes(page);
+    : await listAdminAccessCodes(page, filters);
   const now = new Date();
   // The grace after a booking is an admin setting, not a constant.
   const showerMinutes = await getShowerMinutes();
@@ -82,6 +86,24 @@ export default async function AccessCodesPage({
         nespojilo s konkrétním kódem. Sloupec u zákazníka počítá pouze pokusy
         přiřazené k jeho kódu.
       </p>
+      <AdminListFilters
+        path="/admin/access-codes"
+        filters={filters}
+        dateLabel="Platnost"
+        selects={[
+          {
+            name: "state",
+            label: "Stav kódu",
+            options: [
+              { value: "active", label: "Platný" },
+              { value: "scheduled", label: "Čeká na začátek" },
+              { value: "expired", label: "Platnost skončila" },
+              { value: "revoked", label: "Zrušený" },
+              { value: "failed", label: "Nepotvrzený v Nuki" },
+            ],
+          },
+        ]}
+      />
       <Table>
         <TableHeader>
           <TableRow>
@@ -204,7 +226,7 @@ export default async function AccessCodesPage({
         {page > 1 && (
           <Button
             variant="outline"
-            href={`/admin/access-codes?page=${page - 1}`}
+            href={adminPageHref("/admin/access-codes", params, page - 1)}
           >
             Předchozí
           </Button>
@@ -213,7 +235,7 @@ export default async function AccessCodesPage({
         {hasNext && (
           <Button
             variant="outline"
-            href={`/admin/access-codes?page=${page + 1}`}
+            href={adminPageHref("/admin/access-codes", params, page + 1)}
           >
             Další
           </Button>

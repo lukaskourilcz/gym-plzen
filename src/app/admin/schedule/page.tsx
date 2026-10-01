@@ -1,6 +1,16 @@
+import {
+  AdminListFilters,
+  AdminListPagination,
+} from "@/components/admin/list-filters";
+import {
+  ADMIN_PAGE_SIZE,
+  readAdminFilters,
+  type AdminSearchParams,
+} from "@/lib/helpers/admin-list";
+import { pageFromParam, splitPage } from "@/lib/helpers/pagination";
+import { blockPage } from "@/lib/services/admin-lists";
 import { requireAdmin } from "@/lib/auth/guards";
 import { schedule } from "@/lib/services";
-import { addMinutes } from "@/lib/helpers/datetime";
 import { formatDateTime } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -31,17 +41,25 @@ export const metadata = { title: "Otevírací doba a bloky" };
 export const dynamic = "force-dynamic";
 
 /** Weekly opening hours + one-off blocked slots (maintenance, holidays). */
-export default async function SchedulePage() {
+export default async function SchedulePage({
+  searchParams,
+}: {
+  searchParams: Promise<AdminSearchParams>;
+}) {
   await requireAdmin();
   const now = new Date();
   const demo = await hasDemoAdminSession();
-  const [hours, blocks, showerMinutes] = demo
+  const query = await searchParams;
+  const filters = readAdminFilters(query);
+  const page = pageFromParam(query.page);
+  const [hours, loaded, showerMinutes] = demo
     ? [[], [], DEFAULT_SHOWER_MINUTES]
     : await Promise.all([
         schedule.listOpeningHours(),
-        schedule.listBlockedSlots(now, addMinutes(now, 60 * 24 * 90)),
+        blockPage(page, filters),
         schedule.getShowerMinutes(),
       ]);
+  const { rows: blocks, hasNext } = splitPage(loaded, ADMIN_PAGE_SIZE);
   const byDay = new Map(hours.map((h) => [h.dayOfWeek, h]));
 
   return (
@@ -76,6 +94,21 @@ export default async function SchedulePage() {
         <BlockedSlotForm />
 
         <div className="mt-4">
+          <AdminListFilters
+            path="/admin/schedule"
+            filters={filters}
+            placeholder="Poznámka"
+            dateLabel="Termín"
+            selects={[
+              {
+                name: "reason",
+                label: "Důvod",
+                options: Object.entries(BLOCK_REASON_LABELS).map(
+                  ([value, label]) => ({ value, label }),
+                ),
+              },
+            ]}
+          />
           <Table>
             <TableHeader>
               <TableRow>
@@ -91,7 +124,7 @@ export default async function SchedulePage() {
                 <TableRow key={b.id}>
                   <TableCell>
                     {formatDateTime(b.startsAt)}
-                    {b.startsAt <= now && (
+                    {b.startsAt <= now && b.endsAt > now && (
                       <Badge variant="accent" className="ml-2">
                         Probíhá
                       </Badge>
@@ -116,6 +149,12 @@ export default async function SchedulePage() {
               )}
             </TableBody>
           </Table>
+          <AdminListPagination
+            path="/admin/schedule"
+            params={query}
+            page={page}
+            hasNext={hasNext}
+          />
         </div>
       </section>
     </div>

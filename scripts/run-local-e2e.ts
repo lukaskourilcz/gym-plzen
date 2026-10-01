@@ -74,6 +74,9 @@ try {
   await sql.unsafe(
     `TRUNCATE ${BOOKING_TABLES.map((table) => `public.${table}`).join(", ")} RESTART IDENTITY CASCADE`,
   );
+  // Provider fixtures restart their message IDs on every run. Retained email
+  // bodies from an earlier run must not collide with this run's fake IDs.
+  await sql`delete from email_archive`;
   await sql`delete from content_block where key = 'home.hero.title' and locale = 'cs'`;
   for (let weekday = 0; weekday < 7; weekday++)
     await sql`insert into opening_hours (day_of_week, open_minute, close_minute, slot_minutes)
@@ -161,6 +164,8 @@ try {
           "public.spec.ts",
           "auth.spec.ts",
           "admin.spec.ts",
+          "admin-filtering.spec.ts",
+          "manual-invoices.spec.ts",
           "booking-flow.spec.ts",
           "customer.spec.ts",
           "analytics.spec.ts",

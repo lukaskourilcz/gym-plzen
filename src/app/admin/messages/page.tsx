@@ -1,7 +1,19 @@
+import {
+  AdminListFilters,
+  AdminListPagination,
+} from "@/components/admin/list-filters";
+import {
+  ADMIN_PAGE_SIZE,
+  readAdminFilters,
+  demoAdminPage,
+  type AdminSearchParams,
+} from "@/lib/helpers/admin-list";
+import { pageFromParam, splitPage } from "@/lib/helpers/pagination";
+import { messageFilters } from "@/components/admin/list-filter-options";
+import { emailPage, messagePage } from "@/lib/services/admin-lists";
 import { requireAdmin } from "@/lib/auth/guards";
 import { importRecentEmails } from "./actions";
 import { Button } from "@/components/ui/button";
-import { messages } from "@/lib/services";
 import {
   formatChannel,
   formatDateTime,
@@ -28,23 +40,36 @@ export const maxDuration = 60;
 export default async function MessagesPage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    import?: string;
-    imported?: string;
-    unavailable?: string;
-  }>;
+  searchParams: Promise<AdminSearchParams>;
 }) {
   await requireAdmin();
   const result = await searchParams;
   const demoEnabled = await hasDemoAdminSession();
-  const [{ rows }, emails] = await Promise.all([
+  const filters = readAdminFilters(result);
+  const emailNumber = pageFromParam(result.emailPage);
+  const messageNumber = pageFromParam(result.messagePage);
+  const [{ rows: loaded, demo }, loadedEmails] = await Promise.all([
     withDemoFallback(
-      demoEnabled ? Promise.resolve([]) : messages.listUnarchivedRecent(200),
+      demoEnabled ? Promise.resolve([]) : messagePage(messageNumber, filters),
       (d) => d.messages,
       demoEnabled,
     ),
-    demoEnabled ? Promise.resolve([]) : messages.listAdminEmails(),
+    demoEnabled ? Promise.resolve([]) : emailPage(emailNumber, filters),
   ]);
+
+  const { rows: emails, hasNext: moreEmails } = splitPage(
+    loadedEmails,
+    ADMIN_PAGE_SIZE,
+  );
+  const { rows, hasNext: moreMessages } = demo
+    ? demoAdminPage(loaded, messageNumber, filters, (m) => ({
+        text: m.recipient,
+        date: m.sentAt ?? m.createdAt,
+        channel: m.channel,
+        status: m.status,
+        kind: m.kind,
+      }))
+    : splitPage(loaded, ADMIN_PAGE_SIZE);
 
   return (
     <div>
@@ -77,6 +102,13 @@ export default async function MessagesPage({
             </Button>
           </form>
         )}
+      <AdminListFilters
+        path="/admin/messages"
+        filters={filters}
+        selects={messageFilters}
+        placeholder="Jméno, e-mail nebo předmět"
+        dateLabel="Odesláno"
+      />
       <h2 className="mb-3 text-xl font-bold">Odeslané e-maily</h2>
       <Table>
         <TableHeader>
@@ -91,7 +123,14 @@ export default async function MessagesPage({
           {emails.map((email) => (
             <TableRow key={email.id}>
               <TableCell>{formatDateTime(email.sentAt)}</TableCell>
-              <TableCell>{email.recipient}</TableCell>
+              <TableCell>
+                {email.recipient}
+                {email.customerName ? (
+                  <span className="block text-xs text-muted-foreground">
+                    {email.customerName}
+                  </span>
+                ) : null}
+              </TableCell>
               <TableCell>{email.subject}</TableCell>
               <TableCell>
                 <Button
@@ -114,11 +153,14 @@ export default async function MessagesPage({
           )}
         </TableBody>
       </Table>
-      {emails.length === 200 && (
-        <p className="mt-2 text-sm text-muted-foreground">
-          Zobrazeno posledních 200 e-mailů.
-        </p>
-      )}
+      <AdminListPagination
+        path="/admin/messages"
+        params={result}
+        page={emailNumber}
+        hasNext={moreEmails}
+        pageKey="emailPage"
+        label="Stránkování e-mailů"
+      />
       <h2 className="mb-3 mt-8 text-xl font-bold">
         Ostatní zprávy a záznamy bez náhledu
       </h2>
@@ -138,7 +180,14 @@ export default async function MessagesPage({
               <TableCell>{formatDateTime(m.createdAt)}</TableCell>
               <TableCell>{formatChannel(m.channel)}</TableCell>
               <TableCell>{formatMessageKind(m.kind)}</TableCell>
-              <TableCell>{m.recipient}</TableCell>
+              <TableCell>
+                {m.recipient}
+                {"customerName" in m && typeof m.customerName === "string" ? (
+                  <span className="block text-xs text-muted-foreground">
+                    {m.customerName}
+                  </span>
+                ) : null}
+              </TableCell>
               <TableCell
                 className={
                   m.status === "failed" ? "text-destructive" : undefined
@@ -158,6 +207,14 @@ export default async function MessagesPage({
           )}
         </TableBody>
       </Table>
+      <AdminListPagination
+        path="/admin/messages"
+        params={result}
+        page={messageNumber}
+        hasNext={moreMessages}
+        pageKey="messagePage"
+        label="Stránkování ostatních zpráv"
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNotNull, sql } from "drizzle-orm";
 import { db, type DatabaseExecutor } from "@/lib/db";
-import { documentCounter, invoice, payment } from "@/lib/db/schema";
+import { documentCounter, invoice, payment, profiles } from "@/lib/db/schema";
 import type { InvoiceItem } from "@/lib/db/schema";
 import type { Invoice, Reservation } from "@/lib/db/types";
 import {
@@ -15,12 +15,11 @@ import {
   parseBillingProfile,
   type BillingProfile,
 } from "@/lib/config/billing";
-import { formatDateTime, formatMoney } from "@/lib/helpers/format";
+import { formatDateTime } from "@/lib/helpers/format";
 import { logger } from "@/lib/helpers/logger";
 import { renderInvoicePdf, type InvoiceDocument } from "@/lib/pdf/invoice-pdf";
 import { getSetting, setSetting } from "./cms";
 import { getOrder, listOrderReservations } from "./order-state";
-import { sendTransactionalEmail } from "./email-templates";
 
 /**
  * Payment documents: issuing, rendering and e-mailing them.
@@ -122,7 +121,7 @@ export type IssueOutcome =
   | { issued: false; reason: "already_issued"; invoice: Invoice }
   | {
       issued: false;
-      reason: "not_billable" | "profile_incomplete" | "disabled";
+      reason: "not_billable" | "not_paid" | "profile_incomplete" | "disabled";
     };
 
 export interface IssueParams {
@@ -262,22 +261,48 @@ export async function issueDocumentFor(
   reservation: Reservation,
   options: { force?: boolean } = {},
 ): Promise<IssueOutcome> {
-  const issue = issueAndSend;
+  const existing =
+    (reservation.orderId
+      ? await getInvoiceForOrder(reservation.orderId)
+      : null) ?? (await getInvoiceForReservation(reservation.id));
+  if (existing)
+    return { issued: false, reason: "already_issued", invoice: existing };
+  const issue = issueForReservation;
   const order = reservation.orderId
     ? await getOrder(reservation.orderId)
     : null;
+  if ((order?.currency ?? reservation.currency).toLowerCase() !== "czk")
+    return { issued: false, reason: "not_billable" };
   // The date of taxable supply is when the customer paid, not when the
   // document happens to be issued (a later manual issue, a New Year retry).
   const paidAt = await paidAtFor(
     order ? { orderId: order.id } : { reservationId: reservation.id },
+    order?.totalCents ?? reservation.priceCents,
+    order?.currency ?? reservation.currency,
   );
+  if (!(order?.totalCents ?? reservation.priceCents))
+    return { issued: false, reason: "not_billable" };
+  if (
+    !paidAt ||
+    !["confirmed", "completed", "cancelled", "no_show"].includes(
+      reservation.status,
+    )
+  )
+    return { issued: false, reason: "not_paid" };
+  const [profile] = reservation.userId
+    ? await db
+        .select({ email: profiles.email, name: profiles.fullName })
+        .from(profiles)
+        .where(eq(profiles.id, reservation.userId))
+        .limit(1)
+    : [];
   if (!order) {
     return issue({
       paidAt,
       reservationId: reservation.id,
       userId: reservation.userId ?? null,
-      customerName: reservation.contactName,
-      customerEmail: reservation.contactEmail,
+      customerName: reservation.contactName ?? profile?.name ?? null,
+      customerEmail: reservation.contactEmail ?? profile?.email ?? null,
       totalCents: reservation.priceCents,
       startsAt: reservation.startsAt,
       force: options.force,
@@ -290,8 +315,8 @@ export async function issueDocumentFor(
     reservationId: first.id,
     orderId: order.id,
     userId: order.userId ?? null,
-    customerName: order.contactName,
-    customerEmail: order.contactEmail,
+    customerName: order.contactName ?? profile?.name ?? null,
+    customerEmail: order.contactEmail ?? profile?.email ?? null,
     totalCents: order.totalCents,
     startsAt: first.startsAt,
     force: options.force,
@@ -312,7 +337,10 @@ export async function issueDocumentFor(
 /** When the purchase's successful payment arrived, if it did. */
 async function paidAtFor(
   target: { orderId: string } | { reservationId: string },
+  amountCents: number | null,
+  currency: string,
 ): Promise<Date | undefined> {
+  if (!amountCents || amountCents <= 0) return undefined;
   const [row] = await db
     .select({ paidAt: payment.paidAt })
     .from(payment)
@@ -322,6 +350,10 @@ async function paidAtFor(
           ? eq(payment.orderId, target.orderId)
           : eq(payment.reservationId, target.reservationId),
         eq(payment.status, "succeeded"),
+        isNotNull(payment.paidAt),
+        gt(payment.amountCents, 0),
+        eq(payment.amountCents, amountCents),
+        sql`lower(${payment.currency}) = lower(${currency})`,
       ),
     )
     .orderBy(desc(payment.paidAt))
@@ -360,61 +392,13 @@ export function pdfFilename(row: Pick<Invoice, "number">): string {
 
 // ── Sending ─────────────────────────────────────────────────────────────────
 
-export async function sendInvoiceEmail(row: Invoice): Promise<boolean> {
-  const to = row.customerEmail;
-  if (!to) return false;
-
-  const pdf = await renderPdf(row);
-  const result = await sendTransactionalEmail({
-    id: "payment_document",
-    to,
-    attachments: [
-      { filename: pdfFilename(row), content: pdf.toString("base64") },
-    ],
-    variables: {
-      name: row.customerName || "zákazníku",
-      number: row.number,
-      amount: formatMoney(row.totalCents, row.currency),
-      date: new Intl.DateTimeFormat("cs-CZ", {
-        day: "numeric",
-        month: "numeric",
-        year: "numeric",
-        timeZone: "Europe/Prague",
-      }).format(row.issuedAt),
-    },
-  });
-
-  if (result.sent) {
-    await db
-      .update(invoice)
-      .set({ sentAt: new Date(), sentTo: to })
-      .where(eq(invoice.id, row.id));
-  }
-  return result.sent;
-}
-
-/**
- * Issue and send in one step, for the fulfillment path.
- *
- * A document that fails to send is still a document: the row stays, the number
- * is not reused, and the administration offers "Poslat znovu". Delivery
- * failure is therefore logged rather than raised, so a rendering or Resend
- * problem cannot disturb a paid customer's access code. Issuing itself still
- * throws, because a caller that cannot write the row needs to know.
- */
-export async function issueAndSend(params: IssueParams): Promise<IssueOutcome> {
-  const outcome = await issueForReservation(params);
-  if (outcome.issued) {
-    try {
-      await sendInvoiceEmail(outcome.invoice);
-    } catch (e) {
-      logger.error(e, {
-        where: "invoices.issueAndSend",
-        invoiceId: outcome.invoice.id,
-      });
-    }
-  }
-  return outcome;
+export async function sendInvoiceEmail(
+  row: Invoice,
+  requestId: string,
+): Promise<boolean> {
+  const { sendInvoiceDocument } = await import("./invoice-delivery");
+  const result = await sendInvoiceDocument(row, "customer", requestId);
+  return result.failed.length === 0;
 }
 
 // ── Administration ──────────────────────────────────────────────────────────

@@ -141,6 +141,10 @@ export default async function globalSetup(config: FullConfig) {
       const consent = page
         .getByTestId("tracking-consent")
         .getByRole("button", { name: "Pouze nezbytné" });
+      // Fresh local contexts always show consent after hydration; checking too
+      // early lets the late banner cover the sign-in button.
+      if (process.env.E2E_LOCAL_AUTH === "true")
+        await consent.waitFor({ state: "visible" });
       if (await consent.isVisible()) await consent.click();
       await page.getByLabel(/E-mail/i).fill(u.email);
       await page.getByLabel(/Heslo/i).fill(CRED.password);

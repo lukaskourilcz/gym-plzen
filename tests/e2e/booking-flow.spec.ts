@@ -5,9 +5,8 @@ import { isTestDatabaseUrl } from "../helpers/test-database";
 
 /**
  * The public booking flow in a browser against a production build with a
- * local Postgres and a local stand-in for the payment gateway (mode 5 in the
- * README). Covers the two paths a visitor actually takes: a voucher that
- * covers the whole price, and a paid booking where the visitor comes back
+ * local Postgres and a local stand-in for the payment gateway. Covers the two
+ * paths a visitor actually takes: a voucher that covers the whole price, and a paid booking where the visitor comes back
  * from the gateway and submits again, which on 17. 9. 2026 reported the
  * visitor's own hold as a taken slot.
  *
@@ -29,7 +28,10 @@ const gateway = createComgateMock(GATEWAY_PORT);
 const sql = ready ? postgres(DATABASE_URL!, { prepare: false, max: 1 }) : null;
 
 test.describe("Booking flow", () => {
-  test.skip(!ready, "needs a local DATABASE_URL (see tests/e2e/README.md)");
+  test.skip(
+    !ready,
+    "needs a dedicated local TEST_DATABASE_URL (use npm run test:e2e)",
+  );
   test.beforeAll(async () => {
     await gateway.start();
     // The stand-in numbers its payments from one on every start, so a payment

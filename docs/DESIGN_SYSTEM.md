@@ -67,10 +67,9 @@ CSS masks) and regenerate `src/app/icon.png` together with the derived
 
 ## Design variants
 
-The public site ships two looks: `classic`, the approved appearance, and
-`modern`, a bolder editorial reading of the same brand. The choice is a preview
-aid for comparing them with the client, not a user preference: once `modern` is
-approved it becomes the default and the switch is removed.
+The public site ships two looks: `classic`, the default appearance, and
+`modern`, a bolder editorial reading of the same brand. The development preview
+switch compares both implementations; it is not a customer preference.
 
 - The variant lives in the `ns_design` cookie and is stamped on `<html>` as
   `data-design` by a small inline script in the root layout, before first paint.
@@ -576,9 +575,9 @@ that carries the term, the length and the price.
 
 Before adding a reusable visual pattern, search the shared components and this
 document. If a new pattern is justified, add its semantic token or component,
-document it here, and add it to `/admin/design-system` in the same change. Run
-the reviewer in `.claude/agents/design-system-reviewer.md` for every non-trivial
-UI implementation.
+document it here, and add it to `/admin/design-system` in the same change.
+Verify the component on mobile and desktop, with keyboard navigation, visible
+focus, contrast, zoom and reduced motion.
 
 ## Customer avatar
 

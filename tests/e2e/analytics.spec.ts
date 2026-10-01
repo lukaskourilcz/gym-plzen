@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 /*
  * Measurement ids are inlined at build time. This suite exercises the
- * configured path, so build with the same values (see tests/e2e/README).
+ * configured path, so build with the same values (see scripts/run-local-e2e.ts).
  * The unconfigured path, where nothing loads and no consent is requested, is
  * covered by tests/unit/analytics.test.ts.
  */

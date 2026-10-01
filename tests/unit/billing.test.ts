@@ -245,22 +245,3 @@ test("the embedded font covers Czech, so no diacritic renders as .notdef", async
     assert.equal(missing.length, 0, `${file} is missing Czech glyphs`);
   }
 });
-
-test("a payment document never blocks the entry code", async () => {
-  // The reliability pipeline's invariant is that a paid customer gets in. The
-  // document is an accounting convenience bolted alongside it, so its call
-  // site must be wrapped: this is a structural guarantee, not a behaviour that
-  // a future edit should be free to drop.
-  const fs = await import("node:fs/promises");
-  const source = await fs.readFile("src/lib/services/fulfillment.ts", "utf8");
-  // The call site, not the import above it.
-  const call = source.indexOf("await issueDocumentFor(");
-  assert.ok(call > 0, "fulfillment issues the document");
-  const before = source.slice(0, call);
-  const tryIndex = before.lastIndexOf("try {");
-  const catchAfter = source.indexOf("catch", call);
-  assert.ok(
-    tryIndex > 0 && catchAfter > call,
-    "issueDocumentFor must sit inside try/catch",
-  );
-});

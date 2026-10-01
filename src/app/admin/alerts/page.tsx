@@ -1,5 +1,16 @@
+import {
+  AdminListFilters,
+  AdminListPagination,
+} from "@/components/admin/list-filters";
+import {
+  ADMIN_PAGE_SIZE,
+  readAdminFilters,
+  type AdminSearchParams,
+} from "@/lib/helpers/admin-list";
+import { pageFromParam, splitPage } from "@/lib/helpers/pagination";
+import { alertPage } from "@/lib/services/admin-lists";
+import { alertseverity } from "@/lib/db/schema/enums";
 import { requireAdmin } from "@/lib/auth/guards";
-import { alerts } from "@/lib/services";
 import { formatDateTime, formatSeverity } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
 import {
@@ -17,14 +28,47 @@ export const metadata = { title: "Upozornění" };
 export const dynamic = "force-dynamic";
 
 /** Operational alerts history : failures pushed to the WhatsApp group. */
-export default async function AlertsPage() {
+export default async function AlertsPage({
+  searchParams,
+}: {
+  searchParams: Promise<AdminSearchParams>;
+}) {
   await requireAdmin();
   const demo = await hasDemoAdminSession();
-  const rows = demo ? [] : await alerts.listRecentAlerts(100);
+  const query = await searchParams;
+  const filters = readAdminFilters(query);
+  const page = pageFromParam(query.page);
+  const { rows, hasNext } = splitPage(
+    demo ? [] : await alertPage(page, filters),
+    ADMIN_PAGE_SIZE,
+  );
 
   return (
     <div>
       <PageHeader title="Upozornění" />
+      <AdminListFilters
+        path="/admin/alerts"
+        filters={filters}
+        placeholder="Titulek nebo popis"
+        selects={[
+          {
+            name: "severity",
+            label: "Závažnost",
+            options: alertseverity.enumValues.map((value) => ({
+              value,
+              label: formatSeverity(value),
+            })),
+          },
+          {
+            name: "state",
+            label: "Vyřešeno",
+            options: [
+              { value: "open", label: "Nevyřešeno" },
+              { value: "resolved", label: "Vyřešeno" },
+            ],
+          },
+        ]}
+      />
       <Table>
         <TableHeader>
           <TableRow>
@@ -70,6 +114,12 @@ export default async function AlertsPage() {
           )}
         </TableBody>
       </Table>
+      <AdminListPagination
+        path="/admin/alerts"
+        params={query}
+        page={page}
+        hasNext={hasNext}
+      />
     </div>
   );
 }
