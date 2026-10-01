@@ -45,8 +45,8 @@ test.describe("admin filtering and pagination", () => {
       from generate_series(0,7) n join reservation r on r.id=md5('e2e-programme-'||n)::uuid`;
     await sql!`insert into message_delivery(user_id,reservation_id,channel,kind,status,recipient,sent_at)
       select null,md5('e2e-programme-'||n)::uuid,'email','access_code',case when n=3 then 'failed'::message_status else 'sent'::message_status end,'programme-fixture@example.test',case when n=3 then null else now()-interval '1 day' end from generate_series(0,3) n where n<>2`;
-    await sql!`insert into entry_log(reservation_id,access_code_id,trigger,action,occurred_at)
-      select md5('e2e-programme-'||n)::uuid,md5('e2e-programme-code-'||n)::uuid,case when n=1 then 'app' else 'keypad' end,case when n>=2 then 'keypad_failure_224' else 'unlock' end,now() from generate_series(0,3) n`;
+    await sql!`insert into entry_log(reservation_id,access_code_id,nuki_name,trigger,action,occurred_at)
+      select md5('e2e-programme-'||n)::uuid,md5('e2e-programme-code-'||n)::uuid,'NAVI fixture-'||n,case when n=1 then 'app' else 'keypad' end,case when n>=2 then 'keypad_failure_224' else 'unlock' end,now() from generate_series(0,3) n`;
   });
   test.afterAll(async () => {
     if (!sql) return;
@@ -231,6 +231,13 @@ test.describe("admin filtering and pagination", () => {
     }
     for (const n of [2, 3])
       await expect(card(n)).not.toContainText("Kód odeslán");
+    const entries = page.locator('section[aria-labelledby="today-entries"]');
+    for (const n of [0, 1, 2, 3])
+      await expect(
+        entries.getByText(`NAVI fixture-${n} (e2e-programme-${n})`, {
+          exact: true,
+        }),
+      ).toBeVisible();
     const accessibility = await new AxeBuilder({ page })
       .include('section[aria-labelledby="today-programme"]')
       .withTags(["wcag2a", "wcag2aa", "wcag21aa"])

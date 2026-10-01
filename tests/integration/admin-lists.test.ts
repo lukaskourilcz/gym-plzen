@@ -10,6 +10,7 @@ import { after, beforeEach, describe, test } from "node:test";
 import { readAdminFilters } from "../../src/lib/helpers/admin-list";
 import { splitAdminPage } from "../../src/lib/helpers/admin-list";
 import { programmeCodeStates } from "../../src/lib/services/admin-programme";
+import { listEntriesForDay } from "../../src/lib/services/entry-log";
 import { splitPage } from "../../src/lib/helpers/pagination";
 import {
   accessCodePage,
@@ -202,6 +203,64 @@ describe(
         (await rows<{ n: number }>("select count(*)::int n from profiles"))[0]!
           .n,
         106,
+      );
+    });
+
+    test("daily entries resolve only linked customer names, including guests and profile fallbacks", async () => {
+      const guest = await booking();
+      const profileBooking = await booking("   ");
+      const [code] = await rows<{ id: string }>(
+        `insert into access_code(reservation_id,code_hash,valid_from,valid_until)
+         values ($1,'PRIVATE PIN HASH','2026-09-30 22:00+00','2026-09-30 23:30+00') returning id`,
+        [guest],
+      );
+      await rows(
+        `insert into entry_log(nuki_log_id,nuki_name,reservation_id,user_id,access_code_id,action,trigger,occurred_at)
+         values ('guest','NAVI guest',$1,$3,null,'unlock','keypad','2026-09-30 22:00+00'),
+                ('reservation-profile','NAVI profile',$2,null,null,'unlock','keypad','2026-09-30 22:01+00'),
+                ('entry-profile','NAVI member',null,$3,null,'unlock','keypad','2026-09-30 22:02+00'),
+                ('code-link','NAVI code',null,null,$4,'unlock','keypad','2026-09-30 22:03+00'),
+                ('unknown','NAVI guest',null,null,null,'unlock','keypad','2026-09-30 22:04+00'),
+                ('before','Earlier',$1,null,null,'unlock','keypad','2026-09-30 21:59:59+00'),
+                ('after','Later',$1,null,null,'unlock','keypad','2026-10-01 22:00+00')`,
+        [guest, profileBooking, member.id, code!.id],
+      );
+      const bounds = {
+        start: new Date("2026-09-30T22:00:00Z"),
+        end: new Date("2026-10-01T22:00:00Z"),
+      };
+      const entries = await listEntriesForDay(bounds);
+      assert.deepEqual(
+        entries.map((e) => [e.nukiLogId, e.customerName]),
+        [
+          ["unknown", null],
+          ["code-link", "Host Žluťoučký"],
+          ["entry-profile", member.fullName],
+          ["reservation-profile", member.fullName],
+          ["guest", "Host Žluťoučký"],
+        ],
+      );
+      assert.equal(entries[0]!.nukiName, "NAVI guest");
+      assert.ok(entries.every((e) => !("codeHash" in e)));
+      await rows(
+        `update profiles set full_name=' ',first_name='Jana',last_name='Černá' where id=$1`,
+        [member.id],
+      );
+      assert.equal(
+        (await listEntriesForDay(bounds)).find(
+          (e) => e.nukiLogId === "reservation-profile",
+        )?.customerName,
+        member.fullName,
+      );
+      await rows(
+        `update profiles set first_name=null,last_name=null where id=$1`,
+        [member.id],
+      );
+      assert.equal(
+        (await listEntriesForDay(bounds)).find(
+          (e) => e.nukiLogId === "entry-profile",
+        )?.customerName,
+        null,
       );
     });
 

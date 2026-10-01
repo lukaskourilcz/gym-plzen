@@ -1,13 +1,12 @@
-import { and, desc, gte, lt, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, lt, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { entryLog, accessCode, reservation } from "@/lib/db/schema";
+import { entryLog, accessCode, reservation, profiles } from "@/lib/db/schema";
 import type { EntryLog } from "@/lib/db/types";
 import { fetchLog, type NukiLogEntry } from "@/lib/integrations/nuki";
 import {
   isSuccessfulKeypadUse,
   isFailedKeypadUse,
 } from "@/lib/helpers/nuki-usage";
-import { eq } from "drizzle-orm";
 import { logger } from "@/lib/helpers/logger";
 
 /**
@@ -117,15 +116,35 @@ export async function listRecentEntries(limit = 100): Promise<EntryLog[]> {
 export async function listEntriesForDay(bounds: {
   start: Date;
   end: Date;
-}): Promise<EntryLog[]> {
-  return db
-    .select()
+}): Promise<(EntryLog & { customerName: string | null })[]> {
+  const rows = await db
+    .select({
+      entry: entryLog,
+      customerName: sql<string | null>`coalesce(
+        nullif(btrim(${reservation.contactName}), ''),
+        nullif(btrim(${profiles.fullName}), ''),
+        nullif(btrim(concat_ws(' ', ${profiles.firstName}, ${profiles.lastName})), '')
+      )`,
+    })
     .from(entryLog)
+    .leftJoin(accessCode, eq(accessCode.id, entryLog.accessCodeId))
+    .leftJoin(
+      reservation,
+      eq(
+        reservation.id,
+        sql`coalesce(${entryLog.reservationId}, ${accessCode.reservationId})`,
+      ),
+    )
+    .leftJoin(
+      profiles,
+      eq(profiles.id, sql`coalesce(${entryLog.userId}, ${reservation.userId})`),
+    )
     .where(
       and(
         gte(entryLog.occurredAt, bounds.start),
         lt(entryLog.occurredAt, bounds.end),
       ),
     )
-    .orderBy(desc(entryLog.occurredAt));
+    .orderBy(desc(entryLog.occurredAt), desc(entryLog.id));
+  return rows.map(({ entry, customerName }) => ({ ...entry, customerName }));
 }

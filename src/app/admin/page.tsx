@@ -62,9 +62,16 @@ export default async function AdminDashboard() {
     ? new Map<string, { sent: boolean; used: boolean }>()
     : await programmeCodeStates(todaysReservations.map((r) => r.id));
   const entries = demoData
-    ? demoData.entries.filter(
-        (e) => e.occurredAt >= bounds.start && e.occurredAt < bounds.end,
-      )
+    ? demoData.entries
+        .filter(
+          (e) => e.occurredAt >= bounds.start && e.occurredAt < bounds.end,
+        )
+        .map((entry) => ({
+          ...entry,
+          customerName:
+            demoData.reservations.find((r) => r.id === entry.reservationId)
+              ?.contactName ?? null,
+        }))
     : todaysEntries;
   const messageRows = demoData
     ? demoData.messages.slice(0, 12)
@@ -178,8 +185,9 @@ export default async function AdminDashboard() {
                   <span className="font-bold tabular-nums">
                     {formatTime(entry.occurredAt)}
                   </span>
-                  <span className="text-muted-foreground">
+                  <span className="min-w-0 break-words text-muted-foreground">
                     {entry.nukiName ?? entry.trigger ?? "Zámek"}
+                    {entry.customerName ? ` (${entry.customerName})` : null}
                   </span>
                 </div>
               ))}
