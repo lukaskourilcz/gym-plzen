@@ -548,8 +548,10 @@ export default async function HomePage() {
                     illustrative={content.illustrativePhotos}
                     imageClassName={
                       tile.key === "children-corner"
-                        ? "object-bottom lg:object-center"
-                        : undefined
+                        ? "object-bottom"
+                        : tile.key === "fridge"
+                          ? "object-[center_20%]"
+                          : undefined
                     }
                     className="aspect-square rounded-md bg-muted lg:aspect-auto"
                   >
