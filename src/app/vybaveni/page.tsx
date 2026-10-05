@@ -26,9 +26,10 @@ export const revalidate = 300;
 
 export default async function EquipmentPage() {
   const content = await loadSiteContent();
-  const zones = Array.from({ length: 6 }, (_, index) => {
-    const number = index + 1;
+  const zones = [0, 1, 2, 5, 4, 3].map((sourceIndex) => {
+    const number = sourceIndex + 1;
     return {
+      sourceIndex,
       title: content.get(`equipment.zone${number}.title` as SiteContentKey),
       body: content.get(`equipment.zone${number}.body` as SiteContentKey),
     };
@@ -91,14 +92,14 @@ export default async function EquipmentPage() {
                   </div>
                   <IllustrativePhoto
                     src={
-                      content.zoneImageUrls[index] ||
-                      DEFAULT_ZONE_IMAGE_URLS[index]!
+                      content.zoneImageUrls[zone.sourceIndex] ||
+                      DEFAULT_ZONE_IMAGE_URLS[zone.sourceIndex]!
                     }
                     alt={zone.title}
                     sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 25vw"
                     illustrative={content.illustrativePhotos}
                     imageClassName={
-                      index === 2
+                      zone.sourceIndex === 2
                         ? "origin-[72%_25%] object-[center_20%] scale-[1.55] sm:scale-[1.8]"
                         : undefined
                     }

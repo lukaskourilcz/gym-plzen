@@ -374,6 +374,12 @@ test.describe("Public site", () => {
       .locator("img")
       .evaluate((image) => Number.parseFloat(getComputedStyle(image).scale));
     expect(stretchZoom).toBeGreaterThan(1.5);
+    await expect(page.locator("li[data-zone]").nth(3).locator("h3")).toHaveText(
+      "Zázemí pro vás",
+    );
+    await expect(page.locator("li[data-zone]").last().locator("h3")).toHaveText(
+      "Zázemí pro děti",
+    );
     for (const photo of await photos.all()) {
       await photo.scrollIntoViewIfNeeded();
       await expect
@@ -402,7 +408,7 @@ test.describe("Public site", () => {
     expect(overflow).toBeLessThanOrEqual(1);
   });
 
-  test("mobile gallery arranges three gym details and the fridge in a grid", async ({
+  test("gallery arranges four gym details in a grid on mobile and desktop", async ({
     page,
   }) => {
     test.setTimeout(60_000);
@@ -441,24 +447,33 @@ test.describe("Public site", () => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await expect(
       page.locator('#prostor img[alt="Vybavená lednice"]'),
-    ).toBeHidden();
+    ).toBeVisible();
     await expect(galleryPhotos).toHaveCount(5);
-    const desktopOrder = await galleryPhotos.evaluateAll((images) =>
-      images
-        .slice(1)
-        .map((image) => ({
+    const desktopTiles = await galleryPhotos.evaluateAll((images) =>
+      images.slice(1).map((image) => {
+        const box = image.parentElement!.getBoundingClientRect();
+        return {
           alt: image.getAttribute("alt"),
-          box: image.parentElement!.getBoundingClientRect(),
-        }))
-        .filter(({ box }) => box.width > 0)
-        .sort((a, b) => a.box.y - b.box.y)
-        .map(({ alt }) => alt),
+          x: box.x,
+          y: box.y,
+          width: box.width,
+          height: box.height,
+        };
+      }),
     );
-    expect(desktopOrder).toEqual([
-      "Další pohled na prostor",
+    expect(desktopTiles.map((tile) => tile.alt)).toEqual([
       "Detail tréninkové zóny",
       "Zázemí a vstup",
+      "Vybavená lednice",
+      "Další pohled na prostor",
     ]);
+    expect(desktopTiles[0]!.y).toBeCloseTo(desktopTiles[1]!.y, 0);
+    expect(desktopTiles[2]!.y).toBeCloseTo(desktopTiles[3]!.y, 0);
+    expect(desktopTiles[0]!.x).toBeCloseTo(desktopTiles[2]!.x, 0);
+    expect(desktopTiles[1]!.x).toBeCloseTo(desktopTiles[3]!.x, 0);
+    expect(
+      desktopTiles.every((tile) => tile.width > 0 && tile.height > 0),
+    ).toBe(true);
   });
 
   test("booking uses a monthly date-first calendar or a transparent unavailable state", async ({
