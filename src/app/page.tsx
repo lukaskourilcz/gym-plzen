@@ -500,7 +500,7 @@ export default async function HomePage() {
               title={t("home.gallery.title")}
               align="left"
             />
-            <div className="mt-8 grid gap-4 lg:h-[46svh] lg:grid-cols-[1.35fr_.65fr]">
+            <div className="mt-8 grid gap-4 lg:h-[46svh] lg:grid-cols-[1.2fr_.8fr]">
               <IllustrativePhoto
                 src={
                   content.galleryImageUrls[0] || DEFAULT_GALLERY_IMAGE_URLS[0]
@@ -510,7 +510,7 @@ export default async function HomePage() {
                 illustrative={content.illustrativePhotos}
                 className="aspect-[4/3] rounded-lg bg-muted lg:aspect-auto lg:h-full"
               />
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-1 lg:grid-rows-3">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-rows-2">
                 {[
                   {
                     key: "training-detail",
@@ -518,7 +518,6 @@ export default async function HomePage() {
                       content.galleryImageUrls[2] ||
                       DEFAULT_GALLERY_IMAGE_URLS[2]!,
                     alt: t("home.gallery.image3"),
-                    desktopClass: "",
                   },
                   {
                     key: "lounge",
@@ -526,14 +525,12 @@ export default async function HomePage() {
                       content.galleryImageUrls[3] ||
                       DEFAULT_GALLERY_IMAGE_URLS[3]!,
                     alt: t("home.gallery.image4"),
-                    desktopClass: "",
                   },
                   {
                     key: "fridge",
                     src:
                       content.zoneImageUrls[4] || DEFAULT_ZONE_IMAGE_URLS[4]!,
                     alt: t("equipment.zone5.title"),
-                    desktopClass: "lg:hidden",
                   },
                   {
                     key: "children-corner",
@@ -541,24 +538,20 @@ export default async function HomePage() {
                       content.galleryImageUrls[1] ||
                       DEFAULT_GALLERY_IMAGE_URLS[1]!,
                     alt: t("home.gallery.image2"),
-                    desktopClass: "lg:order-first",
                   },
                 ].map((tile) => (
                   <IllustrativePhoto
                     key={tile.key}
                     src={tile.src}
                     alt={tile.alt}
-                    sizes="(max-width: 1023px) 50vw, 34vw"
+                    sizes="(max-width: 1023px) 50vw, 20vw"
                     illustrative={content.illustrativePhotos}
                     imageClassName={
                       tile.key === "children-corner"
                         ? "object-bottom lg:object-center"
                         : undefined
                     }
-                    className={cn(
-                      "aspect-square rounded-md bg-muted lg:aspect-auto",
-                      tile.desktopClass,
-                    )}
+                    className="aspect-square rounded-md bg-muted lg:aspect-auto"
                   >
                     <GalleryPlaceholder label={tile.alt} />
                   </IllustrativePhoto>
