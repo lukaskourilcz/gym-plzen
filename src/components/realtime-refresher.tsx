@@ -30,22 +30,31 @@ export function RealtimeRefresher() {
     let cancelled = false;
     let teardown: (() => void) | undefined;
     const subscribe = () => {
-      void import("@/lib/supabase/client").then(({ createClient }) => {
-        if (cancelled) return;
-        const supabase = createClient();
-        if (!supabase) return;
-        const channel = supabase
-          .channel("public-availability")
-          .on(
-            "postgres_changes",
-            { event: "*", schema: "public", table: PUBLIC_AVAILABILITY_TABLE },
-            () => router.refresh(),
-          )
-          .subscribe();
-        teardown = () => {
-          void supabase.removeChannel(channel);
-        };
-      });
+      void import("@/lib/supabase/client")
+        .then(({ createClient }) => {
+          if (cancelled) return;
+          const supabase = createClient();
+          if (!supabase) return;
+          const channel = supabase
+            .channel("public-availability")
+            .on(
+              "postgres_changes",
+              {
+                event: "*",
+                schema: "public",
+                table: PUBLIC_AVAILABILITY_TABLE,
+              },
+              () => router.refresh(),
+            )
+            .subscribe();
+          teardown = () => {
+            void supabase.removeChannel(channel).catch(() => {});
+          };
+        })
+        .catch(() => {
+          // Optional live updates may be unavailable offline. Ordinary page
+          // navigation still obtains current availability from the server.
+        });
     };
 
     // Safari has no requestIdleCallback; a macrotask after hydration will do.

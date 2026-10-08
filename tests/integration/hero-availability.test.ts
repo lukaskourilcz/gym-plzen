@@ -30,8 +30,14 @@ describe("lazy hero day availability", { skip: !databaseReady }, () => {
       );
       assert.ok(statements.length > 0);
       assert.ok(
-        statements.every((query) => /^\s*select\b/i.test(query)),
-        "public availability must only execute SELECT statements",
+        statements.every(
+          (query) =>
+            /^\s*select\b/i.test(query) ||
+            /^(?:begin(?: read only)?|set transaction read only|commit|rollback|set local statement_timeout = '5s'|set local lock_timeout = '2s')$/i.test(
+              query.trim(),
+            ),
+        ),
+        "public availability must only execute SELECT statements and bounded read-only transaction controls",
       );
     } finally {
       client.options.debug = original;

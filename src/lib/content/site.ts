@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { readDatabase } from "@/lib/db/read";
 import { contentBlock, pricingPeriod, siteSetting } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { firstBookableDateKey } from "@/lib/config/booking-start";
@@ -368,23 +368,28 @@ export async function loadSiteContent(
 
   if (!options.defaultsOnly) {
     try {
-      const [rows, settings, currentPeriods] = await Promise.all([
-        db
-          .select({ key: contentBlock.key, valueText: contentBlock.valueText })
-          .from(contentBlock)
-          .where(eq(contentBlock.locale, locale)),
-        db
-          .select({ key: siteSetting.key, value: siteSetting.value })
-          .from(siteSetting),
-        db
-          .select({
-            name: pricingPeriod.name,
-            priceCents: pricingPeriod.priceCents,
-            startsAt: pricingPeriod.startsAt,
-            endsAt: pricingPeriod.endsAt,
-          })
-          .from(pricingPeriod),
-      ]);
+      const [rows, settings, currentPeriods] = await readDatabase(async (db) =>
+        Promise.all([
+          db
+            .select({
+              key: contentBlock.key,
+              valueText: contentBlock.valueText,
+            })
+            .from(contentBlock)
+            .where(eq(contentBlock.locale, locale)),
+          db
+            .select({ key: siteSetting.key, value: siteSetting.value })
+            .from(siteSetting),
+          db
+            .select({
+              name: pricingPeriod.name,
+              priceCents: pricingPeriod.priceCents,
+              startsAt: pricingPeriod.startsAt,
+              endsAt: pricingPeriod.endsAt,
+            })
+            .from(pricingPeriod),
+        ]),
+      );
       for (const row of rows) {
         if (
           row.valueText != null &&

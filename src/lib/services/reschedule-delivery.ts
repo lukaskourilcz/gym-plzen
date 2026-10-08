@@ -1,4 +1,15 @@
-import { and, asc, eq, inArray, isNull, like, lte, ne, or } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  inArray,
+  isNull,
+  like,
+  lte,
+  ne,
+  or,
+  sql,
+} from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   messageDelivery,
@@ -33,15 +44,21 @@ function savedEmail(value: unknown, recipient: string): SendEmailParams | null {
 export async function deliverRescheduleConfirmation(reservationId: string) {
   return withReservationLock(reservationId, async () => {
     const key = `reschedule-confirmation/${reservationId}`;
-    const [message] = await db
-      .select()
+    const [stored] = await db
+      .select({
+        message: messageDelivery,
+        ageMs: sql<number>`extract(epoch from (clock_timestamp() - ${messageDelivery.createdAt})) * 1000`,
+      })
       .from(messageDelivery)
       .where(eq(messageDelivery.dedupeKey, key))
       .limit(1);
+    const message = stored?.message;
     if (!message || ["sent", "delivered", "read"].includes(message.status))
       return;
     if (message.failureReason === manualReason) return;
-    const age = Date.now() - message.createdAt.getTime();
+    // Both timestamps come from PostgreSQL. A small clock difference between
+    // the app and DB must not send a brand-new delivery to manual recovery.
+    const age = Number(stored!.ageMs);
     if (age >= SAFE_WINDOW_MS || age < 0) {
       await db
         .update(messageDelivery)

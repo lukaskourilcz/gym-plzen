@@ -19,16 +19,7 @@ import { formatMoney } from "@/lib/helpers/format";
 import type { VoucherQuote } from "@/lib/services/vouchers";
 import { quoteVoucherAction } from "../actions";
 import { receiveAction } from "@/lib/helpers/action-response";
-
-function reportTransportError(error: unknown, where: string) {
-  // Load monitoring only after a failure; reporting must never block recovery.
-  if (!process.env.NEXT_PUBLIC_SENTRY_DSN) return;
-  void import("@sentry/nextjs")
-    .then(({ captureException }) =>
-      captureException(error, { tags: { operation: where } }),
-    )
-    .catch(() => {});
-}
+import { reportTransportError } from "@/lib/helpers/report-transport-error";
 
 /**
  * Booking details + the combined document consent, for members and guests

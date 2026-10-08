@@ -1,5 +1,6 @@
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
+import { readDatabase } from "@/lib/db/read";
 import { contentBlock, page, siteSetting } from "@/lib/db/schema";
 import type { ContentBlock, Page } from "@/lib/db/types";
 import { publicEnv } from "@/lib/public-env";
@@ -141,11 +142,9 @@ export async function listPages(): Promise<Page[]> {
 // ── Site settings (global key/value) ────────────────────────────────────────
 
 export async function getSetting<T = unknown>(key: string): Promise<T | null> {
-  const [row] = await db
-    .select()
-    .from(siteSetting)
-    .where(eq(siteSetting.key, key))
-    .limit(1);
+  const [row] = await readDatabase(async (db) =>
+    db.select().from(siteSetting).where(eq(siteSetting.key, key)).limit(1),
+  );
   return (row?.value as T) ?? null;
 }
 

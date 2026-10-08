@@ -8,6 +8,8 @@ import { cachedDateTimeFormat, monthGrid } from "@/lib/helpers/datetime";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
+import { receiveAction } from "@/lib/helpers/action-response";
+import { reportTransportError } from "@/lib/helpers/report-transport-error";
 import { rescheduleReservationAction } from "./actions";
 
 interface RescheduleDayView {
@@ -61,6 +63,7 @@ export function RescheduleCalendar({
   const [selectedStartISO, setSelectedStartISO] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [interrupted, setInterrupted] = useState(false);
   const grid = monthGrid(monthKey);
   const byDate = new Map(days.map((day) => [day.dateKey, day]));
   const selectedDay = selectedDateKey ? byDate.get(selectedDateKey) : undefined;
@@ -75,9 +78,10 @@ export function RescheduleCalendar({
   const basePath = `/account/rezervace/${reservationId}/zmenit`;
 
   useEffect(() => {
+    if (interrupted) return;
     setSelectedStartISO(null);
     setServerError(null);
-  }, [selectedDateKey]);
+  }, [selectedDateKey, interrupted]);
 
   const buildHref = (next: { month?: string; date?: string | null }) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -99,13 +103,25 @@ export function RescheduleCalendar({
   const nextMonth = moveMonth(1);
 
   const confirmChange = async () => {
-    if (!selectedSlot || isSubmitting) return;
+    if (!selectedSlot || isSubmitting || interrupted) return;
     setIsSubmitting(true);
     setServerError(null);
-    const result = await rescheduleReservationAction({
-      reservationId,
-      startsAt: selectedSlot.startISO,
-    });
+    const response = await receiveAction(() =>
+      rescheduleReservationAction({
+        reservationId,
+        startsAt: selectedSlot.startISO,
+      }),
+    );
+    if (!response.received) {
+      setIsSubmitting(false);
+      setInterrupted(true);
+      reportTransportError(response.error, "booking.reschedule.transport");
+      setServerError(
+        "Nepodařilo se načíst výsledek změny. Rezervace již mohla být přesunuta. Než změnu zopakujete, zkontrolujte aktuální termín v účtu.",
+      );
+      return;
+    }
+    const result = response.result;
     if (!result.ok) {
       setServerError(result.error);
       setIsSubmitting(false);
@@ -404,11 +420,16 @@ export function RescheduleCalendar({
                 {serverError}
               </p>
             ) : null}
+            {interrupted ? (
+              <a href="/account" className="mt-4 block font-bold underline">
+                Zkontrolovat rezervaci v účtu
+              </a>
+            ) : null}
             <Button
               type="button"
               size="lg"
               className="mt-5 w-full"
-              disabled={isSubmitting}
+              disabled={isSubmitting || interrupted}
               onClick={confirmChange}
             >
               {isSubmitting ? "Měním termín…" : "Potvrdit změnu termínu"}
@@ -421,7 +442,7 @@ export function RescheduleCalendar({
         ) : null}
 
         <Button href="/account" variant="ghost" className="mt-5">
-          Zpět bez změny
+          {interrupted ? "Zkontrolovat rezervaci" : "Zpět bez změny"}
         </Button>
       </section>
     </div>

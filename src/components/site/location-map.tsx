@@ -3,6 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
 import { cn } from "@/lib/utils";
+import {
+  isGoogleMapsModuleError,
+  markMapErrorRecovered,
+} from "@/lib/helpers/browser-errors";
 
 declare global {
   interface Window {
@@ -107,35 +111,45 @@ export function LocationMap({
       return;
     const container = mapElementRef.current;
     let cancelled = false;
+    let mapFailed = false;
     let map: google.maps.Map | null = null;
     let marker: google.maps.marker.AdvancedMarkerElement | null = null;
+    let readyListener: google.maps.MapsEventListener | undefined;
+    // The iframe remains usable while the enhanced map loads its tiles.
+    const fail = () => {
+      if (cancelled) return;
+      mapFailed = true;
+      setReady(false);
+      setFailed(true);
+    };
+    const readyTimeout = window.setTimeout(fail, 10_000);
+    const onModuleFailure = (event: PromiseRejectionEvent) => {
+      if (!isGoogleMapsModuleError(event.reason)) return;
+      fail();
+      markMapErrorRecovered(event.reason);
+      // Google's internal promise is outside importLibrary's catch. Only
+      // consume this exact failure while our mounted map provides a fallback.
+      event.preventDefault();
+    };
+    window.addEventListener("unhandledrejection", onModuleFailure);
     const previousAuthFailure = window.gm_authFailure;
 
     // Google reports credential failures outside the importLibrary promise.
     // Keep the embedded map visible instead of leaving visitors on Google's
     // "Jejda…" error surface when a deployed key is invalid or revoked.
     const handleAuthFailure = () => {
-      if (!cancelled) {
-        setReady(false);
-        setFailed(true);
-      }
+      fail();
       previousAuthFailure?.();
     };
     window.gm_authFailure = handleAuthFailure;
 
-    try {
-      configureLoader(apiKey, mapId);
-    } catch {
-      if (window.gm_authFailure === handleAuthFailure) {
-        window.gm_authFailure = previousAuthFailure;
-      }
-      setFailed(true);
-      return;
-    }
-
-    void Promise.all([importLibrary("maps"), importLibrary("marker")])
+    void Promise.resolve()
+      .then(() => {
+        configureLoader(apiKey, mapId);
+        return Promise.all([importLibrary("maps"), importLibrary("marker")]);
+      })
       .then(([{ Map }, { AdvancedMarkerElement }]) => {
-        if (cancelled) return;
+        if (cancelled || mapFailed) return;
         map = new Map(container, {
           center: position,
           zoom: 17,
@@ -154,14 +168,21 @@ export function LocationMap({
           anchorTop: "-100%",
         });
         marker.append(createBrandMarker());
-        setReady(true);
+        readyListener = map.addListener("tilesloaded", () => {
+          if (cancelled || mapFailed) return;
+          window.clearTimeout(readyTimeout);
+          setReady(true);
+        });
       })
       .catch(() => {
-        if (!cancelled) setFailed(true);
+        fail();
       });
 
     return () => {
       cancelled = true;
+      window.clearTimeout(readyTimeout);
+      window.removeEventListener("unhandledrejection", onModuleFailure);
+      readyListener?.remove();
       if (window.gm_authFailure === handleAuthFailure) {
         window.gm_authFailure = previousAuthFailure;
       }

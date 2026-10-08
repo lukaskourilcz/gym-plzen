@@ -6,6 +6,7 @@ import { supabaseConfigured } from "./global-setup";
 import {
   addDaysToDateKey,
   dateKeyInTimeZone,
+  localDateTimeToDate,
 } from "../../src/lib/helpers/datetime";
 import { formatDate, formatTimeRange } from "../../src/lib/helpers/format";
 
@@ -202,4 +203,52 @@ test("a member buys two slots, sees one order, moves one term and cancels only t
   expect(final.find((row) => row.id === booked[1]!.id)?.status).toBe(
     "confirmed",
   );
+});
+
+test("a lost rescheduling response offers account recovery without repeating the change", async ({
+  page,
+}) => {
+  const day = addDaysToDateKey(dateKeyInTimeZone(new Date()), 22);
+  const starts = localDateTimeToDate(day, 300);
+  const ends = new Date(starts.getTime() + 75 * 60_000);
+  const [member] =
+    await sql!`select id from profiles where email='member@example.test' order by created_at desc limit 1`;
+  const [reservation] =
+    await sql!`insert into reservation (user_id, starts_at, ends_at, status, price_cents, contact_email)
+    values (${member!.id}, ${starts}, ${ends}, 'confirmed', 22900, 'member@example.test') returning id`;
+  const id = reservation!.id;
+  try {
+    await page.goto(`/account/rezervace/${id}/zmenit?date=${day}`);
+    const replacements = page
+      .locator('section[aria-labelledby="change-time-heading"]')
+      .getByRole("button", { name: /Vybrat$/ });
+    await replacements.last().click();
+    let posts = 0;
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.route(`**/account/rezervace/${id}/zmenit**`, async (route) => {
+      if (route.request().method() !== "POST") return route.continue();
+      posts++;
+      await route.fetch(); // Commit the change, then lose only its response.
+      await route.abort("connectionreset");
+    });
+    await page.getByRole("button", { name: "Potvrdit změnu termínu" }).click();
+    await expect(page.locator("main").getByRole("alert")).toContainText(
+      "Rezervace již mohla být přesunuta",
+    );
+    await expect(
+      page.getByRole("button", { name: "Potvrdit změnu termínu" }),
+    ).toBeDisabled();
+    await page
+      .getByRole("link", { name: "Zkontrolovat rezervaci v účtu", exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/account$/);
+    expect(posts).toBe(1);
+    expect(errors).toEqual([]);
+    const [result] =
+      await sql!`select count(*)::int as n from reservation_reschedule where reservation_id=${id}`;
+    expect(result?.n).toBe(1);
+  } finally {
+    await sql!`delete from reservation where id=${id}`;
+  }
 });

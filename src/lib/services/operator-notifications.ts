@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, asc, eq, inArray, isNull, lte, ne, or } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { messageDelivery } from "@/lib/db/schema";
 import type {
@@ -208,14 +208,19 @@ async function sendPreparedDelivery(
   immediate = false,
 ): Promise<boolean> {
   return withOperationLock(`operator-notice:${id}`, async () => {
-    const [row] = await db
-      .select()
+    const [stored] = await db
+      .select({
+        row: messageDelivery,
+        ageMs: sql<number>`extract(epoch from (clock_timestamp() - ${messageDelivery.createdAt})) * 1000`,
+      })
       .from(messageDelivery)
       .where(eq(messageDelivery.id, id))
       .limit(1);
+    const row = stored?.row;
     if (!row) return false;
     if (["sent", "delivered", "read"].includes(row.status)) return true;
-    const age = Date.now() - row.createdAt.getTime();
+    // Creation timestamps come from PostgreSQL, so measure age there too.
+    const age = Number(stored!.ageMs);
     if (age >= SAFE_WINDOW_MS || age < 0) return false;
     if (
       row.status === "queued" &&
