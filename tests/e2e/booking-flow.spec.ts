@@ -192,4 +192,49 @@ test.describe("Booking flow", () => {
     await expect(otherPage).toHaveURL(/\/rezervace\?date=.*&stav=obsazeno/);
     await other.close();
   });
+  test("a lost checkout response preserves details and resumes the same payment", async ({
+    page,
+  }) => {
+    const createsBefore = gateway.creates.length;
+    await page.route("https://payments.comgate.cz/**", (route) =>
+      route.fulfill({
+        contentType: "text/html",
+        body: "<h1>Test payment</h1>",
+      }),
+    );
+    await openFirstFreeSlot(page);
+    await fillDetails(page, "e2e-interrupted@example.test");
+    let requests = 0;
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.route("**/rezervace/udaje**", async (route) => {
+      if (route.request().method() !== "POST") return route.continue();
+      requests++;
+      if (requests !== 1) return route.continue();
+      await route.fetch();
+      await route.abort("connectionreset");
+    });
+    await page.getByRole("button", { name: /Pokračovat k platbě/ }).click();
+    await expect(
+      page.getByText("Nepodařilo se načíst výsledek rezervace.", {
+        exact: false,
+      }),
+    ).toBeVisible();
+    await expect(page.getByLabel("E-mail")).toHaveValue(
+      "e2e-interrupted@example.test",
+    );
+    const resume = page.getByRole("button", {
+      name: "Zkusit pokračovat znovu",
+    });
+    await expect(resume).toBeEnabled();
+    expect(requests).toBe(1);
+    await resume.click();
+    await page.waitForURL("https://payments.comgate.cz/**");
+    expect(requests).toBe(2);
+    expect(gateway.creates.length - createsBefore).toBe(1);
+    expect(errors).toEqual([]);
+    const [row] =
+      await sql!`select count(*)::int as n from reservation where contact_email='e2e-interrupted@example.test'`;
+    expect(row?.n).toBe(1);
+  });
 });

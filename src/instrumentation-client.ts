@@ -7,21 +7,43 @@
  * NEXT_PUBLIC_SENTRY_DSN is set at build time; with the variable empty the
  * whole branch is dropped from the bundle.
  */
+import {
+  isInjectedFacebookError,
+  isTransportError,
+  wasMapErrorRecovered,
+} from "@/lib/helpers/browser-errors";
+
 type SentryClient = typeof import("@sentry/nextjs");
 
 let sentry: SentryClient | null = null;
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
 if (dsn) {
-  void import("@sentry/nextjs").then((Sentry) => {
-    Sentry.init({
-      dsn,
-      tracesSampleRate: 0.1,
-      replaysSessionSampleRate: 0,
-      replaysOnErrorSampleRate: 1.0,
+  void import("@sentry/nextjs")
+    .then((Sentry) => {
+      Sentry.init({
+        dsn,
+        tracesSampleRate: 0.1,
+        replaysSessionSampleRate: 0,
+        replaysOnErrorSampleRate: 1.0,
+        beforeSend(event, hint) {
+          if (
+            isInjectedFacebookError(event, navigator.userAgent) ||
+            wasMapErrorRecovered(hint.originalException)
+          )
+            return null;
+          if (isTransportError(hint.originalException)) {
+            event.tags = { ...event.tags, online: String(navigator.onLine) };
+            if (!navigator.onLine) event.level = "warning";
+          }
+          return event;
+        },
+      });
+      sentry = Sentry;
+    })
+    .catch(() => {
+      // A blocked monitoring chunk must not become an unhandled page error.
     });
-    sentry = Sentry;
-  });
 }
 
 /** Forwards navigations to the SDK once it has loaded; a no-op before that. */

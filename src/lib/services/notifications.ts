@@ -1,6 +1,7 @@
 import { deliverySummary } from "@/lib/helpers/delivery";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
+import { readDatabase } from "@/lib/db/read";
 import { profiles, messageDelivery } from "@/lib/db/schema";
 import type { MessageDelivery } from "@/lib/db/types";
 import {
@@ -307,18 +308,20 @@ export async function sendReservationConfirmation(params: {
 }): Promise<boolean> {
   if (!params.email) return true;
 
-  const [alreadySent] = await db
-    .select({ id: messageDelivery.id })
-    .from(messageDelivery)
-    .where(
-      and(
-        eq(messageDelivery.reservationId, params.reservationId),
-        eq(messageDelivery.channel, "email"),
-        eq(messageDelivery.kind, "reservation_confirmation"),
-        eq(messageDelivery.status, "sent"),
-      ),
-    )
-    .limit(1);
+  const [alreadySent] = await readDatabase(async (db) =>
+    db
+      .select({ id: messageDelivery.id })
+      .from(messageDelivery)
+      .where(
+        and(
+          eq(messageDelivery.reservationId, params.reservationId),
+          eq(messageDelivery.channel, "email"),
+          eq(messageDelivery.kind, "reservation_confirmation"),
+          inArray(messageDelivery.status, ["sent", "delivered", "read"]),
+        ),
+      )
+      .limit(1),
+  );
   if (alreadySent) return true;
 
   /*

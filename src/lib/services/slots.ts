@@ -1,5 +1,6 @@
 import { or, and, eq, gt, inArray, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
+import { readDatabase } from "@/lib/db/read";
 import { blockedSlot, openingHours, reservation } from "@/lib/db/schema";
 import {
   addDaysToDateKey,
@@ -112,35 +113,40 @@ export async function getSlotsForRange(
 
   try {
     const operations = await getOperations();
-    const [hoursRows, reservations, blocks] = await Promise.all([
-      db.select().from(openingHours),
-      db
-        .select({
-          startsAt: reservation.startsAt,
-          endsAt: reservation.endsAt,
-          rescheduleStartsAt: reservation.rescheduleStartsAt,
-          rescheduleEndsAt: reservation.rescheduleEndsAt,
-        })
-        .from(reservation)
-        .where(
-          and(
-            reservationOverlaps(rangeStart, rangeEnd),
-            or(
-              inArray(reservation.status, ["pending", "confirmed"]),
-              eq(reservation.accessRevocationPending, true),
+    const [hoursRows, reservations, blocks] = await readDatabase(async (db) =>
+      Promise.all([
+        db.select().from(openingHours),
+        db
+          .select({
+            startsAt: reservation.startsAt,
+            endsAt: reservation.endsAt,
+            rescheduleStartsAt: reservation.rescheduleStartsAt,
+            rescheduleEndsAt: reservation.rescheduleEndsAt,
+          })
+          .from(reservation)
+          .where(
+            and(
+              reservationOverlaps(rangeStart, rangeEnd),
+              or(
+                inArray(reservation.status, ["pending", "confirmed"]),
+                eq(reservation.accessRevocationPending, true),
+              ),
             ),
           ),
-        ),
-      db
-        .select({ startsAt: blockedSlot.startsAt, endsAt: blockedSlot.endsAt })
-        .from(blockedSlot)
-        .where(
-          and(
-            lt(blockedSlot.startsAt, rangeEnd),
-            gt(blockedSlot.endsAt, rangeStart),
+        db
+          .select({
+            startsAt: blockedSlot.startsAt,
+            endsAt: blockedSlot.endsAt,
+          })
+          .from(blockedSlot)
+          .where(
+            and(
+              lt(blockedSlot.startsAt, rangeEnd),
+              gt(blockedSlot.endsAt, rangeStart),
+            ),
           ),
-        ),
-    ]);
+      ]),
+    );
 
     const hoursByDay = new Map<number, DayHours>(
       hoursRows.map((row) => [

@@ -34,6 +34,7 @@ import { getEntryPriceCents } from "../../src/lib/services/loyalty";
 import { synchronizeComgatePayment } from "../../src/lib/services/payments";
 import { releaseExpiredPendingReservations } from "../../src/lib/services/reservations";
 import { cancelReservation } from "../../src/lib/services/reservations";
+import { sendReservationConfirmation } from "../../src/lib/services/notifications";
 import { fulfillReservation } from "../../src/lib/services/fulfillment";
 import {
   addDaysToDateKey,
@@ -203,6 +204,31 @@ describe(
       });
       assert.equal(stranger.state, "invalid");
     });
+
+    for (const status of ["delivered", "read"] as const) {
+      test(`a legacy ${status} confirmation is not sent again during recovery`, async () => {
+        const booking = await startBooking({
+          userId: null,
+          startsAt: slot(7),
+          details: guestDetails(),
+          voucherCode: VOUCHER,
+        });
+        const before = resend.sent.length;
+        await rows(
+          "update message_delivery set status=$1, dedupe_key=null where reservation_id=$2 and kind='reservation_confirmation'",
+          [status, booking.reservationId],
+        );
+        await sendReservationConfirmation({
+          userId: null,
+          reservationId: booking.reservationId,
+          startsAt: slot(7),
+          endsAt: new Date(slot(7).getTime() + 75 * 60_000),
+          priceCents: 0,
+          email: GUEST.email,
+        });
+        assert.equal(resend.sent.length, before);
+      });
+    }
 
     test("a lost confirmation response retries identical mail after the template changes", async () => {
       resend.loseNextAcceptedResponse();
