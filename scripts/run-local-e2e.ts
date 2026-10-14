@@ -167,6 +167,7 @@ try {
           "public.spec.ts",
           "auth.spec.ts",
           "admin.spec.ts",
+          "admin-daily.spec.ts",
           "admin-filtering.spec.ts",
           "manual-invoices.spec.ts",
           "member-notes.spec.ts",
