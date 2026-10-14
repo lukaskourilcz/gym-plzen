@@ -37,6 +37,18 @@ Větev: `codex/block-pricing-guests`. Výchozí stav GitHub `main`:
   nespouští fulfillment ani další e-mail. Účet ukazuje doplatek samostatně.
 - Kalendář a detail rezervací zobrazují `+1`/`+2`. Jednotlivec má v kalendáři
   původní podobu názvu.
+  Ovládání kalendáře používá společná tlačítka: posun, návrat na dnešek a
+  přehledné přepínání týden/den/měsíc. Dnešek má výrazné označení, mřížka
+  jemnější čáry a názvy méně tučné písmo. Změna pohledu nemění rezervace.
+- **Poznámky členů (#214):** „Přidat poznámku“ / „Upravit poznámku“ přímo v
+  seznamu členů a jejich profilu. Vlastní dialog upravuje pouze poznámku,
+  nikoliv kontakt nebo předvolby. Smazání textu poznámku odstraní. Existující
+  pole `profiles.note` se zachovává, další migrace není potřeba.
+  Ikonka StickyNote u jména otevírá Radix tooltip myší, klávesnicí i dotykem.
+  Poznámka se načítá podle ID účtu, také v kalendáři, rezervacích, přehledech,
+  věrnosti, kódech/vstupech, seznamech dokladů, zpráv a autorů akcí.
+  Je pouze v administraci a nevkládá se do zákaznických stránek, e-mailů nebo
+  dokladů. Anonymní ani běžný zákaznický účet ji nemůže změnit.
 - Apple Design je omezen na administraci: systémové písmo, seskupená navigace,
   rozbalovací další nástroje a jemná okamžitá odezva. Veřejná typografie,
   rozvržení a společné komponenty se nepřestylovávají. FAQ pouze vysvětluje
@@ -49,13 +61,15 @@ náhradami Auth, Comgate a Resend. Testovací server odmítá externí požadavk
 Nebyly použity ostré přihlašovací údaje ani měněny skutečné rezervace.
 
 - Formát, lint, typová kontrola a produkční sestavení: prošly.
-- Jednotkové testy: 282 prošlo.
-- Integrační testy: 178 prošlo, včetně 16 scénářů nových cen a doprovodu.
-- Prohlížečové testy: 115 prošlo, včetně přístupnosti, cenového editoru,
+- Jednotkové testy: 286 prošlo.
+- Integrační testy: 180 prošlo, včetně 16 scénářů nových cen a doprovodu.
+- Prohlížečové testy: 117 prošlo po úpravě dialogů/kalendáře a přidání poznámek, včetně přístupnosti, cenového editoru,
   skutečného objednání s doprovodem, doplatku a `+2` v kalendáři.
   Po poslední úpravě mobilního zobrazení zopakovány všechny čtyři scénáře
   `pricing-participants.spec.ts` s novým produkčním sestavením: 4 prošly,
   lokální náhrada mailové služby zaznamenala 0 zpráv.
+  Po doplnění poznámek cíleně zopakováno 6 scénářů poznámek/cen/doprovodu:
+  všechny prošly, lokální mailová služba zaznamenala 0 zpráv.
 - SQL omezení: prošla, včetně nejvýše +2 osob, jednoho rozpracovaného
   doplatku, jedné platby, oddělení od původní platby a RLS/zákazu Data API.
 - Migrace vyzkoušena i na naplněné lokální databázi: všechny původní hodnoty
