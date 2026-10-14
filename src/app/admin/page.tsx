@@ -144,7 +144,7 @@ export default async function AdminDashboard({
         <StatCard label="Nedoručené zprávy" value={failedMessages.length} />
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="grid items-start gap-8 lg:grid-cols-2">
         <section aria-labelledby="today-programme">
           <h2 id="today-programme" className="mb-3 text-lg font-semibold">
             Dnešní program
@@ -206,7 +206,7 @@ export default async function AdminDashboard({
           </p>
         </section>
 
-        <div className="grid gap-8">
+        <div className="grid content-start gap-8">
           <section aria-labelledby="today-entries">
             <h2 id="today-entries" className="mb-3 text-lg font-semibold">
               Dnešní vstupy
