@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Notice } from "@/components/ui/notice";
 import { Pagination } from "@/components/ui/pagination";
@@ -83,6 +84,17 @@ export default async function DesignSystemPage() {
           <p className="mt-3 text-sm">
             Doprovod +1 nebo +2 · 100 Kč společně za každý blok.
           </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Přidání i úprava cenového bloku se otevírají v dialogu s dnem, časem
+            od/do a cenou. Escape vrací fokus na původní tlačítko.
+          </p>
+          <div className="mt-5 max-w-xs space-y-2">
+            <Label htmlFor="kit-admin-sort">Řadit podle</Label>
+            <Select id="kit-admin-sort" defaultValue="startsAt">
+              <option value="startsAt">Začátek rezervace</option>
+              <option value="createdAt">Datum vytvoření</option>
+            </Select>
+          </div>
         </section>
         <section aria-labelledby="kit-calendar">
           <h2 id="kit-calendar" className="mb-4 text-xl font-extrabold">

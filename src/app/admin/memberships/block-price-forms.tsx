@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useActionForm } from "@/components/admin/use-action-form";
 import {
@@ -48,7 +49,9 @@ export function BlockPrices({
   rules: BlockPrice[];
 }) {
   const router = useRouter();
-  const [edited, setEdited] = useState<BlockPrice | undefined>();
+  const [editor, setEditor] = useState<{ rule?: BlockPrice } | null>(null);
+  const trigger = useRef<HTMLButtonElement | null>(null);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   async function remove(id: string) {
@@ -58,7 +61,7 @@ export function BlockPrices({
       const result = await deleteBlockPriceAction({ id });
       if (!result.ok) setError(result.error);
       else {
-        if (edited?.id === id) setEdited(undefined);
+        if (editor?.rule?.id === id) setEditor(null);
         router.refresh();
       }
     } catch {
@@ -66,6 +69,15 @@ export function BlockPrices({
     } finally {
       setDeleting(null);
     }
+  }
+  function openEditor(button: HTMLButtonElement, rule?: BlockPrice) {
+    trigger.current = button;
+    setSaved(false);
+    setEditor({ rule });
+  }
+  function closeEditor() {
+    setEditor(null);
+    requestAnimationFrame(() => trigger.current?.focus());
   }
   return (
     <section
@@ -76,9 +88,10 @@ export function BlockPrices({
         Ceny podle času
       </h2>
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-        Vyberte den a rozsah tréninků. Cena platí za jeden blok pro jednu
-        dospělou osobu. Ostatní bloky používají cenu podle data, případně
-        standardní cenu. Uložené rezervace se nepřecení.
+        Každý den může mít několik cenových bloků. Vyberte den a rozsah
+        tréninků. Cena platí za jeden blok pro jednu dospělou osobu. Ostatní
+        bloky používají cenu podle data, případně standardní cenu. Uložené
+        rezervace se nepřecení.
       </p>
       <div className="mt-6 divide-y divide-border">
         {DAY_ORDER.map((day) => {
@@ -117,7 +130,10 @@ export function BlockPrices({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setEdited(rule)}
+                        aria-haspopup="dialog"
+                        onClick={(event) =>
+                          openEditor(event.currentTarget, rule)
+                        }
                       >
                         Upravit
                       </Button>
@@ -137,41 +153,102 @@ export function BlockPrices({
           );
         })}
       </div>
-      <FormFeedback error={error} />
+      <FormFeedback
+        error={error}
+        success={saved ? "Cena bloků uložena." : null}
+      />
       <div className="mt-5 border-t border-border pt-5">
-        <h3 className="mb-4 font-semibold">
-          {edited ? "Upravit cenu bloků" : "Přidat cenu bloků"}
-        </h3>
-        <BlockPriceForm
-          key={edited?.id ?? "new"}
-          rule={edited}
+        <Button
+          aria-haspopup="dialog"
+          onClick={(event) => openEditor(event.currentTarget)}
+        >
+          Přidat cenový blok
+        </Button>
+      </div>
+      {editor ? (
+        <BlockPriceDialog
+          rule={editor.rule}
           hours={hours}
+          onClose={closeEditor}
           onSaved={() => {
-            setEdited(undefined);
+            setSaved(true);
             router.refresh();
           }}
         />
-        {edited ? (
-          <Button
-            variant="ghost"
-            className="mt-2"
-            onClick={() => setEdited(undefined)}
-          >
-            Zrušit úpravu
-          </Button>
-        ) : null}
-      </div>
+      ) : null}
     </section>
+  );
+}
+function BlockPriceDialog({
+  rule,
+  hours,
+  onClose,
+  onSaved,
+}: {
+  rule?: BlockPrice;
+  hours: PricingHours[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  const descriptionId = useId();
+  useEffect(() => {
+    const element = dialog.current;
+    element?.showModal();
+    element?.querySelector<HTMLElement>("[data-initial-focus]")?.focus();
+    return () => {
+      if (element?.open) element.close();
+    };
+  }, []);
+  return (
+    <dialog
+      ref={dialog}
+      aria-labelledby={titleId}
+      aria-describedby={descriptionId}
+      onClose={onClose}
+      className="m-auto max-h-[calc(100dvh_-_2rem)] w-[calc(100%_-_2rem)] max-w-2xl overflow-y-auto rounded-lg border border-border bg-card p-5 text-foreground shadow-md backdrop:bg-black/40 sm:p-6"
+    >
+      <div className="mb-2 flex items-center justify-between gap-4">
+        <h2 id={titleId} className="text-xl font-bold">
+          {rule ? "Upravit cenový blok" : "Přidat cenový blok"}
+        </h2>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="Zavřít dialog"
+          onClick={() => dialog.current?.close()}
+        >
+          <X className="size-5" aria-hidden="true" />
+        </Button>
+      </div>
+      <p id={descriptionId} className="mb-5 text-sm text-muted-foreground">
+        Cena za jeden blok pro jednu dospělou osobu. Časy odpovídají uloženému
+        rozvrhu.
+      </p>
+      <BlockPriceForm
+        rule={rule}
+        hours={hours}
+        onSaved={() => {
+          onSaved();
+          dialog.current?.close();
+        }}
+        onCancel={() => dialog.current?.close()}
+      />
+    </dialog>
   );
 }
 function BlockPriceForm({
   rule,
   hours,
   onSaved,
+  onCancel,
 }: {
   rule?: BlockPrice;
   hours: PricingHours[];
   onSaved: () => void;
+  onCancel: () => void;
 }) {
   const firstDay =
     DAY_ORDER.find((day) =>
@@ -203,13 +280,14 @@ function BlockPriceForm({
           Nejdříve nastavte otevírací dobu a délku bloků v sekci Otevírací doba.
         </Notice>
       ) : null}
-      <div className="grid gap-x-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-x-4 sm:grid-cols-2">
         <Field
           name="block-day"
           label="Den"
           error={form.formState.errors.dayOfWeek}
         >
           <Select
+            data-initial-focus="true"
             className="min-h-11"
             id="block-day"
             {...form.register("dayOfWeek", { valueAsNumber: true })}
@@ -228,7 +306,7 @@ function BlockPriceForm({
         </Field>
         <Field
           name="block-first"
-          label="První blok"
+          label="Čas od"
           error={form.formState.errors.startMinute}
         >
           <Select
@@ -239,14 +317,14 @@ function BlockPriceForm({
             <option value="">Vyberte začátek</option>
             {blocks.map((b) => (
               <option key={b.startMinute} value={b.startMinute}>
-                {minutesToHHmm(b.startMinute)} – {minutesToHHmm(b.endMinute)}
+                {minutesToHHmm(b.startMinute)}
               </option>
             ))}
           </Select>
         </Field>
         <Field
           name="block-last"
-          label="Poslední blok (včetně)"
+          label="Čas do"
           error={form.formState.errors.endMinute}
         >
           <Select
@@ -259,7 +337,7 @@ function BlockPriceForm({
               .filter((b) => !Number.isFinite(start) || b.startMinute >= start)
               .map((b) => (
                 <option key={b.endMinute} value={b.endMinute}>
-                  {minutesToHHmm(b.startMinute)} – {minutesToHHmm(b.endMinute)}
+                  {minutesToHHmm(b.endMinute)}
                 </option>
               ))}
           </Select>
@@ -290,12 +368,17 @@ function BlockPriceForm({
         </label>
       ) : null}
       <FormFeedback error={serverError} success={success} />
-      <SubmitButton
-        isSubmitting={form.formState.isSubmitting}
-        disabled={!blocks.length}
-      >
-        Uložit cenu bloků
-      </SubmitButton>
+      <div className="flex flex-wrap gap-2">
+        <SubmitButton
+          isSubmitting={form.formState.isSubmitting}
+          disabled={!blocks.length}
+        >
+          Uložit cenu bloků
+        </SubmitButton>
+        <Button type="button" variant="ghost" onClick={onCancel}>
+          {rule ? "Zrušit úpravu" : "Zrušit"}
+        </Button>
+      </div>
     </form>
   );
 }

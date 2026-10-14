@@ -9,6 +9,9 @@ Větev: `codex/block-pricing-guests`. Výchozí stav GitHub `main`:
   (poslední včetně) a cenu za jeden blok pro jednoho dospělého. Časy vycházejí
   z databázového rozvrhu. Volitelně uložit stejnou cenu pro všechny otevřené
   dny se shodnými bloky, v jedné transakci. Překryv cen se odmítne.
+  „Přidat cenový blok“ i „Upravit“ otevřou dialog s dnem, časem od/do a cenou.
+  Každý den může mít několik cenových rozsahů. Dialog lze zavřít pomocí Escape,
+  křížku nebo zrušení; fokus se vrátí na původní tlačítko.
 - Cena konkrétního bloku má přednost před cenovým obdobím a standardní cenou.
   Po změně otevírací doby se nezarovnané cenové rozsahy viditelně označí a
   přestanou platit, dokud je správce neopraví. Nic se automaticky neposouvá.
