@@ -206,6 +206,42 @@ describe(
       );
     });
 
+    test("daily entries paginate all records in a Prague day with stable tie ordering", async () => {
+      const bounds = {
+        start: new Date("2026-09-30T22:00:00Z"),
+        end: new Date("2026-10-01T22:00:00Z"),
+      };
+      await rows(
+        `insert into entry_log(nuki_log_id,nuki_name,action,trigger,occurred_at)
+        select 'page-' || n, 'Entry ' || n, 'unlock', 'keypad', $1::timestamptz + (n / 2) * interval '1 minute' from generate_series(0,44) n`,
+        [bounds.start],
+      );
+      await rows(
+        `insert into entry_log(nuki_log_id,action,occurred_at) values ('before-page','unlock',$1::timestamptz - interval '1 second'),('after-page','unlock',$2)`,
+        [bounds.start, bounds.end],
+      );
+      const all = await listEntriesForDay(bounds);
+      assert.equal(all.length, 45);
+      const paged = [];
+      for (let page = 1; page <= 3; page++) {
+        const found = await listEntriesForDay(bounds, { page, pageSize: 20 });
+        assert.equal(found.length, page === 3 ? 5 : 21);
+        paged.push(...found.slice(0, 20).map((e) => e.id));
+      }
+      assert.deepEqual(
+        paged,
+        all.map((e) => e.id),
+      );
+      assert.equal(new Set(paged).size, 45);
+      assert.ok(
+        all.some((e) => e.occurredAt.getTime() === bounds.start.getTime()),
+      );
+      assert.equal(
+        (await listEntriesForDay(bounds, { page: 4, pageSize: 20 })).length,
+        0,
+      );
+    });
+
     test("daily entries resolve only linked customer names, including guests and profile fallbacks", async () => {
       const guest = await booking();
       const profileBooking = await booking("   ");
