@@ -7,6 +7,11 @@ import {
 } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import {
+  PARTICIPANT_PRICING_KEY,
+  DEFAULT_PARTICIPANT_PRICING,
+  parseParticipantPricing,
+} from "@/lib/config/participants";
+import {
   BLOCK_PRICING_KEY,
   parseBlockPrices,
   resolveBlockPrice,
@@ -236,7 +241,7 @@ export const SITE_DEFAULTS = {
     "Nebudou. Celý prostor je ve vašem časovém okně rezervován exkluzivně pro vás a váš doprovod. Nikdo cizí se v prostoru pohybovat nebude. Maximální kapacita je 5 osob včetně dětí.",
   "faq.7.question": "Budu platit více, když do studia nepůjdu sám nebo sama?",
   "faq.7.answer":
-    "Ne. Cena je jednotná a bez příplatků. Za 75 minut zaplatíte {price}, a to až pro 5 osob. Při návštěvě v pěti vychází rezervace jednoho člověka na {pricePerPerson}.",
+    "Základní cena platí za jednu dospělou osobu a závisí na vybraném termínu. {companionPrice} Počet lidí a celkovou cenu zvolíte před platbou. Doprovod lze přidat i později z účtu, před začátkem rezervace.",
   "faq.8.question": "Jak se dostanu dovnitř? Bude na místě recepce?",
   "faq.8.answer":
     "Fungujeme jako plně samoobslužné studio, takže u nás klasickou recepci nenajdete. Před rezervovaným časem obdržíte číselný kód. Zadáte ho u vstupu a dveře se automaticky odemknou.",
@@ -298,6 +303,8 @@ const LEGACY_CONTENT_VALUES: Partial<
   "home.pricing.title": "Jednorázový vstup bez předplatného",
   "home.rules.body": LEGACY_RULES_BODY,
   "contact.phone": LEGACY_PLACEHOLDER_PHONE,
+  "faq.7.answer":
+    "Ne. Cena je jednotná a bez příplatků. Za 75 minut zaplatíte {price}, a to až pro 5 osob. Při návštěvě v pěti vychází rezervace jednoho člověka na {pricePerPerson}.",
 };
 
 export type SiteContentKey = keyof typeof SITE_DEFAULTS;
@@ -352,6 +359,7 @@ export async function loadSiteContent(
   const values: Record<string, string> = { ...SITE_DEFAULTS };
   let standardEntryPriceCents = DEFAULT_ENTRY_PRICE_CENTS;
   let blockPrices: BlockPrice[] = [];
+  let participantPricing = DEFAULT_PARTICIPANT_PRICING;
   let pricingHours: PricingHours[] = [];
   let pricingPeriods: {
     name: string;
@@ -416,6 +424,8 @@ export async function loadSiteContent(
       }
 
       for (const s of settings) {
+        if (s.key === PARTICIPANT_PRICING_KEY)
+          participantPricing = parseParticipantPricing(s.value);
         if (s.key === BLOCK_PRICING_KEY)
           blockPrices = parseBlockPrices(s.value);
         if (s.key === ENTRY_PRICE_SETTING_KEY && typeof s.value === "number")
@@ -478,7 +488,13 @@ export async function loadSiteContent(
   const fillPrices = (value: string) =>
     value
       .replaceAll("{price}", priceLabel)
-      .replaceAll("{pricePerPerson}", perPersonLabel);
+      .replaceAll("{pricePerPerson}", perPersonLabel)
+      .replaceAll(
+        "{companionPrice}",
+        participantPricing.mode === "flat"
+          ? `Za jednu nebo dvě další osoby připlatíte celkem ${formatMoney(participantPricing.amountCents)} za blok.`
+          : `Za každou další osobu připlatíte ${formatMoney(participantPricing.amountCents)} za blok.`,
+      );
 
   return {
     get: (key) => rebrand(fillPrices(values[key] ?? SITE_DEFAULTS[key] ?? "")),

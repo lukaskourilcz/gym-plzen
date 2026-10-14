@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  check,
   index,
   boolean,
   integer,
@@ -144,6 +145,14 @@ export const reservation = pgTable(
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (t) => [
+    check(
+      "reservation_extra_people_check",
+      sql`${t.extraPeople} between 0 and 2`,
+    ),
+    check(
+      "reservation_additional_people_paid_check",
+      sql`${t.additionalPeoplePaidCents} >= 0`,
+    ),
     index("reservation_starts_at_idx").on(t.startsAt),
     index("reservation_user_idx").on(t.userId),
     index("reservation_order_idx").on(t.orderId),

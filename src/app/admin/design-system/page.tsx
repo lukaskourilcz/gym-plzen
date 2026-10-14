@@ -62,6 +62,28 @@ export default async function DesignSystemPage() {
       />
 
       <div className="grid gap-8">
+        <section
+          aria-labelledby="kit-admin-pricing"
+          className="rounded-lg border border-border bg-card p-6"
+        >
+          <h2 id="kit-admin-pricing" className="text-2xl font-bold">
+            Administrace: jasné volby
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Systémové písmo, běžná práce v navigaci a další nástroje pod
+            rozbalením. Veřejný web zachovává svou typografii a vzhled.
+          </p>
+          <div className="mt-5 flex flex-wrap items-center gap-4">
+            <strong>Pondělí</strong>
+            <span>05:00 až 10:00 · 199 Kč za blok pro jednoho dospělého</span>
+            <Button variant="outline" size="sm">
+              Upravit
+            </Button>
+          </div>
+          <p className="mt-3 text-sm">
+            Doprovod +1 nebo +2 · 100 Kč společně za každý blok.
+          </p>
+        </section>
         <section aria-labelledby="kit-calendar">
           <h2 id="kit-calendar" className="mb-4 text-xl font-extrabold">
             Provozní kalendář

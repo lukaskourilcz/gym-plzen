@@ -235,19 +235,17 @@ export async function addParticipants(params: {
             .set({ status: "failed", updatedAt: new Date() })
             .where(eq(participantAddition.id, addition.id));
         else
-          await tx
-            .insert(systemAlert)
-            .values({
-              severity: "critical",
-              dedupeKey: `payment-unknown:${attempt.id}`,
-              title: "Výsledek platby za doprovod není známý",
-              body: "Ověřte pokus v Comgate podle reference. Další platbu automaticky nezakládáme.",
-              context: {
-                paymentId: attempt.id,
-                participantAdditionId: addition.id,
-                reservationId: booking.id,
-              },
-            });
+          await tx.insert(systemAlert).values({
+            severity: "critical",
+            dedupeKey: `payment-unknown:${attempt.id}`,
+            title: "Výsledek platby za doprovod není známý",
+            body: "Ověřte pokus v Comgate podle reference. Další platbu automaticky nezakládáme.",
+            context: {
+              paymentId: attempt.id,
+              participantAdditionId: addition.id,
+              reservationId: booking.id,
+            },
+          });
       });
       if (outcome.ambiguous)
         return { kind: "processing", additionId: addition.id };
@@ -334,8 +332,13 @@ export async function synchronizeParticipantPayment(
             updatedAt: new Date(),
           })
           .where(eq(payment.id, current.id));
-        if (status === "succeeded" && intent.status === "pending") {
+        if (
+          status === "succeeded" &&
+          intent.status !== "confirmed" &&
+          intent.status !== "review_needed"
+        ) {
           if (
+            intent.status === "pending" &&
             eligible(booking, intent.userId) &&
             booking.extraPeople === intent.fromCount
           ) {
@@ -365,19 +368,17 @@ export async function synchronizeParticipantPayment(
               .update(participantAddition)
               .set({ status: "review_needed", updatedAt: new Date() })
               .where(eq(participantAddition.id, intent.id));
-            await tx
-              .insert(systemAlert)
-              .values({
-                severity: "critical",
-                dedupeKey: `late-participant-payment:${current.id}`,
-                title: "Doplatek za doprovod vyžaduje kontrolu",
-                body: "Rezervace se mezitím změnila nebo už začala. Osoby jsme nepřidali. Ověřte vrácení doplatku.",
-                context: {
-                  paymentId: current.id,
-                  participantAdditionId: intent.id,
-                  reservationId: booking.id,
-                },
-              });
+            await tx.insert(systemAlert).values({
+              severity: "critical",
+              dedupeKey: `late-participant-payment:${current.id}`,
+              title: "Doplatek za doprovod vyžaduje kontrolu",
+              body: "Rezervace se mezitím změnila nebo už začala. Osoby jsme nepřidali. Ověřte vrácení doplatku.",
+              context: {
+                paymentId: current.id,
+                participantAdditionId: intent.id,
+                reservationId: booking.id,
+              },
+            });
           }
         } else if (status === "failed" && intent.status === "pending") {
           await tx

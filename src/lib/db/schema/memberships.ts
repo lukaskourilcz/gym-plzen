@@ -142,6 +142,10 @@ export const payment = pgTable(
       .where(
         sql`${t.provider} = 'comgate' and ${t.status} in ('pending', 'processing', 'succeeded')`,
       ),
+    check(
+      "payment_participant_binding_check",
+      sql`${t.participantAdditionId} is null or (${t.reservationId} is null and ${t.orderId} is null and ${t.membershipId} is null)`,
+    ),
     uniqueIndex("payment_participant_addition_uidx").on(
       t.participantAdditionId,
     ),

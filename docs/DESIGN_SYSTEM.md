@@ -589,3 +589,18 @@ not controls. A verified Google HTTPS image is optional; initials appear when
 the image is missing or fails. The wrapper has an image role and name, while
 its children are decorative. Selection uses labelled native radios in the
 customer profile. The rendered example is in `/admin/design-system`.
+
+## Administration: Apple Design scope
+
+The administration follows [Apple Design](https://github.com/emilkowalski/skills/blob/main/skills/apple-design/SKILL.md).
+Only `.admin-shell` uses the platform system font, restrained heading tracking,
+and immediate press feedback. Public typography, layout and shared UI tokens
+are unchanged. Reduced motion disables press transforms. The primary navigation
+shows everyday work, customers/pricing and web communication; less frequent tools
+use a keyboard-operable native disclosure that opens on its active route.
+
+Block pricing uses a weekday, first slot, inclusive last slot and one price.
+Options come from the saved opening hours. A stale range is visibly flagged;
+it never silently shifts with a changed schedule. Companion fees show an immediate
+one-/two-person example. Public booking uses labelled required native radios
+for alone, +1 or +2. The kit shows the admin pattern at `/admin/design-system`.

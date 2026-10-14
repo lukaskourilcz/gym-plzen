@@ -33,6 +33,7 @@ DO $$ BEGIN
 END $$;
 
 ALTER TABLE public.payment ADD COLUMN participant_addition_id uuid REFERENCES public.participant_addition(id) ON DELETE RESTRICT;
+ALTER TABLE public.payment ADD CONSTRAINT payment_participant_binding_check CHECK (participant_addition_id IS NULL OR (reservation_id IS NULL AND order_id IS NULL AND membership_id IS NULL));
 CREATE UNIQUE INDEX payment_participant_addition_uidx ON public.payment(participant_addition_id);
 -- Supplemental payments have no reservation_id/order_id, so they cannot enter
 -- the original reservation confirmation, cancellation or delivery pipeline.

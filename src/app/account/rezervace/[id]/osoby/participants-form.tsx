@@ -36,7 +36,6 @@ export function ParticipantsForm({
           fromCount,
           input.toCount,
           pricing,
-          fixedTarget,
         ),
       });
       if (result.ok) {

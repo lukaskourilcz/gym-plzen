@@ -182,6 +182,7 @@ function BlockPriceForm({
     action: saveBlockPriceAction,
     onSuccess: onSaved,
     successMessage: "Cena bloků uložena.",
+    resetOnSuccess: !rule,
     defaultValues: {
       id: rule?.id,
       dayOfWeek: rule?.dayOfWeek ?? firstDay,
