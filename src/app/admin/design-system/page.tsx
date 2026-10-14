@@ -1,3 +1,7 @@
+import {
+  OverviewIconLink,
+  OverviewStatus,
+} from "@/components/admin/overview-icons";
 import { AdminSwitch } from "@/components/admin/switch";
 import { requireAdmin } from "@/lib/auth/guards";
 import { BookingCalendar } from "@/components/admin/booking-calendar";
@@ -96,7 +100,9 @@ export default async function DesignSystemPage() {
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             Přidání i úprava cenového bloku se otevírají v dialogu s dnem, časem
-            od/do a cenou. Escape vrací fokus na původní tlačítko.
+            od/do a cenou. Escape vrací fokus na původní tlačítko. Přidání
+            cenového období používá stejný dialog; na stránce zůstává tlačítko
+            „Přidat období“.
           </p>
           <div className="mt-5 max-w-xs space-y-2">
             <Label htmlFor="kit-admin-sort">Řadit podle</Label>
@@ -104,6 +110,17 @@ export default async function DesignSystemPage() {
               <option value="startsAt">Začátek rezervace</option>
               <option value="createdAt">Datum vytvoření</option>
             </Select>
+          </div>
+        </section>
+        <section aria-labelledby="kit-overview-icons">
+          <h2 id="kit-overview-icons" className="mb-3 text-xl font-semibold">
+            Přehled rezervací: stavy a akce
+          </h2>
+          <div className="flex items-center gap-2">
+            <OverviewStatus active label="Používá se" />
+            <OverviewStatus active={false} label="Nepoužívá se" />
+            <OverviewIconLink kind="reservation" href="/admin/reservations" />
+            <OverviewIconLink kind="profile" href="/admin/members" />
           </div>
         </section>
         <section aria-labelledby="kit-calendar">

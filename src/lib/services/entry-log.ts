@@ -1,3 +1,4 @@
+import { pageLimit, pageOffset } from "@/lib/helpers/pagination";
 import { and, desc, eq, gte, lt, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { entryLog, accessCode, reservation, profiles } from "@/lib/db/schema";
@@ -113,11 +114,14 @@ export async function listRecentEntries(limit = 100): Promise<EntryLog[]> {
  * The Nuki log records unlocks, not departures, so this answers "who came in
  * and when" and never "who is inside right now".
  */
-export async function listEntriesForDay(bounds: {
-  start: Date;
-  end: Date;
-}): Promise<(EntryLog & { customerName: string | null })[]> {
-  const rows = await db
+export async function listEntriesForDay(
+  bounds: {
+    start: Date;
+    end: Date;
+  },
+  pagination?: { page: number; pageSize: number },
+): Promise<(EntryLog & { customerName: string | null })[]> {
+  const query = db
     .select({
       entry: entryLog,
       customerName: sql<string | null>`coalesce(
@@ -146,5 +150,10 @@ export async function listEntriesForDay(bounds: {
       ),
     )
     .orderBy(desc(entryLog.occurredAt), desc(entryLog.id));
+  const rows = await (pagination
+    ? query
+        .limit(pageLimit(pagination.pageSize))
+        .offset(pageOffset(pagination.page, pagination.pageSize))
+    : query);
   return rows.map(({ entry, customerName }) => ({ ...entry, customerName }));
 }

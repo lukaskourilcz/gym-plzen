@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { useActionForm } from "@/components/admin/use-action-form";
 import {
   Field,
@@ -14,7 +15,11 @@ import { savePricingPeriodAction } from "./actions";
 /** Create or edit one reusable booking-time price period. */
 export function PricingPeriodForm({
   period,
+  onSaved,
+  onCancel,
 }: {
+  onSaved?: () => void;
+  onCancel?: () => void;
   period?: {
     id: string;
     name: string;
@@ -23,6 +28,7 @@ export function PricingPeriodForm({
     endsOn: string;
   };
 }) {
+  const inputId = useId();
   const { form, submit, serverError, success } = useActionForm({
     schema: pricingPeriodSchema,
     action: savePricingPeriodAction,
@@ -30,6 +36,7 @@ export function PricingPeriodForm({
       ? "Cenové období upraveno."
       : "Cenové období přidáno.",
     resetOnSuccess: !period,
+    onSuccess: onSaved,
     defaultValues: period ?? {
       name: "",
       priceCzk: undefined,
@@ -40,16 +47,21 @@ export function PricingPeriodForm({
   const { register, formState } = form;
 
   return (
-    <form onSubmit={submit} className="max-w-xl" id="price-period-form">
+    <form
+      onSubmit={submit}
+      className="max-w-xl"
+      id={period ? "price-period-form" : "price-period-add-form"}
+    >
       {period ? <input type="hidden" {...register("id")} /> : null}
       <Field
-        name="name"
-        controlId="period-name"
+        name={`${inputId}-name`}
+        controlId={`${inputId}-name`}
         label="Název období"
         error={formState.errors.name}
       >
         <Input
-          id="period-name"
+          id={`${inputId}-name`}
+          data-initial-focus="true"
           placeholder="Např. Říjnová akce"
           autoComplete="off"
           {...register("name")}
@@ -57,13 +69,13 @@ export function PricingPeriodForm({
       </Field>
 
       <Field
-        name="priceCzk"
-        controlId="period-priceCzk"
+        name={`${inputId}-priceCzk`}
+        controlId={`${inputId}-priceCzk`}
         label="Cena rezervace (Kč)"
         error={formState.errors.priceCzk}
       >
         <Input
-          id="period-priceCzk"
+          id={`${inputId}-priceCzk`}
           type="number"
           min={1}
           step={1}
@@ -74,20 +86,24 @@ export function PricingPeriodForm({
 
       <div className="grid gap-x-4 sm:grid-cols-2">
         <Field
-          name="startsOn"
-          controlId="period-startsOn"
+          name={`${inputId}-startsOn`}
+          controlId={`${inputId}-startsOn`}
           label="Platí od (včetně)"
           error={formState.errors.startsOn}
         >
-          <Input id="period-startsOn" type="date" {...register("startsOn")} />
+          <Input
+            id={`${inputId}-startsOn`}
+            type="date"
+            {...register("startsOn")}
+          />
         </Field>
         <Field
-          name="endsOn"
-          controlId="period-endsOn"
+          name={`${inputId}-endsOn`}
+          controlId={`${inputId}-endsOn`}
           label="Platí do (včetně)"
           error={formState.errors.endsOn}
         >
-          <Input id="period-endsOn" type="date" {...register("endsOn")} />
+          <Input id={`${inputId}-endsOn`} type="date" {...register("endsOn")} />
         </Field>
       </div>
 
@@ -100,6 +116,11 @@ export function PricingPeriodForm({
         <SubmitButton isSubmitting={formState.isSubmitting}>
           {period ? "Uložit změny" : "Přidat období"}
         </SubmitButton>
+        {onCancel ? (
+          <Button type="button" variant="ghost" onClick={onCancel}>
+            Zrušit
+          </Button>
+        ) : null}
         {period ? (
           <Button href="/admin/memberships#price-periods" variant="outline">
             Zrušit úpravy

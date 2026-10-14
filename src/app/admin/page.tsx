@@ -1,3 +1,10 @@
+import { Pagination } from "@/components/ui/pagination";
+import {
+  pageFromParam,
+  pageLimit,
+  pageOffset,
+  splitPage,
+} from "@/lib/helpers/pagination";
 import { programmeCodeStates } from "@/lib/services/admin-programme";
 import { cn } from "@/lib/utils";
 import { requireAdmin } from "@/lib/auth/guards";
@@ -37,8 +44,15 @@ const DAY_FORMAT = new Intl.DateTimeFormat("cs-CZ", {
  * alerts, message deliveries) so the operator can open one screen in the
  * morning and see what today asks of them.
  */
-export default async function AdminDashboard() {
+export default async function AdminDashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ entriesPage?: string | string[] }>;
+}) {
   await requireAdmin();
+  const query = await searchParams;
+  const entriesPage = pageFromParam(query.entriesPage);
+  const entriesPageSize = 20;
   const now = new Date();
   const bounds = pragueDayBounds(now);
   const demo = await hasDemoAdminSession();
@@ -47,7 +61,10 @@ export default async function AdminDashboard() {
     ? [aggregateDayOverview(demoData!.reservations, now), [], [], []]
     : await Promise.all([
         stats.getDayOverview(now),
-        entryLog.listEntriesForDay(bounds),
+        entryLog.listEntriesForDay(bounds, {
+          page: entriesPage,
+          pageSize: entriesPageSize,
+        }),
         alerts.listRecentAlerts(8),
         messages.listRecent(12),
       ]);
@@ -63,10 +80,19 @@ export default async function AdminDashboard() {
   const codeStates = demo
     ? new Map<string, { sent: boolean; used: boolean }>()
     : await programmeCodeStates(todaysReservations.map((r) => r.id));
-  const entries = demoData
+  const entryRows = demoData
     ? demoData.entries
         .filter(
           (e) => e.occurredAt >= bounds.start && e.occurredAt < bounds.end,
+        )
+        .sort(
+          (a, b) =>
+            b.occurredAt.getTime() - a.occurredAt.getTime() ||
+            b.id.localeCompare(a.id),
+        )
+        .slice(
+          pageOffset(entriesPage, entriesPageSize),
+          pageOffset(entriesPage, entriesPageSize) + pageLimit(entriesPageSize),
         )
         .map((entry) => ({
           ...entry,
@@ -75,6 +101,10 @@ export default async function AdminDashboard() {
               ?.contactName ?? null,
         }))
     : todaysEntries;
+  const { rows: entries, hasNext: entriesHaveNext } = splitPage(
+    entryRows,
+    entriesPageSize,
+  );
   const messageRows = demoData
     ? demoData.messages.slice(0, 12)
     : recentMessages;
@@ -92,10 +122,7 @@ export default async function AdminDashboard() {
 
   return (
     <div>
-      <PageHeader
-        title="Dnes"
-        description={capitalise(DAY_FORMAT.format(now))}
-      />
+      <PageHeader title={`Dnes | ${capitalise(DAY_FORMAT.format(now))}`} />
       <div className="mb-8 flex flex-wrap gap-4">
         <StatCard
           label={
@@ -117,7 +144,7 @@ export default async function AdminDashboard() {
         <StatCard label="Nedoručené zprávy" value={failedMessages.length} />
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="grid items-start gap-8 lg:grid-cols-2">
         <section aria-labelledby="today-programme">
           <h2 id="today-programme" className="mb-3 text-lg font-semibold">
             Dnešní program
@@ -179,13 +206,13 @@ export default async function AdminDashboard() {
           </p>
         </section>
 
-        <div className="grid gap-8">
+        <div className="grid content-start gap-8">
           <section aria-labelledby="today-entries">
             <h2 id="today-entries" className="mb-3 text-lg font-semibold">
               Dnešní vstupy
             </h2>
             <div className="grid gap-2">
-              {entries.slice(0, 8).map((entry) => (
+              {entries.map((entry) => (
                 <div
                   key={entry.id}
                   className="flex items-center gap-3 rounded-md border border-border bg-card px-4 py-3 text-sm"
@@ -215,10 +242,18 @@ export default async function AdminDashboard() {
               ))}
               {entries.length === 0 && (
                 <p className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
-                  Zámek dnes nezaznamenal žádný vstup.
+                  {entriesPage === 1
+                    ? "Zámek dnes nezaznamenal žádný vstup."
+                    : "Na této stránce nejsou další vstupy."}
                 </p>
               )}
             </div>
+            <Pagination
+              page={entriesPage}
+              hasNext={entriesHaveNext}
+              hrefForPage={(page) => `/admin?entriesPage=${page}#today-entries`}
+              label="Stránkování dnešních vstupů"
+            />
             {/* The lock log records unlocks, not departures. */}
             <p className="mt-2 text-xs text-muted-foreground">
               Kniha vstupů zaznamenává odemčení, nikoli odchody.

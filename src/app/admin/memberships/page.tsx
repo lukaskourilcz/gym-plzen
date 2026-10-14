@@ -56,6 +56,7 @@ import { BookingHorizonForm } from "./booking-horizon-form";
 import { EntryPriceForm } from "./entry-price-form";
 import { PricingPeriodDeleteButton } from "./pricing-period-delete-button";
 import { PricingPeriodForm } from "./pricing-period-form";
+import { PricingPeriodCreate } from "./pricing-period-create";
 
 export const metadata = { title: "Ceník a doprovod" };
 export const dynamic = "force-dynamic";
@@ -293,27 +294,28 @@ export default async function PricingPage({
           </div>
 
           <div className="border-t border-border pt-6">
-            <h3 className="mb-1 text-base font-semibold">
-              {editedPeriod ? "Upravit cenové období" : "Přidat cenové období"}
-            </h3>
-            <p className="mb-5 text-sm text-muted-foreground">
-              Datum „do“ platí včetně celého zvoleného dne v časovém pásmu
-              Praha.
-            </p>
-            <PricingPeriodForm
-              period={
-                editedPeriod
-                  ? {
-                      id: editedPeriod.id,
-                      name: editedPeriod.name,
-                      priceCzk: Math.round(editedPeriod.priceCents / 100),
-                      startsOn: dateKeyInTimeZone(editedPeriod.startsAt),
-                      endsOn: dateKeyInTimeZone(lastIncludedDate(editedPeriod)),
-                    }
-                  : undefined
-              }
-            />
+            <PricingPeriodCreate />
           </div>
+          {editedPeriod ? (
+            <div className="mt-6 border-t border-border pt-6">
+              <h3 className="mb-1 text-base font-semibold">
+                Upravit cenové období
+              </h3>
+              <p className="mb-5 text-sm text-muted-foreground">
+                Datum „do“ platí včetně celého zvoleného dne v časovém pásmu
+                Praha.
+              </p>
+              <PricingPeriodForm
+                period={{
+                  id: editedPeriod.id,
+                  name: editedPeriod.name,
+                  priceCzk: Math.round(editedPeriod.priceCents / 100),
+                  startsOn: dateKeyInTimeZone(editedPeriod.startsAt),
+                  endsOn: dateKeyInTimeZone(lastIncludedDate(editedPeriod)),
+                }}
+              />
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
