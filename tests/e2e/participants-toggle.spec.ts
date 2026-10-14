@@ -104,6 +104,7 @@ test("admin toggle persists, hides companion controls and counts, and leaves boo
     await expect(
       bookingForm.getByText("Kolik lidí přijde?", { exact: true }),
     ).toHaveCount(0);
+    await expect(bookingForm.getByText(/Doprovod zvolíte/)).toHaveCount(0);
     await account.goto("/account");
     await expect(
       account.getByRole("link", { name: "Přidat osobu", exact: true }),
@@ -147,6 +148,7 @@ test("admin toggle persists, hides companion controls and counts, and leaves boo
     await expect(
       bookingForm.getByRole("radio", { name: "Přijdu + 2 osoby", exact: true }),
     ).toBeVisible();
+    await expect(bookingForm.getByText(/Doprovod zvolíte/)).toBeVisible();
     await account.goto(`/account/rezervace/${upcoming!.id}/osoby`);
     await expect(
       account.getByLabel("Celkový doprovod v rezervaci"),

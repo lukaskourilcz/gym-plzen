@@ -295,10 +295,12 @@ export default async function BookingDetailsPage({
                     Celkem za {termCount(bookable.length)}:{" "}
                     {totalCents === 0 ? "zdarma" : formatMoney(totalCents)}
                   </span>
-                  <span className="block text-muted-foreground">
-                    Základní cena je za jednu dospělou osobu. Doprovod zvolíte
-                    níže; prostor zůstává jen pro vaši skupinu.
-                  </span>
+                  {participantPricing.enabled ? (
+                    <span className="block text-muted-foreground">
+                      Základní cena je za jednu dospělou osobu. Doprovod zvolíte
+                      níže; prostor zůstává jen pro vaši skupinu.
+                    </span>
+                  ) : null}
                 </p>
               </div>
             </section>
