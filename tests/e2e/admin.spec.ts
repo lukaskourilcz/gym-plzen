@@ -148,12 +148,16 @@ test.describe("Admin : forms", () => {
     const input = page.getByLabel(/Cena jednorázového vstupu/i);
     const original = await input.inputValue();
     await input.fill("300");
-    await page.getByRole("button", { name: /Uložit cenu/i }).click();
+    await page
+      .getByRole("button", { name: "Uložit cenu", exact: true })
+      .click();
     await expect(page.getByText(/Cena vstupného uložena/i)).toBeVisible();
     await page.reload({ waitUntil: "networkidle" });
     await expect(input).toHaveValue("300");
     await input.fill(original);
-    await page.getByRole("button", { name: /Uložit cenu/i }).click();
+    await page
+      .getByRole("button", { name: "Uložit cenu", exact: true })
+      .click();
     await expect(page.getByText(/Cena vstupného uložena/i)).toBeVisible();
     await expect
       .poll(async () => {

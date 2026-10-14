@@ -14,6 +14,7 @@ import { before, after, beforeEach, describe, test } from "node:test";
 import {
   createReservation,
   getReservation,
+  cancelReservation,
 } from "../../src/lib/services/reservations";
 import { addParticipants } from "../../src/lib/services/participants";
 import { synchronizeComgatePayment } from "../../src/lib/services/payments";
@@ -113,6 +114,47 @@ describe(
           adminId,
         ),
         /Rozvrh se změnil/,
+      );
+    });
+    test("one save applies to all matching days atomically and skips different grids", async () => {
+      await rows(
+        "update opening_hours set open_minute = 30 where day_of_week = 0",
+      );
+      await saveBlockPrice(
+        {
+          dayOfWeek: 1,
+          startMinute: 600,
+          endMinute: 720,
+          priceCents: 19900,
+          applyToMatchingDays: true,
+        },
+        MEMBER.id,
+      );
+      const [saved] = await rows<{ value: { dayOfWeek: number }[] }>(
+        "select value from site_setting where key = 'pricing.time_blocks'",
+      );
+      assert.equal(saved?.value.length, 6);
+      assert.ok(saved?.value.every((rule) => rule.dayOfWeek !== 0));
+      await assert.rejects(
+        saveBlockPrice(
+          {
+            dayOfWeek: 1,
+            startMinute: 660,
+            endMinute: 780,
+            priceCents: 24900,
+            applyToMatchingDays: true,
+          },
+          MEMBER.id,
+        ),
+        /už nastavená jiná cena/,
+      );
+      assert.deepEqual(
+        (
+          await rows<{ value: unknown }>(
+            "select value from site_setting where key = 'pricing.time_blocks'",
+          )
+        )[0]?.value,
+        saved?.value,
       );
     });
     test("two slots include the flat group fee per block, and hold resumption cannot change people", async () => {
@@ -247,6 +289,76 @@ describe(
         0,
       );
     });
+    test("a refused gateway creation leaves the original reservation intact", async () => {
+      const booking = await existing();
+      comgate.rejectNextCreation();
+      await assert.rejects(
+        addParticipants({
+          userId: MEMBER.id,
+          reservationId: booking.id,
+          toCount: 1,
+          quotedCents: 10000,
+        }),
+        /Původní rezervace zůstává platná/,
+      );
+      assert.deepEqual(await getReservation(booking.id), booking);
+      assert.equal(
+        (
+          await rows<{ status: string }>(
+            "select status from participant_addition",
+          )
+        )[0]?.status,
+        "failed",
+      );
+      assert.equal(resend.sent.length, 0);
+    });
+    test("an unknown gateway response never creates another charge on retry", async () => {
+      const booking = await existing();
+      comgate.loseNextCreationResponse();
+      const input = {
+        userId: MEMBER.id,
+        reservationId: booking.id,
+        toCount: 2,
+        quotedCents: 10000,
+      };
+      const first = await addParticipants(input);
+      assert.equal(first.kind, "processing");
+      assert.deepEqual(await addParticipants(input), first);
+      assert.equal(comgate.creates.length, 1);
+      assert.deepEqual(await getReservation(booking.id), booking);
+      assert.equal(
+        (
+          await rows<{ failure_reason: string }>(
+            "select failure_reason from payment",
+          )
+        )[0]?.failure_reason,
+        "creation_unknown",
+      );
+      assert.equal(resend.sent.length, 0);
+    });
+    test("a paid callback for a previously failed addition is flagged for review", async () => {
+      const booking = await existing();
+      await addParticipants({
+        userId: MEMBER.id,
+        reservationId: booking.id,
+        toCount: 1,
+        quotedCents: 10000,
+      });
+      comgate.settle("TEST-0001", "CANCELLED");
+      await synchronizeComgatePayment("TEST-0001");
+      comgate.settle("TEST-0001", "PAID");
+      await synchronizeComgatePayment("TEST-0001");
+      assert.equal((await getReservation(booking.id))?.extraPeople, 0);
+      assert.equal(
+        (
+          await rows<{ status: string }>(
+            "select status from participant_addition",
+          )
+        )[0]?.status,
+        "review_needed",
+      );
+      assert.equal(resend.sent.length, 0);
+    });
     test("adding a second person to a flat paid group requires no new charge", async () => {
       const booking = await existing(1);
       const result = await addParticipants({
@@ -326,6 +438,14 @@ describe(
         )[0]?.status,
         "review_needed",
       );
+      assert.equal(
+        (
+          await rows<{ context: { amountCents: number } }>(
+            "select context from system_alert where dedupe_key like 'refund-needed:participant:%'",
+          )
+        )[0]?.context.amountCents,
+        10000,
+      );
       assert.equal(resend.sent.length, 0);
     });
     test("ownership, limits, past visits and unfinished term changes are checked before charging", async () => {
@@ -357,6 +477,25 @@ describe(
       await assert.rejects(addParticipants(input), /vlastní budoucí/);
       assert.equal(comgate.creates.length, 0);
       assert.equal(resend.sent.length, 0);
+    });
+    test("operator cancellation includes successful companion payments in the refund alert", async () => {
+      const booking = await existing();
+      await addParticipants({
+        userId: MEMBER.id,
+        reservationId: booking.id,
+        toCount: 1,
+        quotedCents: 10000,
+      });
+      comgate.settle("TEST-0001", "PAID");
+      await synchronizeComgatePayment("TEST-0001");
+      await cancelReservation({ id: booking.id, byAdminId: MEMBER.id });
+      const [alert] = await rows<{
+        context: { amountCents: number; companionPaymentIds: string[] };
+      }>("select context from system_alert where dedupe_key = $1", [
+        `refund-needed:${booking.id}`,
+      ]);
+      assert.equal(alert?.context.amountCents, 10000);
+      assert.equal(alert?.context.companionPaymentIds.length, 1);
     });
     test("a wrong gateway amount never grants participants", async () => {
       const booking = await existing();

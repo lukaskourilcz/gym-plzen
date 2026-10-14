@@ -370,12 +370,14 @@ export async function synchronizeParticipantPayment(
               .where(eq(participantAddition.id, intent.id));
             await tx.insert(systemAlert).values({
               severity: "critical",
-              dedupeKey: `late-participant-payment:${current.id}`,
+              dedupeKey: `refund-needed:participant:${current.id}`,
               title: "Doplatek za doprovod vyžaduje kontrolu",
               body: "Rezervace se mezitím změnila nebo už začala. Osoby jsme nepřidali. Ověřte vrácení doplatku.",
               context: {
                 paymentId: current.id,
                 participantAdditionId: intent.id,
+                amountCents: current.amountCents,
+                currency: current.currency,
                 reservationId: booking.id,
               },
             });

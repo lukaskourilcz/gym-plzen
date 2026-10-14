@@ -600,7 +600,8 @@ shows everyday work, customers/pricing and web communication; less frequent tool
 use a keyboard-operable native disclosure that opens on its active route.
 
 Block pricing uses a weekday, first slot, inclusive last slot and one price.
-Options come from the saved opening hours. A stale range is visibly flagged;
+Options come from the saved opening hours. A labelled optional checkbox applies
+the range to every other open weekday with an identical grid, atomically. A stale range is visibly flagged;
 it never silently shifts with a changed schedule. Companion fees show an immediate
 one-/two-person example. Public booking uses labelled required native radios
 for alone, +1 or +2. The kit shows the admin pattern at `/admin/design-system`.

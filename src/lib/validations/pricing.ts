@@ -4,6 +4,7 @@ import { uuidSchema } from "./common";
 export const saveBlockPriceSchema = z
   .object({
     id: uuidSchema.optional(),
+    applyToMatchingDays: z.boolean().optional(),
     dayOfWeek: z.number().int().min(0).max(6),
     startMinute: z.number().int().min(0).max(1439),
     endMinute: z.number().int().min(1).max(1440),

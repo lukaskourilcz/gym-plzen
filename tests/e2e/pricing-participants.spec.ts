@@ -10,7 +10,7 @@ import {
 } from "../../src/lib/helpers/datetime";
 
 const sql = postgres(requireTestDatabaseUrl(), { prepare: false, max: 1 });
-const gateway = createComgateMock(4547);
+const gateway = createComgateMock(4547, "PEOPLE");
 test.beforeAll(async () => {
   await gateway.start();
 });

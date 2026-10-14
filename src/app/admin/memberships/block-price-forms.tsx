@@ -185,6 +185,7 @@ function BlockPriceForm({
     resetOnSuccess: !rule,
     defaultValues: {
       id: rule?.id,
+      applyToMatchingDays: false,
       dayOfWeek: rule?.dayOfWeek ?? firstDay,
       startMinute: rule?.startMinute,
       endMinute: rule?.endMinute,
@@ -278,6 +279,16 @@ function BlockPriceForm({
           />
         </Field>
       </div>
+      {!rule ? (
+        <label className="mb-4 flex min-h-11 cursor-pointer items-center gap-3 text-sm">
+          <input
+            type="checkbox"
+            className="size-5 shrink-0 accent-[var(--color-primary)]"
+            {...form.register("applyToMatchingDays")}
+          />
+          Stejnou cenu uložit i pro ostatní otevřené dny se stejnými bloky.
+        </label>
+      ) : null}
       <FormFeedback error={serverError} success={success} />
       <SubmitButton
         isSubmitting={form.formState.isSubmitting}

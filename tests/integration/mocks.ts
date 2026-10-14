@@ -117,9 +117,10 @@ export interface GatewayPayment {
  * treats as authoritative. The redirect points at the real gateway host, as
  * the adapter refuses anything else; a browser test intercepts it.
  */
-export function createComgateMock(port: number) {
+export function createComgateMock(port: number, prefix = "TEST") {
   const payments = new Map<string, GatewayPayment>();
   const creates: unknown[] = [];
+  let nextCreateFailure: "reject" | "lose" | null = null;
   const server = createServer(async (request, response) => {
     const url = new URL(request.url ?? "/", "http://127.0.0.1");
     if (request.method === "POST" && url.pathname === "/v2.0/payment.json") {
@@ -129,7 +130,16 @@ export function createComgateMock(port: number) {
         email: string;
       };
       creates.push(body);
-      const transId = `TEST-${String(payments.size + 1).padStart(4, "0")}`;
+      const failed = nextCreateFailure;
+      nextCreateFailure = null;
+      if (failed === "reject") {
+        response.writeHead(200, { "content-type": "application/json" });
+        response.end(
+          JSON.stringify({ code: 1102, message: "Fixture rejection" }),
+        );
+        return;
+      }
+      const transId = `${prefix}-${String(payments.size + 1).padStart(4, "0")}`;
       payments.set(transId, {
         transId,
         refId: body.refId,
@@ -137,6 +147,10 @@ export function createComgateMock(port: number) {
         email: body.email,
         state: "PENDING",
       });
+      if (failed === "lose") {
+        response.destroy();
+        return;
+      }
       response.writeHead(200, { "content-type": "application/json" });
       response.end(
         JSON.stringify({
@@ -176,6 +190,12 @@ export function createComgateMock(port: number) {
   return {
     payments,
     creates,
+    rejectNextCreation() {
+      nextCreateFailure = "reject";
+    },
+    loseNextCreationResponse() {
+      nextCreateFailure = "lose";
+    },
     settle(transId: string, state: GatewayPayment["state"]) {
       const payment = payments.get(transId);
       if (!payment) throw new Error(`unknown gateway payment ${transId}`);
