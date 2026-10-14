@@ -100,7 +100,7 @@ export function BlockPrices({
                       key={rule.id}
                       className="flex flex-wrap items-center gap-3"
                     >
-                      <div className="min-w-0 flex-1 text-sm">
+                      <div className="min-w-0 basis-full text-sm sm:flex-1 sm:basis-auto">
                         <strong>
                           {minutesToHHmm(rule.startMinute)} až{" "}
                           {minutesToHHmm(rule.endMinute)}

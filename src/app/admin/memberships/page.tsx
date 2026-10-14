@@ -56,7 +56,7 @@ import { EntryPriceForm } from "./entry-price-form";
 import { PricingPeriodDeleteButton } from "./pricing-period-delete-button";
 import { PricingPeriodForm } from "./pricing-period-form";
 
-export const metadata = { title: "Vstupné a věrnost" };
+export const metadata = { title: "Ceník a doprovod" };
 export const dynamic = "force-dynamic";
 
 const DEMO_PERIOD: PricingPeriod = {
@@ -215,7 +215,7 @@ export default async function PricingPage({
                   {entryPrice.periodName ? ` (${entryPrice.periodName})` : ""}
                 </>
               ) : (
-                ". Tato cena právě platí."
+                ". Výchozí cena pro bloky bez jiného nastavení."
               )}
             </p>
             <EntryPriceForm currentCzk={Math.round(standardPriceCents / 100)} />
@@ -242,7 +242,7 @@ export default async function PricingPage({
           <CardTitle>Cenová období</CardTitle>
           <CardDescription>
             Naplánujte libovolné měsíce nebo vlastní rozsahy. Období se nesmí
-            překrývat; mimo ně platí standardní cena.
+            překrývat. Ceny konkrétních časových bloků mají přednost.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -285,8 +285,8 @@ export default async function PricingPage({
             })}
             {periods.length === 0 ? (
               <p className="rounded-lg border border-dashed border-border p-5 text-sm text-muted-foreground">
-                Zatím není naplánované žádné cenové období. Vždy platí
-                standardní cena.
+                Zatím není naplánované žádné cenové období. Vždy platí cena
+                podle jednotlivých bloků, případně standardní cena.
               </p>
             ) : null}
           </div>
