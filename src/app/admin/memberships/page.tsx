@@ -95,7 +95,7 @@ export default async function PricingPage({
     searchParams,
   ]);
   const [pricingHours, blockRules, participantPricing] = demo
-    ? [[], [], DEFAULT_PARTICIPANT_PRICING]
+    ? [[], [], { ...DEFAULT_PARTICIPANT_PRICING, enabled: false }]
     : await Promise.all([
         schedule.listOpeningHours(),
         blockPricing.listBlockPrices(),

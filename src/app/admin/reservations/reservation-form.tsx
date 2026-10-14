@@ -15,7 +15,11 @@ import { createReservationAction } from "./actions";
  * Admin manual-booking form (React Hook Form + Zod). Client validation uses the
  * same schema the server action re-validates with.
  */
-export function ReservationForm() {
+export function ReservationForm({
+  participantsEnabled,
+}: {
+  participantsEnabled: boolean;
+}) {
   const { form, submit, serverError, success } = useActionForm({
     schema: createReservationSchema,
     action: createReservationAction,
@@ -62,17 +66,19 @@ export function ReservationForm() {
           {...register("contactPhone")}
         />
       </Field>
-      <Field name="extraPeople" label="Doprovod" error={errors.extraPeople}>
-        <Select
-          id="extraPeople"
-          className="min-h-11"
-          {...register("extraPeople", { valueAsNumber: true })}
-        >
-          <option value={0}>Bez doprovodu</option>
-          <option value={1}>+1 osoba</option>
-          <option value={2}>+2 osoby</option>
-        </Select>
-      </Field>
+      {participantsEnabled ? (
+        <Field name="extraPeople" label="Doprovod" error={errors.extraPeople}>
+          <Select
+            id="extraPeople"
+            className="min-h-11"
+            {...register("extraPeople", { valueAsNumber: true })}
+          >
+            <option value={0}>Bez doprovodu</option>
+            <option value={1}>+1 osoba</option>
+            <option value={2}>+2 osoby</option>
+          </Select>
+        </Field>
+      ) : null}
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={isSubmitting}>
         Vytvořit rezervaci

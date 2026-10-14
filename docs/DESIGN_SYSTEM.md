@@ -642,3 +642,12 @@ The icon also appears in the calendar, reservation lists, day overviews,
 loyalty, entry/code logs, documents, message recipient names and activity actors.
 Notes stay in the administration; customer views, documents and outgoing
 messages do not receive them. `/admin/design-system` has illustrative examples.
+
+### Přepínač funkce v administraci
+
+`AdminSwitch` používá nativní tlačítko s `role="switch"`, `aria-checked`,
+propojeným popiskem, klávesnicí a 44px dotykovou plochou. Pohyb respektuje
+`prefers-reduced-motion`. V kartě Doprovod se přepnutí ukládá ihned vlastní
+admin akcí; dokud ukládání neskončí, je ovladač deaktivovaný. Viditelný text
+vysvětluje stav. Připravené ceny se ukládají samostatně. Ukázka je v chráněné
+galerii `/admin/design-system`.

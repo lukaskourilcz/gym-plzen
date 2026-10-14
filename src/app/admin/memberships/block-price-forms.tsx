@@ -1,6 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { AdminSwitch } from "@/components/admin/switch";
+import { receiveAction } from "@/lib/helpers/action-response";
+import { useEffect, useRef, useState } from "react";
 import { AdminDialog } from "@/components/admin/dialog";
 import { useRouter } from "next/navigation";
 import { useActionForm } from "@/components/admin/use-action-form";
@@ -19,7 +21,7 @@ import {
   isBlockPriceAligned,
   pricingSlots,
 } from "@/lib/config/block-pricing";
-import { type ParticipantPricing } from "@/lib/config/participants";
+import { type ParticipantOptions } from "@/lib/config/participants";
 import {
   saveBlockPriceSchema,
   saveParticipantPricingSchema,
@@ -29,6 +31,7 @@ import {
   saveBlockPriceAction,
   deleteBlockPriceAction,
   saveParticipantPricingAction,
+  setParticipantsEnabledAction,
 } from "./actions";
 
 const DAYS = [
@@ -355,7 +358,7 @@ function BlockPriceForm({
 export function ParticipantPricingForm({
   pricing,
 }: {
-  pricing: ParticipantPricing;
+  pricing: ParticipantOptions;
 }) {
   const { form, submit, serverError, success } = useActionForm({
     schema: saveParticipantPricingSchema,
@@ -366,46 +369,110 @@ export function ParticipantPricingForm({
   const mode = form.watch("mode");
   const price = form.watch("priceCzk");
   return (
-    <form onSubmit={submit} noValidate>
-      <div className="grid gap-x-4 sm:grid-cols-2">
-        <Field
-          name="participant-price"
-          label="Příplatek (Kč)"
-          error={form.formState.errors.priceCzk}
-        >
-          <Input
-            id="participant-price"
-            type="number"
-            min={0}
-            max={10000}
-            step={1}
-            {...form.register("priceCzk", { valueAsNumber: true })}
-          />
-        </Field>
-        <Field
-          name="participant-mode"
-          label="Jak se příplatek počítá"
-          error={form.formState.errors.mode}
-        >
-          <Select
-            className="min-h-11"
-            id="participant-mode"
-            {...form.register("mode")}
+    <>
+      <ParticipantsToggle enabled={pricing.enabled} />
+      <form onSubmit={submit} noValidate>
+        <div className="grid gap-x-4 sm:grid-cols-2">
+          <Field
+            name="participant-price"
+            label="Příplatek (Kč)"
+            error={form.formState.errors.priceCzk}
           >
-            <option value="flat">Jednou za 1–2 další osoby</option>
-            <option value="per_person">Za každou další osobu zvlášť</option>
-          </Select>
-        </Field>
+            <Input
+              id="participant-price"
+              type="number"
+              min={0}
+              max={10000}
+              step={1}
+              {...form.register("priceCzk", { valueAsNumber: true })}
+            />
+          </Field>
+          <Field
+            name="participant-mode"
+            label="Jak se příplatek počítá"
+            error={form.formState.errors.mode}
+          >
+            <Select
+              className="min-h-11"
+              id="participant-mode"
+              {...form.register("mode")}
+            >
+              <option value="flat">Jednou za 1–2 další osoby</option>
+              <option value="per_person">Za každou další osobu zvlášť</option>
+            </Select>
+          </Field>
+        </div>
+        <p role="status" className="mb-4 text-sm text-muted-foreground">
+          {Number.isFinite(price)
+            ? `1 osoba navíc: ${formatMoney(price * 100)}. 2 osoby navíc: ${formatMoney(price * 100 * (mode === "per_person" ? 2 : 1))}. Příplatek platí za každý rezervovaný blok i u věrnostního vstupu.`
+            : "Zadejte příplatek."}
+        </p>
+        <FormFeedback error={serverError} success={success} />
+        <SubmitButton isSubmitting={form.formState.isSubmitting}>
+          Uložit příplatek
+        </SubmitButton>
+      </form>
+    </>
+  );
+}
+
+function ParticipantsToggle({ enabled }: { enabled: boolean }) {
+  const router = useRouter();
+  const [checked, setChecked] = useState(enabled);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => setChecked(enabled), [enabled]);
+  async function change(next: boolean) {
+    setSaving(true);
+    setError(null);
+    const response = await receiveAction(() =>
+      setParticipantsEnabledAction({ enabled: next }),
+    );
+    if (response.received && response.result.ok) {
+      setChecked(next);
+    } else {
+      setError(
+        response.received && !response.result.ok
+          ? response.result.error
+          : "Stav se nepodařilo ověřit. Obnovte stránku před dalším přepnutím.",
+      );
+    }
+    setSaving(false);
+    router.refresh();
+  }
+  return (
+    <div className="mb-6 border-b border-border pb-5">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <label
+            htmlFor="participants-enabled"
+            className="cursor-pointer text-sm font-semibold"
+          >
+            Doprovod a příplatky
+          </label>
+          <p
+            id="participants-enabled-help"
+            className="mt-1 max-w-xl text-sm text-muted-foreground"
+          >
+            {checked
+              ? "Zapnuto. Zákazník volí počet lidí při rezervaci a může přidat osobu z účtu. Kalendář ukazuje +1 nebo +2."
+              : "Vypnuto. Volba osob, přidání osoby v účtu i počty v kalendáři jsou skryté. Nové příplatky se neúčtují."}
+          </p>
+        </div>
+        <AdminSwitch
+          id="participants-enabled"
+          checked={checked}
+          onCheckedChange={(next) => void change(next)}
+          disabled={saving}
+          aria-describedby="participants-enabled-help"
+        />
       </div>
-      <p role="status" className="mb-4 text-sm text-muted-foreground">
-        {Number.isFinite(price)
-          ? `1 osoba navíc: ${formatMoney(price * 100)}. 2 osoby navíc: ${formatMoney(price * 100 * (mode === "per_person" ? 2 : 1))}. Příplatek platí za každý rezervovaný blok i u věrnostního vstupu.`
-          : "Zadejte příplatek."}
+      <p role="status" className="mt-2 text-xs text-muted-foreground">
+        {saving
+          ? "Ukládám…"
+          : "Změna přepínače se ukládá automaticky. Ceny níže zůstávají připravené pro pozdější zapnutí."}
       </p>
-      <FormFeedback error={serverError} success={success} />
-      <SubmitButton isSubmitting={form.formState.isSubmitting}>
-        Uložit příplatek
-      </SubmitButton>
-    </form>
+      <FormFeedback error={error} />
+    </div>
   );
 }

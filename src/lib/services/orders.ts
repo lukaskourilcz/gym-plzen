@@ -243,6 +243,7 @@ async function continueOwnOrder(
     hold?: BookingHold | null;
   },
   slots: readonly ResolvedSlot[],
+  resumeOnly = false,
 ): Promise<OrderOutcome | null> {
   const lookup = () =>
     findOwnReservations({
@@ -320,6 +321,7 @@ async function continueOwnOrder(
     }
   }
 
+  if (resumeOnly) return null;
   const unproven = own.find((row) => !proves(row));
   if (unproven)
     throw new ActionError(
@@ -384,10 +386,13 @@ export async function quoteOrder(params: {
   slots: readonly ResolvedSlot[];
   extraPeople?: number;
 }): Promise<{ slots: OrderQuoteSlot[]; totalCents: number }> {
-  const surcharge = participantSurcharge(
-    params.extraPeople ?? 0,
-    await getParticipantPricing(),
-  );
+  const pricing = await getParticipantPricing();
+  assertExtraPeople(params.extraPeople ?? 0);
+  if (!pricing.enabled && (params.extraPeople ?? 0) > 0)
+    throw new ActionError("Doprovod je momentálně vypnutý. Obnovte stránku.");
+  const surcharge = pricing.enabled
+    ? participantSurcharge(params.extraPeople ?? 0, pricing)
+    : 0;
   const prices = await Promise.all(
     params.slots.map((slot) => getEntryPriceCents(slot.startsAt)),
   );
@@ -434,14 +439,22 @@ export async function startOrder(params: {
 }): Promise<OrderOutcome> {
   const extraPeople = params.extraPeople ?? 0;
   assertExtraPeople(extraPeople);
-  const surcharge = participantSurcharge(
-    extraPeople,
-    await getParticipantPricing(),
-  );
+  const pricing = await getParticipantPricing();
+  const surcharge = pricing.enabled
+    ? participantSurcharge(extraPeople, pricing)
+    : 0;
   const operations = await getOperations();
   const slots = await resolveOrderSlots(params.starts);
-  const continued = await continueOwnOrder(params, slots);
+  const continued = await continueOwnOrder(
+    params,
+    slots,
+    !pricing.enabled && extraPeople > 0,
+  );
   if (continued) return continued;
+  if (!pricing.enabled && extraPeople > 0)
+    throw new ActionError(
+      "Doprovod je momentálně vypnutý. Obnovte stránku a pokračujte bez příplatku.",
+    );
 
   const basePrices = await Promise.all(
     slots.map((slot) => getEntryPriceCents(slot.startsAt)),

@@ -12,6 +12,9 @@ import {
 } from "@/lib/config/block-pricing";
 import {
   PARTICIPANT_PRICING_KEY,
+  PARTICIPANTS_ENABLED_KEY,
+  parseParticipantsEnabled,
+  type ParticipantOptions,
   parseParticipantPricing,
   participantPricingSchema,
   type ParticipantPricing,
@@ -113,8 +116,22 @@ export async function deleteBlockPrice(
       .where(eq(siteSetting.key, BLOCK_PRICING_KEY));
   });
 }
-export async function getParticipantPricing(): Promise<ParticipantPricing> {
-  return parseParticipantPricing(await getSetting(PARTICIPANT_PRICING_KEY));
+export async function getParticipantsEnabled(): Promise<boolean> {
+  return parseParticipantsEnabled(await getSetting(PARTICIPANTS_ENABLED_KEY));
+}
+export async function getParticipantPricing(): Promise<ParticipantOptions> {
+  const [pricing, enabled] = await Promise.all([
+    getSetting(PARTICIPANT_PRICING_KEY),
+    getParticipantsEnabled(),
+  ]);
+  return { ...parseParticipantPricing(pricing), enabled };
+}
+export async function setParticipantsEnabled(
+  enabled: boolean,
+  adminId: string,
+): Promise<void> {
+  // A separate setting preserves the prepared price, even when both forms save concurrently.
+  await setSetting(PARTICIPANTS_ENABLED_KEY, enabled, adminId);
 }
 export async function saveParticipantPricing(
   input: ParticipantPricing,

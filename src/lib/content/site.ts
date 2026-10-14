@@ -8,6 +8,8 @@ import {
 import { eq } from "drizzle-orm";
 import {
   PARTICIPANT_PRICING_KEY,
+  PARTICIPANTS_ENABLED_KEY,
+  parseParticipantsEnabled,
   DEFAULT_PARTICIPANT_PRICING,
   parseParticipantPricing,
 } from "@/lib/config/participants";
@@ -241,7 +243,7 @@ export const SITE_DEFAULTS = {
     "Nebudou. Celý prostor je ve vašem časovém okně rezervován exkluzivně pro vás a váš doprovod. Nikdo cizí se v prostoru pohybovat nebude. Maximální kapacita je 5 osob včetně dětí.",
   "faq.7.question": "Budu platit více, když do studia nepůjdu sám nebo sama?",
   "faq.7.answer":
-    "Základní cena platí za jednu dospělou osobu a závisí na vybraném termínu. {companionPrice} Počet lidí a celkovou cenu zvolíte před platbou. Doprovod lze přidat i později z účtu, před začátkem rezervace.",
+    "Základní cena platí za jednu dospělou osobu a závisí na vybraném termínu. {companionPrice}",
   "faq.8.question": "Jak se dostanu dovnitř? Bude na místě recepce?",
   "faq.8.answer":
     "Fungujeme jako plně samoobslužné studio, takže u nás klasickou recepci nenajdete. Před rezervovaným časem obdržíte číselný kód. Zadáte ho u vstupu a dveře se automaticky odemknou.",
@@ -360,6 +362,7 @@ export async function loadSiteContent(
   let standardEntryPriceCents = DEFAULT_ENTRY_PRICE_CENTS;
   let blockPrices: BlockPrice[] = [];
   let participantPricing = DEFAULT_PARTICIPANT_PRICING;
+  let participantsEnabled = false;
   let pricingHours: PricingHours[] = [];
   let pricingPeriods: {
     name: string;
@@ -424,6 +427,8 @@ export async function loadSiteContent(
       }
 
       for (const s of settings) {
+        if (s.key === PARTICIPANTS_ENABLED_KEY)
+          participantsEnabled = parseParticipantsEnabled(s.value);
         if (s.key === PARTICIPANT_PRICING_KEY)
           participantPricing = parseParticipantPricing(s.value);
         if (s.key === BLOCK_PRICING_KEY)
@@ -491,9 +496,11 @@ export async function loadSiteContent(
       .replaceAll("{pricePerPerson}", perPersonLabel)
       .replaceAll(
         "{companionPrice}",
-        participantPricing.mode === "flat"
-          ? `Za jednu nebo dvě další osoby připlatíte celkem ${formatMoney(participantPricing.amountCents)} za blok.`
-          : `Za každou další osobu připlatíte ${formatMoney(participantPricing.amountCents)} za blok.`,
+        !participantsEnabled
+          ? "Doprovod nyní není zpoplatněn. Celkovou cenu uvidíte před platbou."
+          : participantPricing.mode === "flat"
+            ? `Za jednu nebo dvě další osoby připlatíte celkem ${formatMoney(participantPricing.amountCents)} za blok. Počet lidí a celkovou cenu zvolíte před platbou. Doprovod lze přidat i později z účtu, před začátkem rezervace.`
+            : `Za každou další osobu připlatíte ${formatMoney(participantPricing.amountCents)} za blok. Počet lidí a celkovou cenu zvolíte před platbou. Doprovod lze přidat i později z účtu, před začátkem rezervace.`,
       );
 
   return {

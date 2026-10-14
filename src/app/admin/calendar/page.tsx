@@ -1,3 +1,4 @@
+import { getParticipantsEnabled } from "@/lib/services/block-pricing";
 import { requireAdmin } from "@/lib/auth/guards";
 import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import type { EventInput } from "@fullcalendar/core";
@@ -34,6 +35,7 @@ export default async function CalendarPage() {
         availability.listCalendarEntries(rangeStart, rangeEnd),
         schedule.listOpeningHours(),
       ]);
+  const participantsEnabled = !demo && (await getParticipantsEnabled());
   const activeDays = openingHours.filter((day) => day.isClosed !== 1);
   const openMinute =
     activeDays.length > 0
@@ -55,7 +57,7 @@ export default async function CalendarPage() {
       .flatMap((r) => [
         {
           id: r.id,
-          title: `${r.contactName?.trim() || "Zákazník bez jména"}${r.extraPeople > 0 ? ` +${r.extraPeople}` : ""}`,
+          title: `${r.contactName?.trim() || "Zákazník bez jména"}${participantsEnabled && r.extraPeople > 0 ? ` +${r.extraPeople}` : ""}`,
           start: r.startsAt.toISOString(),
           end: r.endsAt.toISOString(),
           backgroundColor:
@@ -67,7 +69,7 @@ export default async function CalendarPage() {
           ? [
               {
                 id: `${r.id}/reschedule`,
-                title: `${r.contactName?.trim() || "Zákazník bez jména"}${r.extraPeople > 0 ? ` +${r.extraPeople}` : ""}`,
+                title: `${r.contactName?.trim() || "Zákazník bez jména"}${participantsEnabled && r.extraPeople > 0 ? ` +${r.extraPeople}` : ""}`,
                 start: r.rescheduleStartsAt.toISOString(),
                 end: r.rescheduleEndsAt.toISOString(),
                 backgroundColor: "var(--warning)",

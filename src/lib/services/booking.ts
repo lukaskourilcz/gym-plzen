@@ -94,10 +94,10 @@ export async function startBooking(params: {
 }): Promise<BookingOutcome> {
   const extraPeople = params.extraPeople ?? 0;
   assertExtraPeople(extraPeople);
-  const surcharge = participantSurcharge(
-    extraPeople,
-    await getParticipantPricing(),
-  );
+  const pricing = await getParticipantPricing();
+  const surcharge = pricing.enabled
+    ? participantSurcharge(extraPeople, pricing)
+    : 0;
   const operations = await getOperations();
   const resolved = await resolveBookableSlot(params.startsAt);
   const horizon = await getBookingHorizonDays();
@@ -109,8 +109,15 @@ export async function startBooking(params: {
     !isDateOpenForBooking(date, operations)
   )
     throw new ActionError("Vybraný termín není dostupný pro rezervaci.");
-  const continued = await continueOwnBooking(params);
+  const continued = await continueOwnBooking(
+    params,
+    !pricing.enabled && extraPeople > 0,
+  );
   if (continued) return continued;
+  if (!pricing.enabled && extraPeople > 0)
+    throw new ActionError(
+      "Doprovod je momentálně vypnutý. Obnovte stránku a pokračujte bez příplatku.",
+    );
   const basePrice = await getEntryPriceCents(params.startsAt);
   const token = randomBytes(32).toString("hex");
   // Price, reward claim and reservation commit atomically under one member row
@@ -279,14 +286,17 @@ export async function findOwnReservation(params: {
  * outcome to hand back, or null when nothing is left to continue and a fresh
  * reservation should be made.
  */
-async function continueOwnBooking(params: {
-  userId: string | null;
-  startsAt: Date;
-  details: BookingDetails;
-  extraPeople?: number;
-  voucherCode?: string;
-  hold?: BookingHold | null;
-}): Promise<BookingOutcome | null> {
+async function continueOwnBooking(
+  params: {
+    userId: string | null;
+    startsAt: Date;
+    details: BookingDetails;
+    extraPeople?: number;
+    voucherCode?: string;
+    hold?: BookingHold | null;
+  },
+  resumeOnly = false,
+): Promise<BookingOutcome | null> {
   let own = await findOwnReservation({
     userId: params.userId,
     email: params.details.email,
@@ -331,6 +341,7 @@ async function continueOwnBooking(params: {
     if (resumed.state === "checkout") return resumed.outcome;
     if (resumed.state === "processing") throw new ActionError(STILL_PROCESSING);
   }
+  if (resumeOnly) return null;
   if (!proven)
     throw new ActionError(
       "Tento termín je rozpracovaný v jiné platbě. Dokončete ji, nebo to zkuste znovu za 30 minut.",

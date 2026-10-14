@@ -1,3 +1,4 @@
+import { getParticipantsEnabled } from "@/lib/services/block-pricing";
 import { Button } from "@/components/ui/button";
 import { participantLabel } from "@/lib/config/participants";
 import { buttonVariants } from "@/components/ui/button";
@@ -38,6 +39,7 @@ export async function Orders({
   page: number;
   isDemo: boolean;
 }) {
+  const participantsEnabled = !isDemo && (await getParticipantsEnabled());
   const { rows, hasNext } = splitPage(
     isDemo ? [] : await listCustomerOrders(userId, page),
     ORDER_PAGE_SIZE,
@@ -90,12 +92,15 @@ export async function Orders({
                       {many
                         ? `${formatDate(slot.startsAt)} ${formatTimeRange(slot.startsAt, slot.endsAt)} · `
                         : ""}
-                      {participantLabel(slot.extraPeople)}
+                      {participantsEnabled
+                        ? participantLabel(slot.extraPeople)
+                        : ""}
                       {slot.additionalPeoplePaidCents > 0
                         ? ` · doplatek za doprovod ${formatMoney(slot.additionalPeoplePaidCents)}`
                         : ""}
                     </p>
-                    {slot.status === "confirmed" &&
+                    {participantsEnabled &&
+                    slot.status === "confirmed" &&
                     slot.startsAt > new Date() &&
                     slot.extraPeople < 2 ? (
                       <Button

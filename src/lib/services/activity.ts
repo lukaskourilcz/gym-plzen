@@ -35,6 +35,7 @@ export const ACTIVITY_ACTIONS = {
   "settings.price_saved": "Cena vstupu uložena",
   "settings.block_price_saved": "Cena bloků uložena",
   "settings.block_price_deleted": "Cena bloků odebrána",
+  "settings.participants_toggled": "Doprovod přepnut",
   "settings.participant_price_saved": "Příplatek za doprovod uložen",
   "reservation.participants_added": "Doprovod přidán",
   "settings.pricing_period_saved": "Cenové období uloženo",

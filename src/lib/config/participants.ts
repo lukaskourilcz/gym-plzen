@@ -1,6 +1,12 @@
 import { z } from "zod";
 
 export const MAX_EXTRA_PEOPLE = 2;
+export const PARTICIPANTS_ENABLED_KEY = "features.additional_people";
+/** Enable explicitly: absent, malformed and legacy settings keep the feature off. */
+export function parseParticipantsEnabled(value: unknown): boolean {
+  return value === true;
+}
+export type ParticipantOptions = ParticipantPricing & { enabled: boolean };
 export const PARTICIPANT_PRICING_KEY = "pricing.additional_people";
 export const participantPricingSchema = z.object({
   amountCents: z.number().int().min(0).max(1_000_000),

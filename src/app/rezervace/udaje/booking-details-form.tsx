@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   participantSurcharge,
-  type ParticipantPricing,
+  type ParticipantOptions,
 } from "@/lib/config/participants";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -46,7 +46,7 @@ export function BookingDetailsForm({
   startsISO: string[];
   /** What the selection costs before a voucher, loyalty rewards applied. */
   totalCents: number;
-  participantPricing: ParticipantPricing;
+  participantPricing: ParticipantOptions;
   heldExtraPeople?: number;
   /** A selected slot must be removed before the order can be placed. */
   blocked?: boolean;
@@ -96,7 +96,9 @@ export function BookingDetailsForm({
         voucherCode: "",
         extraPeople:
           heldExtraPeople === undefined
-            ? undefined
+            ? participantPricing.enabled
+              ? undefined
+              : "0"
             : (String(heldExtraPeople) as "0" | "1" | "2"),
         // Keeping the number is the member's choice, so it starts unticked.
         savePhone: false,
@@ -109,7 +111,7 @@ export function BookingDetailsForm({
   const people = watch("extraPeople");
   const selectionTotalCents =
     totalCents +
-    (heldExtraPeople === undefined
+    (heldExtraPeople === undefined && participantPricing.enabled
       ? startsISO.length *
         participantSurcharge(Number(people ?? 0), participantPricing)
       : 0);
@@ -274,72 +276,74 @@ export function BookingDetailsForm({
         </p>
       </div>
 
-      <fieldset
-        className="mt-7 border-t border-border pt-6"
-        aria-describedby={
-          formState.errors.extraPeople
-            ? "extra-people-error"
-            : "extra-people-help"
-        }
-      >
-        <legend className="text-sm font-extrabold">Kolik lidí přijde?</legend>
-        <p
-          id="extra-people-help"
-          className="mt-2 text-sm text-muted-foreground"
+      {participantPricing.enabled ? (
+        <fieldset
+          className="mt-7 border-t border-border pt-6"
+          aria-describedby={
+            formState.errors.extraPeople
+              ? "extra-people-error"
+              : "extra-people-help"
+          }
         >
-          Cena zahrnuje jednu dospělou osobu.{" "}
-          {participantPricing.mode === "flat"
-            ? `Za 1–2 další osoby připlatíte celkem ${formatMoney(participantPricing.amountCents)}`
-            : `Za každou další osobu připlatíte ${formatMoney(participantPricing.amountCents)}`}{" "}
-          za každý blok. Doprovod se hradí i u věrnostního vstupu zdarma.
-        </p>
-        <div className="mt-3 grid gap-2 sm:grid-cols-3">
-          {(["0", "1", "2"] as const).map((count) => (
-            <label
-              key={count}
-              className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md border border-border px-3 py-3 text-sm"
-            >
-              <input
-                type="radio"
-                value={count}
-                disabled={
-                  heldExtraPeople !== undefined &&
-                  count !== String(heldExtraPeople)
-                }
-                className="size-5 shrink-0 accent-[var(--color-primary)]"
-                {...register("extraPeople")}
-                onChange={(e) => {
-                  void register("extraPeople").onChange(e);
-                  setVoucherQuote(null);
-                  setVoucherError(null);
-                }}
-              />
-              {count === "0"
-                ? "Přijdu sám / sama"
-                : `Přijdu + ${count} ${count === "1" ? "osoba" : "osoby"}`}
-            </label>
-          ))}
-        </div>
-        {formState.errors.extraPeople ? (
+          <legend className="text-sm font-extrabold">Kolik lidí přijde?</legend>
           <p
-            id="extra-people-error"
-            role="alert"
-            className="mt-2 text-sm text-destructive"
+            id="extra-people-help"
+            className="mt-2 text-sm text-muted-foreground"
           >
-            {formState.errors.extraPeople.message}
+            Cena zahrnuje jednu dospělou osobu.{" "}
+            {participantPricing.mode === "flat"
+              ? `Za 1–2 další osoby připlatíte celkem ${formatMoney(participantPricing.amountCents)}`
+              : `Za každou další osobu připlatíte ${formatMoney(participantPricing.amountCents)}`}{" "}
+            za každý blok. Doprovod se hradí i u věrnostního vstupu zdarma.
           </p>
-        ) : null}
-        {heldExtraPeople !== undefined ? (
-          <p className="mt-2 text-sm text-muted-foreground">
-            Počet lidí v rozpracované platbě zůstává stejný. Další osobu můžete
-            přidat z účtu po potvrzení rezervace.
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            {(["0", "1", "2"] as const).map((count) => (
+              <label
+                key={count}
+                className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md border border-border px-3 py-3 text-sm"
+              >
+                <input
+                  type="radio"
+                  value={count}
+                  disabled={
+                    heldExtraPeople !== undefined &&
+                    count !== String(heldExtraPeople)
+                  }
+                  className="size-5 shrink-0 accent-[var(--color-primary)]"
+                  {...register("extraPeople")}
+                  onChange={(e) => {
+                    void register("extraPeople").onChange(e);
+                    setVoucherQuote(null);
+                    setVoucherError(null);
+                  }}
+                />
+                {count === "0"
+                  ? "Přijdu sám / sama"
+                  : `Přijdu + ${count} ${count === "1" ? "osoba" : "osoby"}`}
+              </label>
+            ))}
+          </div>
+          {formState.errors.extraPeople ? (
+            <p
+              id="extra-people-error"
+              role="alert"
+              className="mt-2 text-sm text-destructive"
+            >
+              {formState.errors.extraPeople.message}
+            </p>
+          ) : null}
+          {heldExtraPeople !== undefined ? (
+            <p className="mt-2 text-sm text-muted-foreground">
+              Počet lidí v rozpracované platbě zůstává stejný. Další osobu
+              můžete přidat z účtu po potvrzení rezervace.
+            </p>
+          ) : null}
+          <p role="status" className="mt-3 text-sm font-bold">
+            Celkem {formatMoney(selectionTotalCents)} za{" "}
+            {startsISO.length === 1 ? "vybraný blok" : "vybrané bloky"}.
           </p>
-        ) : null}
-        <p role="status" className="mt-3 text-sm font-bold">
-          Celkem {formatMoney(selectionTotalCents)} za{" "}
-          {startsISO.length === 1 ? "vybraný blok" : "vybrané bloky"}.
-        </p>
-      </fieldset>
+        </fieldset>
+      ) : null}
 
       {selectionTotalCents > 0 ? (
         <fieldset className="mt-7 border-t border-border pt-6">

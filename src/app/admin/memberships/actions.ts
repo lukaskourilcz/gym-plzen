@@ -5,6 +5,7 @@ import {
   saveBlockPriceSchema,
   deleteBlockPriceSchema,
   saveParticipantPricingSchema,
+  setParticipantsEnabledSchema,
   type SaveBlockPriceValues,
   type SaveParticipantPricingValues,
 } from "@/lib/validations/pricing";
@@ -231,4 +232,30 @@ export async function saveParticipantPricingAction(
   input: SaveParticipantPricingValues,
 ): Promise<Result<unknown>> {
   return saveParticipantsImpl(input);
+}
+
+const setParticipantsEnabledImpl = defineAction({
+  schema: setParticipantsEnabledSchema,
+  authorize: assertAdmin,
+  handler: async ({ enabled }, admin) => {
+    await blockPricing.setParticipantsEnabled(enabled, admin.id);
+    await activity.record({
+      action: "settings.participants_toggled",
+      actorType: "admin",
+      actorId: admin.id,
+      actorLabel: admin.email,
+      summary: enabled
+        ? "Doprovod a příplatky zapnuty."
+        : "Doprovod a příplatky vypnuty.",
+    });
+    revalidatePath("/admin", "layout");
+    revalidatePath("/account", "layout");
+    revalidatePath("/rezervace", "layout");
+    revalidatePricedPages();
+  },
+});
+export async function setParticipantsEnabledAction(input: {
+  enabled: boolean;
+}): Promise<Result<unknown>> {
+  return setParticipantsEnabledImpl(input);
 }

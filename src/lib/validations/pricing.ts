@@ -19,6 +19,7 @@ export const saveBlockPriceSchema = z
     message: "Poslední blok musí následovat po prvním.",
   });
 export const deleteBlockPriceSchema = z.object({ id: uuidSchema });
+export const setParticipantsEnabledSchema = z.object({ enabled: z.boolean() });
 export const saveParticipantPricingSchema = z.object({
   priceCzk: z
     .number({ invalid_type_error: "Zadejte cenu." })

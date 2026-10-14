@@ -1,3 +1,4 @@
+import { AdminSwitch } from "@/components/admin/switch";
 import { requireAdmin } from "@/lib/auth/guards";
 import { BookingCalendar } from "@/components/admin/booking-calendar";
 import { dateKeyInTimeZone, localDateTimeToDate } from "@/lib/helpers/datetime";
@@ -81,6 +82,14 @@ export default async function DesignSystemPage() {
             <Button variant="outline" size="sm">
               Upravit
             </Button>
+          </div>
+          <div className="mt-4 flex items-center gap-3">
+            <AdminSwitch
+              checked={false}
+              disabled
+              aria-label="Ukázka přepínače doprovodu"
+            />
+            <span className="text-sm">Doprovod a příplatky · vypnuto</span>
           </div>
           <p className="mt-3 text-sm">
             Doprovod +1 nebo +2 · 100 Kč společně za každý blok.

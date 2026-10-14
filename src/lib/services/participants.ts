@@ -95,6 +95,8 @@ export async function addParticipants(params: {
   assertExtraPeople(params.toCount);
   return withReservationLock(params.reservationId, async () => {
     const pricing = await getParticipantPricing();
+    if (!pricing.enabled)
+      throw new ActionError("Doprovod je momentálně vypnutý. Obnovte stránku.");
     const operations = await getOperations();
     const intent = await db.transaction(async (tx) => {
       const [booking] = await tx

@@ -1,3 +1,4 @@
+import { getParticipantsEnabled } from "@/lib/services/block-pricing";
 import {
   AdminListTotal,
   AdminListFilters,
@@ -112,6 +113,7 @@ export default async function ReservationsPage({
     ? new Map<string, string>()
     : await getMemberNotes(rows.map((r) => r.userId));
 
+  const participantsEnabled = !demo && (await getParticipantsEnabled());
   const access = demo
     ? new Map(
         rows.map((r) => [
@@ -200,7 +202,7 @@ export default async function ReservationsPage({
                   </>
                 )}
                 <span className="block text-xs text-muted-foreground">
-                  {participantLabel(r.extraPeople)}
+                  {participantsEnabled ? participantLabel(r.extraPeople) : ""}
                 </span>
               </TableCell>
               <TableCell>
@@ -275,7 +277,7 @@ export default async function ReservationsPage({
           <CardTitle>Nová rezervace (ručně)</CardTitle>
         </CardHeader>
         <CardContent>
-          <ReservationForm />
+          <ReservationForm participantsEnabled={participantsEnabled} />
         </CardContent>
       </Card>
     </div>

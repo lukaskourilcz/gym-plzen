@@ -108,7 +108,12 @@ export default async function ParticipantsPage({
               </Notice>
             ) : null}
             <div className="mt-7">
-              {pending ? (
+              {!pricing.enabled ? (
+                <Notice>
+                  Doprovod je momentálně vypnutý. Nové osoby ani příplatky nyní
+                  nepřidáváme.
+                </Notice>
+              ) : pending ? (
                 <>
                   <Notice title="Platba za doprovod se zpracovává">
                     Požadovaný doprovod +{pending.toCount}, doplatek{" "}
