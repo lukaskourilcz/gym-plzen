@@ -1,3 +1,7 @@
+import {
+  OverviewIconLink,
+  OverviewStatus,
+} from "@/components/admin/overview-icons";
 import { AdminSwitch } from "@/components/admin/switch";
 import { requireAdmin } from "@/lib/auth/guards";
 import { BookingCalendar } from "@/components/admin/booking-calendar";
@@ -104,6 +108,17 @@ export default async function DesignSystemPage() {
               <option value="startsAt">Začátek rezervace</option>
               <option value="createdAt">Datum vytvoření</option>
             </Select>
+          </div>
+        </section>
+        <section aria-labelledby="kit-overview-icons">
+          <h2 id="kit-overview-icons" className="mb-3 text-xl font-semibold">
+            Přehled rezervací: stavy a akce
+          </h2>
+          <div className="flex items-center gap-2">
+            <OverviewStatus active label="Používá se" />
+            <OverviewStatus active={false} label="Nepoužívá se" />
+            <OverviewIconLink kind="reservation" href="/admin/reservations" />
+            <OverviewIconLink kind="profile" href="/admin/members" />
           </div>
         </section>
         <section aria-labelledby="kit-calendar">

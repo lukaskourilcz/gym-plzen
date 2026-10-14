@@ -16,7 +16,8 @@
   ],
   "git": {
     "deploymentEnabled": {
-      "codex/block-pricing-guests": false
+      "codex/block-pricing-guests": false,
+      "codex/admin-daily-refinements": false
     }
   }
 }

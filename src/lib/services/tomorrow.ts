@@ -125,6 +125,9 @@ export async function getTomorrowOverview(now = new Date()) {
       codeCheck,
       email,
       whatsApp,
+      whatsAppEnabled: Boolean(
+        booking.userId && booking.whatsAppOptIn && booking.whatsAppPhone,
+      ),
     };
   });
   return {

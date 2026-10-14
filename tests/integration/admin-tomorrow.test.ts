@@ -72,6 +72,8 @@ describe(
           ],
         ],
       );
+      assert.equal(overview.rows[0]?.whatsAppEnabled, true);
+      assert.equal(overview.rows[1]?.whatsAppEnabled, false);
       assert.equal("codeHash" in overview.rows[0]!, false);
     });
 

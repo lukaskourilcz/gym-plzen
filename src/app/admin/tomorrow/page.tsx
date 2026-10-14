@@ -1,4 +1,15 @@
-import Link from "next/link";
+import {
+  OverviewIconLink,
+  OverviewStatus,
+} from "@/components/admin/overview-icons";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { requireAdmin } from "@/lib/auth/guards";
 import { AdminMemberName } from "@/components/admin/member-name";
 import { getMemberNotes } from "@/lib/services/admin-member-notes";
@@ -24,7 +35,7 @@ const CODE_LABEL: Record<string, string> = {
 const DELIVERY_LABEL: Record<string, string> = {
   awaiting_payment: "Čeká na platbu",
   not_applicable: "Nepoužívá se",
-  scheduled: "Odejde hodinu předem",
+  scheduled: "Hodinu předem",
   pending: "Čeká na odeslání",
   queued: "Odesílá se",
   sent: "Odesláno",
@@ -54,21 +65,8 @@ export default async function TomorrowPage() {
   return (
     <div>
       <PageHeader
-        title="Zítra"
-        description={
-          headingDate
-            ? `Kontrola rezervací na ${headingDate}`
-            : "Kontrola rezervací na další den"
-        }
+        title={`Zítra | kontrola rezervací na ${headingDate || "další den"}`}
       />
-      <p className="mb-6 max-w-3xl text-sm text-muted-foreground">
-        Tady večer uvidíte, zda je pro zítřejší rezervace připravený kód a zda
-        se shoduje s Nuki. E-mail s kódem a případný WhatsApp se posílají až
-        hodinu před začátkem rezervace. „Odesláno“ ještě neznamená, že
-        poskytovatel potvrdil doručení. Pokud se dříve odeslaná zpráva ukáže
-        jako „předčasně“, zkontrolujte konkrétní rezervaci v Odeslaných
-        zprávách.
-      </p>
       {demo ? (
         <p className="rounded-lg border border-border p-5 text-sm">
           Ukázkový režim nezobrazuje skutečné rezervace ani stav zámku.
@@ -83,7 +81,92 @@ export default async function TomorrowPage() {
               value={overview.needsAttention}
             />
           </div>
-          <div className="grid gap-4">
+          <div className="hidden lg:block">
+            <Table label="Zítřejší rezervace">
+              <TableHeader>
+                <TableRow>
+                  {[
+                    "Čas",
+                    "Jméno",
+                    "Nuki kód",
+                    "Email",
+                    "Whatsapp",
+                    "Potvrzeno",
+                  ].map((label) => (
+                    <TableHead key={label} scope="col">
+                      {label}
+                    </TableHead>
+                  ))}
+                  <TableHead scope="col" className="w-12 px-1">
+                    <span className="sr-only">Rezervace</span>
+                  </TableHead>
+                  <TableHead scope="col" className="w-12 px-1">
+                    <span className="sr-only">Profil zákazníka</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {overview.rows.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell className="whitespace-nowrap font-semibold tabular-nums">
+                      {formatTimeRange(row.startsAt, row.endsAt)}
+                    </TableCell>
+                    <TableCell className="min-w-32">
+                      <AdminMemberName
+                        name={row.contactName}
+                        note={memberNotes.get(row.userId ?? "")}
+                      />
+                    </TableCell>
+                    <TableCell>{CODE_LABEL[row.codeCheck]}</TableCell>
+                    <TableCell>{DELIVERY_LABEL[row.email]}</TableCell>
+                    <TableCell>
+                      <OverviewStatus
+                        active={row.whatsAppEnabled}
+                        label={
+                          row.whatsAppEnabled ? "Používá se" : "Nepoužívá se"
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <OverviewStatus
+                        active={row.status === "confirmed"}
+                        label={
+                          row.status === "confirmed"
+                            ? "Potvrzeno"
+                            : "Čeká na platbu"
+                        }
+                      />
+                    </TableCell>
+                    <TableCell className="px-1">
+                      <OverviewIconLink
+                        kind="reservation"
+                        href={`/admin/reservations?id=${row.id}`}
+                      />
+                    </TableCell>
+                    <TableCell className="px-1">
+                      {row.userId ? (
+                        <OverviewIconLink
+                          kind="profile"
+                          href={`/admin/members/${row.userId}`}
+                        />
+                      ) : null}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {overview.rows.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={8}
+                      className="py-6 text-muted-foreground"
+                    >
+                      Na zítřek zatím nejsou žádné rezervace.
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="grid gap-4 lg:hidden">
             {overview.rows.map((row) => (
               <Card key={row.id}>
                 <CardContent className="p-4 sm:p-5">
@@ -120,25 +203,26 @@ export default async function TomorrowPage() {
                     <div>
                       <dt className="text-muted-foreground">WhatsApp</dt>
                       <dd className="font-semibold">
-                        {DELIVERY_LABEL[row.whatsApp]}
+                        <OverviewStatus
+                          active={row.whatsAppEnabled}
+                          label={
+                            row.whatsAppEnabled ? "Používá se" : "Nepoužívá se"
+                          }
+                        />
                       </dd>
                     </div>
                   </dl>
-                  <div className="mt-3 flex gap-4 text-sm">
-                    <Link
-                      className="text-accent-foreground hover:underline"
+                  <div className="mt-3 flex gap-2">
+                    <OverviewIconLink
+                      kind="reservation"
                       href={`/admin/reservations?id=${row.id}`}
-                    >
-                      Rezervace →
-                    </Link>
-                    {row.userId && (
-                      <Link
-                        className="text-accent-foreground hover:underline"
+                    />
+                    {row.userId ? (
+                      <OverviewIconLink
+                        kind="profile"
                         href={`/admin/members/${row.userId}`}
-                      >
-                        Profil zákazníka →
-                      </Link>
-                    )}
+                      />
+                    ) : null}
                   </div>
                 </CardContent>
               </Card>

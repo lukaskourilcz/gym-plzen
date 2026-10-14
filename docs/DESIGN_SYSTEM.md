@@ -651,3 +651,11 @@ propojeným popiskem, klávesnicí a 44px dotykovou plochou. Pohyb respektuje
 admin akcí; dokud ukládání neskončí, je ovladač deaktivovaný. Viditelný text
 vysvětluje stav. Připravené ceny se ukládají samostatně. Ukázka je v chráněné
 galerii `/admin/design-system`.
+
+### Zítřejší přehled
+
+Na desktopu (`lg`) používá tabulku, na mobilu stejné údaje v kartách. Ikonové
+akce `OverviewIconLink` mají 44px plochu, přístupný název a tooltip dostupný
+myší i klávesnicí. `OverviewStatus` zobrazuje fajfku/X s textovým názvem stavu,
+takže rozlišení nezávisí na barvě. Ikony se nemají tvářit jako přepínače.
+Ukázka je v chráněné galerii `/admin/design-system`.
