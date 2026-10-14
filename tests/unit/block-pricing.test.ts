@@ -8,6 +8,7 @@ import {
 } from "../../src/lib/config/block-pricing";
 import { localDateTimeToDate } from "../../src/lib/helpers/datetime";
 import {
+  parseParticipantsEnabled,
   participantAdditionPrice,
   participantSurcharge,
   DEFAULT_PARTICIPANT_PRICING,
@@ -82,4 +83,10 @@ test("one or two additional people cost 100 Kč together by default", () => {
   assert.equal(participantAdditionPrice(1, 2, perPerson), 10_000);
   for (const count of [-1, 3, 0.5, NaN])
     assert.throws(() => participantSurcharge(count, perPerson));
+});
+
+test("companions are off unless an explicit boolean true is saved", () => {
+  for (const value of [undefined, null, false, 0, 1, "true", {}, []])
+    assert.equal(parseParticipantsEnabled(value), false);
+  assert.equal(parseParticipantsEnabled(true), true);
 });

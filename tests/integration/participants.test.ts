@@ -24,7 +24,14 @@ import {
   resolveOrderSlots,
 } from "../../src/lib/services/orders";
 import { getEntryPriceCents } from "../../src/lib/services/loyalty";
-import { saveBlockPrice } from "../../src/lib/services/block-pricing";
+import { startBooking } from "../../src/lib/services/booking";
+import { createManualReservation } from "../../src/lib/services/admin-reservations";
+import {
+  getParticipantPricing,
+  setParticipantsEnabled,
+  saveParticipantPricing,
+  saveBlockPrice,
+} from "../../src/lib/services/block-pricing";
 import { loadSiteContent } from "../../src/lib/content/site";
 import {
   addDaysToDateKey,
@@ -71,6 +78,199 @@ describe(
     beforeEach(async () => {
       await resetDatabase();
       await seedProfile(MEMBER);
+    });
+    test("missing toggle defaults off; switching preserves prices, bookings and payments", async () => {
+      const booking = await existing(2);
+      await rows(
+        "delete from site_setting where key = 'features.additional_people'",
+      );
+      assert.equal((await getParticipantPricing()).enabled, false);
+      const before = await rows("select * from payment order by id");
+      await setParticipantsEnabled(true, MEMBER.id);
+      await saveParticipantPricing(
+        { amountCents: 12300, mode: "per_person" },
+        MEMBER.id,
+      );
+      await setParticipantsEnabled(false, MEMBER.id);
+      assert.deepEqual(await getParticipantPricing(), {
+        amountCents: 12300,
+        mode: "per_person",
+        enabled: false,
+      });
+      assert.deepEqual(await getReservation(booking.id), booking);
+      assert.deepEqual(await rows("select * from payment order by id"), before);
+      assert.equal(resend.sent.length, 0);
+      assert.equal(comgate.creates.length, 0);
+      const copy = (await loadSiteContent()).get("faq.7.answer");
+      assert.match(copy, /není zpoplatněn/);
+      assert.doesNotMatch(copy, /zvolíte|přidat i později/);
+      await setParticipantsEnabled(true, MEMBER.id);
+      assert.equal((await getParticipantPricing()).amountCents, 12300);
+      assert.match((await loadSiteContent()).get("faq.7.answer"), /123/);
+    });
+    test("disabled companions reject stale inputs without creating a payment or changing bookings", async () => {
+      const booking = await existing();
+      await setParticipantsEnabled(false, MEMBER.id);
+      const details = {
+        name: MEMBER.fullName,
+        email: MEMBER.email,
+        phone: "+420777000111",
+        acceptedAt: new Date(),
+      };
+      const before = await rows("select * from reservation order by id");
+      await assert.rejects(
+        startOrder({
+          userId: MEMBER.id,
+          starts: [slot(6)],
+          extraPeople: 2,
+          details,
+        }),
+        /Doprovod je momentálně vypnutý/,
+      );
+      await assert.rejects(
+        startBooking({
+          userId: MEMBER.id,
+          startsAt: slot(6),
+          extraPeople: 1,
+          details,
+        }),
+        /Doprovod je momentálně vypnutý/,
+      );
+      await assert.rejects(
+        addParticipants({
+          userId: MEMBER.id,
+          reservationId: booking.id,
+          toCount: 1,
+          quotedCents: 10000,
+        }),
+        /Doprovod je momentálně vypnutý/,
+      );
+      await assert.rejects(
+        createManualReservation({
+          startsAt: slot(6),
+          extraPeople: 1,
+          admin: { id: MEMBER.id, email: MEMBER.email },
+        }),
+        /Doprovod je momentálně vypnutý/,
+      );
+      await assert.rejects(
+        quoteOrder({
+          userId: MEMBER.id,
+          slots: await resolveOrderSlots([slot(6)]),
+          extraPeople: 1,
+        }),
+        /Doprovod je momentálně vypnutý/,
+      );
+      assert.deepEqual(
+        await rows("select * from reservation order by id"),
+        before,
+      );
+      assert.equal(comgate.creates.length, 0);
+      assert.equal(resend.sent.length, 0);
+      const result = await startOrder({
+        userId: MEMBER.id,
+        starts: [slot(6)],
+        details,
+      });
+      assert.equal(result.kind, "checkout");
+      if (result.kind !== "checkout") return;
+      assert.equal(result.totalCents, 22900);
+      assert.equal(
+        (
+          await rows<{ extra_people: number }>(
+            "select extra_people from reservation where order_id=$1",
+            [result.orderId],
+          )
+        )[0]?.extra_people,
+        0,
+      );
+    });
+    test("switching off preserves and resumes existing order and legacy holds without repricing", async () => {
+      const details = {
+        name: MEMBER.fullName,
+        email: MEMBER.email,
+        phone: "+420777000111",
+        acceptedAt: new Date(),
+      };
+      const orderInput = {
+        userId: MEMBER.id,
+        starts: [slot()],
+        extraPeople: 2,
+        details,
+      };
+      const bookingInput = {
+        userId: MEMBER.id,
+        startsAt: slot(6),
+        extraPeople: 1,
+        details,
+      };
+      const order = await startOrder(orderInput);
+      const legacy = await startBooking(bookingInput);
+      const before = await rows("select * from reservation order by id");
+      const paymentFields =
+        "id, user_id, reservation_id, order_id, participant_addition_id, status, amount_cents, currency, provider_payment_id, gateway_url, paid_at";
+      const payments = await rows(
+        `select ${paymentFields} from payment order by id`,
+      );
+      await setParticipantsEnabled(false, MEMBER.id);
+      const resumedOrder = await startOrder(orderInput);
+      const resumedLegacy = await startBooking(bookingInput);
+      assert.equal(resumedOrder.kind, order.kind);
+      assert.equal(resumedLegacy.kind, legacy.kind);
+      if (resumedOrder.kind === "checkout")
+        assert.equal(resumedOrder.totalCents, 32900);
+      if (resumedLegacy.kind === "checkout")
+        assert.equal(resumedLegacy.priceCents, 32900);
+      await assert.rejects(
+        startOrder({ ...orderInput, extraPeople: 1 }),
+        /vypnutý/,
+      );
+      await assert.rejects(
+        startBooking({ ...bookingInput, extraPeople: 2 }),
+        /vypnutý/,
+      );
+      assert.deepEqual(
+        await rows("select * from reservation order by id"),
+        before,
+      );
+      assert.deepEqual(
+        await rows(`select ${paymentFields} from payment order by id`),
+        payments,
+      );
+      assert.equal(comgate.creates.length, 2);
+      assert.equal(resend.sent.length, 0);
+    });
+    test("a previously initiated supplemental payment settles safely after disabling", async () => {
+      const booking = await existing();
+      const beforePipeline = await counts();
+      await addParticipants({
+        userId: MEMBER.id,
+        reservationId: booking.id,
+        toCount: 2,
+        quotedCents: 10000,
+      });
+      const [attempt] = await rows<{ provider_payment_id: string }>(
+        "select provider_payment_id from payment",
+      );
+      await setParticipantsEnabled(false, MEMBER.id);
+      assert.deepEqual(await getReservation(booking.id), booking);
+      comgate.settle(attempt!.provider_payment_id, "PAID");
+      await synchronizeComgatePayment(attempt!.provider_payment_id);
+      await synchronizeComgatePayment(attempt!.provider_payment_id);
+      const after = (await getReservation(booking.id))!;
+      assert.equal(after.extraPeople, 2);
+      assert.equal(after.additionalPeoplePaidCents, 10000);
+      for (const field of [
+        "startsAt",
+        "endsAt",
+        "status",
+        "priceCents",
+        "confirmationTokenHash",
+      ] as const)
+        assert.deepEqual(after[field], booking[field]);
+      assert.deepEqual(await counts(), beforePipeline);
+      assert.equal(resend.sent.length, 0);
+      assert.equal(comgate.creates.length, 1);
     });
     test("block price overrides date price; public calendar and checkout agree", async () => {
       const at = slot();

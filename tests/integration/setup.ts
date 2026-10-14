@@ -117,6 +117,7 @@ export async function resetDatabase(): Promise<void> {
   });
   await setSetting("pricing.entry_price_cents", 22_900);
   await setSetting("pricing.time_blocks", []);
+  await setSetting("features.additional_people", true);
   await setSetting("pricing.additional_people", {
     amountCents: 10_000,
     mode: "flat",
