@@ -12,6 +12,8 @@ Next plugin využívá z tohoto balíčku pouze `globSync(pattern, { onlyDirecto
 pro vyhledání kořenových složek z nastavení `settings.next.rootDir`.
 [Tinyglobby](https://github.com/SuperchupuDev/tinyglobby) toto rozhraní podporuje.
 Nejde o obecnou náhradu všech API knihovny `fast-glob`.
+Tinyglobby vrací adresáře relativně k pracovní složce a s koncovým lomítkem;
+Next je zpracovává přes `path.join` a `fs`, takže výsledná složka zůstává stejná.
 
 Regresní testy v `tests/unit/eslint-root-dirs.test.ts` ověřují výchozí kořen,
 adresářové a složené vzory, seznam kořenů, prázdný výsledek a skutečné hlášení

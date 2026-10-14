@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { join, normalize } from "node:path";
+import { join, relative, resolve } from "node:path";
 import { test } from "node:test";
 import { ESLint } from "eslint";
 
@@ -32,7 +32,8 @@ test("Next lint resolves directory globs and multiple configured roots", (t) => 
   writeFileSync(join(fixture, "apps", "ignore.txt"), "not a directory");
   const roots = (rootDir: string | string[]) =>
     getRootDirs({ cwd: fixture, settings: { next: { rootDir } } })
-      .map(normalize)
+      // Next consumes these results through path.join and fs, relative to process.cwd().
+      .map((directory) => resolve(directory))
       .sort();
 
   assert.deepEqual(roots(join(fixture, "apps", "*")), [admin, web].sort());
@@ -41,6 +42,8 @@ test("Next lint resolves directory globs and multiple configured roots", (t) => 
     [admin, web].sort(),
   );
   assert.deepEqual(roots([web, admin]), [admin, web].sort());
+  assert.deepEqual(roots(relative(process.cwd(), web)), [web]);
+  assert.deepEqual(roots(web.replaceAll("/", "\\")), [web]);
   assert.deepEqual(roots(join(fixture, "missing", "*")), []);
 });
 
@@ -62,6 +65,7 @@ test("Next lint still reports internal HTML links with a globbed project root", 
     'export default function Page() { return <a href="/booking">Rezervace</a>; }',
     { filePath: "src/lint-regression.tsx" },
   );
+  assert.ok(result);
   assert.ok(
     result.messages.some(
       (message) =>
@@ -74,5 +78,6 @@ test("Next lint still reports internal HTML links with a globbed project root", 
     'import Link from "next/link"; export default function Page() { return <Link href="/booking">Rezervace</Link>; }',
     { filePath: "src/lint-regression.tsx" },
   );
+  assert.ok(valid);
   assert.equal(valid.errorCount, 0, JSON.stringify(valid.messages));
 });
