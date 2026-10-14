@@ -17,7 +17,8 @@
   "git": {
     "deploymentEnabled": {
       "codex/block-pricing-guests": false,
-      "codex/admin-daily-refinements": false
+      "codex/admin-daily-refinements": false,
+      "codex/fix-audit-braces": false
     }
   }
 }

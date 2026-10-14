@@ -84,6 +84,9 @@
     "next": {
       "sharp": "0.35.5"
     },
-    "postcss": "8.5.28"
+    "postcss": "8.5.28",
+    "@next/eslint-plugin-next": {
+      "fast-glob": "npm:tinyglobby@0.2.17"
+    }
   }
 }
