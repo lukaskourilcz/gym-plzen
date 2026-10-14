@@ -129,6 +129,7 @@ export default async function AdminDashboard() {
               return (
                 <Card
                   key={r.id}
+                  data-reservation-id={r.id}
                   className={cn(
                     running && "border-primary",
                     code?.used && "border-success/40 bg-success/10",
