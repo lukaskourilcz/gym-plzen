@@ -13,6 +13,8 @@ export interface CustomerOrderSlot {
   status: string;
   priceCents: number | null;
   loyaltyReward: number | null;
+  extraPeople: number;
+  additionalPeoplePaidCents: number;
 }
 
 /**
@@ -139,6 +141,8 @@ export async function listCustomerOrders(
         status: slot.status,
         priceCents: slot.priceCents,
         loyaltyReward: slot.loyaltyReward,
+        extraPeople: slot.extraPeople,
+        additionalPeoplePaidCents: slot.additionalPeoplePaidCents,
       })),
     };
   });

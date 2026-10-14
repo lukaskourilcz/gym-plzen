@@ -210,9 +210,8 @@ test.describe("admin filtering and pagination", () => {
     );
     const card = (n: number) =>
       programme
-        .getByText(`e2e-programme-${n}`, { exact: true })
-        .locator("..")
-        .locator("..");
+        .locator("[data-reservation-id]")
+        .filter({ has: page.getByText(`e2e-programme-${n}`, { exact: true }) });
     for (const n of [0, 1, 2, 3])
       await expect(
         programme.getByText(`e2e-programme-${n}`, { exact: true }),

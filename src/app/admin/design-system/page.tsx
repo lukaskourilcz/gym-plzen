@@ -1,3 +1,4 @@
+import { AdminSwitch } from "@/components/admin/switch";
 import { requireAdmin } from "@/lib/auth/guards";
 import { BookingCalendar } from "@/components/admin/booking-calendar";
 import { dateKeyInTimeZone, localDateTimeToDate } from "@/lib/helpers/datetime";
@@ -15,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Notice } from "@/components/ui/notice";
 import { Pagination } from "@/components/ui/pagination";
@@ -26,6 +28,7 @@ import {
 } from "@/components/site/social-icons";
 import { PageHeader } from "@/components/admin/page-header";
 import { CheckboxRow } from "@/components/admin/form-controls";
+import { AdminMemberName } from "@/components/admin/member-name";
 
 export const metadata = { title: "Design systém" };
 
@@ -62,6 +65,47 @@ export default async function DesignSystemPage() {
       />
 
       <div className="grid gap-8">
+        <section
+          aria-labelledby="kit-admin-pricing"
+          className="rounded-lg border border-border bg-card p-6"
+        >
+          <h2 id="kit-admin-pricing" className="text-2xl font-bold">
+            Administrace: jasné volby
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Systémové písmo, běžná práce v navigaci a další nástroje pod
+            rozbalením. Veřejný web zachovává svou typografii a vzhled.
+          </p>
+          <div className="mt-5 flex flex-wrap items-center gap-4">
+            <strong>Pondělí</strong>
+            <span>05:00 až 10:00 · 199 Kč za blok pro jednoho dospělého</span>
+            <Button variant="outline" size="sm">
+              Upravit
+            </Button>
+          </div>
+          <div className="mt-4 flex items-center gap-3">
+            <AdminSwitch
+              checked={false}
+              disabled
+              aria-label="Ukázka přepínače doprovodu"
+            />
+            <span className="text-sm">Doprovod a příplatky · vypnuto</span>
+          </div>
+          <p className="mt-3 text-sm">
+            Doprovod +1 nebo +2 · 100 Kč společně za každý blok.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Přidání i úprava cenového bloku se otevírají v dialogu s dnem, časem
+            od/do a cenou. Escape vrací fokus na původní tlačítko.
+          </p>
+          <div className="mt-5 max-w-xs space-y-2">
+            <Label htmlFor="kit-admin-sort">Řadit podle</Label>
+            <Select id="kit-admin-sort" defaultValue="startsAt">
+              <option value="startsAt">Začátek rezervace</option>
+              <option value="createdAt">Datum vytvoření</option>
+            </Select>
+          </div>
+        </section>
         <section aria-labelledby="kit-calendar">
           <h2 id="kit-calendar" className="mb-4 text-xl font-extrabold">
             Provozní kalendář
@@ -103,6 +147,10 @@ export default async function DesignSystemPage() {
           </h2>
           <div className="flex flex-wrap items-center gap-5">
             <CustomerAvatar name="Klára Nováková" />
+            <AdminMemberName
+              name="Klára Nováková"
+              note="Ukázková interní poznámka. Před první návštěvou domluvit úvodní trénink."
+            />
             <p>
               Fotka z Googlu nebo iniciály. Při nedostupné fotce se zobrazí
               iniciály.

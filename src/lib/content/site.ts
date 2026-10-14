@@ -1,6 +1,25 @@
 import { readDatabase } from "@/lib/db/read";
-import { contentBlock, pricingPeriod, siteSetting } from "@/lib/db/schema";
+import {
+  contentBlock,
+  pricingPeriod,
+  siteSetting,
+  openingHours,
+} from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import {
+  PARTICIPANT_PRICING_KEY,
+  PARTICIPANTS_ENABLED_KEY,
+  parseParticipantsEnabled,
+  DEFAULT_PARTICIPANT_PRICING,
+  parseParticipantPricing,
+} from "@/lib/config/participants";
+import {
+  BLOCK_PRICING_KEY,
+  parseBlockPrices,
+  resolveBlockPrice,
+  type BlockPrice,
+  type PricingHours,
+} from "@/lib/config/block-pricing";
 import { firstBookableDateKey } from "@/lib/config/booking-start";
 import { localDateTimeToDate } from "@/lib/helpers/datetime";
 import { logger } from "@/lib/helpers/logger";
@@ -224,7 +243,7 @@ export const SITE_DEFAULTS = {
     "Nebudou. Celý prostor je ve vašem časovém okně rezervován exkluzivně pro vás a váš doprovod. Nikdo cizí se v prostoru pohybovat nebude. Maximální kapacita je 5 osob včetně dětí.",
   "faq.7.question": "Budu platit více, když do studia nepůjdu sám nebo sama?",
   "faq.7.answer":
-    "Ne. Cena je jednotná a bez příplatků. Za 75 minut zaplatíte {price}, a to až pro 5 osob. Při návštěvě v pěti vychází rezervace jednoho člověka na {pricePerPerson}.",
+    "Základní cena platí za jednu dospělou osobu a závisí na vybraném termínu. {companionPrice}",
   "faq.8.question": "Jak se dostanu dovnitř? Bude na místě recepce?",
   "faq.8.answer":
     "Fungujeme jako plně samoobslužné studio, takže u nás klasickou recepci nenajdete. Před rezervovaným časem obdržíte číselný kód. Zadáte ho u vstupu a dveře se automaticky odemknou.",
@@ -286,6 +305,8 @@ const LEGACY_CONTENT_VALUES: Partial<
   "home.pricing.title": "Jednorázový vstup bez předplatného",
   "home.rules.body": LEGACY_RULES_BODY,
   "contact.phone": LEGACY_PLACEHOLDER_PHONE,
+  "faq.7.answer":
+    "Ne. Cena je jednotná a bez příplatků. Za 75 minut zaplatíte {price}, a to až pro 5 osob. Při návštěvě v pěti vychází rezervace jednoho člověka na {pricePerPerson}.",
 };
 
 export type SiteContentKey = keyof typeof SITE_DEFAULTS;
@@ -339,6 +360,10 @@ export async function loadSiteContent(
 ): Promise<SiteContent> {
   const values: Record<string, string> = { ...SITE_DEFAULTS };
   let standardEntryPriceCents = DEFAULT_ENTRY_PRICE_CENTS;
+  let blockPrices: BlockPrice[] = [];
+  let participantPricing = DEFAULT_PARTICIPANT_PRICING;
+  let participantsEnabled = false;
+  let pricingHours: PricingHours[] = [];
   let pricingPeriods: {
     name: string;
     priceCents: number;
@@ -368,27 +393,29 @@ export async function loadSiteContent(
 
   if (!options.defaultsOnly) {
     try {
-      const [rows, settings, currentPeriods] = await readDatabase(async (db) =>
-        Promise.all([
-          db
-            .select({
-              key: contentBlock.key,
-              valueText: contentBlock.valueText,
-            })
-            .from(contentBlock)
-            .where(eq(contentBlock.locale, locale)),
-          db
-            .select({ key: siteSetting.key, value: siteSetting.value })
-            .from(siteSetting),
-          db
-            .select({
-              name: pricingPeriod.name,
-              priceCents: pricingPeriod.priceCents,
-              startsAt: pricingPeriod.startsAt,
-              endsAt: pricingPeriod.endsAt,
-            })
-            .from(pricingPeriod),
-        ]),
+      const [rows, settings, currentPeriods, hours] = await readDatabase(
+        async (db) =>
+          Promise.all([
+            db
+              .select({
+                key: contentBlock.key,
+                valueText: contentBlock.valueText,
+              })
+              .from(contentBlock)
+              .where(eq(contentBlock.locale, locale)),
+            db
+              .select({ key: siteSetting.key, value: siteSetting.value })
+              .from(siteSetting),
+            db
+              .select({
+                name: pricingPeriod.name,
+                priceCents: pricingPeriod.priceCents,
+                startsAt: pricingPeriod.startsAt,
+                endsAt: pricingPeriod.endsAt,
+              })
+              .from(pricingPeriod),
+            db.select().from(openingHours),
+          ]),
       );
       for (const row of rows) {
         if (
@@ -400,6 +427,12 @@ export async function loadSiteContent(
       }
 
       for (const s of settings) {
+        if (s.key === PARTICIPANTS_ENABLED_KEY)
+          participantsEnabled = parseParticipantsEnabled(s.value);
+        if (s.key === PARTICIPANT_PRICING_KEY)
+          participantPricing = parseParticipantPricing(s.value);
+        if (s.key === BLOCK_PRICING_KEY)
+          blockPrices = parseBlockPrices(s.value);
         if (s.key === ENTRY_PRICE_SETTING_KEY && typeof s.value === "number")
           standardEntryPriceCents = s.value;
         if (s.key === LOGO_URL_KEY && typeof s.value === "string")
@@ -427,6 +460,7 @@ export async function loadSiteContent(
           illustrativePhotos = s.value;
       }
       pricingPeriods = currentPeriods;
+      pricingHours = hours;
     } catch (e) {
       if (options.strict) throw e;
       // DB not provisioned/reachable yet : fall back to defaults so the public
@@ -459,17 +493,30 @@ export async function loadSiteContent(
   const fillPrices = (value: string) =>
     value
       .replaceAll("{price}", priceLabel)
-      .replaceAll("{pricePerPerson}", perPersonLabel);
+      .replaceAll("{pricePerPerson}", perPersonLabel)
+      .replaceAll(
+        "{companionPrice}",
+        !participantsEnabled
+          ? "Doprovod nyní není zpoplatněn. Celkovou cenu uvidíte před platbou."
+          : participantPricing.mode === "flat"
+            ? `Za jednu nebo dvě další osoby připlatíte celkem ${formatMoney(participantPricing.amountCents)} za blok. Počet lidí a celkovou cenu zvolíte před platbou. Doprovod lze přidat i později z účtu, před začátkem rezervace.`
+            : `Za každou další osobu připlatíte ${formatMoney(participantPricing.amountCents)} za blok. Počet lidí a celkovou cenu zvolíte před platbou. Doprovod lze přidat i později z účtu, před začátkem rezervace.`,
+      );
 
   return {
     get: (key) => rebrand(fillPrices(values[key] ?? SITE_DEFAULTS[key] ?? "")),
     entryPriceCents: price.priceCents,
     entryPriceForDate: (at) =>
-      resolveEntryPrice({
-        standardPriceCents: standardEntryPriceCents,
-        periods: pricingPeriods,
+      resolveBlockPrice(
         at,
-      }).priceCents,
+        blockPrices,
+        pricingHours,
+        resolveEntryPrice({
+          standardPriceCents: standardEntryPriceCents,
+          periods: pricingPeriods,
+          at,
+        }).priceCents,
+      ),
     standardEntryPriceCents: price.standardPriceCents,
     isPromoPrice: price.isPromo,
     promoEndsAt: price.promoEndsAt ?? null,

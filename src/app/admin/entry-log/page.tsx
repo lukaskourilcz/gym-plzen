@@ -12,6 +12,8 @@ import {
 import { pageFromParam } from "@/lib/helpers/pagination";
 import { entryPage } from "@/lib/services/admin-lists";
 import { requireAdmin } from "@/lib/auth/guards";
+import { AdminMemberName } from "@/components/admin/member-name";
+import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import {
   formatDateTime,
   formatLockAction,
@@ -60,6 +62,9 @@ export default async function EntryLogPage({
       }))
     : await splitAdminPage(loaded, page, filters, () => entryPage(1, filters));
 
+  const memberNotes = demo
+    ? new Map<string, string>()
+    : await getMemberNotes(rows.map((e) => e.userId));
   return (
     <div>
       <PageHeader
@@ -109,7 +114,12 @@ export default async function EntryLogPage({
           {rows.map((e) => (
             <TableRow key={e.id}>
               <TableCell>{formatDateTime(e.occurredAt)}</TableCell>
-              <TableCell>{e.nukiName ?? "Neuvedeno"}</TableCell>
+              <TableCell>
+                <AdminMemberName
+                  name={e.nukiName ?? "Neuvedeno"}
+                  note={memberNotes.get(e.userId ?? "")}
+                />
+              </TableCell>
               <TableCell>
                 {e.action ? formatLockAction(e.action) : "Neuvedeno"}
               </TableCell>

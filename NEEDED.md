@@ -83,3 +83,15 @@ Popisek stránky:
 - [ ] **Zaškrtávátka administrace:** zbývající `CheckboxField` v profilu člena a nastavení má stále malý řádek bez minimálního 44px cíle. Sjednotit se sdíleným přístupným ovládáním a ověřit klávesnici/focus; zachovat texty.
 - [ ] **Barvy PDF:** v `src/lib/pdf/invoice-pdf.ts` zůstává `MUTED` `#5a6b64` a `RULE` `#c9d3ce`, odlišné od palety `#5b6360` / `#dcd7cc`. Sjednotit a vizuálně ověřit PDF bez změny jeho textu či údajů.
 - [ ] **Nativní 200% zoom kalendářů:** doplnit skutečný browser zoom veřejného i admin kalendáře. Ověřit čitelnost, ovládání a přetečení při skutečném browser zoomu.
+
+## Ceny bloků a doprovod (14. 10. 2026)
+
+- [ ] **Schválit náhled změn před mergem** — ceník podle časových bloků,
+      jednotný/per-person příplatek, výběr a pozdější přidání doprovodu, kalendář
+      a přehlednější administrace. Issues #208–#212. Podklad a výsledky ověření
+      jsou v [PRICING_REVIEW.md](./docs/PRICING_REVIEW.md). [imp:5] [owner:me]
+      [time:30m] [kind:decision]
+- [ ] **Po schválení aplikovat migraci doprovodu před nasazením kódu** —
+      `drizzle/20261014130000_participant_additions.sql`; ověřena pouze na lokální
+      databázi, včetně zachování původních hodnot naplněných rezervací a plateb.
+      Produkce zatím beze změny. [imp:5] [owner:ai] [time:30m] [kind:deploy]

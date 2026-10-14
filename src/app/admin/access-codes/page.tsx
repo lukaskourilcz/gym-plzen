@@ -12,6 +12,8 @@ import {
 import { pageFromParam } from "@/lib/helpers/pagination";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/guards";
+import { AdminMemberName } from "@/components/admin/member-name";
+import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import { getShowerMinutes } from "@/lib/services/schedule";
 import { listAdminAccessCodes } from "@/lib/services/admin-access-codes";
 import { accessCodeStatusLabel } from "@/lib/helpers/access-code-status";
@@ -58,6 +60,9 @@ export default async function AccessCodesPage({
     admin.isDemo ? Promise.resolve([]) : accessCodePage(1, filters),
   );
   const now = new Date();
+  const memberNotes = admin.isDemo
+    ? new Map<string, string>()
+    : await getMemberNotes(rows.map((row) => row.userId));
   // The grace after a booking is an admin setting, not a constant.
   const showerMinutes = await getShowerMinutes();
   return (
@@ -141,12 +146,11 @@ export default async function AccessCodesPage({
               </TableCell>
               <TableCell>
                 {row.userId ? (
-                  <Link
-                    className="font-semibold text-accent-foreground hover:underline"
+                  <AdminMemberName
                     href={`/admin/members/${row.userId}`}
-                  >
-                    {row.name ?? row.memberName ?? row.email ?? "Člen"}
-                  </Link>
+                    name={row.name ?? row.memberName ?? row.email ?? "Člen"}
+                    note={memberNotes.get(row.userId)}
+                  />
                 ) : (
                   <span className="font-semibold">
                     {row.name ?? row.email ?? "Neuvedeno"}

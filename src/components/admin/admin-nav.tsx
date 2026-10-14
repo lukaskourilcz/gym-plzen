@@ -31,45 +31,46 @@ import { isNavigationItemActive } from "@/lib/navigation";
 
 const NAV_GROUPS = [
   {
-    label: "Provoz",
+    label: "Každý den",
     items: [
       ["/admin", "Dnes", Home],
       ["/admin/tomorrow", "Zítra", CalendarDays],
       ["/admin/calendar", "Kalendář", CalendarDays],
       ["/admin/reservations", "Rezervace", ListChecks],
-      ["/admin/schedule", "Otevírací doba a bloky", Clock3],
-      ["/admin/access-codes", "Vstupní kódy", KeyRound],
-      ["/admin/entry-log", "Kniha vstupů", KeyRound],
     ],
   },
   {
-    label: "Lidé",
+    label: "Zákazníci a ceny",
     items: [
+      ["/admin/memberships", "Ceník a doprovod", Tags],
       ["/admin/members", "Členové", Users],
-      ["/admin/memberships", "Vstupné a věrnost", Tags],
       ["/admin/vouchers", "Vouchery", TicketPercent],
       ["/admin/doklady", "Doklady", ReceiptText],
-      ["/admin/messages", "Odeslané zprávy", MessageCircle],
+      ["/admin/finance", "Finance", HandCoins],
     ],
   },
   {
-    label: "Obsah",
+    label: "Web a komunikace",
     items: [
       ["/admin/content", "Obsah webu", FileText],
       ["/admin/emails", "E-maily", Mail],
       ["/admin/newsletter", "Odběratelé novinek", Mail],
-      ["/admin/settings", "Nastavení a branding", Settings],
-      ["/admin/design-system", "Design systém", Palette],
     ],
   },
   {
-    label: "Systém",
+    label: "Další nástroje",
+    collapsible: true,
     items: [
-      ["/admin/statistics", "Statistiky", ChartNoAxesColumnIncreasing],
-      ["/admin/finance", "Finance", HandCoins],
-      ["/admin/how-it-works", "Jak co funguje?", CircleHelp],
-      ["/admin/activity", "Historie akcí", History],
+      ["/admin/schedule", "Otevírací doba a bloky", Clock3],
+      ["/admin/settings", "Nastavení a branding", Settings],
+      ["/admin/access-codes", "Vstupní kódy", KeyRound],
+      ["/admin/entry-log", "Kniha vstupů", KeyRound],
+      ["/admin/messages", "Odeslané zprávy", MessageCircle],
       ["/admin/alerts", "Upozornění", Bell],
+      ["/admin/statistics", "Statistiky", ChartNoAxesColumnIncreasing],
+      ["/admin/activity", "Historie akcí", History],
+      ["/admin/how-it-works", "Jak co funguje?", CircleHelp],
+      ["/admin/design-system", "Design systém", Palette],
     ],
   },
 ] as const;
@@ -112,7 +113,7 @@ export function AdminNav() {
         <span>
           Menu administrace
           {activeLabel ? (
-            <span className="ml-2 font-medium text-white/60">
+            <span className="ml-2 font-medium text-white/80">
               {activeLabel}
             </span>
           ) : null}
@@ -131,11 +132,8 @@ export function AdminNav() {
           open ? "grid" : "hidden",
         )}
       >
-        {NAV_GROUPS.map((group) => (
-          <div key={group.label}>
-            <div className="mb-1 px-2.5 text-[10px] font-extrabold uppercase tracking-[.14em] text-white/55">
-              {group.label}
-            </div>
+        {NAV_GROUPS.map((group) => {
+          const links = (
             <div className="grid gap-px">
               {group.items.map(([href, label, Icon]) => {
                 const active = isNavigationItemActive(pathname, href);
@@ -146,17 +144,17 @@ export function AdminNav() {
                     aria-current={active ? "page" : undefined}
                     onClick={() => setOpen(false)}
                     className={cn(
-                      "flex min-h-11 items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-semibold transition-colors",
+                      "flex min-h-11 items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-semibold transition-colors",
                       active
-                        ? "bg-white/10 text-white"
-                        : "text-white/70 hover:bg-white/[.08] hover:text-white",
+                        ? "bg-white/15 text-white"
+                        : "text-white/80 hover:bg-white/10 hover:text-white",
                     )}
                   >
                     <Icon
                       aria-hidden="true"
                       className={cn(
                         "size-4 shrink-0",
-                        active ? "text-gold" : "text-white/50",
+                        active ? "text-gold" : "text-white/75",
                       )}
                     />
                     {label}
@@ -164,8 +162,32 @@ export function AdminNav() {
                 );
               })}
             </div>
-          </div>
-        ))}
+          );
+          if ("collapsible" in group)
+            return (
+              <details
+                key={group.label}
+                open={
+                  group.items.some(([href]) =>
+                    isNavigationItemActive(pathname, href),
+                  ) || undefined
+                }
+              >
+                <summary className="min-h-11 cursor-pointer rounded-md px-2.5 py-3 font-semibold text-white/80 hover:bg-white/10">
+                  {group.label}
+                </summary>
+                {links}
+              </details>
+            );
+          return (
+            <div key={group.label}>
+              <div className="mb-1 px-2.5 text-xs font-extrabold uppercase tracking-[.14em] text-white/75">
+                {group.label}
+              </div>
+              {links}
+            </div>
+          );
+        })}
       </div>
     </nav>
   );

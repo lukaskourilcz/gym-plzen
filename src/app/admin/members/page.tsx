@@ -13,7 +13,8 @@ import { pageFromParam } from "@/lib/helpers/pagination";
 import { memberFilters } from "@/components/admin/list-filter-options";
 import { memberPage } from "@/lib/services/admin-lists";
 import { requireAdmin } from "@/lib/auth/guards";
-import Link from "next/link";
+import { AdminMemberName } from "@/components/admin/member-name";
+import { MemberNoteEditor } from "@/components/admin/member-note-editor";
 import { loyalty } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
 import { withDemoFallback } from "@/lib/demo/dummy";
@@ -94,6 +95,7 @@ export default async function MembersPage({
             <TableHead>Návštěvy</TableHead>
             <TableHead>Do zdarma</TableHead>
             <TableHead>Role</TableHead>
+            <TableHead>Poznámka</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -103,12 +105,12 @@ export default async function MembersPage({
             return (
               <TableRow key={user.id}>
                 <TableCell>
-                  <Link
+                  <AdminMemberName
                     href={`/admin/members/${user.id}`}
-                    className="inline-flex min-h-11 items-center font-bold text-accent-foreground hover:underline"
-                  >
-                    {user.name || user.email}
-                  </Link>
+                    name={user.name || user.email}
+                    note={profile?.note}
+                    className="min-h-11 items-center"
+                  />
                 </TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{profile?.phone ?? "Neuvedeno"}</TableCell>
@@ -124,12 +126,21 @@ export default async function MembersPage({
                     {user.role === "admin" ? "Správce" : "Člen"}
                   </Badge>
                 </TableCell>
+                <TableCell>
+                  {!demo ? (
+                    <MemberNoteEditor
+                      userId={user.id}
+                      name={user.name || user.email}
+                      note={profile?.note}
+                    />
+                  ) : null}
+                </TableCell>
               </TableRow>
             );
           })}
           {rows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={7} className="text-muted-foreground">
+              <TableCell colSpan={8} className="text-muted-foreground">
                 Zatím žádní členové.
               </TableCell>
             </TableRow>

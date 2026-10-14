@@ -8,6 +8,7 @@ const validDetails = {
   lastName: "Nováková",
   email: "klara@example.cz",
   phone: "+420 777 123 456",
+  extraPeople: "0",
 };
 
 test("booking requires one combined rules and terms consent", () => {
@@ -78,4 +79,25 @@ test("an order holds one to ten slots", () => {
     ),
     false,
   );
+});
+
+test("a visitor must choose alone or one or two additional people", () => {
+  for (const count of ["0", "1", "2"])
+    assert.equal(
+      bookingDetailsSchema.safeParse({
+        ...validDetails,
+        extraPeople: count,
+        acceptConditions: true,
+      }).success,
+      true,
+    );
+  for (const count of [undefined, "", "3", "-1", 1])
+    assert.equal(
+      bookingDetailsSchema.safeParse({
+        ...validDetails,
+        extraPeople: count,
+        acceptConditions: true,
+      }).success,
+      false,
+    );
 });

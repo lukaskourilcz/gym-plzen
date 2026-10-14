@@ -116,6 +116,12 @@ export async function resetDatabase(): Promise<void> {
     accessCodesEnabled: false,
   });
   await setSetting("pricing.entry_price_cents", 22_900);
+  await setSetting("pricing.time_blocks", []);
+  await setSetting("features.additional_people", true);
+  await setSetting("pricing.additional_people", {
+    amountCents: 10_000,
+    mode: "flat",
+  });
   await setSetting("billing.send_documents", false);
   // Test cases may edit the CMS between provider retries. A new case must
   // start with the shipping templates, just like the rest of its fixtures.

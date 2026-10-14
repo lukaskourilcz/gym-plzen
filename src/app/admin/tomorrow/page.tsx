@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/guards";
+import { AdminMemberName } from "@/components/admin/member-name";
+import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
 import { PageHeader } from "@/components/admin/page-header";
 import { StatCard } from "@/components/admin/stat-card";
@@ -37,6 +39,9 @@ export default async function TomorrowPage() {
   await requireAdmin();
   const demo = await hasDemoAdminSession();
   const overview = demo ? null : await getTomorrowOverview();
+  const memberNotes = overview
+    ? await getMemberNotes(overview.rows.map((r) => r.userId))
+    : new Map<string, string>();
   const headingDate = overview?.dateKey
     ? new Intl.DateTimeFormat("cs-CZ", {
         day: "numeric",
@@ -87,7 +92,11 @@ export default async function TomorrowPage() {
                       <strong className="tabular-nums">
                         {formatTimeRange(row.startsAt, row.endsAt)}
                       </strong>
-                      <span className="ml-3">{row.contactName}</span>
+                      <AdminMemberName
+                        className="ml-3"
+                        name={row.contactName}
+                        note={memberNotes.get(row.userId ?? "")}
+                      />
                     </div>
                     <span className="text-xs text-muted-foreground">
                       {row.status === "pending"

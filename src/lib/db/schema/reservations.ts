@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  check,
   index,
   boolean,
   integer,
@@ -117,6 +118,10 @@ export const reservation = pgTable(
     contactEmail: text("contact_email"),
     contactPhone: text("contact_phone"),
 
+    extraPeople: integer("extra_people").notNull().default(0),
+    additionalPeoplePaidCents: integer("additional_people_paid_cents")
+      .notNull()
+      .default(0),
     priceCents: integer("price_cents"), // null when covered by membership
     currency: text("currency").default("czk").notNull(),
 
@@ -140,6 +145,14 @@ export const reservation = pgTable(
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (t) => [
+    check(
+      "reservation_extra_people_check",
+      sql`${t.extraPeople} between 0 and 2`,
+    ),
+    check(
+      "reservation_additional_people_paid_check",
+      sql`${t.additionalPeoplePaidCents} >= 0`,
+    ),
     index("reservation_starts_at_idx").on(t.startsAt),
     index("reservation_user_idx").on(t.userId),
     index("reservation_order_idx").on(t.orderId),

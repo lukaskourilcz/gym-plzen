@@ -15,6 +15,9 @@ import {
 import { pageFromParam, pageLimit, pageOffset } from "@/lib/helpers/pagination";
 import { activityPage, memberMessagePage } from "@/lib/services/admin-lists";
 import { requireAdmin } from "@/lib/auth/guards";
+import { AdminMemberName } from "@/components/admin/member-name";
+import { MemberNoteEditor } from "@/components/admin/member-note-editor";
+import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -191,6 +194,9 @@ export default async function MemberProfilePage({
   const profile = member.profile;
   const name = member.user.name || member.user.email;
   const spentCents = totals.spentCents;
+  const actorNotes = demo
+    ? new Map<string, string>()
+    : await getMemberNotes(entries.map((entry) => entry.actorId));
 
   return (
     <div>
@@ -202,12 +208,15 @@ export default async function MemberProfilePage({
         Zpět na členy
       </Link>
       <PageHeader
-        title={name}
+        title={<AdminMemberName name={name} note={profile?.note} />}
         description={<span className="break-all">{member.user.email}</span>}
       >
         <Badge variant={member.user.role === "admin" ? "accent" : "muted"}>
           {member.user.role === "admin" ? "Správce" : "Člen"}
         </Badge>
+        {!demo ? (
+          <MemberNoteEditor userId={id} name={name} note={profile?.note} />
+        ) : null}
       </PageHeader>
 
       <div className="mb-8 flex flex-wrap gap-4">
@@ -239,9 +248,14 @@ export default async function MemberProfilePage({
             <CardContent>
               <dl className="divide-y divide-border">
                 <Detail label="Jméno">
-                  {profile?.firstName || profile?.lastName
-                    ? `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim()
-                    : (profile?.fullName ?? "Neuvedeno")}
+                  <AdminMemberName
+                    note={profile?.note}
+                    name={
+                      profile?.firstName || profile?.lastName
+                        ? `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim()
+                        : (profile?.fullName ?? "Neuvedeno")
+                    }
+                  />
                 </Detail>
                 <Detail label="E-mail">
                   {member.user.email || "Neuvedeno"}
@@ -406,7 +420,10 @@ export default async function MemberProfilePage({
                   {formatDateTime(entry.occurredAt)}
                 </TableCell>
                 <TableCell>
-                  <ActivityActor entry={entry} />
+                  <ActivityActor
+                    entry={entry}
+                    note={actorNotes.get(entry.actorId ?? "")}
+                  />
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline">

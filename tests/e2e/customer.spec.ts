@@ -102,6 +102,9 @@ test("a member buys two slots, sees one order, moves one term and cancels only t
   await expect(page.getByLabel("Telefon", { exact: true })).toHaveValue(
     "+420777000222",
   );
+  await page
+    .getByRole("radio", { name: "Přijdu sám / sama", exact: true })
+    .check();
   await page.getByLabel("Kód voucheru").fill(VOUCHER);
   await page.getByRole("button", { name: "Použít voucher" }).click();
   await expect(

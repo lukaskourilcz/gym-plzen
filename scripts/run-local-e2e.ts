@@ -105,6 +105,9 @@ try {
       },
     ],
     ["pricing.entry_price_cents", 22_900],
+    ["pricing.time_blocks", []],
+    ["features.additional_people", true],
+    ["pricing.additional_people", { amountCents: 10000, mode: "flat" }],
   ] as const)
     await sql`insert into site_setting (key, value) values (${key}, ${sql.json(value)})
       on conflict (key) do update set value = excluded.value`;
@@ -166,12 +169,15 @@ try {
           "admin.spec.ts",
           "admin-filtering.spec.ts",
           "manual-invoices.spec.ts",
+          "member-notes.spec.ts",
           "booking-flow.spec.ts",
           "customer.spec.ts",
           "analytics.spec.ts",
           "design-preview-gate.spec.ts",
           "accessibility.spec.ts",
           "outage.spec.ts",
+          "pricing-participants.spec.ts",
+          "participants-toggle.spec.ts",
         ]),
   ]);
   console.log(

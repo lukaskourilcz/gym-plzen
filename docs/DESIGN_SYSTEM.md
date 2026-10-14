@@ -483,6 +483,14 @@ example with explicitly illustrative names. A drag-selection that creates a
 block may cross other blocks but never a reservation; closing time over
 existing bookings is done from the schedule form, which asks for confirmation.
 
+The calendar toolbar uses the shared shadcn-style Button primitive, with outlined
+previous/next/today controls and a quiet grouped week/day/month view switch.
+Active view buttons expose `aria-pressed`; date changes update a polite heading.
+The week grid has compact weekday/date headers, a filled marker for today, muted
+time labels, softer separators and medium-weight reservation names. A labelled
+status legend accompanies the semantic colours. Controls wrap on narrow screens
+and retain 44px targets. FullCalendar still handles the grid and selection rules.
+
 ## Transactional e-mail
 
 Every automatic e-mail is one plain-text body inside one shared shell
@@ -589,3 +597,57 @@ not controls. A verified Google HTTPS image is optional; initials appear when
 the image is missing or fails. The wrapper has an image role and name, while
 its children are decorative. Selection uses labelled native radios in the
 customer profile. The rendered example is in `/admin/design-system`.
+
+## Administration: Apple Design scope
+
+The administration follows [Apple Design](https://github.com/emilkowalski/skills/blob/main/skills/apple-design/SKILL.md).
+Only `.admin-shell` uses the platform system font, restrained heading tracking,
+and immediate press feedback. Public typography, layout and shared UI tokens
+are unchanged. Reduced motion disables press transforms. The primary navigation
+shows everyday work, customers/pricing and web communication; less frequent tools
+use a keyboard-operable native disclosure that opens on its active route.
+
+Single-value selects in `.admin-shell` use an inset chevron, 0.75rem from the
+right edge, with 2.5rem reserved for it. They retain the native picker and
+keyboard behavior. Forced-colors mode restores the platform indicator. Public
+selects keep their existing appearance.
+
+Block pricing uses a weekday, first slot, inclusive last slot and one price.
+Adding or editing opens a labelled native modal dialog with focus containment,
+Escape/close/cancel dismissal and focus return to its trigger. Successful saves
+close the dialog and announce the result beside the refreshed price list;
+validation errors stay in the dialog. The form uses two columns on desktop and
+one on mobile, with a scrollable dialog on short screens.
+Options come from the saved opening hours. A labelled optional checkbox applies
+the range to every other open weekday with an identical grid, atomically. A stale range is visibly flagged;
+it never silently shifts with a changed schedule. Companion fees show an immediate
+one-/two-person example. Public booking uses labelled required native radios
+for alone, +1 or +2. The kit shows the admin pattern at `/admin/design-system`.
+
+### Internal member notes
+
+Members have a separate "Přidat poznámku" / "Upravit poznámku" dialog, in the
+list and profile. It edits only the existing `profiles.note` field, up to 2000
+characters; clearing the text removes the note. Contact forms cannot overwrite
+notes. `AdminDialog` supplies native modality, an explicit initial focus target,
+keyboard cycling, Escape/close/cancel and focus return.
+
+`AdminMemberName` shows a small Lucide StickyNote at the upper right of a name
+only when its account has a nonblank note. The shadcn-style Radix tooltip opens
+on hover/focus and toggles on touch/click, closes on Escape and stays inside the
+viewport. Its portal keeps table/grid clipping from hiding the note. Text is
+rendered literally, preserves line breaks and can scroll when long. Each admin
+reader looks notes up by registered account ID in one query for the page.
+The icon also appears in the calendar, reservation lists, day overviews,
+loyalty, entry/code logs, documents, message recipient names and activity actors.
+Notes stay in the administration; customer views, documents and outgoing
+messages do not receive them. `/admin/design-system` has illustrative examples.
+
+### Přepínač funkce v administraci
+
+`AdminSwitch` používá nativní tlačítko s `role="switch"`, `aria-checked`,
+propojeným popiskem, klávesnicí a 44px dotykovou plochou. Pohyb respektuje
+`prefers-reduced-motion`. V kartě Doprovod se přepnutí ukládá ihned vlastní
+admin akcí; dokud ukládání neskončí, je ovladač deaktivovaný. Viditelný text
+vysvětluje stav. Připravené ceny se ukládají samostatně. Ukázka je v chráněné
+galerii `/admin/design-system`.

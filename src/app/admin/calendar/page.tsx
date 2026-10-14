@@ -1,4 +1,6 @@
+import { getParticipantsEnabled } from "@/lib/services/block-pricing";
 import { requireAdmin } from "@/lib/auth/guards";
+import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import type { EventInput } from "@fullcalendar/core";
 import { availability, schedule } from "@/lib/services";
 import { addMinutes } from "@/lib/helpers/datetime";
@@ -33,6 +35,7 @@ export default async function CalendarPage() {
         availability.listCalendarEntries(rangeStart, rangeEnd),
         schedule.listOpeningHours(),
       ]);
+  const participantsEnabled = !demo && (await getParticipantsEnabled());
   const activeDays = openingHours.filter((day) => day.isClosed !== 1);
   const openMinute =
     activeDays.length > 0
@@ -44,6 +47,9 @@ export default async function CalendarPage() {
       : DEFAULT_CLOSE_MINUTE;
 
   const slotMinutes = calendarRowMinutes(activeDays, openMinute);
+  const memberNotes = demo
+    ? new Map<string, string>()
+    : await getMemberNotes(reservations.map((r) => r.userId));
 
   const events: EventInput[] = [
     ...reservations
@@ -51,22 +57,24 @@ export default async function CalendarPage() {
       .flatMap((r) => [
         {
           id: r.id,
-          title: r.contactName?.trim() || "Zákazník bez jména",
+          title: `${r.contactName?.trim() || "Zákazník bez jména"}${participantsEnabled && r.extraPeople > 0 ? ` +${r.extraPeople}` : ""}`,
           start: r.startsAt.toISOString(),
           end: r.endsAt.toISOString(),
           backgroundColor:
             r.status === "confirmed" ? "var(--success)" : "var(--warning)",
           borderColor: "transparent",
+          extendedProps: { memberNote: memberNotes.get(r.userId ?? "") },
         },
         ...(r.rescheduleStartsAt && r.rescheduleEndsAt
           ? [
               {
                 id: `${r.id}/reschedule`,
-                title: r.contactName?.trim() || "Zákazník bez jména",
+                title: `${r.contactName?.trim() || "Zákazník bez jména"}${participantsEnabled && r.extraPeople > 0 ? ` +${r.extraPeople}` : ""}`,
                 start: r.rescheduleStartsAt.toISOString(),
                 end: r.rescheduleEndsAt.toISOString(),
                 backgroundColor: "var(--warning)",
                 borderColor: "transparent",
+                extendedProps: { memberNote: memberNotes.get(r.userId ?? "") },
               },
             ]
           : []),
@@ -85,16 +93,20 @@ export default async function CalendarPage() {
     <div>
       <PageHeader
         title="Kalendář"
-        description={`Přehled rezervací a bloků. Tažením přes prázdný čas přidáte blok. Zobrazený rozsah vychází z nastavení: ${minutesToHHmm(openMinute)} až ${minutesToHHmm(closeMinute)}.`}
+        description="Rezervace a blokované termíny na jednom místě."
       />
       <Card>
-        <CardContent className="p-3">
+        <CardContent className="p-3 sm:p-5">
           <BookingCalendar
             events={events}
             openMinute={openMinute}
             closeMinute={closeMinute}
             slotMinutes={slotMinutes}
           />
+          <p className="mt-4 text-xs text-muted-foreground">
+            {minutesToHHmm(openMinute)}–{minutesToHHmm(closeMinute)} · Tažením
+            přes volný čas přidáte blok pro úklid.
+          </p>
         </CardContent>
       </Card>
     </div>

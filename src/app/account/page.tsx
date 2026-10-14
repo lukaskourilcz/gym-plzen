@@ -1,3 +1,5 @@
+import { getParticipantsEnabled } from "@/lib/services/block-pricing";
+import { participantLabel } from "@/lib/config/participants";
 import { CustomerAvatar } from "@/components/site/customer-avatar";
 import Link from "next/link";
 import { getMember } from "@/lib/services/members";
@@ -63,18 +65,20 @@ export default async function AccountPage({
       ? (member?.profile?.avatarSource ?? "google")
       : ("initials" as const),
   };
-  const [status, upcoming, rescheduledIds, content] = await Promise.all([
-    isDemoCustomer
-      ? Promise.resolve(deriveLoyaltyStatus(6))
-      : loyalty.getLoyaltyStatus(user.id),
-    isDemoCustomer
-      ? Promise.resolve(demoUpcomingReservations())
-      : reservations.listUpcomingForUser(user.id),
-    isDemoCustomer
-      ? Promise.resolve(new Set<string>())
-      : rescheduling.listRescheduledReservationIds(user.id),
-    loadSiteContent(),
-  ]);
+  const [status, upcoming, rescheduledIds, content, participantsEnabled] =
+    await Promise.all([
+      isDemoCustomer
+        ? Promise.resolve(deriveLoyaltyStatus(6))
+        : loyalty.getLoyaltyStatus(user.id),
+      isDemoCustomer
+        ? Promise.resolve(demoUpcomingReservations())
+        : reservations.listUpcomingForUser(user.id),
+      isDemoCustomer
+        ? Promise.resolve(new Set<string>())
+        : rescheduling.listRescheduledReservationIds(user.id),
+      loadSiteContent(),
+      isDemoCustomer ? Promise.resolve(false) : getParticipantsEnabled(),
+    ]);
 
   return (
     <>
@@ -223,6 +227,24 @@ export default async function AccountPage({
                             {formatTimeRange(r.startsAt, r.endsAt)}
                           </div>
                         </div>
+                        {participantsEnabled ? (
+                          <span className="text-sm text-muted-foreground">
+                            {participantLabel(r.extraPeople)}
+                          </span>
+                        ) : null}
+                        {participantsEnabled &&
+                        !isDemoCustomer &&
+                        r.status === "confirmed" &&
+                        r.startsAt > new Date() &&
+                        r.extraPeople < 2 ? (
+                          <Button
+                            href={`/account/rezervace/${r.id}/osoby`}
+                            variant="outline"
+                            size="sm"
+                          >
+                            Přidat osobu
+                          </Button>
+                        ) : null}
                         <span className="rounded-sm bg-accent px-3 py-1 text-xs font-bold text-accent-foreground">
                           {formatStatus(r.status)}
                         </span>
@@ -291,12 +313,14 @@ function demoUpcomingReservations() {
 
   return [
     {
+      extraPeople: 0,
       id: "demo-reservation-1",
       startsAt: tomorrow,
       endsAt: new Date(tomorrow.getTime() + 75 * 60_000),
       status: "confirmed" as const,
     },
     {
+      extraPeople: 0,
       id: "demo-reservation-2",
       startsAt: nextWeek,
       endsAt: new Date(nextWeek.getTime() + 60 * 60_000),

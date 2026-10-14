@@ -224,6 +224,8 @@ export function buildDemoReservations(
       contactName: fullName(u),
       contactEmail: u.email,
       contactPhone: u.phone,
+      extraPeople: 0,
+      additionalPeoplePaidCents: 0,
       priceCents: n % 10 === 9 ? 0 : 22900,
       currency: "czk",
       rulesAcceptedAt: addMinutes(startsAt, -60 * 24),

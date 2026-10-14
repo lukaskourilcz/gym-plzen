@@ -207,6 +207,13 @@ const emailCustomerName = sql<string | null>`coalesce(
    order by m.created_at desc,m.id desc limit 1),
   (select p.full_name from public.profiles p where lower(p.email)=lower(email_archive.recipient)
    order by p.created_at desc,p.id desc limit 1))`;
+const emailCustomerId = sql<string | null>`coalesce(
+  (select coalesce(m.user_id,r.user_id) from public.message_delivery m
+   left join public.reservation r on r.id=m.reservation_id
+   where m.provider_message_id=email_archive.provider_message_id and m.channel='email'
+   order by m.created_at desc,m.id desc limit 1),
+  (select p.id from public.profiles p where lower(p.email)=lower(email_archive.recipient)
+   order by p.created_at desc,p.id desc limit 1))`;
 
 /** Retained archive metadata only; never read HTML/PIN bodies for a table. */
 export async function emailPage(
@@ -234,6 +241,7 @@ export async function emailPage(
       recipient: emailArchive.recipient,
       sentAt: emailArchive.sentAt,
       customerName: emailCustomerName,
+      customerId: emailCustomerId,
     })
     .from(emailArchive)
     .where(
@@ -288,6 +296,7 @@ export async function messagePage(
     .select({
       totalCount: adminTotalCount,
       message: messageDelivery,
+      customerId: profiles.id,
       customerName: sql<
         string | null
       >`coalesce(${reservation.contactName},${profiles.fullName})`,
@@ -333,6 +342,7 @@ export async function messagePage(
     ...r.message,
     totalCount: r.totalCount,
     customerName: r.customerName,
+    customerId: r.customerId,
   }));
 }
 

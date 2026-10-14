@@ -32,6 +32,7 @@ const createImpl = defineAction({
       contactEmail: input.contactEmail || null,
       contactPhone: input.contactPhone || null,
       priceCents: input.priceCents ?? null,
+      extraPeople: input.extraPeople ?? 0,
       admin: { id: admin.id, email: admin.email },
     });
     // Provision + deliver the access code straight away.

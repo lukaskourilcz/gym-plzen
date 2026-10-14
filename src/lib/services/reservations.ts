@@ -18,6 +18,7 @@ import { db, type DatabaseExecutor } from "@/lib/db";
 import { withReservationLock } from "./operation-lock";
 import {
   invoice,
+  participantAddition,
   payment,
   reservation,
   messageDelivery,
@@ -72,6 +73,7 @@ export interface CreateReservationInput {
   contactEmail?: string | null;
   contactPhone?: string | null;
   priceCents?: number | null;
+  extraPeople?: number;
   /** When the visitor ticked the house rules; null for admin walk-ins. */
   rulesAcceptedAt?: Date | null;
   /** When the visitor ticked the terms of business; null for admin walk-ins. */
@@ -119,6 +121,7 @@ export async function createReservation(
     contactEmail: input.contactEmail ?? null,
     contactPhone: input.contactPhone ?? null,
     priceCents: input.priceCents ?? null,
+    extraPeople: input.extraPeople ?? 0,
     rulesAcceptedAt: input.rulesAcceptedAt ?? null,
     termsAcceptedAt: input.termsAcceptedAt ?? null,
     createdByAdminId: input.createdByAdminId ?? null,
@@ -270,21 +273,40 @@ async function cancelReservationLocked(
       ),
     )
     .limit(1);
-  const paidForSlot = paid
+  const companionPayments = await db
+    .select({ id: payment.id, amountCents: payment.amountCents })
+    .from(payment)
+    .innerJoin(
+      participantAddition,
+      eq(payment.participantAdditionId, participantAddition.id),
+    )
+    .where(
+      and(
+        eq(participantAddition.reservationId, params.id),
+        eq(payment.status, "succeeded"),
+      ),
+    );
+  const companionPaidCents = companionPayments.reduce(
+    (sum, row) => sum + row.amountCents,
+    0,
+  );
+  const originalPaidForSlot = paid
     ? paid.orderId
       ? (before.priceCents ?? 0)
       : paid.amountCents
     : 0;
-  if (paid && paidForSlot > 0 && !params.byCustomer)
+  const paidForSlot = originalPaidForSlot + companionPaidCents;
+  if (paidForSlot > 0 && !params.byCustomer)
     await raiseAlert({
       severity: "critical",
       dedupeKey: `refund-needed:${params.id}`,
       title: "Zrušená zaplacená rezervace vyžaduje vrácení platby",
-      body: `Rezervace na ${formatDateTime(before.startsAt)} byla zrušena. Zákazník za ni zaplatil ${formatMoney(paidForSlot, paid.currency)}${paid.orderId ? ` jako součást objednávky za ${formatMoney(paid.amountCents, paid.currency)}` : ""}; ověřte nárok a stav refundace v Comgate. Samotné storno platbu nevrací.`,
+      body: `Rezervace na ${formatDateTime(before.startsAt)} byla zrušena. Zákazník za ni zaplatil ${formatMoney(paidForSlot, before.currency)}${paid?.orderId ? ` jako součást objednávky za ${formatMoney(paid.amountCents, paid.currency)}` : ""}${companionPaidCents > 0 ? ` (z toho doprovod ${formatMoney(companionPaidCents, before.currency)})` : ""}; ověřte nárok a stav refundace v Comgate. Samotné storno platbu nevrací.`,
       context: {
         reservationId: params.id,
-        paymentId: paid.id,
-        orderId: paid.orderId,
+        paymentId: paid?.id ?? companionPayments[0]?.id,
+        orderId: paid?.orderId ?? null,
+        companionPaymentIds: companionPayments.map((row) => row.id),
         amountCents: paidForSlot,
       },
     });

@@ -23,6 +23,7 @@ import {
 import { listHistoryForUser } from "../../src/lib/services/reservations";
 import { listForUser } from "../../src/lib/services/messages";
 import { saveBookingPhone } from "../../src/lib/services/customer-profile";
+import { getMemberNotes } from "../../src/lib/services/admin-member-notes";
 import {
   countAdmins,
   setRole,
@@ -246,6 +247,35 @@ describe(
         )[0]!.phone,
         null,
       );
+    });
+    test("note lookup is bound to account IDs even for identical names", async () => {
+      await rows(
+        "update profiles set full_name='Stejné jméno', note='Pouze Anna' where id=$1",
+        [ANNA.id],
+      );
+      await rows(
+        "update profiles set full_name='Stejné jméno', note='Pouze Boris' where id=$1",
+        [BORIS.id],
+      );
+      assert.deepEqual(
+        [...(await getMemberNotes([ANNA.id, ANNA.id, null, undefined]))],
+        [[ANNA.id, "Pouze Anna"]],
+      );
+      assert.deepEqual([...(await getMemberNotes([]))], []);
+      assert.deepEqual(
+        [...(await getMemberNotes(["44444444-4444-4444-8444-444444444444"]))],
+        [],
+      );
+    });
+    test("cleared and whitespace-only notes do not expose an indicator", async () => {
+      await updateProfile(ANNA.id, { note: "Text" });
+      await updateProfile(BORIS.id, { note: "   " });
+      assert.deepEqual(
+        [...(await getMemberNotes([ANNA.id, BORIS.id]))],
+        [[ANNA.id, "Text"]],
+      );
+      await updateProfile(ANNA.id, { note: null });
+      assert.equal((await getMemberNotes([ANNA.id, BORIS.id])).size, 0);
     });
   },
 );

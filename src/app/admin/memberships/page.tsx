@@ -12,8 +12,17 @@ import { pageFromParam } from "@/lib/helpers/pagination";
 import { demoAdminPage } from "@/lib/helpers/admin-list";
 import { memberPage } from "@/lib/services/admin-lists";
 import { memberFilters } from "@/components/admin/list-filter-options";
+import { BlockPrices, ParticipantPricingForm } from "./block-price-forms";
+import { DEFAULT_PARTICIPANT_PRICING } from "@/lib/config/participants";
 import { requireAdmin } from "@/lib/auth/guards";
-import { loyalty, pricingPeriods, slots } from "@/lib/services";
+import { AdminMemberName } from "@/components/admin/member-name";
+import {
+  loyalty,
+  pricingPeriods,
+  slots,
+  blockPricing,
+  schedule,
+} from "@/lib/services";
 import { deriveLoyaltyStatus } from "@/lib/services/loyalty";
 import {
   DEFAULT_ENTRY_PRICE_CENTS,
@@ -48,7 +57,7 @@ import { EntryPriceForm } from "./entry-price-form";
 import { PricingPeriodDeleteButton } from "./pricing-period-delete-button";
 import { PricingPeriodForm } from "./pricing-period-form";
 
-export const metadata = { title: "Vstupné a věrnost" };
+export const metadata = { title: "Ceník a doprovod" };
 export const dynamic = "force-dynamic";
 
 const DEMO_PERIOD: PricingPeriod = {
@@ -85,6 +94,13 @@ export default async function PricingPage({
     hasDemoAdminSession(),
     searchParams,
   ]);
+  const [pricingHours, blockRules, participantPricing] = demo
+    ? [[], [], { ...DEFAULT_PARTICIPANT_PRICING, enabled: false }]
+    : await Promise.all([
+        schedule.listOpeningHours(),
+        blockPricing.listBlockPrices(),
+        blockPricing.getParticipantPricing(),
+      ]);
   const filters = readAdminFilters(query);
   const page = pageFromParam(query.page);
   let hasNext = false;
@@ -159,16 +175,30 @@ export default async function PricingPage({
   return (
     <div>
       <PageHeader
-        title="Vstupné a věrnost"
-        description="Standardní cena, časově omezené ceny, rozsah rezervací a automatický každý 10. vstup zdarma."
+        title="Ceník a doprovod"
+        description="Cena jednoho dospělého podle času a příplatek za doprovod. Změny platí pro nové nákupy, uložené rezervace si zachovají svou cenu."
       />
 
+      <BlockPrices hours={pricingHours} rules={blockRules} />
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Doprovod</CardTitle>
+          <CardDescription>
+            K rezervaci lze přidat jednu nebo dvě další osoby, při objednání i
+            později z účtu.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ParticipantPricingForm pricing={participantPricing} />
+        </CardContent>
+      </Card>
       <div className="mb-8 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Standardní cena</CardTitle>
             <CardDescription>
-              Použije se vždy, když právě neplatí žádné cenové období.
+              Použije se pro bloky bez vlastní ceny, pokud pro jejich datum
+              neplatí cenové období.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -186,7 +216,7 @@ export default async function PricingPage({
                   {entryPrice.periodName ? ` (${entryPrice.periodName})` : ""}
                 </>
               ) : (
-                ". Tato cena právě platí."
+                ". Výchozí cena pro bloky bez jiného nastavení."
               )}
             </p>
             <EntryPriceForm currentCzk={Math.round(standardPriceCents / 100)} />
@@ -213,7 +243,7 @@ export default async function PricingPage({
           <CardTitle>Cenová období</CardTitle>
           <CardDescription>
             Naplánujte libovolné měsíce nebo vlastní rozsahy. Období se nesmí
-            překrývat; mimo ně platí standardní cena.
+            překrývat. Ceny konkrétních časových bloků mají přednost.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -256,8 +286,8 @@ export default async function PricingPage({
             })}
             {periods.length === 0 ? (
               <p className="rounded-lg border border-dashed border-border p-5 text-sm text-muted-foreground">
-                Zatím není naplánované žádné cenové období. Vždy platí
-                standardní cena.
+                Zatím není naplánované žádné cenové období. Vždy platí cena
+                podle jednotlivých bloků, případně standardní cena.
               </p>
             ) : null}
           </div>
@@ -293,7 +323,8 @@ export default async function PricingPage({
           <CardDescription>
             Každý {FREE_ENTRY_EVERY}. vstup je pro přihlášeného zákazníka
             automaticky zdarma. Bezplatný vstup má přednost před jakoukoli
-            časovou cenou; rezervace hostů bez účtu se do věrnosti nepočítají.
+            časovou cenou. Příplatek za doprovod se hradí i u vstupu zdarma;
+            rezervace hostů bez účtu se do věrnosti nepočítají.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -319,7 +350,13 @@ export default async function PricingPage({
         <TableBody>
           {withLoyalty.map(({ member, status }) => (
             <TableRow key={member.user.id}>
-              <TableCell>{member.user.name || member.user.email}</TableCell>
+              <TableCell>
+                <AdminMemberName
+                  name={member.user.name || member.user.email}
+                  note={member.profile?.note}
+                  href={`/admin/members/${member.user.id}`}
+                />
+              </TableCell>
               <TableCell>{status.totalEntries}</TableCell>
               <TableCell>
                 {status.positionInCycle} / {status.cadence}

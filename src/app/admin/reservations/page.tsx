@@ -1,3 +1,4 @@
+import { getParticipantsEnabled } from "@/lib/services/block-pricing";
 import {
   AdminListTotal,
   AdminListFilters,
@@ -14,7 +15,10 @@ import { reservationPage } from "@/lib/services/admin-lists";
 import { reservationFilters } from "@/components/admin/list-filter-options";
 import { reservationAccessState } from "@/lib/helpers/reservation-access-state";
 import { adminReservationAccess } from "@/lib/services/reservation-access";
+import { participantLabel } from "@/lib/config/participants";
 import { requireAdmin } from "@/lib/auth/guards";
+import { AdminMemberName } from "@/components/admin/member-name";
+import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import { idSchema } from "@/lib/validations/common";
 import Link from "next/link";
 import { reservations } from "@/lib/services";
@@ -105,7 +109,11 @@ export default async function ReservationsPage({
   const invoiceStates = demo
     ? new Map()
     : await reservationInvoiceStates(rows.map((r) => r.id));
+  const memberNotes = demo
+    ? new Map<string, string>()
+    : await getMemberNotes(rows.map((r) => r.userId));
 
+  const participantsEnabled = !demo && (await getParticipantsEnabled());
   const access = demo
     ? new Map(
         rows.map((r) => [
@@ -177,12 +185,12 @@ export default async function ReservationsPage({
               <TableCell>{formatDateTime(r.endsAt)}</TableCell>
               <TableCell>
                 {r.userId && !demo ? (
-                  <Link
+                  <AdminMemberName
                     href={`/admin/members/${r.userId}`}
-                    className="inline-flex min-h-11 items-center font-bold text-accent-foreground hover:underline"
-                  >
-                    {r.contactName ?? r.contactEmail ?? "Člen"}
-                  </Link>
+                    className="min-h-11 items-center"
+                    name={r.contactName ?? r.contactEmail ?? "Člen"}
+                    note={memberNotes.get(r.userId)}
+                  />
                 ) : (
                   <>
                     {r.contactName ?? r.contactEmail ?? "Neuvedeno"}
@@ -193,8 +201,17 @@ export default async function ReservationsPage({
                     )}
                   </>
                 )}
+                <span className="block text-xs text-muted-foreground">
+                  {participantsEnabled ? participantLabel(r.extraPeople) : ""}
+                </span>
               </TableCell>
               <TableCell>
+                {r.additionalPeoplePaidCents > 0 ? (
+                  <span className="block text-xs text-muted-foreground">
+                    Doplatek za doprovod{" "}
+                    {formatMoney(r.additionalPeoplePaidCents)}
+                  </span>
+                ) : null}
                 {r.priceCents != null
                   ? formatMoney(r.priceCents, r.currency)
                   : "členství"}
@@ -260,7 +277,7 @@ export default async function ReservationsPage({
           <CardTitle>Nová rezervace (ručně)</CardTitle>
         </CardHeader>
         <CardContent>
-          <ReservationForm />
+          <ReservationForm participantsEnabled={participantsEnabled} />
         </CardContent>
       </Card>
     </div>

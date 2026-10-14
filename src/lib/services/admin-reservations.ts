@@ -1,3 +1,4 @@
+import { getParticipantsEnabled } from "./block-pricing";
 import type { Reservation } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
 import { formatDateTime } from "@/lib/helpers/format";
@@ -40,6 +41,7 @@ export async function createManualReservation(
     contactEmail?: string | null;
     contactPhone?: string | null;
     priceCents?: number | null;
+    extraPeople?: number;
     admin: AdminActor;
   },
   now = new Date(),
@@ -47,6 +49,8 @@ export async function createManualReservation(
   if (input.startsAt.getTime() < now.getTime()) {
     throw new ActionError(PAST_START_MESSAGE);
   }
+  if ((input.extraPeople ?? 0) > 0 && !(await getParticipantsEnabled()))
+    throw new ActionError("Doprovod je momentálně vypnutý. Obnovte stránku.");
   const slot = await resolveConfiguredSlot(input.startsAt);
   if (!slot) throw new ActionError(OFF_GRID_MESSAGE);
 
@@ -58,6 +62,7 @@ export async function createManualReservation(
     contactEmail: input.contactEmail ?? null,
     contactPhone: input.contactPhone ?? null,
     priceCents: input.priceCents ?? null,
+    extraPeople: input.extraPeople ?? 0,
     status: "confirmed", // admin bookings are confirmed immediately
     createdByAdminId: input.admin.id,
   });

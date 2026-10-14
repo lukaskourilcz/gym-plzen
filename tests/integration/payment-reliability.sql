@@ -104,3 +104,48 @@ BEGIN
 END $$;
 ROLLBACK;
 SELECT 'reward, payment, webhook rollback/retry, code intent, order constraints passed' AS result;
+
+BEGIN;
+CREATE TEMP TABLE test_participant_intent (LIKE public.participant_addition INCLUDING ALL);
+CREATE TEMP TABLE test_participant_payment (LIKE public.payment INCLUDING ALL);
+DO $$
+DECLARE rid uuid := gen_random_uuid(); aid uuid := gen_random_uuid(); rejected boolean := false;
+BEGIN
+ INSERT INTO test_participant_intent(id,reservation_id,user_id,from_count,to_count,amount_cents,pricing_mode)
+ VALUES(aid,rid,gen_random_uuid(),0,2,10000,'flat');
+ BEGIN
+  INSERT INTO test_participant_intent(reservation_id,user_id,from_count,to_count,amount_cents,pricing_mode)
+  VALUES(rid,gen_random_uuid(),0,1,10000,'flat');
+ EXCEPTION WHEN unique_violation THEN rejected := true;
+ END;
+ IF NOT rejected THEN RAISE EXCEPTION 'second pending companion purchase'; END IF;
+ rejected := false;
+ BEGIN
+  INSERT INTO test_participant_intent(reservation_id,user_id,from_count,to_count,amount_cents,pricing_mode)
+  VALUES(gen_random_uuid(),gen_random_uuid(),0,3,10000,'flat');
+ EXCEPTION WHEN check_violation THEN rejected := true;
+ END;
+ IF NOT rejected THEN RAISE EXCEPTION 'invalid companion count'; END IF;
+ INSERT INTO test_participant_payment(participant_addition_id,type,status,amount_cents,provider)
+ VALUES(aid,'one_off','pending',10000,'comgate');
+ rejected := false;
+ BEGIN
+  INSERT INTO test_participant_payment(participant_addition_id,type,status,amount_cents,provider)
+  VALUES(aid,'one_off','pending',10000,'comgate');
+ EXCEPTION WHEN unique_violation THEN rejected := true;
+ END;
+ IF NOT rejected THEN RAISE EXCEPTION 'second payment for companion purchase'; END IF;
+ rejected := false;
+ BEGIN
+  INSERT INTO test_participant_payment(participant_addition_id,reservation_id,type,status,amount_cents,provider)
+  VALUES(gen_random_uuid(),rid,'one_off','pending',10000,'comgate');
+ EXCEPTION WHEN check_violation THEN rejected := true;
+ END;
+ IF NOT rejected THEN RAISE EXCEPTION 'companion payment entered original reservation pipeline'; END IF;
+ IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid='public.participant_addition'::regclass) THEN RAISE EXCEPTION 'participant RLS missing'; END IF;
+ IF has_table_privilege('anon','public.participant_addition','SELECT') OR has_table_privilege('authenticated','public.participant_addition','SELECT')
+ OR has_table_privilege('anon','public.participant_addition','INSERT') OR has_table_privilege('authenticated','public.participant_addition','UPDATE')
+ THEN RAISE EXCEPTION 'participant data exposed to Data API'; END IF;
+END $$;
+ROLLBACK;
+SELECT 'companion limits, single purchase/payment, payment isolation and RLS passed' AS result;

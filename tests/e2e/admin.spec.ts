@@ -43,7 +43,7 @@ const ADMIN_PAGES: { path: string; heading: RegExp }[] = [
   { path: "/admin/reservations", heading: /Rezervace/i },
   { path: "/admin/schedule", heading: /Otevírací doba/i },
   { path: "/admin/members", heading: /Členové/i },
-  { path: "/admin/memberships", heading: /Vstupné a věrnost/i },
+  { path: "/admin/memberships", heading: /Ceník a doprovod/i },
   { path: "/admin/statistics", heading: /Statistiky/i },
   { path: "/admin/content", heading: /Obsah webu/i },
   { path: "/admin/settings", heading: /Nastavení a branding/i },
@@ -148,12 +148,16 @@ test.describe("Admin : forms", () => {
     const input = page.getByLabel(/Cena jednorázového vstupu/i);
     const original = await input.inputValue();
     await input.fill("300");
-    await page.getByRole("button", { name: /Uložit cenu/i }).click();
+    await page
+      .getByRole("button", { name: "Uložit cenu", exact: true })
+      .click();
     await expect(page.getByText(/Cena vstupného uložena/i)).toBeVisible();
     await page.reload({ waitUntil: "networkidle" });
     await expect(input).toHaveValue("300");
     await input.fill(original);
-    await page.getByRole("button", { name: /Uložit cenu/i }).click();
+    await page
+      .getByRole("button", { name: "Uložit cenu", exact: true })
+      .click();
     await expect(page.getByText(/Cena vstupného uložena/i)).toBeVisible();
     await expect
       .poll(async () => {
