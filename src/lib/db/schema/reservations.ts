@@ -117,6 +117,10 @@ export const reservation = pgTable(
     contactEmail: text("contact_email"),
     contactPhone: text("contact_phone"),
 
+    extraPeople: integer("extra_people").notNull().default(0),
+    additionalPeoplePaidCents: integer("additional_people_paid_cents")
+      .notNull()
+      .default(0),
     priceCents: integer("price_cents"), // null when covered by membership
     currency: text("currency").default("czk").notNull(),
 

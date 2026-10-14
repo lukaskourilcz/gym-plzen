@@ -34,6 +34,10 @@ export const bookingDetailsSchema = z.object({
   lastName: z.string().min(1, "Zadejte příjmení.").max(60),
   email: emailSchema,
   phone: phoneSchema,
+  extraPeople: z.enum(["0", "1", "2"], {
+    required_error: "Vyberte, kolik lidí přijde.",
+    invalid_type_error: "Vyberte, kolik lidí přijde.",
+  }),
   voucherCode: z.string().max(64, "Kód je příliš dlouhý.").optional(),
   /** Signed-in members only: keep this number in the profile for next time. */
   savePhone: z.boolean().optional(),
@@ -42,6 +46,7 @@ export const bookingDetailsSchema = z.object({
 
 export const voucherQuoteSchema = z.object({
   starts: startsSchema,
+  extraPeople: z.enum(["0", "1", "2"]),
   code: z.string().min(1, "Zadejte kód voucheru.").max(64),
 });
 

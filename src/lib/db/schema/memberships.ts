@@ -10,6 +10,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import { participantAddition } from "./participants";
 import { profiles } from "./members";
 import { bookingOrder, reservation } from "./reservations";
 import { membershipStatus, paymentStatus, paymentType } from "./enums";
@@ -107,6 +108,10 @@ export const payment = pgTable(
     orderId: uuid("order_id").references(() => bookingOrder.id, {
       onDelete: "set null",
     }),
+    participantAdditionId: uuid("participant_addition_id").references(
+      () => participantAddition.id,
+      { onDelete: "restrict" },
+    ),
     membershipId: uuid("membership_id").references(() => membership.id, {
       onDelete: "set null",
     }),
@@ -137,6 +142,9 @@ export const payment = pgTable(
       .where(
         sql`${t.provider} = 'comgate' and ${t.status} in ('pending', 'processing', 'succeeded')`,
       ),
+    uniqueIndex("payment_participant_addition_uidx").on(
+      t.participantAdditionId,
+    ),
     index("payment_provider_check_idx").on(
       t.provider,
       t.status,

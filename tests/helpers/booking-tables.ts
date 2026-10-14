@@ -10,6 +10,7 @@ export const BOOKING_TABLES = [
   "voucher_redemption",
   "voucher",
   "payment",
+  "participant_addition",
   "webhook_event",
   "system_alert",
   "blocked_slot",

@@ -64,6 +64,7 @@ const startImpl = defineAction({
         // Server time, not a value the form could claim for itself.
         acceptedAt: new Date(),
       },
+      extraPeople: Number(input.extraPeople),
       voucherCode: input.voucherCode,
       hold,
     });
@@ -130,6 +131,7 @@ const quoteVoucherImpl = defineAction({
     }
     const quote = await orders.quoteOrder({
       userId: session?.user.id ?? null,
+      extraPeople: Number(input.extraPeople),
       slots: await orders.resolveOrderSlots(
         input.starts.map((start) => new Date(start)),
       ),

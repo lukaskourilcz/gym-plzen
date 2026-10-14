@@ -4,6 +4,11 @@ import { db } from "@/lib/db";
 import { profiles, reservation } from "@/lib/db/schema";
 import type { Reservation } from "@/lib/db/types";
 import type { BookingHold } from "@/lib/helpers/booking-hold";
+import {
+  assertExtraPeople,
+  participantSurcharge,
+} from "@/lib/config/participants";
+import { getParticipantPricing } from "./block-pricing";
 import { FREE_ENTRY_EVERY } from "@/lib/config/pricing";
 import { isDateOpenForBooking } from "@/lib/config/operations";
 import { ActionError } from "@/lib/helpers/action";
@@ -82,10 +87,17 @@ export async function startBooking(params: {
   userId: string | null;
   startsAt: Date;
   details: BookingDetails;
+  extraPeople?: number;
   voucherCode?: string;
   /** The guest's hold cookie, when the browser sent one. */
   hold?: BookingHold | null;
 }): Promise<BookingOutcome> {
+  const extraPeople = params.extraPeople ?? 0;
+  assertExtraPeople(extraPeople);
+  const surcharge = participantSurcharge(
+    extraPeople,
+    await getParticipantPricing(),
+  );
   const operations = await getOperations();
   const resolved = await resolveBookableSlot(params.startsAt);
   const horizon = await getBookingHorizonDays();
@@ -120,7 +132,10 @@ export async function startBooking(params: {
       )
         reward = number;
     }
-    if (!reward && (!operations.paymentsEnabled || !isComgateConfigured()))
+    if (
+      (!reward || surcharge > 0) &&
+      (!operations.paymentsEnabled || !isComgateConfigured())
+    )
       throw new ActionError(
         "Online platby teď nejsou dostupné. Zkuste to prosím později.",
       );
@@ -134,8 +149,9 @@ export async function startBooking(params: {
         contactPhone: params.details.phone,
         rulesAcceptedAt: params.details.acceptedAt,
         termsAcceptedAt: params.details.acceptedAt,
-        priceCents: reward ? 0 : basePrice,
-        status: reward ? "confirmed" : "pending",
+        priceCents: (reward ? 0 : basePrice) + surcharge,
+        extraPeople,
+        status: reward && surcharge === 0 ? "confirmed" : "pending",
         confirmationTokenHash: hashCode(token),
         loyaltyReward: reward,
       },
@@ -158,14 +174,14 @@ export async function startBooking(params: {
     await fulfillReservation(reserved.id);
     return { kind: "free", reservationId: reserved.id, token };
   }
-  let priceCents = basePrice;
+  let priceCents = reserved.priceCents ?? 0;
   let voucherCode: string | null = null;
   if (params.voucherCode?.trim()) {
     try {
       const quote = await claimVoucher({
         code: params.voucherCode,
         reservationId: reserved.id,
-        originalPriceCents: basePrice,
+        originalPriceCents: priceCents,
         reservedUntil: resolved.endsAt,
       });
       priceCents = quote.finalPriceCents;
@@ -267,6 +283,7 @@ async function continueOwnBooking(params: {
   userId: string | null;
   startsAt: Date;
   details: BookingDetails;
+  extraPeople?: number;
   voucherCode?: string;
   hold?: BookingHold | null;
 }): Promise<BookingOutcome | null> {
@@ -298,7 +315,10 @@ async function continueOwnBooking(params: {
   if (own.status !== "pending") return null;
 
   // A voucher on the retry asks for a different price than the hold carries.
-  if (!params.voucherCode?.trim()) {
+  if (
+    !params.voucherCode?.trim() &&
+    own.extraPeople === (params.extraPeople ?? 0)
+  ) {
     if (proven)
       // Proof of ownership allows the full path, a fresh gateway session
       // included, should the earlier one never have been created.

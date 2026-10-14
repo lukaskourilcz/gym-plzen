@@ -4,6 +4,11 @@ import { db } from "@/lib/db";
 import { bookingOrder, profiles, reservation } from "@/lib/db/schema";
 import type { BookingOrder, Reservation } from "@/lib/db/types";
 import type { BookingHold } from "@/lib/helpers/booking-hold";
+import {
+  assertExtraPeople,
+  participantSurcharge,
+} from "@/lib/config/participants";
+import { getParticipantPricing } from "./block-pricing";
 import { FREE_ENTRY_EVERY } from "@/lib/config/pricing";
 import { MAX_SLOTS_PER_ORDER } from "@/lib/config/orders";
 import { isDateOpenForBooking } from "@/lib/config/operations";
@@ -234,6 +239,7 @@ async function continueOwnOrder(
     userId: string | null;
     details: BookingDetails;
     voucherCode?: string;
+    extraPeople?: number;
     hold?: BookingHold | null;
   },
   slots: readonly ResolvedSlot[],
@@ -297,7 +303,10 @@ async function continueOwnOrder(
         (row, index) =>
           row.startsAt.getTime() === slots[index]!.startsAt.getTime(),
       );
-    if (sameSelection) {
+    if (
+      sameSelection &&
+      held.every((row) => row.extraPeople === (params.extraPeople ?? 0))
+    ) {
       if (held.every(proves))
         return startOrderPayment({
           orderId: onlyOrder,
@@ -373,7 +382,12 @@ export interface OrderQuoteSlot {
 export async function quoteOrder(params: {
   userId: string | null;
   slots: readonly ResolvedSlot[];
+  extraPeople?: number;
 }): Promise<{ slots: OrderQuoteSlot[]; totalCents: number }> {
+  const surcharge = participantSurcharge(
+    params.extraPeople ?? 0,
+    await getParticipantPricing(),
+  );
   const prices = await Promise.all(
     params.slots.map((slot) => getEntryPriceCents(slot.startsAt)),
   );
@@ -395,7 +409,7 @@ export async function quoteOrder(params: {
   const slots = params.slots.map((slot, index) => ({
     startsAt: slot.startsAt,
     endsAt: slot.endsAt,
-    priceCents: rewards[index] ? 0 : prices[index]!,
+    priceCents: (rewards[index] ? 0 : prices[index]!) + surcharge,
     isReward: Boolean(rewards[index]),
   }));
   return {
@@ -414,9 +428,16 @@ export async function startOrder(params: {
   starts: readonly Date[];
   details: BookingDetails;
   voucherCode?: string;
+  extraPeople?: number;
   /** The guest's hold cookie, when the browser sent one. */
   hold?: BookingHold | null;
 }): Promise<OrderOutcome> {
+  const extraPeople = params.extraPeople ?? 0;
+  assertExtraPeople(extraPeople);
+  const surcharge = participantSurcharge(
+    extraPeople,
+    await getParticipantPricing(),
+  );
   const operations = await getOperations();
   const slots = await resolveOrderSlots(params.starts);
   const continued = await continueOwnOrder(params, slots);
@@ -450,8 +471,8 @@ export async function startOrder(params: {
             : null,
         );
     }
-    const prices = basePrices.map((price, index) =>
-      rewards[index] ? 0 : price,
+    const prices = basePrices.map(
+      (price, index) => (rewards[index] ? 0 : price) + surcharge,
     );
     const totalCents = prices.reduce((sum, price) => sum + price, 0);
     if (
@@ -491,6 +512,7 @@ export async function startOrder(params: {
               rulesAcceptedAt: params.details.acceptedAt,
               termsAcceptedAt: params.details.acceptedAt,
               priceCents: prices[index]!,
+              extraPeople,
               status: allFree ? "confirmed" : "pending",
               // The same token opens each slot's calendar file and status.
               confirmationTokenHash: tokenHash,

@@ -1,3 +1,4 @@
+import { getParticipantPricing } from "@/lib/services/block-pricing";
 import { isComgateConfigured } from "@/lib/integrations/comgate";
 import { getOperations } from "@/lib/services/operations";
 import type { Metadata } from "next";
@@ -180,6 +181,15 @@ export default async function BookingDetailsPage({
     allStarts,
   ).toString()}`;
   const heldCount = selection.filter((item) => item.state === "held").length;
+  const participantPricing = await getParticipantPricing();
+  const heldPeople = bookable.map(
+    (item) => ownAt.get(item.startsAt.getTime())?.extraPeople,
+  );
+  const heldExtraPeople =
+    heldCount === bookable.length &&
+    heldPeople.every((count) => count === heldPeople[0])
+      ? heldPeople[0]
+      : undefined;
 
   return (
     <>
@@ -286,7 +296,8 @@ export default async function BookingDetailsPage({
                     {totalCents === 0 ? "zdarma" : formatMoney(totalCents)}
                   </span>
                   <span className="block text-muted-foreground">
-                    Cena platí za celý prostor, nikoli za osobu.
+                    Základní cena je za jednu dospělou osobu. Doprovod zvolíte
+                    níže; prostor zůstává jen pro vaši skupinu.
                   </span>
                 </p>
               </div>
@@ -353,6 +364,8 @@ export default async function BookingDetailsPage({
                 paymentsAvailable={paymentsAvailable}
                 startsISO={bookable.map((item) => item.startsAt.toISOString())}
                 totalCents={totalCents}
+                participantPricing={participantPricing}
+                heldExtraPeople={heldExtraPeople}
                 blocked={blocked > 0}
                 canSavePhone={Boolean(member) && !session?.user.isDemo}
                 defaultValues={{

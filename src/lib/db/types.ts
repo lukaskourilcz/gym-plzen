@@ -57,3 +57,7 @@ export type VoucherRedemption = InferSelectModel<typeof s.voucherRedemption>;
 export type NewsletterSubscriber = InferSelectModel<
   typeof s.newsletterSubscriber
 >;
+
+export type ParticipantAddition = InferSelectModel<
+  typeof s.participantAddition
+>;

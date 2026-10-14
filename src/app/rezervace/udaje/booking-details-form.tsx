@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import {
+  participantSurcharge,
+  type ParticipantPricing,
+} from "@/lib/config/participants";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,6 +35,8 @@ export function BookingDetailsForm({
   paymentsAvailable = true,
   startsISO,
   totalCents,
+  participantPricing,
+  heldExtraPeople,
   blocked = false,
   canSavePhone = false,
   defaultValues,
@@ -40,6 +46,8 @@ export function BookingDetailsForm({
   startsISO: string[];
   /** What the selection costs before a voucher, loyalty rewards applied. */
   totalCents: number;
+  participantPricing: ParticipantPricing;
+  heldExtraPeople?: number;
   /** A selected slot must be removed before the order can be placed. */
   blocked?: boolean;
   /** A signed-in member has a profile the number can be kept in; a guest does not. */
@@ -79,13 +87,17 @@ export function BookingDetailsForm({
     return () => window.removeEventListener("pageshow", onPageShow);
   }, []);
 
-  const { register, handleSubmit, formState, getValues, setValue } =
+  const { register, handleSubmit, formState, getValues, setValue, watch } =
     useForm<BookingDetailsValues>({
       resolver: zodResolver(bookingDetailsSchema),
       defaultValues: {
         starts: startsISO,
         ...defaultValues,
         voucherCode: "",
+        extraPeople:
+          heldExtraPeople === undefined
+            ? undefined
+            : (String(heldExtraPeople) as "0" | "1" | "2"),
         // Keeping the number is the member's choice, so it starts unticked.
         savePhone: false,
         // `undefined` rather than `false`: an unticked box must fail validation,
@@ -94,8 +106,16 @@ export function BookingDetailsForm({
       },
     });
 
-  const effectivePriceCents = voucherQuote?.finalPriceCents ?? totalCents;
-  const voucherUnavailable = !paymentsAvailable && totalCents > 0;
+  const people = watch("extraPeople");
+  const selectionTotalCents =
+    totalCents +
+    (heldExtraPeople === undefined
+      ? startsISO.length *
+        participantSurcharge(Number(people ?? 0), participantPricing)
+      : 0);
+  const effectivePriceCents =
+    voucherQuote?.finalPriceCents ?? selectionTotalCents;
+  const voucherUnavailable = !paymentsAvailable && selectionTotalCents > 0;
   const voucherField = register("voucherCode");
 
   async function applyVoucher() {
@@ -106,11 +126,21 @@ export function BookingDetailsForm({
       setVoucherError("Zadejte kód voucheru.");
       return;
     }
+    const selectedPeople = getValues("extraPeople");
+    if (selectedPeople === undefined) {
+      setVoucherError("Nejdříve vyberte počet lidí.");
+      return;
+    }
     setVoucherLoading(true);
     const response = await receiveAction(() =>
-      quoteVoucherAction({ code, starts: startsISO }),
+      quoteVoucherAction({
+        code,
+        starts: startsISO,
+        extraPeople: selectedPeople,
+      }),
     );
     setVoucherLoading(false);
+    if (getValues("extraPeople") !== selectedPeople) return;
     if (!response.received) {
       reportTransportError(response.error, "booking.quoteVoucher.transport");
       setVoucherError(
@@ -244,7 +274,74 @@ export function BookingDetailsForm({
         </p>
       </div>
 
-      {totalCents > 0 ? (
+      <fieldset
+        className="mt-7 border-t border-border pt-6"
+        aria-describedby={
+          formState.errors.extraPeople
+            ? "extra-people-error"
+            : "extra-people-help"
+        }
+      >
+        <legend className="text-sm font-extrabold">Kolik lidí přijde?</legend>
+        <p
+          id="extra-people-help"
+          className="mt-2 text-sm text-muted-foreground"
+        >
+          Cena zahrnuje jednu dospělou osobu.{" "}
+          {participantPricing.mode === "flat"
+            ? `Za 1–2 další osoby připlatíte celkem ${formatMoney(participantPricing.amountCents)}`
+            : `Za každou další osobu připlatíte ${formatMoney(participantPricing.amountCents)}`}{" "}
+          za každý blok. Doprovod se hradí i u věrnostního vstupu zdarma.
+        </p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          {(["0", "1", "2"] as const).map((count) => (
+            <label
+              key={count}
+              className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md border border-border px-3 py-3 text-sm"
+            >
+              <input
+                type="radio"
+                value={count}
+                disabled={
+                  heldExtraPeople !== undefined &&
+                  count !== String(heldExtraPeople)
+                }
+                className="size-5 shrink-0 accent-[var(--color-primary)]"
+                {...register("extraPeople")}
+                onChange={(e) => {
+                  void register("extraPeople").onChange(e);
+                  setVoucherQuote(null);
+                  setVoucherError(null);
+                }}
+              />
+              {count === "0"
+                ? "Přijdu sám / sama"
+                : `Přijdu + ${count} ${count === "1" ? "osoba" : "osoby"}`}
+            </label>
+          ))}
+        </div>
+        {formState.errors.extraPeople ? (
+          <p
+            id="extra-people-error"
+            role="alert"
+            className="mt-2 text-sm text-destructive"
+          >
+            {formState.errors.extraPeople.message}
+          </p>
+        ) : null}
+        {heldExtraPeople !== undefined ? (
+          <p className="mt-2 text-sm text-muted-foreground">
+            Počet lidí v rozpracované platbě zůstává stejný. Další osobu můžete
+            přidat z účtu po potvrzení rezervace.
+          </p>
+        ) : null}
+        <p role="status" className="mt-3 text-sm font-bold">
+          Celkem {formatMoney(selectionTotalCents)} za{" "}
+          {startsISO.length === 1 ? "vybraný blok" : "vybrané bloky"}.
+        </p>
+      </fieldset>
+
+      {selectionTotalCents > 0 ? (
         <fieldset className="mt-7 border-t border-border pt-6">
           <legend className="flex items-center gap-2 text-sm font-extrabold">
             <TicketPercent
@@ -337,7 +434,7 @@ export function BookingDetailsForm({
           redirecting ||
           formState.isSubmitting ||
           blocked ||
-          (!paymentsAvailable && totalCents > 0)
+          (!paymentsAvailable && selectionTotalCents > 0)
         }
         aria-describedby={blocked ? "submit-blocked" : undefined}
         className="mt-6 w-full sm:w-auto"
