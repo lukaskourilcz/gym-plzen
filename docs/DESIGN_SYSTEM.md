@@ -659,3 +659,8 @@ akce `OverviewIconLink` mají 44px plochu, přístupný název a tooltip dostupn
 myší i klávesnicí. `OverviewStatus` zobrazuje fajfku/X s textovým názvem stavu,
 takže rozlišení nezávisí na barvě. Ikony se nemají tvářit jako přepínače.
 Ukázka je v chráněné galerii `/admin/design-system`.
+
+Přidání cenového období používá stejný `AdminDialog` jako cenové bloky.
+Na stránce zůstává pouze spouštěcí tlačítko; formulář má vlastní identifikátory,
+počáteční fokus na názvu a při zavření vrací fokus na tlačítko. Úprava již
+uloženého období zachovává dosavadní odkaz a samostatný formulář.

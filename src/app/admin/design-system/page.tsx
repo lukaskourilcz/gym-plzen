@@ -100,7 +100,9 @@ export default async function DesignSystemPage() {
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             Přidání i úprava cenového bloku se otevírají v dialogu s dnem, časem
-            od/do a cenou. Escape vrací fokus na původní tlačítko.
+            od/do a cenou. Escape vrací fokus na původní tlačítko. Přidání
+            cenového období používá stejný dialog; na stránce zůstává tlačítko
+            „Přidat období“.
           </p>
           <div className="mt-5 max-w-xs space-y-2">
             <Label htmlFor="kit-admin-sort">Řadit podle</Label>
