@@ -15,11 +15,23 @@ Větev: `codex/block-pricing-guests`. Výchozí stav GitHub `main`:
 - Cena konkrétního bloku má přednost před cenovým obdobím a standardní cenou.
   Po změně otevírací doby se nezarovnané cenové rozsahy viditelně označí a
   přestanou platit, dokud je správce neopraví. Nic se automaticky neposouvá.
-- **Doprovod:** výchozí 100 Kč společně za +1 nebo +2 osoby. Správce může
+- **Přepínač Doprovod a příplatky:** v kartě Doprovod se ukládá ihned,
+  odděleně od cen. Výchozí stav je **vypnuto** (i u dosavadního nastavení bez
+  přepínače). Klient jej ručně zapne v prosinci; datum automaticky nezapíná funkci.
+  Vypnutí skryje volbu lidí v rezervaci, přidání osoby z účtu a počty +1/+2
+  v administrativním kalendáři včetně rozpracované změny termínu. Nové příplatky
+  i podvržené/staré formuláře odmítne server; nová rezervace stojí základní cenu.
+  Připravené ceny zůstávají uložené. Přepnutí zapisuje pouze nastavení a
+  administrativní historii, nemění žádnou existující rezervaci či platbu a
+  nevolá platební ani mailovou službu. Již zahájené platby zachovávají cenu:
+  shodnou rozpracovanou objednávku lze dokončit, dříve založený doplatek se
+  nadále ověřuje a potvrzuje právě jednou. Již přijaté doplatky zůstávají v historii.
+  Boolean `features.additional_people` je v `site_setting`; další migrace není třeba.
+- **Doprovod při zapnutí:** připravená cena je 100 Kč společně za +1 nebo +2 osoby. Správce může
   změnit částku i výpočet na cenu za každou další osobu. Příplatek se počítá
   za každý zakoupený blok. Věrnostní odměna pokryje základní vstup;
   doprovod se hradí i u tohoto vstupu. Voucher se uplatní na cenu objednávky.
-- Před rezervací je povinná volba sám/sama, +1 nebo +2. Server cenu znovu
+- Při zapnutém doprovodu je před rezervací povinná volba sám/sama, +1 nebo +2. Server cenu znovu
   vypočítá. Rozpracovaná platba si zachovává svůj původní počet osob a cenu.
 - **Můj účet:** „Přidat osobu“ u vlastního budoucího potvrzeného termínu,
   také v historii objednávek. Doplatek vychází z aktuálního nastavení pouze
@@ -61,15 +73,20 @@ náhradami Auth, Comgate a Resend. Testovací server odmítá externí požadavk
 Nebyly použity ostré přihlašovací údaje ani měněny skutečné rezervace.
 
 - Formát, lint, typová kontrola a produkční sestavení: prošly.
-- Jednotkové testy: 286 prošlo.
-- Integrační testy: 180 prošlo, včetně 16 scénářů nových cen a doprovodu.
-- Prohlížečové testy: 117 prošlo po úpravě dialogů/kalendáře a přidání poznámek, včetně přístupnosti, cenového editoru,
+- Jednotkové testy: 287 prošlo.
+- Integrační testy: 184 prošlo, včetně 20 scénářů nových cen a doprovodu.
+- Prohlížečové testy: 119 prošlo po doplnění přepínače doprovodu, včetně přístupnosti, cenového editoru,
   skutečného objednání s doprovodem, doplatku a `+2` v kalendáři.
   Po poslední úpravě mobilního zobrazení zopakovány všechny čtyři scénáře
   `pricing-participants.spec.ts` s novým produkčním sestavením: 4 prošly,
   lokální náhrada mailové služby zaznamenala 0 zpráv.
   Po doplnění poznámek cíleně zopakováno 6 scénářů poznámek/cen/doprovodu:
   všechny prošly, lokální mailová služba zaznamenala 0 zpráv.
+  Oba nové scénáře přepínače prošly i samostatně; lokální mailová služba
+  zaznamenala 0 zpráv. Ověřeno skrytí formulářů/kalendářních počtů, opětovné
+  zapnutí, klávesnice a přístupnost, zachování neuložené ceny, blokování starého
+  formuláře a nová rezervace bez příplatku. Integrační testy navíc potvrzují
+  dokončení původních plateb bez přecenění a vypnutí bez zápisu do rezervací.
 - SQL omezení: prošla, včetně nejvýše +2 osob, jednoho rozpracovaného
   doplatku, jedné platby, oddělení od původní platby a RLS/zákazu Data API.
 - Migrace vyzkoušena i na naplněné lokální databázi: všechny původní hodnoty
