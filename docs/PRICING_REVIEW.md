@@ -106,14 +106,30 @@ Oba mají ukázkové heslo `Nahled2026!`; nejde o produkční přístupové úda
 Auth, platby a mailová služba jsou lokální náhrady a server odmítá externí
 požadavky. Náhled žije jen po dobu běhu lokálního procesu.
 
-Merge do `main` čeká na kontrolu náhledu vlastníkem. Pro tuto pracovní větev
+Vlastník 14. 10. 2026 schválil merge do `main` a produkční nasazení. Pro tuto pracovní větev
 je automatické Vercel nasazení vypnuté. Nastavení produkčních služeb se neměnilo.
 
-Před nasazením kódu bude nutné aplikovat migraci
+Před nasazením kódu byla aplikována migrace
 `drizzle/20261014130000_participant_additions.sql` běžným spravovaným postupem.
 Je pouze doplňující: nové sloupce s bezpečnými výchozími hodnotami, nová
 serverová tabulka a vazba doplatku v platbě. Neobsahuje `UPDATE reservation`
-ani nové notifikační triggery. Na produkci zatím nebyla spuštěna.
+ani nové notifikační triggery. Na produkci byla aplikována 14. 10. 2026 přes Supabase jako
+`20261014165450_participant_additions`, po další zkoušce na naplněné lokální
+databázi. Nasazení obsahovalo transakční kontrolu otisků všech původních
+nastavení, rozvrhu, rezervací, plateb, signálů dostupnosti, e-mailového archivu
+a vstupních kódů; případná změna by vrátila celou migraci zpět.
+Kontrola prošla. Nebyly spouštěny seed, testovací data, platby ani notifikace.
+
+Produkce si zachovává základní cenu **239 Kč**, rozvrh **5:00–23:45 po 75
+minutách** ve všech dnech a původní cenová období. `pricing.time_blocks`
+není nastavené: žádné ukázkové cenové rozsahy se nepřenášejí a klient si je
+nastaví sám. Doprovod zůstává vypnutý. Nová tabulka doplatků je prázdná;
+nová pole historických rezervací mají pouze výchozí nulové hodnoty.
+Po migraci zůstalo 285 rezervací, 213 plateb, 687 archivovaných e-mailů a 162
+kódů. RLS je zapnuté a tabulka doplatků nemá oprávnění pro anon/authenticated;
+info hláška „RLS enabled no policy“ odpovídá záměrně serverovému přístupu.
+Průběžný provoz aktualizuje pouze obvyklý stav `nuki-health:*`; nasazení
+nepřepisuje obchodní či rezervační nastavení.
 
 Historické rezervace nemají evidenci skutečného doprovodu; nic se u nich
 zpětně nedopočítává. Původní rezervace, ceny, kódy a doklady zůstávají zachované.
