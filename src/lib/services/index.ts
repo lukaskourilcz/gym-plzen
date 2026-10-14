@@ -28,6 +28,7 @@ export * as members from "./members";
 export * as memberships from "./memberships";
 export * as loyalty from "./loyalty";
 export * as pricingPeriods from "./pricing-periods";
+export * as blockPricing from "./block-pricing";
 export * as schedule from "./schedule";
 export * as closures from "./closures";
 export * as cms from "./cms";

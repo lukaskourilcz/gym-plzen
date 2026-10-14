@@ -1,6 +1,18 @@
 import { readDatabase } from "@/lib/db/read";
-import { contentBlock, pricingPeriod, siteSetting } from "@/lib/db/schema";
+import {
+  contentBlock,
+  pricingPeriod,
+  siteSetting,
+  openingHours,
+} from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import {
+  BLOCK_PRICING_KEY,
+  parseBlockPrices,
+  resolveBlockPrice,
+  type BlockPrice,
+  type PricingHours,
+} from "@/lib/config/block-pricing";
 import { firstBookableDateKey } from "@/lib/config/booking-start";
 import { localDateTimeToDate } from "@/lib/helpers/datetime";
 import { logger } from "@/lib/helpers/logger";
@@ -339,6 +351,8 @@ export async function loadSiteContent(
 ): Promise<SiteContent> {
   const values: Record<string, string> = { ...SITE_DEFAULTS };
   let standardEntryPriceCents = DEFAULT_ENTRY_PRICE_CENTS;
+  let blockPrices: BlockPrice[] = [];
+  let pricingHours: PricingHours[] = [];
   let pricingPeriods: {
     name: string;
     priceCents: number;
@@ -368,27 +382,29 @@ export async function loadSiteContent(
 
   if (!options.defaultsOnly) {
     try {
-      const [rows, settings, currentPeriods] = await readDatabase(async (db) =>
-        Promise.all([
-          db
-            .select({
-              key: contentBlock.key,
-              valueText: contentBlock.valueText,
-            })
-            .from(contentBlock)
-            .where(eq(contentBlock.locale, locale)),
-          db
-            .select({ key: siteSetting.key, value: siteSetting.value })
-            .from(siteSetting),
-          db
-            .select({
-              name: pricingPeriod.name,
-              priceCents: pricingPeriod.priceCents,
-              startsAt: pricingPeriod.startsAt,
-              endsAt: pricingPeriod.endsAt,
-            })
-            .from(pricingPeriod),
-        ]),
+      const [rows, settings, currentPeriods, hours] = await readDatabase(
+        async (db) =>
+          Promise.all([
+            db
+              .select({
+                key: contentBlock.key,
+                valueText: contentBlock.valueText,
+              })
+              .from(contentBlock)
+              .where(eq(contentBlock.locale, locale)),
+            db
+              .select({ key: siteSetting.key, value: siteSetting.value })
+              .from(siteSetting),
+            db
+              .select({
+                name: pricingPeriod.name,
+                priceCents: pricingPeriod.priceCents,
+                startsAt: pricingPeriod.startsAt,
+                endsAt: pricingPeriod.endsAt,
+              })
+              .from(pricingPeriod),
+            db.select().from(openingHours),
+          ]),
       );
       for (const row of rows) {
         if (
@@ -400,6 +416,8 @@ export async function loadSiteContent(
       }
 
       for (const s of settings) {
+        if (s.key === BLOCK_PRICING_KEY)
+          blockPrices = parseBlockPrices(s.value);
         if (s.key === ENTRY_PRICE_SETTING_KEY && typeof s.value === "number")
           standardEntryPriceCents = s.value;
         if (s.key === LOGO_URL_KEY && typeof s.value === "string")
@@ -427,6 +445,7 @@ export async function loadSiteContent(
           illustrativePhotos = s.value;
       }
       pricingPeriods = currentPeriods;
+      pricingHours = hours;
     } catch (e) {
       if (options.strict) throw e;
       // DB not provisioned/reachable yet : fall back to defaults so the public
@@ -465,11 +484,16 @@ export async function loadSiteContent(
     get: (key) => rebrand(fillPrices(values[key] ?? SITE_DEFAULTS[key] ?? "")),
     entryPriceCents: price.priceCents,
     entryPriceForDate: (at) =>
-      resolveEntryPrice({
-        standardPriceCents: standardEntryPriceCents,
-        periods: pricingPeriods,
+      resolveBlockPrice(
         at,
-      }).priceCents,
+        blockPrices,
+        pricingHours,
+        resolveEntryPrice({
+          standardPriceCents: standardEntryPriceCents,
+          periods: pricingPeriods,
+          at,
+        }).priceCents,
+      ),
     standardEntryPriceCents: price.standardPriceCents,
     isPromoPrice: price.isPromo,
     promoEndsAt: price.promoEndsAt ?? null,

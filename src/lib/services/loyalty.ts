@@ -1,6 +1,8 @@
 import { and, count, eq, inArray, isNotNull, ne } from "drizzle-orm";
 import { db, type DatabaseExecutor } from "@/lib/db";
-import { reservation } from "@/lib/db/schema";
+import { reservation, openingHours } from "@/lib/db/schema";
+import { listBlockPrices } from "./block-pricing";
+import { resolveBlockPrice } from "@/lib/config/block-pricing";
 import {
   DEFAULT_ENTRY_PRICE_CENTS,
   ENTRY_PRICE_SETTING_KEY,
@@ -180,15 +182,21 @@ export async function getStandardEntryPriceCents(): Promise<number> {
  * supply it so a future October visit gets the October price in September.
  */
 export async function getEntryPrice(at: Date): Promise<EntryPrice> {
-  const [standardPriceCents, period] = await Promise.all([
+  const [standardPriceCents, period, rules, hours] = await Promise.all([
     getStandardEntryPriceCents(),
     getActivePricingPeriod(at),
+    listBlockPrices(),
+    db.select().from(openingHours),
   ]);
-  return resolveEntryPrice({
+  const price = resolveEntryPrice({
     standardPriceCents,
     periods: period ? [period] : [],
     at,
   });
+  const priceCents = resolveBlockPrice(at, rules, hours, price.priceCents);
+  return priceCents === price.priceCents
+    ? price
+    : { priceCents, standardPriceCents, isPromo: false };
 }
 
 /** Price for the requested visit start. */
