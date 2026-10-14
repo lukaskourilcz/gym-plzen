@@ -28,6 +28,7 @@ export const ACTIVITY_ACTIONS = {
   "member.registered": "Nová registrace",
   "newsletter.unsubscribed": "Odhlášení z novinek",
   "member.profile_updated": "Profil člena upraven",
+  "member.note_updated": "Poznámka zákazníka upravena",
   "member.role_changed": "Role člena změněna",
   "settings.operations_saved": "Provozní nastavení uloženo",
   "settings.operator_notifications_saved": "Provozní upozornění uložena",

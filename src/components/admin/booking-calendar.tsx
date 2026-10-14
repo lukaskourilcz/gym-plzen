@@ -15,6 +15,7 @@ import type {
 } from "@fullcalendar/core";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AdminMemberName } from "@/components/admin/member-name";
 import { cn } from "@/lib/utils";
 import { createBlockedSlotAction } from "@/app/admin/schedule/actions";
 import { minutesToHHmm } from "@/lib/helpers/format";
@@ -353,7 +354,14 @@ export function BookingCalendar({
                   : undefined
               }
             >
-              {event.title}
+              <AdminMemberName
+                name={event.title}
+                note={
+                  typeof event.extendedProps.memberNote === "string"
+                    ? event.extendedProps.memberNote
+                    : null
+                }
+              />
             </span>
           )
         }

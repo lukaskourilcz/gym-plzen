@@ -623,3 +623,22 @@ the range to every other open weekday with an identical grid, atomically. A stal
 it never silently shifts with a changed schedule. Companion fees show an immediate
 one-/two-person example. Public booking uses labelled required native radios
 for alone, +1 or +2. The kit shows the admin pattern at `/admin/design-system`.
+
+### Internal member notes
+
+Members have a separate "Přidat poznámku" / "Upravit poznámku" dialog, in the
+list and profile. It edits only the existing `profiles.note` field, up to 2000
+characters; clearing the text removes the note. Contact forms cannot overwrite
+notes. `AdminDialog` supplies native modality, an explicit initial focus target,
+keyboard cycling, Escape/close/cancel and focus return.
+
+`AdminMemberName` shows a small Lucide StickyNote at the upper right of a name
+only when its account has a nonblank note. The shadcn-style Radix tooltip opens
+on hover/focus and toggles on touch/click, closes on Escape and stays inside the
+viewport. Its portal keeps table/grid clipping from hiding the note. Text is
+rendered literally, preserves line breaks and can scroll when long. Each admin
+reader looks notes up by registered account ID in one query for the page.
+The icon also appears in the calendar, reservation lists, day overviews,
+loyalty, entry/code logs, documents, message recipient names and activity actors.
+Notes stay in the administration; customer views, documents and outgoing
+messages do not receive them. `/admin/design-system` has illustrative examples.

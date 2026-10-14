@@ -9,11 +9,13 @@ import {
   updateMemberSchema,
   type SetMemberRoleValues,
   type UpdateMemberValues,
+  updateMemberNoteSchema,
+  type UpdateMemberNoteValues,
 } from "@/lib/validations/members";
 import { activity, members } from "@/lib/services";
 import { logger } from "@/lib/helpers/logger";
 
-/** Update a member's profile (contact, notification prefs, admin note). */
+/** Update contact/preferences; notes have their own action to avoid stale overwrites. */
 const updateMemberImpl = defineAction({
   schema: updateMemberSchema,
   authorize: assertAdmin,
@@ -23,7 +25,6 @@ const updateMemberImpl = defineAction({
       notifyByWhatsapp: input.notifyByWhatsapp,
       notifyBySms: input.notifyBySms,
       marketingConsent: input.marketingConsent,
-      note: input.note || null,
     });
     await activity.record({
       action: "member.profile_updated",
@@ -43,6 +44,31 @@ export async function updateMemberAction(
   input: UpdateMemberValues,
 ): Promise<Result<unknown>> {
   return updateMemberImpl(input);
+}
+
+const updateMemberNoteImpl = defineAction({
+  schema: updateMemberNoteSchema,
+  authorize: assertAdmin,
+  handler: async ({ userId, note }, admin) => {
+    const text = note.trim();
+    await members.updateProfile(userId, { note: text || null });
+    await activity.record({
+      action: "member.note_updated",
+      actorType: "admin",
+      actorId: admin.id,
+      actorLabel: admin.email,
+      memberId: userId,
+      summary: text
+        ? "Interní poznámka zákazníka uložena."
+        : "Interní poznámka zákazníka odstraněna.",
+    });
+    revalidatePath("/admin", "layout");
+  },
+});
+export async function updateMemberNoteAction(
+  input: UpdateMemberNoteValues,
+): Promise<Result<unknown>> {
+  return updateMemberNoteImpl(input);
 }
 
 /**

@@ -10,6 +10,7 @@ import {
 } from "@/lib/helpers/admin-list";
 import { activityPage } from "@/lib/services/admin-lists";
 import { requireAdmin } from "@/lib/auth/guards";
+import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import Link from "next/link";
 import { activity } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
@@ -56,6 +57,9 @@ export default async function ActivityPage({
     () => (demo ? Promise.resolve([]) : activityPage(1, filters)),
   );
 
+  const memberNotes = demo
+    ? new Map<string, string>()
+    : await getMemberNotes(rows.map((entry) => entry.actorId));
   return (
     <div>
       <PageHeader
@@ -94,7 +98,10 @@ export default async function ActivityPage({
                 {formatDateTime(entry.occurredAt)}
               </TableCell>
               <TableCell>
-                <ActivityActor entry={entry} />
+                <ActivityActor
+                  entry={entry}
+                  note={memberNotes.get(entry.actorId ?? "")}
+                />
               </TableCell>
               <TableCell>
                 <Badge variant="outline">

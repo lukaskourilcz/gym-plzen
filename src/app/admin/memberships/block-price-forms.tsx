@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { useRef, useState } from "react";
+import { AdminDialog } from "@/components/admin/dialog";
 import { useRouter } from "next/navigation";
 import { useActionForm } from "@/components/admin/use-action-form";
 import {
@@ -190,74 +190,25 @@ function BlockPriceDialog({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const dialog = useRef<HTMLDialogElement>(null);
-  const titleId = useId();
-  const descriptionId = useId();
-  useEffect(() => {
-    const element = dialog.current;
-    element?.showModal();
-    element?.querySelector<HTMLElement>("[data-initial-focus]")?.focus();
-    return () => {
-      if (element?.open) element.close();
-    };
-  }, []);
   return (
-    <dialog
-      ref={dialog}
-      aria-labelledby={titleId}
-      aria-describedby={descriptionId}
+    <AdminDialog
+      title={rule ? "Upravit cenový blok" : "Přidat cenový blok"}
+      description="Cena za jeden blok pro jednu dospělou osobu. Časy odpovídají uloženému rozvrhu."
       onClose={onClose}
-      onKeyDown={(event) => {
-        if (event.key !== "Tab") return;
-        const controls = Array.from(
-          event.currentTarget.querySelectorAll<HTMLElement>(
-            "button, input, select",
-          ),
-        ).filter(
-          (control) => control.tabIndex >= 0 && !control.matches(":disabled"),
-        );
-        const first = controls[0];
-        const last = controls.at(-1);
-        if (event.shiftKey && document.activeElement === first) {
-          event.preventDefault();
-          last?.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault();
-          first?.focus();
-        }
-      }}
-      className="m-auto max-h-[calc(100dvh_-_2rem)] w-[calc(100%_-_2rem)] max-w-2xl overflow-y-auto rounded-lg border border-border bg-card p-5 text-foreground shadow-md backdrop:bg-black/40 sm:p-6"
     >
-      <div className="mb-2 flex items-center justify-between gap-4">
-        <h2 id={titleId} className="text-xl font-bold">
-          {rule ? "Upravit cenový blok" : "Přidat cenový blok"}
-        </h2>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label="Zavřít dialog"
-          onClick={() => dialog.current?.close()}
-        >
-          <X className="size-5" aria-hidden="true" />
-        </Button>
-      </div>
-      <p id={descriptionId} className="mb-5 text-sm text-muted-foreground">
-        Cena za jeden blok pro jednu dospělou osobu. Časy odpovídají uloženému
-        rozvrhu.
-      </p>
       <BlockPriceForm
         rule={rule}
         hours={hours}
         onSaved={() => {
           onSaved();
-          dialog.current?.close();
+          onClose();
         }}
-        onCancel={() => dialog.current?.close()}
+        onCancel={onClose}
       />
-    </dialog>
+    </AdminDialog>
   );
 }
+
 function BlockPriceForm({
   rule,
   hours,

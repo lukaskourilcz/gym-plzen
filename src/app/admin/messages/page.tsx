@@ -13,6 +13,8 @@ import { pageFromParam } from "@/lib/helpers/pagination";
 import { messageFilters } from "@/components/admin/list-filter-options";
 import { emailPage, messagePage } from "@/lib/services/admin-lists";
 import { requireAdmin } from "@/lib/auth/guards";
+import { AdminMemberName } from "@/components/admin/member-name";
+import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import { importRecentEmails } from "./actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -81,6 +83,16 @@ export default async function MessagesPage({
         messagePage(1, filters),
       );
 
+  const memberNotes = demo
+    ? new Map<string, string>()
+    : await getMemberNotes([
+        ...emails.map((email) => email.customerId),
+        ...rows.map((m) =>
+          "customerId" in m && typeof m.customerId === "string"
+            ? m.customerId
+            : m.userId,
+        ),
+      ]);
   return (
     <div>
       <PageHeader
@@ -138,7 +150,10 @@ export default async function MessagesPage({
                 {email.recipient}
                 {email.customerName ? (
                   <span className="block text-xs text-muted-foreground">
-                    {email.customerName}
+                    <AdminMemberName
+                      name={email.customerName}
+                      note={memberNotes.get(email.customerId ?? "")}
+                    />
                   </span>
                 ) : null}
               </TableCell>
@@ -196,7 +211,14 @@ export default async function MessagesPage({
                 {m.recipient}
                 {"customerName" in m && typeof m.customerName === "string" ? (
                   <span className="block text-xs text-muted-foreground">
-                    {m.customerName}
+                    <AdminMemberName
+                      name={m.customerName}
+                      note={memberNotes.get(
+                        "customerId" in m && typeof m.customerId === "string"
+                          ? m.customerId
+                          : (m.userId ?? ""),
+                      )}
+                    />
                   </span>
                 ) : null}
               </TableCell>

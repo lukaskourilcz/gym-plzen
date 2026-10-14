@@ -15,6 +15,7 @@ import { memberFilters } from "@/components/admin/list-filter-options";
 import { BlockPrices, ParticipantPricingForm } from "./block-price-forms";
 import { DEFAULT_PARTICIPANT_PRICING } from "@/lib/config/participants";
 import { requireAdmin } from "@/lib/auth/guards";
+import { AdminMemberName } from "@/components/admin/member-name";
 import {
   loyalty,
   pricingPeriods,
@@ -349,7 +350,13 @@ export default async function PricingPage({
         <TableBody>
           {withLoyalty.map(({ member, status }) => (
             <TableRow key={member.user.id}>
-              <TableCell>{member.user.name || member.user.email}</TableCell>
+              <TableCell>
+                <AdminMemberName
+                  name={member.user.name || member.user.email}
+                  note={member.profile?.note}
+                  href={`/admin/members/${member.user.id}`}
+                />
+              </TableCell>
               <TableCell>{status.totalEntries}</TableCell>
               <TableCell>
                 {status.positionInCycle} / {status.cadence}

@@ -1,6 +1,8 @@
 import { programmeCodeStates } from "@/lib/services/admin-programme";
 import { cn } from "@/lib/utils";
 import { requireAdmin } from "@/lib/auth/guards";
+import { AdminMemberName } from "@/components/admin/member-name";
+import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import Link from "next/link";
 import { AlertTriangle, DoorOpen, MailWarning } from "lucide-react";
 import { alerts, entryLog, messages, stats } from "@/lib/services";
@@ -78,6 +80,12 @@ export default async function AdminDashboard() {
     : recentMessages;
 
   const upcoming = todaysReservations.filter((r) => r.startsAt > now);
+  const memberNotes = demo
+    ? new Map<string, string>()
+    : await getMemberNotes([
+        ...todaysReservations.map((r) => r.userId),
+        ...entries.map((entry) => entry.userId),
+      ]);
   const openAlerts = recentAlerts.filter((a) => !a.resolvedAt);
   const failedMessages = messageRows.filter((m) => m.status === "failed");
   const trend = day.last7 - day.previous7;
@@ -131,7 +139,10 @@ export default async function AdminDashboard() {
                       {formatTimeRange(r.startsAt, r.endsAt)}
                     </span>
                     <span className="min-w-32 flex-1 text-sm text-muted-foreground">
-                      {r.contactName ?? r.contactEmail ?? "Neuvedeno"}
+                      <AdminMemberName
+                        name={r.contactName ?? r.contactEmail ?? "Neuvedeno"}
+                        note={memberNotes.get(r.userId ?? "")}
+                      />
                     </span>
                     {code?.sent && <Badge variant="outline">Kód odeslán</Badge>}
                     {code?.used && (
@@ -187,7 +198,17 @@ export default async function AdminDashboard() {
                   </span>
                   <span className="min-w-0 break-words text-muted-foreground">
                     {entry.nukiName ?? entry.trigger ?? "Zámek"}
-                    {entry.customerName ? ` (${entry.customerName})` : null}
+                    {entry.customerName ? (
+                      <>
+                        {" "}
+                        (
+                        <AdminMemberName
+                          name={entry.customerName}
+                          note={memberNotes.get(entry.userId ?? "")}
+                        />
+                        )
+                      </>
+                    ) : null}
                   </span>
                 </div>
               ))}

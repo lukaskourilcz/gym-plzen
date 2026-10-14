@@ -1,4 +1,5 @@
 import { requireAdmin } from "@/lib/auth/guards";
+import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import type { EventInput } from "@fullcalendar/core";
 import { availability, schedule } from "@/lib/services";
 import { addMinutes } from "@/lib/helpers/datetime";
@@ -44,6 +45,9 @@ export default async function CalendarPage() {
       : DEFAULT_CLOSE_MINUTE;
 
   const slotMinutes = calendarRowMinutes(activeDays, openMinute);
+  const memberNotes = demo
+    ? new Map<string, string>()
+    : await getMemberNotes(reservations.map((r) => r.userId));
 
   const events: EventInput[] = [
     ...reservations
@@ -57,6 +61,7 @@ export default async function CalendarPage() {
           backgroundColor:
             r.status === "confirmed" ? "var(--success)" : "var(--warning)",
           borderColor: "transparent",
+          extendedProps: { memberNote: memberNotes.get(r.userId ?? "") },
         },
         ...(r.rescheduleStartsAt && r.rescheduleEndsAt
           ? [
@@ -67,6 +72,7 @@ export default async function CalendarPage() {
                 end: r.rescheduleEndsAt.toISOString(),
                 backgroundColor: "var(--warning)",
                 borderColor: "transparent",
+                extendedProps: { memberNote: memberNotes.get(r.userId ?? "") },
               },
             ]
           : []),

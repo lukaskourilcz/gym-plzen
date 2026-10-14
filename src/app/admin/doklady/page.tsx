@@ -11,6 +11,8 @@ import {
 import { pageFromParam } from "@/lib/helpers/pagination";
 import { invoicePage } from "@/lib/services/admin-lists";
 import { requireAdmin } from "@/lib/auth/guards";
+import { AdminMemberName } from "@/components/admin/member-name";
+import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import Link from "next/link";
 import { invoices } from "@/lib/services";
 import { PageHeader } from "@/components/admin/page-header";
@@ -71,6 +73,9 @@ export default async function DocumentsPage({
     filters,
     () => (demo ? Promise.resolve([]) : invoicePage(1, filters)),
   );
+  const memberNotes = demo
+    ? new Map<string, string>()
+    : await getMemberNotes(rows.map((row) => row.userId));
 
   return (
     <div>
@@ -159,7 +164,10 @@ export default async function DocumentsPage({
                         {formatDateTime(row.issuedAt)}
                       </td>
                       <td className="py-3 pr-4">
-                        {row.customerName || "—"}
+                        <AdminMemberName
+                          name={row.customerName || "—"}
+                          note={memberNotes.get(row.userId ?? "")}
+                        />
                         {row.customerEmail && (
                           <span className="block text-xs text-muted-foreground">
                             {row.customerEmail}

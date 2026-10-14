@@ -16,6 +16,8 @@ import { reservationAccessState } from "@/lib/helpers/reservation-access-state";
 import { adminReservationAccess } from "@/lib/services/reservation-access";
 import { participantLabel } from "@/lib/config/participants";
 import { requireAdmin } from "@/lib/auth/guards";
+import { AdminMemberName } from "@/components/admin/member-name";
+import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import { idSchema } from "@/lib/validations/common";
 import Link from "next/link";
 import { reservations } from "@/lib/services";
@@ -106,6 +108,9 @@ export default async function ReservationsPage({
   const invoiceStates = demo
     ? new Map()
     : await reservationInvoiceStates(rows.map((r) => r.id));
+  const memberNotes = demo
+    ? new Map<string, string>()
+    : await getMemberNotes(rows.map((r) => r.userId));
 
   const access = demo
     ? new Map(
@@ -178,12 +183,12 @@ export default async function ReservationsPage({
               <TableCell>{formatDateTime(r.endsAt)}</TableCell>
               <TableCell>
                 {r.userId && !demo ? (
-                  <Link
+                  <AdminMemberName
                     href={`/admin/members/${r.userId}`}
-                    className="inline-flex min-h-11 items-center font-bold text-accent-foreground hover:underline"
-                  >
-                    {r.contactName ?? r.contactEmail ?? "Člen"}
-                  </Link>
+                    className="min-h-11 items-center"
+                    name={r.contactName ?? r.contactEmail ?? "Člen"}
+                    note={memberNotes.get(r.userId)}
+                  />
                 ) : (
                   <>
                     {r.contactName ?? r.contactEmail ?? "Neuvedeno"}

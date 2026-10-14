@@ -414,7 +414,8 @@ summary {
 }
 
 /* Apple Design is scoped to the administration; public typography is unchanged. */
-.admin-shell {
+.admin-shell,
+.admin-note-tooltip {
   font-family:
     system-ui,
     -apple-system,

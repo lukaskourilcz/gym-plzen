@@ -27,6 +27,7 @@ import {
 } from "@/components/site/social-icons";
 import { PageHeader } from "@/components/admin/page-header";
 import { CheckboxRow } from "@/components/admin/form-controls";
+import { AdminMemberName } from "@/components/admin/member-name";
 
 export const metadata = { title: "Design systém" };
 
@@ -137,6 +138,10 @@ export default async function DesignSystemPage() {
           </h2>
           <div className="flex flex-wrap items-center gap-5">
             <CustomerAvatar name="Klára Nováková" />
+            <AdminMemberName
+              name="Klára Nováková"
+              note="Ukázková interní poznámka. Před první návštěvou domluvit úvodní trénink."
+            />
             <p>
               Fotka z Googlu nebo iniciály. Při nedostupné fotce se zobrazí
               iniciály.
