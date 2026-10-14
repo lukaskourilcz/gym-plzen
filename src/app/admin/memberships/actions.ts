@@ -1,6 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import {
+  saveBlockPriceSchema,
+  deleteBlockPriceSchema,
+  saveParticipantPricingSchema,
+  type SaveBlockPriceValues,
+  type SaveParticipantPricingValues,
+} from "@/lib/validations/pricing";
 import { assertAdmin } from "@/lib/auth/guards";
 import { defineAction } from "@/lib/helpers/action";
 import type { Result } from "@/lib/helpers/result";
@@ -16,7 +23,7 @@ import {
   BOOKING_HORIZON_SETTING_KEY,
   clampBookingHorizonDays,
 } from "@/lib/config/schedule";
-import { activity, cms, pricingPeriods } from "@/lib/services";
+import { activity, cms, pricingPeriods, blockPricing } from "@/lib/services";
 import { formatDateTime, formatMoney } from "@/lib/helpers/format";
 import { addDaysToDateKey, localDateTimeToDate } from "@/lib/helpers/datetime";
 import {
@@ -152,4 +159,76 @@ export async function deletePricingPeriodAction(input: {
   id: string;
 }): Promise<Result<unknown>> {
   return deletePricingPeriodImpl(input);
+}
+
+const saveBlockImpl = defineAction({
+  schema: saveBlockPriceSchema,
+  authorize: assertAdmin,
+  handler: async ({ priceCzk, ...range }, admin) => {
+    await blockPricing.saveBlockPrice(
+      { ...range, priceCents: priceCzk * 100 },
+      admin.id,
+    );
+    await activity.record({
+      action: "settings.block_price_saved",
+      actorType: "admin",
+      actorId: admin.id,
+      actorLabel: admin.email,
+      summary: "Cena časových bloků uložena.",
+      context: range,
+    });
+    revalidatePath("/admin/memberships");
+    revalidatePricedPages();
+  },
+});
+export async function saveBlockPriceAction(
+  input: SaveBlockPriceValues,
+): Promise<Result<unknown>> {
+  return saveBlockImpl(input);
+}
+const deleteBlockImpl = defineAction({
+  schema: deleteBlockPriceSchema,
+  authorize: assertAdmin,
+  handler: async ({ id }, admin) => {
+    await blockPricing.deleteBlockPrice(id, admin.id);
+    await activity.record({
+      action: "settings.block_price_deleted",
+      actorType: "admin",
+      actorId: admin.id,
+      actorLabel: admin.email,
+      summary: "Cena časových bloků odebrána.",
+    });
+    revalidatePath("/admin/memberships");
+    revalidatePricedPages();
+  },
+});
+export async function deleteBlockPriceAction(input: {
+  id: string;
+}): Promise<Result<unknown>> {
+  return deleteBlockImpl(input);
+}
+const saveParticipantsImpl = defineAction({
+  schema: saveParticipantPricingSchema,
+  authorize: assertAdmin,
+  handler: async ({ priceCzk, mode }, admin) => {
+    await blockPricing.saveParticipantPricing(
+      { amountCents: priceCzk * 100, mode },
+      admin.id,
+    );
+    await activity.record({
+      action: "settings.participant_price_saved",
+      actorType: "admin",
+      actorId: admin.id,
+      actorLabel: admin.email,
+      summary: `Příplatek za doprovod ${formatMoney(priceCzk * 100)}, ${mode === "flat" ? "jednotně za doprovod" : "za každou osobu"}.`,
+    });
+    revalidatePath("/admin/memberships");
+    revalidatePath("/account");
+    revalidatePricedPages();
+  },
+});
+export async function saveParticipantPricingAction(
+  input: SaveParticipantPricingValues,
+): Promise<Result<unknown>> {
+  return saveParticipantsImpl(input);
 }

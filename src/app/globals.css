@@ -450,3 +450,49 @@ summary {
     flex: 1 1 0;
   }
 }
+
+/* Apple Design is scoped to the administration; public typography is unchanged. */
+.admin-shell {
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  font-optical-sizing: auto;
+}
+.admin-shell h1 {
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+.admin-shell h2,
+.admin-shell h3 {
+  letter-spacing: -0.01em;
+}
+.admin-shell button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.admin-shell button {
+  transition:
+    background-color 140ms,
+    color 140ms,
+    transform 100ms;
+}
+.admin-shell summary:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-shell button {
+    transition: none;
+  }
+  .admin-shell button:active:not(:disabled) {
+    transform: none;
+  }
+}
+@media (prefers-contrast: more) {
+  .admin-shell nav a[aria-current="page"] {
+    outline: 2px solid currentColor;
+    outline-offset: -2px;
+  }
+}

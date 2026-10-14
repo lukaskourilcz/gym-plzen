@@ -17,7 +17,7 @@ export default async function AdminLayout({
   const admin = await requireAdmin();
 
   return (
-    <div className="min-h-screen bg-secondary/35 lg:flex">
+    <div className="admin-shell min-h-screen bg-secondary/35 lg:flex">
       <aside className="border-b border-white/10 bg-ink px-4 py-3 text-white lg:fixed lg:inset-y-0 lg:flex lg:w-[248px] lg:flex-col lg:border-r lg:border-b-0 lg:px-3.5 lg:py-5">
         <div className="flex items-center justify-between gap-4">
           <Link
