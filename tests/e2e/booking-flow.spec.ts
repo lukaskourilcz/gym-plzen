@@ -79,6 +79,9 @@ test.describe("Booking flow", () => {
     await page.getByLabel("Příjmení").fill("Testová");
     await page.getByLabel("E-mail").fill(email);
     await page.getByLabel("Telefon").fill("+420 777 123 456");
+    await page
+      .getByRole("radio", { name: "Přijdu sám / sama", exact: true })
+      .check();
     await page.locator("form").getByRole("checkbox").check();
   }
 

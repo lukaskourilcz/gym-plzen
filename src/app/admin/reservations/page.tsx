@@ -14,6 +14,7 @@ import { reservationPage } from "@/lib/services/admin-lists";
 import { reservationFilters } from "@/components/admin/list-filter-options";
 import { reservationAccessState } from "@/lib/helpers/reservation-access-state";
 import { adminReservationAccess } from "@/lib/services/reservation-access";
+import { participantLabel } from "@/lib/config/participants";
 import { requireAdmin } from "@/lib/auth/guards";
 import { idSchema } from "@/lib/validations/common";
 import Link from "next/link";
@@ -193,8 +194,17 @@ export default async function ReservationsPage({
                     )}
                   </>
                 )}
+                <span className="block text-xs text-muted-foreground">
+                  {participantLabel(r.extraPeople)}
+                </span>
               </TableCell>
               <TableCell>
+                {r.additionalPeoplePaidCents > 0 ? (
+                  <span className="block text-xs text-muted-foreground">
+                    Doplatek za doprovod{" "}
+                    {formatMoney(r.additionalPeoplePaidCents)}
+                  </span>
+                ) : null}
                 {r.priceCents != null
                   ? formatMoney(r.priceCents, r.currency)
                   : "členství"}

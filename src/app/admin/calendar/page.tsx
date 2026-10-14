@@ -51,7 +51,7 @@ export default async function CalendarPage() {
       .flatMap((r) => [
         {
           id: r.id,
-          title: r.contactName?.trim() || "Zákazník bez jména",
+          title: `${r.contactName?.trim() || "Zákazník bez jména"}${r.extraPeople > 0 ? ` +${r.extraPeople}` : ""}`,
           start: r.startsAt.toISOString(),
           end: r.endsAt.toISOString(),
           backgroundColor:
@@ -62,7 +62,7 @@ export default async function CalendarPage() {
           ? [
               {
                 id: `${r.id}/reschedule`,
-                title: r.contactName?.trim() || "Zákazník bez jména",
+                title: `${r.contactName?.trim() || "Zákazník bez jména"}${r.extraPeople > 0 ? ` +${r.extraPeople}` : ""}`,
                 start: r.rescheduleStartsAt.toISOString(),
                 end: r.rescheduleEndsAt.toISOString(),
                 backgroundColor: "var(--warning)",

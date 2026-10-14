@@ -1,3 +1,4 @@
+import { participantLabel } from "@/lib/config/participants";
 import { CustomerAvatar } from "@/components/site/customer-avatar";
 import Link from "next/link";
 import { getMember } from "@/lib/services/members";
@@ -223,6 +224,21 @@ export default async function AccountPage({
                             {formatTimeRange(r.startsAt, r.endsAt)}
                           </div>
                         </div>
+                        <span className="text-sm text-muted-foreground">
+                          {participantLabel(r.extraPeople)}
+                        </span>
+                        {!isDemoCustomer &&
+                        r.status === "confirmed" &&
+                        r.startsAt > new Date() &&
+                        r.extraPeople < 2 ? (
+                          <Button
+                            href={`/account/rezervace/${r.id}/osoby`}
+                            variant="outline"
+                            size="sm"
+                          >
+                            Přidat osobu
+                          </Button>
+                        ) : null}
                         <span className="rounded-sm bg-accent px-3 py-1 text-xs font-bold text-accent-foreground">
                           {formatStatus(r.status)}
                         </span>
@@ -291,12 +307,14 @@ function demoUpcomingReservations() {
 
   return [
     {
+      extraPeople: 0,
       id: "demo-reservation-1",
       startsAt: tomorrow,
       endsAt: new Date(tomorrow.getTime() + 75 * 60_000),
       status: "confirmed" as const,
     },
     {
+      extraPeople: 0,
       id: "demo-reservation-2",
       startsAt: nextWeek,
       endsAt: new Date(nextWeek.getTime() + 60 * 60_000),

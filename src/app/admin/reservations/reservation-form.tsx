@@ -6,6 +6,7 @@ import {
   FormFeedback,
   SubmitButton,
 } from "@/components/admin/form-controls";
+import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { createReservationSchema } from "@/lib/validations/reservations";
 import { createReservationAction } from "./actions";
@@ -20,6 +21,7 @@ export function ReservationForm() {
     action: createReservationAction,
     successMessage: "Rezervace vytvořena.",
     resetOnSuccess: true,
+    defaultValues: { extraPeople: 0 },
   });
   const { register, formState } = form;
   const { errors, isSubmitting } = formState;
@@ -59,6 +61,17 @@ export function ReservationForm() {
           placeholder="+420…"
           {...register("contactPhone")}
         />
+      </Field>
+      <Field name="extraPeople" label="Doprovod" error={errors.extraPeople}>
+        <Select
+          id="extraPeople"
+          className="min-h-11"
+          {...register("extraPeople", { valueAsNumber: true })}
+        >
+          <option value={0}>Bez doprovodu</option>
+          <option value={1}>+1 osoba</option>
+          <option value={2}>+2 osoby</option>
+        </Select>
       </Field>
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={isSubmitting}>

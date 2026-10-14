@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+import { participantLabel } from "@/lib/config/participants";
 import { buttonVariants } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { splitPage } from "@/lib/helpers/pagination";
@@ -77,6 +79,35 @@ export async function Orders({
                     ? "Cena neuvedena"
                     : formatMoney(row.totalCents, row.currency)}
                 </p>
+              </div>
+              <div className="mt-4 grid gap-3 text-sm">
+                {row.slots.map((slot) => (
+                  <div
+                    key={slot.id}
+                    className="flex flex-wrap items-center justify-between gap-3"
+                  >
+                    <p>
+                      {many
+                        ? `${formatDate(slot.startsAt)} ${formatTimeRange(slot.startsAt, slot.endsAt)} · `
+                        : ""}
+                      {participantLabel(slot.extraPeople)}
+                      {slot.additionalPeoplePaidCents > 0
+                        ? ` · doplatek za doprovod ${formatMoney(slot.additionalPeoplePaidCents)}`
+                        : ""}
+                    </p>
+                    {slot.status === "confirmed" &&
+                    slot.startsAt > new Date() &&
+                    slot.extraPeople < 2 ? (
+                      <Button
+                        href={`/account/rezervace/${slot.id}/osoby`}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Přidat osobu
+                      </Button>
+                    ) : null}
+                  </div>
+                ))}
               </div>
               {many ? (
                 <ul className="mt-4 divide-y divide-border border-y border-border text-sm">

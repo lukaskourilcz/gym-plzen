@@ -14,6 +14,7 @@ import {
  */
 export const createReservationSchema = z.object({
   userId: idSchema.optional(),
+  extraPeople: z.number().int().min(0).max(2).optional(),
   startsAt: dateTimeStringSchema,
   contactName: optionalText(120),
   contactEmail: optionalEmail,

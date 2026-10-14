@@ -43,7 +43,7 @@ const ADMIN_PAGES: { path: string; heading: RegExp }[] = [
   { path: "/admin/reservations", heading: /Rezervace/i },
   { path: "/admin/schedule", heading: /Otevírací doba/i },
   { path: "/admin/members", heading: /Členové/i },
-  { path: "/admin/memberships", heading: /Vstupné a věrnost/i },
+  { path: "/admin/memberships", heading: /Ceník a doprovod/i },
   { path: "/admin/statistics", heading: /Statistiky/i },
   { path: "/admin/content", heading: /Obsah webu/i },
   { path: "/admin/settings", heading: /Nastavení a branding/i },

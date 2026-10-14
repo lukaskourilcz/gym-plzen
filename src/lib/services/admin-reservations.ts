@@ -40,6 +40,7 @@ export async function createManualReservation(
     contactEmail?: string | null;
     contactPhone?: string | null;
     priceCents?: number | null;
+    extraPeople?: number;
     admin: AdminActor;
   },
   now = new Date(),
@@ -58,6 +59,7 @@ export async function createManualReservation(
     contactEmail: input.contactEmail ?? null,
     contactPhone: input.contactPhone ?? null,
     priceCents: input.priceCents ?? null,
+    extraPeople: input.extraPeople ?? 0,
     status: "confirmed", // admin bookings are confirmed immediately
     createdByAdminId: input.admin.id,
   });
