@@ -50,6 +50,9 @@ Nebyly použity ostré přihlašovací údaje ani měněny skutečné rezervace.
 - Integrační testy: 178 prošlo, včetně 16 scénářů nových cen a doprovodu.
 - Prohlížečové testy: 115 prošlo, včetně přístupnosti, cenového editoru,
   skutečného objednání s doprovodem, doplatku a `+2` v kalendáři.
+  Po poslední úpravě mobilního zobrazení zopakovány všechny čtyři scénáře
+  `pricing-participants.spec.ts` s novým produkčním sestavením: 4 prošly,
+  lokální náhrada mailové služby zaznamenala 0 zpráv.
 - SQL omezení: prošla, včetně nejvýše +2 osob, jednoho rozpracovaného
   doplatku, jedné platby, oddělení od původní platby a RLS/zákazu Data API.
 - Migrace vyzkoušena i na naplněné lokální databázi: všechny původní hodnoty
@@ -61,6 +64,13 @@ Nebyly použity ostré přihlašovací údaje ani měněny skutečné rezervace.
   Neproveden vynucený downgrade a audit nebyl skryt ani vypnut.
 
 ## Před nasazením
+
+Lokální náhled na `http://127.0.0.1:3132` používá vlastní databázi
+`gym_preview_test` a pouze fiktivní účty/rezervace. Přihlášení pro správce:
+`admin@preview.example.test`, pro zákazníka: `klient@preview.example.test`.
+Oba mají ukázkové heslo `Nahled2026!`; nejde o produkční přístupové údaje.
+Auth, platby a mailová služba jsou lokální náhrady a server odmítá externí
+požadavky. Náhled žije jen po dobu běhu lokálního procesu.
 
 Merge do `main` čeká na kontrolu náhledu vlastníkem. Pro tuto pracovní větev
 je automatické Vercel nasazení vypnuté. Nastavení produkčních služeb se neměnilo.
