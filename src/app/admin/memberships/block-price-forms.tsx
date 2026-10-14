@@ -207,6 +207,25 @@ function BlockPriceDialog({
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
       onClose={onClose}
+      onKeyDown={(event) => {
+        if (event.key !== "Tab") return;
+        const controls = Array.from(
+          event.currentTarget.querySelectorAll<HTMLElement>(
+            "button, input, select",
+          ),
+        ).filter(
+          (control) => control.tabIndex >= 0 && !control.matches(":disabled"),
+        );
+        const first = controls[0];
+        const last = controls.at(-1);
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }}
       className="m-auto max-h-[calc(100dvh_-_2rem)] w-[calc(100%_-_2rem)] max-w-2xl overflow-y-auto rounded-lg border border-border bg-card p-5 text-foreground shadow-md backdrop:bg-black/40 sm:p-6"
     >
       <div className="mb-2 flex items-center justify-between gap-4">

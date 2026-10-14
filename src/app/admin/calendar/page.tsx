@@ -85,16 +85,20 @@ export default async function CalendarPage() {
     <div>
       <PageHeader
         title="Kalendář"
-        description={`Přehled rezervací a bloků. Tažením přes prázdný čas přidáte blok. Zobrazený rozsah vychází z nastavení: ${minutesToHHmm(openMinute)} až ${minutesToHHmm(closeMinute)}.`}
+        description="Rezervace a blokované termíny na jednom místě."
       />
       <Card>
-        <CardContent className="p-3">
+        <CardContent className="p-3 sm:p-5">
           <BookingCalendar
             events={events}
             openMinute={openMinute}
             closeMinute={closeMinute}
             slotMinutes={slotMinutes}
           />
+          <p className="mt-4 text-xs text-muted-foreground">
+            {minutesToHHmm(openMinute)}–{minutesToHHmm(closeMinute)} · Tažením
+            přes volný čas přidáte blok pro úklid.
+          </p>
         </CardContent>
       </Card>
     </div>

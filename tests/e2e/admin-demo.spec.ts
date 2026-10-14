@@ -168,9 +168,7 @@ test("admin calendar uses readable phone and tablet layouts", async ({
 
   const phoneLayout = await page.evaluate(() => {
     const chunks = Array.from(
-      document.querySelectorAll<HTMLElement>(
-        ".fc-header-toolbar .fc-toolbar-chunk",
-      ),
+      document.querySelectorAll<HTMLElement>(".admin-calendar-toolbar > *"),
     ).map((chunk) => chunk.getBoundingClientRect());
     const overlaps = chunks.some((chunk, index) =>
       chunks
@@ -184,7 +182,7 @@ test("admin calendar uses readable phone and tablet layouts", async ({
         ),
     );
     const buttonHeights = Array.from(
-      document.querySelectorAll<HTMLElement>(".fc-button"),
+      document.querySelectorAll<HTMLElement>(".admin-calendar-toolbar button"),
     ).map((button) => button.getBoundingClientRect().height);
     return {
       overflow: document.documentElement.scrollWidth - window.innerWidth,
@@ -202,9 +200,11 @@ test("admin calendar uses readable phone and tablet layouts", async ({
   const tabletLayout = await page.evaluate(() => ({
     overflow: document.documentElement.scrollWidth - window.innerWidth,
     minimumButtonHeight: Math.min(
-      ...Array.from(document.querySelectorAll<HTMLElement>(".fc-button")).map(
-        (button) => button.getBoundingClientRect().height,
-      ),
+      ...Array.from(
+        document.querySelectorAll<HTMLElement>(
+          ".admin-calendar-toolbar button",
+        ),
+      ).map((button) => button.getBoundingClientRect().height),
     ),
   }));
   expect(tabletLayout.overflow).toBeLessThanOrEqual(1);

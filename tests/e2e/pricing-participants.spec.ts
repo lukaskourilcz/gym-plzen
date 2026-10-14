@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 import { join } from "node:path";
 import postgres from "postgres";
 import { createComgateMock } from "../integration/mocks";
@@ -34,13 +35,23 @@ test.describe("simple pricing administration", () => {
     await expect(
       page.getByRole("heading", { name: "Ceník a doprovod", exact: true }),
     ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Přidat cenový blok", exact: true })
+      .click();
+    const dialog = page.getByRole("dialog", {
+      name: "Přidat cenový blok",
+      exact: true,
+    });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByLabel("Den", { exact: true })).toBeFocused();
     await page.getByLabel("Den", { exact: true }).selectOption("1");
-    await page.getByLabel("První blok", { exact: true }).selectOption("300");
-    await page.getByLabel("Poslední blok (včetně)").selectOption("600");
+    await page.getByLabel("Čas od", { exact: true }).selectOption("300");
+    await page.getByLabel("Čas do", { exact: true }).selectOption("600");
     await page.getByLabel("Cena za blok (Kč)").fill("199");
     await page
       .getByRole("button", { name: "Uložit cenu bloků", exact: true })
       .click();
+    await expect(dialog).not.toBeVisible();
     await expect(
       page.getByText("05:00 až 10:00", { exact: true }),
     ).toBeVisible();
@@ -56,6 +67,56 @@ test.describe("simple pricing administration", () => {
         }),
       ]),
     );
+    const edit = page
+      .getByRole("button", { name: "Upravit", exact: true })
+      .first();
+    await edit.click();
+    const editDialog = page.getByRole("dialog", {
+      name: "Upravit cenový blok",
+      exact: true,
+    });
+    await expect(editDialog.getByLabel("Cena za blok (Kč)")).toHaveValue("199");
+    await editDialog.getByLabel("Cena za blok (Kč)").fill("209");
+    await page.keyboard.press("Escape");
+    await expect(editDialog).not.toBeVisible();
+    await expect(edit).toBeFocused();
+    await edit.click();
+    await expect(editDialog.getByLabel("Cena za blok (Kč)")).toHaveValue("199");
+    await editDialog.getByLabel("Cena za blok (Kč)").fill("");
+    await editDialog
+      .getByRole("button", { name: "Uložit cenu bloků", exact: true })
+      .click();
+    await expect(
+      editDialog.getByText("Zadejte cenu.", { exact: true }),
+    ).toBeVisible();
+    await expect(editDialog).toBeVisible();
+    await editDialog.getByLabel("Cena za blok (Kč)").fill("209");
+    await editDialog
+      .getByRole("button", { name: "Uložit cenu bloků", exact: true })
+      .click();
+    await expect(editDialog).not.toBeVisible();
+    await expect(page.getByText(/209.*za blok/)).toBeVisible();
+    await page
+      .getByRole("button", { name: "Přidat cenový blok", exact: true })
+      .click();
+    await dialog.getByLabel("Den", { exact: true }).selectOption("1");
+    await dialog.getByLabel("Čas od", { exact: true }).selectOption("600");
+    await dialog.getByLabel("Čas do", { exact: true }).selectOption("900");
+    await dialog.getByLabel("Cena za blok (Kč)").fill("299");
+    await dialog
+      .getByRole("button", { name: "Uložit cenu bloků", exact: true })
+      .click();
+    await expect(dialog).not.toBeVisible();
+    await expect(
+      page.getByText("10:00 až 15:00", { exact: true }),
+    ).toBeVisible();
+    const [twoRanges] =
+      await sql`select value from site_setting where key = 'pricing.time_blocks'`;
+    expect(
+      twoRanges!.value.filter(
+        (rule: { dayOfWeek: number }) => rule.dayOfWeek === 1,
+      ),
+    ).toHaveLength(2);
     await page.getByLabel("Příplatek (Kč)").fill("120");
     await page.getByLabel("Jak se příplatek počítá").selectOption("per_person");
     await expect(
@@ -78,6 +139,16 @@ test.describe("simple pricing administration", () => {
       .getByRole("button", { name: "Odebrat", exact: true })
       .first()
       .click();
+    await expect(
+      page.getByText("05:00 až 10:00", { exact: true }),
+    ).not.toBeVisible();
+    await page
+      .getByRole("button", { name: "Odebrat", exact: true })
+      .first()
+      .click();
+    await expect(
+      page.getByText("10:00 až 15:00", { exact: true }),
+    ).not.toBeVisible();
     await page.getByLabel("Příplatek (Kč)").fill("100");
     await page.getByLabel("Jak se příplatek počítá").selectOption("flat");
     await page
@@ -109,6 +180,100 @@ test.describe("simple pricing administration", () => {
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true);
+    await page
+      .getByRole("button", { name: "Přidat cenový blok", exact: true })
+      .click();
+    const dialog = page.getByRole("dialog", {
+      name: "Přidat cenový blok",
+      exact: true,
+    });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByLabel("Den", { exact: true })).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await page.keyboard.press("Shift+Tab");
+    await expect(
+      dialog.getByRole("button", { name: "Zrušit", exact: true }),
+    ).toBeFocused();
+    expect(
+      (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze())
+        .violations,
+    ).toEqual([]);
+    expect(
+      await dialog.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth,
+      ),
+    ).toBe(true);
+    await page.keyboard.press("Escape");
+    await expect(dialog).not.toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Přidat cenový blok", exact: true }),
+    ).toBeFocused();
+  });
+  test("calendar controls navigate and switch views without changing reservations", async ({
+    page,
+  }) => {
+    const before = await sql`select * from reservation order by id`;
+    const [emails] = await sql`select count(*)::int as n from email_archive`;
+    await page.goto("/admin/calendar");
+    const views = page.getByRole("group", {
+      name: "Zobrazení kalendáře",
+      exact: true,
+    });
+    const title = page.locator(".admin-calendar-toolbar h2");
+    await expect(
+      views.getByRole("button", { name: "Týden", exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      page.getByRole("button", { name: "Dnes", exact: true }),
+    ).toBeDisabled();
+    const originalTitle = await title.textContent();
+    await page
+      .getByRole("button", { name: "Další období", exact: true })
+      .click();
+    await expect(title).not.toHaveText(originalTitle!);
+    await expect(
+      page.getByRole("button", { name: "Dnes", exact: true }),
+    ).toBeEnabled();
+    await page.getByRole("button", { name: "Dnes", exact: true }).click();
+    await expect(title).toHaveText(originalTitle!);
+    await views.getByRole("button", { name: "Měsíc", exact: true }).click();
+    await expect(page.locator(".fc-dayGridMonth-view")).toBeVisible();
+    await expect(
+      views.getByRole("button", { name: "Měsíc", exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await views.getByRole("button", { name: "Týden", exact: true }).click();
+    for (const width of [320, 390, 768, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect(
+        page.locator(
+          width < 640 ? ".fc-timeGridDay-view" : ".fc-timeGridWeek-view",
+        ),
+      ).toBeVisible();
+      const layout = await page.evaluate(() => ({
+        overflow: document.documentElement.scrollWidth > window.innerWidth,
+        buttonHeight: Math.min(
+          ...Array.from(
+            document.querySelectorAll<HTMLElement>(
+              ".admin-calendar-toolbar button",
+            ),
+            (button) => button.getBoundingClientRect().height,
+          ),
+        ),
+      }));
+      expect(layout.overflow).toBe(false);
+      expect(layout.buttonHeight).toBeGreaterThanOrEqual(44);
+    }
+    expect(
+      (
+        await new AxeBuilder({ page })
+          .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+          .analyze()
+      ).violations,
+    ).toEqual([]);
+    expect(await sql`select * from reservation order by id`).toEqual(before);
+    expect(
+      (await sql`select count(*)::int as n from email_archive`)[0]!.n,
+    ).toBe(emails!.n);
   });
 });
 
@@ -158,7 +323,7 @@ test.describe("paid companion addition from account", () => {
     browser,
   }) => {
     const [member] =
-      await sql`select id from profiles where email = 'member@example.test'`;
+      await sql`select id from profiles where email = 'member@example.test' order by created_at desc limit 1`;
     const start = localDateTimeToDate(
       addDaysToDateKey(dateKeyInTimeZone(new Date()), 1),
       600,

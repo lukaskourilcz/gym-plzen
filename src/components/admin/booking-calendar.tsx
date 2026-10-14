@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import FullCalendar from "@fullcalendar/react";
@@ -8,7 +8,14 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import csLocale from "@fullcalendar/core/locales/cs";
-import type { DateSelectArg, EventInput } from "@fullcalendar/core";
+import type {
+  DateSelectArg,
+  DatesSetArg,
+  EventInput,
+} from "@fullcalendar/core";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { createBlockedSlotAction } from "@/app/admin/schedule/actions";
 import { minutesToHHmm } from "@/lib/helpers/format";
 import { closureFailureMessage } from "@/lib/helpers/closure-copy";
@@ -17,6 +24,12 @@ import {
   DEFAULT_OPEN_MINUTE,
   DEFAULT_SLOT_MINUTES,
 } from "@/lib/config/schedule";
+
+const CALENDAR_VIEWS = [
+  ["timeGridWeek", "Týden"],
+  ["timeGridDay", "Den"],
+  ["dayGridMonth", "Měsíc"],
+] as const;
 
 /**
  * Admin operational calendar (FullCalendar, MIT). Week view with reservations
@@ -46,6 +59,15 @@ export function BookingCalendar({
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [scheduleHint, setScheduleHint] = useState(false);
+  const [title, setTitle] = useState("");
+  const [viewType, setViewType] = useState("timeGridWeek");
+  const [todayInRange, setTodayInRange] = useState(true);
+  const syncToolbar = useCallback(({ view }: DatesSetArg) => {
+    setTitle(view.title);
+    setViewType(view.type);
+    const now = new Date();
+    setTodayInRange(now >= view.currentStart && now < view.currentEnd);
+  }, []);
 
   /*
    * A seven-column time grid is useful on tablets and desktops, but each day
@@ -81,11 +103,6 @@ export function BookingCalendar({
     const observedNames = new Set<HTMLElement>();
     const resizeRows = () => {
       frame = 0;
-      // Toolbar buttons already carry localized names. Their icon fonts are
-      // decoration, including after a FullCalendar view/navigation redraw.
-      container
-        .querySelectorAll<HTMLElement>(".fc-toolbar .fc-icon[role='img']")
-        .forEach((icon) => icon.setAttribute("aria-hidden", "true"));
       const heights = new Map<number, number>();
       for (const name of observedNames) {
         if (!container.contains(name)) {
@@ -111,7 +128,7 @@ export function BookingCalendar({
             row,
             Math.max(
               heights.get(row) ?? 44,
-              Math.ceil(name.getBoundingClientRect().height) + 12,
+              Math.ceil(name.getBoundingClientRect().height) + 16,
             ),
           );
         });
@@ -204,17 +221,116 @@ export function BookingCalendar({
       className="admin-booking-calendar"
     >
       <style ref={rowStyleRef} />
+      <div className="admin-calendar-toolbar mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2
+          className="w-full text-lg font-semibold sm:w-auto sm:flex-1"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {title || "Načítám kalendář…"}
+        </h2>
+        <div
+          className="flex items-center gap-2"
+          role="group"
+          aria-label="Posun kalendáře"
+        >
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label="Předchozí období"
+            onClick={() => calendarRef.current?.getApi().prev()}
+          >
+            <ChevronLeft aria-hidden="true" />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label="Další období"
+            onClick={() => calendarRef.current?.getApi().next()}
+          >
+            <ChevronRight aria-hidden="true" />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={todayInRange}
+            onClick={() => calendarRef.current?.getApi().today()}
+          >
+            Dnes
+          </Button>
+        </div>
+        <div
+          className="flex w-full gap-1 rounded-md border border-border bg-secondary/50 p-1 sm:w-auto"
+          role="group"
+          aria-label="Zobrazení kalendáře"
+        >
+          {CALENDAR_VIEWS.map(([view, label]) => (
+            <Button
+              key={view}
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-pressed={viewType === view}
+              className={cn(
+                "flex-1 font-medium sm:flex-none",
+                viewType === view && "bg-card shadow-sm",
+              )}
+              onClick={() => calendarRef.current?.getApi().changeView(view)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+      </div>
+      <div
+        className="mb-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground"
+        role="group"
+        aria-label="Legenda kalendáře"
+      >
+        <span className="inline-flex items-center gap-2">
+          <span className="size-2 rounded-full bg-success" aria-hidden="true" />
+          Potvrzeno
+        </span>
+        <span className="inline-flex items-center gap-2">
+          <span className="size-2 rounded-full bg-warning" aria-hidden="true" />
+          Rozpracováno
+        </span>
+        <span className="inline-flex items-center gap-2">
+          <span
+            className="size-2 rounded-full bg-muted-foreground"
+            aria-hidden="true"
+          />
+          Blokováno
+        </span>
+      </div>
       <FullCalendar
         ref={calendarRef}
         plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
         initialView="timeGridWeek"
         locale={csLocale}
         firstDay={1}
-        headerToolbar={{
-          left: "prev,next today",
-          center: "title",
-          right: "timeGridWeek,timeGridDay,dayGridMonth",
-        }}
+        headerToolbar={false}
+        datesSet={syncToolbar}
+        dayHeaderContent={({ date, view, isToday }) => (
+          <span className="inline-flex flex-col items-center gap-1">
+            <span className="text-xs font-medium text-muted-foreground">
+              {date.toLocaleDateString("cs-CZ", { weekday: "short" })}
+            </span>
+            {view.type !== "dayGridMonth" ? (
+              <span
+                className={cn(
+                  "inline-flex size-7 items-center justify-center rounded-full text-sm font-semibold tabular-nums",
+                  isToday && "bg-primary text-primary-foreground",
+                )}
+              >
+                {date.getDate()}
+              </span>
+            ) : null}
+          </span>
+        )}
         slotMinTime={`${minutesToHHmm(openMinute)}:00`}
         slotMaxTime={`${minutesToHHmm(closeMinute)}:00`}
         slotDuration={{ minutes: slotMinutes }}
