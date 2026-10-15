@@ -68,7 +68,11 @@ test("private member notes save, annotate names and clear without changing booki
       exact: true,
     });
     await expect(indicator).toBeVisible();
+    // Focusing an off-screen trigger also scrolls the table. Radix closes
+    // tooltips on scroll, so finish that movement before testing focus.
+    await indicator.scrollIntoViewIfNeeded();
     await indicator.focus();
+    await expect(indicator).toBeFocused();
     await expect(page.getByRole("tooltip")).toHaveText(note);
     await expect(page.getByRole("tooltip").locator("b")).toHaveCount(0);
     await page.keyboard.press("Escape");
@@ -123,12 +127,13 @@ test("private member notes save, annotate names and clear without changing booki
         exact: true,
       }),
     ).toHaveCount(1);
-    await page
-      .getByRole("button", {
-        name: `Poznámka k zákazníkovi ${reservationName}`,
-        exact: true,
-      })
-      .focus();
+    const calendarIndicator = page.getByRole("button", {
+      name: `Poznámka k zákazníkovi ${reservationName}`,
+      exact: true,
+    });
+    await calendarIndicator.scrollIntoViewIfNeeded();
+    await calendarIndicator.focus();
+    await expect(calendarIndicator).toBeFocused();
     await expect(page.getByRole("tooltip")).toHaveText(note);
     await page.keyboard.press("Escape");
     await page.goto(`/admin/reservations?id=${ids[0]}`);
