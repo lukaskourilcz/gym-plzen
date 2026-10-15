@@ -58,11 +58,27 @@ test("private member notes save, annotate names and clear without changing booki
         request.method() === "POST" &&
         Boolean(request.headers()["next-action"]),
     );
+    const refreshed = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return (
+        response.request().method() === "GET" &&
+        url.pathname === "/admin/members" &&
+        url.searchParams.has("_rsc") &&
+        response.request().headers()["next-router-prefetch"] !== "1"
+      );
+    });
     await editor
       .getByRole("button", { name: "Uložit poznámku", exact: true })
       .click();
     const action = await submitted;
+    await refreshed;
     await expect(editor).not.toBeVisible();
+    await expect(
+      row.getByRole("button", { name: "Upravit poznámku", exact: true }),
+    ).toBeVisible();
+    // Move away from the removed dialog before testing keyboard interaction;
+    // its former pointer position can now hover a newly rendered note icon.
+    await page.mouse.move(0, 0);
     const indicator = row.getByRole("button", {
       name: `Poznámka k zákazníkovi ${name}`,
       exact: true,
@@ -121,6 +137,7 @@ test("private member notes save, annotate names and clear without changing booki
     }
 
     await page.goto("/admin/calendar");
+    await page.mouse.move(0, 0);
     await expect(
       page.getByRole("button", {
         name: `Poznámka k zákazníkovi ${reservationName}`,
