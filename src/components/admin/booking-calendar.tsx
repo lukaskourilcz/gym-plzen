@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { createBlockedSlotAction } from "@/app/admin/schedule/actions";
 import { minutesToHHmm } from "@/lib/helpers/format";
 import { closureFailureMessage } from "@/lib/helpers/closure-copy";
+import { OUTSIDE_OPENING_HOURS_LABEL } from "@/lib/helpers/calendar-schedule";
 import {
   DEFAULT_CLOSE_MINUTE,
   DEFAULT_OPEN_MINUTE,
@@ -45,12 +46,18 @@ export function BookingCalendar({
   closeMinute = DEFAULT_CLOSE_MINUTE,
   slotMinutes = DEFAULT_SLOT_MINUTES,
   readOnly = false,
+  businessHours,
 }: {
   events: EventInput[];
   openMinute?: number;
   closeMinute?: number;
   slotMinutes?: number;
   readOnly?: boolean;
+  businessHours?: {
+    daysOfWeek: number[];
+    startTime: string;
+    endTime: string;
+  }[];
 }) {
   const router = useRouter();
   const calendarRef = useRef<FullCalendar>(null);
@@ -306,6 +313,13 @@ export function BookingCalendar({
           />
           Blokováno
         </span>
+        <span className="inline-flex items-center gap-2">
+          <span
+            className="size-2 rounded-full bg-muted-foreground"
+            aria-hidden="true"
+          />
+          Mimo otevírací dobu
+        </span>
       </div>
       <FullCalendar
         ref={calendarRef}
@@ -342,6 +356,7 @@ export function BookingCalendar({
           return `${minutesToHHmm(start)} – ${minutesToHHmm(Math.min(start + slotMinutes, closeMinute))}`;
         }}
         displayEventTime={false}
+        eventDisplay="block"
         eventContent={({ event }) =>
           event.display === "background" ||
           event.display === "inverse-background" ? null : (
@@ -356,6 +371,12 @@ export function BookingCalendar({
             >
               <AdminMemberName
                 name={event.title}
+                className="flex flex-wrap"
+                nameHint={
+                  event.extendedProps.outsideOpeningHours === true
+                    ? OUTSIDE_OPENING_HOURS_LABEL
+                    : undefined
+                }
                 note={
                   typeof event.extendedProps.memberNote === "string"
                     ? event.extendedProps.memberNote
@@ -376,11 +397,13 @@ export function BookingCalendar({
         select={onSelect}
         height="auto"
         expandRows={false}
-        businessHours={{
-          daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
-          startTime: minutesToHHmm(openMinute),
-          endTime: minutesToHHmm(closeMinute),
-        }}
+        businessHours={
+          businessHours ?? {
+            daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+            startTime: minutesToHHmm(openMinute),
+            endTime: minutesToHHmm(closeMinute),
+          }
+        }
         events={events}
       />
       {actionError ? (

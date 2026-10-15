@@ -19,7 +19,8 @@
       "codex/block-pricing-guests": false,
       "codex/admin-daily-refinements": false,
       "codex/fix-audit-braces": false,
-      "codex/required-phone-members": false
+      "codex/required-phone-members": false,
+      "codex/preserve-bookings-opening-hours": false
     }
   }
 }

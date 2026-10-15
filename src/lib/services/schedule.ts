@@ -26,7 +26,10 @@ export async function listOpeningHours(): Promise<OpeningHours[]> {
   return db.select().from(openingHours).orderBy(asc(openingHours.dayOfWeek));
 }
 
-/** Upsert the opening hours for one weekday (0=Sun…6=Sat). */
+/**
+ * Upsert hours for future availability (0=Sun…6=Sat). Purchased intervals and
+ * access intents are independent: never revalidate, move or cancel them here.
+ */
 export async function setOpeningHours(input: {
   dayOfWeek: number;
   openMinute: number;
