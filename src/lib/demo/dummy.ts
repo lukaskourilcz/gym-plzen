@@ -176,7 +176,7 @@ export function buildDemoMembers(
         role,
         phone: u.phone,
         phoneRequired: false,
-      phoneVerified: i % 3 !== 0,
+        phoneVerified: i % 3 !== 0,
         notifyByWhatsapp: true,
         notifyBySms: i % 4 === 0,
         marketingConsent: i % 2 === 0,
