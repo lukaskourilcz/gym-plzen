@@ -13,6 +13,14 @@ import type { AdminSelectFilter } from "./list-filters";
 
 export const memberFilters: AdminSelectFilter[] = [
   {
+    name: "registration",
+    label: "Registrace",
+    options: [
+      { value: "registered", label: "Registrovaní" },
+      { value: "guest", label: "Neregistrovaní" },
+    ],
+  },
+  {
     name: "whatsapp",
     label: "WhatsApp",
     options: [

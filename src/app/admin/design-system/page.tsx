@@ -32,6 +32,7 @@ import {
 } from "@/components/site/social-icons";
 import { PageHeader } from "@/components/admin/page-header";
 import { CheckboxRow } from "@/components/admin/form-controls";
+import { MemberRegistrationBadge } from "@/components/admin/member-registration-badge";
 import { AdminMemberName } from "@/components/admin/member-name";
 
 export const metadata = { title: "Design systém" };
@@ -67,6 +68,10 @@ export default async function DesignSystemPage() {
         title="Design systém"
         description="Referenční galerie komponent. Pravidla a tokeny jsou v docs/DESIGN_SYSTEM.md."
       />
+      <section aria-label="Typ zákazníka" className="my-6 flex flex-wrap gap-3">
+        <MemberRegistrationBadge registered />
+        <MemberRegistrationBadge registered={false} />
+      </section>
 
       <div className="grid gap-8">
         <section
