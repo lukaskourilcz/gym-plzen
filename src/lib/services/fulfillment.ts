@@ -145,6 +145,8 @@ async function fulfillLocked(reservationId: string): Promise<void> {
 
   // This guard applies to every caller: payment, admin booking and watchdog.
   // Confirmation is immediate; prepare at -24h, deliver separately at -1h.
+  // A later opening-hours change cannot invalidate this purchased interval.
+  // Fulfillment intentionally uses stored reservation times, never the slot grid.
   if (!isAccessCodePreparationDue(reservation.startsAt)) return;
 
   // Step: code_created : issue a code + provision it on the lock (once).

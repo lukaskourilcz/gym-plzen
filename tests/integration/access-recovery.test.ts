@@ -30,7 +30,11 @@ import { GET as watchdog } from "../../src/app/api/cron/watchdog/route";
 
 import { rescheduleReservation } from "../../src/lib/services/rescheduling";
 import { getSlotsForRange } from "../../src/lib/services/slots";
-import { findOverlappingReservations } from "../../src/lib/services/schedule";
+import {
+  findOverlappingReservations,
+  setOpeningHours,
+} from "../../src/lib/services/schedule";
+import { dayOfWeek } from "../../src/lib/helpers/datetime";
 
 const nativeFetch = globalThis.fetch;
 let online = true,
@@ -150,6 +154,101 @@ describe(
       auths = [];
       mode = "ok";
       deleteWorks = true;
+    });
+    for (const closed of [false, true]) {
+      test(`purchased reservation still receives its code after hours are ${closed ? "closed" : "shortened"} (#229)`, async () => {
+        const id = await booking();
+        const before = await rows("select * from reservation order by id");
+        const beforeSteps = await rows(
+          "select * from reservation_pipeline order by id",
+        );
+        const beforeCodes = await rows("select * from access_code order by id");
+        const [emailsBefore] = await rows<{ n: number }>(
+          "select count(*)::int as n from email_archive",
+        );
+        await setOpeningHours({
+          dayOfWeek: dayOfWeek(before[0]!.starts_at as Date),
+          openMinute: 300,
+          closeMinute: 360,
+          slotMinutes: 75,
+          isClosed: closed,
+        });
+        assert.deepEqual(
+          await rows("select * from reservation order by id"),
+          before,
+        );
+        assert.deepEqual(
+          await rows("select * from reservation_pipeline order by id"),
+          beforeSteps,
+        );
+        assert.deepEqual(
+          await rows("select * from access_code order by id"),
+          beforeCodes,
+        );
+        assert.equal(
+          (
+            await rows<{ n: number }>(
+              "select count(*)::int as n from email_archive",
+            )
+          )[0]!.n,
+          emailsBefore!.n,
+        );
+        assert.ok(
+          (await dueForRetry()).some((step) => step.reservationId === id),
+        );
+        await fulfillReservation(id);
+        const issued = await code(id);
+        assert.equal(issued.provision_state, "ready");
+        assert.equal(
+          issued.valid_from.getTime(),
+          (before[0]!.starts_at as Date).getTime(),
+        );
+        assert.deepEqual(
+          await rows("select * from reservation order by id"),
+          before,
+        );
+        assert.equal(
+          (await steps(id)).find(([step]) => step === "code_delivered")?.[1],
+          "succeeded",
+        );
+        assert.equal(putCount, 1);
+      });
+    }
+    test("prepared code retains its PIN and validity and is delivered after closing its day (#229)", async (t) => {
+      const id = await booking(120);
+      await fulfillReservation(id);
+      const original = await code(id);
+      const before = await rows("select * from access_code order by id");
+      const sentBefore = resend.sent.length;
+      await setOpeningHours({
+        dayOfWeek: dayOfWeek(original.valid_from),
+        openMinute: 360,
+        closeMinute: 1320,
+        slotMinutes: 75,
+        isClosed: true,
+      });
+      assert.deepEqual(
+        await rows("select * from access_code order by id"),
+        before,
+      );
+      assert.equal(resend.sent.length, sentBefore);
+      t.mock.timers.setTime(now.getTime() + 61 * 60000);
+      assert.ok(
+        (await dueForRetry()).some(
+          (step) => step.reservationId === id && step.step === "code_delivered",
+        ),
+      );
+      await fulfillReservation(id);
+      const after = await code(id);
+      assert.equal(after.id, original.id);
+      assert.equal(after.encrypted_pin, original.encrypted_pin);
+      assert.equal(after.valid_from.getTime(), original.valid_from.getTime());
+      assert.equal(after.valid_until.getTime(), original.valid_until.getTime());
+      assert.equal(putCount, 1);
+      assert.equal(
+        (await steps(id)).find(([step]) => step === "code_delivered")?.[1],
+        "succeeded",
+      );
     });
     async function movableBooking() {
       const user = {
