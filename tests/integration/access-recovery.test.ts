@@ -33,8 +33,14 @@ import { getSlotsForRange } from "../../src/lib/services/slots";
 import {
   findOverlappingReservations,
   setOpeningHours,
+  getShowerMinutes,
 } from "../../src/lib/services/schedule";
-import { dayOfWeek } from "../../src/lib/helpers/datetime";
+import {
+  addDaysToDateKey,
+  dateKeyInTimeZone,
+  dayOfWeek,
+  intervalsOverlap,
+} from "../../src/lib/helpers/datetime";
 
 const nativeFetch = globalThis.fetch;
 let online = true,
@@ -203,6 +209,11 @@ describe(
           issued.valid_from.getTime(),
           (before[0]!.starts_at as Date).getTime(),
         );
+        assert.equal(
+          issued.valid_until.getTime(),
+          (before[0]!.ends_at as Date).getTime() +
+            (await getShowerMinutes()) * 60_000,
+        );
         assert.deepEqual(
           await rows("select * from reservation order by id"),
           before,
@@ -249,6 +260,38 @@ describe(
         (await steps(id)).find(([step]) => step === "code_delivered")?.[1],
         "succeeded",
       );
+    });
+    test("shifted public slot grid still blocks every overlap with an old purchased interval (#229)", async () => {
+      const id = await booking();
+      const [original] = await rows<{ starts_at: Date; ends_at: Date }>(
+        "select starts_at,ends_at from reservation where id=$1",
+        [id],
+      );
+      await setOpeningHours({
+        dayOfWeek: dayOfWeek(original!.starts_at),
+        openMinute: 360,
+        closeMinute: 1320,
+        slotMinutes: 75,
+      });
+      const day = dateKeyInTimeZone(original!.starts_at);
+      const range = await getSlotsForRange(day, addDaysToDateKey(day, 1), now);
+      const overlaps = range.days[0]!.slots.filter((slot) =>
+        intervalsOverlap(
+          slot.start,
+          slot.end,
+          original!.starts_at,
+          original!.ends_at,
+        ),
+      );
+      assert.ok(overlaps.length > 0);
+      for (const slot of overlaps) {
+        assert.equal(slot.available, false);
+        assert.equal(slot.booked, true);
+        assert.equal(
+          (await checkAvailability(slot.start, slot.end)).reason,
+          "overlap_reservation",
+        );
+      }
     });
     async function movableBooking() {
       const user = {
