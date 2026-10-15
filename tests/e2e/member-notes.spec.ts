@@ -41,6 +41,7 @@ test("private member notes save, annotate names and clear without changing booki
   const note = "Domluvit rozcvičení.\n<b>Bez HTML formátování.</b>";
   try {
     await page.goto(`/admin/members?q=${encodeURIComponent(member!.email)}`);
+    await page.bringToFront();
     const row = page
       .getByRole("row")
       .filter({ has: page.locator(`a[href='/admin/members/${member!.id}']`) });
@@ -87,7 +88,8 @@ test("private member notes save, annotate names and clear without changing booki
     // Focusing an off-screen trigger also scrolls the table. Radix closes
     // tooltips on scroll, so finish that movement before testing focus.
     await indicator.scrollIntoViewIfNeeded();
-    await indicator.focus();
+    await row.getByRole("link", { name, exact: true }).focus();
+    await page.keyboard.press("Tab");
     await expect(indicator).toBeFocused();
     await expect(page.getByRole("tooltip")).toHaveText(note);
     await expect(page.getByRole("tooltip").locator("b")).toHaveCount(0);
@@ -137,6 +139,7 @@ test("private member notes save, annotate names and clear without changing booki
     }
 
     await page.goto("/admin/calendar");
+    await page.bringToFront();
     await page.mouse.move(0, 0);
     await expect(
       page.getByRole("button", {
