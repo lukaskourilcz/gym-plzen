@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { join } from "node:path";
 import postgres from "postgres";
@@ -10,6 +10,20 @@ import {
 } from "../../src/lib/helpers/datetime";
 
 const sql = postgres(requireTestDatabaseUrl(), { prepare: false, max: 1 });
+async function revealBeforeFocus(locator: Locator) {
+  await locator.evaluate(async (element) => {
+    element.scrollIntoView({
+      block: "center",
+      inline: "center",
+      behavior: "instant",
+    });
+    // Scroll events can arrive after the browser reports the final position.
+    // Drain that rendering cycle before opening a scroll-dismissed tooltip.
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+  });
+}
 test.afterAll(async () => sql.end({ timeout: 2 }));
 test.use({
   storageState: join(process.cwd(), "tests/e2e/.auth/admin.json"),
@@ -98,11 +112,8 @@ test("private member notes save, annotate names and clear without changing booki
     // the whole name first: focusing a clipped link otherwise scrolls again
     // after Tab has opened the tooltip, which Radix dismisses on scroll.
     const nameLink = row.getByRole("link", { name, exact: true });
-    await nameLink.scrollIntoViewIfNeeded();
+    await revealBeforeFocus(nameLink);
     await expect(nameLink).toBeInViewport({ ratio: 1 });
-    await expect
-      .poll(() => tableRegion.evaluate((element) => element.scrollLeft))
-      .toBe(0);
     await nameLink.focus();
     await page.keyboard.press("Tab");
     await expect(indicator).toBeFocused();
@@ -166,7 +177,7 @@ test("private member notes save, annotate names and clear without changing booki
       name: `Poznámka k zákazníkovi ${reservationName}`,
       exact: true,
     });
-    await calendarIndicator.scrollIntoViewIfNeeded();
+    await revealBeforeFocus(calendarIndicator);
     await calendarIndicator.focus();
     await expect(calendarIndicator).toBeFocused();
     await expect(page.getByRole("tooltip")).toHaveText(note);
