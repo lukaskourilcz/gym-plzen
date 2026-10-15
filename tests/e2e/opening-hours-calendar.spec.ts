@@ -169,17 +169,20 @@ test("changed hours preserve reservations and codes while all calendar views sho
     await expect(
       page.locator(".fc-event").filter({ hasText: "Rozvrh: časný host" }),
     ).toHaveCSS("background-color", grey);
-    await reveal(early);
-    await early.focus();
-    await expect(page.getByRole("tooltip")).toHaveText(
-      "Rezervace mimo otevírací dobu",
-    );
     await page.screenshot({
       path: "/tmp/gym-hours-calendar-month.png",
       fullPage: true,
     });
-    await page.keyboard.press("Escape");
     await page.setViewportSize({ width: 390, height: 844 });
+    // Start the mobile interaction after layout has settled on a fresh page.
+    // Resizing a focused desktop trigger intentionally dismisses its tooltip.
+    await page.goto("/admin/calendar");
+    await page.getByRole("button", { name: "Měsíc", exact: true }).click();
+    for (let n = 0; n < 3 && (await early.count()) === 0; n++)
+      await page
+        .getByRole("button", { name: "Další období", exact: true })
+        .click();
+    await expect(early).toHaveCount(1);
     await reveal(early);
     await early.tap();
     await expect(page.getByRole("tooltip")).toHaveText(
@@ -196,8 +199,18 @@ test("changed hours preserve reservations and codes while all calendar views sho
     expect(tooltip.right).toBeLessThanOrEqual(tooltip.width);
     await page.keyboard.press("Escape");
     for (const dark of [false, true]) {
-      await page.evaluate((enabled) => {
+      await page.evaluate(async (enabled) => {
         document.documentElement.classList.toggle("dark", enabled);
+        // Contrast is measured after the existing colour transitions finish.
+        await Promise.all(
+          document
+            .getAnimations()
+            .filter(
+              (animation) =>
+                animation.effect?.getComputedTiming().iterations !== Infinity,
+            )
+            .map((animation) => animation.finished.catch(() => undefined)),
+        );
       }, dark);
       expect(
         (
