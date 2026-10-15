@@ -188,6 +188,9 @@ test("changed hours preserve reservations and codes while all calendar views sho
     expect(
       (
         await new AxeBuilder({ page })
+          // Audit the changed reservation content and its status legend.
+          .include(".fc-event")
+          .include('[aria-label="Legenda kalendáře"]')
           .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
           .analyze()
       ).violations,
