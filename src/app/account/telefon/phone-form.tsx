@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { phoneSchema } from "@/lib/validations/common";
@@ -14,6 +15,10 @@ import { completePhoneAction } from "./actions";
 
 export function PhoneForm({ next }: { next: string }) {
   const router = useRouter();
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    setReady(true);
+  }, []);
   const { form, submit, serverError } = useActionForm({
     schema: z.object({ phone: phoneSchema }),
     action: completePhoneAction,
@@ -37,6 +42,7 @@ export function PhoneForm({ next }: { next: string }) {
       </Field>
       <FormFeedback error={serverError} />
       <SubmitButton
+        disabled={!ready}
         isSubmitting={form.formState.isSubmitting}
         pendingLabel="Ukládám…"
       >

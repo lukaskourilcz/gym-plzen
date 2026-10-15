@@ -82,7 +82,10 @@ export async function authenticateAction(input: unknown): Promise<AuthResult> {
     const profile = await members.ensureProfileForUser({
       id: data.user.id,
       email: data.user.email ?? null,
-      fullName: typeof data.user.user_metadata?.full_name === "string" ? data.user.user_metadata.full_name : null,
+      fullName:
+        typeof data.user.user_metadata?.full_name === "string"
+          ? data.user.user_metadata.full_name
+          : null,
       phone:
         typeof data.user.user_metadata?.phone === "string"
           ? data.user.user_metadata.phone
