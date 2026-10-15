@@ -493,8 +493,8 @@ and retain 44px targets. FullCalendar still handles the grid and selection rules
 
 The displayed time range expands to include stored reservation intervals, even
 after opening hours change. A reservation outside its specific weekday's hours
-(including a closed day or a partial overrun) uses muted grey with readable light
-text and the hint "Rezervace mimo otevírací dobu". Focus, hover and tapping its
+(including a closed day or a partial overrun) uses muted grey with contrasting
+card-colour text and the hint "Rezervace mimo otevírací dobu". Focus, hover and tapping its
 name expose the shared Radix tooltip; the private-note trigger stays independent.
 Actual business-hours shading retains each day's configured hours. This display
 classification never changes a reservation, price, access code or fulfillment.

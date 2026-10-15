@@ -173,7 +173,7 @@ export default async function DesignSystemPage() {
                 start: localDateTimeToDate(calendarDate, 1350).toISOString(),
                 end: localDateTimeToDate(calendarDate, 1425).toISOString(),
                 backgroundColor: "var(--muted-foreground)",
-                textColor: "var(--primary-foreground)",
+                textColor: "var(--card)",
                 borderColor: "transparent",
                 extendedProps: { outsideOpeningHours: true },
               },

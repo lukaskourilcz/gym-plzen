@@ -65,7 +65,11 @@ export default async function CalendarPage() {
           : r.status === "confirmed"
             ? "var(--success)"
             : "var(--warning)",
-        textColor: "var(--primary-foreground)",
+        textColor: isOutsideOpeningHours(r, openingHours)
+          ? "var(--card)"
+          : r.status === "confirmed"
+            ? "var(--success-foreground)"
+            : "var(--warning-foreground)",
         borderColor: "transparent",
         extendedProps: {
           memberNote: memberNotes.get(r.userId ?? ""),
@@ -85,7 +89,12 @@ export default async function CalendarPage() {
               )
                 ? "var(--muted-foreground)"
                 : "var(--warning)",
-              textColor: "var(--primary-foreground)",
+              textColor: isOutsideOpeningHours(
+                { startsAt: r.rescheduleStartsAt, endsAt: r.rescheduleEndsAt },
+                openingHours,
+              )
+                ? "var(--card)"
+                : "var(--warning-foreground)",
               borderColor: "transparent",
               extendedProps: {
                 memberNote: memberNotes.get(r.userId ?? ""),

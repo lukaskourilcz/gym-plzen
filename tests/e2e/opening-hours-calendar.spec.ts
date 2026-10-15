@@ -169,6 +169,16 @@ test("changed hours preserve reservations and codes while all calendar views sho
     await expect(
       page.locator(".fc-event").filter({ hasText: "Rozvrh: časný host" }),
     ).toHaveCSS("background-color", grey);
+    await reveal(early);
+    await early.focus();
+    await expect(page.getByRole("tooltip")).toHaveText(
+      "Rezervace mimo otevírací dobu",
+    );
+    await page.screenshot({
+      path: "/tmp/gym-hours-calendar-month.png",
+      fullPage: true,
+    });
+    await page.keyboard.press("Escape");
     await page.setViewportSize({ width: 390, height: 844 });
     await reveal(early);
     await early.tap();
@@ -185,16 +195,24 @@ test("changed hours preserve reservations and codes while all calendar views sho
     expect(tooltip.left).toBeGreaterThanOrEqual(0);
     expect(tooltip.right).toBeLessThanOrEqual(tooltip.width);
     await page.keyboard.press("Escape");
-    expect(
-      (
-        await new AxeBuilder({ page })
-          // Audit the changed reservation content and its status legend.
-          .include(".fc-event")
-          .include('[aria-label="Legenda kalendáře"]')
-          .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
-          .analyze()
-      ).violations,
-    ).toEqual([]);
+    for (const dark of [false, true]) {
+      await page.evaluate((enabled) => {
+        document.documentElement.classList.toggle("dark", enabled);
+      }, dark);
+      expect(
+        (
+          await new AxeBuilder({ page })
+            // Audit the changed reservation content and its status legend.
+            .include(".fc-event")
+            .include('[aria-label="Legenda kalendáře"]')
+            .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+            .analyze()
+        ).violations,
+      ).toEqual([]);
+    }
+    await page.evaluate(() =>
+      document.documentElement.classList.remove("dark"),
+    );
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.getByRole("button", { name: "Týden", exact: true }).click();
     await page.screenshot({
