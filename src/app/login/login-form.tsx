@@ -19,6 +19,7 @@ import {
   CONFIGURED_OAUTH_PROVIDERS,
   type OAuthProviderId,
 } from "@/lib/auth/oauth";
+import { phoneSchema } from "@/lib/validations/common";
 import { authenticateAction } from "./actions";
 
 /**
@@ -40,9 +41,18 @@ const schema = z
   .object({
     __mode: z.enum(["signin", "signup"]),
     name: z.string().max(120).optional(),
+    phone: z.string().max(40).optional(),
     email: z.string().email("Neplatný e-mail."),
     password: z.string().min(8, "Heslo musí mít alespoň 8 znaků."),
   })
+  .refine(
+    (val) =>
+      val.__mode === "signin" || phoneSchema.safeParse(val.phone).success,
+    {
+      path: ["phone"],
+      message: "Zadejte platné telefonní číslo.",
+    },
+  )
   .refine((val) => val.__mode === "signin" || Boolean(val.name?.trim()), {
     path: ["name"],
     message: "Zadejte jméno.",
@@ -83,7 +93,13 @@ export function LoginForm({
 
   const { register, handleSubmit, setValue, formState } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { __mode: "signin", email: "", password: "", name: "" },
+    defaultValues: {
+      __mode: "signin",
+      email: "",
+      password: "",
+      name: "",
+      phone: "",
+    },
   });
 
   function switchMode(newMode: "signin" | "signup") {
@@ -100,6 +116,7 @@ export function LoginForm({
     const result = await authenticateAction({
       mode,
       name: values.name,
+      phone: values.phone,
       email: values.email,
       password: values.password,
       next,
@@ -152,6 +169,22 @@ export function LoginForm({
         {mode === "signup" && (
           <Field name="name" label="Jméno" error={formState.errors.name}>
             <Input id="name" autoComplete="name" {...register("name")} />
+          </Field>
+        )}
+        {mode === "signup" && (
+          <Field
+            name="registration-phone"
+            label="Telefon"
+            error={formState.errors.phone}
+          >
+            <Input
+              id="registration-phone"
+              type="tel"
+              autoComplete="tel"
+              required
+              placeholder="+420 777 123 456"
+              {...register("phone")}
+            />
           </Field>
         )}
         <Field name="email" label="E-mail" error={formState.errors.email}>

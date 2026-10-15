@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
 import { ActionError } from "@/lib/helpers/action";
 import { toE164 } from "@/lib/helpers/phone";
+import { assertRequiredPhone } from "./members";
 import type { ProfileValues } from "@/lib/validations/profile";
 
 /** Explicit allowlist: customer input can never change a role or admin note. */
@@ -11,6 +12,7 @@ export async function saveCustomerProfile(
   input: ProfileValues,
 ) {
   const phone = input.phone.trim() ? toE164(input.phone) : null;
+  await assertRequiredPhone(userId, phone);
   const [updated] = await db
     .update(profiles)
     .set({

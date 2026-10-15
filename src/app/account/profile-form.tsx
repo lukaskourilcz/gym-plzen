@@ -23,11 +23,13 @@ export function ProfileForm({
   email,
   googlePhoto,
   isDemo,
+  phoneRequired = false,
 }: {
   values: ProfileValues;
   email: string;
   googlePhoto: string | null;
   isDemo: boolean;
+  phoneRequired?: boolean;
 }) {
   const router = useRouter();
   const { form, submit, serverError, success } = useActionForm({
@@ -124,6 +126,7 @@ export function ProfileForm({
             >
               <Input
                 id="phone"
+                required={phoneRequired}
                 type="tel"
                 autoComplete="tel"
                 placeholder="+420 777 123 456"
