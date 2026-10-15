@@ -11,7 +11,12 @@ import {
 
 const sql = postgres(requireTestDatabaseUrl(), { prepare: false, max: 1 });
 test.afterAll(async () => sql.end({ timeout: 2 }));
-test.use({ storageState: join(process.cwd(), "tests/e2e/.auth/admin.json") });
+test.use({
+  storageState: join(process.cwd(), "tests/e2e/.auth/admin.json"),
+  // Keep the desktop sidebar while forcing horizontal table overflow locally
+  // as well as on Linux, where different font metrics make the table wider.
+  viewport: { width: 1100, height: 720 },
+});
 
 test("private member notes save, annotate names and clear without changing bookings or sending messages", async ({
   page,
@@ -77,6 +82,10 @@ test("private member notes save, annotate names and clear without changing booki
     await expect(
       row.getByRole("button", { name: "Upravit poznámku", exact: true }),
     ).toBeVisible();
+    const tableRegion = page.getByRole("region", { name: "Tabulka" });
+    await expect
+      .poll(() => tableRegion.evaluate((element) => element.scrollLeft))
+      .toBeGreaterThan(0);
     // Move away from the removed dialog before testing keyboard interaction;
     // its former pointer position can now hover a newly rendered note icon.
     await page.mouse.move(0, 0);
@@ -85,10 +94,16 @@ test("private member notes save, annotate names and clear without changing booki
       exact: true,
     });
     await expect(indicator).toBeVisible();
-    // Focusing an off-screen trigger also scrolls the table. Radix closes
-    // tooltips on scroll, so finish that movement before testing focus.
-    await indicator.scrollIntoViewIfNeeded();
-    await row.getByRole("link", { name, exact: true }).focus();
+    // Saving from the last column scrolls a wide table to the right. Restore
+    // the whole name first: focusing a clipped link otherwise scrolls again
+    // after Tab has opened the tooltip, which Radix dismisses on scroll.
+    const nameLink = row.getByRole("link", { name, exact: true });
+    await nameLink.scrollIntoViewIfNeeded();
+    await expect(nameLink).toBeInViewport({ ratio: 1 });
+    await expect
+      .poll(() => tableRegion.evaluate((element) => element.scrollLeft))
+      .toBe(0);
+    await nameLink.focus();
     await page.keyboard.press("Tab");
     await expect(indicator).toBeFocused();
     await expect(page.getByRole("tooltip")).toHaveText(note);
