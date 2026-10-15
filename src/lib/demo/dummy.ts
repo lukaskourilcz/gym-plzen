@@ -175,6 +175,7 @@ export function buildDemoMembers(
         avatarSource: "initials",
         role,
         phone: u.phone,
+        phoneRequired: false,
         phoneVerified: i % 3 !== 0,
         notifyByWhatsapp: true,
         notifyBySms: i % 4 === 0,

@@ -168,6 +168,7 @@ try {
           "auth.spec.ts",
           "admin.spec.ts",
           "admin-daily.spec.ts",
+          "required-phone-members.spec.ts",
           "admin-filtering.spec.ts",
           "manual-invoices.spec.ts",
           "member-notes.spec.ts",

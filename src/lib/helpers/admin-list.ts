@@ -18,6 +18,7 @@ const FILTER_KEYS = [
   "action",
   "trigger",
   "whatsapp",
+  "registration",
 ] as const;
 export type AdminFilterKey = (typeof FILTER_KEYS)[number];
 export type AdminFilters = Record<AdminFilterKey, string> & {
@@ -126,6 +127,7 @@ export function demoAdminPage<T>(
     action?: string;
     trigger?: string;
     whatsapp?: string;
+    registration?: string;
     name?: string;
     email?: string;
     sortValues?: Record<string, string | number | Date | null>;
@@ -152,6 +154,7 @@ export function demoAdminPage<T>(
               "action",
               "trigger",
               "whatsapp",
+              "registration",
             ] as const
           ).every(
             (key) =>

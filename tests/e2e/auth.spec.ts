@@ -71,6 +71,7 @@ test.describe("Auth", () => {
     // Switch to sign-up so the 8-char rule applies, then submit a short password.
     await page.getByRole("button", { name: /Zaregistrujte se/i }).click();
     await page.getByLabel(/Jméno/i).fill("Test");
+    await page.getByLabel("Telefon", { exact: true }).fill("777123456");
     await page.getByLabel(/E-mail/i).fill("bad@example.test");
     await page.getByLabel(/Heslo/i).fill("123");
     await page.getByRole("button", { name: /Zaregistrovat se/i }).click();
@@ -95,6 +96,7 @@ test.describe("Auth", () => {
     const email = `registration-${process.env.E2E_RUN_ID}@example.test`;
     await page.getByRole("button", { name: /Zaregistrujte se/i }).click();
     await page.getByLabel(/Jméno/i).fill("Nový Člen");
+    await page.getByLabel("Telefon", { exact: true }).fill("777123456");
     await page.getByLabel(/E-mail/i).fill(email);
     await page.getByLabel(/Heslo/i).fill("local-registration-password");
     await page.getByRole("button", { name: /Zaregistrovat se/i }).click();
@@ -117,8 +119,13 @@ test.describe("Auth", () => {
         confirm.getByRole("heading", { name: /Dobrý den, Nový/i }),
       ).toBeVisible();
       const [after] =
-        await sql!`select full_name, role from profiles where email = ${email}`;
-      expect(after).toMatchObject({ full_name: "Nový Člen", role: "member" });
+        await sql!`select full_name, role, phone, phone_required from profiles where email = ${email}`;
+      expect(after).toMatchObject({
+        full_name: "Nový Člen",
+        role: "member",
+        phone: "+420777123456",
+        phone_required: true,
+      });
       const [history] =
         await sql!`select count(*)::int as count from activity_log a join profiles p on p.id = a.member_id where p.email = ${email} and a.action = 'member.registered'`;
       expect(history?.count).toBe(1);

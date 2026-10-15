@@ -31,6 +31,8 @@ export const profiles = pgTable("profiles", {
 
   // Contact : phone is E.164, required for WhatsApp/SMS code delivery.
   phone: text("phone"),
+  // Existing profiles remain exempt; Auth inserts explicitly enable the policy.
+  phoneRequired: boolean("phone_required").default(false).notNull(),
   phoneVerified: boolean("phone_verified").default(false).notNull(),
 
   // Notification channel preferences (email is always on).

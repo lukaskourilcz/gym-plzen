@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { googleAvatarUrl } from "@/lib/helpers/profile";
+import { phoneCompletionHref } from "@/lib/helpers/phone-policy";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { verifiedAuthUser } from "@/lib/supabase/request-timeout";
@@ -31,6 +32,7 @@ export interface SessionUser {
   name: string;
   role: string;
   isDemo: boolean;
+  needsPhone?: boolean;
   googleAvatarUrl?: string | null;
 }
 
@@ -84,6 +86,11 @@ async function resolveSessionUser(): Promise<SessionUser | null> {
     id: user.id,
     email: user.email ?? null,
     fullName,
+    phone:
+      typeof user.user_metadata?.phone === "string"
+        ? user.user_metadata.phone
+        : null,
+    createdAt: user.created_at,
   });
 
   return {
@@ -92,6 +99,7 @@ async function resolveSessionUser(): Promise<SessionUser | null> {
     name: profile.fullName ?? fullName ?? user.email ?? "",
     role: profile.role,
     isDemo: false,
+    needsPhone: profile.phoneRequired && !profile.phone,
     googleAvatarUrl: googleAvatarUrl(
       user.identities?.find((identity) => identity.provider === "google")
         ?.identity_data?.avatar_url ??
@@ -117,6 +125,7 @@ export function isAdmin(
 export async function requireUser(nextPath = "/"): Promise<SessionUser> {
   const user = await getSessionUser();
   if (!user) redirect(`/login?next=${encodeURIComponent(nextPath)}`);
+  if (user.needsPhone) redirect(phoneCompletionHref(nextPath));
   return user;
 }
 

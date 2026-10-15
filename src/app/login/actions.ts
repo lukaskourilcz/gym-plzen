@@ -15,6 +15,9 @@ import {
 import { members } from "@/lib/services";
 import { takeRateLimit } from "@/lib/security/rate-limit";
 import { publicEnv } from "@/lib/public-env";
+import { phoneSchema } from "@/lib/validations/common";
+import { toE164 } from "@/lib/helpers/phone";
+import { phoneCompletionHref } from "@/lib/helpers/phone-policy";
 import { passwordResetRequestSchema } from "@/lib/validations/auth";
 import {
   isProductionDeployment,
@@ -24,6 +27,7 @@ import {
 const inputSchema = z.object({
   mode: z.enum(["signin", "signup"]),
   name: z.string().max(120).optional(),
+  phone: z.string().max(40).optional(),
   email: z.string().email().max(254),
   password: z.string().min(8).max(200),
   next: z.string().max(1000).optional(),
@@ -75,14 +79,31 @@ export async function authenticateAction(input: unknown): Promise<AuthResult> {
       password: parsed.data.password,
     });
     if (error) return { ok: false, error: "E-mail nebo heslo není správné." };
-    const member = await members.getMember(data.user.id);
+    const profile = await members.ensureProfileForUser({
+      id: data.user.id,
+      email: data.user.email ?? null,
+      fullName:
+        typeof data.user.user_metadata?.full_name === "string"
+          ? data.user.user_metadata.full_name
+          : null,
+      phone:
+        typeof data.user.user_metadata?.phone === "string"
+          ? data.user.user_metadata.phone
+          : null,
+      createdAt: data.user.created_at,
+    });
     return {
       ok: true,
-      destination: postLoginDestination(destination, member?.user.role),
+      destination:
+        profile.phoneRequired && !profile.phone
+          ? phoneCompletionHref(destination)
+          : postLoginDestination(destination, profile.role),
     };
   }
 
   if (!parsed.data.name?.trim()) return { ok: false, error: "Zadejte jméno." };
+  if (!phoneSchema.safeParse(parsed.data.phone).success)
+    return { ok: false, error: "Zadejte platné telefonní číslo." };
   const origin = new URL(
     process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   ).origin;
@@ -90,7 +111,10 @@ export async function authenticateAction(input: unknown): Promise<AuthResult> {
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
-      data: { full_name: parsed.data.name.trim() },
+      data: {
+        full_name: parsed.data.name.trim(),
+        phone: toE164(parsed.data.phone!),
+      },
       emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(destination)}`,
     },
   });

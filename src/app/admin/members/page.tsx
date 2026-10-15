@@ -11,7 +11,7 @@ import {
 } from "@/lib/helpers/admin-list";
 import { pageFromParam } from "@/lib/helpers/pagination";
 import { memberFilters } from "@/components/admin/list-filter-options";
-import { memberPage } from "@/lib/services/admin-lists";
+import { memberDirectoryPage as memberPage } from "@/lib/services/member-directory";
 import { requireAdmin } from "@/lib/auth/guards";
 import { AdminMemberName } from "@/components/admin/member-name";
 import { MemberNoteEditor } from "@/components/admin/member-note-editor";
@@ -28,6 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { MemberRegistrationBadge } from "@/components/admin/member-registration-badge";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
 
 export const metadata = { title: "Členové" };
@@ -52,6 +53,7 @@ export default async function MembersPage({
 
   const { rows, hasNext, totalCount } = demo
     ? demoAdminPage(loaded, page, filters, (m) => ({
+        registration: "registered",
         name: m.user.name,
         email: m.user.email,
         whatsapp: m.profile?.notifyByWhatsapp ? "enabled" : "disabled",
@@ -69,29 +71,32 @@ export default async function MembersPage({
   const statuses = demo
     ? new Map<string, ReturnType<typeof loyalty.deriveLoyaltyStatus>>()
     : await loyalty.getLoyaltyStatusForUsers(
-        rows.map((member) => member.user.id),
+        rows
+          .filter((member) => member.profile !== null)
+          .map((member) => member.user.id),
       );
 
   return (
     <div>
       <PageHeader
         title="Členové"
-        description="Každý registrovaný účet. Jméno otevře profil člena s kontaktem, věrností, historií rezervací a záznamem akcí."
+        description="Registrovaní členové i zákazníci bez účtu. Jméno otevře profil člena nebo rezervace neregistrovaného zákazníka."
       />
       <AdminListFilters
         path="/admin/members"
         filters={filters}
         selects={memberFilters}
-        dateLabel="Registrace"
+        dateLabel="Zařazení do evidence"
       />
       <AdminListTotal total={totalCount} label="Celkem členů" />
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Jméno</TableHead>
+            <TableHead>Účet</TableHead>
             <TableHead>E-mail</TableHead>
             <TableHead>Telefon</TableHead>
-            <TableHead>Registrace</TableHead>
+            <TableHead>V evidenci od</TableHead>
             <TableHead>Návštěvy</TableHead>
             <TableHead>Do zdarma</TableHead>
             <TableHead>Role</TableHead>
@@ -99,35 +104,57 @@ export default async function MembersPage({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map(({ user, profile }) => {
+          {rows.map((entry) => {
+            const { user, profile } = entry;
+            const guest = profile === null;
             const status =
               statuses.get(user.id) ?? loyalty.deriveLoyaltyStatus(0);
             return (
               <TableRow key={user.id}>
                 <TableCell>
                   <AdminMemberName
-                    href={`/admin/members/${user.id}`}
+                    href={
+                      guest
+                        ? `/admin/reservations?q=${encodeURIComponent(user.email)}`
+                        : `/admin/members/${user.id}`
+                    }
                     name={user.name || user.email}
                     note={profile?.note}
                     className="min-h-11 items-center"
                   />
                 </TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{profile?.phone ?? "Neuvedeno"}</TableCell>
-                <TableCell>{formatDateTime(user.createdAt)}</TableCell>
-                <TableCell>{status.totalEntries}</TableCell>
                 <TableCell>
-                  {status.nextEntryIsFree
-                    ? "další zdarma"
-                    : status.entriesUntilFree}
+                  <MemberRegistrationBadge registered={!guest} />
+                </TableCell>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>
+                  {profile?.phone ??
+                    ("contactPhone" in entry &&
+                    typeof entry.contactPhone === "string"
+                      ? entry.contactPhone
+                      : null) ??
+                    "Neuvedeno"}
+                </TableCell>
+                <TableCell>{formatDateTime(user.createdAt)}</TableCell>
+                <TableCell>{guest ? "—" : status.totalEntries}</TableCell>
+                <TableCell>
+                  {guest
+                    ? "—"
+                    : status.nextEntryIsFree
+                      ? "další zdarma"
+                      : status.entriesUntilFree}
                 </TableCell>
                 <TableCell>
                   <Badge variant={user.role === "admin" ? "accent" : "muted"}>
-                    {user.role === "admin" ? "Správce" : "Člen"}
+                    {guest
+                      ? "Bez účtu"
+                      : user.role === "admin"
+                        ? "Správce"
+                        : "Člen"}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {!demo ? (
+                  {!demo && !guest ? (
                     <MemberNoteEditor
                       userId={user.id}
                       name={user.name || user.email}
@@ -140,7 +167,7 @@ export default async function MembersPage({
           })}
           {rows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={8} className="text-muted-foreground">
+              <TableCell colSpan={9} className="text-muted-foreground">
                 Zatím žádní členové.
               </TableCell>
             </TableRow>

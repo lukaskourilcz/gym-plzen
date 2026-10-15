@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { emailSchema } from "./common";
+import { emailSchema, phoneSchema } from "./common";
 
 /** Sign-in: email + password. */
 export const signInSchema = z.object({
@@ -10,6 +10,7 @@ export const signInSchema = z.object({
 /** Sign-up: adds a required name and a minimum password length. */
 export const signUpSchema = z.object({
   name: z.string().min(1, "Zadejte jméno.").max(120),
+  phone: phoneSchema,
   email: emailSchema,
   password: z.string().min(8, "Heslo musí mít alespoň 8 znaků."),
 });

@@ -664,3 +664,12 @@ Přidání cenového období používá stejný `AdminDialog` jako cenové bloky
 Na stránce zůstává pouze spouštěcí tlačítko; formulář má vlastní identifikátory,
 počáteční fokus na názvu a při zavření vrací fokus na tlačítko. Úprava již
 uloženého období zachovává dosavadní odkaz a samostatný formulář.
+
+### Typ zákazníka v Členech
+
+`MemberRegistrationBadge` kombinuje text Registrovaný / Neregistrovaný, ikonu
+a jemně odlišený povrch. Typ účtu se proto pozná i bez rozlišení barev.
+Filtr Registrace zachovává hledání a stránkování. U hosta jméno vede na jeho
+rezervace; nevytváří se profil s přihlašovacími oprávněními ani věrnostní účet.
+Chybějící historický telefon se zobrazuje jako Neuvedeno. Ukázky jsou v chráněné
+galerii `/admin/design-system`.

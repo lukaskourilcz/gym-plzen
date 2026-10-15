@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { join } from "node:path";
 import postgres from "postgres";
@@ -10,8 +10,27 @@ import {
 } from "../../src/lib/helpers/datetime";
 
 const sql = postgres(requireTestDatabaseUrl(), { prepare: false, max: 1 });
+async function revealBeforeFocus(locator: Locator) {
+  await locator.evaluate(async (element) => {
+    element.scrollIntoView({
+      block: "center",
+      inline: "center",
+      behavior: "instant",
+    });
+    // Scroll events can arrive after the browser reports the final position.
+    // Drain that rendering cycle before opening a scroll-dismissed tooltip.
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+  });
+}
 test.afterAll(async () => sql.end({ timeout: 2 }));
-test.use({ storageState: join(process.cwd(), "tests/e2e/.auth/admin.json") });
+test.use({
+  storageState: join(process.cwd(), "tests/e2e/.auth/admin.json"),
+  // Keep the desktop sidebar while forcing horizontal table overflow locally
+  // as well as on Linux, where different font metrics make the table wider.
+  viewport: { width: 1100, height: 720 },
+});
 
 test("private member notes save, annotate names and clear without changing bookings or sending messages", async ({
   page,
@@ -41,6 +60,7 @@ test("private member notes save, annotate names and clear without changing booki
   const note = "Domluvit rozcvičení.\n<b>Bez HTML formátování.</b>";
   try {
     await page.goto(`/admin/members?q=${encodeURIComponent(member!.email)}`);
+    await page.bringToFront();
     const row = page
       .getByRole("row")
       .filter({ has: page.locator(`a[href='/admin/members/${member!.id}']`) });
@@ -58,17 +78,45 @@ test("private member notes save, annotate names and clear without changing booki
         request.method() === "POST" &&
         Boolean(request.headers()["next-action"]),
     );
+    const refreshed = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return (
+        response.request().method() === "GET" &&
+        url.pathname === "/admin/members" &&
+        url.searchParams.has("_rsc") &&
+        response.request().headers()["next-router-prefetch"] !== "1"
+      );
+    });
     await editor
       .getByRole("button", { name: "Uložit poznámku", exact: true })
       .click();
     const action = await submitted;
+    await refreshed;
     await expect(editor).not.toBeVisible();
+    await expect(
+      row.getByRole("button", { name: "Upravit poznámku", exact: true }),
+    ).toBeVisible();
+    const tableRegion = page.getByRole("region", { name: "Tabulka" });
+    await expect
+      .poll(() => tableRegion.evaluate((element) => element.scrollLeft))
+      .toBeGreaterThan(0);
+    // Move away from the removed dialog before testing keyboard interaction;
+    // its former pointer position can now hover a newly rendered note icon.
+    await page.mouse.move(0, 0);
     const indicator = row.getByRole("button", {
       name: `Poznámka k zákazníkovi ${name}`,
       exact: true,
     });
     await expect(indicator).toBeVisible();
-    await indicator.focus();
+    // Saving from the last column scrolls a wide table to the right. Restore
+    // the whole name first: focusing a clipped link otherwise scrolls again
+    // after Tab has opened the tooltip, which Radix dismisses on scroll.
+    const nameLink = row.getByRole("link", { name, exact: true });
+    await revealBeforeFocus(nameLink);
+    await expect(nameLink).toBeInViewport({ ratio: 1 });
+    await nameLink.focus();
+    await page.keyboard.press("Tab");
+    await expect(indicator).toBeFocused();
     await expect(page.getByRole("tooltip")).toHaveText(note);
     await expect(page.getByRole("tooltip").locator("b")).toHaveCount(0);
     await page.keyboard.press("Escape");
@@ -117,18 +165,21 @@ test("private member notes save, annotate names and clear without changing booki
     }
 
     await page.goto("/admin/calendar");
+    await page.bringToFront();
+    await page.mouse.move(0, 0);
     await expect(
       page.getByRole("button", {
         name: `Poznámka k zákazníkovi ${reservationName}`,
         exact: true,
       }),
     ).toHaveCount(1);
-    await page
-      .getByRole("button", {
-        name: `Poznámka k zákazníkovi ${reservationName}`,
-        exact: true,
-      })
-      .focus();
+    const calendarIndicator = page.getByRole("button", {
+      name: `Poznámka k zákazníkovi ${reservationName}`,
+      exact: true,
+    });
+    await revealBeforeFocus(calendarIndicator);
+    await calendarIndicator.focus();
+    await expect(calendarIndicator).toBeFocused();
     await expect(page.getByRole("tooltip")).toHaveText(note);
     await page.keyboard.press("Escape");
     await page.goto(`/admin/reservations?id=${ids[0]}`);

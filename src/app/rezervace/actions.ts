@@ -73,7 +73,7 @@ const startImpl = defineAction({
      * and never in its way: a failed profile write must not cost a
      * reservation that is already placed, so it is logged and nothing more.
      */
-    if (input.savePhone && session) {
+    if ((input.savePhone || session?.user.needsPhone) && session) {
       try {
         await saveBookingPhone(session.user.id, phone);
         revalidatePath("/account");

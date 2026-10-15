@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/helpers/logger";
+import { phoneCompletionHref } from "@/lib/helpers/phone-policy";
 import { members } from "@/lib/services";
 import { safeInternalPath } from "@/lib/security/redirects";
 import {
@@ -89,6 +90,11 @@ export async function GET(request: NextRequest) {
   if (data.user && (type === "signup" || type === "email" || type === "invite"))
     await members.recordRegistration({
       userId: data.user.id,
+      phone:
+        typeof data.user.user_metadata?.phone === "string"
+          ? data.user.user_metadata.phone
+          : null,
+      createdAt: data.user.created_at,
       email: data.user.email,
       name:
         typeof data.user.user_metadata?.full_name === "string"
@@ -96,7 +102,23 @@ export async function GET(request: NextRequest) {
           : null,
     });
 
-  const response = NextResponse.redirect(new URL(next, origin));
+  const profile = data.user
+    ? await members.ensureProfileForUser({
+        id: data.user.id,
+        email: data.user.email ?? null,
+        fullName: null,
+        phone:
+          typeof data.user.user_metadata?.phone === "string"
+            ? data.user.user_metadata.phone
+            : null,
+        createdAt: data.user.created_at,
+      })
+    : null;
+  const target =
+    profile?.phoneRequired && !profile.phone ? phoneCompletionHref(next) : next;
+  const response = NextResponse.redirect(
+    new URL(type === "recovery" ? next : target, origin),
+  );
   if (type === "recovery" && data.user && data.session) {
     const proof = createRecoveryProof(data.user.id);
     if (proof)

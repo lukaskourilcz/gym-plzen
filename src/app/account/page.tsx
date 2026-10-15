@@ -140,6 +140,7 @@ export default async function AccountPage({
             {tab === "profile" ? (
               <div className="grid gap-6">
                 <ProfileForm
+                  phoneRequired={member?.profile?.phoneRequired ?? false}
                   values={profileValues}
                   email={user.email}
                   googlePhoto={user.googleAvatarUrl ?? null}

@@ -243,6 +243,7 @@ export function BookingDetailsForm({
       <Field name="phone" label="Telefon" error={formState.errors.phone}>
         <Input
           id="phone"
+          required
           type="tel"
           autoComplete="tel"
           placeholder="+420 777 123 456"
