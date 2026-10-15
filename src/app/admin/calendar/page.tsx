@@ -8,9 +8,9 @@ import { PageHeader } from "@/components/admin/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookingCalendar } from "@/components/admin/booking-calendar";
 import {
-  DEFAULT_CLOSE_MINUTE,
-  DEFAULT_OPEN_MINUTE,
-} from "@/lib/config/schedule";
+  calendarTimeBounds,
+  isOutsideOpeningHours,
+} from "@/lib/helpers/calendar-schedule";
 import { calendarRowMinutes } from "@/lib/helpers/calendar-grid";
 import { minutesToHHmm } from "@/lib/helpers/format";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
@@ -37,14 +37,16 @@ export default async function CalendarPage() {
       ]);
   const participantsEnabled = !demo && (await getParticipantsEnabled());
   const activeDays = openingHours.filter((day) => day.isClosed !== 1);
-  const openMinute =
-    activeDays.length > 0
-      ? Math.min(...activeDays.map((day) => day.openMinute))
-      : DEFAULT_OPEN_MINUTE;
-  const closeMinute =
-    activeDays.length > 0
-      ? Math.max(...activeDays.map((day) => day.closeMinute))
-      : DEFAULT_CLOSE_MINUTE;
+  const visibleReservations = reservations.filter(
+    (r) => r.status !== "cancelled" || r.accessRevocationPending,
+  );
+  const windows = visibleReservations.flatMap((r) => [
+    { startsAt: r.startsAt, endsAt: r.endsAt },
+    ...(r.rescheduleStartsAt && r.rescheduleEndsAt
+      ? [{ startsAt: r.rescheduleStartsAt, endsAt: r.rescheduleEndsAt }]
+      : []),
+  ]);
+  const { openMinute, closeMinute } = calendarTimeBounds(openingHours, windows);
 
   const slotMinutes = calendarRowMinutes(activeDays, openMinute);
   const memberNotes = demo
@@ -52,33 +54,53 @@ export default async function CalendarPage() {
     : await getMemberNotes(reservations.map((r) => r.userId));
 
   const events: EventInput[] = [
-    ...reservations
-      .filter((r) => r.status !== "cancelled" || r.accessRevocationPending)
-      .flatMap((r) => [
-        {
-          id: r.id,
-          title: `${r.contactName?.trim() || "Zákazník bez jména"}${participantsEnabled && r.extraPeople > 0 ? ` +${r.extraPeople}` : ""}`,
-          start: r.startsAt.toISOString(),
-          end: r.endsAt.toISOString(),
-          backgroundColor:
-            r.status === "confirmed" ? "var(--success)" : "var(--warning)",
-          borderColor: "transparent",
-          extendedProps: { memberNote: memberNotes.get(r.userId ?? "") },
+    ...visibleReservations.flatMap((r) => [
+      {
+        id: r.id,
+        title: `${r.contactName?.trim() || "Zákazník bez jména"}${participantsEnabled && r.extraPeople > 0 ? ` +${r.extraPeople}` : ""}`,
+        start: r.startsAt.toISOString(),
+        end: r.endsAt.toISOString(),
+        backgroundColor: isOutsideOpeningHours(r, openingHours)
+          ? "var(--muted-foreground)"
+          : r.status === "confirmed"
+            ? "var(--success)"
+            : "var(--warning)",
+        textColor: "var(--primary-foreground)",
+        borderColor: "transparent",
+        extendedProps: {
+          memberNote: memberNotes.get(r.userId ?? ""),
+          outsideOpeningHours: isOutsideOpeningHours(r, openingHours),
         },
-        ...(r.rescheduleStartsAt && r.rescheduleEndsAt
-          ? [
-              {
-                id: `${r.id}/reschedule`,
-                title: `${r.contactName?.trim() || "Zákazník bez jména"}${participantsEnabled && r.extraPeople > 0 ? ` +${r.extraPeople}` : ""}`,
-                start: r.rescheduleStartsAt.toISOString(),
-                end: r.rescheduleEndsAt.toISOString(),
-                backgroundColor: "var(--warning)",
-                borderColor: "transparent",
-                extendedProps: { memberNote: memberNotes.get(r.userId ?? "") },
+      },
+      ...(r.rescheduleStartsAt && r.rescheduleEndsAt
+        ? [
+            {
+              id: `${r.id}/reschedule`,
+              title: `${r.contactName?.trim() || "Zákazník bez jména"}${participantsEnabled && r.extraPeople > 0 ? ` +${r.extraPeople}` : ""}`,
+              start: r.rescheduleStartsAt.toISOString(),
+              end: r.rescheduleEndsAt.toISOString(),
+              backgroundColor: isOutsideOpeningHours(
+                { startsAt: r.rescheduleStartsAt, endsAt: r.rescheduleEndsAt },
+                openingHours,
+              )
+                ? "var(--muted-foreground)"
+                : "var(--warning)",
+              textColor: "var(--primary-foreground)",
+              borderColor: "transparent",
+              extendedProps: {
+                memberNote: memberNotes.get(r.userId ?? ""),
+                outsideOpeningHours: isOutsideOpeningHours(
+                  {
+                    startsAt: r.rescheduleStartsAt,
+                    endsAt: r.rescheduleEndsAt,
+                  },
+                  openingHours,
+                ),
               },
-            ]
-          : []),
-      ]),
+            },
+          ]
+        : []),
+    ]),
     ...blocks.map((b) => ({
       id: b.id,
       title: b.note ?? "Blok",
@@ -102,10 +124,15 @@ export default async function CalendarPage() {
             openMinute={openMinute}
             closeMinute={closeMinute}
             slotMinutes={slotMinutes}
+            businessHours={activeDays.map((day) => ({
+              daysOfWeek: [day.dayOfWeek],
+              startTime: minutesToHHmm(day.openMinute),
+              endTime: minutesToHHmm(day.closeMinute),
+            }))}
           />
           <p className="mt-4 text-xs text-muted-foreground">
-            {minutesToHHmm(openMinute)}–{minutesToHHmm(closeMinute)} · Tažením
-            přes volný čas přidáte blok pro úklid.
+            Časová osa {minutesToHHmm(openMinute)}–{minutesToHHmm(closeMinute)}{" "}
+            · Tažením přes volný čas přidáte blok pro úklid.
           </p>
         </CardContent>
       </Card>

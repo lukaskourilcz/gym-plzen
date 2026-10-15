@@ -84,6 +84,11 @@ export default async function SchedulePage({
           {minutesToHHmm(DEFAULT_OPEN_MINUTE)} až{" "}
           {minutesToHHmm(DEFAULT_CLOSE_MINUTE)} po 75 minutách.
         </p>
+        <p className="mb-4 text-sm text-muted-foreground">
+          Změna otevírací doby zachová už zakoupené rezervace a přípravu jejich
+          vstupních kódů pro původní čas. Termíny mimo novou otevírací dobu
+          uvidíte v kalendáři šedě.
+        </p>
         {Array.from({ length: 7 }, (_, day) => (
           <OpeningHoursRow key={day} dayOfWeek={day} hours={byDay.get(day)} />
         ))}

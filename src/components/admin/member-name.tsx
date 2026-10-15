@@ -16,11 +16,13 @@ export function AdminMemberName({
   note,
   href,
   className,
+  nameHint,
 }: {
   name: string;
   note?: string | null;
   href?: string;
   className?: string;
+  nameHint?: string;
 }) {
   const [open, setOpen] = useState(false);
   const text = note?.trim();
@@ -33,6 +35,8 @@ export function AdminMemberName({
         >
           {name}
         </Link>
+      ) : nameHint ? (
+        <NameHint name={name} hint={nameHint} />
       ) : (
         <span className="min-w-0">{name}</span>
       )}
@@ -62,5 +66,31 @@ export function AdminMemberName({
         </Tooltip>
       ) : null}
     </span>
+  );
+}
+
+/** A separate trigger keeps the reservation hint and private note independent. */
+function NameHint({ name, hint }: { name: string; hint: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Tooltip open={open} onOpenChange={setOpen}>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label={name}
+          className="min-w-0 rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            // Touch can focus (and open) before click. Keep the first tap open.
+            setOpen(true);
+          }}
+        >
+          {name}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent className="admin-note-tooltip">{hint}</TooltipContent>
+    </Tooltip>
   );
 }

@@ -31,6 +31,8 @@ const saveOpeningHoursImpl = defineAction({
       isClosed: input.isClosed,
     });
     revalidatePath("/admin/schedule");
+    revalidatePath("/admin/calendar");
+    revalidatePath("/rezervace");
   },
 });
 

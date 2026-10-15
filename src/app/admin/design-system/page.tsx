@@ -134,10 +134,18 @@ export default async function DesignSystemPage() {
           </h2>
           <p className="mb-4 text-sm text-muted-foreground">
             Ukázková jména. Jeden řádek odpovídá 75 minutám; čas je na ose, v
-            rezervaci pouze jméno. V této ukázce nelze vytvářet bloky.
+            rezervaci pouze jméno. V této ukázce nelze vytvářet bloky. Šedá
+            rezervace má tooltip „Rezervace mimo otevírací dobu“.
           </p>
           <BookingCalendar
             readOnly
+            businessHours={[
+              {
+                daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+                startTime: "05:00",
+                endTime: "22:00",
+              },
+            ]}
             events={[
               {
                 title: "Zavřeno – tento text se nesmí zobrazit",
@@ -159,6 +167,15 @@ export default async function DesignSystemPage() {
                 end: localDateTimeToDate(calendarDate, 1125).toISOString(),
                 backgroundColor: "var(--success)",
                 borderColor: "transparent",
+              },
+              {
+                title: "Ukázková rezervace mimo otevírací dobu",
+                start: localDateTimeToDate(calendarDate, 1350).toISOString(),
+                end: localDateTimeToDate(calendarDate, 1425).toISOString(),
+                backgroundColor: "var(--muted-foreground)",
+                textColor: "var(--primary-foreground)",
+                borderColor: "transparent",
+                extendedProps: { outsideOpeningHours: true },
               },
             ]}
           />

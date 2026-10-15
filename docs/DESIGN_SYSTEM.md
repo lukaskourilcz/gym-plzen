@@ -491,6 +491,14 @@ time labels, softer separators and medium-weight reservation names. A labelled
 status legend accompanies the semantic colours. Controls wrap on narrow screens
 and retain 44px targets. FullCalendar still handles the grid and selection rules.
 
+The displayed time range expands to include stored reservation intervals, even
+after opening hours change. A reservation outside its specific weekday's hours
+(including a closed day or a partial overrun) uses muted grey with readable light
+text and the hint "Rezervace mimo otevírací dobu". Focus, hover and tapping its
+name expose the shared Radix tooltip; the private-note trigger stays independent.
+Actual business-hours shading retains each day's configured hours. This display
+classification never changes a reservation, price, access code or fulfillment.
+
 ## Transactional e-mail
 
 Every automatic e-mail is one plain-text body inside one shared shell
