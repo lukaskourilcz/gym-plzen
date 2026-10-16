@@ -34,6 +34,10 @@ test("admin edits templates in dialogs and applies/undoes batches without changi
     await expect(
       page.getByRole("heading", { name: "Blokování termínů", exact: true }),
     ).toBeVisible();
+    await page.screenshot({
+      path: "/tmp/gym-calendar-blocking-desktop.png",
+      fullPage: true,
+    });
     await page
       .getByRole("button", { name: "Přidat šablonu", exact: true })
       .click();
@@ -55,6 +59,7 @@ test("admin edits templates in dialogs and applies/undoes batches without changi
           .map((animation) => animation.finished.catch(() => undefined)),
       );
     });
+    await page.screenshot({ path: "/tmp/gym-calendar-blocking-dialog.png" });
     expect(
       (await new AxeBuilder({ page }).include("dialog").analyze()).violations,
     ).toEqual([]);
@@ -78,7 +83,7 @@ test("admin edits templates in dialogs and applies/undoes batches without changi
       .getByRole("button", { name: "Zobrazit náhled", exact: true })
       .click();
     await expect(
-      dialog.getByText("Připraveno 1 blokací", { exact: true }),
+      dialog.getByText("Připravené blokace: 1", { exact: true }),
     ).toBeVisible();
     let lostResponse = false;
     await page.route("**/admin/blocking**", async (route) => {
@@ -89,7 +94,10 @@ test("admin edits templates in dialogs and applies/undoes batches without changi
       await route.abort("connectionreset");
     });
     await dialog
-      .getByRole("button", { name: "Zablokovat 1 slotů", exact: true })
+      .getByRole("button", {
+        name: "Zablokovat vybrané sloty (1)",
+        exact: true,
+      })
       .click();
     await expect(
       dialog.getByText(/Výsledek uložení se nepodařilo načíst/),

@@ -243,7 +243,7 @@ export function BlockingManager({
           onSaved={(count) => {
             setUsing(null);
             saved(
-              `Uloženo ${count} blokací. Existující rezervace zůstávají platné.`,
+              `Počet uložených blokací: ${count}. Existující rezervace zůstávají platné.`,
             );
           }}
         />
@@ -276,7 +276,7 @@ export function BlockingManager({
                   );
                   if (result.ok) {
                     setCancel(null);
-                    saved(`Zrušeno ${result.data.count} budoucích blokací.`);
+                    saved(`Zrušené budoucí blokace: ${result.data.count}.`);
                   } else setCancelError(result.error);
                 })
               }
@@ -661,7 +661,7 @@ function ApplyDialog({
       )}
       {preview && request && (
         <div className="mt-5 space-y-4">
-          <Notice tone="info" title={`Připraveno ${preview.count} blokací`}>
+          <Notice tone="info" title={`Připravené blokace: ${preview.count}`}>
             <p>
               Překryvy s rezervacemi:{" "}
               {
@@ -740,7 +740,7 @@ function ApplyDialog({
               ? "Ukládám…"
               : uncertain
                 ? "Ověřit uložení"
-                : `Zablokovat ${preview.count} slotů`}
+                : `Zablokovat vybrané sloty (${preview.count})`}
           </Button>
         </div>
       )}
