@@ -194,6 +194,69 @@ describe("safe template blocking", { skip: !databaseReady }, () => {
     );
     assert.equal((await rows("select * from block_application")).length, 1);
   });
+  test("a new booking after preview requires confirmation again without writing a partial batch", async () => {
+    const t = await template();
+    const input = {
+      templateIds: [t.id],
+      target: { mode: "dates" as const, dates: ["2026-10-24"] },
+    };
+    const preview = await previewBlockApplication(input, now);
+    await rows(
+      "insert into reservation (starts_at,ends_at,status) values ($1,$2,'confirmed')",
+      [
+        localDateTimeToDate("2026-10-24", 300),
+        localDateTimeToDate("2026-10-24", 375),
+      ],
+    );
+    await assert.rejects(
+      applyBlockTemplates(
+        {
+          ...input,
+          operationId: randomUUID(),
+          fingerprint: preview.fingerprint,
+        },
+        null,
+        now,
+      ),
+      /náhled/,
+    );
+    assert.equal((await rows("select * from block_application")).length, 0);
+    assert.equal((await rows("select * from blocked_slot")).length, 0);
+    const renewed = await previewBlockApplication(input, now);
+    assert.equal(renewed.conflicts[0]?.reservationIds.length, 1);
+  });
+  test("write failure rolls back the entire batch and concurrent replay inserts only once", async () => {
+    const t = await template();
+    const input = {
+      templateIds: [t.id],
+      target: { mode: "dates" as const, dates: ["2026-10-24", "2026-10-25"] },
+    };
+    const preview = await previewBlockApplication(input, now);
+    const request = {
+      ...input,
+      operationId: randomUUID(),
+      fingerprint: preview.fingerprint,
+    };
+    await rows(
+      "alter table blocked_slot add constraint synthetic_block_failure check (starts_at < '2026-10-25T00:00:00Z')",
+    );
+    try {
+      await assert.rejects(applyBlockTemplates(request, null, now));
+    } finally {
+      await rows(
+        "alter table blocked_slot drop constraint synthetic_block_failure",
+      );
+    }
+    assert.equal((await rows("select * from block_application")).length, 0);
+    assert.equal((await rows("select * from blocked_slot")).length, 0);
+    const result = await Promise.all([
+      applyBlockTemplates(request, null, now),
+      applyBlockTemplates(request, null, now),
+    ]);
+    assert.deepEqual(result[0], result[1]);
+    assert.equal((await rows("select * from block_application")).length, 1);
+    assert.equal((await rows("select * from blocked_slot")).length, 2);
+  });
   test("undo never removes already started slots and replay cannot recreate a cancelled batch", async () => {
     const t = await template();
     const a = await apply(t.id);

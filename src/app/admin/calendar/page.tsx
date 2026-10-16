@@ -90,9 +90,7 @@ export default async function CalendarPage() {
         : "var(--muted-foreground)",
       borderColor: b.applicationId ? "var(--border)" : undefined,
       textColor: b.applicationId ? "var(--muted-foreground)" : undefined,
-      url: b.applicationId
-        ? `/admin/blocking?batch=${b.applicationId}`
-        : undefined,
+      url: b.applicationId ? "/admin/blocking" : undefined,
       extendedProps: { blockApplicationId: b.applicationId },
     })),
   ];

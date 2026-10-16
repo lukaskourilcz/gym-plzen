@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Notice } from "@/components/ui/notice";
+import { receiveAction } from "@/lib/helpers/action-response";
+import type { Result } from "@/lib/helpers/result";
 import { cn } from "@/lib/utils";
 import {
   blockSlotKey,
@@ -26,6 +28,19 @@ import {
   applyBlockTemplatesAction,
   cancelBlockApplicationAction,
 } from "./actions";
+
+async function safeAction<T>(
+  request: () => Promise<Result<T>>,
+): Promise<Result<T>> {
+  const response = await receiveAction(request);
+  return response.received
+    ? response.result
+    : {
+        ok: false,
+        error:
+          "Spojení bylo přerušeno. Obnovte stránku a zkontrolujte výsledek.",
+      };
+}
 
 const WEEKDAYS = [
   "Neděle",
@@ -66,6 +81,7 @@ export function BlockingManager({
   const [using, setUsing] = useState<string[] | null>(null);
   const [cancel, setCancel] = useState<Application | null>(null);
   const [message, setMessage] = useState("");
+  const [cancelError, setCancelError] = useState("");
   const [pending, start] = useTransition();
   function saved(text: string) {
     setMessage(text);
@@ -193,7 +209,10 @@ export function BlockingManager({
                   {!application.cancelledAt && (
                     <Button
                       variant="outline"
-                      onClick={() => setCancel(application)}
+                      onClick={() => {
+                        setCancelError("");
+                        setCancel(application);
+                      }}
                     >
                       Zrušit budoucí blokace
                     </Button>
@@ -242,18 +261,23 @@ export function BlockingManager({
               .map((template) => template.name)
               .join(" + ")}
           </p>
+          {cancelError && (
+            <p role="alert" className="mb-4 text-sm text-destructive">
+              {cancelError}
+            </p>
+          )}
           <div className="flex flex-wrap gap-3">
             <Button
               disabled={pending}
               onClick={() =>
                 start(async () => {
-                  const result = await cancelBlockApplicationAction({
-                    id: cancel.id,
-                  });
+                  const result = await safeAction(() =>
+                    cancelBlockApplicationAction({ id: cancel.id }),
+                  );
                   if (result.ok) {
                     setCancel(null);
                     saved(`Zrušeno ${result.data.count} budoucích blokací.`);
-                  } else setMessage(result.error);
+                  } else setCancelError(result.error);
                 })
               }
             >
@@ -303,12 +327,14 @@ function TemplateDialog({
         onSubmit={(event) => {
           event.preventDefault();
           start(async () => {
-            const result = await saveBlockTemplateAction({
-              id: template?.id,
-              expectedUpdatedAt: template?.updatedAt,
-              name,
-              slots,
-            });
+            const result = await safeAction(() =>
+              saveBlockTemplateAction({
+                id: template?.id,
+                expectedUpdatedAt: template?.updatedAt,
+                name,
+                slots,
+              }),
+            );
             if (result.ok) onSaved();
             else setError(result.error);
           });
@@ -442,6 +468,7 @@ function ApplyDialog({
   const [preview, setPreview] = useState<BlockPreview | null>(null);
   const [request, setRequest] = useState<BlockPreviewInput | null>(null);
   const [operationId, setOperationId] = useState("");
+  const [uncertain, setUncertain] = useState(false);
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
   function changed() {
@@ -466,7 +493,9 @@ function ApplyDialog({
           const input = { templateIds: ids, target };
           start(async () => {
             setError("");
-            const result = await previewBlockApplicationAction(input);
+            const result = await safeAction(() =>
+              previewBlockApplicationAction(input),
+            );
             if (result.ok) {
               setPreview(result.data);
               setRequest(input);
@@ -478,7 +507,7 @@ function ApplyDialog({
           });
         }}
       >
-        <fieldset disabled={pending} className="grid gap-5">
+        <fieldset disabled={pending || uncertain} className="grid gap-5">
           <fieldset className="grid gap-2">
             <legend className="mb-2 text-sm font-semibold">Šablony</legend>
             {templates.map((template) => (
@@ -677,21 +706,41 @@ function ApplyDialog({
             disabled={pending}
             onClick={() =>
               start(async () => {
-                const result = await applyBlockTemplatesAction({
-                  ...request,
-                  operationId,
-                  fingerprint: preview.fingerprint,
-                });
+                const response = await receiveAction(() =>
+                  applyBlockTemplatesAction({
+                    ...request,
+                    operationId,
+                    fingerprint: preview.fingerprint,
+                  }),
+                );
+                if (!response.received) {
+                  setUncertain(true);
+                  setError(
+                    "Výsledek uložení se nepodařilo načíst. Ověřte uložení stejným tlačítkem; další dávka se nevytvoří.",
+                  );
+                  return;
+                }
+                const result = response.result;
                 if (result.ok) onSaved(result.data.count);
                 else {
-                  setPreview(null);
+                  const stale = /náhled|rozvrhu|šablon|obsazenost/.test(
+                    result.error,
+                  );
+                  if (stale) {
+                    setPreview(null);
+                    setUncertain(false);
+                  } else setUncertain(true);
                   setError(result.error);
                 }
               })
             }
           >
             <Ban className="mr-2 size-4" aria-hidden="true" />
-            {pending ? "Ukládám…" : `Zablokovat ${preview.count} slotů`}
+            {pending
+              ? "Ukládám…"
+              : uncertain
+                ? "Ověřit uložení"
+                : `Zablokovat ${preview.count} slotů`}
           </Button>
         </div>
       )}

@@ -80,8 +80,22 @@ test("admin edits templates in dialogs and applies/undoes batches without changi
     await expect(
       dialog.getByText("Připraveno 1 blokací", { exact: true }),
     ).toBeVisible();
+    let lostResponse = false;
+    await page.route("**/admin/blocking**", async (route) => {
+      if (route.request().method() !== "POST" || lostResponse)
+        return route.continue();
+      lostResponse = true;
+      await route.fetch();
+      await route.abort("connectionreset");
+    });
     await dialog
       .getByRole("button", { name: "Zablokovat 1 slotů", exact: true })
+      .click();
+    await expect(
+      dialog.getByText(/Výsledek uložení se nepodařilo načíst/),
+    ).toBeVisible();
+    await dialog
+      .getByRole("button", { name: "Ověřit uložení", exact: true })
       .click();
     await expect(dialog).toHaveCount(0);
     const [batch] =
@@ -91,7 +105,7 @@ test("admin edits templates in dialogs and applies/undoes batches without changi
     const publicPage = await guest.newPage();
     await publicPage.goto(`/rezervace?date=${target}`);
     await expect(
-      publicPage.getByRole("button", { name: /05:00.*Obsazeno/ }),
+      publicPage.getByRole("button", { name: /0?5:00.*Obsazeno/ }),
     ).toBeDisabled();
     await guest.close();
     await page
