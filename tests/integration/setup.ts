@@ -127,6 +127,9 @@ export async function resetDatabase(): Promise<void> {
   // start with the shipping templates, just like the rest of its fixtures.
   await setSetting("messages.email.reservation_confirmation", null);
   await setSetting("messages.email.order_confirmation", null);
+  await setSetting("messages.email.access_code", null);
+  await setSetting("messages.email.access_code_evening", null);
+  await setSetting("messages.access_code_evening_from", 1260);
   // The operator's own notifications are on by default in production and have
   // their own suite; here they would add a second recipient to every booking
   // and blur what the customer actually received.

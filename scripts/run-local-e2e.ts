@@ -165,6 +165,8 @@ try {
       ? process.argv.slice(2)
       : [
           "public.spec.ts",
+          "calendar-performance.spec.ts",
+          "blocking-templates.spec.ts",
           "auth.spec.ts",
           "admin.spec.ts",
           "admin-daily.spec.ts",

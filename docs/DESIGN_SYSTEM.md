@@ -673,3 +673,23 @@ Filtr Registrace zachovává hledání a stránkování. U hosta jméno vede na 
 rezervace; nevytváří se profil s přihlašovacími oprávněními ani věrnostní účet.
 Chybějící historický telefon se zobrazuje jako Neuvedeno. Ukázky jsou v chráněné
 galerii `/admin/design-system`.
+
+## Blocking templates (administration only)
+
+`/admin/blocking` separates saved weekly choices from their application to dates.
+Template cards offer Use/Edit; creation and editing use the existing `AdminDialog`
+with focus trapping, Escape and focus restoration. Every weekday is a labelled
+fieldset. Slot buttons have at least 44px targets and expose selection with
+`aria-pressed`, a checkmark and a solid primary surface. The grid comes from
+current opening hours; it never permits arbitrary minute input.
+
+Application is a second dialog: templates, inclusive range or individual native
+calendar dates, then an explicit preview showing count and reservation overlaps.
+Editing any choice clears the preview. A stale schedule or occupancy requires a
+new preview; the primary action states the number of blocks. Batch cancellation
+confirms that only its future blocks are removed. Never describe existing paid
+reservations as cancelled.
+
+These are admin patterns. The public calendar keeps its existing design and adds
+only a disabled `Obsazeno` state for future occupied slots, immediate date
+selection and an accessible loading/retry status.

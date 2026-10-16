@@ -81,11 +81,19 @@ export default async function CalendarPage() {
       ]),
     ...blocks.map((b) => ({
       id: b.id,
-      title: b.note ?? "Blok",
+      title: b.applicationId ? "Blokováno" : (b.note ?? "Blok"),
       start: b.startsAt.toISOString(),
       end: b.endsAt.toISOString(),
-      display: "background" as const,
-      backgroundColor: "var(--muted-foreground)",
+      display: b.applicationId ? ("block" as const) : ("background" as const),
+      backgroundColor: b.applicationId
+        ? "var(--muted)"
+        : "var(--muted-foreground)",
+      borderColor: b.applicationId ? "var(--border)" : undefined,
+      textColor: b.applicationId ? "var(--muted-foreground)" : undefined,
+      url: b.applicationId
+        ? `/admin/blocking?batch=${b.applicationId}`
+        : undefined,
+      extendedProps: { blockApplicationId: b.applicationId },
     })),
   ];
 

@@ -781,6 +781,50 @@ export default async function DesignSystemPage() {
           </div>
         </section>
 
+        <section aria-labelledby="kit-blocking">
+          <h2
+            id="kit-blocking"
+            className="mb-4 text-2xl font-bold tracking-tight"
+          >
+            Šablony blokací
+          </h2>
+          <Card>
+            <CardHeader>
+              <CardTitle>Víkendová rána</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Šablona → výběr dní → náhled → potvrzení. Uložení šablony
+                termíny neblokuje.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <fieldset>
+                <legend className="mb-2 text-sm font-semibold">Sobota</legend>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    aria-pressed="true"
+                    className="min-h-11 rounded-md border border-primary bg-primary px-3 text-sm font-medium text-primary-foreground"
+                  >
+                    05:00–06:15 ✓
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed="false"
+                    className="min-h-11 rounded-md border border-border bg-card px-3 text-sm font-medium"
+                  >
+                    06:15–07:30
+                  </button>
+                </div>
+              </fieldset>
+              <p className="mt-4 text-sm text-muted-foreground">
+                Dny mají vlastní skupinu slotů. Výběr nese stav aria-pressed a
+                ikonu; časy pocházejí z rozvrhu. Přidání a úprava jsou v
+                modálním dialogu. Existující rezervace zůstávají platné.
+              </p>
+            </CardContent>
+          </Card>
+        </section>
+
         <section
           aria-labelledby="kit-dark"
           className="rounded-lg bg-ink p-6 text-white"

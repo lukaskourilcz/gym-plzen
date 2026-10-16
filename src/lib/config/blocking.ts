@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   addDaysToDateKey,
+  addMinutes,
   dayOfWeek,
   daysBetweenDateKeys,
   isDateKey,
@@ -97,7 +98,7 @@ export function buildBlockWindows(
       .filter((slot) => slot.dayOfWeek === weekday)
       .flatMap((slot) => {
         const start = localDateTimeToDate(dateKey, slot.startMinute);
-        const end = localDateTimeToDate(dateKey, slot.endMinute);
+        const end = addMinutes(start, slot.endMinute - slot.startMinute);
         if (start <= now) return [];
         return [
           {
