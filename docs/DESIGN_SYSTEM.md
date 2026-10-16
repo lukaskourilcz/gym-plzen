@@ -678,8 +678,8 @@ galerii `/admin/design-system`.
 
 `/admin/blocking` separates saved weekly choices from their application to dates.
 Template cards offer Use/Edit; creation and editing use the existing `AdminDialog`
-with focus trapping, Escape and focus restoration. Every weekday is a labelled
-fieldset. Slot buttons have at least 44px targets and expose selection with
+with focus trapping, Escape and focus restoration. A compact weekday switch shows selected-slot counts. Only the active weekday
+is rendered as a labelled fieldset, so the dialog never lists 105 controls at once. Slot buttons have at least 44px targets and expose selection with
 `aria-pressed`, a checkmark and a solid primary surface. The grid comes from
 current opening hours; it never permits arbitrary minute input.
 

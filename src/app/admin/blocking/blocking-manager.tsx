@@ -309,6 +309,9 @@ function TemplateDialog({
   onSaved: () => void;
 }) {
   const [name, setName] = useState(template?.name ?? "");
+  const [activeDay, setActiveDay] = useState(
+    template?.slots[0]?.dayOfWeek ?? 1,
+  );
   const [slots, setSlots] = useState<BlockingSlot[]>(
     template?.slots.filter((slot) => slotFitsHours(slot, hours)) ?? [],
   );
@@ -353,7 +356,51 @@ function TemplateDialog({
             className="mt-2"
           />
         </div>
-        {WEEK.map((day) => {
+        <fieldset>
+          <legend className="mb-2 text-sm font-semibold">
+            Vyberte den v týdnu
+          </legend>
+          <div className="flex flex-wrap gap-2">
+            {WEEK.map((day) => {
+              const count = slots.filter(
+                (slot) => slot.dayOfWeek === day,
+              ).length;
+              return (
+                <Button
+                  key={day}
+                  type="button"
+                  variant="outline"
+                  aria-pressed={activeDay === day}
+                  onClick={() => setActiveDay(day)}
+                  className={cn(
+                    "gap-2",
+                    activeDay === day &&
+                      "border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
+                  )}
+                >
+                  {WEEKDAYS[day]}
+                  <span
+                    className={cn(
+                      "rounded-sm px-1.5 text-xs tabular-nums",
+                      activeDay === day
+                        ? "bg-white/15"
+                        : count
+                          ? "bg-accent text-accent-foreground"
+                          : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {count}
+                  </span>
+                </Button>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Pro každý den vyberte sloty zvlášť. Číslo u dne ukazuje počet
+            vybraných slotů.
+          </p>
+        </fieldset>
+        {WEEK.filter((day) => day === activeDay).map((day) => {
           const hoursForDay = hours.find((row) => row.dayOfWeek === day);
           const options: BlockingSlot[] = [];
           if (

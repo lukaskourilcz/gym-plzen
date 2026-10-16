@@ -11,6 +11,11 @@ const nextMonth = new Date(Date.UTC(year!, month!, 1))
 const dateA = `${nextMonth}-08`,
   dateB = `${nextMonth}-10`;
 
+test.afterEach(async ({ page }) => {
+  // Neighbour prefetch may still be in a test interceptor when the page closes.
+  await page.unrouteAll({ behavior: "ignoreErrors" });
+});
+
 test("date changes respond immediately, stale responses cannot replace the latest day and cached days avoid navigation requests", async ({
   page,
 }) => {
