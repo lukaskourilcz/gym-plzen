@@ -22,5 +22,6 @@
       "codex/required-phone-members": false,
       "codex/calendar-blocking-evening": false
     }
-  }
+  },
+  "regions": ["cdg1"]
 }

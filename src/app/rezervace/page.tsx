@@ -2,20 +2,7 @@ import type { Metadata } from "next";
 import { footerProps, loadSiteContent } from "@/lib/content/site";
 import { getSession } from "@/lib/auth/guards";
 import { formatTimeRange } from "@/lib/helpers/format";
-import {
-  addDaysToDateKey,
-  dateKeyInTimeZone,
-  isDateKey,
-  minutesBetween,
-  monthGrid,
-  localDateTimeToDate,
-} from "@/lib/helpers/datetime";
-import {
-  getBookingHorizonDays,
-  getSlotsForRange,
-  isWithinBookingHorizon,
-  resolveBookableSlots,
-} from "@/lib/services/slots";
+import { localDateTimeToDate } from "@/lib/helpers/datetime";
 import { getLoyaltyStatus } from "@/lib/services/loyalty";
 import { parseSelectedStarts } from "@/lib/helpers/booking-selection";
 import { Container, Section } from "@/components/ui/container";
@@ -24,29 +11,22 @@ import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { RealtimeRefresher } from "@/components/realtime-refresher";
 import { BookingCalendar } from "./booking-calendar";
-import { firstBookableDateKey } from "@/lib/config/booking-start";
+import { loadCalendarAvailability } from "@/lib/services/calendar-availability";
+import {
+  calendarLocation,
+  type CalendarView,
+} from "@/lib/config/booking-calendar";
+import { DEFAULT_BOOKING_HORIZON_DAYS } from "@/lib/config/schedule";
+import { logger } from "@/lib/helpers/logger";
 
 export const metadata: Metadata = {
   title: "Rezervace soukromého gymu",
   description: "Vyberte datum a přesný čas rezervace NAVI Private Gym v Plzni.",
   alternates: { canonical: "/rezervace" },
 };
-/*
- * Deliberately no `loading.tsx` next to this page. The calendar navigates to
- * itself with different search params, and under a segment loading boundary
- * the React build bundled with Next 15.5 can lose the wake-up of a Flight row
- * that arrives while it unwinds, which parked the first date selection until
- * the visitor clicked again. Without the boundary the suspension is handled
- * at the root, where that wake-up is recorded; the transition simply holds
- * the current view until the new day's data is in.
- */
+/* First render is server-side. Day/month navigation uses the public snapshot
+ * API; no same-route Flight/loading boundary or authentication round trip. */
 export const dynamic = "force-dynamic";
-
-function validMonth(value: string | undefined): value is string {
-  return Boolean(
-    value && /^\d{4}-\d{2}$/.test(value) && isDateKey(`${value}-01`),
-  );
-}
 
 export default async function BookingPage({
   searchParams,
@@ -55,53 +35,37 @@ export default async function BookingPage({
 }) {
   const params = await searchParams;
   const now = new Date();
-  const todayKey = dateKeyInTimeZone(now);
-  /*
-   * Before launch the earliest bookable day is opening day, afterwards it is
-   * today. Nothing earlier is offered, so it is also the floor of month
-   * navigation: the months before opening hold no bookable day at all.
-   */
-  const minDateKey = firstBookableDateKey(now);
-  const minMonth = minDateKey.slice(0, 7);
-  // Resolved once per request: the operator can change the horizon.
-  const horizonDays = await getBookingHorizonDays();
-  const maxDateKey = addDaysToDateKey(todayKey, horizonDays);
-  const isBookable = (dateKey: string) =>
-    dateKey >= minDateKey && isWithinBookingHorizon(dateKey, now, horizonDays);
-  const requestedDate =
-    typeof params.date === "string" && isDateKey(params.date)
-      ? params.date
-      : null;
-  const requestedMonth =
-    typeof params.month === "string" ? params.month : undefined;
-  const monthKey =
-    requestedDate && isBookable(requestedDate)
-      ? requestedDate.slice(0, 7)
-      : validMonth(requestedMonth) &&
-          requestedMonth >= minMonth &&
-          requestedMonth <= maxDateKey.slice(0, 7)
-        ? requestedMonth
-        : minMonth;
-  /*
-   * The opening month opens on the first bookable day; a month the visitor
-   * navigated to opens with no day selected. Explicit day navigation wins.
-   */
-  const selectedDateKey =
-    requestedDate &&
-    requestedDate.startsWith(monthKey) &&
-    isBookable(requestedDate)
-      ? requestedDate
-      : monthKey === minMonth && isBookable(minDateKey)
-        ? minDateKey
-        : null;
-  const grid = monthGrid(monthKey);
-  const rangeStart = grid[0]!.dateKey;
-  const rangeEnd = addDaysToDateKey(grid.at(-1)!.dateKey, 1);
-
-  const [availability, content, session] = await Promise.all([
-    getSlotsForRange(rangeStart, rangeEnd, now),
+  let snapshot: Awaited<ReturnType<typeof loadCalendarAvailability>> | null =
+    null;
+  try {
+    snapshot = await loadCalendarAvailability(
+      {
+        date: typeof params.date === "string" ? params.date : null,
+        month: typeof params.month === "string" ? params.month : null,
+      },
+      now,
+    );
+  } catch (error) {
+    logger.warn("Booking calendar unavailable", { error });
+  }
+  const fallback = calendarLocation(
+    {
+      date: typeof params.date === "string" ? params.date : null,
+      month: typeof params.month === "string" ? params.month : null,
+    },
+    DEFAULT_BOOKING_HORIZON_DAYS,
+    now,
+  );
+  const view: CalendarView = snapshot?.view ?? {
+    ...fallback,
+    days: [],
+    selectedSlots: [],
+    source: "unavailable",
+  };
+  const [content, session] = await Promise.all([
     loadSiteContent("cs", {
-      at: localDateTimeToDate(selectedDateKey ?? minDateKey, 12 * 60),
+      at: localDateTimeToDate(view.selectedDateKey ?? view.minDateKey, 720),
+      bookingSnapshot: snapshot?.pricing,
     }),
     getSession(),
   ]);
@@ -119,7 +83,9 @@ export default async function BookingPage({
   });
   const starts = parseSelectedStarts(params.start);
   const [resolvedSlots, loyaltyStatus] = await Promise.all([
-    resolveBookableSlots(starts),
+    snapshot
+      ? Promise.resolve(starts.map((start) => snapshot.resolveSelection(start)))
+      : Promise.resolve(starts.map(() => null)),
     session ? getLoyaltyStatus(session.user.id) : null,
   ]);
   const selected = starts
@@ -144,25 +110,6 @@ export default async function BookingPage({
             : loyaltyStatus.entriesUntilFree,
       }
     : null;
-  // The client needs one flag per day and the slots of the selected day only;
-  // shipping all 630 slots of the grid made the document ten times larger.
-  const days = availability.days.map((day) => ({
-    dateKey: day.dateKey,
-    isClosed: day.isClosed,
-    hasAvailability: day.slots.some((slot) => slot.available),
-  }));
-  const selectedSlots = (
-    availability.days.find((day) => day.dateKey === selectedDateKey)?.slots ??
-    []
-  )
-    .filter((slot) => slot.available)
-    .map((slot) => ({
-      startISO: slot.start.toISOString(),
-      label: formatTimeRange(slot.start, slot.end),
-      durationMinutes: minutesBetween(slot.start, slot.end),
-      // A price period can start or end mid-day: each slot has its own price.
-      priceCents: content.entryPriceForDate(slot.start),
-    }));
 
   return (
     <>
@@ -172,7 +119,7 @@ export default async function BookingPage({
         accountHref={session ? "/account" : "/login"}
         accountLabel={session ? "Můj účet" : "Přihlásit se"}
       />
-      <RealtimeRefresher />
+      <RealtimeRefresher eventName="navi:calendar-availability-change" />
       <main id="main-content" tabIndex={-1}>
         <Section className="pb-28 pt-12 sm:pt-16">
           <Container>
@@ -215,17 +162,9 @@ export default async function BookingPage({
 
             <div className="mt-10">
               <BookingCalendar
-                monthKey={monthKey}
-                selectedDateKey={selectedDateKey}
-                todayKey={todayKey}
-                minDateKey={minDateKey}
-                maxDateKey={maxDateKey}
-                horizonDays={horizonDays}
-                days={days}
-                selectedSlots={selectedSlots}
+                {...view}
                 selected={selected}
                 loyalty={loyalty}
-                source={availability.source}
               />
             </div>
           </Container>

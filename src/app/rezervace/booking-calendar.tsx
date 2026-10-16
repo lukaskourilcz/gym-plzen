@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   ArrowRight,
   Check,
@@ -19,6 +18,7 @@ import {
 } from "@/lib/helpers/datetime";
 import { formatMoney } from "@/lib/helpers/format";
 import {
+  parseSelectedStarts,
   detailsHref,
   rewardPositions,
   withSelectedStarts,
@@ -26,6 +26,8 @@ import {
 import { MAX_SLOTS_PER_ORDER } from "@/lib/config/orders";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
+import { useCalendarAvailability } from "./use-calendar-availability";
+import type { CalendarView } from "@/lib/config/booking-calendar";
 
 /**
  * One calendar cell. Only the selected day needs its slots; every other day
@@ -43,6 +45,7 @@ export interface BookingSlotView {
   label: string;
   durationMinutes: number;
   priceCents: number;
+  booked?: boolean;
 }
 
 /** A slot in the visitor's selection, possibly on another day. */
@@ -83,42 +86,38 @@ function displayDate(dateKey: string, options: Intl.DateTimeFormatOptions) {
 }
 
 export function BookingCalendar({
-  monthKey,
-  selectedDateKey,
-  todayKey,
-  minDateKey,
-  maxDateKey,
-  horizonDays,
-  days,
-  selectedSlots,
   selected,
   loyalty,
-  source,
-}: {
-  monthKey: string;
-  selectedDateKey: string | null;
-  todayKey: string;
-  /** Earliest bookable day: opening day before launch, today afterwards. */
-  minDateKey: string;
-  maxDateKey: string;
-  horizonDays: number;
-  days: BookingDayView[];
-  /** Available slots of `selectedDateKey`; empty when no day is selected. */
-  selectedSlots: BookingSlotView[];
-  /** The slots already picked, from the URL, in start order. */
+  ...initial
+}: CalendarView & {
   selected: SelectedSlotView[];
-  /** Present for a signed-in member. */
   loyalty: SelectionLoyalty | null;
-  source: "live" | "preview" | "unavailable";
 }) {
-  const router = useRouter();
+  const {
+    view,
+    loading: isRefreshing,
+    refresh,
+  } = useCalendarAvailability(initial);
+  const {
+    monthKey,
+    selectedDateKey,
+    todayKey,
+    minDateKey,
+    maxDateKey,
+    horizonDays,
+    days,
+    selectedSlots,
+    source,
+  } = view;
   const searchParams = useSearchParams();
-  const [isRefreshing, startRefresh] = useTransition();
   const gridRef = useRef<HTMLDivElement>(null);
   const grid = monthGrid(monthKey);
   const byDate = new Map(days.map((day) => [day.dateKey, day]));
   const selectedDay = selectedDateKey ? byDate.get(selectedDateKey) : undefined;
-  const availableSlots = selectedDateKey ? selectedSlots : [];
+  const availableSlots =
+    selectedDateKey && !isRefreshing && source !== "unavailable"
+      ? selectedSlots
+      : [];
   // Months before the first bookable day hold nothing to book, so the calendar
   // does not go there: before opening day, paging back stops at the opening
   // month instead of showing a month of struck-through days.
@@ -155,6 +154,23 @@ export function BookingCalendar({
     // must not reset what the visitor has just picked.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedKey]);
+  const knownSlots = useRef(
+    new Map(selected.map((slot) => [slot.startISO, slot])),
+  );
+  for (const slot of selection) knownSlots.current.set(slot.startISO, slot);
+  useEffect(() => {
+    const starts = parseSelectedStarts(searchParams.getAll("start")).map(
+      (date) => date.toISOString(),
+    );
+    setSelection((current) =>
+      starts.join(",") === current.map((slot) => slot.startISO).join(",")
+        ? current
+        : starts.flatMap((start) => {
+            const slot = knownSlots.current.get(start);
+            return slot ? [slot] : [];
+          }),
+    );
+  }, [searchParams]);
   const selectedStarts = new Set(selection.map((slot) => slot.startISO));
   const selectedPerDay = new Map<string, number>();
   for (const slot of selection) {
@@ -199,7 +215,11 @@ export function BookingCalendar({
     next: { month?: string; date?: string | null },
     starts: readonly SelectedSlotView[] = selection,
   ) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(
+      typeof window === "undefined"
+        ? searchParams.toString()
+        : window.location.search,
+    );
     params.delete("stav");
     if (next.month) params.set("month", next.month);
     if (next.date === null) params.delete("date");
@@ -210,6 +230,27 @@ export function BookingCalendar({
     ).toString()}`;
   };
 
+  const navigate = (next: { month?: string; date?: string | null }) => {
+    const month = next.month ?? monthKey,
+      date = next.date === undefined ? selectedDateKey : next.date;
+    window.history.pushState(null, "", buildHref({ month, date }));
+    void refresh(month, date);
+  };
+  const follow = (
+    event: React.MouseEvent<HTMLAnchorElement>,
+    next: { month?: string; date?: string | null },
+  ) => {
+    if (
+      event.button !== 0 ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      event.altKey
+    )
+      return;
+    event.preventDefault();
+    navigate(next);
+  };
   const updateSelection = (next: SelectedSlotView[]) => {
     setAnnouncement("");
     const sorted = [...next].sort((a, b) =>
@@ -261,7 +302,7 @@ export function BookingCalendar({
   ) => {
     if (event.key === " " || event.key === "Enter") {
       event.preventDefault();
-      router.push(buildHref({ month: monthKey, date: dateKey }));
+      navigate({ month: monthKey, date: dateKey });
       return;
     }
     const deltas: Record<string, number> = {
@@ -276,12 +317,7 @@ export function BookingCalendar({
       event.preventDefault();
       const targetMonth = moveMonth(event.key === "PageUp" ? -1 : 1);
       if (targetMonth < minMonth || targetMonth > maxMonth) return;
-      router.push(
-        buildHref({
-          month: targetMonth,
-          date: null,
-        }),
-      );
+      navigate({ month: targetMonth, date: null });
       return;
     }
     const delta = deltas[event.key];
@@ -306,32 +342,44 @@ export function BookingCalendar({
             </h2>
           </div>
           <div className="flex gap-2">
-            <Button
+            <a
               href={buildHref({ month: moveMonth(-1), date: null })}
-              variant="outline"
-              size="icon"
+              onClick={(event) => {
+                if (monthKey <= minMonth) {
+                  event.preventDefault();
+                  return;
+                }
+                follow(event, { month: moveMonth(-1), date: null });
+              }}
               aria-disabled={monthKey <= minMonth}
               className={cn(
+                buttonVariants({ variant: "outline", size: "icon" }),
                 monthKey <= minMonth && "pointer-events-none opacity-40",
               )}
               aria-label="Předchozí měsíc"
               tabIndex={monthKey <= minMonth ? -1 : undefined}
             >
               <ChevronLeft aria-hidden="true" />
-            </Button>
-            <Button
+            </a>
+            <a
               href={buildHref({ month: moveMonth(1), date: null })}
-              variant="outline"
-              size="icon"
+              onClick={(event) => {
+                if (monthKey >= maxMonth) {
+                  event.preventDefault();
+                  return;
+                }
+                follow(event, { month: moveMonth(1), date: null });
+              }}
               aria-disabled={monthKey >= maxMonth}
               className={cn(
+                buttonVariants({ variant: "outline", size: "icon" }),
                 monthKey >= maxMonth && "pointer-events-none opacity-40",
               )}
               aria-label="Následující měsíc"
               tabIndex={monthKey >= maxMonth ? -1 : undefined}
             >
               <ChevronRight aria-hidden="true" />
-            </Button>
+            </a>
           </div>
         </div>
 
@@ -348,7 +396,7 @@ export function BookingCalendar({
               variant="outline"
               className="mt-3"
               disabled={isRefreshing}
-              onClick={() => startRefresh(() => router.refresh())}
+              onClick={() => void refresh(monthKey, selectedDateKey)}
             >
               {isRefreshing ? "Načítám…" : "Zkusit znovu"}
             </Button>
@@ -449,12 +497,18 @@ export function BookingCalendar({
                             {content}
                           </span>
                         ) : (
-                          <Link
+                          <a
                             key={cell.dateKey}
                             href={buildHref({
                               month: monthKey,
                               date: cell.dateKey,
                             })}
+                            onClick={(event) =>
+                              follow(event, {
+                                month: monthKey,
+                                date: cell.dateKey,
+                              })
+                            }
                             role="gridcell"
                             data-date={cell.dateKey}
                             aria-selected={selected}
@@ -481,7 +535,7 @@ export function BookingCalendar({
                                 {pickedHere}
                               </span>
                             ) : null}
-                          </Link>
+                          </a>
                         );
                       })}
                   </div>
@@ -526,18 +580,33 @@ export function BookingCalendar({
             : "Vyberte datum"}
         </h2>
 
-        <div aria-live="polite" aria-atomic="true" className="mt-6">
+        <div
+          aria-live="polite"
+          aria-atomic="true"
+          aria-busy={isRefreshing}
+          className="mt-6"
+        >
+          {isRefreshing ? (
+            <p role="status" className="text-sm text-muted-foreground">
+              Načítám termíny…
+            </p>
+          ) : null}
           {!selectedDateKey && source !== "unavailable" ? (
             <Notice title="Nejprve zvolte den">
               Po výběru data se zde zobrazí přesné časy začátku a konce.
             </Notice>
           ) : null}
-          {selectedDateKey && selectedDay?.isClosed ? (
+          {!isRefreshing &&
+          source !== "unavailable" &&
+          selectedDateKey &&
+          selectedDay?.isClosed ? (
             <Notice tone="warning" title="Tento den je zavřeno">
               Vyberte jiné datum v kalendáři.
             </Notice>
           ) : null}
-          {selectedDateKey &&
+          {!isRefreshing &&
+          source !== "unavailable" &&
+          selectedDateKey &&
           selectedDay &&
           !selectedDay.isClosed &&
           availableSlots.length === 0 ? (
@@ -570,15 +639,17 @@ export function BookingCalendar({
                   key={slot.startISO}
                   type="button"
                   aria-pressed={picked}
-                  disabled={!picked && full}
+                  disabled={slot.booked || (!picked && full)}
                   onClick={() => toggleSlot(slot)}
                   className={cn(
                     buttonVariants({ variant: "outline" }),
                     // Focus scrolled into view clears the sticky selection bar.
                     "h-auto min-h-16 scroll-mb-36 justify-between px-4 py-3",
-                    picked
-                      ? "border-2 border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
-                      : "border-primary bg-primary/10 hover:bg-primary/20",
+                    slot.booked
+                      ? "border-border bg-muted text-muted-foreground disabled:opacity-100"
+                      : picked
+                        ? "border-2 border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+                        : "border-primary bg-primary/10 hover:bg-primary/20",
                   )}
                 >
                   <span className="text-left">
@@ -598,10 +669,12 @@ export function BookingCalendar({
                   <span
                     className={cn(
                       "inline-flex items-center gap-1 text-sm font-extrabold",
-                      !picked && "text-accent-foreground",
+                      !picked && !slot.booked && "text-accent-foreground",
                     )}
                   >
-                    {picked ? (
+                    {slot.booked ? (
+                      "Obsazeno"
+                    ) : picked ? (
                       <>
                         <Check aria-hidden="true" />
                         Vybráno
