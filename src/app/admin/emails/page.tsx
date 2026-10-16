@@ -1,3 +1,9 @@
+import { EveningEmailForm } from "./evening-email-form";
+import {
+  EVENING_EMAIL_START_KEY,
+  eveningEmailStart,
+} from "@/lib/config/evening-email";
+import { getSetting } from "@/lib/services/cms";
 import { requireAdmin } from "@/lib/auth/guards";
 import { emailTemplates } from "@/lib/services";
 import {
@@ -125,6 +131,11 @@ export default async function EmailsPage() {
       <PageHeader
         title="E-maily"
         description="České texty, náhledy a testy všech automatických e-mailů. Každý e-mail používá stejné logo NAVI."
+      />
+      <EveningEmailForm
+        minute={eveningEmailStart(
+          demo ? null : await getSetting(EVENING_EMAIL_START_KEY),
+        )}
       />
       <Card>
         <CardHeader>

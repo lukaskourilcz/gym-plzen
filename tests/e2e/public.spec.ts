@@ -1,3 +1,4 @@
+import { futureBookingCalendarHref } from "../helpers/calendar-date";
 import { test, expect } from "@playwright/test";
 
 async function dismissTrackingConsentIfShown(
@@ -514,7 +515,9 @@ test.describe("Public site", () => {
   test("selected slots lead to the details step, consents and all", async ({
     page,
   }) => {
-    await page.goto("/rezervace", { waitUntil: "domcontentloaded" });
+    await page.goto(futureBookingCalendarHref(), {
+      waitUntil: "domcontentloaded",
+    });
     await dismissTrackingConsentIfShown(page);
     // A slot is a toggle button whose accessible name ends with "Vybrat".
     const slot = page.getByRole("button", { name: /Vybrat$/ });
@@ -562,7 +565,9 @@ test.describe("Public site", () => {
     page,
   }) => {
     test.setTimeout(60_000);
-    await page.goto("/rezervace", { waitUntil: "domcontentloaded" });
+    await page.goto(futureBookingCalendarHref(), {
+      waitUntil: "domcontentloaded",
+    });
     const available = page.locator(
       'a[role="gridcell"][aria-label*="dostupné termíny"]',
     );
@@ -603,7 +608,9 @@ test.describe("Public site", () => {
     // below skips the check where live availability is not configured.
     test.setTimeout(90_000);
     const probe = await browser.newPage();
-    await probe.goto("/rezervace", { waitUntil: "domcontentloaded" });
+    await probe.goto(futureBookingCalendarHref(), {
+      waitUntil: "domcontentloaded",
+    });
     const availableCount = await probe
       .locator('a[role="gridcell"][aria-label*="dostupné termíny"]')
       .count();
@@ -618,7 +625,9 @@ test.describe("Public site", () => {
 
     for (const attempt of [1, 2, 3, 4]) {
       const page = await browser.newPage();
-      await page.goto("/rezervace", { waitUntil: "networkidle" });
+      await page.goto(futureBookingCalendarHref(), {
+        waitUntil: "networkidle",
+      });
       const entry = page.locator('a[role="gridcell"][tabindex="0"]');
       await entry.focus();
       await entry.press("ArrowRight");

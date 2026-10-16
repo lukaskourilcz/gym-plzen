@@ -185,6 +185,99 @@ describe(
       )[0]!;
     }
 
+    test("missing contact is diagnosed at 24h, one incident escalates at delivery time, and repairing the contact delivers the same PIN once", async (t) => {
+      const id = await booking(1441);
+      await rows("update reservation set contact_email=null where id=$1", [id]);
+      const original = await rows("select * from reservation where id=$1", [
+        id,
+      ]);
+      await fulfillReservation(id);
+      assert.equal((await openStepAlerts(id)).length, 0);
+      assert.equal((await rows("select id from access_code")).length, 0);
+      t.mock.timers.setTime(now.getTime() + 60000);
+      await fulfillReservation(id);
+      const beforeCode = await code(id);
+      const [early] = await rows<{
+        id: string;
+        severity: string;
+        context: { incident: { code: string; step: string } };
+      }>("select * from system_alert where dedupe_key=$1", [
+        `reservation:${id}:contact`,
+      ]);
+      assert.equal(early!.severity, "warning");
+      assert.equal(early!.context.incident.code, "contact_missing_all");
+      assert.equal(early!.context.incident.step, "code_delivered");
+      assert.equal(beforeCode.provision_state, "ready");
+      assert.equal(putCount, 1);
+      await fulfillReservation(id);
+      assert.equal((await openStepAlerts(id)).length, 1);
+      assert.equal(resend.sent.length, 0);
+      t.mock.timers.setTime(now.getTime() + 1381 * 60000);
+      await fulfillReservation(id);
+      const [urgent] = await rows<{
+        id: string;
+        severity: string;
+        context: { incident: { code: string; attempts: number } };
+      }>("select * from system_alert where dedupe_key=$1", [
+        `reservation:${id}:contact`,
+      ]);
+      assert.equal(urgent!.id, early!.id);
+      assert.equal(urgent!.severity, "critical");
+      assert.equal(urgent!.context.incident.attempts, 1);
+      assert.equal((await code(id)).id, beforeCode.id);
+      assert.deepEqual(
+        await rows("select * from reservation where id=$1", [id]),
+        original,
+      );
+      assert.equal(
+        (await rows("select * from message_delivery where kind='access_code'"))
+          .length,
+        0,
+      );
+      await rows(
+        "update reservation set contact_email='repaired@example.test' where id=$1",
+        [id],
+      );
+      await fulfillReservation(id);
+      await fulfillReservation(id);
+      assert.equal(
+        resend.sent.filter((mail) =>
+          mail.subject.toLocaleLowerCase("cs-CZ").includes("vstupní kód"),
+        ).length,
+        1,
+      );
+      assert.equal((await code(id)).id, beforeCode.id);
+      assert.equal(putCount, 1);
+      assert.equal((await openStepAlerts(id)).length, 0);
+      assert.equal(
+        (
+          await rows("select * from system_alert where dedupe_key=$1", [
+            `reservation:${id}:contact`,
+          ])
+        ).length,
+        1,
+      );
+    });
+    test("offline and explicitly rejected Nuki failures are distinguished from missing contacts", async () => {
+      const offline = await booking(30);
+      online = false;
+      for (let n = 0; n < 5; n++) await fulfillReservation(offline);
+      const [a] = await rows<{ context: { incident: { code: string } } }>(
+        "select context from system_alert where dedupe_key=$1",
+        [`reservation:${offline}:code_created`],
+      );
+      assert.equal(a!.context.incident.code, "lock_offline");
+      online = true;
+      mode = "rejected";
+      const rejected = await booking(120);
+      for (let n = 0; n < 5; n++) await fulfillReservation(rejected);
+      const [b] = await rows<{ context: { incident: { code: string } } }>(
+        "select context from system_alert where dedupe_key=$1",
+        [`reservation:${rejected}:code_created`],
+      );
+      assert.equal(b!.context.incident.code, "lock_rejected");
+    });
+
     test("offline move refuses success, preserves the original and does not consume the change (#170)", async () => {
       const b = await movableBooking();
       online = false;
@@ -486,6 +579,31 @@ describe(
         ).length,
         1,
       );
+    });
+    test("evening email uses reservation start despite earlier delivery; blocked bookings keep fulfillment and delivered codes are never resent", async (t) => {
+      const id = await booking(540); // 21:00 Prague; initial clock is 12:00 Prague.
+      const start = new Date(now.getTime() + 540 * 60000);
+      await rows(
+        "insert into blocked_slot (starts_at,ends_at,note) values ($1,$2,'synthetic block over an existing paid booking')",
+        [start, new Date(start.getTime() + 60 * 60000)],
+      );
+      assert.equal((await rows("select * from message_delivery")).length, 0);
+      t.mock.timers.setTime(now.getTime() + 510 * 60000); // delivered at 20:30, before threshold
+      await fulfillReservation(id);
+      const pin = await code(id);
+      assert.equal(pin.provision_state, "ready");
+      assert.ok(
+        resend.sent.some((email) =>
+          String(email.html).includes("NOČNÍ KLID PO 22. HODINĚ"),
+        ),
+      );
+      const sent = resend.sent.length;
+      await setSetting("messages.access_code_evening_from", 1320);
+      await fulfillReservation(id);
+      await fulfillReservation(id);
+      assert.equal(resend.sent.length, sent);
+      assert.equal((await code(id)).code_hash, pin.code_hash);
+      assert.equal(putCount, 1);
     });
     test("lost response and duplicate fulfillment recover one authorization and one email", async () => {
       const id = await booking();

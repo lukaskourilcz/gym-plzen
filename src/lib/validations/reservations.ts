@@ -12,15 +12,29 @@ import {
  * converts it and the service derives the end from the configured window, so
  * there is no end field to get wrong.
  */
-export const createReservationSchema = z.object({
-  userId: idSchema.optional(),
-  extraPeople: z.number().int().min(0).max(2).optional(),
-  startsAt: dateTimeStringSchema,
-  contactName: optionalText(120),
-  contactEmail: optionalEmail,
-  contactPhone: optionalPhone,
-  priceCents: z.number().int().nonnegative().optional(),
-});
+export const createReservationSchema = z
+  .object({
+    userId: idSchema.optional(),
+    extraPeople: z.number().int().min(0).max(2).optional(),
+    startsAt: dateTimeStringSchema,
+    contactName: optionalText(120),
+    contactEmail: optionalEmail,
+    contactPhone: optionalPhone,
+    priceCents: z.number().int().nonnegative().optional(),
+  })
+  .refine(
+    (input) =>
+      [
+        input.userId,
+        input.contactName,
+        input.contactEmail,
+        input.contactPhone,
+      ].some((value) => value?.trim()),
+    {
+      message: "Vyplňte kontakt zákazníka. Pro blokaci použijte Kalendář.",
+      path: ["contactName"],
+    },
+  );
 
 /** Admin cancellation; the reason is sent to the customer in the e-mail. */
 export const cancelReservationSchema = z.object({

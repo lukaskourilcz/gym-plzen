@@ -253,6 +253,7 @@ export async function emailPage(
           emailArchive.recipient,
           emailArchive.subject,
           emailCustomerName,
+          sql`(select m.reservation_id::text from public.message_delivery m where m.provider_message_id=${emailArchive.providerMessageId} and m.channel='email' order by m.created_at desc,m.id desc limit 1)`,
         ),
         channel && channel !== "email" ? sql`false` : undefined,
         matchingDelivery,
@@ -315,6 +316,7 @@ export async function messagePage(
         adminTextSearch(
           filters.q,
           messageDelivery.recipient,
+          sql`${messageDelivery.reservationId}::text`,
           reservation.contactName,
           reservation.contactEmail,
           profiles.fullName,
@@ -494,7 +496,12 @@ export function alertPage(page: number, filters: AdminFilters) {
     .from(systemAlert)
     .where(
       and(
-        adminTextSearch(filters.q, systemAlert.title, systemAlert.body),
+        adminTextSearch(
+          filters.q,
+          systemAlert.title,
+          systemAlert.body,
+          sql`${systemAlert.context}->>'reservationId'`,
+        ),
         adminDateFilter(systemAlert.createdAt, filters),
         severity ? eq(systemAlert.severity, severity) : undefined,
         filters.state === "open"

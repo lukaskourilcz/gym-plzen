@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Bell,
+  Ban,
   CalendarDays,
   ChartNoAxesColumnIncreasing,
   CircleHelp,
@@ -36,6 +37,7 @@ const NAV_GROUPS = [
       ["/admin", "Dnes", Home],
       ["/admin/tomorrow", "Zítra", CalendarDays],
       ["/admin/calendar", "Kalendář", CalendarDays],
+      ["/admin/blocking", "Blokování termínů", Ban],
       ["/admin/reservations", "Rezervace", ListChecks],
     ],
   },

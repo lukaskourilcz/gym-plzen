@@ -1,3 +1,4 @@
+import { IncidentDetails } from "@/components/admin/incident-details";
 import { Pagination } from "@/components/ui/pagination";
 import {
   pageFromParam,
@@ -170,6 +171,9 @@ export default async function AdminDashboard({
                       <AdminMemberName
                         name={r.contactName ?? r.contactEmail ?? "Neuvedeno"}
                         note={memberNotes.get(r.userId ?? "")}
+                        href={
+                          r.userId ? `/admin/members/${r.userId}` : undefined
+                        }
                       />
                     </span>
                     {code?.sent && <Badge variant="outline">Kód odeslán</Badge>}
@@ -233,6 +237,11 @@ export default async function AdminDashboard({
                         <AdminMemberName
                           name={entry.customerName}
                           note={memberNotes.get(entry.userId ?? "")}
+                          href={
+                            entry.userId
+                              ? `/admin/members/${entry.userId}`
+                              : undefined
+                          }
                         />
                         )
                       </>
@@ -312,7 +321,7 @@ export default async function AdminDashboard({
                     className="mt-0.5 size-4 shrink-0 text-warning"
                   />
                   <div>
-                    <div className="font-bold">{alert.title}</div>
+                    <IncidentDetails alert={alert} compact />
                     <div className="text-muted-foreground">
                       {formatDateTime(alert.createdAt)}
                     </div>

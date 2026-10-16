@@ -1,3 +1,7 @@
+import {
+  BOOKING_PUBLIC_SETTING_KEYS,
+  type BookingPricingSnapshot,
+} from "@/lib/services/calendar-availability";
 import { readDatabase } from "@/lib/db/read";
 import {
   contentBlock,
@@ -5,7 +9,7 @@ import {
   siteSetting,
   openingHours,
 } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, notInArray } from "drizzle-orm";
 import {
   PARTICIPANT_PRICING_KEY,
   PARTICIPANTS_ENABLED_KEY,
@@ -356,7 +360,12 @@ export function footerProps(content: SiteContent) {
 /** Load public content once, with a resilient fallback outside strict admin reads. */
 export async function loadSiteContent(
   locale = "cs",
-  options: { strict?: boolean; defaultsOnly?: boolean; at?: Date } = {},
+  options: {
+    strict?: boolean;
+    defaultsOnly?: boolean;
+    at?: Date;
+    bookingSnapshot?: BookingPricingSnapshot;
+  } = {},
 ): Promise<SiteContent> {
   const values: Record<string, string> = { ...SITE_DEFAULTS };
   let standardEntryPriceCents = DEFAULT_ENTRY_PRICE_CENTS;
@@ -403,18 +412,40 @@ export async function loadSiteContent(
               })
               .from(contentBlock)
               .where(eq(contentBlock.locale, locale)),
-            db
-              .select({ key: siteSetting.key, value: siteSetting.value })
-              .from(siteSetting),
-            db
-              .select({
-                name: pricingPeriod.name,
-                priceCents: pricingPeriod.priceCents,
-                startsAt: pricingPeriod.startsAt,
-                endsAt: pricingPeriod.endsAt,
-              })
-              .from(pricingPeriod),
-            db.select().from(openingHours),
+            options.bookingSnapshot
+              ? Promise.resolve(options.bookingSnapshot.settings).then(
+                  async (booking) => [
+                    ...(await db
+                      .select({
+                        key: siteSetting.key,
+                        value: siteSetting.value,
+                      })
+                      .from(siteSetting)
+                      .where(
+                        notInArray(
+                          siteSetting.key,
+                          BOOKING_PUBLIC_SETTING_KEYS,
+                        ),
+                      )),
+                    ...booking,
+                  ],
+                )
+              : db
+                  .select({ key: siteSetting.key, value: siteSetting.value })
+                  .from(siteSetting),
+            options.bookingSnapshot
+              ? Promise.resolve(options.bookingSnapshot.periods)
+              : db
+                  .select({
+                    name: pricingPeriod.name,
+                    priceCents: pricingPeriod.priceCents,
+                    startsAt: pricingPeriod.startsAt,
+                    endsAt: pricingPeriod.endsAt,
+                  })
+                  .from(pricingPeriod),
+            options.bookingSnapshot
+              ? Promise.resolve(options.bookingSnapshot.hours)
+              : db.select().from(openingHours),
           ]),
       );
       for (const row of rows) {

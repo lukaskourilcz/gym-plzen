@@ -13,6 +13,7 @@ export const EMAIL_TEMPLATE_IDS = [
   "order_confirmation",
   "reservation_rescheduled",
   "access_code",
+  "access_code_evening",
   "reservation_cancellation",
   "payment_document",
   "operator_notice",
@@ -108,6 +109,18 @@ export const EMAIL_TEMPLATE_DEFINITIONS: readonly EmailTemplateDefinition[] = [
     fallback: {
       subject: "Váš vstupní kód | NAVI Private Gym",
       body: "Ahoj {name},\n\nváš termín rezervace: {time}.\n\nVstupní kód: {code}\n\nKód zadejte na klávesnici u dveří v čase vaší rezervace. Kód je osobní a platí pouze pro tento termín.\n\nNAVI Private Gym",
+    },
+  },
+  {
+    id: "access_code_evening",
+    label: "Vstupní kód – večer",
+    description:
+      "Vstupní kód pro rezervace začínající od času nastaveného níže. Rozhoduje začátek rezervace v Praze, nikoli čas odeslání.",
+    variables: ["{name}", "{code}", "{time}"],
+    delivery: "application",
+    fallback: {
+      subject: "Váš vstupní kód | NAVI Private Gym",
+      body: "Ahoj {name},\n\nváš termín rezervace: {time}.\n\nVstupní kód: {code}\n\nKód zadejte na klávesnici u dveří v čase vaší rezervace. Kód je osobní a platí pouze pro tento termín.\n\nNOČNÍ KLID PO 22. HODINĚ — Prosíme o klidnější cvičení a hudbu pouze do sluchátek.\n\nNAVI Private Gym",
     },
   },
   {

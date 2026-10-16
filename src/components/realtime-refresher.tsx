@@ -21,13 +21,21 @@ import { PUBLIC_AVAILABILITY_TABLE } from "@/lib/config/realtime";
  * No-ops (renders nothing, subscribes to nothing) when Supabase realtime isn't
  * configured, so the page still works without it.
  */
-export function RealtimeRefresher() {
+export function RealtimeRefresher({ eventName }: { eventName?: string } = {}) {
   const router = useRouter();
 
   useEffect(() => {
     if (!publicEnv.NEXT_PUBLIC_SUPABASE_URL || !supabasePublicKey) return;
 
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const changed = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (eventName) window.dispatchEvent(new Event(eventName));
+        else router.refresh();
+      }, 150);
+    };
     let teardown: (() => void) | undefined;
     const subscribe = () => {
       void import("@/lib/supabase/client")
@@ -44,7 +52,7 @@ export function RealtimeRefresher() {
                 schema: "public",
                 table: PUBLIC_AVAILABILITY_TABLE,
               },
-              () => router.refresh(),
+              changed,
             )
             .subscribe();
           teardown = () => {
@@ -65,6 +73,7 @@ export function RealtimeRefresher() {
 
     return () => {
       cancelled = true;
+      clearTimeout(timer);
       if (typeof window.cancelIdleCallback === "function") {
         window.cancelIdleCallback(idle);
       } else {
@@ -72,7 +81,7 @@ export function RealtimeRefresher() {
       }
       teardown?.();
     };
-  }, [router]);
+  }, [router, eventName]);
 
   return null;
 }

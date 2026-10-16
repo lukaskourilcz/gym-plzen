@@ -1,3 +1,6 @@
+import { contactFailure, contactIncidentKey } from "@/lib/config/incidents";
+import { raiseAlert, resolveAlert } from "./alerts";
+import { buildReservationIncident } from "./reservation-incidents";
 import { sendReservationWhatsApp } from "./whatsapp-delivery";
 import {
   isAccessCodeDeliveryDue,
@@ -153,6 +156,22 @@ async function fulfillLocked(reservationId: string): Promise<void> {
   const deliveryDone = pipeline.some(
     (step) => step.step === "code_delivered" && step.status === "succeeded",
   );
+  if (!deliveryDone) {
+    const failure = contactFailure(reservation);
+    if (failure)
+      await raiseAlert(
+        buildReservationIncident({
+          booking: reservation,
+          step: "code_delivered",
+          failure,
+          attempts:
+            pipeline.find((row) => row.step === "code_delivered")?.attempts ??
+            0,
+          nextRetryAt: null,
+        }),
+      );
+    else await resolveAlert(contactIncidentKey(reservationId));
+  }
   let plaintext: string | null = null;
   let codeReady = existing.some(
     (c) => ["scheduled", "active", "used"].includes(c.status) && c.nukiAuthId,
@@ -166,16 +185,19 @@ async function fulfillLocked(reservationId: string): Promise<void> {
     ? { validFrom: liveCode.validFrom, validUntil: liveCode.validUntil }
     : null;
   if (!deliveryDone && liveCode) {
+    let preparationError: string | undefined;
     try {
       plaintext = await recoverAccessCode(liveCode);
-    } catch {
+    } catch (error) {
+      preparationError = error instanceof Error ? error.message : undefined;
       plaintext = null;
     }
     if (!plaintext) {
       await markStepFailed(
         reservationId,
         "code_created",
-        "Nuki zatím nepotvrdilo správný kód a jeho platnost. Další kód se nevytváří.",
+        preparationError ??
+          "Nuki zatím nepotvrdilo správný kód a jeho platnost. Další kód se nevytváří.",
       );
       return;
     }
@@ -229,6 +251,7 @@ async function fulfillLocked(reservationId: string): Promise<void> {
       code: plaintext,
       startsAt: reservation.startsAt,
       email: reservation.contactEmail,
+      phone: reservation.contactPhone,
       // WhatsApp goes separately below (Zernio), never instead of e-mail.
       notifyByWhatsapp: false,
       notifyBySms: false,
@@ -259,7 +282,7 @@ async function fulfillLocked(reservationId: string): Promise<void> {
       await markStepFailed(
         reservationId,
         "code_delivered",
-        "Mandatory email delivery failed",
+        outcome.failure ?? { code: "email_delivery_failed" },
       );
     }
   }

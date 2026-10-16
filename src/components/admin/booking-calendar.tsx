@@ -7,19 +7,23 @@ import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import luxonPlugin from "@fullcalendar/luxon3";
 import csLocale from "@fullcalendar/core/locales/cs";
-import type {
-  DateSelectArg,
-  DatesSetArg,
-  EventInput,
-} from "@fullcalendar/core";
+import type { DatesSetArg, EventInput } from "@fullcalendar/core";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AdminMemberName } from "@/components/admin/member-name";
 import { cn } from "@/lib/utils";
-import { createBlockedSlotAction } from "@/app/admin/schedule/actions";
+import {
+  loadCalendarBlockChoicesAction,
+  saveCalendarBlockSelectionAction,
+} from "@/app/admin/calendar/actions";
+import type {
+  CalendarBlockWindow,
+  CalendarBlockSelection,
+} from "@/lib/config/calendar-blocking";
+import { minuteOfDay } from "@/lib/helpers/datetime";
 import { minutesToHHmm } from "@/lib/helpers/format";
-import { closureFailureMessage } from "@/lib/helpers/closure-copy";
 import {
   DEFAULT_CLOSE_MINUTE,
   DEFAULT_OPEN_MINUTE,
@@ -33,11 +37,9 @@ const CALENDAR_VIEWS = [
 ] as const;
 
 /**
- * Admin operational calendar (FullCalendar, MIT). Week view with reservations
- * as solid events and blocks (e.g. cleaning) as
- * background events. Drag-select an empty range to create a block (used for the
- * cleaning window ~13:00). Correctness (overlap) is enforced server-side; this
- * is the visual operations view.
+ * Operational calendar with an explicit, keyboard-accessible block selection
+ * mode. Choices are real configured slots read from the server; all writes
+ * are revalidated atomically and never invoke reservation cancellation.
  */
 export function BookingCalendar({
   events,
@@ -59,11 +61,29 @@ export function BookingCalendar({
   const calendarId = useId();
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [scheduleHint, setScheduleHint] = useState(false);
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<CalendarBlockWindow[]>([]);
+  const [choices, setChoices] = useState<{
+    windows: CalendarBlockWindow[];
+    scheduleFingerprint: string;
+  } | null>(null);
+  const [loadingChoices, setLoadingChoices] = useState(false);
+  const [range, setRange] = useState<{ from: string; to: string } | null>(null);
+  const [uncertain, setUncertain] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const pendingRequest = useRef<CalendarBlockSelection | null>(null);
+  const saving = useRef(false);
+  const fingerprint = useRef<string | null>(null);
+  const [reloadChoices, setReloadChoices] = useState(0);
   const [title, setTitle] = useState("");
   const [viewType, setViewType] = useState("timeGridWeek");
   const [todayInRange, setTodayInRange] = useState(true);
-  const syncToolbar = useCallback(({ view }: DatesSetArg) => {
+  const syncToolbar = useCallback(({ view, startStr, endStr }: DatesSetArg) => {
+    setRange((old) =>
+      old?.from === startStr.slice(0, 10) && old.to === endStr.slice(0, 10)
+        ? old
+        : { from: startStr.slice(0, 10), to: endStr.slice(0, 10) },
+    );
     setTitle(view.title);
     setViewType(view.type);
     const now = new Date();
@@ -174,52 +194,129 @@ export function BookingCalendar({
     };
   }, [events, openMinute, slotMinutes, calendarId]);
 
-  async function onSelect(sel: DateSelectArg) {
-    if (busy || readOnly) return;
+  // Server Actions may return a fresh RSC array with identical events. Reload
+  // choices only when their actual contents change, never on object identity.
+  const eventRevision = JSON.stringify(events);
+  useEffect(() => {
+    if (!selecting || !range) return;
+    let active = true;
+    setLoadingChoices(true);
+    setChoices(null);
     setActionError(null);
-    setScheduleHint(false);
-    const label = `${sel.start.toLocaleString("cs-CZ")} – ${sel.end.toLocaleTimeString("cs-CZ")}`;
-    if (!window.confirm(`Blokovat tento čas pro úklid?\n${label}`)) {
-      sel.view.calendar.unselect();
-      return;
-    }
-    setBusy(true);
-    const values = {
-      startsAt: sel.start.toISOString(),
-      endsAt: sel.end.toISOString(),
-      reason: "maintenance" as const,
-      note: "Úklid",
+    void loadCalendarBlockChoicesAction(range)
+      .then((result) => {
+        if (!active) return;
+        if (!result.ok) {
+          setActionError(result.error);
+          return;
+        }
+        if (
+          fingerprint.current &&
+          fingerprint.current !== result.data.scheduleFingerprint
+        ) {
+          setSelected([]);
+          pendingRequest.current = null;
+          setActionError(
+            "Rozvrh se změnil. Předchozí výběr byl vymazán; vyberte termíny znovu.",
+          );
+        }
+        fingerprint.current = result.data.scheduleFingerprint;
+        setChoices(result.data);
+      })
+      .catch(() => {
+        if (active)
+          setActionError(
+            "Volné termíny se nepodařilo načíst. Zkuste načtení znovu.",
+          );
+      })
+      .finally(() => {
+        if (active) setLoadingChoices(false);
+      });
+    return () => {
+      active = false;
     };
-    const result = await createBlockedSlotAction(values);
-    setBusy(false);
-    sel.view.calendar.unselect();
-    if (!result.ok) {
-      setActionError(result.error ?? "Blok se nepodařilo vytvořit.");
-      return;
-    }
-    // A drag cannot start over a booking (selectOverlap below), but one made
-    // since this page loaded is only known to the server. Nothing was saved;
-    // closing time over bookings is the schedule form's deliberate path.
-    if (result.data.status === "needs_confirmation") {
+  }, [selecting, range, eventRevision, reloadChoices]);
+
+  function toggleWindow(window: CalendarBlockWindow) {
+    if (saving.current || uncertain || loadingChoices) return;
+    pendingRequest.current = null;
+    setSelected((old) =>
+      old.some((w) => w.startISO === window.startISO)
+        ? old.filter((w) => w.startISO !== window.startISO)
+        : old.length < 200
+          ? [...old, window]
+          : old,
+    );
+  }
+  async function saveSelection() {
+    if (saving.current || !selected.length || !choices) return;
+    saving.current = true;
+    setBusy(true);
+    setActionError(null);
+    setNotice(null);
+    const request = pendingRequest.current ?? {
+      operationId: crypto.randomUUID(),
+      windows: selected,
+      scheduleFingerprint: choices.scheduleFingerprint,
+    };
+    pendingRequest.current = request;
+    try {
+      const result = await saveCalendarBlockSelectionAction(request);
+      if (!result.ok) {
+        const unknownOutcome =
+          result.error === "Došlo k neočekávané chybě. Zkuste to prosím znovu.";
+        setUncertain(unknownOutcome);
+        if (!unknownOutcome) pendingRequest.current = null;
+        setActionError(
+          unknownOutcome
+            ? "Uložení se nepodařilo potvrdit. Tlačítkem Uložit blokované termíny ověřte stejnou dávku."
+            : result.error,
+        );
+        return;
+      }
+      setNotice(`Uloženo ${result.data.count} blokovaných termínů.`);
+      setSelected([]);
+      setSelecting(false);
+      setChoices(null);
+      fingerprint.current = null;
+      pendingRequest.current = null;
+      setUncertain(false);
+      router.refresh();
+    } catch {
+      setUncertain(true);
       setActionError(
-        `V tomto čase mezitím přibyla rezervace (${result.data.affectedCount}). Blok nebyl vytvořen. Pokud chcete čas uzavřít i s jejím zrušením, použijte formulář Blokované termíny.`,
+        "Výsledek uložení se nepodařilo načíst. Tlačítkem Uložit blokované termíny ověřte stejnou dávku; termíny se neuloží dvakrát.",
       );
-      setScheduleHint(true);
-      router.refresh();
-      return;
-    }
-    if (result.data.status === "closed") {
-      if (result.data.failed.length > 0)
-        setActionError(closureFailureMessage(result.data.failed));
-      router.refresh();
+    } finally {
+      saving.current = false;
+      setBusy(false);
     }
   }
+  const selectionEvents: EventInput[] =
+    selecting && viewType !== "dayGridMonth" && !loadingChoices && choices
+      ? choices.windows.map((window) => ({
+          id: `select/${window.startISO}`,
+          start: window.startISO,
+          end: window.endISO,
+          title: "Volný termín",
+          // Native buttons inside the event own keyboard activation; the
+          // FullCalendar anchor must not consume Space/Enter first.
+          interactive: false,
+          classNames: ["admin-calendar-choice"],
+          backgroundColor: "transparent",
+          borderColor: "transparent",
+          extendedProps: { blockChoice: window },
+        }))
+      : [];
 
   return (
     <div
       ref={containerRef}
       data-calendar-id={calendarId}
-      className="admin-booking-calendar"
+      className={cn(
+        "admin-booking-calendar",
+        selecting && "admin-calendar-selecting",
+      )}
     >
       <style ref={rowStyleRef} />
       <div className="admin-calendar-toolbar mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -240,6 +337,7 @@ export function BookingCalendar({
             variant="outline"
             size="icon"
             aria-label="Předchozí období"
+            disabled={busy || uncertain}
             onClick={() => calendarRef.current?.getApi().prev()}
           >
             <ChevronLeft aria-hidden="true" />
@@ -249,6 +347,7 @@ export function BookingCalendar({
             variant="outline"
             size="icon"
             aria-label="Další období"
+            disabled={busy || uncertain}
             onClick={() => calendarRef.current?.getApi().next()}
           >
             <ChevronRight aria-hidden="true" />
@@ -257,7 +356,7 @@ export function BookingCalendar({
             type="button"
             variant="outline"
             size="sm"
-            disabled={todayInRange}
+            disabled={todayInRange || busy || uncertain}
             onClick={() => calendarRef.current?.getApi().today()}
           >
             Dnes
@@ -275,6 +374,7 @@ export function BookingCalendar({
               variant="ghost"
               size="sm"
               aria-pressed={viewType === view}
+              disabled={busy || uncertain}
               className={cn(
                 "flex-1 font-medium sm:flex-none",
                 viewType === view && "bg-card shadow-sm",
@@ -286,6 +386,79 @@ export function BookingCalendar({
           ))}
         </div>
       </div>
+      {!readOnly ? (
+        <div className="mb-4 rounded-lg border border-border bg-card p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant={selecting ? "secondary" : "outline"}
+              aria-pressed={selecting}
+              disabled={busy || uncertain}
+              onClick={() => {
+                setSelecting(!selecting);
+                setSelected([]);
+                setChoices(null);
+                fingerprint.current = null;
+                pendingRequest.current = null;
+                setActionError(null);
+                setNotice(null);
+                if (!selecting && viewType === "dayGridMonth")
+                  calendarRef.current?.getApi().changeView("timeGridWeek");
+              }}
+            >
+              {selecting ? "Zrušit výběr" : "Vybrat termíny k zablokování"}
+            </Button>
+            {selecting ? (
+              <Button
+                type="button"
+                disabled={
+                  busy || loadingChoices || !choices || !selected.length
+                }
+                onClick={() => void saveSelection()}
+              >
+                {busy ? "Ukládám…" : "Uložit blokované termíny"}
+              </Button>
+            ) : null}
+            {selecting ? (
+              <span className="text-sm font-medium" role="status">
+                Vybráno: {selected.length} / 200
+              </span>
+            ) : null}
+          </div>
+          {selecting ? (
+            <p className="mt-2 text-sm text-muted-foreground">
+              {loadingChoices
+                ? "Načítám volné termíny…"
+                : "Kliknutím označte volné termíny. Vybrat je můžete i v několika dnech nebo týdnech. Vytvoří se blokace bez kódů a zpráv."}
+            </p>
+          ) : null}
+          {selecting && !loadingChoices && !choices ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-2"
+              onClick={() => setReloadChoices((value) => value + 1)}
+            >
+              Zkusit načíst znovu
+            </Button>
+          ) : null}
+          {selecting && viewType === "dayGridMonth" ? (
+            <p className="mt-2 text-sm">
+              Pro výběr konkrétních časů otevřete den kliknutím na datum nebo
+              zvolte Týden.
+            </p>
+          ) : null}
+          {notice ? (
+            <p role="status" className="mt-2 text-sm text-success">
+              {notice}{" "}
+              <Link href="/admin/blocking" className="underline">
+                Spravovat blokace
+              </Link>
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       <div
         className="mb-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground"
         role="group"
@@ -309,7 +482,13 @@ export function BookingCalendar({
       </div>
       <FullCalendar
         ref={calendarRef}
-        plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
+        plugins={[
+          timeGridPlugin,
+          dayGridPlugin,
+          interactionPlugin,
+          luxonPlugin,
+        ]}
+        timeZone="Europe/Prague"
         initialView="timeGridWeek"
         locale={csLocale}
         firstDay={1}
@@ -318,7 +497,10 @@ export function BookingCalendar({
         dayHeaderContent={({ date, view, isToday }) => (
           <span className="inline-flex flex-col items-center gap-1">
             <span className="text-xs font-medium text-muted-foreground">
-              {date.toLocaleDateString("cs-CZ", { weekday: "short" })}
+              {date.toLocaleDateString("cs-CZ", {
+                timeZone: "Europe/Prague",
+                weekday: "short",
+              })}
             </span>
             {view.type !== "dayGridMonth" ? (
               <span
@@ -327,7 +509,12 @@ export function BookingCalendar({
                   isToday && "bg-primary text-primary-foreground",
                 )}
               >
-                {date.getDate()}
+                {date
+                  .toLocaleDateString("cs-CZ", {
+                    timeZone: "Europe/Prague",
+                    day: "numeric",
+                  })
+                  .replace(".", "")}
               </span>
             ) : null}
           </span>
@@ -338,20 +525,48 @@ export function BookingCalendar({
         slotLabelInterval={{ minutes: slotMinutes }}
         snapDuration={{ minutes: slotMinutes }}
         slotLabelContent={({ date }) => {
-          const start = date.getHours() * 60 + date.getMinutes();
+          const start = minuteOfDay(date);
           return `${minutesToHHmm(start)} – ${minutesToHHmm(Math.min(start + slotMinutes, closeMinute))}`;
         }}
         displayEventTime={false}
         eventContent={({ event }) =>
-          event.display === "background" ||
-          event.display === "inverse-background" ? null : (
+          event.extendedProps.blockChoice ? (
+            <button
+              type="button"
+              className="admin-calendar-slot-choice"
+              aria-pressed={selected.some(
+                (w) => w.startISO === event.start?.toISOString(),
+              )}
+              disabled={
+                busy ||
+                uncertain ||
+                (selected.length >= 200 &&
+                  !selected.some(
+                    (w) => w.startISO === event.start?.toISOString(),
+                  ))
+              }
+              aria-label={`Blokovat ${event.start?.toLocaleString("cs-CZ", { timeZone: "Europe/Prague", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" })}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleWindow(
+                  event.extendedProps.blockChoice as CalendarBlockWindow,
+                );
+              }}
+            >
+              <span aria-hidden="true">
+                {selected.some((w) => w.startISO === event.start?.toISOString())
+                  ? "✓ Vybráno"
+                  : "+ Vybrat"}
+              </span>
+            </button>
+          ) : event.display === "background" ||
+            event.display === "inverse-background" ? null : (
             <span
               className="admin-calendar-name"
               title={event.title}
               data-start-minute={
-                event.start
-                  ? event.start.getHours() * 60 + event.start.getMinutes()
-                  : undefined
+                event.start ? minuteOfDay(event.start) : undefined
               }
             >
               <AdminMemberName
@@ -367,13 +582,17 @@ export function BookingCalendar({
         }
         allDaySlot={false}
         nowIndicator
-        selectable={!busy && !readOnly}
-        // A block over a booking cancels it and e-mails the customer, so a
-        // drag may cross only other blocks (background events), never a
-        // reservation. The form on /admin/schedule is the deliberate path.
-        selectOverlap={(event) => event.display === "background"}
-        selectMirror
-        select={onSelect}
+        selectable={false}
+        eventClick={(info) => {
+          if (selecting) {
+            info.jsEvent.preventDefault();
+          }
+        }}
+        dateClick={(info) => {
+          if (selecting && !busy && !uncertain && viewType === "dayGridMonth")
+            calendarRef.current?.getApi().changeView("timeGridDay", info.date);
+        }}
+        navLinks={false}
         height="auto"
         expandRows={false}
         businessHours={{
@@ -381,19 +600,11 @@ export function BookingCalendar({
           startTime: minutesToHHmm(openMinute),
           endTime: minutesToHHmm(closeMinute),
         }}
-        events={events}
+        events={[...events, ...selectionEvents]}
       />
       {actionError ? (
         <p role="alert" className="mt-3 text-sm text-destructive">
           {actionError}
-          {scheduleHint ? (
-            <>
-              {" "}
-              <Link href="/admin/schedule" className="font-bold underline">
-                Otevřít otevírací dobu a bloky
-              </Link>
-            </>
-          ) : null}
         </p>
       ) : null}
     </div>

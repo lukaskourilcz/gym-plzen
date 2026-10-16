@@ -19,7 +19,9 @@
       "codex/block-pricing-guests": false,
       "codex/admin-daily-refinements": false,
       "codex/fix-audit-braces": false,
-      "codex/required-phone-members": false
+      "codex/required-phone-members": false,
+      "codex/calendar-blocking-evening": false
     }
-  }
+  },
+  "regions": ["cdg1"]
 }

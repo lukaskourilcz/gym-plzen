@@ -75,6 +75,7 @@ test("a manual booking takes no end from the form", () => {
   const parsed = createReservationSchema.parse({
     startsAt: "2026-10-01T10:00",
     endsAt: "2026-10-01T13:00",
+    contactName: "Místní ukázkový zákazník",
   });
   assert.equal("endsAt" in parsed, false);
 });
@@ -101,13 +102,21 @@ test("the administration may cancel only reservations that have not ended", () =
   );
 });
 
-test("the admin calendar cannot start a drag over a booking", async () => {
-  const calendar = await readFile(
-    "src/components/admin/booking-calendar.tsx",
-    "utf8",
+test("a completely empty manual booking is invalid while real contact or an assigned member remains allowed", () => {
+  const input = { startsAt: "2026-10-01T10:00" };
+  assert.equal(createReservationSchema.safeParse(input).success, false);
+  assert.equal(
+    createReservationSchema.safeParse({ ...input, contactName: "  " }).success,
+    false,
   );
-  assert.match(
-    calendar,
-    /selectOverlap=\{\(event\) => event\.display === "background"\}/,
-  );
+  for (const contact of [
+    { contactName: "Host U Dveří" },
+    { contactEmail: "synthetic@example.test" },
+    { contactPhone: "+420777000111" },
+    { userId: "00000000-0000-4000-8000-000000000001" },
+  ])
+    assert.equal(
+      createReservationSchema.safeParse({ ...input, ...contact }).success,
+      true,
+    );
 });

@@ -1,3 +1,4 @@
+import { IncidentDetails } from "@/components/admin/incident-details";
 import {
   OverviewIconLink,
   OverviewStatus,
@@ -128,13 +129,62 @@ export default async function DesignSystemPage() {
             <OverviewIconLink kind="profile" href="/admin/members" />
           </div>
         </section>
+        <section aria-labelledby="kit-incident">
+          <h2 id="kit-incident" className="mb-4 text-xl font-semibold">
+            Srozumitelný incident
+          </h2>
+          <Card>
+            <CardContent className="pt-5">
+              <IncidentDetails
+                alert={{
+                  title: "Ukázkový provozní problém",
+                  body: null,
+                  context: {
+                    incident: {
+                      version: 1,
+                      code: "contact_missing_all",
+                      reservationId: "00000000-0000-4000-8000-000000000001",
+                      userId: null,
+                      customerName: null,
+                      startsAt: localDateTimeToDate(
+                        calendarDate,
+                        975,
+                      ).toISOString(),
+                      endsAt: localDateTimeToDate(
+                        calendarDate,
+                        1050,
+                      ).toISOString(),
+                      step: "code_delivered",
+                      attempts: 0,
+                      nextRetryAt: null,
+                      technicalDetail: null,
+                      firstSeenAt: localDateTimeToDate(
+                        calendarDate,
+                        600,
+                      ).toISOString(),
+                      lastSeenAt: localDateTimeToDate(
+                        calendarDate,
+                        600,
+                      ).toISOString(),
+                      occurrences: 1,
+                    },
+                  },
+                }}
+              />
+            </CardContent>
+          </Card>
+        </section>
         <section aria-labelledby="kit-calendar">
           <h2 id="kit-calendar" className="mb-4 text-xl font-extrabold">
             Provozní kalendář
           </h2>
           <p className="mb-4 text-sm text-muted-foreground">
             Ukázková jména. Jeden řádek odpovídá 75 minutám; čas je na ose, v
-            rezervaci pouze jméno. V této ukázce nelze vytvářet bloky.
+            rezervaci pouze jméno. V ostrém kalendáři tlačítko „Vybrat termíny k
+            zablokování“ zapne barevný režim s přepínači jednotlivých volných
+            slotů a počtem vybraných termínů. Vybrané termíny mají plnou barvu a
+            fajfku; změna se uloží až tlačítkem „Uložit blokované termíny“. V
+            této ukázce nelze vytvářet bloky.
           </p>
           <BookingCalendar
             readOnly
@@ -779,6 +829,50 @@ export default async function DesignSystemPage() {
               </li>
             </ul>
           </div>
+        </section>
+
+        <section aria-labelledby="kit-blocking">
+          <h2
+            id="kit-blocking"
+            className="mb-4 text-2xl font-bold tracking-tight"
+          >
+            Šablony blokací
+          </h2>
+          <Card>
+            <CardHeader>
+              <CardTitle>Víkendová rána</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Šablona → výběr dní → náhled → potvrzení. Uložení šablony
+                termíny neblokuje.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <fieldset>
+                <legend className="mb-2 text-sm font-semibold">Sobota</legend>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    aria-pressed="true"
+                    className="min-h-11 rounded-md border border-primary bg-primary px-3 text-sm font-medium text-primary-foreground"
+                  >
+                    05:00–06:15 ✓
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed="false"
+                    className="min-h-11 rounded-md border border-border bg-card px-3 text-sm font-medium"
+                  >
+                    06:15–07:30
+                  </button>
+                </div>
+              </fieldset>
+              <p className="mt-4 text-sm text-muted-foreground">
+                Dny mají vlastní skupinu slotů. Výběr nese stav aria-pressed a
+                ikonu; časy pocházejí z rozvrhu. Přidání a úprava jsou v
+                modálním dialogu. Existující rezervace zůstávají platné.
+              </p>
+            </CardContent>
+          </Card>
         </section>
 
         <section

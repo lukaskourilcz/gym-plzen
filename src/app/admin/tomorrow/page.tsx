@@ -115,6 +115,11 @@ export default async function TomorrowPage() {
                       <AdminMemberName
                         name={row.contactName}
                         note={memberNotes.get(row.userId ?? "")}
+                        href={
+                          row.userId
+                            ? `/admin/members/${row.userId}`
+                            : undefined
+                        }
                       />
                     </TableCell>
                     <TableCell>{CODE_LABEL[row.codeCheck]}</TableCell>
@@ -179,6 +184,11 @@ export default async function TomorrowPage() {
                         className="ml-3"
                         name={row.contactName}
                         note={memberNotes.get(row.userId ?? "")}
+                        href={
+                          row.userId
+                            ? `/admin/members/${row.userId}`
+                            : undefined
+                        }
                       />
                     </div>
                     <span className="text-xs text-muted-foreground">

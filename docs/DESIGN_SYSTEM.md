@@ -673,3 +673,56 @@ Filtr Registrace zachovává hledání a stránkování. U hosta jméno vede na 
 rezervace; nevytváří se profil s přihlašovacími oprávněními ani věrnostní účet.
 Chybějící historický telefon se zobrazuje jako Neuvedeno. Ukázky jsou v chráněné
 galerii `/admin/design-system`.
+
+## Blocking templates (administration only)
+
+`/admin/blocking` separates saved weekly choices from their application to dates.
+Template cards offer Use/Edit; creation and editing use the existing `AdminDialog`
+with focus trapping, Escape and focus restoration. A compact weekday switch shows selected-slot counts. Only the active weekday
+is rendered as a labelled fieldset, so the dialog never lists 105 controls at once. Slot buttons have at least 44px targets and expose selection with
+`aria-pressed`, a checkmark and a solid primary surface. The grid comes from
+current opening hours; it never permits arbitrary minute input.
+
+Application is a second dialog: templates, inclusive range or individual native
+calendar dates, then an explicit preview showing count and reservation overlaps.
+Editing any choice clears the preview. A stale schedule or occupancy requires a
+new preview; the primary action states the number of blocks. Batch cancellation
+confirms that only its future blocks are removed. Never describe existing paid
+reservations as cancelled.
+
+These are admin patterns. The public calendar keeps its existing design and adds
+only a disabled `Obsazeno` state for future occupied slots, immediate date
+selection and an accessible loading/retry status.
+
+### Výběr blokací v provozním kalendáři
+
+Tlačítko **Vybrat termíny k zablokování** zapne explicitní režim úprav.
+Kalendář dostane akcentový podklad a ohraničení. Každý skutečně volný slot
+je samostatné nativní tlačítko s `aria-pressed`; vybrané sloty mají plnou barvu,
+fajfku a text „Vybráno“. Není potřeba dlouhé podržení ani přesné tažení.
+Týden a den podporují dotyk i klávesnici, měsíc slouží k otevření konkrétního dne.
+Barva není jediným nositelem stavu. Počet výběrů je v živém stavovém textu.
+Odezva při stisku je okamžitá, omezený pohyb respektuje nastavení uživatele.
+
+Vedle přepínače je **Uložit blokované termíny**. **Zrušit výběr** pouze zahodí
+rozpracovaný výběr. Při načítání se nenabízejí domnělé volné sloty. Po uložení
+se objeví potvrzení a odkaz na správu dávky v **Blokování termínů**. Síťově
+nejasný výsledek zmrazí výběr do ověření stejné operace, aby se nezapsal dvakrát.
+Existující rezervace ani kódy se při tom nemění; blokace nemá zákazníka ani zprávy.
+
+### Srozumitelné incidenty
+
+`IncidentDetails` sjednocuje upozornění v přehledu Dnes a jejich historii.
+Výrazný titulek pojmenuje problém, následuje termín, zákazník, provozní fáze,
+příčina, dopad a **Co udělat**. K dispozici jsou odkazy na konkrétní rezervaci,
+navázaného člena a související zprávy. Technický kód chyby a očištěné podrobnosti
+jsou v nativním rozbalovacím `details`; dlouhé UUID není hlavním titulkem.
+Kompaktní varianta v Dnes ukazuje příčinu a odkaz na celý incident.
+Historie používá od šířky `md` tabulku, na mobilu plnohodnotné karty se stejným
+obsahem a ovládáním. Dlouhý popis se nesmí mačkat do úzkého sloupce tabulky.
+
+Stav není vyjádřen jen barvou. Časy používají Prahu. Historická obecná hlášení
+výslovně přiznávají nezaznamenanou příčinu; nedoplňují domnělý chybějící kontakt.
+Stejný otevřený incident se aktualizuje a ukazuje poslední zachycení i další
+běžný pokus. Počet pokusů označuje skutečné pokusy, nikoliv počet upozornění.
+Ukázka je v chráněné galerii komponent.

@@ -1,3 +1,4 @@
+import { IncidentDetails } from "@/components/admin/incident-details";
 import {
   AdminListTotal,
   AdminListFilters,
@@ -48,7 +49,10 @@ export default async function AlertsPage({
 
   return (
     <div>
-      <PageHeader title="Upozornění" />
+      <PageHeader
+        title="Upozornění"
+        description="Co se stalo, kterého termínu se problém týká a jak postupovat. Opakované výskyty zůstávají v jednom otevřeném incidentu."
+      />
       <AdminListFilters
         path="/admin/alerts"
         filters={filters}
@@ -73,51 +77,102 @@ export default async function AlertsPage({
         ]}
       />
       <AdminListTotal total={totalCount} label="Celkem záznamů" />
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Čas</TableHead>
-            <TableHead>Závažnost</TableHead>
-            <TableHead>Titulek</TableHead>
-            <TableHead>Odesláno</TableHead>
-            <TableHead>Vyřešeno</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((a) => (
-            <TableRow
-              key={a.id}
-              className={a.resolvedAt ? undefined : "bg-destructive/5"}
-            >
-              <TableCell>{formatDateTime(a.createdAt)}</TableCell>
-              <TableCell>{formatSeverity(a.severity)}</TableCell>
-              <TableCell>
-                {a.title}
-                {a.body && (
-                  <div className="text-xs text-muted-foreground">{a.body}</div>
-                )}
-              </TableCell>
-              <TableCell>
-                {a.notifiedAt ? formatDateTime(a.notifiedAt) : "Neodesláno"}
-              </TableCell>
-              <TableCell>
-                {a.resolvedAt ? (
-                  formatDateTime(a.resolvedAt)
-                ) : (
-                  <ResolveAlertButton id={a.id} title={a.title} />
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
-          {rows.length === 0 && (
+      <div className="space-y-3 md:hidden" data-incident-list="mobile">
+        {rows.map((a) => (
+          <article
+            key={a.id}
+            className="space-y-3 rounded-lg border bg-card p-4"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+              <time dateTime={a.createdAt.toISOString()}>
+                {formatDateTime(a.createdAt)}
+              </time>
+              <span
+                className={
+                  a.resolvedAt
+                    ? "font-medium"
+                    : a.severity === "critical"
+                      ? "font-semibold text-destructive"
+                      : "font-semibold text-foreground"
+                }
+              >
+                {formatSeverity(a.severity)}
+              </span>
+            </div>
+            <IncidentDetails alert={a} />
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-3 text-xs text-muted-foreground">
+              <span>
+                {a.notifiedAt
+                  ? `Upozornění odesláno ${formatDateTime(a.notifiedAt)}`
+                  : "Upozornění neodesláno"}
+              </span>
+              {a.resolvedAt ? (
+                <span>Vyřešeno {formatDateTime(a.resolvedAt)}</span>
+              ) : (
+                <ResolveAlertButton id={a.id} title={a.title} />
+              )}
+            </div>
+          </article>
+        ))}
+        {rows.length === 0 ? (
+          <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
+            Žádná upozornění.
+          </p>
+        ) : null}
+      </div>
+      <div className="hidden md:block">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={5} className="text-muted-foreground">
-                Žádná upozornění.
-              </TableCell>
+              <TableHead>Čas</TableHead>
+              <TableHead>Závažnost</TableHead>
+              <TableHead>Titulek</TableHead>
+              <TableHead>Odesláno</TableHead>
+              <TableHead>Vyřešeno</TableHead>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {rows.map((a) => (
+              <TableRow
+                key={a.id}
+                className={
+                  "[&>td]:align-top " +
+                  (a.resolvedAt
+                    ? ""
+                    : a.severity === "critical"
+                      ? "bg-destructive/5"
+                      : a.severity === "warning"
+                        ? "bg-warning/5"
+                        : "bg-muted/40")
+                }
+              >
+                <TableCell>{formatDateTime(a.createdAt)}</TableCell>
+                <TableCell>{formatSeverity(a.severity)}</TableCell>
+                <TableCell>
+                  <IncidentDetails alert={a} />
+                </TableCell>
+                <TableCell>
+                  {a.notifiedAt ? formatDateTime(a.notifiedAt) : "Neodesláno"}
+                </TableCell>
+                <TableCell>
+                  {a.resolvedAt ? (
+                    formatDateTime(a.resolvedAt)
+                  ) : (
+                    <ResolveAlertButton id={a.id} title={a.title} />
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+            {rows.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-muted-foreground">
+                  Žádná upozornění.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
       <AdminListPagination
         path="/admin/alerts"
         params={query}
