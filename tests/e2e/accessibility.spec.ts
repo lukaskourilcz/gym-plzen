@@ -1,3 +1,4 @@
+import { futureBookingCalendarHref } from "../helpers/calendar-date";
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { join } from "node:path";
@@ -91,7 +92,7 @@ test.describe("authenticated accessibility", () => {
 test("checkout details and validation errors remain accessible", async ({
   page,
 }) => {
-  await page.goto("/rezervace");
+  await page.goto(futureBookingCalendarHref());
   const consent = page.getByRole("button", { name: "Pouze nezbytné" });
   if (await consent.isVisible()) await consent.click();
   await page

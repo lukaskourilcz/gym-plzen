@@ -146,6 +146,13 @@ test("a member buys two slots, sees one order, moves one term and cancels only t
     .first()
     .click();
   await expect(page).toHaveURL(/\/account\/rezervace\/[0-9a-f-]+\/zmenit/);
+  // The initial day may have ended when checks run late at night.
+  const changeUrl = new URL(page.url());
+  changeUrl.searchParams.set(
+    "date",
+    addDaysToDateKey(dateKeyInTimeZone(new Date()), 2),
+  );
+  await page.goto(`${changeUrl.pathname}${changeUrl.search}`);
   const replacements = page
     .locator('section[aria-labelledby="change-time-heading"]')
     .getByRole("button", { name: /Vybrat$/ });

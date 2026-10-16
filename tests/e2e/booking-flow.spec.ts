@@ -1,3 +1,4 @@
+import { futureBookingCalendarHref } from "../helpers/calendar-date";
 import { expect, test, type Page } from "@playwright/test";
 import postgres from "postgres";
 import { createComgateMock } from "../integration/mocks";
@@ -53,7 +54,9 @@ test.describe("Booking flow", () => {
   });
 
   async function openFirstFreeSlot(page: Page): Promise<string> {
-    await page.goto("/rezervace", { waitUntil: "domcontentloaded" });
+    await page.goto(futureBookingCalendarHref(), {
+      waitUntil: "domcontentloaded",
+    });
     const consent = page
       .getByTestId("tracking-consent")
       .getByRole("button", { name: "Pouze nezbytné" });

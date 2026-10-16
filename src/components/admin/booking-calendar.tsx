@@ -371,10 +371,7 @@ export function BookingCalendar({
         // A block over a booking cancels it and e-mails the customer, so a
         // drag may cross only other blocks (background events), never a
         // reservation. The form on /admin/schedule is the deliberate path.
-        selectOverlap={(event) =>
-          event.display === "background" ||
-          Boolean(event.extendedProps.blockApplicationId)
-        }
+        selectOverlap={(event) => event.display === "background"}
         selectMirror
         select={onSelect}
         height="auto"

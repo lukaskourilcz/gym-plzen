@@ -35,14 +35,12 @@ export default async function BlockingPage({
           ...row,
           updatedAt: row.updatedAt.toISOString(),
         }))}
-        applications={applications
-          .slice(0, 20)
-          .map((row) => ({
-            id: row.id,
-            snapshot: row.snapshot,
-            createdAt: row.createdAt.toISOString(),
-            cancelledAt: row.cancelledAt?.toISOString() ?? null,
-          }))}
+        applications={applications.slice(0, 20).map((row) => ({
+          id: row.id,
+          snapshot: row.snapshot,
+          createdAt: row.createdAt.toISOString(),
+          cancelledAt: row.cancelledAt?.toISOString() ?? null,
+        }))}
         hours={hours}
         today={dateKeyInTimeZone(new Date())}
       />
