@@ -167,6 +167,7 @@ try {
           "public.spec.ts",
           "calendar-performance.spec.ts",
           "calendar-blocking.spec.ts",
+          "incidents.spec.ts",
           "blocking-templates.spec.ts",
           "auth.spec.ts",
           "admin.spec.ts",

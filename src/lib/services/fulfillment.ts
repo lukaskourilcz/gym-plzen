@@ -167,9 +167,7 @@ async function fulfillLocked(reservationId: string): Promise<void> {
           attempts:
             pipeline.find((row) => row.step === "code_delivered")?.attempts ??
             0,
-          nextRetryAt:
-            pipeline.find((row) => row.step === "code_delivered")
-              ?.nextRetryAt ?? null,
+          nextRetryAt: null,
         }),
       );
     else await resolveAlert(contactIncidentKey(reservationId));

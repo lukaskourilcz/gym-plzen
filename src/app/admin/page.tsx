@@ -1,3 +1,4 @@
+import { IncidentDetails } from "@/components/admin/incident-details";
 import { Pagination } from "@/components/ui/pagination";
 import {
   pageFromParam,
@@ -320,7 +321,7 @@ export default async function AdminDashboard({
                     className="mt-0.5 size-4 shrink-0 text-warning"
                   />
                   <div>
-                    <div className="font-bold">{alert.title}</div>
+                    <IncidentDetails alert={alert} compact />
                     <div className="text-muted-foreground">
                       {formatDateTime(alert.createdAt)}
                     </div>

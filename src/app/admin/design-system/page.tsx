@@ -1,3 +1,4 @@
+import { IncidentDetails } from "@/components/admin/incident-details";
 import {
   OverviewIconLink,
   OverviewStatus,
@@ -127,6 +128,51 @@ export default async function DesignSystemPage() {
             <OverviewIconLink kind="reservation" href="/admin/reservations" />
             <OverviewIconLink kind="profile" href="/admin/members" />
           </div>
+        </section>
+        <section aria-labelledby="kit-incident">
+          <h2 id="kit-incident" className="mb-4 text-xl font-semibold">
+            Srozumitelný incident
+          </h2>
+          <Card>
+            <CardContent className="pt-5">
+              <IncidentDetails
+                alert={{
+                  title: "Ukázkový provozní problém",
+                  body: null,
+                  context: {
+                    incident: {
+                      version: 1,
+                      code: "contact_missing_all",
+                      reservationId: "00000000-0000-4000-8000-000000000001",
+                      userId: null,
+                      customerName: null,
+                      startsAt: localDateTimeToDate(
+                        calendarDate,
+                        975,
+                      ).toISOString(),
+                      endsAt: localDateTimeToDate(
+                        calendarDate,
+                        1050,
+                      ).toISOString(),
+                      step: "code_delivered",
+                      attempts: 0,
+                      nextRetryAt: null,
+                      technicalDetail: null,
+                      firstSeenAt: localDateTimeToDate(
+                        calendarDate,
+                        600,
+                      ).toISOString(),
+                      lastSeenAt: localDateTimeToDate(
+                        calendarDate,
+                        600,
+                      ).toISOString(),
+                      occurrences: 1,
+                    },
+                  },
+                }}
+              />
+            </CardContent>
+          </Card>
         </section>
         <section aria-labelledby="kit-calendar">
           <h2 id="kit-calendar" className="mb-4 text-xl font-extrabold">

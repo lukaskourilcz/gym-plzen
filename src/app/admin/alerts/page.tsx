@@ -1,3 +1,4 @@
+import { IncidentDetails } from "@/components/admin/incident-details";
 import {
   AdminListTotal,
   AdminListFilters,
@@ -48,7 +49,10 @@ export default async function AlertsPage({
 
   return (
     <div>
-      <PageHeader title="Upozornění" />
+      <PageHeader
+        title="Upozornění"
+        description="Co se stalo, kterého termínu se problém týká a jak postupovat. Opakované výskyty zůstávají v jednom otevřeném incidentu."
+      />
       <AdminListFilters
         path="/admin/alerts"
         filters={filters}
@@ -87,15 +91,21 @@ export default async function AlertsPage({
           {rows.map((a) => (
             <TableRow
               key={a.id}
-              className={a.resolvedAt ? undefined : "bg-destructive/5"}
+              className={
+                "[&>td]:align-top " +
+                (a.resolvedAt
+                  ? ""
+                  : a.severity === "critical"
+                    ? "bg-destructive/5"
+                    : a.severity === "warning"
+                      ? "bg-warning/5"
+                      : "bg-muted/40")
+              }
             >
               <TableCell>{formatDateTime(a.createdAt)}</TableCell>
               <TableCell>{formatSeverity(a.severity)}</TableCell>
               <TableCell>
-                {a.title}
-                {a.body && (
-                  <div className="text-xs text-muted-foreground">{a.body}</div>
-                )}
+                <IncidentDetails alert={a} />
               </TableCell>
               <TableCell>
                 {a.notifiedAt ? formatDateTime(a.notifiedAt) : "Neodesláno"}

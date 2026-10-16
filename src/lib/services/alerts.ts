@@ -82,6 +82,7 @@ async function raiseAlertUnlocked(
             ? existing.context
             : {}),
           ...params.context,
+          ...(escalated ? { incidentNotificationStage: params.severity } : {}),
           incident: {
             ...incoming,
             firstSeenAt:

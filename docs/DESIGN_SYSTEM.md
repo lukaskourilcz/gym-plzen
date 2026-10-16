@@ -709,3 +709,18 @@ rozpracovaný výběr. Při načítání se nenabízejí domnělé volné sloty.
 se objeví potvrzení a odkaz na správu dávky v **Blokování termínů**. Síťově
 nejasný výsledek zmrazí výběr do ověření stejné operace, aby se nezapsal dvakrát.
 Existující rezervace ani kódy se při tom nemění; blokace nemá zákazníka ani zprávy.
+
+### Srozumitelné incidenty
+
+`IncidentDetails` sjednocuje upozornění v přehledu Dnes a jejich historii.
+Výrazný titulek pojmenuje problém, následuje termín, zákazník, provozní fáze,
+příčina, dopad a **Co udělat**. K dispozici jsou odkazy na konkrétní rezervaci,
+navázaného člena a související zprávy. Technický kód chyby a očištěné podrobnosti
+jsou v nativním rozbalovacím `details`; dlouhé UUID není hlavním titulkem.
+Kompaktní varianta v Dnes ukazuje příčinu a odkaz na celý incident.
+
+Stav není vyjádřen jen barvou. Časy používají Prahu. Historická obecná hlášení
+výslovně přiznávají nezaznamenanou příčinu; nedoplňují domnělý chybějící kontakt.
+Stejný otevřený incident se aktualizuje a ukazuje poslední zachycení i další
+běžný pokus. Počet pokusů označuje skutečné pokusy, nikoliv počet upozornění.
+Ukázka je v chráněné galerii komponent.

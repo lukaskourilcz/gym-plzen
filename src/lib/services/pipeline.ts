@@ -26,6 +26,7 @@ import { raiseAlert, resolveAlert } from "./alerts";
 import { buildReservationIncident } from "./reservation-incidents";
 import {
   contactFailure,
+  isContactFailure,
   emailFailure,
   preparationFailure,
   contactIncidentKey,
@@ -180,7 +181,7 @@ export async function markStepFailed(
     reason: failure.code,
   });
 
-  if (exhausted && booking) {
+  if ((exhausted || isContactFailure(failure.code)) && booking) {
     await raiseAlert(
       buildReservationIncident({
         booking: {

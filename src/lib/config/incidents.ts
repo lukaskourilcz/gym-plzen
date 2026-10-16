@@ -8,7 +8,7 @@ export const INCIDENTS = {
     impact:
       "Vstupní kód není kam doručit e-mailem. Chybějící kontakt sám o sobě neznamená selhání vytvoření kódu.",
     action:
-      "Otevřete rezervaci a ověřte skutečného zákazníka. Doplňte doručovací e-mail do kontaktu rezervace. Pro vlastní obsazení prostoru používejte blokování termínů.",
+      "Otevřete rezervaci a ověřte skutečného zákazníka. Zákaznickou rezervaci předejte správci systému k doplnění doručovacího kontaktu. Pro vlastní obsazení prostoru používejte blokování termínů.",
     retryable: false,
   },
   contact_email_missing: {
@@ -18,14 +18,7 @@ export const INCIDENTS = {
     impact:
       "Příprava kódu může pokračovat, ale e-mail se vstupním kódem nelze odeslat.",
     action:
-      "Ověřte a doplňte doručovací e-mail přímo do kontaktu rezervace. Kontakty člena a kontakt uložený u rezervace mohou být odlišné.",
-    retryable: false,
-  },
-  contact_email_invalid: {
-    title: "E-mail pro vstupní kód má neplatný formát",
-    cause: "E-mail uložený u rezervace neodpovídá platnému formátu adresy.",
-    impact: "Vstupní kód nelze na tuto adresu odeslat.",
-    action: "Ověřte se zákazníkem správnou adresu a opravte kontakt rezervace.",
+      "Ověřte adresu zákazníka a předejte rezervaci správci systému k doplnění doručovacího e-mailu. E-mail v profilu člena se do starší rezervace automaticky nepřepisuje.",
     retryable: false,
   },
   lock_offline: {
@@ -175,8 +168,6 @@ export function contactFailure(contact: {
           ? "contact_missing_all"
           : "contact_email_missing",
     };
-  if (!z.string().email().safeParse(contact.contactEmail).success)
-    return { code: "contact_email_invalid" };
   return null;
 }
 export function emailFailure(reason?: string | null): PipelineFailure {

@@ -491,9 +491,17 @@ export async function notifyNewMember(params: {
 export async function notifyAlert(alert: SystemAlert): Promise<boolean> {
   return notify({
     event: "systemAlert",
-    scope: parseIncident(alert.context)
-      ? `${alert.id}:${alert.severity}`
-      : alert.id,
+    scope: (() => {
+      const context =
+        alert.context && typeof alert.context === "object"
+          ? (alert.context as Record<string, unknown>)
+          : {};
+      const stage = context.incidentNotificationStage;
+      return parseIncident(alert.context) &&
+        (stage === "warning" || stage === "critical")
+        ? `${alert.id}:${stage}`
+        : alert.id;
+    })(),
     path: (() => {
       const incident = parseIncident(alert.context);
       return incident
