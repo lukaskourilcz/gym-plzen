@@ -480,3 +480,54 @@ summary {
     outline-offset: -2px;
   }
 }
+
+/* Explicit selection mode: color and checkmarks communicate state together. */
+.admin-shell .admin-calendar-selecting .fc-view-harness {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
+  background: color-mix(in srgb, var(--accent) 40%, var(--card));
+}
+.admin-shell .admin-calendar-selecting .fc-col-header {
+  background: var(--accent);
+}
+.admin-shell .admin-calendar-choice .fc-event-main {
+  padding: 0;
+  height: 100%;
+}
+.admin-shell .admin-calendar-slot-choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 32px;
+  padding: 0.25rem;
+  border: 1px dashed var(--primary);
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--accent) 70%, var(--card));
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.admin-shell .admin-calendar-slot-choice[aria-pressed="true"] {
+  border-style: solid;
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.admin-shell .admin-calendar-slot-choice:active {
+  transform: scale(0.98);
+}
+.admin-shell .admin-calendar-slot-choice:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.admin-shell .admin-calendar-slot-choice:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-shell .admin-calendar-slot-choice:active {
+    transform: none;
+  }
+}

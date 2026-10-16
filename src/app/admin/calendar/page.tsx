@@ -12,7 +12,6 @@ import {
   DEFAULT_OPEN_MINUTE,
 } from "@/lib/config/schedule";
 import { calendarRowMinutes } from "@/lib/helpers/calendar-grid";
-import { minutesToHHmm } from "@/lib/helpers/format";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
 
 export const metadata = { title: "Kalendář" };
@@ -20,8 +19,8 @@ export const dynamic = "force-dynamic";
 
 /**
  * Admin calendar : the operational week view (FullCalendar). Reservations show
- * as solid events, blocks as background events. Drag-select an empty range to
- * add a block (e.g. the daily cleaning window).
+ * as solid events and block batches as muted events. Free configured slots
+ * can be selected explicitly without creating customer reservations.
  */
 export default async function CalendarPage() {
   await requireAdmin();
@@ -109,10 +108,6 @@ export default async function CalendarPage() {
             closeMinute={closeMinute}
             slotMinutes={slotMinutes}
           />
-          <p className="mt-4 text-xs text-muted-foreground">
-            {minutesToHHmm(openMinute)}–{minutesToHHmm(closeMinute)} · Tažením
-            přes volný čas přidáte blok pro úklid.
-          </p>
         </CardContent>
       </Card>
     </div>

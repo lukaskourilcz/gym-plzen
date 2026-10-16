@@ -191,7 +191,7 @@ export function BlockingManager({
                     <p className="font-semibold">
                       {application.snapshot.templates
                         .map((template) => template.name)
-                        .join(" + ")}
+                        .join(" + ") || "Výběr v kalendáři"}
                     </p>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {application.snapshot.windows.length} slotů ·{" "}
@@ -259,7 +259,7 @@ export function BlockingManager({
           <p className="mb-5 text-sm">
             {cancel.snapshot.templates
               .map((template) => template.name)
-              .join(" + ")}
+              .join(" + ") || "Výběr v kalendáři"}
           </p>
           {cancelError && (
             <p role="alert" className="mb-4 text-sm text-destructive">
