@@ -259,9 +259,15 @@ export function BookingCalendar({
     try {
       const result = await saveCalendarBlockSelectionAction(request);
       if (!result.ok) {
-        setUncertain(false);
-        pendingRequest.current = null;
-        setActionError(result.error);
+        const unknownOutcome =
+          result.error === "Došlo k neočekávané chybě. Zkuste to prosím znovu.";
+        setUncertain(unknownOutcome);
+        if (!unknownOutcome) pendingRequest.current = null;
+        setActionError(
+          unknownOutcome
+            ? "Uložení se nepodařilo potvrdit. Tlačítkem Uložit blokované termíny ověřte stejnou dávku."
+            : result.error,
+        );
         return;
       }
       setNotice(`Uloženo ${result.data.count} blokovaných termínů.`);
@@ -289,6 +295,9 @@ export function BookingCalendar({
           start: window.startISO,
           end: window.endISO,
           title: "Volný termín",
+          // Native buttons inside the event own keyboard activation; the
+          // FullCalendar anchor must not consume Space/Enter first.
+          interactive: false,
           classNames: ["admin-calendar-choice"],
           backgroundColor: "transparent",
           borderColor: "transparent",

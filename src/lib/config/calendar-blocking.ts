@@ -6,7 +6,10 @@ export const calendarBlockRangeSchema = z
   .object({ from: dateKey, to: dateKey })
   .refine(
     ({ from, to }) =>
-      daysBetweenDateKeys(from, to) > 0 && daysBetweenDateKeys(from, to) <= 42,
+      isDateKey(from) &&
+      isDateKey(to) &&
+      daysBetweenDateKeys(from, to) > 0 &&
+      daysBetweenDateKeys(from, to) <= 42,
     "Vyberte nejvýše 42 dní.",
   );
 export const calendarBlockWindowSchema = z.object({

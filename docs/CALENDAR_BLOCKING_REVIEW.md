@@ -59,3 +59,26 @@ daty. Při schváleném nasazení nejprve aplikovat tuto přidávající migraci
 potom nasadit ověřený commit a pouze čtením zkontrolovat region a dostupnost.
 Produkční cíl API pod 500 ms po zahřátí lze potvrdit až po tomto nasazení;
 místní odezva neprokazuje produkční síťovou latenci.
+
+## Přímý výběr v Kalendáři (#237)
+
+Kalendář má explicitní režim **Vybrat termíny k zablokování**. Barevné odlišení,
+nativní přepínače volných slotů, stavový počet a tlačítko **Uložit blokované
+termíny** umožňují vybrat až 200 slotů přes více dnů a týdnů. Údaje pro konkrétní
+pohled se načítají až při výběru, samostatně pod přihlášením správce. Při chybě
+nejsou nabízeny domnělé volné sloty. Kalendář i server používají Prahu včetně DST.
+
+Nový zápis používá existující `block_application` a `blocked_slot`; žádná další
+migrace není potřeba. Pod výhradním zámkem rozvrhu znovu ověří přesné časy,
+aktuální otevírací dobu i volnost všech slotů. Kolize odmítne celou dávku;
+existující zákaznická rezervace se nikdy neruší. Dávka má neměnnou kopii výběru,
+ID operace a záznam v historii. Po nejasném výsledku spojení se ověřuje stejná
+operace. Její budoucí bloky lze odebrat v **Blokování termínů**, kde je označena
+„Výběr v kalendáři“. Nevznikají zákazníci, rezervace, pipeline, PINy ani zprávy.
+
+Formulář a služba ručních rezervací odmítají nový zcela prázdný kontakt a
+odkazují správce na Kalendář. Telefonické rezervace se skutečným kontaktem a
+rezervace přiřazených členů fungují dál. Staré rezervace se automaticky
+nepřevádějí podle chybějícího e-mailu: absence kontaktu sama o sobě spolehlivě
+neprokazuje, že rezervace byla umělou blokací. Žádná produkční data nebyla
+při implementaci přepsána, nic nebylo doručeno zákazníkům ani na zámek.
