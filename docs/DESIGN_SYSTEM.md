@@ -718,6 +718,8 @@ příčina, dopad a **Co udělat**. K dispozici jsou odkazy na konkrétní rezer
 navázaného člena a související zprávy. Technický kód chyby a očištěné podrobnosti
 jsou v nativním rozbalovacím `details`; dlouhé UUID není hlavním titulkem.
 Kompaktní varianta v Dnes ukazuje příčinu a odkaz na celý incident.
+Historie používá od šířky `md` tabulku, na mobilu plnohodnotné karty se stejným
+obsahem a ovládáním. Dlouhý popis se nesmí mačkat do úzkého sloupce tabulky.
 
 Stav není vyjádřen jen barvou. Časy používají Prahu. Historická obecná hlášení
 výslovně přiznávají nezaznamenanou příčinu; nedoplňují domnělý chybějící kontakt.

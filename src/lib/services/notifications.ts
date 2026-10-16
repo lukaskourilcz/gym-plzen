@@ -188,7 +188,7 @@ export async function dispatchAccessCode(
       contactPhone: ctx.phone,
       userId: ctx.userId,
     }) ?? undefined;
-  // Missing/malformed recipients are diagnosed before attempting the provider.
+  // Missing recipients are diagnosed before attempting the provider.
   if (!failure && ctx.email) {
     const result = await sendTransactionalEmail({
       id: accessCodeEmailTemplate(

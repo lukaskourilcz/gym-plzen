@@ -94,12 +94,19 @@ test("incidents explain the actual cause, link to the reservation/member/message
     await sql`insert into system_alert(id,title,body,severity,context) values(${legacyId},${`Rezervace ${id}: krok "code_delivered" selhal`},'Po 6 pokusech: Mandatory email delivery failed','critical',${sql.json({ reservationId: id, step: "code_delivered" })})`;
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`/admin/alerts?q=${id}`);
+    const mobile = page.locator('[data-incident-list="mobile"]');
     await expect(
-      page.getByText("Povinný e-mail se nepodařilo odeslat", { exact: true }),
+      mobile.getByText("Povinný e-mail se nepodařilo odeslat", { exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByText(/Starší záznam: přesná příčina nebyla zachycena/),
+      mobile.getByText(/Starší záznam: přesná příčina nebyla zachycena/),
     ).toBeVisible();
+    const card = mobile.locator("article").filter({ hasText: prefix });
+    expect((await card.boundingBox())!.width).toBeGreaterThan(300);
+    await expect(
+      card.getByRole("link", { name: "Související zprávy" }),
+    ).toBeVisible();
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     await page.screenshot({
       path: "/tmp/gym-incidents-mobile.png",
       fullPage: true,
