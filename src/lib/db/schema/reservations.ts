@@ -4,6 +4,7 @@ import {
   index,
   boolean,
   integer,
+  jsonb,
   pgTable,
   smallint,
   text,
@@ -11,6 +12,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { BlockingSlot, BlockPreviewInput } from "@/lib/config/blocking";
 import { profiles } from "./members";
 import { voucher } from "./marketing";
 import { blockReason, bookingOrderStatus, reservationStatus } from "./enums";
@@ -203,6 +205,50 @@ export const reservationReschedule = pgTable(
   ],
 );
 
+/** Templates affect future applications only. Batch snapshots are immutable. */
+export const blockTemplate = pgTable("block_template", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  slots: jsonb("slots").$type<BlockingSlot[]>().notNull(),
+  createdByAdminId: uuid("created_by_admin_id").references(() => profiles.id, {
+    onDelete: "set null",
+  }),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+export const blockApplication = pgTable(
+  "block_application",
+  {
+    id: uuid("id").primaryKey(),
+    request: jsonb("request").$type<BlockPreviewInput>().notNull(),
+    snapshot: jsonb("snapshot")
+      .$type<{
+        templates: { id: string; name: string; slots: BlockingSlot[] }[];
+        windows: {
+          dateKey: string;
+          startISO: string;
+          endISO: string;
+          label: string;
+        }[];
+      }>()
+      .notNull(),
+    fingerprint: text("fingerprint").notNull(),
+    createdByAdminId: uuid("created_by_admin_id").references(
+      () => profiles.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  },
+  (t) => [index("block_application_created_idx").on(t.createdAt)],
+);
+
 /**
  * A blocked slot removes a time range from availability without being a
  * booking : maintenance, holidays, private events.
@@ -210,6 +256,10 @@ export const reservationReschedule = pgTable(
 export const blockedSlot = pgTable(
   "blocked_slot",
   {
+    applicationId: uuid("application_id").references(
+      () => blockApplication.id,
+      { onDelete: "restrict" },
+    ),
     id: uuid("id").defaultRandom().primaryKey(),
     startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
     endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
@@ -223,7 +273,15 @@ export const blockedSlot = pgTable(
     ),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
-  (t) => [index("blocked_slot_starts_at_idx").on(t.startsAt)],
+  (t) => [
+    index("blocked_slot_starts_at_idx").on(t.startsAt),
+    index("blocked_slot_application_idx").on(t.applicationId),
+    uniqueIndex("blocked_slot_application_window_uidx").on(
+      t.applicationId,
+      t.startsAt,
+      t.endsAt,
+    ),
+  ],
 );
 
 /**

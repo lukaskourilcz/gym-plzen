@@ -14,6 +14,7 @@ export const BOOKING_TABLES = [
   "webhook_event",
   "system_alert",
   "blocked_slot",
+  "block_application",
   "pricing_period",
   "reservation",
   "booking_order",
