@@ -693,3 +693,19 @@ reservations as cancelled.
 These are admin patterns. The public calendar keeps its existing design and adds
 only a disabled `Obsazeno` state for future occupied slots, immediate date
 selection and an accessible loading/retry status.
+
+### Výběr blokací v provozním kalendáři
+
+Tlačítko **Vybrat termíny k zablokování** zapne explicitní režim úprav.
+Kalendář dostane akcentový podklad a ohraničení. Každý skutečně volný slot
+je samostatné nativní tlačítko s `aria-pressed`; vybrané sloty mají plnou barvu,
+fajfku a text „Vybráno“. Není potřeba dlouhé podržení ani přesné tažení.
+Týden a den podporují dotyk i klávesnici, měsíc slouží k otevření konkrétního dne.
+Barva není jediným nositelem stavu. Počet výběrů je v živém stavovém textu.
+Odezva při stisku je okamžitá, omezený pohyb respektuje nastavení uživatele.
+
+Vedle přepínače je **Uložit blokované termíny**. **Zrušit výběr** pouze zahodí
+rozpracovaný výběr. Při načítání se nenabízejí domnělé volné sloty. Po uložení
+se objeví potvrzení a odkaz na správu dávky v **Blokování termínů**. Síťově
+nejasný výsledek zmrazí výběr do ověření stejné operace, aby se nezapsal dvakrát.
+Existující rezervace ani kódy se při tom nemění; blokace nemá zákazníka ani zprávy.

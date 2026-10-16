@@ -54,6 +54,18 @@ export async function createManualReservation(
   const slot = await resolveConfiguredSlot(input.startsAt);
   if (!slot) throw new ActionError(OFF_GRID_MESSAGE);
 
+  if (
+    ![
+      input.userId,
+      input.contactName,
+      input.contactEmail,
+      input.contactPhone,
+    ].some((value) => value?.trim())
+  )
+    throw new ActionError(
+      "Pro rezervaci vyplňte kontakt zákazníka. Prázdné termíny blokujte tlačítkem Vybrat termíny k zablokování v Kalendáři.",
+    );
+
   const reservation = await createReservation({
     userId: input.userId ?? null,
     startsAt: slot.startsAt,

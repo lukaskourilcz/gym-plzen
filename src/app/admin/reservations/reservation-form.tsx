@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionForm } from "@/components/admin/use-action-form";
 import {
   Field,
@@ -32,6 +33,17 @@ export function ReservationForm({
 
   return (
     <form onSubmit={submit}>
+      <p className="mb-4 text-sm text-muted-foreground">
+        Chcete jen zablokovat volný čas? V{" "}
+        <Link
+          href="/admin/calendar"
+          className="font-medium text-primary underline"
+        >
+          Kalendáři
+        </Link>{" "}
+        zvolte „Vybrat termíny k zablokování“. Blokace nepotřebuje zákazníka ani
+        vstupní kód.
+      </p>
       <Field name="startsAt" label="Začátek" error={errors.startsAt}>
         <Input
           id="startsAt"

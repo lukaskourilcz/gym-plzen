@@ -134,7 +134,11 @@ export default async function DesignSystemPage() {
           </h2>
           <p className="mb-4 text-sm text-muted-foreground">
             Ukázková jména. Jeden řádek odpovídá 75 minutám; čas je na ose, v
-            rezervaci pouze jméno. V této ukázce nelze vytvářet bloky.
+            rezervaci pouze jméno. V ostrém kalendáři tlačítko „Vybrat termíny k
+            zablokování“ zapne barevný režim s přepínači jednotlivých volných
+            slotů a počtem vybraných termínů. Vybrané termíny mají plnou barvu a
+            fajfku; změna se uloží až tlačítkem „Uložit blokované termíny“. V
+            této ukázce nelze vytvářet bloky.
           </p>
           <BookingCalendar
             readOnly
