@@ -7,6 +7,7 @@ import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import luxonPlugin from "@fullcalendar/luxon3";
 import csLocale from "@fullcalendar/core/locales/cs";
 import type { DatesSetArg, EventInput } from "@fullcalendar/core";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -21,6 +22,7 @@ import type {
   CalendarBlockWindow,
   CalendarBlockSelection,
 } from "@/lib/config/calendar-blocking";
+import { minuteOfDay } from "@/lib/helpers/datetime";
 import { minutesToHHmm } from "@/lib/helpers/format";
 import {
   DEFAULT_CLOSE_MINUTE,
@@ -467,7 +469,13 @@ export function BookingCalendar({
       </div>
       <FullCalendar
         ref={calendarRef}
-        plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
+        plugins={[
+          timeGridPlugin,
+          dayGridPlugin,
+          interactionPlugin,
+          luxonPlugin,
+        ]}
+        timeZone="Europe/Prague"
         initialView="timeGridWeek"
         locale={csLocale}
         firstDay={1}
@@ -476,7 +484,10 @@ export function BookingCalendar({
         dayHeaderContent={({ date, view, isToday }) => (
           <span className="inline-flex flex-col items-center gap-1">
             <span className="text-xs font-medium text-muted-foreground">
-              {date.toLocaleDateString("cs-CZ", { weekday: "short" })}
+              {date.toLocaleDateString("cs-CZ", {
+                timeZone: "Europe/Prague",
+                weekday: "short",
+              })}
             </span>
             {view.type !== "dayGridMonth" ? (
               <span
@@ -485,7 +496,12 @@ export function BookingCalendar({
                   isToday && "bg-primary text-primary-foreground",
                 )}
               >
-                {date.getDate()}
+                {date
+                  .toLocaleDateString("cs-CZ", {
+                    timeZone: "Europe/Prague",
+                    day: "numeric",
+                  })
+                  .replace(".", "")}
               </span>
             ) : null}
           </span>
@@ -496,7 +512,7 @@ export function BookingCalendar({
         slotLabelInterval={{ minutes: slotMinutes }}
         snapDuration={{ minutes: slotMinutes }}
         slotLabelContent={({ date }) => {
-          const start = date.getHours() * 60 + date.getMinutes();
+          const start = minuteOfDay(date);
           return `${minutesToHHmm(start)} – ${minutesToHHmm(Math.min(start + slotMinutes, closeMinute))}`;
         }}
         displayEventTime={false}
@@ -537,9 +553,7 @@ export function BookingCalendar({
               className="admin-calendar-name"
               title={event.title}
               data-start-minute={
-                event.start
-                  ? event.start.getHours() * 60 + event.start.getMinutes()
-                  : undefined
+                event.start ? minuteOfDay(event.start) : undefined
               }
             >
               <AdminMemberName
