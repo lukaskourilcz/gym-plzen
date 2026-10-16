@@ -1,3 +1,8 @@
+import {
+  accessCodeEmailTemplate,
+  EVENING_EMAIL_START_KEY,
+  eveningEmailStart,
+} from "@/lib/config/evening-email";
 import { deliverySummary } from "@/lib/helpers/delivery";
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
@@ -173,7 +178,10 @@ export async function dispatchAccessCode(
   // Email : always attempted when we have an address.
   if (ctx.email) {
     const result = await sendTransactionalEmail({
-      id: "access_code",
+      id: accessCodeEmailTemplate(
+        ctx.startsAt,
+        eveningEmailStart(await getSetting(EVENING_EMAIL_START_KEY)),
+      ),
       idempotencyKey: ctx.accessCodeId
         ? `access-code/${ctx.accessCodeId}`
         : undefined,

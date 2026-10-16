@@ -1,5 +1,10 @@
 "use server";
 
+import {
+  eveningEmailStartSchema,
+  EVENING_EMAIL_START_KEY,
+} from "@/lib/config/evening-email";
+import { setSetting } from "@/lib/services/cms";
 import { revalidatePath } from "next/cache";
 import { assertAdmin } from "@/lib/auth/guards";
 import { defineAction, ActionError } from "@/lib/helpers/action";
@@ -58,4 +63,19 @@ export async function sendEmailTemplateTestAction(
   input: EmailTemplateTestValues,
 ): Promise<Result<unknown>> {
   return sendEmailTemplateTestImpl(input);
+}
+
+const saveEveningEmailStartImpl = defineAction({
+  schema: eveningEmailStartSchema,
+  authorize: assertAdmin,
+  handler: async ({ time }, admin) => {
+    const [hours, minutes] = time.split(":").map(Number);
+    await setSetting(EVENING_EMAIL_START_KEY, hours! * 60 + minutes!, admin.id);
+    revalidatePath("/admin/emails");
+    return {};
+  },
+});
+
+export async function saveEveningEmailStartAction(input: { time: string }) {
+  return saveEveningEmailStartImpl(input);
 }
