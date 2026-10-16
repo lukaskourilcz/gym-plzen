@@ -51,6 +51,17 @@ test("calendar selects real free windows using keyboard, saves a lost response o
       path: "/tmp/gym-calendar-selection-desktop.png",
       fullPage: true,
     });
+    await expect(
+      page.getByRole("button", {
+        name: "Uložit blokované termíny",
+        exact: true,
+      }),
+    ).toBeEnabled();
+    await expect(options.nth(0)).toHaveAttribute("aria-pressed", "true");
+    await page.screenshot({
+      path: "/tmp/gym-calendar-selection-desktop.png",
+      fullPage: true,
+    });
     let lost = false;
     await page.route("**/admin/calendar**", async (route) => {
       if (route.request().method() !== "POST" || lost) return route.continue();

@@ -194,6 +194,9 @@ export function BookingCalendar({
     };
   }, [events, openMinute, slotMinutes, calendarId]);
 
+  // Server Actions may return a fresh RSC array with identical events. Reload
+  // choices only when their actual contents change, never on object identity.
+  const eventRevision = JSON.stringify(events);
   useEffect(() => {
     if (!selecting || !range) return;
     let active = true;
@@ -231,7 +234,7 @@ export function BookingCalendar({
     return () => {
       active = false;
     };
-  }, [selecting, range, events, reloadChoices]);
+  }, [selecting, range, eventRevision, reloadChoices]);
 
   function toggleWindow(window: CalendarBlockWindow) {
     if (saving.current || uncertain || loadingChoices) return;
