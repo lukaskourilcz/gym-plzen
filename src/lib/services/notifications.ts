@@ -3,6 +3,11 @@ import {
   EVENING_EMAIL_START_KEY,
   eveningEmailStart,
 } from "@/lib/config/evening-email";
+import {
+  contactFailure,
+  emailFailure,
+  type PipelineFailure,
+} from "@/lib/config/incidents";
 import { deliverySummary } from "@/lib/helpers/delivery";
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
@@ -163,6 +168,7 @@ export interface DispatchOutcome {
   anyDelivered: boolean;
   emailDelivered: boolean;
   deliveries: MessageDelivery[];
+  failure?: PipelineFailure;
 }
 
 /**
@@ -175,8 +181,15 @@ export async function dispatchAccessCode(
   const when = formatDateTime(ctx.startsAt);
   const deliveries: MessageDelivery[] = [];
 
-  // Email : always attempted when we have an address.
-  if (ctx.email) {
+  let failure =
+    contactFailure({
+      contactName: ctx.name,
+      contactEmail: ctx.email,
+      contactPhone: ctx.phone,
+      userId: ctx.userId,
+    }) ?? undefined;
+  // Missing/malformed recipients are diagnosed before attempting the provider.
+  if (!failure && ctx.email) {
     const result = await sendTransactionalEmail({
       id: accessCodeEmailTemplate(
         ctx.startsAt,
@@ -192,6 +205,7 @@ export async function dispatchAccessCode(
         time: when,
       },
     });
+    if (!result.sent) failure = emailFailure(result.error);
     deliveries.push(
       await record(
         { ...channelBase(ctx), channel: "email", recipient: ctx.email },
@@ -235,6 +249,7 @@ export async function dispatchAccessCode(
   return {
     ...deliverySummary(deliveries),
     deliveries,
+    failure,
   };
 }
 

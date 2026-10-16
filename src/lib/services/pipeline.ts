@@ -23,6 +23,17 @@ import type { ReservationPipeline } from "@/lib/db/types";
 import { addMinutes } from "@/lib/helpers/datetime";
 import { logger, redactForLogs } from "@/lib/helpers/logger";
 import { raiseAlert, resolveAlert } from "./alerts";
+import { buildReservationIncident } from "./reservation-incidents";
+import {
+  contactFailure,
+  emailFailure,
+  preparationFailure,
+  contactIncidentKey,
+  INCIDENTS,
+  type PipelineFailure,
+} from "@/lib/config/incidents";
+import { accessCode, messageDelivery } from "@/lib/db/schema";
+import { desc } from "drizzle-orm";
 
 /**
  * Per-reservation reliability pipeline: payment → code_created → code_delivered.
@@ -71,6 +82,8 @@ export async function markStepSucceeded(
       ),
     );
   await resolveAlert(dedupeKey(reservationId, step));
+  if (step === "code_delivered")
+    await resolveAlert(contactIncidentKey(reservationId));
 }
 
 /**
@@ -80,9 +93,8 @@ export async function markStepSucceeded(
 export async function markStepFailed(
   reservationId: string,
   step: PipelineStep,
-  error: string,
+  error: string | PipelineFailure,
 ): Promise<void> {
-  error = redactForLogs(error);
   const [row] = await db
     .select()
     .from(reservationPipeline)
@@ -97,23 +109,60 @@ export async function markStepFailed(
   const attempts = (row?.attempts ?? 0) + 1;
   const exhausted = attempts >= MAX_ATTEMPTS;
   const [booking] = await db
-    .select({ startsAt: reservation.startsAt })
+    .select()
     .from(reservation)
     .where(eq(reservation.id, reservationId))
     .limit(1);
   const urgent =
     booking && booking.startsAt.getTime() - Date.now() <= 15 * 60_000;
 
+  let failure: PipelineFailure;
+  if (typeof error !== "string") failure = error;
+  else if (step === "code_created") {
+    const [code] = await db
+      .select({ reason: accessCode.failureReason })
+      .from(accessCode)
+      .where(eq(accessCode.reservationId, reservationId))
+      .orderBy(desc(accessCode.createdAt))
+      .limit(1);
+    failure = preparationFailure(code?.reason, error);
+  } else {
+    const [delivery] = await db
+      .select({ reason: messageDelivery.failureReason })
+      .from(messageDelivery)
+      .where(
+        and(
+          eq(messageDelivery.reservationId, reservationId),
+          eq(messageDelivery.channel, "email"),
+          eq(
+            messageDelivery.kind,
+            step === "payment" ? "reservation_confirmation" : "access_code",
+          ),
+          eq(messageDelivery.status, "failed"),
+        ),
+      )
+      .orderBy(desc(messageDelivery.createdAt))
+      .limit(1);
+    failure =
+      (step === "code_delivered" && booking && contactFailure(booking)) ||
+      emailFailure(delivery?.reason);
+    if (!failure.detail) failure = { ...failure, detail: error };
+  }
+  const lastError =
+    typeof error === "string"
+      ? redactForLogs(error)
+      : INCIDENTS[failure.code].cause;
+  const nextRetryAt = addMinutes(
+    new Date(),
+    urgent ? 1 : retryDelayMinutes(attempts),
+  );
   await db
     .update(reservationPipeline)
     .set({
       status: "retrying",
       attempts,
-      lastError: error,
-      nextRetryAt: addMinutes(
-        new Date(),
-        urgent ? 1 : retryDelayMinutes(attempts),
-      ),
+      lastError,
+      nextRetryAt,
       updatedAt: new Date(),
     })
     .where(
@@ -123,16 +172,28 @@ export async function markStepFailed(
       ),
     );
 
-  logger.warn("Pipeline step failed", { reservationId, step, attempts, error });
+  logger.warn("Pipeline step failed", {
+    reservationId,
+    step,
+    attempts,
+    error: lastError,
+    reason: failure.code,
+  });
 
-  if (exhausted) {
-    await raiseAlert({
-      severity: "critical",
-      dedupeKey: dedupeKey(reservationId, step),
-      title: `Rezervace ${reservationId}: krok "${step}" selhal`,
-      body: `Po ${attempts} pokusech: ${error}`,
-      context: { reservationId, step },
-    });
+  if (exhausted && booking) {
+    await raiseAlert(
+      buildReservationIncident({
+        booking: {
+          ...booking,
+          startsAt: booking.rescheduleStartsAt ?? booking.startsAt,
+          endsAt: booking.rescheduleEndsAt ?? booking.endsAt,
+        },
+        step,
+        failure,
+        attempts,
+        nextRetryAt,
+      }),
+    );
   }
 }
 
@@ -225,6 +286,7 @@ export async function closePipeline(
       ),
     );
   for (const step of STEPS) await resolveAlert(dedupeKey(reservationId, step));
+  await resolveAlert(contactIncidentKey(reservationId));
 }
 
 /** Watchdog sweep: close the pipelines of cancelled and ended reservations. */

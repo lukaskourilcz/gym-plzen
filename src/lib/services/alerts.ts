@@ -1,3 +1,5 @@
+import { parseIncident } from "@/lib/config/incidents";
+import { withOperationLock } from "./operation-lock";
 import { and, asc, desc, eq, gt, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { systemAlert } from "@/lib/db/schema";
@@ -42,6 +44,20 @@ export async function raiseAlert(
   params: RaiseAlertParams,
 ): Promise<SystemAlert | null> {
   try {
+    return params.dedupeKey
+      ? await withOperationLock(`alert:${params.dedupeKey}`, () =>
+          raiseAlertUnlocked(params),
+        )
+      : await raiseAlertUnlocked(params);
+  } catch (error) {
+    logger.error(error, { where: "alerts.raiseAlert.lock" });
+    return null;
+  }
+}
+async function raiseAlertUnlocked(
+  params: RaiseAlertParams,
+): Promise<SystemAlert | null> {
+  try {
     if (params.dedupeKey) {
       const [existing] = await db
         .select()
@@ -54,10 +70,44 @@ export async function raiseAlert(
         )
         .limit(1);
       if (existing) {
-        logger.warn("Duplicate alert suppressed", {
-          dedupeKey: params.dedupeKey,
-        });
-        return existing;
+        const incoming = parseIncident(params.context),
+          previous = parseIncident(existing.context);
+        if (!incoming) return existing;
+        const severityRank = { info: 0, warning: 1, critical: 2 };
+        const escalated =
+          severityRank[params.severity ?? "warning"] >
+          severityRank[existing.severity];
+        const context = {
+          ...(existing.context && typeof existing.context === "object"
+            ? existing.context
+            : {}),
+          ...params.context,
+          incident: {
+            ...incoming,
+            firstSeenAt:
+              previous?.firstSeenAt ?? existing.createdAt.toISOString(),
+            occurrences: (previous?.occurrences ?? 1) + 1,
+            attempts: Math.max(previous?.attempts ?? 0, incoming.attempts),
+          },
+        };
+        const [updated] = await db
+          .update(systemAlert)
+          .set({
+            title: params.title,
+            body: params.body ?? existing.body,
+            context,
+            severity: escalated ? params.severity : existing.severity,
+            notifiedAt: escalated ? null : existing.notifiedAt,
+          })
+          .where(
+            and(
+              eq(systemAlert.id, existing.id),
+              isNull(systemAlert.resolvedAt),
+            ),
+          )
+          .returning();
+        if (updated && escalated) await deliver(updated);
+        return updated ?? existing;
       }
     }
 
@@ -83,14 +133,28 @@ export async function raiseAlert(
 
 /** A failed operator e-mail stays pending so the watchdog can recover it. */
 async function deliver(alert: SystemAlert): Promise<boolean> {
-  await dispatchToWhatsApp(alert);
-  // The WhatsApp group is one way in; e-mail is the one that works today.
-  if (!(await notifyAlert(alert))) return false;
-  await db
-    .update(systemAlert)
-    .set({ notifiedAt: new Date() })
-    .where(eq(systemAlert.id, alert.id));
-  return true;
+  return withOperationLock(`alert-delivery:${alert.id}`, async () => {
+    const [current] = await db
+      .select()
+      .from(systemAlert)
+      .where(eq(systemAlert.id, alert.id))
+      .limit(1);
+    if (!current || current.resolvedAt) return false;
+    if (current.notifiedAt) return true;
+    await dispatchToWhatsApp(current);
+    if (!(await notifyAlert(current))) return false;
+    await db
+      .update(systemAlert)
+      .set({ notifiedAt: new Date() })
+      .where(
+        and(
+          eq(systemAlert.id, current.id),
+          eq(systemAlert.severity, current.severity),
+          isNull(systemAlert.resolvedAt),
+        ),
+      );
+    return true;
+  });
 }
 
 /**

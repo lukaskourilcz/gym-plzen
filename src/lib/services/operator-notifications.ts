@@ -1,3 +1,4 @@
+import { parseIncident } from "@/lib/config/incidents";
 import { randomUUID } from "node:crypto";
 import { and, asc, eq, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
@@ -490,8 +491,15 @@ export async function notifyNewMember(params: {
 export async function notifyAlert(alert: SystemAlert): Promise<boolean> {
   return notify({
     event: "systemAlert",
-    scope: alert.id,
-    path: "/admin/alerts",
+    scope: parseIncident(alert.context)
+      ? `${alert.id}:${alert.severity}`
+      : alert.id,
+    path: (() => {
+      const incident = parseIncident(alert.context);
+      return incident
+        ? `/admin/reservations?id=${incident.reservationId}`
+        : "/admin/alerts";
+    })(),
     // The alert's own body is a sentence to the operator, so it is prose too.
     summary: alert.body?.trim()
       ? `${alert.title}\n\n${alert.body.trim()}`
