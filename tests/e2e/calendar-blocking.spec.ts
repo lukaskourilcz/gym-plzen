@@ -31,6 +31,14 @@ test("calendar selects real free windows using keyboard, saves a lost response o
     messages = await sql`select * from message_delivery order by id`,
     emails = await sql`select * from email_archive order by id`;
   let applicationId: string | undefined;
+  let calendarReads = 0;
+  page.on("request", (request) => {
+    if (
+      request.method() === "POST" &&
+      new URL(request.url()).pathname === "/admin/calendar"
+    )
+      calendarReads++;
+  });
   try {
     await begin(page);
     const options = page.getByRole("button", { name: /^Blokovat / });
@@ -62,6 +70,10 @@ test("calendar selects real free windows using keyboard, saves a lost response o
       path: "/tmp/gym-calendar-selection-desktop.png",
       fullPage: true,
     });
+    expect(
+      calendarReads,
+      "identical RSC events must not create a read loop",
+    ).toBe(1);
     let lost = false;
     await page.route("**/admin/calendar**", async (route) => {
       if (route.request().method() !== "POST" || lost) return route.continue();
