@@ -59,6 +59,9 @@ test("tomorrow offers a desktop table, icon tooltips and mobile cards without ch
     ]);
     const row = table.getByRole("row").filter({ hasText: prefix + " member" });
     await expect(
+      row.getByRole("link", { name: prefix + " member", exact: true }),
+    ).toHaveAttribute("href", `/admin/members/${memberId}`);
+    await expect(
       row.getByRole("img", { name: "Používá se", exact: true }),
     ).toBeVisible();
     await expect(
@@ -118,6 +121,10 @@ test("tomorrow offers a desktop table, icon tooltips and mobile cards without ch
       path: "/tmp/gym-admin-tomorrow-mobile.png",
       fullPage: true,
     });
+    await page
+      .getByRole("link", { name: prefix + " member", exact: true })
+      .click();
+    await expect(page).toHaveURL(new RegExp(`/admin/members/${memberId}$`));
     await unchanged(before, emails!.n);
   } finally {
     await sql`delete from reservation where id in (${booking!.id},${pending!.id})`;
@@ -130,9 +137,12 @@ test("today paginates all entries by twenty and uses compact gaps beside a long 
 }) => {
   const today = dateKeyInTimeZone(new Date());
   const dayStart = localDateTimeToDate(today, 0);
+  const [registered] =
+    await sql`select id from profiles where email='member@example.test' order by created_at desc limit 1`;
+  expect(registered).toBeTruthy();
   for (let n = 0; n < 25; n++) {
     const start = localDateTimeToDate(today, n * 30);
-    await sql`insert into reservation(starts_at,ends_at,status,contact_name,contact_email) values (${start},${new Date(start.getTime() + 20 * 60_000)},'confirmed',${prefix + " programme " + n},${prefix + "@example.test"})`;
+    await sql`insert into reservation(user_id,starts_at,ends_at,status,contact_name,contact_email) values (${n === 0 ? registered!.id : null},${start},${new Date(start.getTime() + 20 * 60_000)},'confirmed',${prefix + " programme " + n},${prefix + "@example.test"})`;
   }
   for (let n = 0; n < 23; n++)
     await sql`insert into entry_log(nuki_log_id,nuki_name,action,trigger,occurred_at) values (${prefix + "-" + n},${"Denní vstup " + String(n).padStart(2, "0")},'unlock','keypad',${localDateTimeToDate(today, n * 55)})`;
@@ -144,6 +154,21 @@ test("today paginates all entries by twenty and uses compact gaps beside a long 
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       /^Dnes \| /,
     );
+    const programme = page.locator(
+      'section[aria-labelledby="today-programme"]',
+    );
+    await expect(
+      programme.getByRole("link", {
+        name: prefix + " programme 0",
+        exact: true,
+      }),
+    ).toHaveAttribute("href", `/admin/members/${registered!.id}`);
+    await expect(
+      programme.getByRole("link", {
+        name: prefix + " programme 1",
+        exact: true,
+      }),
+    ).toHaveCount(0);
     const entries = page.locator('section[aria-labelledby="today-entries"]');
     await expect(entries.getByText(/^Denní vstup/)).toHaveCount(20);
     await expect(
@@ -194,6 +219,12 @@ test("today paginates all entries by twenty and uses compact gaps beside a long 
     });
     await nav.getByRole("link", { name: "Předchozí", exact: true }).click();
     await expect(entries.getByText(/^Denní vstup/)).toHaveCount(20);
+    await programme
+      .getByRole("link", { name: prefix + " programme 0", exact: true })
+      .click();
+    await expect(page).toHaveURL(
+      new RegExp(`/admin/members/${registered!.id}$`),
+    );
     await unchanged(before, emails!.n);
   } finally {
     await sql`delete from entry_log where nuki_log_id like ${prefix + "-%"}`;

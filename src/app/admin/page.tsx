@@ -170,6 +170,9 @@ export default async function AdminDashboard({
                       <AdminMemberName
                         name={r.contactName ?? r.contactEmail ?? "Neuvedeno"}
                         note={memberNotes.get(r.userId ?? "")}
+                        href={
+                          r.userId ? `/admin/members/${r.userId}` : undefined
+                        }
                       />
                     </span>
                     {code?.sent && <Badge variant="outline">Kód odeslán</Badge>}
@@ -233,6 +236,11 @@ export default async function AdminDashboard({
                         <AdminMemberName
                           name={entry.customerName}
                           note={memberNotes.get(entry.userId ?? "")}
+                          href={
+                            entry.userId
+                              ? `/admin/members/${entry.userId}`
+                              : undefined
+                          }
                         />
                         )
                       </>
