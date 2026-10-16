@@ -1,7 +1,7 @@
 # Kalendář, blokování termínů a večerní e-mail
 
 Práce na větvi `codex/calendar-blocking-evening` vychází z mainu `bf4b085`.
-PR #231 zůstává samostatný. Issues: #232, #233, #234.
+PR #231 zůstává samostatný. Issues: #232, #233, #234, #236, #237, #238.
 
 ## Co je připravené
 
@@ -29,7 +29,8 @@ Izolované místní databáze `gym_calendar_test`, `gym_calendar_browser_test` a
 `gym_calendar_rollout_test` na loopback portu 55439. Náhrady Auth, Resend,
 Comgate a Nuki; síťový zákaz skutečných poskytovatelů v testech.
 
-- 299 unit + 202 integračních + 131 prohlížečových testů: 632 prošlo, žádný přeskočený.
+- Před rozšířením incidentů prošlo 299 unit + 209 integračních + 135
+  prohlížečových testů (643 celkem). Aktuální výsledky jsou v kontrolách PR #235.
 - Produkční sestavení, TypeScript, lint a formát prošly.
 - SQL kontroly prošly; oba audity závislostí mají 0 zranitelností.
 - Prohlížeč naměřil zvýraznění data 7–8 ms, bez RSC navigace; ověřena cache,
@@ -82,3 +83,27 @@ rezervace přiřazených členů fungují dál. Staré rezervace se automaticky
 nepřevádějí podle chybějícího e-mailu: absence kontaktu sama o sobě spolehlivě
 neprokazuje, že rezervace byla umělou blokací. Žádná produkční data nebyla
 při implementaci přepsána, nic nebylo doručeno zákazníkům ani na zámek.
+
+## Srozumitelné provozní incidenty (#238)
+
+Katalog diagnostických kódů odděluje chybějící kontakt rezervace, nedostupný
+zámek, odmítnutý či nepotvrzený PIN a chyby e-mailové služby (nastavení,
+omezení, výpadek, odmítnutí a nejasný výsledek). Text nepřebírá domnělou příčinu
+z obecné výjimky. Chybějící e-mail neznamená selhání vytvoření PINu.
+
+Při vstupu do 24hodinového okna přípravy se kontroluje doručovací kontakt
+uložený u rezervace. Příprava původního PINu pokračuje; chybějící e-mail založí
+varování, které se od hodiny před začátkem změní na kritické. Opakování pod
+zámkem aktualizuje jeden otevřený incident, počet pokusů a čas výskytu.
+Provozovatel je upozorněn při vzniku a jednou při zvýšení závažnosti. Stávající
+identifikátory odeslání se zachovávají. Vyřešení není trvalé umlčení příčiny.
+
+Historie i Dnes zobrazují příčinu, dopad, doporučený postup, termín a prokliky
+na rezervaci, člena a související zprávy. Technické podrobnosti jsou sbalené
+a zbavené PINů, kontaktů a přístupových údajů. Historické obecné záznamy se
+nepřepisují; zobrazení výslovně přiznává neznámou příčinu.
+
+Používá se existující JSON evidence upozornění, bez další migrace. Neprovádí
+se opravy produkčních kontaktů, převod starých rezervací na blokace ani zpětné
+rozesílání. Testy kontrolují souběh, zvýšení závažnosti, zachování rezervace,
+stejný PIN po opravě kontaktu, jediné doručení a navigaci v administraci.
