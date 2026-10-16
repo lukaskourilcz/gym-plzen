@@ -202,6 +202,7 @@ export function BookingCalendar({
     let active = true;
     setLoadingChoices(true);
     setChoices(null);
+    setActionError(null);
     void loadCalendarBlockChoicesAction(range)
       .then((result) => {
         if (!active) return;
