@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   check,
+  date,
   index,
   boolean,
   integer,
@@ -209,6 +210,8 @@ export const reservationReschedule = pgTable(
 export const blockTemplate = pgTable("block_template", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
+  validFrom: date("valid_from"),
+  validTo: date("valid_to"),
   slots: jsonb("slots").$type<BlockingSlot[]>().notNull(),
   createdByAdminId: uuid("created_by_admin_id").references(() => profiles.id, {
     onDelete: "set null",

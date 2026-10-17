@@ -20,7 +20,8 @@
       "codex/admin-daily-refinements": false,
       "codex/fix-audit-braces": false,
       "codex/required-phone-members": false,
-      "codex/calendar-blocking-evening": false
+      "codex/calendar-blocking-evening": false,
+      "codex/blocking-periods-legacy-cleanup": false
     }
   },
   "regions": ["cdg1"]

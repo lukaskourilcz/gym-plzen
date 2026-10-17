@@ -726,3 +726,16 @@ výslovně přiznávají nezaznamenanou příčinu; nedoplňují domnělý chyb�
 Stejný otevřený incident se aktualizuje a ukazuje poslední zachycení i další
 běžný pokus. Počet pokusů označuje skutečné pokusy, nikoliv počet upozornění.
 Ukázka je v chráněné galerii komponent.
+
+### Platnost šablon a doplňující nadpis
+
+Šablona blokací má explicitní platnost od–do včetně obou dnů. Starší šablona
+bez období má neaktivní tlačítko Použít a přímý pokyn k úpravě. Formulář nejprve
+zobrazí kontrolu období a počet překryvů, potom nabídne Uložit šablonu. Změna
+výběru zneplatní kontrolu. Již použité dávky, rezervace a jejich kódy se nemění.
+Použití nabídne pouze společné období vybraných šablon; server hranice ověřuje
+nezávisle na formuláři.
+
+`PageHeader.detail` zachovává jeden H1. Hlavní název zůstává výrazný, oddělovač
+a kontext za ním mají menší písmo a běžný řez. Na mobilu se mohou přirozeně
+zalomit. Příkladem jsou Dnes a Zítra, vzor je i v galerii.

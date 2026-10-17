@@ -14,6 +14,7 @@ import {
   listBlockTemplates,
   previewBlockApplication,
   saveBlockTemplate,
+  previewBlockTemplate,
 } from "../../src/lib/services/blocking";
 import { checkAvailability } from "../../src/lib/services/availability";
 import { localDateTimeToDate } from "../../src/lib/helpers/datetime";
@@ -24,7 +25,15 @@ const slots = [
   { dayOfWeek: 6, startMinute: 300, endMinute: 375 },
 ];
 async function template() {
-  return saveBlockTemplate({ name: "Synthetic weekend", slots }, null);
+  return saveBlockTemplate(
+    {
+      name: "Synthetic weekend",
+      slots,
+      validFrom: "2026-10-16",
+      validTo: "2026-12-31",
+    },
+    null,
+  );
 }
 async function apply(id: string, dates = ["2026-10-24", "2026-10-25"]) {
   const input = {
@@ -161,6 +170,8 @@ describe("safe template blocking", { skip: !databaseReady }, () => {
         id: t.id,
         expectedUpdatedAt: t.updatedAt.toISOString(),
         name: "Edited locally",
+        validFrom: "2026-10-16",
+        validTo: "2026-12-31",
         slots: [{ dayOfWeek: 6, startMinute: 375, endMinute: 450 }],
       },
       null,
@@ -267,5 +278,138 @@ describe("safe template blocking", { skip: !databaseReady }, () => {
     assert.equal(removed.count, 1);
     await applyBlockTemplates(a.request, null, now);
     assert.equal((await rows("select * from blocked_slot")).length, 1);
+  });
+  test("a template can be used only within its inclusive period, for ranges and individual dates", async () => {
+    const t = await saveBlockTemplate(
+      {
+        name: "Only this weekend",
+        slots,
+        validFrom: "2026-10-24",
+        validTo: "2026-10-25",
+      },
+      null,
+      now,
+    );
+    await apply(t.id);
+    for (const target of [
+      { mode: "dates" as const, dates: ["2026-10-23", "2026-10-24"] },
+      { mode: "range" as const, from: "2026-10-24", to: "2026-10-26" },
+    ])
+      await assert.rejects(
+        previewBlockApplication({ templateIds: [t.id], target }, now),
+        /mimo období/,
+      );
+    assert.equal((await rows("select * from blocked_slot")).length, 2);
+    await assert.rejects(
+      saveBlockTemplate(
+        {
+          name: "Invalid period",
+          slots,
+          validFrom: "2026-10-25",
+          validTo: "2026-10-24",
+        },
+        null,
+        now,
+      ),
+    );
+  });
+  test("unconfigured legacy templates require an explicit period without activating old suggestions", async () => {
+    const [legacy] = await listBlockTemplates();
+    assert.equal(legacy!.validFrom, null);
+    await assert.rejects(
+      previewBlockApplication(
+        {
+          templateIds: [legacy!.id],
+          target: { mode: "dates", dates: ["2026-10-24"] },
+        },
+        now,
+      ),
+      /nemá nastavené období/,
+    );
+    assert.equal((await rows("select * from blocked_slot")).length, 0);
+  });
+  test("editing previews conflicts and preserves existing batches, reservations and PINs byte for byte", async () => {
+    const t = await template();
+    const batch = await apply(t.id);
+    const [r] = await rows<{ id: string }>(
+      "insert into reservation(starts_at,ends_at,status,contact_email) values($1,$2,'confirmed','customer@example.test') returning id",
+      [
+        localDateTimeToDate("2026-10-31", 300),
+        localDateTimeToDate("2026-10-31", 375),
+      ],
+    );
+    await rows(
+      "insert into access_code(reservation_id,code_hash,valid_from,valid_until,status) values($1,'synthetic',$2,$3,'scheduled')",
+      [
+        r!.id,
+        localDateTimeToDate("2026-10-31", 300),
+        localDateTimeToDate("2026-10-31", 390),
+      ],
+    );
+    const before = await rows(
+      "select row_to_json(r) as data from reservation r union all select row_to_json(a) from access_code a union all select row_to_json(b) from block_application b",
+    );
+    const input = {
+      id: t.id,
+      expectedUpdatedAt: t.updatedAt.toISOString(),
+      name: t.name,
+      slots,
+      validFrom: "2026-10-31",
+      validTo: "2026-11-01",
+    };
+    const p = await previewBlockTemplate(input, now);
+    assert.equal(p.conflicts[0]!.reservationIds[0], r!.id);
+    await saveBlockTemplate(
+      { ...input, fingerprint: p.fingerprint },
+      null,
+      now,
+    );
+    assert.deepEqual(
+      await rows(
+        "select row_to_json(r) as data from reservation r union all select row_to_json(a) from access_code a union all select row_to_json(b) from block_application b",
+      ),
+      before,
+    );
+    assert.equal(
+      (
+        await rows("select * from blocked_slot where application_id=$1", [
+          batch.result.id,
+        ])
+      ).length,
+      2,
+    );
+    assert.equal(resend.sent.length, 0);
+  });
+  test("a booking arriving after the edit check invalidates save and leaves the template untouched", async () => {
+    const t = await template();
+    const input = {
+      id: t.id,
+      expectedUpdatedAt: t.updatedAt.toISOString(),
+      name: "Changed",
+      slots,
+      validFrom: "2026-10-24",
+      validTo: "2026-10-25",
+    };
+    const p = await previewBlockTemplate(input, now);
+    await rows(
+      "insert into reservation(starts_at,ends_at,status) values($1,$2,'confirmed')",
+      [
+        localDateTimeToDate("2026-10-24", 300),
+        localDateTimeToDate("2026-10-24", 375),
+      ],
+    );
+    await assert.rejects(
+      saveBlockTemplate({ ...input, fingerprint: p.fingerprint }, null, now),
+      /nový náhled/,
+    );
+    assert.equal(
+      (
+        await rows<{ name: string }>(
+          "select name from block_template where id=$1",
+          [t.id],
+        )
+      )[0]!.name,
+      t.name,
+    );
   });
 });
