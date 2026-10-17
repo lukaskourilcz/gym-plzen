@@ -22,6 +22,59 @@ async function begin(page: import("@playwright/test").Page) {
     page.getByRole("button", { name: /^Blokovat / }).first(),
   ).toBeVisible();
 }
+test("blocking controls share the calendar toolbar on desktop and fit small screens", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/admin/calendar");
+  const toolbar = page.locator(".admin-calendar-toolbar");
+  const controls = toolbar.getByRole("group", {
+    name: "Blokování termínů",
+    exact: true,
+  });
+  await expect(
+    controls.getByRole("button", {
+      name: "Vybrat termíny k zablokování",
+      exact: true,
+    }),
+  ).toBeVisible();
+  const layout = await toolbar.evaluate((element) => {
+    const chunks = Array.from(element.children).map((child) =>
+      child.getBoundingClientRect(),
+    );
+    const bounds = element.getBoundingClientRect();
+    return {
+      centers: chunks.map((rect) => rect.top + rect.height / 2),
+      rightGap: bounds.right - chunks.at(-1)!.right,
+    };
+  });
+  expect(
+    Math.max(...layout.centers) - Math.min(...layout.centers),
+  ).toBeLessThanOrEqual(1);
+  expect(Math.abs(layout.rightGap)).toBeLessThanOrEqual(1);
+  await page.screenshot({
+    path: "/tmp/gym-calendar-toolbar-desktop.png",
+    fullPage: true,
+  });
+  for (const width of [320, 390, 768]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(controls).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth - innerWidth,
+      ),
+    ).toBeLessThanOrEqual(1);
+    const button = await controls.getByRole("button").boundingBox();
+    expect(button!.x).toBeGreaterThanOrEqual(0);
+    expect(button!.x + button!.width).toBeLessThanOrEqual(width);
+    expect(button!.height).toBeGreaterThanOrEqual(44);
+  }
+  await page.screenshot({
+    path: "/tmp/gym-calendar-toolbar-mobile.png",
+    fullPage: true,
+  });
+});
+
 test("calendar selects real free windows using keyboard, saves a lost response once and exposes public occupied slots without customer side effects", async ({
   page,
   browser,

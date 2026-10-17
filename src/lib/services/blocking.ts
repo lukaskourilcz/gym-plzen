@@ -12,6 +12,7 @@ import {
 import { ActionError } from "@/lib/helpers/action";
 import { dateKeyInTimeZone, intervalsOverlap } from "@/lib/helpers/datetime";
 import {
+  BLOCK_APPLICATION_PAGE_SIZE,
   blockApplySchema,
   blockPreviewSchema,
   blockTargetDates,
@@ -37,8 +38,8 @@ export async function listBlockApplications(page = 1) {
     .select()
     .from(blockApplication)
     .orderBy(desc(blockApplication.createdAt), desc(blockApplication.id))
-    .limit(21)
-    .offset((page - 1) * 20);
+    .limit(BLOCK_APPLICATION_PAGE_SIZE + 1)
+    .offset((page - 1) * BLOCK_APPLICATION_PAGE_SIZE);
 }
 export async function loadBlockingHours(executor: DatabaseExecutor = db) {
   return (

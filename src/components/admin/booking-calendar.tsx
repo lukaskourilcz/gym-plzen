@@ -385,13 +385,16 @@ export function BookingCalendar({
             </Button>
           ))}
         </div>
-      </div>
-      {!readOnly ? (
-        <div className="mb-4 rounded-lg border border-border bg-card p-3">
-          <div className="flex flex-wrap items-center gap-2">
+        {!readOnly ? (
+          <div
+            className="ml-auto flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto"
+            role="group"
+            aria-label="Blokování termínů"
+          >
             <Button
               type="button"
               variant={selecting ? "secondary" : "outline"}
+              className="w-full whitespace-normal px-3 sm:w-auto sm:whitespace-nowrap"
               aria-pressed={selecting}
               disabled={busy || uncertain}
               onClick={() => {
@@ -419,12 +422,16 @@ export function BookingCalendar({
                 {busy ? "Ukládám…" : "Uložit blokované termíny"}
               </Button>
             ) : null}
-            {selecting ? (
-              <span className="text-sm font-medium" role="status">
-                Vybráno: {selected.length} / 200
-              </span>
-            ) : null}
           </div>
+        ) : null}
+      </div>
+      {!readOnly && (selecting || notice) ? (
+        <div className="mb-4 rounded-lg border border-border bg-card p-3">
+          {selecting ? (
+            <span className="text-sm font-medium" role="status">
+              Vybráno: {selected.length} / 200
+            </span>
+          ) : null}
           {selecting ? (
             <p className="mt-2 text-sm text-muted-foreground">
               {loadingChoices

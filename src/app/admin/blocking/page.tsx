@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/auth/guards";
 import { PageHeader } from "@/components/admin/page-header";
 import { Pagination } from "@/components/ui/pagination";
 import { dateKeyInTimeZone } from "@/lib/helpers/datetime";
+import { BLOCK_APPLICATION_PAGE_SIZE } from "@/lib/config/blocking";
 import {
   listBlockApplications,
   listBlockTemplates,
@@ -35,19 +36,23 @@ export default async function BlockingPage({
           ...row,
           updatedAt: row.updatedAt.toISOString(),
         }))}
-        applications={applications.slice(0, 20).map((row) => ({
-          id: row.id,
-          snapshot: row.snapshot,
-          createdAt: row.createdAt.toISOString(),
-          cancelledAt: row.cancelledAt?.toISOString() ?? null,
-        }))}
+        applications={applications
+          .slice(0, BLOCK_APPLICATION_PAGE_SIZE)
+          .map((row) => ({
+            id: row.id,
+            snapshot: row.snapshot,
+            createdAt: row.createdAt.toISOString(),
+            cancelledAt: row.cancelledAt?.toISOString() ?? null,
+          }))}
         hours={hours}
         today={dateKeyInTimeZone(new Date())}
       />
       <Pagination
         page={page}
-        hasNext={applications.length > 20}
-        hrefForPage={(value) => `/admin/blocking?page=${value}`}
+        hasNext={applications.length > BLOCK_APPLICATION_PAGE_SIZE}
+        hrefForPage={(value) =>
+          `/admin/blocking?page=${value}#blocking-history`
+        }
         label="Použité blokace"
       />
     </div>

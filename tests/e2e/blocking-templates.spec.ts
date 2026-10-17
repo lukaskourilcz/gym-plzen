@@ -15,6 +15,111 @@ test.use({ storageState: join(process.cwd(), "tests/e2e/.auth/admin.json") });
 test.afterAll(async () => {
   await sql.end({ timeout: 2 });
 });
+test("blocking history uses compact rows and bounded pages without changing bookings or codes", async ({
+  page,
+}) => {
+  const ids = Array.from({ length: 12 }, () => randomUUID());
+  const today = dateKeyInTimeZone(new Date());
+  const created = Date.now() + 60_000;
+  const baseline = await sql`select
+    (select md5(coalesce(string_agg(to_jsonb(r)::text, '' order by id), '')) from reservation r) as bookings,
+    (select md5(coalesce(string_agg(to_jsonb(r)::text, '' order by id), '')) from access_code r) as codes,
+    (select md5(coalesce(string_agg(to_jsonb(r)::text, '' order by id), '')) from message_delivery r) as messages`;
+  try {
+    for (let i = 0; i < ids.length; i++) {
+      const snapshot = {
+        templates: [{ id: ids[i], name: `Víkendová rána ${i + 1}`, slots: [] }],
+        windows: [
+          {
+            dateKey: today,
+            startISO: new Date(created).toISOString(),
+            endISO: new Date(created + 75 * 60_000).toISOString(),
+            label: "05:00–06:15",
+          },
+        ],
+      };
+      await sql`insert into block_application(id,request,snapshot,fingerprint,created_at,cancelled_at)
+        values (${ids[i]!},'{}',${sql.json(snapshot)},'synthetic-history',${new Date(created + i * 1000)},${i === 11 ? new Date(created) : null})`;
+    }
+    await page.goto("/admin/blocking");
+    const region = page.getByRole("region", {
+      name: "Tabulka použitých blokací",
+      exact: true,
+    });
+    const rows = region.locator("tbody tr");
+    const pagination = page.getByRole("navigation", {
+      name: "Použité blokace",
+      exact: true,
+    });
+    await expect(rows).toHaveCount(10);
+    await expect(rows.first()).toContainText("Víkendová rána 12");
+    await expect(rows.first()).toContainText("Zrušeno");
+    await expect(rows.first().getByRole("button")).toHaveCount(0);
+    await expect(rows.last()).toContainText("Víkendová rána 3");
+    await expect(
+      pagination.getByRole("link", { name: "Předchozí", exact: true }),
+    ).toHaveCount(0);
+    for (const row of await rows.all()) {
+      expect(
+        await row.evaluate((element) => element.getBoundingClientRect().height),
+      ).toBeLessThanOrEqual(54);
+    }
+    await rows
+      .nth(1)
+      .getByRole("button", { name: "Zrušit budoucí blokace", exact: true })
+      .click();
+    await expect(page.getByRole("dialog")).toContainText("Víkendová rána 11");
+    await page
+      .getByRole("button", { name: "Ponechat blokace", exact: true })
+      .click();
+    await page.screenshot({
+      path: "/tmp/gym-blocking-history-desktop.png",
+      fullPage: true,
+    });
+    await pagination.getByRole("link", { name: "Další", exact: true }).click();
+    await expect(page).toHaveURL(/page=2#blocking-history$/);
+    await expect(rows).toHaveCount(2);
+    await expect(rows.first()).toContainText("Víkendová rána 2");
+    await expect(rows.last()).toContainText("Víkendová rána 1");
+    await expect(
+      pagination.getByRole("link", { name: "Další", exact: true }),
+    ).toHaveCount(0);
+    await page.goBack();
+    await expect(rows).toHaveCount(10);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await region.scrollIntoViewIfNeeded();
+    await region.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect
+      .poll(() => region.evaluate((element) => element.scrollLeft))
+      .toBeGreaterThan(0);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth - innerWidth,
+      ),
+    ).toBeLessThanOrEqual(1);
+    expect(
+      (
+        await new AxeBuilder({ page })
+          .include('[aria-labelledby="blocking-history"]')
+          .analyze()
+      ).violations,
+    ).toEqual([]);
+    await page.screenshot({
+      path: "/tmp/gym-blocking-history-mobile.png",
+      fullPage: true,
+    });
+    expect(
+      await sql`select
+      (select md5(coalesce(string_agg(to_jsonb(r)::text, '' order by id), '')) from reservation r) as bookings,
+      (select md5(coalesce(string_agg(to_jsonb(r)::text, '' order by id), '')) from access_code r) as codes,
+      (select md5(coalesce(string_agg(to_jsonb(r)::text, '' order by id), '')) from message_delivery r) as messages`,
+    ).toEqual(baseline);
+  } finally {
+    await sql`delete from block_application where id in ${sql(ids)}`;
+  }
+});
+
 test("template periods and edit conflict checks preserve existing reservations, PINs and applied batches", async ({
   page,
 }) => {

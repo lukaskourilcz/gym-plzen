@@ -696,7 +696,10 @@ selection and an accessible loading/retry status.
 
 ### Výběr blokací v provozním kalendáři
 
-Tlačítko **Vybrat termíny k zablokování** zapne explicitní režim úprav.
+Tlačítko **Vybrat termíny k zablokování** je vpravo v horní liště vedle
+data a přepínačů zobrazení. Zapne explicitní režim úprav. Samostatný
+panel s počtem výběrů a nápovědou se objeví až během výběru; na malých
+obrazovkách se skupiny ovládání zalomí.
 Kalendář dostane akcentový podklad a ohraničení. Každý skutečně volný slot
 je samostatné nativní tlačítko s `aria-pressed`; vybrané sloty mají plnou barvu,
 fajfku a text „Vybráno“. Není potřeba dlouhé podržení ani přesné tažení.
@@ -739,3 +742,11 @@ nezávisle na formuláři.
 `PageHeader.detail` zachovává jeden H1. Hlavní název zůstává výrazný, oddělovač
 a kontext za ním mají menší písmo a běžný řez. Na mobilu se mohou přirozeně
 zalomit. Příkladem jsou Dnes a Zítra, vzor je i v galerii.
+
+### Kompaktní historie blokací
+
+Použité blokace zobrazují jeden nezalamovaný řádek na dávku: název, období,
+počet slotů, čas vytvoření a akci nebo datum zrušení. Dlouhý název se zkrátí
+s úplným textem v `title`. Sdílená tabulka umožňuje vodorovný posun dotykem
+i klávesnicí na malé obrazovce. Server čte 10 záznamů a jeden navíc pro
+ověření další stránky; navigace odkazuje přímo zpět na historii.
