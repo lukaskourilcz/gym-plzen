@@ -15,8 +15,9 @@ export function PageHeader({
       <div>
         <h1 className="text-[28px] font-extrabold tracking-[-.01em]">
           {title}
+          {detail ? " " : null}
           {detail && (
-            <span className="ml-2 text-base font-normal tracking-normal text-muted-foreground sm:text-lg">
+            <span className="text-base font-normal tracking-normal text-muted-foreground sm:text-lg">
               | {detail}
             </span>
           )}
