@@ -65,7 +65,8 @@ export default async function TomorrowPage() {
   return (
     <div>
       <PageHeader
-        title={`Zítra | kontrola rezervací na ${headingDate || "další den"}`}
+        title="Zítra"
+        detail={`kontrola rezervací na ${headingDate || "další den"}`}
       />
       {demo ? (
         <p className="rounded-lg border border-border p-5 text-sm">

@@ -123,7 +123,7 @@ export default async function AdminDashboard({
 
   return (
     <div>
-      <PageHeader title={`Dnes | ${capitalise(DAY_FORMAT.format(now))}`} />
+      <PageHeader title="Dnes" detail={capitalise(DAY_FORMAT.format(now))} />
       <div className="mb-8 flex flex-wrap gap-4">
         <StatCard
           label={
