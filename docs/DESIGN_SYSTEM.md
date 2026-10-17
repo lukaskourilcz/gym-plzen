@@ -739,3 +739,11 @@ nezávisle na formuláři.
 `PageHeader.detail` zachovává jeden H1. Hlavní název zůstává výrazný, oddělovač
 a kontext za ním mají menší písmo a běžný řez. Na mobilu se mohou přirozeně
 zalomit. Příkladem jsou Dnes a Zítra, vzor je i v galerii.
+
+### Kompaktní historie blokací
+
+Použité blokace zobrazují jeden nezalamovaný řádek na dávku: název, období,
+počet slotů, čas vytvoření a akci nebo datum zrušení. Dlouhý název se zkrátí
+s úplným textem v `title`. Sdílená tabulka umožňuje vodorovný posun dotykem
+i klávesnicí na malé obrazovce. Server čte 10 záznamů a jeden navíc pro
+ověření další stránky; navigace odkazuje přímo zpět na historii.
