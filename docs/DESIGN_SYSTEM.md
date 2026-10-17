@@ -696,7 +696,10 @@ selection and an accessible loading/retry status.
 
 ### Výběr blokací v provozním kalendáři
 
-Tlačítko **Vybrat termíny k zablokování** zapne explicitní režim úprav.
+Tlačítko **Vybrat termíny k zablokování** je vpravo v horní liště vedle
+data a přepínačů zobrazení. Zapne explicitní režim úprav. Samostatný
+panel s počtem výběrů a nápovědou se objeví až během výběru; na malých
+obrazovkách se skupiny ovládání zalomí.
 Kalendář dostane akcentový podklad a ohraničení. Každý skutečně volný slot
 je samostatné nativní tlačítko s `aria-pressed`; vybrané sloty mají plnou barvu,
 fajfku a text „Vybráno“. Není potřeba dlouhé podržení ani přesné tažení.

@@ -210,7 +210,10 @@ export function BlockingManager({
             </CardContent>
           </Card>
         ) : (
-          <Table label="Použité blokace" className="whitespace-nowrap bg-card">
+          <Table
+            label="Tabulka použitých blokací"
+            className="whitespace-nowrap bg-card"
+          >
             <TableHeader>
               <TableRow>
                 <TableHead scope="col">Blokace</TableHead>

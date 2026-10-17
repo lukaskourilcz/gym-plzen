@@ -43,7 +43,7 @@ test("blocking history uses compact rows and bounded pages without changing book
     }
     await page.goto("/admin/blocking");
     const region = page.getByRole("region", {
-      name: "Použité blokace",
+      name: "Tabulka použitých blokací",
       exact: true,
     });
     const rows = region.locator("tbody tr");
