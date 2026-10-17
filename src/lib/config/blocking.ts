@@ -9,6 +9,8 @@ import {
 } from "@/lib/helpers/datetime";
 import type { DayHours } from "@/lib/services/slots";
 
+export const BLOCK_APPLICATION_PAGE_SIZE = 10;
+
 export const blockingSlotSchema = z
   .object({
     dayOfWeek: z.number().int().min(0).max(6),

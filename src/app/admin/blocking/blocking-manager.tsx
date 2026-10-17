@@ -8,6 +8,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Notice } from "@/components/ui/notice";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 import { receiveAction } from "@/lib/helpers/action-response";
 import type { Result } from "@/lib/helpers/result";
 import { cn } from "@/lib/utils";
@@ -20,7 +28,7 @@ import {
   type BlockPreviewInput,
   type BlockTarget,
 } from "@/lib/config/blocking";
-import { formatDateTime } from "@/lib/helpers/format";
+import { formatDate, formatDateTime } from "@/lib/helpers/format";
 import type { BlockPreview } from "@/lib/services/blocking";
 import {
   saveBlockTemplateAction,
@@ -202,47 +210,77 @@ export function BlockingManager({
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-3">
-            {applications.map((application) => (
-              <Card key={application.id}>
-                <CardContent className="flex flex-wrap items-center justify-between gap-4 pt-5">
-                  <div>
-                    <p className="font-semibold">
-                      {application.snapshot.templates
-                        .map((template) => template.name)
-                        .join(" + ") ||
-                        (application.snapshot.source === "legacy_reservation"
-                          ? "Převedená původní blokace"
-                          : "Výběr v kalendáři")}
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {application.snapshot.windows.length} slotů ·{" "}
-                      {application.snapshot.windows[0]?.dateKey} až{" "}
-                      {application.snapshot.windows.at(-1)?.dateKey} · vytvořeno{" "}
+          <Table label="Použité blokace" className="whitespace-nowrap bg-card">
+            <TableHeader>
+              <TableRow>
+                <TableHead scope="col">Blokace</TableHead>
+                <TableHead scope="col">Období</TableHead>
+                <TableHead scope="col" className="text-right">
+                  Slotů
+                </TableHead>
+                <TableHead scope="col">Vytvořeno</TableHead>
+                <TableHead scope="col" className="text-right">
+                  Akce
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {applications.map((application) => {
+                const name =
+                  application.snapshot.templates
+                    .map((template) => template.name)
+                    .join(" + ") ||
+                  (application.snapshot.source === "legacy_reservation"
+                    ? "Převedená původní blokace"
+                    : "Výběr v kalendáři");
+                const first = application.snapshot.windows[0]?.dateKey;
+                const last = application.snapshot.windows.at(-1)?.dateKey;
+                return (
+                  <TableRow key={application.id}>
+                    <TableCell className="font-medium">
+                      <span className="block max-w-72 truncate" title={name}>
+                        {name}
+                      </span>
+                    </TableCell>
+                    <TableCell className="tabular-nums">
+                      {first ? formatDate(new Date(`${first}T12:00:00Z`)) : "—"}
+                      {last && last !== first
+                        ? ` – ${formatDate(new Date(`${last}T12:00:00Z`))}`
+                        : ""}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {application.snapshot.windows.length}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-muted-foreground">
                       {formatDateTime(new Date(application.createdAt))}
-                    </p>
-                    {application.cancelledAt && (
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Budoucí blokace zrušeny{" "}
-                        {formatDateTime(new Date(application.cancelledAt))}
-                      </p>
-                    )}
-                  </div>
-                  {!application.cancelledAt && (
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setCancelError("");
-                        setCancel(application);
-                      }}
-                    >
-                      Zrušit budoucí blokace
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    </TableCell>
+                    <TableCell className="py-1 text-right">
+                      {application.cancelledAt ? (
+                        <span
+                          className="text-muted-foreground"
+                          title={`Budoucí blokace zrušeny ${formatDateTime(new Date(application.cancelledAt))}`}
+                        >
+                          Zrušeno{" "}
+                          {formatDateTime(new Date(application.cancelledAt))}
+                        </span>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setCancelError("");
+                            setCancel(application);
+                          }}
+                        >
+                          Zrušit budoucí blokace
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         )}
       </section>
       {editing && (
