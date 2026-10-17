@@ -153,6 +153,8 @@ test("admin edits templates in dialogs and applies/undoes batches without changi
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
     await dialog.getByLabel("Název šablony").fill(prefix);
+    await dialog.getByLabel("Platnost od (včetně)").fill(target);
+    await dialog.getByLabel("Platnost do (včetně)").fill(target);
     await dialog.getByRole("button", { name: /^Sobota/ }).click();
     await dialog
       .getByRole("group", { name: "Sobota", exact: true })

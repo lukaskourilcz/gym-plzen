@@ -33,6 +33,7 @@ async function template() {
       validTo: "2026-12-31",
     },
     null,
+    now,
   );
 }
 async function apply(id: string, dates = ["2026-10-24", "2026-10-25"]) {
@@ -175,6 +176,7 @@ describe("safe template blocking", { skip: !databaseReady }, () => {
         slots: [{ dayOfWeek: 6, startMinute: 375, endMinute: 450 }],
       },
       null,
+      now,
     );
     assert.equal(
       (
