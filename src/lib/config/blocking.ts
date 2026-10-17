@@ -35,6 +35,8 @@ export const blockTemplateSchema = z
   })
   .refine(
     (input) =>
+      isDateKey(input.validFrom) &&
+      isDateKey(input.validTo) &&
       input.validTo >= input.validFrom &&
       daysBetweenDateKeys(input.validFrom, input.validTo) <= 365,
     "Vyberte období od–do, nejvýše 366 dní.",
