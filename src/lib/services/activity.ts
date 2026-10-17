@@ -22,6 +22,8 @@ export const ACTIVITY_ACTIONS = {
   "payment.cancelled": "Platba neproběhla",
   "blocked_slot.created": "Termíny uzavřeny",
   "blocked_slot.deleted": "Uzavření zrušeno",
+  "blocked_slot.legacy_converted": "Původní rezervace převedena na blokaci",
+  "blocked_slot.legacy_finalized": "Převod původní blokace dokončen",
   "voucher.created": "Voucher vytvořen",
   "voucher.activated": "Voucher aktivován",
   "voucher.deactivated": "Voucher deaktivován",
