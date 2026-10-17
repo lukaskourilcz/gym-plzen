@@ -20,16 +20,27 @@ export const blockingSlotSchema = z
     "Konec musí být po začátku.",
   );
 export type BlockingSlot = z.infer<typeof blockingSlotSchema>;
-export const blockTemplateSchema = z.object({
-  id: z.string().uuid().optional(),
-  expectedUpdatedAt: z.string().datetime().optional(),
-  name: z.string().trim().min(2).max(120),
-  slots: z
-    .array(blockingSlotSchema)
-    .min(1, "Vyberte alespoň jeden slot.")
-    .max(350),
-});
 const date = z.string().refine(isDateKey, "Zadejte platné datum.");
+export const blockTemplateSchema = z
+  .object({
+    id: z.string().uuid().optional(),
+    expectedUpdatedAt: z.string().datetime().optional(),
+    name: z.string().trim().min(2).max(120),
+    validFrom: date,
+    validTo: date,
+    slots: z
+      .array(blockingSlotSchema)
+      .min(1, "Vyberte alespoň jeden slot.")
+      .max(350),
+  })
+  .refine(
+    (input) =>
+      isDateKey(input.validFrom) &&
+      isDateKey(input.validTo) &&
+      input.validTo >= input.validFrom &&
+      daysBetweenDateKeys(input.validFrom, input.validTo) <= 365,
+    "Vyberte období od–do, nejvýše 366 dní.",
+  );
 export const blockTargetSchema = z.discriminatedUnion("mode", [
   z.object({ mode: z.literal("range"), from: date, to: date }),
   z.object({ mode: z.literal("dates"), dates: z.array(date).min(1).max(366) }),

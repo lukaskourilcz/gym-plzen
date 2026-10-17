@@ -15,6 +15,115 @@ test.use({ storageState: join(process.cwd(), "tests/e2e/.auth/admin.json") });
 test.afterAll(async () => {
   await sql.end({ timeout: 2 });
 });
+test("template periods and edit conflict checks preserve existing reservations, PINs and applied batches", async ({
+  page,
+}) => {
+  let from = addDaysToDateKey(dateKeyInTimeZone(new Date()), 3);
+  while (dayOfWeek(localDateTimeToDate(from, 720)) !== 6)
+    from = addDaysToDateKey(from, 1);
+  const to = addDaysToDateKey(from, 1),
+    name = `Period-${randomUUID()}`,
+    bookingId = randomUUID();
+  await sql`insert into reservation(id,starts_at,ends_at,status,contact_name,contact_email) values(${bookingId},${localDateTimeToDate(from, 300)},${localDateTimeToDate(from, 375)},'confirmed','Synthetic customer','customer@example.test')`;
+  await sql`insert into access_code(reservation_id,code_hash,valid_from,valid_until,status) values(${bookingId},'synthetic-only',${localDateTimeToDate(from, 300)},${localDateTimeToDate(from, 390)},'scheduled')`;
+  const reservations = await sql`select * from reservation order by id`,
+    codes = await sql`select * from access_code order by id`,
+    messages = await sql`select * from message_delivery order by id`;
+  let templateId: string | undefined, batchId: string | undefined;
+  try {
+    await page.goto("/admin/blocking");
+    await page
+      .getByRole("button", { name: "Přidat šablonu", exact: true })
+      .click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByLabel("Název šablony").fill(name);
+    await dialog.getByLabel("Platnost od (včetně)").fill(from);
+    await dialog.getByLabel("Platnost do (včetně)").fill(to);
+    for (const day of ["Sobota", "Neděle"]) {
+      await dialog.getByRole("button", { name: new RegExp("^" + day) }).click();
+      await dialog
+        .getByRole("group", { name: day, exact: true })
+        .getByRole("button", { name: "05:00–06:15", exact: true })
+        .click();
+    }
+    await dialog
+      .getByRole("button", { name: "Zkontrolovat šablonu", exact: true })
+      .click();
+    await expect(dialog).toContainText("Překryvy s rezervacemi: 1.");
+    await dialog
+      .getByRole("button", { name: "Uložit šablonu", exact: true })
+      .click();
+    await expect(dialog).toHaveCount(0);
+    const [template] =
+      await sql`select id from block_template where name=${name}`;
+    templateId = template!.id;
+    const card = page
+      .getByRole("heading", { name, exact: true })
+      .locator('xpath=ancestor::div[contains(@class,"rounded")][1]');
+    await card.getByRole("button", { name: "Použít", exact: true }).click();
+    await expect(dialog.getByLabel("Od (včetně)", { exact: true })).toHaveValue(
+      from,
+    );
+    await expect(dialog.getByLabel("Do (včetně)", { exact: true })).toHaveValue(
+      to,
+    );
+    await expect(
+      dialog.getByLabel("Do (včetně)", { exact: true }),
+    ).toHaveAttribute("max", to);
+    await dialog
+      .getByRole("button", { name: "Zobrazit náhled", exact: true })
+      .click();
+    await dialog
+      .getByRole("button", {
+        name: "Zablokovat vybrané sloty (2)",
+        exact: true,
+      })
+      .click();
+    await expect(dialog).toHaveCount(0);
+    const [batch] =
+      await sql`select id,snapshot from block_application where snapshot->'templates' @> ${sql.json([{ id: templateId }])}`;
+    batchId = batch!.id;
+    await card.getByRole("button", { name: "Upravit", exact: true }).click();
+    await dialog
+      .getByLabel("Platnost do (včetně)")
+      .fill(addDaysToDateKey(to, 1));
+    await dialog
+      .getByRole("button", { name: "Zkontrolovat šablonu", exact: true })
+      .click();
+    await expect(dialog).toContainText("Překryvy s rezervacemi: 1.");
+    await dialog
+      .getByRole("button", { name: "Uložit šablonu", exact: true })
+      .click();
+    await expect(dialog).toHaveCount(0);
+    expect(
+      (
+        await sql`select snapshot from block_application where id=${batchId!}`
+      )[0]!.snapshot,
+    ).toEqual(batch!.snapshot);
+    expect(await sql`select * from reservation order by id`).toEqual(
+      reservations,
+    );
+    expect(await sql`select * from access_code order by id`).toEqual(codes);
+    expect(await sql`select * from message_delivery order by id`).toEqual(
+      messages,
+    );
+    await page.setViewportSize({ width: 390, height: 844 });
+    await card.getByRole("button", { name: "Upravit", exact: true }).click();
+    await expect(dialog.getByLabel("Platnost od (včetně)")).toBeVisible();
+    expect(
+      (await new AxeBuilder({ page }).include("dialog").analyze()).violations,
+    ).toEqual([]);
+    await page.screenshot({ path: "/tmp/gym-template-period-mobile.png" });
+  } finally {
+    if (batchId) {
+      await sql`delete from blocked_slot where application_id=${batchId}`;
+      await sql`delete from block_application where id=${batchId}`;
+    }
+    if (templateId)
+      await sql`delete from block_template where id=${templateId}`;
+    await sql`delete from reservation where id=${bookingId}`;
+  }
+});
 
 test("admin edits templates in dialogs and applies/undoes batches without changing customers, codes or sending messages", async ({
   page,
@@ -44,6 +153,8 @@ test("admin edits templates in dialogs and applies/undoes batches without changi
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
     await dialog.getByLabel("Název šablony").fill(prefix);
+    await dialog.getByLabel("Platnost od (včetně)").fill(target);
+    await dialog.getByLabel("Platnost do (včetně)").fill(target);
     await dialog.getByRole("button", { name: /^Sobota/ }).click();
     await dialog
       .getByRole("group", { name: "Sobota", exact: true })
@@ -64,6 +175,9 @@ test("admin edits templates in dialogs and applies/undoes batches without changi
     expect(
       (await new AxeBuilder({ page }).include("dialog").analyze()).violations,
     ).toEqual([]);
+    await dialog
+      .getByRole("button", { name: "Zkontrolovat šablonu", exact: true })
+      .click();
     await dialog
       .getByRole("button", { name: "Uložit šablonu", exact: true })
       .click();

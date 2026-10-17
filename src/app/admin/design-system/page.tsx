@@ -67,6 +67,7 @@ export default async function DesignSystemPage() {
     <div>
       <PageHeader
         title="Design systém"
+        detail="Doplňující kontext"
         description="Referenční galerie komponent. Pravidla a tokeny jsou v docs/DESIGN_SYSTEM.md."
       />
       <section aria-label="Typ zákazníka" className="my-6 flex flex-wrap gap-3">

@@ -28,6 +28,12 @@ const contentSecurityPolicy = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  webpack(config) {
+    // Isolated browser builds are disposable. Do not fill the workstation
+    // with a second gigabyte of persistent compilation cache.
+    if (process.env.E2E_LOCAL_AUTH === "true") config.cache = false;
+    return config;
+  },
   /*
    * Payment documents embed Bitter so their Czech diacritics survive (the
    * standard PDF fonts are WinAnsi and have no ě, š, č, ř, ž or ů). The files

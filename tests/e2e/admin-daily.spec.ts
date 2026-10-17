@@ -17,6 +17,27 @@ test.use({ storageState: join(process.cwd(), "tests/e2e/.auth/admin.json") });
 test.afterAll(async () => {
   await sql.end({ timeout: 2 });
 });
+test("daily headings keep the date smaller and regular inside one H1", async ({
+  page,
+}) => {
+  for (const path of ["/admin", "/admin/tomorrow"]) {
+    await page.goto(path);
+    const h1 = page.getByRole("heading", { level: 1 });
+    await expect(h1).toHaveCount(1);
+    const styles = await h1.evaluate((element) => {
+      const detail = element.querySelector("span")!;
+      return {
+        titleSize: parseFloat(getComputedStyle(element).fontSize),
+        detailSize: parseFloat(getComputedStyle(detail).fontSize),
+        detailWeight: getComputedStyle(detail).fontWeight,
+        text: detail.textContent,
+      };
+    });
+    expect(styles.detailSize).toBeLessThan(styles.titleSize);
+    expect(styles.detailWeight).toBe("400");
+    expect(styles.text).toMatch(/^\| /);
+  }
+});
 async function unchanged(before: unknown[], emails: number) {
   expect(await sql`select * from reservation order by id`).toEqual(before);
   expect((await sql`select count(*)::int as n from email_archive`)[0]!.n).toBe(

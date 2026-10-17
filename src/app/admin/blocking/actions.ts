@@ -16,6 +16,7 @@ import {
   cancelBlockApplication,
   previewBlockApplication,
   saveBlockTemplate,
+  previewBlockTemplate,
 } from "@/lib/services/blocking";
 
 function refresh() {
@@ -28,7 +29,9 @@ function refresh() {
     revalidatePath(path);
 }
 const save = defineAction({
-  schema: blockTemplateSchema,
+  schema: blockTemplateSchema.and(
+    z.object({ fingerprint: z.string().regex(/^[a-f0-9]{64}$/) }),
+  ),
   authorize: assertAdmin,
   handler: async (input, admin) => {
     const template = await saveBlockTemplate(input, admin.id);
@@ -40,6 +43,11 @@ const preview = defineAction({
   schema: blockPreviewSchema,
   authorize: assertAdmin,
   handler: (input) => previewBlockApplication(input),
+});
+const templatePreview = defineAction({
+  schema: blockTemplateSchema,
+  authorize: assertAdmin,
+  handler: (input) => previewBlockTemplate(input),
 });
 const apply = defineAction({
   schema: blockApplySchema,
@@ -59,8 +67,13 @@ const cancel = defineAction({
     return result;
   },
 });
-export async function saveBlockTemplateAction(input: BlockTemplateInput) {
+export async function saveBlockTemplateAction(
+  input: BlockTemplateInput & { fingerprint: string },
+) {
   return save(input);
+}
+export async function previewBlockTemplateAction(input: BlockTemplateInput) {
+  return templatePreview(input);
 }
 export async function previewBlockApplicationAction(input: BlockPreviewInput) {
   return preview(input);

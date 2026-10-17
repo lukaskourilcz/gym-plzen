@@ -24,6 +24,7 @@ import { formatDateTime } from "@/lib/helpers/format";
 import type { BlockPreview } from "@/lib/services/blocking";
 import {
   saveBlockTemplateAction,
+  previewBlockTemplateAction,
   previewBlockApplicationAction,
   applyBlockTemplatesAction,
   cancelBlockApplicationAction,
@@ -57,10 +58,16 @@ type Template = {
   name: string;
   slots: BlockingSlot[];
   updatedAt: string;
+  validFrom: string | null;
+  validTo: string | null;
 };
 type Application = {
   id: string;
-  snapshot: BlockPreview["snapshot"];
+  snapshot: {
+    templates: { id: string; name: string; slots: BlockingSlot[] }[];
+    windows: BlockPreview["snapshot"]["windows"];
+    source?: "legacy_reservation";
+  };
   createdAt: string;
   cancelledAt: string | null;
 };
@@ -117,6 +124,11 @@ export function BlockingManager({
                 <CardTitle>{template.name}</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col gap-4">
+                <p className="text-sm text-muted-foreground">
+                  {template.validFrom && template.validTo
+                    ? `Platí od ${template.validFrom} do ${template.validTo} včetně.`
+                    : "Období není nastavené. Nejprve šablonu upravte."}
+                </p>
                 <ul className="flex-1 space-y-2 text-sm">
                   {WEEK.filter((day) =>
                     template.slots.some((slot) => slot.dayOfWeek === day),
@@ -143,7 +155,14 @@ export function BlockingManager({
                   </p>
                 )}
                 <div className="flex flex-wrap gap-2">
-                  <Button onClick={() => setUsing([template.id])}>
+                  <Button
+                    disabled={
+                      !template.validFrom ||
+                      !template.validTo ||
+                      template.validTo < today
+                    }
+                    onClick={() => setUsing([template.id])}
+                  >
                     Použít
                   </Button>
                   <Button
@@ -191,7 +210,10 @@ export function BlockingManager({
                     <p className="font-semibold">
                       {application.snapshot.templates
                         .map((template) => template.name)
-                        .join(" + ") || "Výběr v kalendáři"}
+                        .join(" + ") ||
+                        (application.snapshot.source === "legacy_reservation"
+                          ? "Převedená původní blokace"
+                          : "Výběr v kalendáři")}
                     </p>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {application.snapshot.windows.length} slotů ·{" "}
@@ -227,6 +249,7 @@ export function BlockingManager({
         <TemplateDialog
           template={editing === "new" ? null : editing}
           hours={hours}
+          today={today}
           onClose={() => setEditing(null)}
           onSaved={() => {
             setEditing(null);
@@ -300,15 +323,22 @@ export function BlockingManager({
 function TemplateDialog({
   template,
   hours,
+  today,
   onClose,
   onSaved,
 }: {
   template: Template | null;
   hours: BlockingHours[];
+  today: string;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const [name, setName] = useState(template?.name ?? "");
+  const [validFrom, setValidFrom] = useState(template?.validFrom ?? today);
+  const [validTo, setValidTo] = useState(
+    template?.validTo ?? `${today.slice(0, 4)}-12-31`,
+  );
+  const [preview, setPreview] = useState<BlockPreview | null>(null);
   const [activeDay, setActiveDay] = useState(
     template?.slots[0]?.dayOfWeek ?? 1,
   );
@@ -320,26 +350,48 @@ function TemplateDialog({
   return (
     <AdminDialog
       title={template ? "Upravit šablonu" : "Přidat šablonu"}
-      description="Vyberte konkrétní sloty pro jednotlivé dny. Uložení šablony zatím žádné termíny neblokuje."
+      description="Vyberte období a sloty. Před uložením zkontrolujeme překryvy. Již použité blokace, rezervace i jejich kódy se při úpravě nemění."
       onClose={() => {
         if (!pending) onClose();
       }}
     >
       <form
         className="grid gap-5"
+        onChange={() => {
+          setPreview(null);
+          setError("");
+        }}
         onSubmit={(event) => {
           event.preventDefault();
           start(async () => {
-            const result = await safeAction(() =>
-              saveBlockTemplateAction({
-                id: template?.id,
-                expectedUpdatedAt: template?.updatedAt,
-                name,
-                slots,
-              }),
-            );
-            if (result.ok) onSaved();
-            else setError(result.error);
+            const input = {
+              id: template?.id,
+              expectedUpdatedAt: template?.updatedAt,
+              name,
+              slots,
+              validFrom,
+              validTo,
+            };
+            setError("");
+            if (!preview) {
+              const result = await safeAction(() =>
+                previewBlockTemplateAction(input),
+              );
+              if (result.ok) setPreview(result.data);
+              else setError(result.error);
+            } else {
+              const result = await safeAction(() =>
+                saveBlockTemplateAction({
+                  ...input,
+                  fingerprint: preview.fingerprint,
+                }),
+              );
+              if (result.ok) onSaved();
+              else {
+                setError(result.error);
+                setPreview(null);
+              }
+            }
           });
         }}
       >
@@ -355,6 +407,29 @@ function TemplateDialog({
             onChange={(event) => setName(event.target.value)}
             className="mt-2"
           />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="template-valid-from">Platnost od (včetně)</Label>
+            <Input
+              id="template-valid-from"
+              type="date"
+              required
+              value={validFrom}
+              onChange={(event) => setValidFrom(event.target.value)}
+            />
+          </div>
+          <div>
+            <Label htmlFor="template-valid-to">Platnost do (včetně)</Label>
+            <Input
+              id="template-valid-to"
+              type="date"
+              required
+              min={validFrom}
+              value={validTo}
+              onChange={(event) => setValidTo(event.target.value)}
+            />
+          </div>
         </div>
         <fieldset>
           <legend className="mb-2 text-sm font-semibold">
@@ -435,15 +510,17 @@ function TemplateDialog({
                         key={key}
                         type="button"
                         aria-pressed={checked}
-                        onClick={() =>
+                        onClick={() => {
+                          setPreview(null);
+                          setError("");
                           setSlots((value) =>
                             checked
                               ? value.filter(
                                   (item) => blockSlotKey(item) !== key,
                                 )
                               : [...value, slot],
-                          )
-                        }
+                          );
+                        }}
                         className={cn(
                           "flex min-h-11 items-center justify-center gap-2 rounded-md border px-2 py-2 text-sm font-medium transition-colors active:scale-[.98] motion-reduce:transform-none",
                           checked
@@ -480,9 +557,27 @@ function TemplateDialog({
           Vybráno slotů v týdnu: {slots.length}. Úprava platí jen pro další
           použití šablony.
         </p>
+        {preview && (
+          <Notice tone="info" title={`Kontrola období: ${preview.count} slotů`}>
+            <p>
+              Překryvy s rezervacemi:{" "}
+              {
+                preview.conflicts.filter(
+                  (item) => item.reservationIds.length > 0,
+                ).length
+              }
+              . Existující rezervace, jejich kódy a doručení zůstanou beze
+              změny. Uložení šablony žádné blokace samo nevytvoří.
+            </p>
+          </Notice>
+        )}
         <div className="flex flex-wrap gap-3">
           <Button type="submit" disabled={pending || !slots.length}>
-            {pending ? "Ukládám…" : "Uložit šablonu"}
+            {pending
+              ? "Kontroluji…"
+              : preview
+                ? "Uložit šablonu"
+                : "Zkontrolovat šablonu"}
           </Button>
           <Button variant="outline" disabled={pending} onClick={onClose}>
             Zrušit
@@ -493,6 +588,15 @@ function TemplateDialog({
   );
 }
 
+function periodBounds(templates: Template[], ids: string[], today: string) {
+  const selected = templates.filter((template) => ids.includes(template.id));
+  return {
+    from: [today, ...selected.map((t) => t.validFrom ?? today)].sort().at(-1)!,
+    to: selected.length
+      ? selected.map((t) => t.validTo ?? today).sort()[0]!
+      : `${today.slice(0, 4)}-12-31`,
+  };
+}
 function ApplyDialog({
   selectedIds,
   templates,
@@ -507,9 +611,10 @@ function ApplyDialog({
   onSaved: (count: number) => void;
 }) {
   const [ids, setIds] = useState(selectedIds);
+  const bounds = periodBounds(templates, ids, today);
   const [mode, setMode] = useState<"range" | "dates">("range");
-  const [from, setFrom] = useState(today),
-    [to, setTo] = useState(`${today.slice(0, 4)}-12-31`);
+  const [from, setFrom] = useState(bounds.from),
+    [to, setTo] = useState(bounds.to);
   const [date, setDate] = useState(today),
     [dates, setDates] = useState<string[]>([]);
   const [preview, setPreview] = useState<BlockPreview | null>(null);
@@ -564,18 +669,31 @@ function ApplyDialog({
               >
                 <input
                   type="checkbox"
+                  disabled={
+                    !template.validFrom ||
+                    !template.validTo ||
+                    template.validTo < today
+                  }
                   checked={ids.includes(template.id)}
                   onChange={(event) => {
                     changed();
-                    setIds((value) =>
-                      event.target.checked
-                        ? [...value, template.id]
-                        : value.filter((id) => id !== template.id),
-                    );
+                    const next = event.target.checked
+                      ? [...ids, template.id]
+                      : ids.filter((id) => id !== template.id);
+                    setIds(next);
+                    const period = periodBounds(templates, next, today);
+                    setFrom(period.from);
+                    setTo(period.to);
+                    setDates([]);
                   }}
                   className="size-4 accent-primary"
                 />
                 {template.name}
+                <span className="text-xs text-muted-foreground">
+                  {template.validFrom && template.validTo
+                    ? `${template.validFrom} až ${template.validTo}`
+                    : "Nejprve nastavte období"}
+                </span>
               </label>
             ))}
           </fieldset>
@@ -612,7 +730,8 @@ function ApplyDialog({
                 <Input
                   id="block-from"
                   type="date"
-                  min={today}
+                  min={bounds.from}
+                  max={bounds.to}
                   required
                   value={from}
                   onChange={(event) => {
@@ -627,6 +746,7 @@ function ApplyDialog({
                   id="block-to"
                   type="date"
                   min={from}
+                  max={bounds.to}
                   required
                   value={to}
                   onChange={(event) => {
@@ -641,10 +761,10 @@ function ApplyDialog({
                 variant="outline"
                 onClick={() => {
                   changed();
-                  setTo(`${from.slice(0, 4)}-12-31`);
+                  setTo(bounds.to);
                 }}
               >
-                Do konce roku
+                Do konce platnosti
               </Button>
             </div>
           ) : (
@@ -654,7 +774,8 @@ function ApplyDialog({
                 <Input
                   id="block-date"
                   type="date"
-                  min={today}
+                  min={bounds.from}
+                  max={bounds.to}
                   value={date}
                   onChange={(event) => setDate(event.target.value)}
                 />
