@@ -180,6 +180,11 @@ export default async function PricingPage({
         description="Cena jednoho dospělého podle času a příplatek za doprovod. Změny platí pro nové nákupy, uložené rezervace si zachovají svou cenu."
       />
 
+      <p className="mb-4 text-sm text-muted-foreground">
+        Přednost má cenové období podle data návštěvy. Mimo něj platí cena
+        časového bloku, případně standardní cena. Nový ceník tak můžete nastavit
+        předem, aniž by přepsal probíhající akci.
+      </p>
       <BlockPrices hours={pricingHours} rules={blockRules} />
       <Card className="mb-8">
         <CardHeader>
@@ -244,7 +249,7 @@ export default async function PricingPage({
           <CardTitle>Cenová období</CardTitle>
           <CardDescription>
             Naplánujte libovolné měsíce nebo vlastní rozsahy. Období se nesmí
-            překrývat. Ceny konkrétních časových bloků mají přednost.
+            překrývat. Cena období má přednost před cenami časových bloků.
           </CardDescription>
         </CardHeader>
         <CardContent>

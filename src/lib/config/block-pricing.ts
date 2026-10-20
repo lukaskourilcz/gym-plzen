@@ -48,7 +48,7 @@ export function parseBlockPrices(value: unknown): BlockPrice[] {
   const parsed = z.array(blockPriceSchema).safeParse(value);
   return parsed.success ? parsed.data : [];
 }
-/** Explicit block price takes precedence over the date period and fallback. */
+/** Resolve the permanent price; the caller gives date periods first priority. */
 export function resolveBlockPrice(
   at: Date,
   rules: readonly BlockPrice[],

@@ -20,7 +20,6 @@ import {
 import {
   BLOCK_PRICING_KEY,
   parseBlockPrices,
-  resolveBlockPrice,
   type BlockPrice,
   type PricingHours,
 } from "@/lib/config/block-pricing";
@@ -538,16 +537,13 @@ export async function loadSiteContent(
     get: (key) => rebrand(fillPrices(values[key] ?? SITE_DEFAULTS[key] ?? "")),
     entryPriceCents: price.priceCents,
     entryPriceForDate: (at) =>
-      resolveBlockPrice(
-        at,
+      resolveEntryPrice({
+        standardPriceCents: standardEntryPriceCents,
+        periods: pricingPeriods,
         blockPrices,
-        pricingHours,
-        resolveEntryPrice({
-          standardPriceCents: standardEntryPriceCents,
-          periods: pricingPeriods,
-          at,
-        }).priceCents,
-      ),
+        hours: pricingHours,
+        at,
+      }).priceCents,
     standardEntryPriceCents: price.standardPriceCents,
     isPromoPrice: price.isPromo,
     promoEndsAt: price.promoEndsAt ?? null,

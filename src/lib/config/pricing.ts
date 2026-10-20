@@ -9,6 +9,12 @@
  * admin (stored under the `pricing.entry` site setting : see cms.getSetting).
  */
 
+import {
+  resolveBlockPrice,
+  type BlockPrice,
+  type PricingHours,
+} from "./block-pricing";
+
 /** Default price of a single entry, in the smallest currency unit (haléř). */
 export const DEFAULT_ENTRY_PRICE_CENTS = 22_900; // 229 Kč
 
@@ -80,6 +86,9 @@ function isInstant(value: unknown): value is Date {
  */
 export function resolveEntryPrice(params: {
   standardPriceCents: number;
+  /** Permanent time-block prices apply only outside a matching period. */
+  blockPrices?: readonly BlockPrice[];
+  hours?: readonly PricingHours[];
   periods?: readonly PricingWindow[];
   /** Compatibility input for callers that still provide a single period. */
   promo?: PromoWindow | null;
@@ -114,5 +123,13 @@ export function resolveEntryPrice(params: {
     };
   }
 
-  return { priceCents: standardPriceCents, standardPriceCents, isPromo: false };
+  const priceCents = isInstant(at)
+    ? resolveBlockPrice(
+        at,
+        params.blockPrices ?? [],
+        params.hours ?? [],
+        standardPriceCents,
+      )
+    : standardPriceCents;
+  return { priceCents, standardPriceCents, isPromo: false };
 }

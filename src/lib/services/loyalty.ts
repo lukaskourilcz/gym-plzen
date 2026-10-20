@@ -2,7 +2,6 @@ import { and, count, eq, inArray, isNotNull, ne } from "drizzle-orm";
 import { db, type DatabaseExecutor } from "@/lib/db";
 import { reservation, openingHours } from "@/lib/db/schema";
 import { listBlockPrices } from "./block-pricing";
-import { resolveBlockPrice } from "@/lib/config/block-pricing";
 import {
   DEFAULT_ENTRY_PRICE_CENTS,
   ENTRY_PRICE_SETTING_KEY,
@@ -188,15 +187,13 @@ export async function getEntryPrice(at: Date): Promise<EntryPrice> {
     listBlockPrices(),
     db.select().from(openingHours),
   ]);
-  const price = resolveEntryPrice({
+  return resolveEntryPrice({
     standardPriceCents,
     periods: period ? [period] : [],
+    blockPrices: rules,
+    hours,
     at,
   });
-  const priceCents = resolveBlockPrice(at, rules, hours, price.priceCents);
-  return priceCents === price.priceCents
-    ? price
-    : { priceCents, standardPriceCents, isPromo: false };
 }
 
 /** Price for the requested visit start. */
