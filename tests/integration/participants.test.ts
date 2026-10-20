@@ -272,7 +272,7 @@ describe(
       assert.equal(resend.sent.length, 0);
       assert.equal(comgate.creates.length, 1);
     });
-    test("block price overrides date price; public calendar and checkout agree", async () => {
+    test("date price overrides block price; public calendar and checkout agree", async () => {
       const at = slot();
       const adminId = MEMBER.id;
       await rows(
@@ -288,8 +288,8 @@ describe(
         },
         adminId,
       );
-      assert.equal(await getEntryPriceCents(at), 19_900);
-      assert.equal((await loadSiteContent()).entryPriceForDate(at), 19_900);
+      assert.equal(await getEntryPriceCents(at), 15_000);
+      assert.equal((await loadSiteContent()).entryPriceForDate(at), 15_000);
       assert.equal(await getEntryPriceCents(slot(5, 720)), 15_000);
       await assert.rejects(
         saveBlockPrice(

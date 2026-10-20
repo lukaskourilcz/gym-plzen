@@ -25,7 +25,6 @@ import {
 import {
   BLOCK_PRICING_KEY,
   parseBlockPrices,
-  resolveBlockPrice,
   type PricingHours,
 } from "@/lib/config/block-pricing";
 import {
@@ -126,17 +125,14 @@ export async function loadCalendarAvailability(
     const rules = parseBlockPrices(stored.get(BLOCK_PRICING_KEY));
     const standard = stored.get(ENTRY_PRICE_SETTING_KEY);
     const priceForDate = (at: Date) =>
-      resolveBlockPrice(
-        at,
-        rules,
+      resolveEntryPrice({
+        standardPriceCents:
+          typeof standard === "number" ? standard : DEFAULT_ENTRY_PRICE_CENTS,
+        periods,
+        blockPrices: rules,
         hours,
-        resolveEntryPrice({
-          standardPriceCents:
-            typeof standard === "number" ? standard : DEFAULT_ENTRY_PRICE_CENTS,
-          periods,
-          at,
-        }).priceCents,
-      );
+        at,
+      }).priceCents;
     const busy = [
       ...bookings,
       ...blocks,

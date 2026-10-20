@@ -111,7 +111,7 @@ describe(
             slot.startISO ===
             localDateTimeToDate("2026-10-25", 600).toISOString(),
         )?.priceCents,
-        32900,
+        19900,
       );
       assert.equal(
         snapshot.view.selectedSlots.find(

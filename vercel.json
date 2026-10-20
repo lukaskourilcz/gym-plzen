@@ -22,7 +22,8 @@
       "codex/required-phone-members": false,
       "codex/calendar-blocking-evening": false,
       "codex/blocking-periods-legacy-cleanup": false,
-      "codex/compact-blocking-history": false
+      "codex/compact-blocking-history": false,
+      "codex/period-price-priority": false
     }
   },
   "regions": ["cdg1"]

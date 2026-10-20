@@ -183,6 +183,7 @@ try {
           "accessibility.spec.ts",
           "outage.spec.ts",
           "pricing-participants.spec.ts",
+          "price-period-priority.spec.ts",
           "participants-toggle.spec.ts",
         ]),
   ]);

@@ -12,7 +12,8 @@ Větev: `codex/block-pricing-guests`. Výchozí stav GitHub `main`:
   „Přidat cenový blok“ i „Upravit“ otevřou dialog s dnem, časem od/do a cenou.
   Každý den může mít několik cenových rozsahů. Dialog lze zavřít pomocí Escape,
   křížku nebo zrušení; fokus se vrátí na původní tlačítko.
-- Cena konkrétního bloku má přednost před cenovým obdobím a standardní cenou.
+- Od úpravy z 20. 10. 2026 má cenové období podle začátku návštěvy přednost
+  před cenou konkrétního bloku; standardní cena je poslední záloha.
   Po změně otevírací doby se nezarovnané cenové rozsahy viditelně označí a
   přestanou platit, dokud je správce neopraví. Nic se automaticky neposouvá.
 - **Přepínač Doprovod a příplatky:** v kartě Doprovod se ukládá ihned,
