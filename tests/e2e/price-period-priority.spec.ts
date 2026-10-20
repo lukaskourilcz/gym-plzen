@@ -42,7 +42,7 @@ test("calendar and multi-date details use period priority, while admin explains 
     ] as const) {
       await page.goto(`/rezervace?date=${date}`);
       await expect(
-        page.getByRole("button", { name: new RegExp(`10:00.*${amount}`) }),
+        page.getByRole("button", { name: new RegExp(`^10:00.*${amount}`) }),
       ).toBeVisible();
       const response = await page.request.get(
         `/api/availability/calendar?date=${date}`,
