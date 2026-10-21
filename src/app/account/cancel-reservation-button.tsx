@@ -1,109 +1,142 @@
 "use client";
 
-import { useId, useRef, useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { FormFeedback } from "@/components/admin/form-controls";
+import { Dialog } from "@/components/ui/dialog";
+import {
+  cancellationPrice,
+  type CancellationPrice,
+} from "@/lib/config/customer-cancellation";
+import { receiveAction } from "@/lib/helpers/action-response";
 import { cancelMyReservationAction } from "./actions";
 
-/**
- * Two-step storno of the customer's own booking (the same inline pattern as
- * the administration's cancel). The first click only opens the confirmation,
- * which says plainly that the price is not refunded; focus moves into it and
- * returns to the trigger when the booking is kept.
- */
 export function CancelReservationButton({
   reservationId,
   startsAtLabel,
+  price,
+  canReschedule,
+  insideCutoff,
 }: {
   reservationId: string;
-  /** "1. 10. 2026 · 10:00 – 11:15", so every row's control reads differently. */
   startsAtLabel: string;
+  price: CancellationPrice;
+  canReschedule: boolean;
+  insideCutoff: boolean;
 }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
-  const trigger = useRef<HTMLDivElement>(null);
-  const noteId = useId();
-
-  function keep() {
-    setConfirming(false);
+  const [pending, setPending] = useState(false);
+  const [interrupted, setInterrupted] = useState(false);
+  const amount = cancellationPrice(price);
+  async function cancel() {
+    if (pending || interrupted) return;
+    setPending(true);
     setError(null);
-    requestAnimationFrame(() =>
-      trigger.current?.querySelector("button")?.focus(),
+    const response = await receiveAction(() =>
+      cancelMyReservationAction({ id: reservationId }),
     );
+    if (!response.received) {
+      setPending(false);
+      setInterrupted(true);
+      setError(
+        "Výsledek storna se nepodařilo načíst. Rezervace už mohla být zrušena. Zkontrolujte její stav v účtu; storno nyní neopakujte.",
+      );
+      return;
+    }
+    if (!response.result.ok) {
+      setPending(false);
+      setError(response.result.error);
+      return;
+    }
+    router.push("/account?storno=hotovo&view=history");
   }
-
-  function cancel() {
-    setError(null);
-    startTransition(async () => {
-      const result = await cancelMyReservationAction({ id: reservationId });
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-      router.replace("/account?storno=hotovo");
-      router.refresh();
-    });
-  }
-
-  if (!confirming)
-    return (
-      <div ref={trigger}>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          aria-label={`Zrušit rezervaci ${startsAtLabel}`}
-          onClick={() => setConfirming(true)}
-        >
-          Zrušit rezervaci
-        </Button>
-      </div>
-    );
-
   return (
-    <div
-      role="group"
-      aria-label={`Zrušení rezervace ${startsAtLabel}`}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") {
-          event.preventDefault();
-          keep();
-        }
-      }}
-      className="mt-3 w-full rounded-md border border-destructive/40 bg-destructive/5 p-4"
-    >
-      <p id={noteId} className="text-sm">
-        Termín se uvolní pro ostatní a vstupní kód přestane platit.{" "}
-        <strong>Zaplacená cena se nevrací.</strong> Pokud chcete jen jiný čas,
-        použijte raději změnu termínu.
-      </p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Button
-          type="button"
-          variant="destructive"
-          size="sm"
-          // Focus moves into the confirmation the click opened.
-          autoFocus
-          disabled={pending}
-          aria-describedby={noteId}
-          onClick={cancel}
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        aria-label={`Zrušit rezervaci ${startsAtLabel}`}
+        onClick={() => {
+          setConfirming(true);
+          setError(null);
+          setInterrupted(false);
+        }}
+      >
+        Zrušit rezervaci
+      </Button>
+      {confirming ? (
+        <Dialog
+          title="Zrušit tuto rezervaci?"
+          description={startsAtLabel}
+          busy={pending}
+          onClose={() => setConfirming(false)}
         >
-          {pending ? "Ruším…" : "Ano, zrušit bez vrácení platby"}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={pending}
-          onClick={keep}
-        >
-          Ponechat rezervaci
-        </Button>
-      </div>
-      <FormFeedback error={error} />
-    </div>
+          <div className="mt-5 rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm leading-6">
+            <p>
+              Rezervace přestane platit a termín se po ověřeném odebrání
+              vstupního kódu uvolní pro ostatní. Původní kód už nepoužívejte.
+            </p>
+            <p className="mt-3 font-bold">{amount.note}</p>
+            {insideCutoff ? (
+              <p className="mt-3">
+                Do začátku zbývá méně než 24 hodin. Změna termínu už není možná.
+              </p>
+            ) : null}
+          </div>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Zrušíte pouze tento termín. Ostatní rezervace z objednávky zůstanou
+            platné. Potvrzení storna pošleme e-mailem.
+          </p>
+          {canReschedule && !interrupted && !pending ? (
+            <Button
+              href={`/account/rezervace/${reservationId}/zmenit`}
+              variant="outline"
+              className="mt-4"
+            >
+              Raději změnit termín
+            </Button>
+          ) : null}
+          {error ? (
+            <p role="alert" className="mt-4 text-sm font-bold text-destructive">
+              {error}
+            </p>
+          ) : null}
+          {interrupted ? (
+            <a
+              href="/account?view=history"
+              className="mt-4 inline-flex min-h-11 items-center font-bold underline"
+            >
+              Zkontrolovat rezervaci v účtu
+            </a>
+          ) : null}
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Button
+              data-initial-focus
+              type="button"
+              variant="outline"
+              disabled={pending}
+              onClick={() => setConfirming(false)}
+            >
+              Ponechat rezervaci
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={pending || interrupted}
+              onClick={cancel}
+            >
+              {pending
+                ? "Ruším…"
+                : amount.amount === 0
+                  ? "Ano, zrušit rezervaci"
+                  : "Ano, zrušit bez vrácení platby"}
+            </Button>
+          </div>
+        </Dialog>
+      ) : null}
+    </>
   );
 }
