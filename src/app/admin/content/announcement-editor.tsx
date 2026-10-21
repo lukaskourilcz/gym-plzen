@@ -188,9 +188,7 @@ export function AnnouncementEditor({
         <AdminDialog
           title={`Upravit: ${labels[editing]}`}
           description="Uložený text se projeví v náhledu i na webu, pokud je lišta zapnutá."
-          onClose={() => {
-            if (!saving) setEditing(null);
-          }}
+          onClose={() => setEditing(null)}
         >
           <form
             onSubmit={(event) => {
