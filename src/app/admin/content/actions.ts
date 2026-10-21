@@ -1,5 +1,6 @@
 "use server";
 
+import { loadSiteContent, SITE_DEFAULTS } from "@/lib/content/site";
 import { contentAssetSchema } from "@/lib/validations/content-asset";
 
 import { revalidatePath } from "next/cache";
@@ -79,12 +80,21 @@ const savePublicTextImpl = defineAction({
       "/admin/content",
     ])
       revalidatePath(path);
+    const content = await loadSiteContent("cs", { strict: true });
+    return {
+      texts: Object.fromEntries(
+        Object.keys(SITE_DEFAULTS).map((key) => [
+          key,
+          content.get(key as keyof typeof SITE_DEFAULTS),
+        ]),
+      ),
+    };
   },
 });
 
 export async function savePublicTextAction(
   input: EditPublicTextValues,
-): Promise<Result<unknown>> {
+): Promise<Result<{ texts: Record<string, string> }>> {
   return savePublicTextImpl(input);
 }
 

@@ -1,3 +1,4 @@
+import { formatMoney } from "@/lib/helpers/format";
 import { requireAdmin } from "@/lib/auth/guards";
 import { loadSiteContent, SITE_DEFAULTS } from "@/lib/content/site";
 import { PageHeader } from "@/components/admin/page-header";
@@ -47,9 +48,24 @@ export default async function ContentPage() {
     <div>
       <PageHeader
         title="Obsah webu"
-        description="Vyberte část webu podle náhledu. Na jednom místě upravíte její texty i fotografie a najdete související nastavení."
+        description="Vyberte část webu a upravte text nebo fotografii tužkou přímo v jejím rozložení."
       />
-      <ContentEditor values={values} assets={assets} />
+      <ContentEditor
+        values={values}
+        assets={assets}
+        preview={{
+          texts: Object.fromEntries(
+            Object.keys(SITE_DEFAULTS).map((key) => [
+              key,
+              content.get(key as keyof typeof SITE_DEFAULTS),
+            ]),
+          ),
+          price: formatMoney(content.entryPriceCents),
+          hours: content.openingHoursLabel,
+          freeEntryEvery: content.freeEntryEvery,
+          isPromo: content.isPromoPrice,
+        }}
+      />
     </div>
   );
 }
