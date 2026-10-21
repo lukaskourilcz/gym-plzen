@@ -195,6 +195,11 @@ export function PreviewReservationCard({
                 variant="outline"
                 size="sm"
                 aria-pressed={s.startISO === replacement}
+                className={
+                  s.startISO === replacement
+                    ? "border-primary bg-primary/10 text-primary"
+                    : undefined
+                }
                 onClick={() => setReplacement(s.startISO)}
               >
                 {s.label}

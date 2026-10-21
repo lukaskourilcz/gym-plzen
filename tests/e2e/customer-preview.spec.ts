@@ -240,6 +240,9 @@ test.describe("independent preview reservations", () => {
         .first()
         .click();
     await page.getByRole("link", { name: /Pokračovat/ }).click();
+    await expect(
+      page.getByRole("heading", { name: "Údaje a rekapitulace" }),
+    ).toBeVisible();
     if (await page.getByLabel("Přijdu sám / sama").count())
       await page.getByLabel("Přijdu sám / sama").check();
     await page.getByLabel(/Souhlasím/).check();
