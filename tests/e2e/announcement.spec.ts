@@ -138,7 +138,7 @@ test("one banner supports both lines, one bold line, hiding and restoration with
     await page
       .getByRole("button", { name: "Uložit změny", exact: true })
       .click();
-    await expect(page.getByRole("alert")).toContainText(
+    await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
       "Zadejte hlavní text lišty.",
     );
     await page.keyboard.press("Escape");
@@ -195,7 +195,7 @@ test("unconfirmed save keeps the draft, blocks further writes and offers state v
       : route.continue(),
   );
   await page.getByRole("button", { name: "Uložit změny", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText(
+  await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
     "Uložení se nepodařilo potvrdit",
   );
   await expect(field).toHaveValue("Rozepsaný text při výpadku");

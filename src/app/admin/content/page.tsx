@@ -46,10 +46,7 @@ export default async function ContentPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Obsah webu"
-        description="Vyberte část webu a upravte text nebo fotografii tužkou přímo v jejím rozložení."
-      />
+      <PageHeader title="Obsah webu" />
       <ContentEditor
         announcement={content.announcement}
         values={values}

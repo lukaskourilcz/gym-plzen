@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 /** Prague calendar boundaries, including the October daylight-saving change. */
 export function openingAnnouncement(
   at: Date,
@@ -14,7 +16,6 @@ export function openingAnnouncement(
   }
   return null;
 }
-import { z } from "zod";
 
 export const ANNOUNCEMENT_SETTING_KEY = "content.announcement";
 /** Old CMS copy is retained only for a read-only fallback until the first save. */

@@ -103,19 +103,8 @@ export function ContentEditor({
           </Link>
         ))}
       </nav>
-      <section aria-labelledby="content-section-title" className="min-w-0">
-        <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2
-              id="content-section-title"
-              className="text-2xl font-bold tracking-tight"
-            >
-              {section.title}
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              {section.description}
-            </p>
-          </div>
+      <section aria-label={section.title} className="min-w-0">
+        <div className="mb-4 flex justify-end">
           <Button
             href={visual.href}
             target="_blank"
@@ -126,10 +115,6 @@ export function ContentEditor({
             <ArrowUpRight aria-hidden="true" />
           </Button>
         </div>
-        <p className="mb-4 text-sm leading-6 text-muted-foreground">
-          Vyberte tužku přímo u textu nebo fotografie. Uložená změna se zveřejní
-          na webu. Náhledové formuláře neslouží k rezervaci ani k odesílání.
-        </p>
         {visual.id === "opening" ? (
           <AnnouncementEditor initialValue={announcement} />
         ) : (
