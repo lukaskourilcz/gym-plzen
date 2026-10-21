@@ -1,8 +1,10 @@
 # Přehledná změna a zrušení rezervace — návrh
 
-Stav: návrh navazující na požadavek z 21. 10. 2026. Tato větev mění pouze
-administrátorský editor obsahu a rekapitulaci bezpečného zákaznického náhledu.
-Skutečné zákaznické operace popsané níže se zde nemění.
+Stav: implementováno v PR #256 v návaznosti na issues #257 a #258. Změny
+se aktivují až po nasazení a po výslovné zákaznické akci. Nasazení samo
+nepřepisuje rezervace, kódy, historická storna ani uložené e-mailové šablony.
+Není potřeba datová migrace. Testy používají výhradně místní oddělené databáze
+a náhrady poskytovatelů.
 
 ## Ověřený současný stav
 
@@ -14,9 +16,10 @@ Skutečné zákaznické operace popsané níže se zde nemění.
   Po začátku nejsou zákaznická změna ani storno dostupné.
 - Storno již má dvoukrokové potvrzení a obnovu fokusu. Oznámí nevrácení platby,
   zneplatní příslušný kód a uvolnění nesmí obejít ověření odebrání na zámku.
-- Existuje doručení storno e-mailu s ochranou proti duplicitám. Dnes používá
-  společnou šablonu „Zrušení rezervace“, jejíž výchozí text předpokládá storno
-  administrací; pro zákaznické storno je proto vhodná nová samostatná varianta.
+- Nové zákaznické storno ukládá ve stejné transakci i záměr potvrzovacího
+  e-mailu. Používá samostatnou editovatelnou šablonu „Zrušení rezervace
+  zákazníkem“. Storna administrací a jejich již existující fronta zachovávají
+  původní šablonu. Historická zákaznická storna žádnou novou frontu nedostanou.
 - Ostrý formulář již má u jednotlivých termínů „Odebrat“. Obrázek klienta
   pochází z administrátorského zákaznického náhledu, kde tato možnost chyběla.
   Tato větev ji do simulace doplňuje, zachovává rozepsané údaje a přepočítává
@@ -115,7 +118,7 @@ Při existujícím nezaplaceném držení použít současné bezpečné nahraze
 Souběžně zaplacená objednávka se nesmí uvolnit ani přepočítat. Neodstraňovat
 položky již zaplacené objednávky cestou editačního formuláře před platbou.
 
-## Implementační kroky a ověření
+## Provedení a ověření
 
 1. Samostatný issue/commit pro přehled účtu a jednoznačnou změnu termínu.
 2. Samostatný issue/commit pro dialog storna a samostatnou šablonu doručení.
@@ -128,3 +131,24 @@ položky již zaplacené objednávky cestou editačního formuláře před platb
 6. Ověřit mobilní ovládání, klávesnici, návrat fokusu a zachování údajů.
    Databáze a všichni poskytovatelé pouze izolovaní; žádné produkční storno,
    přesun, zpráva ani zkušební platba. Nasazení až po schválení výsledku.
+
+## Technické provedení
+
+- `src/lib/config/rescheduling.ts`: jediné sdílené pravidlo způsobilosti pro UI
+  i zápis. Stávající služba přesunu a ochrany Nuki se nemění.
+- `src/app/account/reservation-card.tsx` a `reservation-actions.tsx`: karty,
+  aktuální lhůty a důvody nedostupné změny; historie čte pouze rezervace
+  přihlášeného uživatele, po 20 záznamech.
+- `src/components/ui/dialog.tsx`: veřejný nativní dialog, bezpečná výchozí
+  volba ponechat termín, obnova fokusu a zákaz zavření během zápisu.
+- Kalendář přesunu používá stejný patnáctisekundový veřejný cache/hook a API
+  jako nový nákup. Realtime zneplatní dostupnost bez obnovy celého účtu.
+  O konečné dostupnosti i přesunu rozhoduje původní služba na serveru.
+- Zákaznické storno uloží typ šablony a proměnné do stávajícího JSON pole
+  fronty. Před prvním pokusem uloží přesné znění e-mailu. Opakování používá
+  stejné bajty i stejný deduplikační klíč, i když správce mezitím šablonu změní.
+  Po 23 hodinách se nejisté odeslání předá k ověření; automaticky znovu neodejde.
+- Již dokončené zákaznické storno je při opakování bez dalších zápisů,
+  zpráv, auditních duplicit nebo opakovaného odebrání kódu.
+- Zrušený bonus není započítaným vstupem. UI ani e-mail neslibují okamžité
+  vrácení bonusu; vysvětlují přepočet nároku podle zbývajících rezervací.

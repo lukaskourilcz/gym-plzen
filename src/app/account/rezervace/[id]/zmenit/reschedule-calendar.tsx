@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarCheck2, ChevronLeft, ChevronRight } from "lucide-react";
 import { cachedDateTimeFormat, monthGrid } from "@/lib/helpers/datetime";
@@ -190,7 +189,12 @@ export function RescheduleCalendar({
   if (source === "unavailable") {
     return (
       <Notice tone="error" title="Kalendář se nepodařilo načíst" role="alert">
-        Původní rezervace zůstává platná.
+        {interrupted ? serverError : "Původní rezervace zůstává platná."}
+        {interrupted ? (
+          <a href="/account" className="mt-4 block font-bold underline">
+            Zkontrolovat rezervaci v účtu
+          </a>
+        ) : null}
         <Button
           type="button"
           variant="outline"
@@ -229,7 +233,10 @@ export function RescheduleCalendar({
             {previousMonth >= minMonth ? (
               <Button
                 href={buildHref({ month: previousMonth, date: null })}
-                onClick={(e) => follow(e, previousMonth, null)}
+                prefetch={false}
+                onClick={(e: React.MouseEvent<HTMLAnchorElement>) =>
+                  follow(e, previousMonth, null)
+                }
                 variant="outline"
                 size="icon"
                 aria-label="Předchozí měsíc"
@@ -250,7 +257,10 @@ export function RescheduleCalendar({
             {nextMonth <= maxMonth ? (
               <Button
                 href={buildHref({ month: nextMonth, date: null })}
-                onClick={(e) => follow(e, nextMonth, null)}
+                prefetch={false}
+                onClick={(e: React.MouseEvent<HTMLAnchorElement>) =>
+                  follow(e, nextMonth, null)
+                }
                 variant="outline"
                 size="icon"
                 aria-label="Následující měsíc"
@@ -323,7 +333,7 @@ export function RescheduleCalendar({
                 );
               }
               return (
-                <Link
+                <a
                   key={cell.dateKey}
                   href={buildHref({ month: monthKey, date: cell.dateKey })}
                   onClick={(e) => follow(e, monthKey, cell.dateKey)}
@@ -359,7 +369,7 @@ export function RescheduleCalendar({
                       )}
                     />
                   ) : null}
-                </Link>
+                </a>
               );
             })}
           </div>
@@ -386,6 +396,16 @@ export function RescheduleCalendar({
             : "Vyberte datum"}
         </h2>
 
+        {serverError ? (
+          <p role="alert" className="mt-4 text-sm font-bold text-destructive">
+            {serverError}
+          </p>
+        ) : null}
+        {interrupted ? (
+          <a href="/account" className="mt-4 block font-bold underline">
+            Zkontrolovat rezervaci v účtu
+          </a>
+        ) : null}
         {loading ? (
           <p role="status" className="mt-6 text-sm text-muted-foreground">
             Načítám dostupné časy…
@@ -483,19 +503,6 @@ export function RescheduleCalendar({
                 </dl>
               </div>
             </div>
-            {serverError ? (
-              <p
-                role="alert"
-                className="mt-4 text-sm font-bold text-destructive"
-              >
-                {serverError}
-              </p>
-            ) : null}
-            {interrupted ? (
-              <a href="/account" className="mt-4 block font-bold underline">
-                Zkontrolovat rezervaci v účtu
-              </a>
-            ) : null}
             <Button
               type="button"
               size="lg"

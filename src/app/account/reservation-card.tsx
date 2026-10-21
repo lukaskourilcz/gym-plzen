@@ -44,6 +44,7 @@ export function ReservationCard({
   const upcoming = r.status === "confirmed" && r.endsAt > now;
   return (
     <article
+      data-reservation-id={r.id}
       aria-label={`Rezervace ${label}`}
       className="rounded-lg border border-border bg-card p-5 sm:p-6"
     >

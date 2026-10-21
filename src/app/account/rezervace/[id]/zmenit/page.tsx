@@ -20,15 +20,8 @@ import { RealtimeRefresher } from "@/components/realtime-refresher";
 import { RescheduleCalendar } from "./reschedule-calendar";
 
 export const metadata: Metadata = { title: "Změna termínu" };
-/*
- * Deliberately no `loading.tsx` next to this page. The calendar navigates to
- * itself with different search params, and under a segment loading boundary
- * the React build bundled with Next 15.5 can lose the wake-up of a Flight row
- * that arrives while it unwinds, which parked the first date selection until
- * the visitor clicked again. Without the boundary the suspension is handled
- * at the root, where that wake-up is recorded; the transition simply holds
- * the current view until the new day's data is in.
- */
+// Initial render is authenticated and server-side; date/month navigation uses
+// the public availability API without remounting the account or changing data.
 export const dynamic = "force-dynamic";
 
 export default async function ReschedulePage({
