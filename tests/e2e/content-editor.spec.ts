@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { test, expect } from "@playwright/test";
 import { join } from "node:path";
 import postgres from "postgres";
@@ -249,5 +250,31 @@ test("inline template edits show resolved values immediately and failures preser
     await expect(
       page.getByText("Text je uložený a projeví se na webu."),
     ).toBeVisible();
+  }
+});
+
+test("visual editing controls remain accessible across all sections", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  for (const id of [
+    "hero",
+    "facts",
+    "steps",
+    "pricing",
+    "gallery",
+    "equipment",
+    "faq",
+    "contact",
+    "newsletter",
+    "opening",
+    "rules",
+  ]) {
+    await page.goto(`/admin/content?section=${id}`);
+    const results = await new AxeBuilder({ page })
+      .include(".content-canvas")
+      .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+      .analyze();
+    expect(results.violations, id).toEqual([]);
   }
 });

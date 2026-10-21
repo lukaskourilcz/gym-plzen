@@ -131,3 +131,68 @@ test.describe("isolated administrator walkthrough", () => {
     expect(await businessState()).toEqual(before);
   });
 });
+
+test.describe("preview recap editing", () => {
+  test.use({ storageState: join(process.cwd(), "tests/e2e/.auth/admin.json") });
+  test("removing individual slots recalculates the bonus, preserves details and cannot submit an empty selection", async ({
+    page,
+  }) => {
+    const before = await businessState();
+    const writes: string[] = [];
+    page.on("request", (request) => {
+      if (
+        request.method() === "POST" ||
+        /comgate|resend|nuki|\/api\/availability/.test(request.url())
+      )
+        writes.push(request.url());
+    });
+    const date = addDaysToDateKey(dateKeyInTimeZone(new Date()), 3);
+    await page.goto(`/customer-preview?date=${date}`);
+    for (let i = 0; i < 4; i++)
+      await page
+        .getByRole("button", { name: /Vybrat$/ })
+        .first()
+        .click();
+    await page.getByRole("link", { name: /Pokračovat/ }).click();
+    await expect(
+      page.getByText("Bonusový 10. vstup zdarma", { exact: true }),
+    ).toHaveCount(1);
+    await expect(
+      page.getByRole("button", { name: /Odebrat termín/ }),
+    ).toHaveCount(4);
+    await page.getByLabel("Jméno", { exact: true }).fill("Petra");
+    await page
+      .getByRole("button", { name: /Odebrat termín/ })
+      .first()
+      .click();
+    await expect(
+      page.getByRole("button", { name: /Odebrat termín/ }),
+    ).toHaveCount(3);
+    await expect(
+      page.getByText("Bonusový 10. vstup zdarma", { exact: true }),
+    ).toHaveCount(0);
+    await expect(page.getByLabel("Jméno", { exact: true })).toHaveValue(
+      "Petra",
+    );
+    await page.goBack();
+    await expect(
+      page.getByRole("button", { name: /Odebrat termín/ }),
+    ).toHaveCount(4);
+    await expect(
+      page.getByText("Bonusový 10. vstup zdarma", { exact: true }),
+    ).toHaveCount(1);
+    for (let i = 0; i < 4; i++)
+      await page
+        .getByRole("button", { name: /Odebrat termín/ })
+        .first()
+        .click();
+    await expect(
+      page.getByText("Nejprve vyber termín v kalendáři."),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Pokračovat k platbě|Potvrdit vstup/ }),
+    ).toHaveCount(0);
+    expect(writes).toEqual([]);
+    expect(await businessState()).toEqual(before);
+  });
+});
