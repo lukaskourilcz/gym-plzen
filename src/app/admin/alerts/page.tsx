@@ -26,7 +26,7 @@ import {
 import { hasDemoAdminSession } from "@/lib/auth/demo";
 import { ResolveAlertButton } from "./resolve-alert-button";
 
-export const metadata = { title: "Upozornění" };
+export const metadata = { title: "Provozní upozornění" };
 export const dynamic = "force-dynamic";
 
 /** Operational alerts history : failures pushed to the WhatsApp group. */
@@ -50,7 +50,7 @@ export default async function AlertsPage({
   return (
     <div>
       <PageHeader
-        title="Upozornění"
+        title="Provozní upozornění"
         description="Co se stalo, kterého termínu se problém týká a jak postupovat. Opakované výskyty zůstávají v jednom otevřeném incidentu."
       />
       <AdminListFilters

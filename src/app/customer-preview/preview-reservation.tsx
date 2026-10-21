@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { ReservationCardView } from "@/components/site/reservation-card-view";
 import { Button } from "@/components/ui/button";
-import { Dialog } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogActions,
+  DIALOG_BUTTON_CLASS,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { cancellationPrice } from "@/lib/config/customer-cancellation";
 import {
@@ -18,6 +22,10 @@ import {
   type CustomerPreviewConfig,
   type previewSelection,
 } from "@/lib/helpers/customer-preview";
+
+import { usePublicNotices } from "@/components/site/public-notices-provider";
+import { CancellationNotice } from "@/components/site/cancellation-notice";
+import { renderNotice } from "@/lib/config/public-notices";
 
 export type PreviewSlot = ReturnType<typeof previewSelection>[number] & {
   isReward?: boolean;
@@ -66,6 +74,16 @@ export function PreviewReservationCard({
     extraPeople,
   };
   const amount = cancellationPrice(reservation);
+  const notices = usePublicNotices();
+  const variables = {
+    time: slot.label,
+    price: amount.price,
+    refund_note: amount.note,
+  };
+  const text = (key: string) =>
+    renderNotice(notices.cancellation[key] ?? "", variables);
+  const changeText = (key: string, time = slot.label) =>
+    renderNotice(notices.reschedule[key] ?? "", { time, price: amount.price });
   const eligibility = getRescheduleEligibility(reservation, slot.changed, now);
   const calendar = previewCalendar(config, { date }, purchased);
   const choices =
@@ -120,62 +138,61 @@ export function PreviewReservationCard({
       </ReservationCardView>
       {dialog === "cancel" ? (
         <Dialog
-          title="Zrušit tuto rezervaci?"
+          title={text("title")}
+          className="max-w-3xl"
           description={slot.label}
           onClose={() => setDialog(null)}
         >
-          <div className="mt-5 rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm leading-6">
-            <p>Rezervace přestane platit. {amount.note}</p>
-            {!eligibility.eligible && eligibility.reason === "inside_cutoff" ? (
-              <p className="mt-3">
-                Do začátku zbývá méně než 24 hodin. Změna termínu už není možná.
-              </p>
+          <CancellationNotice
+            copy={notices.cancellation}
+            variables={variables}
+            insideCutoff={
+              !eligibility.eligible && eligibility.reason === "inside_cutoff"
+            }
+            preview
+          />
+          <DialogActions columns={eligibility.eligible ? 3 : 2}>
+            {eligibility.eligible ? (
+              <Button
+                variant="outline"
+                className={DIALOG_BUTTON_CLASS}
+                onClick={change}
+              >
+                {text("alternative")}
+              </Button>
             ) : null}
-          </div>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Zrušíte pouze tento termín. Ostatní rezervace z objednávky zůstanou
-            platné. V ukázkovém náhledu se storno pouze nasimuluje a žádný
-            e-mail se neposílá.
-          </p>
-          {eligibility.eligible ? (
-            <Button variant="outline" className="mt-4" onClick={change}>
-              Raději změnit termín
-            </Button>
-          ) : null}
-          <div className="mt-5 flex flex-wrap gap-3">
             <Button
               data-initial-focus
+              className={DIALOG_BUTTON_CLASS}
               variant="outline"
               onClick={() => setDialog(null)}
             >
-              Ponechat rezervaci
+              {text("keep")}
             </Button>
             <Button
               variant="destructive"
+              className={DIALOG_BUTTON_CLASS}
               onClick={() => {
                 onCancel(slot.id);
                 setDialog(null);
               }}
             >
-              {amount.amount === 0
-                ? "Ano, zrušit rezervaci"
-                : "Ano, zrušit bez vrácení platby"}
+              {amount.amount === 0 ? text("confirmFree") : text("confirmPaid")}
             </Button>
-          </div>
+          </DialogActions>
         </Dialog>
       ) : null}
       {dialog === "change" && eligibility.eligible ? (
         <Dialog
-          title="Změnit termín"
-          description={`Současný termín: ${slot.label}`}
+          title={changeText("title")}
+          description={changeText("original")}
           onClose={() => setDialog(null)}
         >
           <p className="mt-4 text-sm leading-6 text-muted-foreground">
-            Vyberte nový den a čas. Změní se pouze tato rezervace; její cena
-            zůstane stejná. Původní termín platí až do potvrzení změny.
+            {changeText("body")}
           </p>
           <label className="mt-4 grid gap-2 text-sm font-bold">
-            Nové datum
+            {changeText("date")}
             <Input
               data-initial-focus
               type="date"
@@ -207,23 +224,26 @@ export function PreviewReservationCard({
             ))}
           </div>
           {!choices.length ? (
-            <p className="mt-4 text-sm">
-              Pro tento den není volný termín. Vyberte jiné datum.
-            </p>
+            <p className="mt-4 text-sm">{changeText("empty")}</p>
           ) : null}
           {chosen ? (
-            <p className="mt-5 rounded-md bg-accent p-3 text-sm text-accent-foreground">
-              Nový termín:{" "}
-              <strong>{formatDateTime(new Date(chosen.startISO))}</strong>
-              <br />
-              Cena zůstává {amount.price}.
+            <p className="mt-5 whitespace-pre-line rounded-md bg-accent p-3 text-sm text-accent-foreground">
+              {changeText(
+                "selection",
+                formatDateTime(new Date(chosen.startISO)),
+              )}
             </p>
           ) : null}
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Button variant="outline" onClick={() => setDialog(null)}>
-              Ponechat původní termín
+          <DialogActions>
+            <Button
+              className={DIALOG_BUTTON_CLASS}
+              variant="outline"
+              onClick={() => setDialog(null)}
+            >
+              {changeText("keep")}
             </Button>
             <Button
+              className={DIALOG_BUTTON_CLASS}
               disabled={!chosen}
               onClick={() => {
                 if (chosen) {
@@ -232,9 +252,9 @@ export function PreviewReservationCard({
                 }
               }}
             >
-              Potvrdit změnu termínu
+              {changeText("confirm")}
             </Button>
-          </div>
+          </DialogActions>
         </Dialog>
       ) : null}
     </>
