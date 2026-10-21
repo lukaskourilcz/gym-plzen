@@ -40,7 +40,12 @@ export function BookingDetailsForm({
   blocked = false,
   canSavePhone = false,
   defaultValues,
+  simulation,
 }: {
+  /** Preview-only callback. Returns before every checkout, voucher or analytics call. */
+  simulation?: {
+    submit: (values: BookingDetailsValues, totalCents: number) => void;
+  };
   paymentsAvailable?: boolean;
   /** The bookable slots of the selection, in start order. */
   startsISO: string[];
@@ -121,6 +126,10 @@ export function BookingDetailsForm({
   const voucherField = register("voucherCode");
 
   async function applyVoucher() {
+    if (simulation) {
+      setVoucherError("V ukázkovém náhledu se skutečné vouchery neuplatňují.");
+      return;
+    }
     const code = getValues("voucherCode")?.trim() ?? "";
     setVoucherError(null);
     setVoucherQuote(null);
@@ -161,6 +170,10 @@ export function BookingDetailsForm({
 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
+    if (simulation) {
+      simulation.submit({ ...values, starts: startsISO }, selectionTotalCents);
+      return;
+    }
     // The selection comes from the page, never from the form's first render:
     // "Odebrat" changes only the URL, and a kept form must not book slots the
     // visitor has just removed.

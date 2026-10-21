@@ -12,6 +12,7 @@ import {
   ChevronDown,
   Clock3,
   FileText,
+  Eye,
   HandCoins,
   History,
   Home,
@@ -55,6 +56,7 @@ const NAV_GROUPS = [
     label: "Web a komunikace",
     items: [
       ["/admin/content", "Obsah webu", FileText],
+      ["/customer-preview", "Ukázat web jako registrovaný zákazník", Eye],
       ["/admin/emails", "E-maily", Mail],
       ["/admin/newsletter", "Odběratelé novinek", Mail],
     ],
@@ -143,6 +145,13 @@ export function AdminNav() {
                   <Link
                     key={href}
                     href={href}
+                    target={href === "/customer-preview" ? "_blank" : undefined}
+                    rel={
+                      href === "/customer-preview"
+                        ? "noopener noreferrer"
+                        : undefined
+                    }
+                    prefetch={href === "/customer-preview" ? false : undefined}
                     aria-current={active ? "page" : undefined}
                     onClick={() => setOpen(false)}
                     className={cn(

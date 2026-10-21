@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Bitter } from "next/font/google";
-import { Analytics } from "@vercel/analytics/next";
+import { SiteAnalytics } from "@/components/site/site-analytics";
 import { publicEnv } from "@/lib/public-env";
 import { DESIGN_VARIANT_INIT_SCRIPT } from "@/lib/config/design-variant";
 import { AnalyticsConsentManager } from "@/components/site/analytics-consent";
@@ -62,7 +62,7 @@ export default function RootLayout({
         <SkipLink />
         {children}
         <AnalyticsConsentManager />
-        <Analytics />
+        <SiteAnalytics />
       </body>
     </html>
   );
