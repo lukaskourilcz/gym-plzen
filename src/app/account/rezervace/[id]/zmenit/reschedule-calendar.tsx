@@ -6,6 +6,7 @@ import { CalendarCheck2, ChevronLeft, ChevronRight } from "lucide-react";
 import { cachedDateTimeFormat, monthGrid } from "@/lib/helpers/datetime";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { usePublicNotices } from "@/components/site/public-notices-provider";
 import { Notice } from "@/components/ui/notice";
 import { receiveAction } from "@/lib/helpers/action-response";
 import { reportTransportError } from "@/lib/helpers/report-transport-error";
@@ -36,6 +37,7 @@ export function RescheduleCalendar({
   originalLabel: string;
   initial: CalendarView;
 }) {
+  const copy = usePublicNotices().reschedule;
   const { view, loading, refresh } = useCalendarAvailability(initial);
   const {
     monthKey,
@@ -427,7 +429,7 @@ export function RescheduleCalendar({
         !selectedDay.isClosed &&
         availableSlots.length === 0 ? (
           <Notice className="mt-6" tone="warning" title="Žádný volný termín">
-            Pro tento den nejsou dostupné žádné časy.
+            {copy.empty}
           </Notice>
         ) : null}
 
@@ -482,14 +484,18 @@ export function RescheduleCalendar({
                 className="mt-0.5 size-5 shrink-0 text-accent-foreground"
               />
               <div className="text-sm">
-                <div className="font-extrabold">Potvrzení změny</div>
+                <div className="font-extrabold">{copy.confirmation}</div>
                 <dl className="mt-3 grid gap-2">
                   <div>
-                    <dt className="text-xs text-muted-foreground">Původní</dt>
+                    <dt className="text-xs text-muted-foreground">
+                      {copy.oldLabel}
+                    </dt>
                     <dd className="font-bold">{originalLabel}</dd>
                   </div>
                   <div>
-                    <dt className="text-xs text-muted-foreground">Nový</dt>
+                    <dt className="text-xs text-muted-foreground">
+                      {copy.newLabel}
+                    </dt>
                     <dd className="font-bold">
                       {displayDate(selectedDateKey!, {
                         weekday: "long",
@@ -510,11 +516,10 @@ export function RescheduleCalendar({
               disabled={isSubmitting || interrupted || loading}
               onClick={confirmChange}
             >
-              {isSubmitting ? "Měním termín…" : "Potvrdit změnu termínu"}
+              {isSubmitting ? "Měním termín…" : copy.confirm}
             </Button>
             <p className="mt-3 text-xs leading-5 text-muted-foreground">
-              Potvrzením se nový termín obsadí a původní se uvolní. Tuto změnu
-              už nebude možné opakovat.
+              {copy.note}
             </p>
           </div>
         ) : null}

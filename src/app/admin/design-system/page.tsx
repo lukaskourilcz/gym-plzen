@@ -76,6 +76,21 @@ export default async function DesignSystemPage() {
         <MemberRegistrationBadge registered={false} />
       </section>
 
+      <section
+        className="my-6 rounded-lg border bg-card p-6"
+        aria-label="Zákaznické dialogy"
+      >
+        <h2 className="text-xl font-bold">Upravitelné dialogy</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Statický náhled zachovává vzhled webu. Tužka u textu otevře přístupný
+          dialog; uložení mění jen vybraný obsah. Datum, cena a podmínky storna
+          se doplňují systémem. Akce storna tvoří na větší obrazovce jeden řádek
+          stejně širokých tlačítek, na mobilu jeden sloupec.
+        </p>
+        <Button href="/admin/notices" variant="outline" className="mt-4">
+          Otevřít Upozornění
+        </Button>
+      </section>
       <div className="grid gap-8">
         <section
           aria-labelledby="kit-admin-pricing"

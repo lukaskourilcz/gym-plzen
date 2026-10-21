@@ -794,3 +794,21 @@ Zákaznický náhled se otevírá z administrace v samostatné kartě. Má stál
 popisek simulace, reset a návrat do administrace. Sdílí veřejný kalendář a
 rezervační formulář, ale dostupnost, účet i platba jsou pouze místní stav;
 nevytváří zákaznický účet a nevolá poskytovatele plateb ani zpráv.
+
+### Zákaznická upozornění
+
+Administrace → Upozornění (`/admin/notices`) používá statické náhledy skutečných
+zákaznických dialogů, rozdělené podle účelu. Tužka u každého textu otevře
+`AdminDialog`. Náhled nemontuje formuláře rezervací ani správce cookies.
+Zákaznické písmo je omezené na `.admin-shell .content-canvas`; navigace a editor
+používají systémovou typografii. Podmíněné texty jsou dostupné pod „Další stavy a
+popisky“. Automatické údaje jsou vysvětlené pod náhledem; povinné značky nelze
+odstranit. Uložení mění pouze jednu povolenou položku veřejného obsahu.
+
+`DialogActions` skládá dvě nebo tři stejně široké akce v jednom řádku od šířky
+640 px, na menších displejích do sloupce. Delší text se zalomí; tlačítka mají
+stejnou výšku v řádku a minimálně 44 px. Storno používá širší dialog, počáteční
+fokus patří bezpečné volbě „Ponechat rezervaci“. Klávesa Escape a návrat fokusu
+zůstávají součástí nativního modálního dialogu.
+
+Provozní incidenty zůstávají pod `/admin/alerts` s názvem „Provozní upozornění“.

@@ -3,13 +3,21 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Dialog } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogActions,
+  DIALOG_BUTTON_CLASS,
+} from "@/components/ui/dialog";
 import {
   cancellationPrice,
   type CancellationPrice,
 } from "@/lib/config/customer-cancellation";
 import { receiveAction } from "@/lib/helpers/action-response";
 import { cancelMyReservationAction } from "./actions";
+
+import { usePublicNotices } from "@/components/site/public-notices-provider";
+import { CancellationNotice } from "@/components/site/cancellation-notice";
+import { renderNotice } from "@/lib/config/public-notices";
 
 export function CancelReservationButton({
   reservationId,
@@ -30,6 +38,13 @@ export function CancelReservationButton({
   const [pending, setPending] = useState(false);
   const [interrupted, setInterrupted] = useState(false);
   const amount = cancellationPrice(price);
+  const copy = usePublicNotices().cancellation;
+  const variables = {
+    time: startsAtLabel,
+    price: amount.price,
+    refund_note: amount.note,
+  };
+  const text = (key: string) => renderNotice(copy[key] ?? "", variables);
   async function cancel() {
     if (pending || interrupted) return;
     setPending(true);
@@ -69,36 +84,17 @@ export function CancelReservationButton({
       </Button>
       {confirming ? (
         <Dialog
-          title="Zrušit tuto rezervaci?"
+          title={text("title")}
+          className="max-w-3xl"
           description={startsAtLabel}
           busy={pending}
           onClose={() => setConfirming(false)}
         >
-          <div className="mt-5 rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm leading-6">
-            <p>
-              Rezervace přestane platit a termín se po ověřeném odebrání
-              vstupního kódu uvolní pro ostatní. Původní kód už nepoužívejte.
-            </p>
-            <p className="mt-3 font-bold">{amount.note}</p>
-            {insideCutoff ? (
-              <p className="mt-3">
-                Do začátku zbývá méně než 24 hodin. Změna termínu už není možná.
-              </p>
-            ) : null}
-          </div>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Zrušíte pouze tento termín. Ostatní rezervace z objednávky zůstanou
-            platné. Potvrzení storna pošleme e-mailem.
-          </p>
-          {canReschedule && !interrupted && !pending ? (
-            <Button
-              href={`/account/rezervace/${reservationId}/zmenit`}
-              variant="outline"
-              className="mt-4"
-            >
-              Raději změnit termín
-            </Button>
-          ) : null}
+          <CancellationNotice
+            copy={copy}
+            variables={variables}
+            insideCutoff={insideCutoff}
+          />
           {error ? (
             <p role="alert" className="mt-4 text-sm font-bold text-destructive">
               {error}
@@ -112,29 +108,42 @@ export function CancelReservationButton({
               Zkontrolovat rezervaci v účtu
             </a>
           ) : null}
-          <div className="mt-5 flex flex-wrap gap-3">
+          <DialogActions
+            columns={canReschedule && !interrupted && !pending ? 3 : 2}
+          >
+            {canReschedule && !interrupted && !pending ? (
+              <Button
+                href={`/account/rezervace/${reservationId}/zmenit`}
+                variant="outline"
+                className={DIALOG_BUTTON_CLASS}
+              >
+                {text("alternative")}
+              </Button>
+            ) : null}
             <Button
               data-initial-focus
+              className={DIALOG_BUTTON_CLASS}
               type="button"
               variant="outline"
               disabled={pending}
               onClick={() => setConfirming(false)}
             >
-              Ponechat rezervaci
+              {text("keep")}
             </Button>
             <Button
               type="button"
               variant="destructive"
+              className={DIALOG_BUTTON_CLASS}
               disabled={pending || interrupted}
               onClick={cancel}
             >
               {pending
                 ? "Ruším…"
                 : amount.amount === 0
-                  ? "Ano, zrušit rezervaci"
-                  : "Ano, zrušit bez vrácení platby"}
+                  ? text("confirmFree")
+                  : text("confirmPaid")}
             </Button>
-          </div>
+          </DialogActions>
         </Dialog>
       ) : null}
     </>

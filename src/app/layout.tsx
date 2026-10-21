@@ -8,6 +8,8 @@ import { SkipLink } from "@/components/ui/skip-link";
 import "./globals.css";
 import { siteVerification } from "@/lib/config/site-verification";
 import { env } from "@/lib/env";
+import { getPublicNotices } from "@/lib/services/public-notices";
+import { PublicNoticesProvider } from "@/components/site/public-notices-provider";
 
 /** Self-hosted by Next with latin-ext so Czech diacritics match on every OS. */
 const bitter = Bitter({
@@ -38,9 +40,10 @@ export const metadata: Metadata = {
   ),
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const notices = await getPublicNotices();
   return (
     /*
      * `suppressHydrationWarning`: the inline script below stamps `data-design`
@@ -60,8 +63,10 @@ export default function RootLayout({
       </head>
       <body>
         <SkipLink />
-        {children}
-        <AnalyticsConsentManager />
+        <PublicNoticesProvider notices={notices}>
+          {children}
+          <AnalyticsConsentManager />
+        </PublicNoticesProvider>
         <SiteAnalytics />
       </body>
     </html>

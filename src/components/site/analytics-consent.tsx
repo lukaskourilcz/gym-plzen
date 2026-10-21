@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { usePublicNotices } from "./public-notices-provider";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,6 +53,7 @@ function deleteGoogleAnalyticsCookies() {
 
 export function AnalyticsConsentManager() {
   const pathname = usePathname();
+  const copy = usePublicNotices().cookies;
   const [preferences, setPreferences] = useState<ConsentPreferences | null>(
     null,
   );
@@ -175,23 +177,22 @@ export function AnalyticsConsentManager() {
     >
       <div>
         <h2 id="tracking-consent-title" className="font-extrabold">
-          Nastavení soukromí
+          {copy.title}
         </h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-foreground/80">
-          Volitelné měření spustíme jen podle vaší volby. Nastavení můžete
-          kdykoliv změnit v patičce. Podrobnosti najdete v{" "}
+          {copy.body}{" "}
           <Link
             href="/ochrana-soukromi"
             className="font-bold text-gold underline underline-offset-4 hover:text-ink-foreground"
           >
-            ochraně soukromí
+            {copy.privacyLink}
           </Link>
           .
         </p>
       </div>
 
       <fieldset className="mt-5 grid gap-3 sm:grid-cols-2">
-        <legend className="sr-only">Volitelné kategorie měření</legend>
+        <legend className="sr-only">{copy.categories}</legend>
         {isAnalyticsConfigured && (
           <label className="flex min-h-20 cursor-pointer gap-3 rounded-md border border-white/20 p-4">
             <input
@@ -206,9 +207,11 @@ export function AnalyticsConsentManager() {
               className="mt-1 size-5 shrink-0 accent-[var(--color-gold)]"
             />
             <span>
-              <span className="block font-extrabold">Analytika</span>
+              <span className="block font-extrabold">
+                {copy.analyticsTitle}
+              </span>
               <span className="mt-1 block text-xs leading-5 text-ink-foreground/75">
-                Google Analytics nám pomáhá chápat návštěvnost a používání webu.
+                {copy.analyticsBody}
               </span>
             </span>
           </label>
@@ -227,9 +230,11 @@ export function AnalyticsConsentManager() {
               className="mt-1 size-5 shrink-0 accent-[var(--color-gold)]"
             />
             <span>
-              <span className="block font-extrabold">Marketing</span>
+              <span className="block font-extrabold">
+                {copy.marketingTitle}
+              </span>
               <span className="mt-1 block text-xs leading-5 text-ink-foreground/75">
-                Meta Pixel měří výkon reklam na Facebooku a Instagramu.
+                {copy.marketingBody}
               </span>
             </span>
           </label>
@@ -240,25 +245,25 @@ export function AnalyticsConsentManager() {
         <Button
           type="button"
           variant="outline"
-          className="border-white/30 text-ink-foreground hover:border-white/50 hover:bg-white/10 hover:text-ink-foreground"
+          className="h-auto min-h-11 whitespace-normal border-white/30 text-ink-foreground hover:border-white/50 hover:bg-white/10 hover:text-ink-foreground"
           onClick={() => savePreferences(EMPTY_PREFERENCES)}
         >
-          Pouze nezbytné
+          {copy.reject}
         </Button>
         <Button
           type="button"
           variant="outline"
-          className="border-white/30 text-ink-foreground hover:border-white/50 hover:bg-white/10 hover:text-ink-foreground"
+          className="h-auto min-h-11 whitespace-normal border-white/30 text-ink-foreground hover:border-white/50 hover:bg-white/10 hover:text-ink-foreground"
           onClick={() => savePreferences(draft)}
         >
-          Uložit volbu
+          {copy.save}
         </Button>
         <Button
           type="button"
-          className="bg-gold text-gold-foreground hover:bg-gold/90"
+          className="h-auto min-h-11 whitespace-normal bg-gold text-gold-foreground hover:bg-gold/90"
           onClick={() => savePreferences({ analytics: true, marketing: true })}
         >
-          Povolit vše
+          {copy.accept}
         </Button>
       </div>
     </aside>
