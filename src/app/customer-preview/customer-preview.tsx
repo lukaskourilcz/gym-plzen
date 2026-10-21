@@ -91,7 +91,10 @@ export function CustomerPreview({
   const startPayment = (values: BookingDetailsValues, total: number) => {
     if (selected.length === 0) return;
     setPending({
-      slots: selected,
+      slots: selected.map((slot, index) => ({
+        ...slot,
+        priceCents: rewards[index] ? 0 : slot.priceCents,
+      })),
       totalCents: total,
       extraPeople: Number(values.extraPeople),
       customer: {
@@ -210,7 +213,12 @@ export function CustomerPreview({
                 <div className="mt-8 grid items-start gap-8 lg:grid-cols-2">
                   <Card className="p-5 sm:p-7">
                     <h2 className="text-xl font-extrabold">Vybrané termíny</h2>
-                    {summary(selected)}
+                    {summary(
+                      selected.map((slot, index) => ({
+                        ...slot,
+                        priceCents: rewards[index] ? 0 : slot.priceCents,
+                      })),
+                    )}
                     <p className="border-t border-border pt-4 text-lg font-bold">
                       Celkem {formatMoney(totalCents)}
                     </p>
