@@ -7,8 +7,14 @@ import { openingAnnouncement } from "@/lib/config/opening";
  * nothing. The homepage is ISR (`revalidate = 60`), so a change of phase shows
  * within a minute without a deployment.
  */
-export function OpeningBanner({ at }: { at: Date }) {
-  const announcement = openingAnnouncement(at);
+export function OpeningBanner({
+  at,
+  copy,
+}: {
+  at: Date;
+  copy?: { before: string; october: string; yearEnd: string; cta: string };
+}) {
+  const announcement = openingAnnouncement(at, copy);
   if (!announcement) return null;
 
   return (
@@ -23,7 +29,7 @@ export function OpeningBanner({ at }: { at: Date }) {
         {announcement}
       </Link>
       <p className="mt-1 text-xs leading-5">
-        Zarezervuj si svůj termín již teď.
+        {copy?.cta ?? "Zarezervuj si svůj termín již teď."}
       </p>
     </aside>
   );

@@ -19,6 +19,7 @@ const footerLink =
 
 export function SiteFooter({
   brand = "NAVI Private Gym",
+  description = "Soukromý prostor pro nerušený trénink v Plzni.",
   email,
   phone,
   secondaryPhone,
@@ -28,6 +29,7 @@ export function SiteFooter({
   whatsappUrl,
 }: {
   brand?: string;
+  description?: string;
   email?: string;
   phone?: string;
   secondaryPhone?: string;
@@ -94,7 +96,7 @@ export function SiteFooter({
             <p className="mt-6 text-xs leading-6 text-ink-foreground/75">
               © {year} {brand}
               <br />
-              Soukromý prostor pro nerušený trénink v Plzni.
+              {description}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-x-5 gap-y-7 sm:grid-cols-3 lg:gap-6">

@@ -1,5 +1,7 @@
 /** Only exact superseded public copy; never rewrite custom CMS or legal text. */
 const REVISIONS: Readonly<Record<string, string>> = {
+  "Akční cena platí pro návštěvy v akčním období.":
+    "Akční cena pro návštěvy do {promoEndsAt}.",
   "Rezervujte si celé samoobslužné fitness v Plzni jen pro sebe a svůj doprovod.":
     "Rezervuj si celé samoobslužné fitness v Plzni jen pro sebe a svůj doprovod.",
   "Stroje a pomůcky pro silový trénink máte po celou dobu rezervace jen pro sebe.":
@@ -39,7 +41,7 @@ const REVISIONS: Readonly<Record<string, string>> = {
     "Ano. V kalendáři vybereš až 10 termínů, i v různých dnech, a zaplatíš je jednou platbou. Cena je součtem cen jednotlivých termínů a slevový kód se uplatní na celou objednávku. Vstupní kód dostaneš ke každému termínu zvlášť a změnu nebo storno řešíš u každého termínu samostatně.",
   "Nahlédněte do NAVI Private Gym.": "Nahlédni do NAVI Private Gym.",
   "Akční cena platí pro rezervace vytvořené během akce, i na termíny v dalších měsících.":
-    "Akční cena platí pro návštěvy v akčním období.",
+    "Akční cena pro návštěvy do {promoEndsAt}.",
 };
 
 export function revisePublicCopy(value: string): string {
