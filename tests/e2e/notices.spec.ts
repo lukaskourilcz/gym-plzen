@@ -161,6 +161,8 @@ test("admin copy appears in real and simulated cancellations; actions align with
       .first()
       .click();
     await page.getByRole("link", { name: /Pokračovat/ }).click();
+    if (await page.getByLabel("Přijdu sám / sama").count())
+      await page.getByLabel("Přijdu sám / sama").check();
     await page.getByLabel(/Souhlasím/).check();
     await page.getByRole("button", { name: /Pokračovat k platbě/ }).click();
     await page
