@@ -3,6 +3,7 @@ import {
   dateKeyInTimeZone,
 } from "../../src/lib/helpers/datetime";
 import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 import { join } from "node:path";
 import postgres from "postgres";
 import { requireTestDatabaseUrl } from "../helpers/test-database";
@@ -103,7 +104,7 @@ test.describe("isolated administrator walkthrough", () => {
     await expect(
       page.getByRole("heading", { name: "Ahoj, Jana" }),
     ).toBeVisible();
-    await expect(page.getByText("Potvrzená", { exact: true })).toHaveCount(1);
+    await expect(page.getByText("Potvrzená", { exact: true })).toHaveCount(2);
     await page.getByLabel("Jméno", { exact: true }).fill("Petra");
     await page.getByRole("button", { name: "Uložit údaje" }).click();
     await expect(
@@ -117,8 +118,28 @@ test.describe("isolated administrator walkthrough", () => {
         ),
       ).toBeLessThanOrEqual(1);
     }
+    await expect(
+      page.getByRole("article", { name: /^Rezervace / }),
+    ).toHaveCount(2);
     await page
-      .getByRole("button", { name: "Zrušit ukázkovou rezervaci" })
+      .getByRole("button", { name: /^Zrušit rezervaci / })
+      .first()
+      .click();
+    await expect(
+      page.getByRole("dialog").getByText(/Zrušíte pouze tento termín/),
+    ).toBeVisible();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: /Ano, zrušit/ })
+      .click();
+    await expect(page.getByText("Potvrzená", { exact: true })).toHaveCount(1);
+    await expect(
+      page.getByText("Zrušeno zákazníkem", { exact: true }),
+    ).toHaveCount(1);
+    await page.getByRole("button", { name: /^Zrušit rezervaci / }).click();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: /Ano, zrušit/ })
       .click();
     await expect(
       page.getByText("Nemáš žádnou naplánovanou ukázkovou rezervaci."),
@@ -192,6 +213,113 @@ test.describe("preview recap editing", () => {
     await expect(
       page.getByRole("button", { name: /Pokračovat k platbě|Potvrdit vstup/ }),
     ).toHaveCount(0);
+    expect(writes).toEqual([]);
+    expect(await businessState()).toEqual(before);
+  });
+});
+
+test.describe("independent preview reservations", () => {
+  test.use({ storageState: join(process.cwd(), "tests/e2e/.auth/admin.json") });
+  test("changing one term and cancelling one bonus leaves the other purchased terms intact without any writes", async ({
+    page,
+  }) => {
+    const before = await businessState();
+    const writes: string[] = [];
+    page.on("request", (request) => {
+      if (
+        request.method() === "POST" ||
+        /comgate|resend|nuki|\/api\/availability/.test(request.url())
+      )
+        writes.push(request.url());
+    });
+    const date = addDaysToDateKey(dateKeyInTimeZone(new Date()), 3);
+    await page.goto(`/customer-preview?date=${date}`);
+    for (let i = 0; i < 4; i++)
+      await page
+        .getByRole("button", { name: /Vybrat$/ })
+        .first()
+        .click();
+    await page.getByRole("link", { name: /Pokračovat/ }).click();
+    await expect(
+      page.getByRole("heading", { name: "Údaje a rekapitulace" }),
+    ).toBeVisible();
+    if (await page.getByLabel("Přijdu sám / sama").count())
+      await page.getByLabel("Přijdu sám / sama").check();
+    await page.getByLabel(/Souhlasím/).check();
+    await page.getByRole("button", { name: /Pokračovat k platbě/ }).click();
+    await page
+      .getByRole("button", { name: "Simulovat úspěšnou platbu" })
+      .click();
+    await page.getByRole("button", { name: "Přejít do mého účtu" }).click();
+    const cards = page.getByRole("article", { name: /^Rezervace / });
+    await expect(cards).toHaveCount(4);
+    const original = await cards.evaluateAll((els) =>
+      els.map((el) => ({
+        id: el.getAttribute("data-reservation-id")!,
+        html: el.outerHTML,
+      })),
+    );
+    const target = page.locator(`[data-reservation-id="${original[1]!.id}"]`);
+    await target
+      .getByRole("button", { name: "Změnit termín", exact: true })
+      .click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText(
+      "Původní termín platí až do potvrzení změny",
+    );
+    await dialog.getByLabel("Nové datum").fill(addDaysToDateKey(date, 1));
+    await dialog.getByRole("button", { name: /–/ }).first().click();
+    await expect(dialog).toContainText("Cena zůstává");
+    const a11y = await new AxeBuilder({ page })
+      .include("dialog")
+      .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+      .analyze();
+    expect(a11y.violations).toEqual([]);
+    await dialog
+      .getByRole("button", { name: "Potvrdit změnu termínu" })
+      .click();
+    await expect(target).toContainText(
+      "Tuto rezervaci už jste jednou změnili.",
+    );
+    await expect(
+      target.getByRole("button", { name: "Změna termínu není dostupná" }),
+    ).toBeDisabled();
+    for (const index of [0, 2, 3])
+      expect(
+        await page
+          .locator(`[data-reservation-id="${original[index]!.id}"]`)
+          .evaluate((el) => el.outerHTML),
+      ).toBe(original[index]!.html);
+    const changed = await target.evaluate((el) => el.outerHTML);
+    const bonus = cards.filter({ hasText: "Bonusový 10. vstup zdarma" });
+    await bonus.getByRole("button", { name: /^Zrušit rezervaci / }).click();
+    await expect(dialog).toContainText("nebyla za něj uhrazena žádná částka");
+    await expect(dialog).toContainText(
+      "Ostatní rezervace z objednávky zůstanou platné",
+    );
+    await dialog.getByRole("button", { name: "Ponechat rezervaci" }).click();
+    await expect(page.getByText("Potvrzená", { exact: true })).toHaveCount(4);
+    await bonus.getByRole("button", { name: /^Zrušit rezervaci / }).click();
+    await dialog
+      .getByRole("button", { name: "Ano, zrušit rezervaci", exact: true })
+      .click();
+    await expect(page.getByText("Potvrzená", { exact: true })).toHaveCount(3);
+    await expect(bonus).toContainText("Zrušeno zákazníkem");
+    expect(await target.evaluate((el) => el.outerHTML)).toBe(changed);
+    for (const index of [0, 2])
+      expect(
+        await page
+          .locator(`[data-reservation-id="${original[index]!.id}"]`)
+          .evaluate((el) => el.outerHTML),
+      ).toBe(original[index]!.html);
+    for (const width of [320, 390, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth - innerWidth,
+        ),
+      ).toBeLessThanOrEqual(1);
+    }
     expect(writes).toEqual([]);
     expect(await businessState()).toEqual(before);
   });

@@ -753,6 +753,16 @@ ověření další stránky; navigace odkazuje přímo zpět na historii.
 
 ### Vizuální editor veřejného obsahu
 
+Oznamovací lišta má jeden živý náhled, tužku u hlavního textu i druhého řádku
+a dva pojmenované `AdminSwitch`: zobrazení celé lišty a volitelného druhého
+řádku. Přepnutí ukládá jeden celek do `content.announcement`; vypnutí nikdy
+nemaže texty. Náhled zůstává upravitelný i při vypnutí, se zřetelným popiskem,
+že na webu není vidět. Skrytý druhý řádek lze upravit pod náhledem. Při
+nepotvrzeném uložení zůstane rozepsaný text a další změny čekají na obnovení
+a ověření stavu. Do prvního uložení se původní časový text pouze načte;
+historické CMS řádky se nemažou ani nepřepisují. Nově uložená lišta se už
+podle data nemění.
+
 Obsah webu používá jednu aktivní podsekci s adresou `?section=…`; navigace
 funguje i po obnovení stránky a na mobilu se posouvá vodorovně. Hlavní plochou
 je `ContentCanvas`: rozložení odpovídající veřejné části se současnými CMS

@@ -271,15 +271,7 @@ export default async function HomePage() {
                   )}
                 />
               </div>
-              <OpeningBanner
-                at={now}
-                copy={{
-                  before: t("home.opening.before"),
-                  october: t("home.opening.october"),
-                  yearEnd: t("home.opening.yearEnd"),
-                  cta: t("home.opening.cta"),
-                }}
-              />
+              <OpeningBanner announcement={content.announcement} />
             </div>
           </Container>
         </section>

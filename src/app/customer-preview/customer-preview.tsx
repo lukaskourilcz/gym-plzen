@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Eye, RotateCcw, CalendarDays, CheckCircle2 } from "lucide-react";
+import { Eye, RotateCcw, CheckCircle2 } from "lucide-react";
 import { SiteHeader } from "@/components/site/site-header";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
@@ -24,17 +24,21 @@ import { deriveLoyaltyStatus } from "@/lib/helpers/loyalty-display";
 import { withSelectedStarts } from "@/lib/helpers/booking-selection";
 import type { BookingDetailsValues } from "@/lib/validations/booking";
 
+import {
+  PreviewReservationCard,
+  type PreviewSlot,
+  type PreviewReservation,
+} from "./preview-reservation";
+
 const INITIAL_PROFILE = {
   firstName: "Jana",
   lastName: "Ukázková",
   email: "jana@preview.example.test",
   phone: "+420 777 123 456",
 };
-type PreviewSlot = ReturnType<typeof previewSelection>[number] & {
-  isReward?: boolean;
-};
+
 interface PreviewOrder {
-  slots: PreviewSlot[];
+  slots: PreviewReservation[];
   totalCents: number;
   extraPeople: number;
   customer: typeof INITIAL_PROFILE;
@@ -56,14 +60,24 @@ export function CustomerPreview({
   const [message, setMessage] = useState("");
   const [resetKey, setResetKey] = useState(0);
   const purchased = new Set(
-    orders.flatMap((order) => order.slots.map((s) => s.startISO)),
+    orders.flatMap((order) =>
+      order.slots
+        .filter((s) => s.status === "confirmed")
+        .map((s) => s.startISO),
+    ),
   );
   const load = useCallback(
     (month: string, date: string | null) =>
       previewCalendar(
         config,
         { month, date },
-        new Set(orders.flatMap((o) => o.slots.map((s) => s.startISO))),
+        new Set(
+          orders.flatMap((o) =>
+            o.slots
+              .filter((s) => s.status === "confirmed")
+              .map((s) => s.startISO),
+          ),
+        ),
       ),
     [config, orders],
   );
@@ -74,7 +88,9 @@ export function CustomerPreview({
   );
   const selected = previewSelection(config, params.getAll("start"), purchased);
   const loyalty = deriveLoyaltyStatus(
-    6 + orders.flatMap((o) => o.slots).length,
+    6 +
+      orders.flatMap((o) => o.slots).filter((s) => s.status === "confirmed")
+        .length,
   );
   const rewards = rewardPositions(
     selected.length,
@@ -95,6 +111,9 @@ export function CustomerPreview({
     setPending({
       slots: selected.map((slot, index) => ({
         ...slot,
+        id: crypto.randomUUID(),
+        status: "confirmed",
+        changed: false,
         priceCents: rewards[index] ? 0 : slot.priceCents,
         isReward: rewards[index],
       })),
@@ -131,6 +150,42 @@ export function CustomerPreview({
     window.history.pushState(null, "", `${BASE}?${next}`);
     setMessage(
       "Termín byl odebrán z ukázkového výběru. Cena a bonus se přepočítaly.",
+    );
+  };
+  const cancelReservation = (id: string) => {
+    setOrders((all) =>
+      all.map((order) => ({
+        ...order,
+        slots: order.slots.map((slot) =>
+          slot.id === id ? { ...slot, status: "cancelled" } : slot,
+        ),
+      })),
+    );
+    setMessage(
+      "Zrušen byl pouze vybraný ukázkový termín. Ostatní rezervace zůstávají platné. Žádný e-mail nebyl odeslán.",
+    );
+  };
+  const changeReservation = (id: string, startISO: string) => {
+    const [next] = previewSelection(config, [startISO], purchased);
+    if (!next) return;
+    setOrders((all) =>
+      all.map((order) => ({
+        ...order,
+        slots: order.slots.map((slot) =>
+          slot.id === id
+            ? {
+                ...slot,
+                startISO: next.startISO,
+                label: next.label,
+                durationMinutes: next.durationMinutes,
+                changed: true,
+              }
+            : slot,
+        ),
+      })),
+    );
+    setMessage(
+      "Změněn byl pouze vybraný ukázkový termín. Cena a ostatní rezervace zůstávají stejné. Žádný e-mail nebyl odeslán.",
     );
   };
   const summary = (slots: PreviewSlot[], removable = false) => (
@@ -422,44 +477,68 @@ export function CustomerPreview({
                 <h2 className="mb-4 mt-10 text-2xl font-extrabold">
                   Nadcházející rezervace
                 </h2>
-                {orders.length ? (
+                <p className="mb-5 text-sm text-muted-foreground">
+                  Každý termín můžete spravovat samostatně. Změna nebo zrušení
+                  jednoho vstupu neovlivní ostatní termíny z objednávky.
+                </p>
+                {orders.some((o) =>
+                  o.slots.some((s) => s.status === "confirmed"),
+                ) ? (
                   <div className="grid gap-4">
-                    {orders.map((order, index) => (
-                      <Card key={index} className="p-5">
-                        <div className="flex items-center gap-3">
-                          <CalendarDays aria-hidden="true" className="size-5" />
-                          <strong>Trénink · celý gym</strong>
-                          <span className="ml-auto text-sm font-bold text-success">
-                            Potvrzená
-                          </span>
-                        </div>
-                        {summary(order.slots)}
-                        <p className="text-sm text-muted-foreground">
-                          Vstupní údaje zákazník obdrží před začátkem rezervace.
-                          V náhledu se kód neposílá.
-                        </p>
-                        <Button
-                          className="mt-4"
-                          variant="outline"
-                          onClick={() => {
-                            setOrders((all) =>
-                              all.filter((_, i) => i !== index),
-                            );
-                            setMessage(
-                              "Ukázková rezervace byla zrušena pouze v tomto okně.",
-                            );
-                          }}
-                        >
-                          Zrušit ukázkovou rezervaci
-                        </Button>
-                      </Card>
-                    ))}
+                    {orders
+                      .flatMap((order) =>
+                        order.slots
+                          .filter((slot) => slot.status === "confirmed")
+                          .map((slot) => ({ slot, order })),
+                      )
+                      .sort((a, b) =>
+                        a.slot.startISO.localeCompare(b.slot.startISO),
+                      )
+                      .map(({ slot, order }) => (
+                        <PreviewReservationCard
+                          key={slot.id}
+                          slot={slot}
+                          extraPeople={order.extraPeople}
+                          config={config}
+                          purchased={purchased}
+                          onCancel={cancelReservation}
+                          onChange={changeReservation}
+                        />
+                      ))}
                   </div>
                 ) : (
                   <p className="text-muted-foreground">
                     Nemáš žádnou naplánovanou ukázkovou rezervaci.
                   </p>
                 )}
+                {orders.some((o) =>
+                  o.slots.some((s) => s.status === "cancelled"),
+                ) ? (
+                  <>
+                    <h2 className="mb-4 mt-10 text-2xl font-extrabold">
+                      Historie rezervací
+                    </h2>
+                    <div className="grid gap-4">
+                      {orders
+                        .flatMap((order) =>
+                          order.slots
+                            .filter((slot) => slot.status === "cancelled")
+                            .map((slot) => ({ slot, order })),
+                        )
+                        .map(({ slot, order }) => (
+                          <PreviewReservationCard
+                            key={slot.id}
+                            slot={slot}
+                            extraPeople={order.extraPeople}
+                            config={config}
+                            purchased={purchased}
+                            onCancel={cancelReservation}
+                            onChange={changeReservation}
+                          />
+                        ))}
+                    </div>
+                  </>
+                ) : null}
                 <Button className="mt-6" onClick={() => navigate("calendar")}>
                   Rezervovat další termín
                 </Button>

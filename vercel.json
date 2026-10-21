@@ -25,7 +25,8 @@
       "codex/compact-blocking-history": false,
       "codex/period-price-priority": false,
       "codex/public-copy-pricing": false,
-      "codex/inline-content-editor": false
+      "codex/inline-content-editor": false,
+      "codex/single-announcement-banner": false
     }
   },
   "regions": ["cdg1"]

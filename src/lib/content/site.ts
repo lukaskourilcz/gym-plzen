@@ -53,6 +53,11 @@ import {
 } from "@/lib/config/branding";
 import { DEFAULT_RULES_BODY, LEGACY_RULES_BODY } from "@/lib/content/rules";
 import { rebrand } from "@/lib/content/rebrand";
+import {
+  ANNOUNCEMENT_SETTING_KEY,
+  resolveAnnouncement,
+  type Announcement,
+} from "@/lib/config/opening";
 
 export const PUBLIC_ADDRESS = "Křížkova 424/23, 301 00 Plzeň - Roudná";
 export const PUBLIC_MAP_QUERY = "Křížkova 424/23, 301 00 Plzeň";
@@ -335,6 +340,7 @@ const LEGACY_CONTENT_VALUES: Partial<
 export type SiteContentKey = keyof typeof SITE_DEFAULTS;
 
 export interface SiteContent {
+  announcement: Announcement;
   get: (key: SiteContentKey) => string;
   /** Editable source, including dynamic placeholders instead of today’s amounts. */
   raw: (key: SiteContentKey) => string;
@@ -412,6 +418,7 @@ export async function loadSiteContent(
   // Built-in photographs now show the real NAVI space. The operator can still
   // label future stand-in images explicitly through the CMS setting.
   let illustrativePhotos = false;
+  let announcementSetting: unknown;
   /*
    * Only a real instant is accepted here: `resolveEntryPrice` tolerates
    * anything else by quoting the standard price, but the intent of a caller
@@ -481,6 +488,7 @@ export async function loadSiteContent(
       }
 
       for (const s of settings) {
+        if (s.key === ANNOUNCEMENT_SETTING_KEY) announcementSetting = s.value;
         if (s.key === PARTICIPANTS_ENABLED_KEY)
           participantsEnabled = parseParticipantsEnabled(s.value);
         if (s.key === PARTICIPANT_PRICING_KEY)
@@ -573,13 +581,25 @@ export async function loadSiteContent(
             : `Za každou další osobu připlatíš ${formatMoney(participantPricing.amountCents)} za blok. Počet lidí a celkovou cenu zvolíš před platbou. Doprovod lze přidat i později z účtu, před začátkem rezervace.`,
       );
 
+  const publicText = (key: SiteContentKey) =>
+    rebrand(
+      fillPrices(revisePublicCopy(values[key] ?? SITE_DEFAULTS[key] ?? "")),
+    );
+
   return {
+    announcement: resolveAnnouncement(
+      announcementSetting,
+      options.at ?? new Date(),
+      {
+        before: publicText("home.opening.before"),
+        october: publicText("home.opening.october"),
+        yearEnd: publicText("home.opening.yearEnd"),
+        cta: publicText("home.opening.cta"),
+      },
+    ),
     raw: (key) =>
       rebrand(revisePublicCopy(values[key] ?? SITE_DEFAULTS[key] ?? "")),
-    get: (key) =>
-      rebrand(
-        fillPrices(revisePublicCopy(values[key] ?? SITE_DEFAULTS[key] ?? "")),
-      ),
+    get: publicText,
     entryPriceCents: price.priceCents,
     entryPriceForDate: (at) =>
       resolveEntryPrice({

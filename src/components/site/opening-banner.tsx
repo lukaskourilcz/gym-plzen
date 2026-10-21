@@ -1,21 +1,16 @@
 import Link from "next/link";
-import { openingAnnouncement } from "@/lib/config/opening";
+import type { Announcement } from "@/lib/config/opening";
 
 /**
- * Launch banner under the hero calendar. The text follows the Prague calendar
- * through `openingAnnouncement`: pre-launch, October, November/December, then
- * nothing. The homepage is ISR (`revalidate = 60`), so a change of phase shows
- * within a minute without a deployment.
+ * One manually controlled announcement. Existing launch copy is resolved by
+ * the content loader until an administrator first saves the single banner.
  */
 export function OpeningBanner({
-  at,
-  copy,
+  announcement,
 }: {
-  at: Date;
-  copy?: { before: string; october: string; yearEnd: string; cta: string };
+  announcement: Announcement;
 }) {
-  const announcement = openingAnnouncement(at, copy);
-  if (!announcement) return null;
+  if (!announcement.enabled) return null;
 
   return (
     <aside
@@ -26,11 +21,11 @@ export function OpeningBanner({
         href="/#cenik"
         className="block text-sm font-extrabold leading-6 sm:text-base"
       >
-        {announcement}
+        {announcement.title}
       </Link>
-      <p className="mt-1 text-xs leading-5">
-        {copy?.cta ?? "Zarezervuj si svůj termín již teď."}
-      </p>
+      {announcement.showSecondLine && announcement.secondLine ? (
+        <p className="mt-1 text-xs leading-5">{announcement.secondLine}</p>
+      ) : null}
     </aside>
   );
 }

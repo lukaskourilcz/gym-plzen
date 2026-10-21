@@ -187,6 +187,7 @@ try {
           "public.spec.ts",
           "customer-preview.spec.ts",
           "content-editor.spec.ts",
+          "announcement.spec.ts",
           "calendar-performance.spec.ts",
           "calendar-blocking.spec.ts",
           "incidents.spec.ts",

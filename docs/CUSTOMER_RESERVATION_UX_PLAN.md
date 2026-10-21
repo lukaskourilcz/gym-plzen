@@ -33,6 +33,14 @@ Zdroje: `src/lib/services/rescheduling.ts`, `src/lib/services/reservations.ts`,
 
 ## Můj účet → Moje rezervace
 
+Administrátorský zákaznický náhled nyní používá stejnou prezentační kartu
+`ReservationCardView` jako skutečný účet. Každý zaplacený termín má vlastní
+stálé ID, stav a informaci o využité změně; společná platba termíny neslučuje.
+Ukázkové storno přesune pouze vybraný termín do historie a ukázková změna
+zachová jeho zaplacenou cenu i bonus. Náhled používá společné pravidlo 24 hodin,
+avšak vlastní čistě místní ovladače bez importu serverových rezervačních akcí.
+Otevření dialogu nic nemění a všechny úpravy se zahodí po obnovení náhledu.
+
 Výchozí pohled „Nadcházející“, vedle „Historie“. Jeden termín = jedna kompaktní
 karta. Na první pohled datum, čas, stav a cena; pod nimi jasná tlačítka
 „Změnit termín“ a méně výrazné „Zrušit rezervaci“. Na telefonu zůstanou tlačítka

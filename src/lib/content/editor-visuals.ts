@@ -190,9 +190,9 @@ export const CONTENT_VISUALS: Record<string, ContentVisual> = {
     href: "/",
     dependencies: [
       {
-        label: "Kdy se lišta zobrazí",
+        label: "Ceny uvedené v oznámení",
         description:
-          "Texty se střídají podle pražského data: před otevřením, v říjnu 2026 a v listopadu–prosinci 2026. Potom se lišta skryje. Částky v těchto oznámeních jsou součástí textu; samy se s ceníkem nepřepočítávají.",
+          "Lišta používá vámi uložený text, dokud jej nezměníte nebo lištu nevypnete. Pokud v textu uvedete cenu, upravte ji i zde; nastavení lišty cenu rezervace nemění.",
         href: "/admin/memberships",
         linkLabel: "Zkontrolovat skutečné ceny",
       },

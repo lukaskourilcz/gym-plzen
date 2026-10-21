@@ -13,6 +13,56 @@ import { upsertBlock } from "../../src/lib/services/cms";
 describe("editable public content source", { skip: !databaseReady }, () => {
   beforeEach(resetDatabase);
   after(stopEverything);
+  test("the single banner reads resolved legacy copy until its first save, then honors manual visibility without rewriting CMS rows", async () => {
+    const key = "content.announcement";
+    try {
+      await setSetting(key, null);
+      await upsertBlock({
+        key: "home.opening.october",
+        valueText: "Vstup {price} na {duration}.",
+      });
+      const before = await rows(
+        "select * from content_block where key like 'home.opening.%' order by key",
+      );
+      const content = await loadSiteContent("cs", {
+        strict: true,
+        at: new Date("2026-10-21T10:00:00Z"),
+      });
+      assert.equal(
+        content.announcement.title,
+        content.get("home.opening.october"),
+      );
+      assert.match(content.announcement.title, /229.*60 minut/);
+      const saved = {
+        enabled: false,
+        title: "Vlastní text",
+        showSecondLine: false,
+        secondLine: "Uložený druhý řádek",
+      };
+      await setSetting(key, saved);
+      const settings = await rows("select * from site_setting order by key");
+      const afterSave = await loadSiteContent("cs", {
+        strict: true,
+        at: new Date("2027-03-01T10:00:00Z"),
+      });
+      assert.deepEqual(afterSave.announcement, saved);
+      assert.deepEqual(
+        await rows(
+          "select * from content_block where key like 'home.opening.%' order by key",
+        ),
+        before,
+      );
+      assert.deepEqual(
+        await rows("select * from site_setting order by key"),
+        settings,
+      );
+    } finally {
+      await rows(
+        "delete from content_block where key='home.opening.october' and locale='cs'",
+      );
+      await rows("delete from site_setting where key=$1", [key]);
+    }
+  });
   test("editor retains price/date/duration variables, while public content resolves the current configuration", async () => {
     const keys = [
       "home.pricing.promoNote",
