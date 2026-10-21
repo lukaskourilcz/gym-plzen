@@ -643,10 +643,10 @@ export default async function HomePage() {
             </blockquote>
             <div className="border-t border-white/15 pt-8 md:border-l md:border-t-0 md:pl-12 md:pt-0">
               <h2 className="text-2xl font-extrabold sm:text-3xl">
-                Chcete se dozvědět novinky ze světa NAVI Private Gym jako první?
+                Chceš se dozvědět novinky ze světa NAVI Private Gym jako první?
               </h2>
               <p className="mt-3 text-sm text-ink-foreground/75">
-                Zanechte nám svou e-mailovou adresu.
+                Zanech nám svou e-mailovou adresu.
               </p>
               <NewsletterSignup />
             </div>

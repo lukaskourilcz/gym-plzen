@@ -30,7 +30,7 @@ export function NewsletterSignup() {
             id="newsletter-email"
             type="email"
             autoComplete="email"
-            placeholder="vas@email.cz"
+            placeholder="tvuj@email.cz"
             aria-invalid={emailError ? true : undefined}
             aria-describedby={emailError ? "newsletter-email-error" : undefined}
             className="border-white/35 bg-white text-foreground"
@@ -64,9 +64,9 @@ export function NewsletterSignup() {
       </div>
       <FormFeedback error={serverError} success={success} />
       <p className="mt-3 text-xs leading-5 text-ink-foreground/70">
-        Odesláním souhlasíte se zpracováním e-mailu pro zasílání novinek.
-        Souhlas můžete kdykoli odvolat odkazem v každém e-mailu s novinkami nebo
-        e-mailem na nás. Podrobnosti najdete v{" "}
+        Odesláním souhlasíš se zpracováním e-mailu pro zasílání novinek. Souhlas
+        můžeš kdykoli odvolat odkazem v každém e-mailu s novinkami nebo e-mailem
+        na nás. Podrobnosti najdeš v{" "}
         <Link href="/ochrana-soukromi" className="underline hover:text-white">
           zásadách ochrany soukromí
         </Link>

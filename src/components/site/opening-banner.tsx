@@ -23,7 +23,7 @@ export function OpeningBanner({ at }: { at: Date }) {
         {announcement}
       </Link>
       <p className="mt-1 text-xs leading-5">
-        Zarezervujte si svůj termín již teď.
+        Zarezervuj si svůj termín již teď.
       </p>
     </aside>
   );

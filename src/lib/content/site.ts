@@ -1,3 +1,4 @@
+import { revisePublicCopy } from "./public-copy";
 import {
   BOOKING_PUBLIC_SETTING_KEYS,
   type BookingPricingSnapshot,
@@ -533,7 +534,10 @@ export async function loadSiteContent(
       );
 
   return {
-    get: (key) => rebrand(fillPrices(values[key] ?? SITE_DEFAULTS[key] ?? "")),
+    get: (key) =>
+      rebrand(
+        fillPrices(revisePublicCopy(values[key] ?? SITE_DEFAULTS[key] ?? "")),
+      ),
     entryPriceCents: price.priceCents,
     entryPriceForDate: (at) =>
       resolveEntryPrice({
