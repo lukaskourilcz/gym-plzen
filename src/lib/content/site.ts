@@ -581,23 +581,25 @@ export async function loadSiteContent(
             : `Za každou další osobu připlatíš ${formatMoney(participantPricing.amountCents)} za blok. Počet lidí a celkovou cenu zvolíš před platbou. Doprovod lze přidat i později z účtu, před začátkem rezervace.`,
       );
 
+  const publicText = (key: SiteContentKey) =>
+    rebrand(
+      fillPrices(revisePublicCopy(values[key] ?? SITE_DEFAULTS[key] ?? "")),
+    );
+
   return {
     announcement: resolveAnnouncement(
       announcementSetting,
       options.at ?? new Date(),
       {
-        before: values["home.opening.before"]!,
-        october: values["home.opening.october"]!,
-        yearEnd: values["home.opening.yearEnd"]!,
-        cta: values["home.opening.cta"]!,
+        before: publicText("home.opening.before"),
+        october: publicText("home.opening.october"),
+        yearEnd: publicText("home.opening.yearEnd"),
+        cta: publicText("home.opening.cta"),
       },
     ),
     raw: (key) =>
       rebrand(revisePublicCopy(values[key] ?? SITE_DEFAULTS[key] ?? "")),
-    get: (key) =>
-      rebrand(
-        fillPrices(revisePublicCopy(values[key] ?? SITE_DEFAULTS[key] ?? "")),
-      ),
+    get: publicText,
     entryPriceCents: price.priceCents,
     entryPriceForDate: (at) =>
       resolveEntryPrice({
