@@ -38,6 +38,7 @@ const PREVIEW_VALUES: Record<string, string> = {
   duration: "75 minut",
   price: "229 Kč",
   reason: "Úprava provozní doby",
+  refund_note: "Zaplacených 229 Kč se podle obchodních podmínek nevrací.",
   loyalty:
     "Toto je váš 7. započítaný vstup, do vstupu zdarma zbývají 3 vstupy.",
 };

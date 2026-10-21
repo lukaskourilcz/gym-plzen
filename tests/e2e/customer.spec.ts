@@ -547,3 +547,58 @@ test("rescheduling navigates through lightweight availability, ignores delayed r
     await sql!`delete from reservation where id=${id}`;
   }
 });
+
+test("administrator can edit the new customer cancellation template and preview the no-refund text without sending messages", async ({
+  browser,
+}) => {
+  const key = "messages.email.customer_reservation_cancellation";
+  const [saved] = await sql!`select * from site_setting where key=${key}`;
+  const state = () => sql!`select
+    (select md5(coalesce(string_agg(to_jsonb(r)::text,'' order by id),'')) from reservation r) as reservations,
+    (select md5(coalesce(string_agg(to_jsonb(c)::text,'' order by id),'')) from access_code c) as codes,
+    (select md5(coalesce(string_agg(to_jsonb(m)::text,'' order by id),'')) from message_delivery m) as messages,
+    (select md5(coalesce(string_agg(to_jsonb(e)::text,'' order by id),'')) from email_archive e) as emails`;
+  const before = await state();
+  const context = await browser.newContext({
+    storageState: join(process.cwd(), "tests/e2e/.auth/admin.json"),
+  });
+  const page = await context.newPage();
+  try {
+    await page.goto("/admin/emails");
+    await page
+      .getByRole("tab", { name: "Zrušení rezervace zákazníkem", exact: true })
+      .click();
+    await expect(page.getByLabel("Text e-mailu", { exact: true })).toHaveValue(
+      /\{refund_note\}/,
+    );
+    await expect(
+      page.getByText(
+        "Zaplacených 229 Kč se podle obchodních podmínek nevrací.",
+        { exact: true },
+      ),
+    ).toBeVisible();
+    const subject = page.getByLabel("Předmět", { exact: true });
+    await subject.fill("Potvrzení zákaznického storna");
+    await page
+      .getByRole("button", { name: "Uložit šablonu", exact: true })
+      .click();
+    await expect
+      .poll(
+        async () =>
+          (await sql!`select value from site_setting where key=${key}`)[0]
+            ?.value?.subject,
+      )
+      .toContain("Potvrzení zákaznického storna");
+    await page.reload();
+    await page
+      .getByRole("tab", { name: "Zrušení rezervace zákazníkem", exact: true })
+      .click();
+    await expect(subject).toHaveValue(/Potvrzení zákaznického storna/);
+    expect(await state()).toEqual(before);
+  } finally {
+    if (saved)
+      await sql!`update site_setting set value=${sql!.json(saved.value)},updated_at=${saved.updated_at},updated_by_admin_id=${saved.updated_by_admin_id} where key=${key}`;
+    else await sql!`delete from site_setting where key=${key}`;
+    await context.close();
+  }
+});

@@ -163,8 +163,8 @@ export default async function AccountPage({
                     role="status"
                   >
                     Po dokončení odebrání vstupního kódu se termín uvolní v
-                    kalendáři. Zaplacená cena se podle obchodních podmínek
-                    nevrací.
+                    kalendáři. Potvrzení storna posíláme e-mailem. Podrobnosti
+                    najdete u zrušeného termínu v historii.
                   </Notice>
                 ) : null}
                 {params.zmena === "uspesna" ? (

@@ -14,7 +14,12 @@ import { raiseAlert, resolveAlert } from "./alerts";
 const customerIntentSchema = z.object({
   version: z.literal(1),
   templateId: z.literal("customer_reservation_cancellation"),
-  variables: z.record(z.string()),
+  variables: z.object({
+    name: z.string(),
+    time: z.string(),
+    price: z.string(),
+    refund_note: z.string(),
+  }),
   email: z
     .object({
       to: z.string(),

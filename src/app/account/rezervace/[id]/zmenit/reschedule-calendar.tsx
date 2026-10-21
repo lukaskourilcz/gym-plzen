@@ -326,9 +326,9 @@ export function RescheduleCalendar({
                           })}, ${reason}`
                         : undefined
                     }
-                    className="grid min-h-12 place-items-center rounded-sm text-sm text-muted-foreground/35 sm:min-h-14"
+                    className="grid min-h-12 place-items-center rounded-sm text-sm text-muted-foreground sm:min-h-14"
                   >
-                    {dayNumber}
+                    {cell.inMonth ? dayNumber : null}
                   </span>
                 );
               }
