@@ -166,13 +166,10 @@ export const CONTENT_EDITOR_SECTIONS: readonly ContentEditorSection[] = [
   },
   {
     title: "Oznamovací lišta",
-    description: "Časově omezená zlatá lišta pod úvodním kalendářem.",
-    items: [
-      item("home.opening.before", "Oznámení před otevřením"),
-      item("home.opening.october", "Oznámení v říjnu"),
-      item("home.opening.yearEnd", "Oznámení v listopadu a prosinci"),
-      item("home.opening.cta", "Výzva pod oznámením"),
-    ],
+    description:
+      "Jedna zlatá lišta pod úvodním kalendářem. Upravte text nebo ji kdykoli vypněte.",
+    // Dedicated editor stores both text lines and visibility together.
+    items: [],
   },
   {
     title: "Provozní řád",

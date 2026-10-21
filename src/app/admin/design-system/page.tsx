@@ -912,6 +912,10 @@ export default async function DesignSystemPage() {
                     mají informační ikonu s odkazem na zdroj; náhledové
                     formuláře nic neodesílají.
                   </p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Oznamovací lišta má jeden upravitelný náhled a přepínače
+                    zobrazení celé lišty i druhého řádku. Vypnutí uchová texty.
+                  </p>
                   <Button
                     className="mt-4"
                     href="/admin/content?section=pricing"

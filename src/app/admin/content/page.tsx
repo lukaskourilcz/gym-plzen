@@ -51,6 +51,7 @@ export default async function ContentPage() {
         description="Vyberte část webu a upravte text nebo fotografii tužkou přímo v jejím rozložení."
       />
       <ContentEditor
+        announcement={content.announcement}
         values={values}
         assets={assets}
         preview={{

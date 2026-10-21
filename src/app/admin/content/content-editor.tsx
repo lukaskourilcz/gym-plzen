@@ -29,13 +29,17 @@ import { savePublicTextAction } from "./actions";
 import { AssetEditor } from "./asset-editor";
 import { ContentCanvas } from "./content-canvas";
 import type { ContentPreviewData } from "./canvas-controls";
+import type { Announcement } from "@/lib/config/opening";
+import { AnnouncementEditor } from "./announcement-editor";
 
 /** Focus one website section at a time, with a visual reference and explicit data sources. */
 export function ContentEditor({
+  announcement,
   values,
   assets,
   preview,
 }: {
+  announcement: Announcement;
   values: Record<string, string>;
   assets: Record<string, string>;
   preview: ContentPreviewData;
@@ -126,13 +130,17 @@ export function ContentEditor({
           Vyberte tužku přímo u textu nebo fotografie. Uložená změna se zveřejní
           na webu. Náhledové formuláře neslouží k rezervaci ani k odesílání.
         </p>
-        <ContentCanvas
-          section={section}
-          preview={{ ...preview, texts: rendered }}
-          assets={images}
-          onEdit={startEditing}
-          onEditAsset={setEditingAsset}
-        />
+        {visual.id === "opening" ? (
+          <AnnouncementEditor initialValue={announcement} />
+        ) : (
+          <ContentCanvas
+            section={section}
+            preview={{ ...preview, texts: rendered }}
+            assets={images}
+            onEdit={startEditing}
+            onEditAsset={setEditingAsset}
+          />
+        )}
         {visual.dependencies.length ? (
           <details className="mt-5 rounded-lg border border-border bg-card p-4">
             <summary className="cursor-pointer font-semibold">

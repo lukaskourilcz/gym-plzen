@@ -543,31 +543,6 @@ function Newsletter() {
     </>
   );
 }
-function Opening() {
-  return (
-    <div className="grid gap-6 p-5 @2xl:p-8">
-      {[
-        ["before", "Před otevřením"],
-        ["october", "Říjen 2026"],
-        ["yearEnd", "Listopad a prosinec 2026"],
-      ].map(([key, label]) => (
-        <div key={key}>
-          <p className="canvas-meta mb-2 text-muted-foreground">{label}</p>
-          <div className="bg-gold p-6 text-center text-gold-foreground">
-            <Text
-              field={`home.opening.${key}`}
-              as="p"
-              className="font-extrabold uppercase"
-            />
-            {key === "october" ? (
-              <Text field="home.opening.cta" as="p" className="mt-2 text-sm" />
-            ) : null}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 function Rules() {
   const { preview, onEdit } = useCanvas();
   const body = preview.texts["home.rules.body"] ?? "";
@@ -630,8 +605,6 @@ export function CanvasSection({ id }: { id: string }) {
       return <Contact />;
     case "newsletter":
       return <Newsletter />;
-    case "opening":
-      return <Opening />;
     case "rules":
       return <Rules />;
     default:

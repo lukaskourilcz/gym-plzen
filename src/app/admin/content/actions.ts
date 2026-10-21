@@ -19,6 +19,29 @@ import {
   isEditableContentKey,
 } from "@/lib/content/editor";
 import { ActionError } from "@/lib/helpers/action";
+import {
+  ANNOUNCEMENT_SETTING_KEY,
+  announcementSchema,
+  type Announcement,
+} from "@/lib/config/opening";
+
+const saveAnnouncementImpl = defineAction({
+  schema: announcementSchema,
+  authorize: assertAdmin,
+  handler: async (input, admin) => {
+    // A single CMS setting only. No reservation, delivery or code service runs.
+    await cms.setSetting(ANNOUNCEMENT_SETTING_KEY, input, admin.id);
+    revalidatePath("/");
+    revalidatePath("/admin/content");
+    return input;
+  },
+});
+
+export async function saveAnnouncementAction(
+  input: Announcement,
+): Promise<Result<Announcement>> {
+  return saveAnnouncementImpl(input);
+}
 
 /**
  * CMS content-block save action. Upserts a block by (key, locale). The public

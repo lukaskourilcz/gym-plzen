@@ -7,6 +7,7 @@ import {
 import { CONTENT_VISUALS } from "../../src/lib/content/editor-visuals";
 import { SITE_DEFAULTS } from "../../src/lib/content/site";
 import { contentAssetSchema } from "../../src/lib/validations/content-asset";
+import { LEGACY_ANNOUNCEMENT_KEYS } from "../../src/lib/config/opening";
 
 test("every public CMS key has an editor and a visual section", () => {
   const keys = CONTENT_EDITOR_SECTIONS.flatMap((section) => {
@@ -15,11 +16,14 @@ test("every public CMS key has an editor and a visual section", () => {
   });
   assert.equal(new Set(keys).size, keys.length);
   assert.deepEqual(
-    Object.keys(SITE_DEFAULTS).filter((key) => !keys.includes(key)),
+    Object.keys(SITE_DEFAULTS).filter((key) => !keys.includes(key) && !LEGACY_ANNOUNCEMENT_KEYS.some((legacy) => legacy === key)),
     [],
   );
   assert.equal(isEditableContentKey("billing.send_documents"), false);
   assert.equal(isEditableContentKey("notifications.operator"), false);
+  // Historical phase copy is retained in storage, but the single banner has
+  // its own editor and cannot accidentally reopen the old date-based variants.
+  for (const key of LEGACY_ANNOUNCEMENT_KEYS) assert.equal(isEditableContentKey(key), false);
 });
 test("asset editing only accepts supported image sources and known branding keys", () => {
   for (const value of [
