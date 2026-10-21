@@ -46,6 +46,7 @@ export function NoticesEditor({ initial }: { initial: PublicNotices }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState(false);
+  const [interrupted, setInterrupted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const def = noticeDefinition(active);
@@ -85,7 +86,7 @@ export function NoticesEditor({ initial }: { initial: PublicNotices }) {
         <button
           type="button"
           aria-label={`Upravit: ${field.label}`}
-          disabled={pending}
+          disabled={pending || interrupted}
           className="ml-1 inline-flex size-9 shrink-0 items-center justify-center rounded-md border border-border bg-card align-middle text-primary shadow-sm hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           onClick={() => {
             setEditing(key);
@@ -111,7 +112,7 @@ export function NoticesEditor({ initial }: { initial: PublicNotices }) {
   );
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    if (!editing || pending) return;
+    if (!editing || pending || interrupted) return;
     const input = { id: active, fields: { ...copy, [editing]: draft } };
     const parsed = saveNoticeSchema.safeParse(input);
     if (!parsed.success) {
@@ -123,6 +124,7 @@ export function NoticesEditor({ initial }: { initial: PublicNotices }) {
     const response = await receiveAction(() => saveNoticeAction(parsed.data));
     setPending(false);
     if (!response.received) {
+      setInterrupted(true);
       setError(
         "Uložení se nepodařilo potvrdit. Před další úpravou obnovte stránku a ověřte uložený text.",
       );
@@ -151,7 +153,7 @@ export function NoticesEditor({ initial }: { initial: PublicNotices }) {
             key={d.id}
             type="button"
             aria-current={active === d.id ? "page" : undefined}
-            disabled={pending}
+            disabled={pending || interrupted}
             className={cn(
               "min-h-11 shrink-0 rounded-md border px-3 py-2 text-left text-sm font-semibold",
               active === d.id
@@ -319,7 +321,7 @@ export function NoticesEditor({ initial }: { initial: PublicNotices }) {
               id="notice-text"
               data-initial-focus
               value={draft}
-              disabled={pending}
+              disabled={pending || interrupted}
               rows={currentField.button ? 2 : 5}
               maxLength={currentField.button ? 100 : 3000}
               onChange={(e) => setDraft(e.target.value)}
@@ -333,13 +335,25 @@ export function NoticesEditor({ initial }: { initial: PublicNotices }) {
             </p>
             <div className="mt-3">
               <FormFeedback error={error} />
+              {interrupted ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-3"
+                  onClick={() => window.location.reload()}
+                >
+                  Obnovit a ověřit stav
+                </Button>
+              ) : null}
             </div>
             <div className="mt-5 flex flex-wrap gap-3">
-              <SubmitButton isSubmitting={pending}>Uložit text</SubmitButton>
+              <SubmitButton isSubmitting={pending} disabled={interrupted}>
+                Uložit text
+              </SubmitButton>
               <Button
                 variant="outline"
                 type="button"
-                disabled={pending}
+                disabled={pending || interrupted}
                 onClick={() => setEditing(null)}
               >
                 Zrušit úpravu
