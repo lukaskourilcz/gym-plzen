@@ -15,6 +15,7 @@ export const EMAIL_TEMPLATE_IDS = [
   "access_code",
   "access_code_evening",
   "reservation_cancellation",
+  "customer_reservation_cancellation",
   "payment_document",
   "operator_notice",
 ] as const;
@@ -145,6 +146,18 @@ export const EMAIL_TEMPLATE_DEFINITIONS: readonly EmailTemplateDefinition[] = [
     fallback: {
       subject: "Zrušení rezervace | NAVI Private Gym",
       body: "Ahoj {name},\n\nvaše rezervace na {time} byla bohužel zrušena.\n\nDůvod: {reason}\n\nOmlouváme se za komplikace. Vyberte si prosím jiný volný termín.\n\nNAVI Private Gym",
+    },
+  },
+  {
+    id: "customer_reservation_cancellation",
+    label: "Zrušení rezervace zákazníkem",
+    description:
+      "Odešle se pouze po novém stornu, které zákazník potvrdí ve svém účtu. Uložení šablony nic nerozesílá; historická storna ji zpětně nepoužijí.",
+    variables: ["{name}", "{time}", "{price}", "{refund_note}"],
+    delivery: "application",
+    fallback: {
+      subject: "Potvrzení zrušení rezervace | NAVI Private Gym",
+      body: "Dobrý den, {name},\n\npotvrzujeme zrušení rezervace na vaši žádost.\n\nTermín: {time}\nCena: {price}\n\n{refund_note}\n\nRezervace již neplatí. Původní vstupní kód již nepoužívejte. Ostatní rezervace z vaší objednávky zůstávají v platnosti.\n\nSvé rezervace najdete ve svém zákaznickém účtu.\n\nNAVI Private Gym",
     },
   },
   {
