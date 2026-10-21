@@ -316,7 +316,7 @@ export default async function HowItWorksPage() {
                 href="/admin/alerts"
                 className="text-accent-foreground hover:underline"
               >
-                Upozornění
+                Provozní upozornění
               </Link>
               .
             </p>
@@ -453,7 +453,7 @@ export default async function HowItWorksPage() {
                 href="/admin/alerts"
                 className="text-accent-foreground hover:underline"
               >
-                Upozornění
+                Provozní upozornění
               </Link>{" "}
               a{" "}
               <Link
@@ -471,8 +471,8 @@ export default async function HowItWorksPage() {
               Zkontrolujte stav e-mailu a WhatsAppu na stránce Zítra a pak
               podrobnosti v Odeslaných zprávách. WhatsApp se týká jen
               přihlášených zákazníků, kteří si ho zapnuli. Pokud e-mail nebo kód
-              selhal, otevřete Upozornění; systém pokusy automaticky opakuje,
-              ale obsluha má problém sledovat.
+              selhal, otevřete Provozní upozornění; systém pokusy automaticky
+              opakuje, ale obsluha má problém sledovat.
             </p>
           </Question>
           <Question title="Ukazuje Finance vratku. Znamená to, že už odešla?">

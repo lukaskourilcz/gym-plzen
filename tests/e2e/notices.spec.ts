@@ -101,7 +101,7 @@ test("admin copy appears in real and simulated cancellations; actions align with
   const key = noticeSettingKey("cancellation");
   const [previous] = await sql`select * from site_setting where key=${key}`;
   const [member] =
-    await sql`select id from profiles where email='member@example.test'`;
+    await sql`select id from profiles where email='member@example.test' order by created_at desc limit 1`;
   const id = randomUUID();
   await sql`insert into reservation(id,user_id,starts_at,ends_at,status,price_cents,contact_email) values(${id},${member!.id},now()+interval '3 days',now()+interval '3 days 75 minutes','confirmed',19900,'member@example.test')`;
   await sql`insert into access_code(reservation_id,code_hash,code_last2,valid_from,valid_until,status) values(${id},'synthetic-only','42',now()+interval '3 days',now()+interval '3 days 75 minutes','active')`;

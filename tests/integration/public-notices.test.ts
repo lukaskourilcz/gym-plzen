@@ -15,7 +15,12 @@ describe(
   { skip: !databaseReady },
   () => {
     after(stopEverything);
-    beforeEach(resetDatabase);
+    beforeEach(async () => {
+      await resetDatabase();
+      await rows(
+        "delete from site_setting where key like 'content.notice.%' or key = 'private.provider.credentials'",
+      );
+    });
     test("defaults do not create records; selected public copy excludes unrelated settings and tolerates corruption", async () => {
       await setSetting("private.provider.credentials", {
         secret: "must-not-leak",

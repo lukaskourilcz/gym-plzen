@@ -82,7 +82,12 @@ export function NoticesEditor({ initial }: { initial: PublicNotices }) {
     const field = def.fields.find((f) => f.key === key)!;
     return (
       <span className="whitespace-pre-line break-words">
-        {renderNotice(copy[key]!, sample)}
+        {renderNotice(
+          copy[key]!,
+          key === "selection"
+            ? { ...sample, time: "24. 10. 2026, 10:00 – 11:15" }
+            : sample,
+        )}
         <button
           type="button"
           aria-label={`Upravit: ${field.label}`}
@@ -174,7 +179,21 @@ export function NoticesEditor({ initial }: { initial: PublicNotices }) {
           {def.description} Text upravíte tužkou přímo v náhledu.
         </p>
         <FormFeedback success={saved} />
+        {interrupted && !editing ? (
+          <div className="mt-4 rounded-lg border bg-card p-4">
+            <FormFeedback error={error} />
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-3"
+              onClick={() => window.location.reload()}
+            >
+              Obnovit a ověřit stav
+            </Button>
+          </div>
+        ) : null}
         <section
+          key={active}
           aria-label={`Náhled upozornění: ${def.label}`}
           className="content-canvas mt-4 min-w-0 rounded-lg border border-border bg-secondary/50 p-3 sm:p-6"
         >
