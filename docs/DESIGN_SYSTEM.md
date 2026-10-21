@@ -750,3 +750,23 @@ počet slotů, čas vytvoření a akci nebo datum zrušení. Dlouhý název se z
 s úplným textem v `title`. Sdílená tabulka umožňuje vodorovný posun dotykem
 i klávesnicí na malé obrazovce. Server čte 10 záznamů a jeden navíc pro
 ověření další stránky; navigace odkazuje přímo zpět na historii.
+
+### Vizuální editor veřejného obsahu
+
+Obsah webu používá jednu aktivní podsekci s adresou `?section=…`; navigace
+funguje i po obnovení stránky a na mobilu se posouvá vodorovně. Každá část má
+orientační snímek skutečného veřejného rozvržení, odkaz na publikovaný web,
+jednotlivé texty a vlastní fotografie. Snímek není živý náhled aktuálních dat;
+popisek tento rozdíl vysvětluje. Snímky se obnovují pouze z odděleného místního
+prostředí volbou `--capture-content-previews` v E2E runneru.
+
+Text se upravuje v existujícím nativním `AdminDialog`, s obnovením fokusu,
+validací a potvrzením uložení. Cena, datum konce období a délka bloku zůstávají
+v editačním zdroji jako proměnné. Blok „Co se načítá odjinud“ popisuje původ
+hodnot a vede přímo do ceníku, rozvrhu nebo společných kontaktů. Fotografie se
+ukládá po jedné podle povoleného klíče; formulář nepřepisuje jiné snímky.
+
+Zákaznický náhled se otevírá z administrace v samostatné kartě. Má stálý výrazný
+popisek simulace, reset a návrat do administrace. Sdílí veřejný kalendář a
+rezervační formulář, ale dostupnost, účet i platba jsou pouze místní stav;
+nevytváří zákaznický účet a nevolá poskytovatele plateb ani zpráv.

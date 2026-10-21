@@ -1,3 +1,8 @@
+import {
+  DEFAULT_OPEN_MINUTE,
+  DEFAULT_CLOSE_MINUTE,
+} from "@/lib/config/schedule";
+import { minutesToHHmm } from "@/lib/helpers/format";
 import type { Metadata } from "next";
 import Image, { getImageProps } from "next/image";
 import { ArrowRight, Check, Clock3, ImageIcon, MapPin } from "lucide-react";
@@ -8,21 +13,10 @@ import {
   PUBLIC_MAP_QUERY,
 } from "@/lib/content/site";
 import { cn } from "@/lib/utils";
-import {
-  formatDate,
-  formatMoney,
-  formatTimeRange,
-  minutesToHHmm,
-  RANGE_DASH,
-} from "@/lib/helpers/format";
+import { formatMoney, formatTimeRange } from "@/lib/helpers/format";
 import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/helpers/datetime";
 import { firstBookableDateKey } from "@/lib/config/booking-start";
 import { getSlotsForRange } from "@/lib/services/slots";
-import {
-  DEFAULT_CLOSE_MINUTE,
-  DEFAULT_OPEN_MINUTE,
-  DEFAULT_SLOT_MINUTES,
-} from "@/lib/config/schedule";
 import { HERO_INITIAL_DAYS, HERO_HORIZON_DAYS } from "@/lib/config/hero";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
@@ -47,11 +41,6 @@ import {
 /** Verified position of the entrance, used as the map's marker. */
 const GYM_POSITION = { lat: 49.7550669, lng: 13.3785039 } as const;
 const GYM_COORDINATES = `${GYM_POSITION.lat},${GYM_POSITION.lng}`;
-
-const OPENING_HOURS = `${minutesToHHmm(DEFAULT_OPEN_MINUTE).replace(
-  /^0/,
-  "",
-)}${RANGE_DASH}${minutesToHHmm(DEFAULT_CLOSE_MINUTE)}`;
 
 /** Six operating steps, all editable in the admin under "Obsah webu". */
 const STEP_KEYS = [
@@ -94,9 +83,7 @@ export default async function HomePage() {
   /*
    * Promotions follow the visit date. Show the configured end to avoid stale copy.
    */
-  const promoNote = content.promoEndsAt
-    ? `Akční cena pro návštěvy do ${formatDate(content.promoEndsAt)}. Platí i při rezervaci předem.`
-    : t("home.pricing.promoNote");
+  const promoNote = t("home.pricing.promoNote");
   const address = publicAddress(t("contact.address"));
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(PUBLIC_MAP_QUERY)}`;
   /*
@@ -236,9 +223,11 @@ export default async function HomePage() {
                       {t("home.hero.hoursLabel")}
                     </span>
                     <span className="mt-1 block font-bold">
-                      {OPENING_HOURS}
+                      {content.openingHoursLabel}
                     </span>
-                    <span className="block font-bold">otevřeno každý den</span>
+                    <span className="block font-bold">
+                      {t("home.hero.hoursNote")}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -282,14 +271,22 @@ export default async function HomePage() {
                   )}
                 />
               </div>
-              <OpeningBanner at={now} />
+              <OpeningBanner
+                at={now}
+                copy={{
+                  before: t("home.opening.before"),
+                  october: t("home.opening.october"),
+                  yearEnd: t("home.opening.yearEnd"),
+                  cta: t("home.opening.cta"),
+                }}
+              />
             </div>
           </Container>
         </section>
 
         {/* The desktop hero reserves room for this strip so it is visible
             immediately, without requiring the first scroll. */}
-        <div className="border-b border-border bg-background">
+        <div id="informace" className="border-b border-border bg-background">
           <Container className="grid grid-cols-1 border-x border-border sm:grid-cols-2 lg:grid-cols-4">
             {[
               {
@@ -300,7 +297,10 @@ export default async function HomePage() {
                 value: t("home.facts.2.title"),
                 label: t("home.facts.2.body"),
               },
-              { value: OPENING_HOURS, label: t("home.facts.3.body") },
+              {
+                value: content.openingHoursLabel,
+                label: t("home.facts.3.body"),
+              },
               {
                 value: t("home.facts.4.title"),
                 label: t("home.facts.4.body"),
@@ -449,25 +449,22 @@ export default async function HomePage() {
                 <div className="flex flex-1 flex-col justify-center border-b border-border px-7 py-12 text-center">
                   <div className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
                     {/* 60px: the top of the documented display range. */}
+                    <span className="text-base font-bold text-muted-foreground">
+                      {t("home.pricing.pricePrefix")}
+                    </span>
                     <span className="text-6xl font-extrabold leading-none tracking-[-.01em] text-gold">
                       {price}
                     </span>
                     <span className="text-base font-bold uppercase tracking-[.1em] text-muted-foreground">
-                      / {DEFAULT_SLOT_MINUTES} minut
+                      {t("home.pricing.duration")}
                     </span>
                   </div>
                   <p className="mt-4 text-sm font-semibold text-card-foreground">
-                    Uvedená cena platí za celý prostor, nikoli za osobu.
+                    {t("home.pricing.priceScope")}
                   </p>
-                  {/*
-                   * During a promotion the standard price stays visible, so the
-                   * saving is a fact the visitor can check rather than a claim.
-                   */}
+                  {/* Keep the configured promotion end, without a second price. */}
                   {content.isPromoPrice && (
                     <p className="mt-4 text-sm font-bold text-muted-foreground">
-                      <span className="line-through">
-                        {formatMoney(content.standardEntryPriceCents)}
-                      </span>{" "}
                       <span className="text-accent-foreground">
                         {promoNote}
                       </span>
@@ -607,7 +604,10 @@ export default async function HomePage() {
             </p>
             <p className="mt-2 font-bold">{address}</p>
             <p className="mt-3 text-sm text-muted-foreground">
-              {t("home.contact.hours").replace("{hours}", OPENING_HOURS)}
+              {t("home.contact.hours").replace(
+                "{hours}",
+                content.openingHoursLabel,
+              )}
             </p>
           </div>
           <Button
@@ -621,7 +621,7 @@ export default async function HomePage() {
           </Button>
         </div>
 
-        <section className="bg-ink text-ink-foreground">
+        <section id="novinky" className="bg-ink text-ink-foreground">
           <Container className="grid gap-10 py-12 md:grid-cols-2 md:items-center md:gap-12 lg:py-14">
             <blockquote className="flex items-center gap-5 text-base leading-7 text-ink-foreground/80 md:justify-self-center">
               <BrandMark
@@ -646,12 +646,19 @@ export default async function HomePage() {
             </blockquote>
             <div className="border-t border-white/15 pt-8 md:border-l md:border-t-0 md:pl-12 md:pt-0">
               <h2 className="text-2xl font-extrabold sm:text-3xl">
-                Chcete se dozvědět novinky ze světa NAVI Private Gym jako první?
+                {t("home.newsletter.title")}
               </h2>
               <p className="mt-3 text-sm text-ink-foreground/75">
-                Zanechte nám svou e-mailovou adresu.
+                {t("home.newsletter.body")}
               </p>
-              <NewsletterSignup />
+              <NewsletterSignup
+                copy={{
+                  button: t("home.newsletter.button"),
+                  placeholder: t("home.newsletter.placeholder"),
+                  consent: t("home.newsletter.consent"),
+                  privacyLink: t("home.newsletter.privacyLink"),
+                }}
+              />
             </div>
           </Container>
         </section>

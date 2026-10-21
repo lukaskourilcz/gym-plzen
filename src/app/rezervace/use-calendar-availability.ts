@@ -24,7 +24,10 @@ async function load(month: string, date: string | null) {
     return result;
   });
 }
-export function useCalendarAvailability(initial: CalendarView) {
+export function useCalendarAvailability(
+  initial: CalendarView,
+  localSource?: (month: string, date: string | null) => CalendarView,
+) {
   const [view, setView] = useState(initial);
   const [loading, setLoading] = useState(false);
   const sequence = useRef(0);
@@ -33,42 +36,50 @@ export function useCalendarAvailability(initial: CalendarView) {
     month: initial.monthKey,
     date: initial.selectedDateKey,
   });
-  const refresh = useCallback(async (month: string, date: string | null) => {
-    const token = ++sequence.current;
-    current.current = { month, date };
-    const cached = cache.peek(month, date);
-    // Highlight the requested day on the same event; never retain another day's times.
-    setView(
-      (previous) =>
-        cached ?? {
-          ...previous,
-          monthKey: month,
-          selectedDateKey: date,
-          selectedSlots: [],
-          source: previous.source === "preview" ? "preview" : "live",
-        },
-    );
-    setLoading(!cached);
-    try {
-      const result = cached ?? (await load(month, date));
-      if (mounted.current && token === sequence.current) setView(result);
-    } catch {
-      if (mounted.current && token === sequence.current)
-        setView((previous) => ({
-          ...previous,
-          source: "unavailable",
-          selectedSlots: [],
-        }));
-    } finally {
-      if (mounted.current && token === sequence.current) setLoading(false);
-    }
-  }, []);
+  const refresh = useCallback(
+    async (month: string, date: string | null) => {
+      const token = ++sequence.current;
+      current.current = { month, date };
+      if (localSource) {
+        setView(localSource(month, date));
+        setLoading(false);
+        return;
+      }
+      const cached = cache.peek(month, date);
+      // Highlight the requested day on the same event; never retain another day's times.
+      setView(
+        (previous) =>
+          cached ?? {
+            ...previous,
+            monthKey: month,
+            selectedDateKey: date,
+            selectedSlots: [],
+            source: previous.source === "preview" ? "preview" : "live",
+          },
+      );
+      setLoading(!cached);
+      try {
+        const result = cached ?? (await load(month, date));
+        if (mounted.current && token === sequence.current) setView(result);
+      } catch {
+        if (mounted.current && token === sequence.current)
+          setView((previous) => ({
+            ...previous,
+            source: "unavailable",
+            selectedSlots: [],
+          }));
+      } finally {
+        if (mounted.current && token === sequence.current) setLoading(false);
+      }
+    },
+    [localSource],
+  );
   useEffect(() => {
     mounted.current = true;
     sequence.current++;
-    cache.seed(initial);
+    if (!localSource) cache.seed(initial);
     const invalidate = () => {
-      cache.invalidate();
+      if (!localSource) cache.invalidate();
       void refresh(current.current.month, current.current.date);
     };
     const pop = () => {
@@ -99,9 +110,15 @@ export function useCalendarAvailability(initial: CalendarView) {
     };
     // The server snapshot seeds this mounted calendar once. Navigation is local.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refresh]);
+  }, [refresh, localSource]);
   useEffect(() => {
-    if (loading || view.source !== "live" || !view.selectedDateKey) return;
+    if (
+      localSource ||
+      loading ||
+      view.source !== "live" ||
+      !view.selectedDateKey
+    )
+      return;
     const date = view.selectedDateKey;
     const timer = window.setTimeout(() => {
       for (const delta of [-1, 1]) {
@@ -112,6 +129,7 @@ export function useCalendarAvailability(initial: CalendarView) {
     }, 250);
     return () => window.clearTimeout(timer);
   }, [
+    localSource,
     view.selectedDateKey,
     view.minDateKey,
     view.maxDateKey,

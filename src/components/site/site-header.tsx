@@ -14,13 +14,20 @@ export function SiteHeader({
   brand = "NAVI Private Gym",
   accountHref = "/login",
   accountLabel = "Přihlásit se",
+  previewBase,
 }: {
+  /** Protected customer walkthrough: all website links stay inside the preview. */
+  previewBase?: string;
   brand?: string;
   logoUrl?: string | null;
   accountHref?: string;
   accountLabel?: string;
 }) {
   const pathname = usePathname();
+  const link = (href: string) =>
+    previewBase
+      ? `${previewBase}?screen=${href === "/rezervace" ? "calendar" : href === "/vybaveni" ? "equipment" : href === "/faq" ? "faq" : "home"}${href.includes("#") ? `#${href.split("#")[1]}` : ""}`
+      : href;
   const [open, setOpen] = useState(false);
   const [ready, setReady] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -79,7 +86,7 @@ export function SiteHeader({
            * the top on a same-page click.
            */}
           <Link
-            href="/"
+            href={link("/")}
             scroll={false}
             onClick={() => window.scrollTo({ top: 0 })}
             aria-label={`${brand}, úvodní stránka`}
@@ -96,7 +103,7 @@ export function SiteHeader({
             {PUBLIC_NAV.map((item) => (
               <Link
                 key={item.href}
-                href={item.href}
+                href={link(item.href)}
                 aria-current={pathname === item.href ? "page" : undefined}
                 className="flex min-h-11 items-center px-2 text-sm font-bold uppercase tracking-[.09em] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
@@ -109,7 +116,7 @@ export function SiteHeader({
             {/* Visible at every width: on mobile the hero no longer carries a
               booking action of its own above the fold. */}
             <Button
-              href="/rezervace"
+              href={link("/rezervace")}
               prefetch={false}
               size="sm"
               className="px-2.5 uppercase tracking-[.04em] sm:px-4 sm:tracking-[.1em]"
@@ -153,7 +160,7 @@ export function SiteHeader({
             {PUBLIC_NAV.map((item) => (
               <Link
                 key={item.href}
-                href={item.href}
+                href={link(item.href)}
                 onClick={() => setOpen(false)}
                 className="flex min-h-11 items-center border-b border-border/60 px-1 text-base font-bold uppercase tracking-[.08em] last:border-0"
               >

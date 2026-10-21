@@ -129,7 +129,7 @@ export default async function SettingsPage() {
             <OperatorNotificationsForm values={operatorNotifications} />
           </CardContent>
         </Card>
-        <Card className="max-w-2xl">
+        <Card id="branding" className="max-w-2xl scroll-mt-6">
           <CardHeader>
             <CardTitle>Logo a obchodní podmínky</CardTitle>
           </CardHeader>
@@ -199,7 +199,11 @@ export default async function SettingsPage() {
 
         <Card className="max-w-2xl">
           <CardHeader>
-            <CardTitle>Nahrát soubor</CardTitle>
+            <CardTitle>
+              <span id="upload" className="scroll-mt-6">
+                Nahrát soubor
+              </span>
+            </CardTitle>
             <CardDescription>
               Nahrajte logo, PDF podmínek nebo fotku. Po nahrání dostanete URL,
               kterou vložíte výše nebo do obsahu webu.

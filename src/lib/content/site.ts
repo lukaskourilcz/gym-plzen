@@ -1,3 +1,6 @@
+import { openingHoursLabel } from "@/lib/helpers/opening-hours-label";
+import { DEFAULT_SLOT_MINUTES } from "@/lib/config/schedule";
+import { revisePublicCopy } from "./public-copy";
 import {
   BOOKING_PUBLIC_SETTING_KEYS,
   type BookingPricingSnapshot,
@@ -26,7 +29,7 @@ import {
 import { firstBookableDateKey } from "@/lib/config/booking-start";
 import { localDateTimeToDate } from "@/lib/helpers/datetime";
 import { logger } from "@/lib/helpers/logger";
-import { formatMoney } from "@/lib/helpers/format";
+import { formatDate, formatMoney } from "@/lib/helpers/format";
 import {
   DEFAULT_ENTRY_PRICE_CENTS,
   ENTRY_PRICE_SETTING_KEY,
@@ -137,6 +140,7 @@ export const SITE_DEFAULTS = {
   "home.hero.secondaryCta": "Jak rezervovat",
   "home.hero.addressLabel": "Adresa",
   "home.hero.hoursLabel": "Otevírací doba",
+  "home.hero.hoursNote": "otevřeno každý den",
   "home.facts.1.title": "Samoobslužné fitness",
   "home.facts.1.body": "kardio, silová zóna a strečink",
   "home.facts.2.title": "Dětský koutek",
@@ -167,8 +171,24 @@ export const SITE_DEFAULTS = {
   // Three lines in the hero's format, the last one carrying the gold accent.
   "home.pricing.title": "Bez závazků.\nBez předplatného.",
   "home.pricing.titleAccent": "Bez měsíčních plateb.",
-  "home.pricing.promoNote":
-    "Akční cena platí pro návštěvy v akčním období, i při rezervaci předem.",
+  "home.pricing.promoNote": "Akční cena pro návštěvy do {promoEndsAt}.",
+  "home.pricing.pricePrefix": "od",
+  "home.pricing.duration": "/ {duration}",
+  "home.pricing.priceScope":
+    "Uvedená cena platí za celý prostor, nikoli za osobu.",
+  "home.newsletter.title":
+    "Chceš se dozvědět novinky ze světa NAVI Private Gym jako první?",
+  "home.newsletter.body": "Zanech nám svou e-mailovou adresu.",
+  "home.newsletter.button": "Chci novinky",
+  "home.newsletter.placeholder": "tvuj@email.cz",
+  "home.newsletter.consent":
+    "Odesláním souhlasíš se zpracováním e-mailu pro zasílání novinek. Souhlas můžeš kdykoli odvolat odkazem v každém e-mailu s novinkami nebo e-mailem na nás. Podrobnosti najdeš v",
+  "home.newsletter.privacyLink": "zásadách ochrany soukromí",
+  "home.opening.before": "OTEVÍRÁME 1. 10. • VSTUP 199 Kč PO CELÝ ŘÍJEN",
+  "home.opening.october": "MÁME OTEVŘENO • VSTUP 199 Kč PO CELÝ ŘÍJEN",
+  "home.opening.yearEnd": "LISTOPAD A PROSINEC • VSTUP 229 Kč",
+  "home.opening.cta": "Zarezervuj si svůj termín již teď.",
+  "footer.description": "Soukromý prostor pro nerušený trénink v Plzni.",
   "home.pricing.feature1": "Soukromé využití prostoru během rezervace",
   "home.pricing.feature2": "Online platba přes Comgate",
   "home.pricing.feature3": "Pokyny ke vstupu po potvrzení rezervace",
@@ -316,6 +336,8 @@ export type SiteContentKey = keyof typeof SITE_DEFAULTS;
 
 export interface SiteContent {
   get: (key: SiteContentKey) => string;
+  /** Editable source, including dynamic placeholders instead of today’s amounts. */
+  raw: (key: SiteContentKey) => string;
   /** What an entry costs right now, promotion included. */
   entryPriceCents: number;
   entryPriceForDate: (at: Date) => number;
@@ -326,6 +348,7 @@ export interface SiteContent {
   /** End of the running promotion, for the note under the price. */
   promoEndsAt: Date | null;
   freeEntryEvery: number;
+  openingHoursLabel: string;
   logoUrl: string | null;
   termsUrl: string | null;
   heroImageUrl: string | null;
@@ -346,6 +369,7 @@ export function footerProps(content: SiteContent) {
 
   return {
     brand: content.get("brand.name"),
+    description: content.get("footer.description"),
     email: content.get("contact.email").trim() || undefined,
     phone,
     secondaryPhone: publicPhone(content.get("contact.phoneSecondary")),
@@ -520,21 +544,42 @@ export async function loadSiteContent(
   const perPersonLabel = formatMoney(
     Math.round(price.priceCents / GYM_CAPACITY),
   );
+  const durations = [
+    ...new Set(
+      pricingHours.filter((h) => !h.isClosed).map((h) => h.slotMinutes),
+    ),
+  ];
+  const duration =
+    durations.length > 1
+      ? "blok"
+      : `${durations[0] ?? DEFAULT_SLOT_MINUTES} minut`;
   const fillPrices = (value: string) =>
     value
+      .replaceAll("{duration}", duration)
+      .replaceAll(
+        "{promoEndsAt}",
+        price.promoEndsAt
+          ? formatDate(new Date(price.promoEndsAt.getTime() - 1))
+          : "",
+      )
       .replaceAll("{price}", priceLabel)
       .replaceAll("{pricePerPerson}", perPersonLabel)
       .replaceAll(
         "{companionPrice}",
         !participantsEnabled
-          ? "Doprovod nyní není zpoplatněn. Celkovou cenu uvidíte před platbou."
+          ? "Doprovod nyní není zpoplatněn. Celkovou cenu uvidíš před platbou."
           : participantPricing.mode === "flat"
-            ? `Za jednu nebo dvě další osoby připlatíte celkem ${formatMoney(participantPricing.amountCents)} za blok. Počet lidí a celkovou cenu zvolíte před platbou. Doprovod lze přidat i později z účtu, před začátkem rezervace.`
-            : `Za každou další osobu připlatíte ${formatMoney(participantPricing.amountCents)} za blok. Počet lidí a celkovou cenu zvolíte před platbou. Doprovod lze přidat i později z účtu, před začátkem rezervace.`,
+            ? `Za jednu nebo dvě další osoby připlatíš celkem ${formatMoney(participantPricing.amountCents)} za blok. Počet lidí a celkovou cenu zvolíš před platbou. Doprovod lze přidat i později z účtu, před začátkem rezervace.`
+            : `Za každou další osobu připlatíš ${formatMoney(participantPricing.amountCents)} za blok. Počet lidí a celkovou cenu zvolíš před platbou. Doprovod lze přidat i později z účtu, před začátkem rezervace.`,
       );
 
   return {
-    get: (key) => rebrand(fillPrices(values[key] ?? SITE_DEFAULTS[key] ?? "")),
+    raw: (key) =>
+      rebrand(revisePublicCopy(values[key] ?? SITE_DEFAULTS[key] ?? "")),
+    get: (key) =>
+      rebrand(
+        fillPrices(revisePublicCopy(values[key] ?? SITE_DEFAULTS[key] ?? "")),
+      ),
     entryPriceCents: price.priceCents,
     entryPriceForDate: (at) =>
       resolveEntryPrice({
@@ -548,6 +593,7 @@ export async function loadSiteContent(
     isPromoPrice: price.isPromo,
     promoEndsAt: price.promoEndsAt ?? null,
     freeEntryEvery: FREE_ENTRY_EVERY,
+    openingHoursLabel: openingHoursLabel(pricingHours),
     logoUrl,
     termsUrl,
     heroImageUrl,

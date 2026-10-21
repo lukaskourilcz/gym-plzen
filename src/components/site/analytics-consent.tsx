@@ -97,14 +97,16 @@ export function AnalyticsConsentManager() {
   }, []);
 
   useEffect(() => {
+    if (pathname === "/customer-preview") return;
     if (preferences?.analytics) {
       startGoogleAnalytics();
       window.dispatchEvent(new Event(ANALYTICS_CONSENT_CHANGED));
     }
-  }, [preferences?.analytics]);
+  }, [pathname, preferences?.analytics]);
 
   useEffect(() => {
-    if (preferences?.marketing) startMetaPixel(pathname);
+    if (pathname !== "/customer-preview" && preferences?.marketing)
+      startMetaPixel(pathname);
   }, [pathname, preferences?.marketing]);
 
   useEffect(() => {
@@ -162,6 +164,8 @@ export function AnalyticsConsentManager() {
    */
   if (!isAnalyticsConfigured && !isMarketingConfigured) return null;
   if (!hydrated || (!settingsOpen && preferences !== null)) return null;
+
+  if (pathname === "/customer-preview") return null;
 
   return (
     <aside

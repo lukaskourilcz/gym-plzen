@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { IncidentDetails } from "@/components/admin/incident-details";
 import {
   OverviewIconLink,
@@ -872,6 +873,42 @@ export default async function DesignSystemPage() {
                 ikonu; časy pocházejí z rozvrhu. Přidání a úprava jsou v
                 modálním dialogu. Existující rezervace zůstávají platné.
               </p>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section aria-labelledby="kit-content-editor">
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <span id="kit-content-editor">Vizuální editor obsahu</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid items-start gap-5 sm:grid-cols-2">
+                <Image
+                  src="/images/content-previews/pricing.webp"
+                  width={1200}
+                  height={800}
+                  unoptimized
+                  alt="Orientační snímek části Ceník"
+                  className="rounded-md border border-border"
+                />
+                <div>
+                  <h3 className="font-semibold">Co se načítá odjinud</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Částka se počítá z cenových období a bloků. Editor zachovává
+                    proměnné, nepřepisuje cenu číslem.
+                  </p>
+                  <Button
+                    className="mt-4"
+                    href="/admin/content?section=pricing"
+                    variant="outline"
+                  >
+                    Otevřít editor ceníku
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </section>

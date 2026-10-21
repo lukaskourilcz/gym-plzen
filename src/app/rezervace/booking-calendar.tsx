@@ -88,16 +88,23 @@ function displayDate(dateKey: string, options: Intl.DateTimeFormatOptions) {
 export function BookingCalendar({
   selected,
   loyalty,
+  simulation,
   ...initial
 }: CalendarView & {
   selected: SelectedSlotView[];
   loyalty: SelectionLoyalty | null;
+  /** Admin-only isolated walkthrough, with no live availability requests. */
+  simulation?: {
+    calendarHref: string;
+    detailsHref: string;
+    load: (month: string, date: string | null) => CalendarView;
+  };
 }) {
   const {
     view,
     loading: isRefreshing,
     refresh,
-  } = useCalendarAvailability(initial);
+  } = useCalendarAvailability(initial, simulation?.load);
   const {
     monthKey,
     selectedDateKey,
@@ -224,7 +231,7 @@ export function BookingCalendar({
     if (next.month) params.set("month", next.month);
     if (next.date === null) params.delete("date");
     else if (next.date) params.set("date", next.date);
-    return `/rezervace?${withSelectedStarts(
+    return `${simulation?.calendarHref ?? "/rezervace"}?${withSelectedStarts(
       params,
       starts.map((slot) => slot.startISO),
     ).toString()}`;
@@ -403,7 +410,7 @@ export function BookingCalendar({
           </Notice>
         ) : (
           <>
-            {source === "preview" ? (
+            {source === "preview" && !simulation ? (
               <Notice
                 tone="warning"
                 title="Ilustrační náhled"
@@ -756,7 +763,14 @@ export function BookingCalendar({
                 Zrušit výběr
               </Button>
               <Button
-                href={detailsHref(selection.map((slot) => slot.startISO))}
+                href={
+                  simulation
+                    ? `${simulation.detailsHref}&${withSelectedStarts(
+                        new URLSearchParams(),
+                        selection.map((slot) => slot.startISO),
+                      )}`
+                    : detailsHref(selection.map((slot) => slot.startISO))
+                }
                 className="flex-1 sm:flex-none"
               >
                 Pokračovat <ArrowRight aria-hidden="true" />

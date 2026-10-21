@@ -1,5 +1,7 @@
 "use server";
 
+import { contentAssetSchema } from "@/lib/validations/content-asset";
+
 import { revalidatePath } from "next/cache";
 import { assertAdmin } from "@/lib/auth/guards";
 import { defineAction } from "@/lib/helpers/action";
@@ -84,4 +86,22 @@ export async function savePublicTextAction(
   input: EditPublicTextValues,
 ): Promise<Result<unknown>> {
   return savePublicTextImpl(input);
+}
+
+const saveContentAssetImpl = defineAction({
+  schema: contentAssetSchema,
+  authorize: assertAdmin,
+  handler: async (input, admin) => {
+    await cms.setSetting(input.key, input.value, admin.id);
+    for (const path of ["/", "/vybaveni", "/admin/content", "/admin/settings"])
+      revalidatePath(path);
+  },
+});
+
+/** One whitelisted asset per save; never overwrite another section's image. */
+export async function saveContentAssetAction(input: {
+  key: string;
+  value: string;
+}): Promise<Result<unknown>> {
+  return saveContentAssetImpl(input);
 }

@@ -4,7 +4,7 @@ import {
   entriesRemainingPhrase,
   loyaltyFilledSegments,
   type LoyaltyStatus,
-} from "@/lib/services/loyalty";
+} from "@/lib/helpers/loyalty-display";
 
 /**
  * Customer-facing loyalty widget. Shows how many entries the member has and how

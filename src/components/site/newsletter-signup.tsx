@@ -8,7 +8,16 @@ import { Button } from "@/components/ui/button";
 import { newsletterSignupSchema } from "@/lib/validations/newsletter";
 import { subscribeNewsletterAction } from "@/app/newsletter/actions";
 
-export function NewsletterSignup() {
+export function NewsletterSignup({
+  copy,
+}: {
+  copy: {
+    button: string;
+    placeholder: string;
+    consent: string;
+    privacyLink: string;
+  };
+}) {
   const { form, submit, serverError, success } = useActionForm({
     schema: newsletterSignupSchema,
     action: subscribeNewsletterAction,
@@ -30,7 +39,7 @@ export function NewsletterSignup() {
             id="newsletter-email"
             type="email"
             autoComplete="email"
-            placeholder="vas@email.cz"
+            placeholder={copy.placeholder}
             aria-invalid={emailError ? true : undefined}
             aria-describedby={emailError ? "newsletter-email-error" : undefined}
             className="border-white/35 bg-white text-foreground"
@@ -50,7 +59,7 @@ export function NewsletterSignup() {
           disabled={formState.isSubmitting}
           className="shrink-0 bg-gold text-gold-foreground hover:bg-gold/90"
         >
-          {formState.isSubmitting ? "Ukládám…" : "Chci novinky"}
+          {formState.isSubmitting ? "Ukládám…" : copy.button}
         </Button>
       </div>
       <div className="sr-only" aria-hidden="true">
@@ -64,11 +73,9 @@ export function NewsletterSignup() {
       </div>
       <FormFeedback error={serverError} success={success} />
       <p className="mt-3 text-xs leading-5 text-ink-foreground/70">
-        Odesláním souhlasíte se zpracováním e-mailu pro zasílání novinek.
-        Souhlas můžete kdykoli odvolat odkazem v každém e-mailu s novinkami nebo
-        e-mailem na nás. Podrobnosti najdete v{" "}
+        {copy.consent}{" "}
         <Link href="/ochrana-soukromi" className="underline hover:text-white">
-          zásadách ochrany soukromí
+          {copy.privacyLink}
         </Link>
         .
       </p>

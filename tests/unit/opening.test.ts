@@ -22,7 +22,27 @@ test("the homepage banner renders the time-aware announcement, never a literal",
     "src/components/site/opening-banner.tsx",
     "utf8",
   );
-  assert.match(component, /openingAnnouncement\(at\)/);
+  assert.match(component, /openingAnnouncement\(at(?:, copy)?\)/);
   assert.match(component, /if \(!announcement\) return null/);
   assert.doesNotMatch(component, /OTEVÍRÁME 1\. 10\./);
+});
+
+test("editable announcement copy keeps the original phase boundaries", () => {
+  const copy = {
+    before: "Před otevřením",
+    october: "Říjnové oznámení",
+    yearEnd: "Závěr roku",
+  };
+  assert.equal(
+    openingAnnouncement(new Date("2026-10-31T22:59:59Z"), copy),
+    copy.october,
+  );
+  assert.equal(
+    openingAnnouncement(new Date("2026-10-31T23:00:00Z"), copy),
+    copy.yearEnd,
+  );
+  assert.equal(
+    openingAnnouncement(new Date("2026-12-31T23:00:00Z"), copy),
+    null,
+  );
 });

@@ -5,6 +5,7 @@ import postgres from "postgres";
 import { requireTestDatabaseUrl } from "../tests/helpers/test-database";
 import { createLocalAuth } from "../tests/e2e/local-auth";
 import { createResendMock } from "../tests/integration/mocks";
+import { captureContentPreviews } from "./capture-content-previews";
 import { BOOKING_TABLES } from "../tests/helpers/booking-tables";
 
 const database = requireTestDatabaseUrl();
@@ -118,10 +119,8 @@ await run(["node_modules/next/dist/bin/next", "build"]);
 const auth = createLocalAuth(4549);
 const resend = createResendMock(4548);
 let app: ChildProcess | undefined;
-try {
-  await auth.start();
-  await resend.start();
-  app = spawn(
+function startApp() {
+  return spawn(
     process.execPath,
     [
       "--import",
@@ -137,6 +136,8 @@ try {
     ],
     { env: testEnv, stdio: "inherit" },
   );
+}
+async function waitForApp(app: ChildProcess) {
   let ready = false;
   for (let attempt = 0; attempt < 120; attempt++) {
     if (app.exitCode !== null)
@@ -158,13 +159,34 @@ try {
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   if (!ready) throw new Error("Local E2E app did not become ready.");
+}
+try {
+  await auth.start();
+  await resend.start();
+  app = startApp();
+  await waitForApp(app);
+  const args = process.argv
+    .slice(2)
+    .filter((arg) => arg !== "--capture-content-previews");
+  if (process.argv.includes("--capture-content-previews")) {
+    await captureContentPreviews("http://localhost:3131", testEnv.E2E_RUN_ID!);
+    const stopped = new Promise<void>((resolve) =>
+      app!.once("exit", () => resolve()),
+    );
+    app.kill("SIGTERM");
+    await stopped;
+    app = startApp();
+    await waitForApp(app);
+  }
   await run([
     "node_modules/@playwright/test/cli.js",
     "test",
-    ...(process.argv.length > 2
-      ? process.argv.slice(2)
+    ...(args.length > 0
+      ? args
       : [
           "public.spec.ts",
+          "customer-preview.spec.ts",
+          "content-editor.spec.ts",
           "calendar-performance.spec.ts",
           "calendar-blocking.spec.ts",
           "incidents.spec.ts",

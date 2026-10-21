@@ -1,3 +1,14 @@
+import {
+  deriveLoyaltyStatus,
+  pluralEntries,
+  entriesRemainingPhrase,
+} from "@/lib/helpers/loyalty-display";
+export {
+  deriveLoyaltyStatus,
+  loyaltyFilledSegments,
+  pluralEntries,
+  entriesRemainingPhrase,
+} from "@/lib/helpers/loyalty-display";
 import { and, count, eq, inArray, isNotNull, ne } from "drizzle-orm";
 import { db, type DatabaseExecutor } from "@/lib/db";
 import { reservation, openingHours } from "@/lib/db/schema";
@@ -141,31 +152,6 @@ export async function getLoyaltyStatus(userId: string): Promise<LoyaltyStatus> {
   return status;
 }
 
-/**
- * Pure derivation of loyalty status from an entry count : separated so it is
- * trivially unit-testable and reusable (e.g. in the customer widget).
- */
-export function deriveLoyaltyStatus(totalEntries: number): LoyaltyStatus {
-  const positionInCycle = totalEntries % FREE_ENTRY_EVERY;
-  /*
-   * Counts the remaining entries *including* the free one, so it is never zero:
-   * right after a free entry the member is a full cadence away from the next.
-   * A modulo here would read "0 remaining" while the next entry costs full
-   * price.
-   */
-  const entriesUntilFree = FREE_ENTRY_EVERY - positionInCycle;
-  return {
-    totalEntries,
-    positionInCycle,
-    entriesUntilFree,
-    freeEntriesEarned: Math.floor(totalEntries / FREE_ENTRY_EVERY),
-    // The next booking is free when completing it lands on a multiple of the
-    // cadence : i.e. the member already has FREE_ENTRY_EVERY-1 in this cycle.
-    nextEntryIsFree: positionInCycle === FREE_ENTRY_EVERY - 1,
-    cadence: FREE_ENTRY_EVERY,
-  };
-}
-
 /** The standard entry price (admin override, falling back to the default). */
 export async function getStandardEntryPriceCents(): Promise<number> {
   const override = await getSetting<number>(ENTRY_PRICE_SETTING_KEY);
@@ -217,35 +203,6 @@ export async function priceForNextEntry(
   return status.nextEntryIsFree
     ? { priceCents: 0, isFree: true }
     : { priceCents: price, isFree: false };
-}
-
-/**
- * How many of the cadence's steps read as complete. Shared by the classic
- * segment bar and the modern ring so the two can never disagree: a member whose
- * next entry is free sees a full track, which is the reward being ready rather
- * than the cycle being over.
- */
-export function loyaltyFilledSegments(status: LoyaltyStatus): number {
-  return status.nextEntryIsFree ? status.cadence : status.positionInCycle;
-}
-
-/** Czech pluralisation for "vstup" (1 / 2 to 4 / 5+). */
-export function pluralEntries(n: number): string {
-  if (n === 1) return "vstup";
-  if (n >= 2 && n <= 4) return "vstupy";
-  return "vstupů";
-}
-
-/**
- * "zbývá 1 vstup" / "zbývají 3 vstupy" / "zbývá 9 vstupů".
- *
- * Czech agreement: the plural verb goes with 2 to 4, while 1 and the genitive
- * plural from 5 up both take the singular. Shared so the widget and the
- * confirmation copy cannot disagree about it.
- */
-export function entriesRemainingPhrase(n: number): string {
-  const verb = n >= 2 && n <= 4 ? "zbývají" : "zbývá";
-  return `${verb} ${n} ${pluralEntries(n)}`;
 }
 
 /**
