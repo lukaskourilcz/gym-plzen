@@ -12,9 +12,8 @@ test("self-navigating calendars carry no segment loading boundary", async () => 
       "src/app/account/rezervace/[id]/zmenit/loading.tsx",
     ].map((path) => assert.rejects(readFile(path, "utf8"), { code: "ENOENT" })),
   );
-  const [bookingPage, reschedulePage, skeletons] = await Promise.all([
+  const [bookingPage, skeletons] = await Promise.all([
     readFile("src/app/rezervace/page.tsx", "utf8"),
-    readFile("src/app/account/rezervace/[id]/zmenit/page.tsx", "utf8"),
     readFile("src/components/site/loading-skeletons.tsx", "utf8"),
   ]);
   assert.match(bookingPage, /loadCalendarAvailability/);
@@ -24,7 +23,6 @@ test("self-navigating calendars carry no segment loading boundary", async () => 
   );
   assert.match(bookingClient, /useCalendarAvailability/);
   assert.doesNotMatch(bookingClient, /router\.(?:push|refresh)/);
-  assert.match(reschedulePage, /Deliberately no `loading\.tsx`/);
   assert.doesNotMatch(skeletons, /CalendarSkeleton/);
 });
 

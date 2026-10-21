@@ -1,12 +1,13 @@
 import { getParticipantsEnabled } from "@/lib/services/block-pricing";
-import { participantLabel } from "@/lib/config/participants";
 import { CustomerAvatar } from "@/components/site/customer-avatar";
 import Link from "next/link";
 import { getMember } from "@/lib/services/members";
 import { splitFullName } from "@/lib/helpers/profile";
 import { ProfileForm, PasswordForm } from "./profile-form";
 import { Orders } from "./orders";
-import { CancelReservationButton } from "./cancel-reservation-button";
+import { ReservationCard } from "./reservation-card";
+import { Pagination } from "@/components/ui/pagination";
+import { splitPage } from "@/lib/helpers/pagination";
 import { requireUser } from "@/lib/auth/guards";
 import { loyalty, reservations, rescheduling } from "@/lib/services";
 import {
@@ -14,23 +15,16 @@ import {
   loadSiteContent,
   publicAddress,
 } from "@/lib/content/site";
-import {
-  formatDate,
-  formatMoney,
-  formatStatus,
-  formatTimeRange,
-} from "@/lib/helpers/format";
+import { formatDate, formatMoney, formatTimeRange } from "@/lib/helpers/format";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
 import { pageFromParam } from "@/lib/helpers/pagination";
-import { CalendarDays } from "lucide-react";
 import { LoyaltyWidget } from "@/components/loyalty-widget";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { deriveLoyaltyStatus } from "@/lib/services/loyalty";
 import { SignOutButton } from "@/components/admin/sign-out-button";
-import { CalendarActions } from "@/components/site/calendar-actions";
 
 export const metadata = {
   title: "Můj účet",
@@ -54,6 +48,8 @@ export default async function AccountPage({
       ? params.tab
       : "reservations";
   const page = pageFromParam(params.page);
+  const historyView = params.view === "history";
+  const now = new Date();
   const member = isDemoCustomer ? null : await getMember(user.id);
   const names = splitFullName(user.name);
   const profileValues = {
@@ -79,6 +75,13 @@ export default async function AccountPage({
       loadSiteContent(),
       isDemoCustomer ? Promise.resolve(false) : getParticipantsEnabled(),
     ]);
+
+  const history = splitPage(
+    !isDemoCustomer && tab === "reservations" && historyView
+      ? await reservations.listCustomerReservationHistory(user.id, page, now)
+      : [],
+    20,
+  );
 
   return (
     <>
@@ -122,7 +125,7 @@ export default async function AccountPage({
             >
               {(
                 [
-                  { id: "reservations", label: "Moje tréninky" },
+                  { id: "reservations", label: "Moje rezervace" },
                   { id: "orders", label: "Historie objednávek" },
                   { id: "profile", label: "Profil a heslo" },
                 ] as const
@@ -160,8 +163,8 @@ export default async function AccountPage({
                     role="status"
                   >
                     Po dokončení odebrání vstupního kódu se termín uvolní v
-                    kalendáři. Zaplacená cena se podle obchodních podmínek
-                    nevrací.
+                    kalendáři. Potvrzení storna posíláme e-mailem. Podrobnosti
+                    najdete u zrušeného termínu v historii.
                   </Notice>
                 ) : null}
                 {params.zmena === "uspesna" ? (
@@ -206,89 +209,65 @@ export default async function AccountPage({
                   </div>
                 </div>
 
-                <h2 className="mb-3 mt-10 text-lg font-extrabold">
-                  Nadcházející rezervace
-                </h2>
-                <div className="grid gap-2.5">
-                  {upcoming.map((r) => (
-                    <div
-                      key={r.id}
-                      className="rounded-md border border-border bg-card px-5 py-4"
+                <nav
+                  aria-label="Přehled rezervací"
+                  className="mb-5 mt-10 flex gap-2 border-b border-border pb-3"
+                >
+                  {[
+                    { id: "upcoming", label: "Nadcházející" },
+                    { id: "history", label: "Historie rezervací" },
+                  ].map((item) => (
+                    <Link
+                      key={item.id}
+                      href={
+                        item.id === "history"
+                          ? "/account?view=history"
+                          : "/account"
+                      }
+                      aria-current={
+                        (item.id === "history") === historyView
+                          ? "page"
+                          : undefined
+                      }
+                      className={`inline-flex min-h-11 items-center rounded-md px-4 py-2 text-sm font-bold ${(item.id === "history") === historyView ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
                     >
-                      <div className="flex flex-wrap items-center gap-4">
-                        <span className="grid size-11 place-items-center rounded-sm bg-accent text-accent-foreground">
-                          <CalendarDays className="size-5" />
-                        </span>
-                        <div className="min-w-48 flex-1">
-                          <div className="font-extrabold">
-                            Trénink · celý gym
-                          </div>
-                          <div className="mt-0.5 text-sm text-muted-foreground">
-                            {formatDate(r.startsAt)} ·{" "}
-                            {formatTimeRange(r.startsAt, r.endsAt)}
-                          </div>
-                        </div>
-                        {participantsEnabled ? (
-                          <span className="text-sm text-muted-foreground">
-                            {participantLabel(r.extraPeople)}
-                          </span>
-                        ) : null}
-                        {participantsEnabled &&
-                        !isDemoCustomer &&
-                        r.status === "confirmed" &&
-                        r.startsAt > new Date() &&
-                        r.extraPeople < 2 ? (
-                          <Button
-                            href={`/account/rezervace/${r.id}/osoby`}
-                            variant="outline"
-                            size="sm"
-                          >
-                            Přidat osobu
-                          </Button>
-                        ) : null}
-                        <span className="rounded-sm bg-accent px-3 py-1 text-xs font-bold text-accent-foreground">
-                          {formatStatus(r.status)}
-                        </span>
-                        {!isDemoCustomer &&
-                        rescheduling.getRescheduleEligibility(
-                          r,
-                          rescheduledIds.has(r.id),
-                        ).eligible ? (
-                          <Button
-                            href={`/account/rezervace/${r.id}/zmenit`}
-                            variant="outline"
-                            size="sm"
-                          >
-                            Změnit termín
-                          </Button>
-                        ) : null}
-                        {!isDemoCustomer && r.startsAt > new Date() ? (
-                          <CancelReservationButton
-                            reservationId={r.id}
-                            startsAtLabel={`${formatDate(r.startsAt)} ${formatTimeRange(r.startsAt, r.endsAt)}`}
-                          />
-                        ) : null}
-                      </div>
-                      {/* Demo reservations have no row behind them to authorise. */}
-                      {isDemoCustomer ? null : (
-                        <CalendarActions
-                          className="mt-3"
-                          reservationId={r.id}
-                          startsAt={r.startsAt}
-                          endsAt={r.endsAt}
-                          address={publicAddress(
-                            content.get("contact.address"),
-                          )}
-                        />
-                      )}
-                    </div>
+                      {item.label}
+                    </Link>
                   ))}
-                  {upcoming.length === 0 && (
+                </nav>
+                <h2 className="mb-4 text-xl font-extrabold">
+                  {historyView
+                    ? "Historie rezervací"
+                    : "Nadcházející rezervace"}
+                </h2>
+                <div className="grid gap-4">
+                  {(historyView ? history.rows : upcoming).map((r) => (
+                    <ReservationCard
+                      key={r.id}
+                      reservation={r}
+                      changed={rescheduledIds.has(r.id)}
+                      now={now}
+                      address={publicAddress(content.get("contact.address"))}
+                      participantsEnabled={participantsEnabled}
+                      demo={isDemoCustomer}
+                    />
+                  ))}
+                  {(historyView ? history.rows : upcoming).length === 0 ? (
                     <div className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
-                      Žádné nadcházející rezervace.
+                      {historyView
+                        ? "Zatím nemáte žádné uplynulé ani zrušené rezervace."
+                        : "Žádné nadcházející rezervace."}
                     </div>
-                  )}
+                  ) : null}
                 </div>
+                {historyView ? (
+                  <Pagination
+                    page={page}
+                    hasNext={history.hasNext}
+                    hrefForPage={(p) => `/account?view=history&page=${p}`}
+                    label="Stránky historie rezervací"
+                  />
+                ) : null}
 
                 <div className="mt-8">
                   <Button href="/rezervace">Rezervovat trénink</Button>
@@ -314,6 +293,11 @@ function demoUpcomingReservations() {
 
   return [
     {
+      priceCents: 23900,
+      currency: "czk",
+      loyaltyReward: null,
+      additionalPeoplePaidCents: 0,
+      cancelReason: null,
       extraPeople: 0,
       id: "demo-reservation-1",
       startsAt: tomorrow,
@@ -321,6 +305,11 @@ function demoUpcomingReservations() {
       status: "confirmed" as const,
     },
     {
+      priceCents: 23900,
+      currency: "czk",
+      loyaltyReward: null,
+      additionalPeoplePaidCents: 0,
+      cancelReason: null,
       extraPeople: 0,
       id: "demo-reservation-2",
       startsAt: nextWeek,

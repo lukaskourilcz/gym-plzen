@@ -1,0 +1,66 @@
+/* The public brand typography lives only inside this admin editing canvas. */
+.admin-shell .content-canvas {
+  font-family: var(--font-brand), Georgia, serif;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.admin-shell .content-canvas h2,
+.admin-shell .content-canvas h3 {
+  font-family: inherit;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.admin-shell .content-canvas .canvas-pencil {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-inline-start: 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--primary);
+  vertical-align: middle;
+  cursor: pointer;
+  box-shadow: 0 1px 2px #0001;
+  flex-shrink: 0;
+}
+.admin-shell .content-canvas .canvas-pencil:hover,
+.admin-shell .content-canvas .canvas-photo-control:hover {
+  background: var(--accent);
+}
+.admin-shell .content-canvas .canvas-pencil:active,
+.admin-shell .content-canvas .canvas-photo-control:active {
+  background: var(--secondary);
+}
+.admin-shell .content-canvas .canvas-pencil:focus-visible,
+.admin-shell .content-canvas .canvas-photo-control:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+  /* Two-tone focus stays visible on both white cards and dark photographs. */
+  box-shadow: 0 0 0 5px white;
+}
+.admin-shell .content-canvas .canvas-photo-control,
+.admin-shell .content-canvas .canvas-meta {
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.admin-shell .content-canvas .canvas-photo-control {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  cursor: pointer;
+}

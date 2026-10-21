@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { IncidentDetails } from "@/components/admin/incident-details";
 import {
   OverviewIconLink,
@@ -17,6 +16,7 @@ import {
   Clock3,
   Dumbbell,
   Info,
+  Pencil,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -886,19 +886,31 @@ export default async function DesignSystemPage() {
             </CardHeader>
             <CardContent>
               <div className="grid items-start gap-5 sm:grid-cols-2">
-                <Image
-                  src="/images/content-previews/pricing.webp"
-                  width={1200}
-                  height={800}
-                  unoptimized
-                  alt="Orientační snímek části Ceník"
-                  className="rounded-md border border-border"
-                />
+                <div className="content-canvas rounded-lg bg-ink p-6 text-ink-foreground">
+                  <p className="text-xs font-bold uppercase text-gold">
+                    Jednorázový vstup
+                  </p>
+                  <p className="mt-3 text-3xl font-extrabold">
+                    Bez závazků.{" "}
+                    <Button
+                      href="/admin/content?section=pricing"
+                      variant="outline"
+                      size="icon"
+                      aria-label="Ukázka úpravy nadpisu"
+                    >
+                      <Pencil aria-hidden="true" className="size-4" />
+                    </Button>
+                  </p>
+                  <p className="mt-4 text-sm text-ink-foreground/80">
+                    Tužka je přímo u textu. Úprava otevře dialog.
+                  </p>
+                </div>
                 <div>
-                  <h3 className="font-semibold">Co se načítá odjinud</h3>
+                  <h3 className="font-semibold">Přímá úprava v rozložení</h3>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Částka se počítá z cenových období a bloků. Editor zachovává
-                    proměnné, nepřepisuje cenu číslem.
+                    Aktuální texty a fotografie ve vzhledu webu. Cena a rozvrh
+                    mají informační ikonu s odkazem na zdroj; náhledové
+                    formuláře nic neodesílají.
                   </p>
                   <Button
                     className="mt-4"

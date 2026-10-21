@@ -3,46 +3,26 @@ import { notFound } from "next/navigation";
 import { uuidSchema } from "@/lib/validations/common";
 import { requireUser } from "@/lib/auth/guards";
 import { footerProps, loadSiteContent } from "@/lib/content/site";
-import {
-  addDaysToDateKey,
-  dateKeyInTimeZone,
-  isDateKey,
-  minutesBetween,
-  monthGrid,
-} from "@/lib/helpers/datetime";
+import { dateKeyInTimeZone } from "@/lib/helpers/datetime";
 import { formatDate, formatTimeRange } from "@/lib/helpers/format";
 import { reservations, rescheduling } from "@/lib/services";
+import { loadCalendarAvailability } from "@/lib/services/calendar-availability";
 import {
-  getBookingHorizonDays,
-  getSlotsForRange,
-  isWithinBookingHorizon,
-} from "@/lib/services/slots";
+  calendarLocation,
+  type CalendarView,
+} from "@/lib/config/booking-calendar";
 import { Container, Section } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { RealtimeRefresher } from "@/components/realtime-refresher";
-import { firstBookableDateKey } from "@/lib/config/booking-start";
 import { RescheduleCalendar } from "./reschedule-calendar";
 
 export const metadata: Metadata = { title: "Změna termínu" };
-/*
- * Deliberately no `loading.tsx` next to this page. The calendar navigates to
- * itself with different search params, and under a segment loading boundary
- * the React build bundled with Next 15.5 can lose the wake-up of a Flight row
- * that arrives while it unwinds, which parked the first date selection until
- * the visitor clicked again. Without the boundary the suspension is handled
- * at the root, where that wake-up is recorded; the transition simply holds
- * the current view until the new day's data is in.
- */
+// Initial render is authenticated and server-side; date/month navigation uses
+// the public availability API without remounting the account or changing data.
 export const dynamic = "force-dynamic";
-
-function validMonth(value: string | undefined): value is string {
-  return Boolean(
-    value && /^\d{4}-\d{2}$/.test(value) && isDateKey(`${value}-01`),
-  );
-}
 
 export default async function ReschedulePage({
   params,
@@ -72,61 +52,28 @@ export default async function ReschedulePage({
     alreadyRescheduled,
     now,
   );
-  const todayKey = dateKeyInTimeZone(now);
-  /*
-   * The same floor as the public calendar: before opening day there is no
-   * earlier month to move a reservation into, so this page opens on the
-   * opening month instead of on a September full of struck-through days.
-   */
-  const minDateKey = firstBookableDateKey(now);
-  const minMonth = minDateKey.slice(0, 7);
-  // Resolved once per request: the operator can change the horizon.
-  const horizonDays = await getBookingHorizonDays();
-  const maxDateKey = addDaysToDateKey(todayKey, horizonDays);
-  const isBookable = (dateKey: string) =>
-    dateKey >= minDateKey && isWithinBookingHorizon(dateKey, now, horizonDays);
-  const requestedDate =
-    typeof query.date === "string" && isDateKey(query.date) ? query.date : null;
-  const requestedMonth =
-    typeof query.month === "string" ? query.month : undefined;
-  const monthKey =
-    requestedDate && isBookable(requestedDate)
-      ? requestedDate.slice(0, 7)
-      : validMonth(requestedMonth) &&
-          requestedMonth >= minMonth &&
-          requestedMonth <= maxDateKey.slice(0, 7)
-        ? requestedMonth
-        : minMonth;
-  const selectedDateKey =
-    requestedDate &&
-    requestedDate.startsWith(monthKey) &&
-    isBookable(requestedDate)
-      ? requestedDate
-      : monthKey === minMonth && isBookable(minDateKey)
-        ? minDateKey
-        : null;
-
-  const grid = monthGrid(monthKey);
-  const rangeStart = grid[0]!.dateKey;
-  const rangeEnd = addDaysToDateKey(grid.at(-1)!.dateKey, 1);
-  const availability = eligibility.eligible
-    ? await getSlotsForRange(rangeStart, rangeEnd, now)
-    : { days: [], source: "live" as const };
-  const days = availability.days.map((day) => ({
-    dateKey: day.dateKey,
-    isClosed: day.isClosed,
-    hasAvailability: day.slots.some((slot) => slot.available),
-  }));
-  const selectedSlots = (
-    availability.days.find((day) => day.dateKey === selectedDateKey)?.slots ??
-    []
-  )
-    .filter((slot) => slot.available)
-    .map((slot) => ({
-      startISO: slot.start.toISOString(),
-      label: formatTimeRange(slot.start, slot.end),
-      durationMinutes: minutesBetween(slot.start, slot.end),
-    }));
+  const input = {
+    date:
+      typeof query.date === "string"
+        ? query.date
+        : typeof query.month === "string"
+          ? null
+          : dateKeyInTimeZone(current.startsAt),
+    month: typeof query.month === "string" ? query.month : null,
+  };
+  let calendar: CalendarView | null = null;
+  if (eligibility.eligible) {
+    try {
+      calendar = (await loadCalendarAvailability(input, now)).view;
+    } catch {
+      calendar = {
+        ...calendarLocation(input, 60, now),
+        days: [],
+        selectedSlots: [],
+        source: "unavailable",
+      };
+    }
+  }
 
   return (
     <>
@@ -136,7 +83,7 @@ export default async function ReschedulePage({
         accountHref="/account"
         accountLabel="Můj účet"
       />
-      <RealtimeRefresher />
+      <RealtimeRefresher eventName="navi:calendar-availability-change" />
       <main id="main-content" tabIndex={-1}>
         <Section className="pb-28 pt-12 sm:pt-16">
           <Container>
@@ -155,8 +102,9 @@ export default async function ReschedulePage({
                 </strong>
               </p>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Podle obchodních podmínek můžete rezervaci bezplatně změnit
-                pouze jednou a nejpozději 24 hodin před jejím začátkem.
+                Původní rezervace platí až do potvrzení změny. Termín můžete
+                bezplatně změnit jednou, nejpozději 24 hodin před začátkem. Cena
+                původní rezervace se nemění.
               </p>
             </div>
 
@@ -173,18 +121,11 @@ export default async function ReschedulePage({
               <div className="mt-10">
                 <RescheduleCalendar
                   reservationId={current.id}
-                  monthKey={monthKey}
-                  selectedDateKey={selectedDateKey}
-                  todayKey={todayKey}
-                  minDateKey={minDateKey}
-                  maxDateKey={maxDateKey}
+                  initial={calendar!}
                   originalLabel={`${formatDate(current.startsAt)} · ${formatTimeRange(
                     current.startsAt,
                     current.endsAt,
                   )}`}
-                  days={days}
-                  selectedSlots={selectedSlots}
-                  source={availability.source}
                 />
               </div>
             )}

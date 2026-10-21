@@ -1,3 +1,5 @@
+import { formatTime } from "@/lib/helpers/format";
+import { cancellationPrice } from "@/lib/config/customer-cancellation";
 import { adminOrder, adminTotalCount } from "./admin-list-query";
 import { deliverCancellation } from "./cancellation-delivery";
 import { UNSTARTED_HOLD_MINUTES } from "@/lib/config/checkout";
@@ -184,8 +186,8 @@ export interface CancelReservationParams {
   byAdminId?: string;
   /**
    * The customer's own storno (VOP 8.10): they chose it in their account and
-   * see it confirmed there, so no "your booking was cancelled" e-mail, and no
-   * refund is due, so no refund alert either.
+   * receive a dedicated confirmation e-mail. No refund is due and no refund
+   * alert is raised.
    */
   byCustomer?: boolean;
 }
@@ -211,7 +213,9 @@ async function cancelReservationLocked(
         .from(profiles)
         .where(eq(profiles.id, before.userId))
     : [];
-  const email = before.contactEmail ?? member?.email;
+  const email = params.byCustomer
+    ? before.contactEmail?.trim() || member?.email?.trim()
+    : (before.contactEmail ?? member?.email);
   await db.transaction(async (tx) => {
     await tx
       .update(reservation)
@@ -231,7 +235,7 @@ async function cancelReservationLocked(
         before.orderId,
         tx,
       );
-    if (before.status === "confirmed" && email && !params.byCustomer) {
+    if (before.status === "confirmed" && email) {
       await tx
         .insert(messageDelivery)
         .values({
@@ -242,6 +246,21 @@ async function cancelReservationLocked(
           recipient: email,
           dedupeKey: `cancellation/${before.id}`,
           status: "queued",
+          providerResponse: params.byCustomer
+            ? {
+                cancellation: {
+                  version: 1,
+                  templateId: "customer_reservation_cancellation",
+                  variables: {
+                    name: before.contactName || "zákazníku",
+                    time: `${formatDateTime(before.startsAt)} – ${formatTime(before.endsAt)}`,
+                    price: cancellationPrice(before).price,
+                    refund_note: cancellationPrice(before).note,
+                  },
+                },
+                submitted: false,
+              }
+            : null,
         })
         .onConflictDoNothing();
     }
@@ -349,6 +368,11 @@ export async function cancelByCustomer(params: {
     // Do not reveal whether an arbitrary reservation id exists.
     if (!row || row.userId !== params.userId)
       throw new ActionError("Rezervaci se nepodařilo najít.");
+    if (
+      row.status === "cancelled" &&
+      row.cancelReason === CUSTOMER_CANCEL_REASON
+    )
+      return row;
     if (row.status !== "confirmed")
       throw new ActionError("Zrušit lze pouze potvrzenou rezervaci.");
     if (row.startsAt <= (params.now ?? new Date()))
@@ -534,6 +558,32 @@ export async function listUpcomingForUser(
       ),
     )
     .orderBy(reservation.startsAt);
+}
+
+/** Bounded reservation history, scoped strictly to the signed-in account. */
+export async function listCustomerReservationHistory(
+  userId: string,
+  page: number,
+  now = new Date(),
+): Promise<Reservation[]> {
+  return db
+    .select()
+    .from(reservation)
+    .where(
+      and(
+        eq(reservation.userId, userId),
+        or(
+          eq(reservation.status, "cancelled"),
+          and(
+            lt(reservation.endsAt, now),
+            inArray(reservation.status, ["confirmed", "completed", "no_show"]),
+          ),
+        ),
+      ),
+    )
+    .orderBy(desc(reservation.startsAt), desc(reservation.id))
+    .limit(21)
+    .offset((page - 1) * 20);
 }
 
 /** One reservation with what the administration wants to see beside it. */

@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { test, expect } from "@playwright/test";
 import { join } from "node:path";
 import postgres from "postgres";
@@ -184,7 +185,9 @@ test("a member buys two slots, sees one order, moves one term and cancels only t
   await expect(cancel).toBeVisible();
   await cancel.click();
   await expect(
-    page.getByText("Zaplacená cena se nevrací.", { exact: true }),
+    page
+      .getByRole("dialog")
+      .getByText(/Za tento vstup nebyla uhrazena žádná částka/),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "Ponechat rezervaci", exact: true })
@@ -196,7 +199,7 @@ test("a member buys two slots, sees one order, moves one term and cancels only t
   await cancel.click();
   await page
     .getByRole("button", {
-      name: "Ano, zrušit bez vrácení platby",
+      name: "Ano, zrušit rezervaci",
       exact: true,
     })
     .click();
@@ -260,5 +263,342 @@ test("a lost rescheduling response offers account recovery without repeating the
     expect(result?.n).toBe(1);
   } finally {
     await sql!`delete from reservation where id=${id}`;
+  }
+});
+
+test("reservation cards explain deadlines and cancelled history; opening and dismissing storno never changes business data", async ({
+  page,
+}) => {
+  const [member] =
+    await sql!`select id from profiles where email='member@example.test' order by created_at desc limit 1`;
+  const start = new Date(Date.now() + 12 * 3_600_000);
+  const [r] =
+    await sql!`insert into reservation(user_id,starts_at,ends_at,status,price_cents,additional_people_paid_cents,contact_email)
+    values(${member!.id},${start},${new Date(start.getTime() + 75 * 60000)},'confirmed',19900,10000,'member@example.test') returning id`;
+  const id = r!.id;
+  const fingerprint = () => sql!`select
+    (select md5(coalesce(string_agg(to_jsonb(r)::text,'' order by id),'')) from reservation r) as reservations,
+    (select md5(coalesce(string_agg(to_jsonb(c)::text,'' order by id),'')) from access_code c) as codes,
+    (select md5(coalesce(string_agg(to_jsonb(m)::text,'' order by id),'')) from message_delivery m) as messages`;
+  try {
+    const before = await fingerprint();
+    await page.goto("/account");
+    const card = page.locator(`[data-reservation-id="${id}"]`);
+    await expect(
+      card.getByText(
+        "Termín lze změnit nejpozději 24 hodin před jeho začátkem.",
+        { exact: true },
+      ),
+    ).toBeVisible();
+    await expect(
+      card.getByRole("button", { name: "Změna termínu není dostupná" }),
+    ).toBeDisabled();
+    const cancel = card.getByRole("button", { name: /Zrušit rezervaci/ });
+    for (const width of [320, 390, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      await cancel.click();
+      const dialog = page.getByRole("dialog");
+      await expect(dialog).toBeVisible();
+      await expect(dialog.getByText(/Zaplacených 299.*nevrací/)).toBeVisible();
+      await expect(
+        dialog.getByText(/Do začátku zbývá méně než 24 hodin/),
+      ).toBeVisible();
+      await expect(
+        dialog.getByRole("link", { name: "Raději změnit termín" }),
+      ).toHaveCount(0);
+      await expect(
+        dialog.getByRole("button", { name: "Ponechat rezervaci" }),
+      ).toBeFocused();
+      expect(
+        (
+          await new AxeBuilder({ page })
+            .include("dialog")
+            .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+            .analyze()
+        ).violations,
+      ).toEqual([]);
+      await page.keyboard.press("Escape");
+      await expect(cancel).toBeFocused();
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth - innerWidth,
+        ),
+      ).toBeLessThanOrEqual(1);
+    }
+    expect(await fingerprint()).toEqual(before);
+  } finally {
+    await sql!`delete from reservation where id=${id}`;
+  }
+});
+
+test("a lost cancellation response offers history recovery and sends only one confirmation", async ({
+  page,
+}) => {
+  const [member] =
+    await sql!`select id from profiles where email='member@example.test' order by created_at desc limit 1`;
+  const start = localDateTimeToDate(
+    addDaysToDateKey(dateKeyInTimeZone(new Date()), 36),
+    300,
+  );
+  const [r] =
+    await sql!`insert into reservation(user_id,starts_at,ends_at,status,price_cents,contact_email,contact_name)
+    values(${member!.id},${start},${new Date(start.getTime() + 75 * 60000)},'confirmed',19900,'member@example.test','Jana Ukázková') returning id`;
+  const id = r!.id;
+  try {
+    await page.goto("/account");
+    const card = page.locator(`[data-reservation-id="${id}"]`);
+    await expect(card.getByText(/Změna zdarma do/)).toBeVisible();
+    await card.getByRole("button", { name: /Zrušit rezervaci/ }).click();
+    await expect(
+      page
+        .getByRole("dialog")
+        .getByRole("link", { name: "Raději změnit termín" }),
+    ).toBeVisible();
+    let posts = 0;
+    await page.route("**/account", async (route) => {
+      if (route.request().method() !== "POST") return route.continue();
+      posts++;
+      await route.fetch();
+      await route.abort("connectionreset");
+    });
+    await page
+      .getByRole("button", {
+        name: "Ano, zrušit bez vrácení platby",
+        exact: true,
+      })
+      .click();
+    await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
+      "Rezervace už mohla být zrušena",
+    );
+    await expect(
+      page.getByRole("button", {
+        name: "Ano, zrušit bez vrácení platby",
+        exact: true,
+      }),
+    ).toBeDisabled();
+    await page
+      .getByRole("link", { name: "Zkontrolovat rezervaci v účtu", exact: true })
+      .click();
+    await expect(page).toHaveURL(/view=history/);
+    await expect(
+      page
+        .locator(`[data-reservation-id="${id}"]`)
+        .getByText("Zrušeno zákazníkem", { exact: true }),
+    ).toBeVisible();
+    expect(posts).toBe(1);
+    const mails =
+      await sql!`select status from message_delivery where dedupe_key=${`cancellation/${id}`}`;
+    expect(mails).toHaveLength(1);
+    expect(mails[0]!.status).toBe("sent");
+  } finally {
+    await page.unroute("**/account");
+    await sql!`delete from reservation where id=${id}`;
+  }
+});
+
+test("reservation history is paginated and never includes another member's bookings", async ({
+  page,
+}) => {
+  const [member] =
+    await sql!`select id from profiles where email='member@example.test' order by created_at desc limit 1`;
+  const [admin] =
+    await sql!`select id from profiles where email='admin@example.test' order by created_at desc limit 1`;
+  const ids: string[] = [];
+  try {
+    for (let n = 0; n < 26; n++) {
+      const start = localDateTimeToDate(
+        addDaysToDateKey(dateKeyInTimeZone(new Date()), 60 + n),
+        300,
+      );
+      const [r] =
+        await sql!`insert into reservation(user_id,starts_at,ends_at,status,price_cents,cancel_reason) values(${n === 25 ? admin!.id : member!.id},${start},${new Date(start.getTime() + 75 * 60000)},'cancelled',19900,'Zrušeno zákazníkem (bez vrácení platby)') returning id`;
+      ids.push(r!.id);
+    }
+    await page.goto("/account?view=history");
+    await expect(
+      page.getByRole("article", { name: /^Rezervace / }),
+    ).toHaveCount(20);
+    await expect(
+      page.locator(`[data-reservation-id="${ids.at(-1)}"]`),
+    ).toHaveCount(0);
+    await page
+      .getByRole("navigation", { name: "Stránky historie rezervací" })
+      .getByRole("link", { name: "Další", exact: true })
+      .click();
+    await expect(page).toHaveURL(/page=2/);
+    await expect(
+      page.locator(`[data-reservation-id="${ids[0]}"]`),
+    ).toBeVisible();
+    await expect(
+      page.locator(`[data-reservation-id="${ids.at(-1)}"]`),
+    ).toHaveCount(0);
+  } finally {
+    await sql!`delete from reservation where id in ${sql!(ids)}`;
+  }
+});
+
+test("rescheduling navigates through lightweight availability, ignores delayed replies, retries outages and keeps the original untouched", async ({
+  page,
+}) => {
+  const [member] =
+    await sql!`select id from profiles where email='member@example.test' order by created_at desc limit 1`;
+  const date = `${addDaysToDateKey(dateKeyInTimeZone(new Date()), 35).slice(0, 7)}-10`;
+  const day2 = addDaysToDateKey(date, 1),
+    day3 = addDaysToDateKey(date, 2),
+    day4 = addDaysToDateKey(date, 7);
+  const start = localDateTimeToDate(date, 300);
+  const [r] =
+    await sql!`insert into reservation(user_id,starts_at,ends_at,status,price_cents,contact_email)
+    values(${member!.id},${start},${new Date(start.getTime() + 75 * 60000)},'confirmed',19900,'member@example.test') returning id`;
+  const id = r!.id,
+    path = `/account/rezervace/${id}/zmenit`;
+  try {
+    const before = await sql!`select * from reservation where id=${id}`;
+    await page.goto(`${path}?date=${date}`);
+    await expect(
+      page.getByText(/Původní rezervace platí až do potvrzení změny/),
+    ).toBeVisible();
+    const navigation: string[] = [];
+    page.on("request", (request) => {
+      if (
+        new URL(request.url()).pathname === path &&
+        request.method() === "GET"
+      )
+        navigation.push(request.url());
+    });
+    await page.route("**/api/availability/calendar?**", async (route) => {
+      const url = new URL(route.request().url());
+      if (url.searchParams.get("date") !== day2) return route.continue();
+      const response = await route.fetch();
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      await route.fulfill({ response });
+    });
+    await page.locator(`a[data-date="${day2}"]`).click();
+    await expect(page.locator(`a[data-date="${day2}"]`)).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+    await page.locator(`a[data-date="${day3}"]`).click();
+    await expect(page.locator(`a[data-date="${day3}"]`)).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+    const times = page
+      .locator('section[aria-labelledby="change-time-heading"]')
+      .getByRole("button", { name: /Vybrat$/ });
+    await expect(times.first()).toBeVisible();
+    await page.waitForTimeout(350);
+    await expect(page.locator(`a[data-date="${day3}"]`)).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+    await page.unroute("**/api/availability/calendar?**");
+    await page.route("**/api/availability/calendar?**", (route) =>
+      route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: '{"error":"unavailable"}',
+      }),
+    );
+    await page.locator(`a[data-date="${day4}"]`).click();
+    await expect(
+      page.getByText("Kalendář se nepodařilo načíst", { exact: true }),
+    ).toBeVisible();
+    await expect(times).toHaveCount(0);
+    await page.unroute("**/api/availability/calendar?**");
+    await page
+      .getByRole("button", { name: "Zkusit znovu", exact: true })
+      .click();
+    await expect(times.first()).toBeVisible();
+    await page.goBack();
+    await expect(page.locator(`a[data-date="${day3}"]`)).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+    await expect(times.first()).toBeVisible();
+    await times.first().click();
+    await expect(
+      page.getByText("Potvrzení změny", { exact: true }),
+    ).toBeVisible();
+    await page.evaluate(() =>
+      window.dispatchEvent(new Event("navi:calendar-availability-change")),
+    );
+    await expect(times.first()).toBeVisible();
+    expect(navigation).toEqual([]);
+    expect(await sql!`select * from reservation where id=${id}`).toEqual(
+      before,
+    );
+    expect(
+      await sql!`select * from reservation_reschedule where reservation_id=${id}`,
+    ).toHaveLength(0);
+    expect(
+      await sql!`select * from message_delivery where reservation_id=${id}`,
+    ).toHaveLength(0);
+    expect(
+      (
+        await new AxeBuilder({ page })
+          .include("main")
+          .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+          .analyze()
+      ).violations,
+    ).toEqual([]);
+  } finally {
+    await page.unroute("**/api/availability/calendar?**");
+    await sql!`delete from reservation where id=${id}`;
+  }
+});
+
+test("administrator can edit the new customer cancellation template and preview the no-refund text without sending messages", async ({
+  browser,
+}) => {
+  const key = "messages.email.customer_reservation_cancellation";
+  const [saved] = await sql!`select * from site_setting where key=${key}`;
+  const state = () => sql!`select
+    (select md5(coalesce(string_agg(to_jsonb(r)::text,'' order by id),'')) from reservation r) as reservations,
+    (select md5(coalesce(string_agg(to_jsonb(c)::text,'' order by id),'')) from access_code c) as codes,
+    (select md5(coalesce(string_agg(to_jsonb(m)::text,'' order by id),'')) from message_delivery m) as messages,
+    (select md5(coalesce(string_agg(to_jsonb(e)::text,'' order by id),'')) from email_archive e) as emails`;
+  const before = await state();
+  const context = await browser.newContext({
+    storageState: join(process.cwd(), "tests/e2e/.auth/admin.json"),
+  });
+  const page = await context.newPage();
+  try {
+    await page.goto("/admin/emails");
+    await page
+      .getByRole("tab", { name: "Zrušení rezervace zákazníkem", exact: true })
+      .click();
+    await expect(page.getByLabel("Text e-mailu", { exact: true })).toHaveValue(
+      /\{refund_note\}/,
+    );
+    await expect(
+      page.getByText(
+        "Zaplacených 229 Kč se podle obchodních podmínek nevrací.",
+        { exact: true },
+      ),
+    ).toBeVisible();
+    const subject = page.getByLabel("Předmět", { exact: true });
+    await subject.fill("Potvrzení zákaznického storna");
+    await page
+      .getByRole("button", { name: "Uložit šablonu", exact: true })
+      .click();
+    await expect
+      .poll(
+        async () =>
+          (await sql!`select value from site_setting where key=${key}`)[0]
+            ?.value?.subject,
+      )
+      .toContain("Potvrzení zákaznického storna");
+    await page.reload();
+    await page
+      .getByRole("tab", { name: "Zrušení rezervace zákazníkem", exact: true })
+      .click();
+    await expect(subject).toHaveValue(/Potvrzení zákaznického storna/);
+    expect(await state()).toEqual(before);
+  } finally {
+    if (saved)
+      await sql!`update site_setting set value=${sql!.json(saved.value)},updated_at=${saved.updated_at},updated_by_admin_id=${saved.updated_by_admin_id} where key=${key}`;
+    else await sql!`delete from site_setting where key=${key}`;
+    await context.close();
   }
 });

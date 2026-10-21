@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarCheck2, ChevronLeft, ChevronRight } from "lucide-react";
 import { cachedDateTimeFormat, monthGrid } from "@/lib/helpers/datetime";
@@ -12,17 +11,12 @@ import { receiveAction } from "@/lib/helpers/action-response";
 import { reportTransportError } from "@/lib/helpers/report-transport-error";
 import { rescheduleReservationAction } from "./actions";
 
-interface RescheduleDayView {
-  dateKey: string;
-  isClosed: boolean;
-  hasAvailability: boolean;
-}
-
-interface RescheduleSlotView {
-  startISO: string;
-  label: string;
-  durationMinutes: number;
-}
+import type { CalendarView } from "@/lib/config/booking-calendar";
+import {
+  useCalendarAvailability,
+  CALENDAR_CHANGE_EVENT,
+} from "@/app/rezervace/use-calendar-availability";
+import { addDaysToDateKey } from "@/lib/helpers/datetime";
 
 const weekdays = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
 
@@ -35,29 +29,25 @@ function displayDate(dateKey: string, options: Intl.DateTimeFormatOptions) {
 
 export function RescheduleCalendar({
   reservationId,
-  monthKey,
-  selectedDateKey,
-  todayKey,
-  minDateKey,
-  maxDateKey,
   originalLabel,
-  days,
-  selectedSlots,
-  source,
+  initial,
 }: {
   reservationId: string;
-  monthKey: string;
-  selectedDateKey: string | null;
-  todayKey: string;
-  /** Earliest bookable day: opening day before launch, today afterwards. */
-  minDateKey: string;
-  maxDateKey: string;
   originalLabel: string;
-  days: RescheduleDayView[];
-  /** Available slots of `selectedDateKey`; empty when no day is selected. */
-  selectedSlots: RescheduleSlotView[];
-  source: "live" | "preview" | "unavailable";
+  initial: CalendarView;
 }) {
+  const { view, loading, refresh } = useCalendarAvailability(initial);
+  const {
+    monthKey,
+    selectedDateKey,
+    todayKey,
+    minDateKey,
+    maxDateKey,
+    days,
+    selectedSlots,
+    source,
+  } = view;
+  const gridRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedStartISO, setSelectedStartISO] = useState<string | null>(null);
@@ -67,7 +57,10 @@ export function RescheduleCalendar({
   const grid = monthGrid(monthKey);
   const byDate = new Map(days.map((day) => [day.dateKey, day]));
   const selectedDay = selectedDateKey ? byDate.get(selectedDateKey) : undefined;
-  const availableSlots = selectedDateKey ? selectedSlots : [];
+  const availableSlots =
+    selectedDateKey && !loading
+      ? selectedSlots.filter((slot) => !slot.booked)
+      : [];
   const selectedSlot = availableSlots.find(
     (slot) => slot.startISO === selectedStartISO,
   );
@@ -92,6 +85,63 @@ export function RescheduleCalendar({
     return query ? `${basePath}?${query}` : basePath;
   };
 
+  useEffect(() => {
+    if (!window.location.search) {
+      const params = new URLSearchParams({ month: initial.monthKey });
+      if (initial.selectedDateKey) params.set("date", initial.selectedDateKey);
+      window.history.replaceState(null, "", `${basePath}?${params}`);
+    }
+  }, [basePath, initial.monthKey, initial.selectedDateKey]);
+  const navigate = (month: string, date: string | null) => {
+    if (isSubmitting || interrupted) return;
+    window.history.pushState(null, "", buildHref({ month, date }));
+    setSelectedStartISO(null);
+    setServerError(null);
+    void refresh(month, date);
+  };
+  const follow = (
+    event: React.MouseEvent<HTMLAnchorElement>,
+    month: string,
+    date: string | null,
+  ) => {
+    if (
+      event.button ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      event.altKey
+    )
+      return;
+    event.preventDefault();
+    navigate(month, date);
+  };
+  const keyDown = (
+    event: React.KeyboardEvent<HTMLAnchorElement>,
+    date: string,
+  ) => {
+    if (event.key === " " || event.key === "Enter") {
+      event.preventDefault();
+      navigate(date.slice(0, 7), date);
+      return;
+    }
+    const deltas: Record<string, number> = {
+      ArrowLeft: -1,
+      ArrowRight: 1,
+      ArrowUp: -7,
+      ArrowDown: 7,
+    };
+    if (!(event.key in deltas)) return;
+    event.preventDefault();
+    const next = addDaysToDateKey(date, deltas[event.key]!);
+    if (next < minDateKey || next > maxDateKey) return;
+    if (next.slice(0, 7) !== monthKey) navigate(next.slice(0, 7), next);
+    requestAnimationFrame(() =>
+      gridRef.current
+        ?.querySelector<HTMLElement>(`[data-date="${next}"]`)
+        ?.focus(),
+    );
+  };
+
   const moveMonth = (delta: number) => {
     const [year, month] = monthKey.split("-").map(Number);
     return new Date(Date.UTC(year!, month! - 1 + delta, 1))
@@ -103,7 +153,7 @@ export function RescheduleCalendar({
   const nextMonth = moveMonth(1);
 
   const confirmChange = async () => {
-    if (!selectedSlot || isSubmitting || interrupted) return;
+    if (!selectedSlot || isSubmitting || interrupted || loading) return;
     setIsSubmitting(true);
     setServerError(null);
     const response = await receiveAction(() =>
@@ -125,20 +175,34 @@ export function RescheduleCalendar({
     if (!result.ok) {
       setServerError(result.error);
       setIsSubmitting(false);
-      router.refresh();
+      window.dispatchEvent(new Event(CALENDAR_CHANGE_EVENT));
       return;
     }
     // The action already revalidated /account, and a dynamic page is fetched
     // afresh on navigation. A refresh() fired right behind the push() started
     // a second, competing request for the same route, which the browser saw
     // end as "Connection closed" when one of them was abandoned.
+    window.dispatchEvent(new Event(CALENDAR_CHANGE_EVENT));
     router.push("/account?zmena=uspesna");
   };
 
   if (source === "unavailable") {
     return (
       <Notice tone="error" title="Kalendář se nepodařilo načíst" role="alert">
-        Zkuste stránku obnovit. Původní rezervace zůstává beze změny.
+        {interrupted ? serverError : "Původní rezervace zůstává platná."}
+        {interrupted ? (
+          <a href="/account" className="mt-4 block font-bold underline">
+            Zkontrolovat rezervaci v účtu
+          </a>
+        ) : null}
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-4"
+          onClick={() => void refresh(monthKey, selectedDateKey)}
+        >
+          Zkusit znovu
+        </Button>
       </Notice>
     );
   }
@@ -169,6 +233,10 @@ export function RescheduleCalendar({
             {previousMonth >= minMonth ? (
               <Button
                 href={buildHref({ month: previousMonth, date: null })}
+                prefetch={false}
+                onClick={(e: React.MouseEvent<HTMLAnchorElement>) =>
+                  follow(e, previousMonth, null)
+                }
                 variant="outline"
                 size="icon"
                 aria-label="Předchozí měsíc"
@@ -189,6 +257,10 @@ export function RescheduleCalendar({
             {nextMonth <= maxMonth ? (
               <Button
                 href={buildHref({ month: nextMonth, date: null })}
+                prefetch={false}
+                onClick={(e: React.MouseEvent<HTMLAnchorElement>) =>
+                  follow(e, nextMonth, null)
+                }
                 variant="outline"
                 size="icon"
                 aria-label="Následující měsíc"
@@ -217,7 +289,7 @@ export function RescheduleCalendar({
               </div>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-1">
+          <div ref={gridRef} className="grid grid-cols-7 gap-1">
             {grid.map((cell) => {
               const day = byDate.get(cell.dateKey);
               const selectable =
@@ -254,16 +326,19 @@ export function RescheduleCalendar({
                           })}, ${reason}`
                         : undefined
                     }
-                    className="grid min-h-12 place-items-center rounded-sm text-sm text-muted-foreground/35 sm:min-h-14"
+                    className="grid min-h-12 place-items-center rounded-sm text-sm text-muted-foreground sm:min-h-14"
                   >
-                    {dayNumber}
+                    {cell.inMonth ? dayNumber : null}
                   </span>
                 );
               }
               return (
-                <Link
+                <a
                   key={cell.dateKey}
                   href={buildHref({ month: monthKey, date: cell.dateKey })}
+                  onClick={(e) => follow(e, monthKey, cell.dateKey)}
+                  onKeyDown={(e) => keyDown(e, cell.dateKey)}
+                  data-date={cell.dateKey}
                   // The dot and the fill are visual only; the name says both.
                   aria-label={`${displayDate(cell.dateKey, {
                     weekday: "long",
@@ -294,7 +369,7 @@ export function RescheduleCalendar({
                       )}
                     />
                   ) : null}
-                </Link>
+                </a>
               );
             })}
           </div>
@@ -321,6 +396,21 @@ export function RescheduleCalendar({
             : "Vyberte datum"}
         </h2>
 
+        {serverError ? (
+          <p role="alert" className="mt-4 text-sm font-bold text-destructive">
+            {serverError}
+          </p>
+        ) : null}
+        {interrupted ? (
+          <a href="/account" className="mt-4 block font-bold underline">
+            Zkontrolovat rezervaci v účtu
+          </a>
+        ) : null}
+        {loading ? (
+          <p role="status" className="mt-6 text-sm text-muted-foreground">
+            Načítám dostupné časy…
+          </p>
+        ) : null}
         {!selectedDateKey ? (
           <Notice className="mt-6" title="Nejprve zvolte den">
             Potom se zobrazí dostupné časy.
@@ -333,6 +423,7 @@ export function RescheduleCalendar({
         ) : null}
         {selectedDateKey &&
         selectedDay &&
+        !loading &&
         !selectedDay.isClosed &&
         availableSlots.length === 0 ? (
           <Notice className="mt-6" tone="warning" title="Žádný volný termín">
@@ -412,24 +503,11 @@ export function RescheduleCalendar({
                 </dl>
               </div>
             </div>
-            {serverError ? (
-              <p
-                role="alert"
-                className="mt-4 text-sm font-bold text-destructive"
-              >
-                {serverError}
-              </p>
-            ) : null}
-            {interrupted ? (
-              <a href="/account" className="mt-4 block font-bold underline">
-                Zkontrolovat rezervaci v účtu
-              </a>
-            ) : null}
             <Button
               type="button"
               size="lg"
               className="mt-5 w-full"
-              disabled={isSubmitting || interrupted}
+              disabled={isSubmitting || interrupted || loading}
               onClick={confirmChange}
             >
               {isSubmitting ? "Měním termín…" : "Potvrdit změnu termínu"}

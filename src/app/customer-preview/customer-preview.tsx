@@ -30,7 +30,9 @@ const INITIAL_PROFILE = {
   email: "jana@preview.example.test",
   phone: "+420 777 123 456",
 };
-type PreviewSlot = ReturnType<typeof previewSelection>[number];
+type PreviewSlot = ReturnType<typeof previewSelection>[number] & {
+  isReward?: boolean;
+};
 interface PreviewOrder {
   slots: PreviewSlot[];
   totalCents: number;
@@ -94,6 +96,7 @@ export function CustomerPreview({
       slots: selected.map((slot, index) => ({
         ...slot,
         priceCents: rewards[index] ? 0 : slot.priceCents,
+        isReward: rewards[index],
       })),
       totalCents: total,
       extraPeople: Number(values.extraPeople),
@@ -119,15 +122,46 @@ export function CustomerPreview({
     setResetKey((k) => k + 1);
     navigate("calendar");
   };
-  const summary = (slots: PreviewSlot[]) => (
+  const removeSlot = (startISO: string) => {
+    const remaining = selected.filter((slot) => slot.startISO !== startISO);
+    const next = withSelectedStarts(
+      new URLSearchParams(params.toString()),
+      remaining.map((slot) => slot.startISO),
+    );
+    window.history.pushState(null, "", `${BASE}?${next}`);
+    setMessage(
+      "Termín byl odebrán z ukázkového výběru. Cena a bonus se přepočítaly.",
+    );
+  };
+  const summary = (slots: PreviewSlot[], removable = false) => (
     <ul className="divide-y divide-border">
       {slots.map((slot) => (
         <li
           key={slot.startISO}
           className="flex flex-wrap justify-between gap-2 py-4"
         >
-          <span>{slot.label}</span>
-          <strong>{formatMoney(slot.priceCents)}</strong>
+          <div className="min-w-0 flex-1">
+            <span>{slot.label}</span>
+            {slot.isReward ? (
+              <p className="mt-1 text-sm font-bold text-success">
+                Bonusový 10. vstup zdarma
+              </p>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-3">
+            <strong>{formatMoney(slot.priceCents)}</strong>
+            {removable ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label={`Odebrat termín ${slot.label}`}
+                onClick={() => removeSlot(slot.startISO)}
+              >
+                Odebrat
+              </Button>
+            ) : null}
+          </div>
         </li>
       ))}
     </ul>
@@ -221,7 +255,9 @@ export function CustomerPreview({
                       selected.map((slot, index) => ({
                         ...slot,
                         priceCents: rewards[index] ? 0 : slot.priceCents,
+                        isReward: rewards[index],
                       })),
+                      true,
                     )}
                     <p className="border-t border-border pt-4 text-lg font-bold">
                       Celkem {formatMoney(totalCents)}
@@ -240,7 +276,6 @@ export function CustomerPreview({
                   <Card className="p-5 sm:p-7">
                     <h2 className="mb-6 text-xl font-extrabold">Tvoje údaje</h2>
                     <BookingDetailsForm
-                      key={selected.map((s) => s.startISO).join(",")}
                       startsISO={selected.map((s) => s.startISO)}
                       totalCents={totalCents}
                       participantPricing={config.participants}

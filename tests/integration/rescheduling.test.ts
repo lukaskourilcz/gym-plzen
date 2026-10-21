@@ -322,8 +322,8 @@ describe(
       );
       assert.equal(
         resend.sent.filter((mail) => mail.to === MEMBER.email).length,
-        0,
-        "no 'your booking was cancelled' e-mail for the customer's own storno",
+        1,
+        "customer receives their dedicated cancellation confirmation",
       );
       const log = await rows<{ actor_type: string; summary: string }>(
         "select actor_type, summary from activity_log where reservation_id = $1 and action = 'reservation.cancelled'",
@@ -335,7 +335,7 @@ describe(
       assert.match(log[0]!.summary, /nevrací/);
     });
 
-    test("a storno is refused for someone else's, a cancelled or a started booking", async () => {
+    test("a storno rejects another owner or a started booking and replays a customer cancellation safely", async () => {
       const id = await paidBooking(slot(5));
       await assert.rejects(
         cancelByCustomer({ reservationId: id, userId: STRANGER }),
@@ -350,9 +350,10 @@ describe(
         { message: "Probíhající nebo uplynulý termín už nelze zrušit." },
       );
       await cancelByCustomer({ reservationId: id, userId: MEMBER.id });
-      await assert.rejects(
-        cancelByCustomer({ reservationId: id, userId: MEMBER.id }),
-        { message: "Zrušit lze pouze potvrzenou rezervaci." },
+      await cancelByCustomer({ reservationId: id, userId: MEMBER.id });
+      assert.equal(
+        resend.sent.filter((mail) => mail.to === MEMBER.email).length,
+        1,
       );
     });
   },
