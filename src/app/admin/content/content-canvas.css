@@ -38,6 +38,8 @@
 .admin-shell .content-canvas .canvas-photo-control:focus-visible {
   outline: 3px solid var(--ring);
   outline-offset: 2px;
+  /* Two-tone focus stays visible on both white cards and dark photographs. */
+  box-shadow: 0 0 0 5px white;
 }
 .admin-shell .content-canvas .canvas-photo-control,
 .admin-shell .content-canvas .canvas-meta {

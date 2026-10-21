@@ -57,6 +57,7 @@ export function Text({
         type="button"
         className="canvas-pencil"
         aria-label={`Upravit: ${item.label}`}
+        title={`Upravit: ${item.label}`}
         onClick={() => onEdit(item)}
       >
         <Pencil aria-hidden="true" className="size-3.5" />
