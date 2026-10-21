@@ -213,6 +213,15 @@ export function AnnouncementEditor({
               </p>
             ) : null}
             <FormFeedback error={error} />
+            {uncertain ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => window.location.reload()}
+              >
+                Obnovit a ověřit stav
+              </Button>
+            ) : null}
             <div className="mt-4 flex flex-wrap gap-3">
               <SubmitButton isSubmitting={saving} disabled={uncertain}>
                 Uložit změny

@@ -35,12 +35,13 @@ test("all sections render editable website layouts with every text reachable on 
         }),
       ).toHaveCount(1);
     }
-    if (section.items.length) await canvas
-      .getByRole("button", {
-        name: `Upravit: ${section.items[0]!.label}`,
-        exact: true,
-      })
-      .click();
+    if (section.items.length)
+      await canvas
+        .getByRole("button", {
+          name: `Upravit: ${section.items[0]!.label}`,
+          exact: true,
+        })
+        .click();
     if (section.items.length) {
       await expect(page.getByRole("dialog")).toBeVisible();
       await page.keyboard.press("Escape");
