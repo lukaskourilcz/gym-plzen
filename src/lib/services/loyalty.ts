@@ -152,10 +152,6 @@ export async function getLoyaltyStatus(userId: string): Promise<LoyaltyStatus> {
   return status;
 }
 
-/**
- * Pure derivation of loyalty status from an entry count : separated so it is
- * trivially unit-testable and reusable (e.g. in the customer widget).
- */
 /** The standard entry price (admin override, falling back to the default). */
 export async function getStandardEntryPriceCents(): Promise<number> {
   const override = await getSetting<number>(ENTRY_PRICE_SETTING_KEY);
@@ -209,12 +205,6 @@ export async function priceForNextEntry(
     : { priceCents: price, isFree: false };
 }
 
-/**
- * How many of the cadence's steps read as complete. Shared by the classic
- * segment bar and the modern ring so the two can never disagree: a member whose
- * next entry is free sees a full track, which is the reward being ready rather
- * than the cycle being over.
- */
 /**
  * One Czech sentence about the member's loyalty progress, for the confirmation
  * e-mail and the confirmation page. Returns an empty string when there is

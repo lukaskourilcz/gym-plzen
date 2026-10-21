@@ -1,5 +1,6 @@
 "use client";
 
+import { ContentImageUpload } from "./image-upload";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
@@ -90,19 +91,28 @@ function AssetEditor({
       {asset.kind === "image" ? (
         <div className="flex flex-wrap items-center gap-4">
           <Image
-            src={value}
-            alt={`Aktuální: ${asset.label}`}
+            src={
+              contentAssetSchema.safeParse({ key: asset.key, value: current })
+                .success
+                ? current
+                : value
+            }
+            alt={`Náhled: ${asset.label}`}
             width={180}
             height={110}
             unoptimized
             className="h-24 w-40 rounded-md border border-border object-cover"
           />
-          <Link
-            href="/admin/settings#upload"
-            className="text-sm font-semibold text-primary underline"
-          >
-            Nahrát novou fotografii a získat její adresu
-          </Link>
+          <ContentImageUpload
+            disabled={busy}
+            onUploaded={(url) => {
+              setCurrent(url);
+              setSuccess(
+                "Fotografie je nahraná. Zkontrolujte náhled a zvolte Uložit fotografii.",
+              );
+              setError(null);
+            }}
+          />
         </div>
       ) : null}
       <FormFeedback error={error} success={success} />
@@ -200,8 +210,8 @@ export function ContentEditor({
             <ArrowUpRight aria-hidden="true" />
           </Button>
         </div>
-        <div className="grid items-start gap-6 2xl:grid-cols-[minmax(0,1fr)_280px]">
-          <div className="order-2 min-w-0 2xl:order-1">
+        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="order-2 min-w-0 xl:order-1">
             {visual.dependencies.length ? (
               <Card className="mb-5 p-4 sm:p-5">
                 <h3 className="font-semibold">Co se načítá odjinud</h3>
@@ -304,7 +314,7 @@ export function ContentEditor({
               </Card>
             ) : null}
           </div>
-          <figure className="order-1 min-w-0 overflow-hidden rounded-lg border border-border bg-card 2xl:sticky 2xl:top-6 2xl:order-2">
+          <figure className="order-1 min-w-0 overflow-hidden rounded-lg border border-border bg-card xl:sticky xl:top-6 xl:order-2">
             <a
               href={`/images/content-previews/${visual.id}.webp`}
               target="_blank"
@@ -316,7 +326,7 @@ export function ContentEditor({
                 width={1200}
                 height={800}
                 unoptimized
-                className="max-h-80 w-full object-cover object-top 2xl:max-h-none"
+                className="max-h-80 w-full object-cover object-top xl:max-h-none"
               />
             </a>
             <figcaption className="border-t border-border p-4 text-xs leading-5 text-muted-foreground">

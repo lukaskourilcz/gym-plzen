@@ -376,7 +376,7 @@ test.describe("Public site", () => {
       .evaluate((image) => Number.parseFloat(getComputedStyle(image).scale));
     expect(stretchZoom).toBeGreaterThan(1.5);
     await expect(page.locator("li[data-zone]").nth(3).locator("h3")).toHaveText(
-      "Zázemí pro vás",
+      "Zázemí pro tebe",
     );
     await expect(page.locator("li[data-zone]").last().locator("h3")).toHaveText(
       "Zázemí pro děti",
@@ -772,7 +772,7 @@ test.describe("Public site", () => {
     await expect(page.locator("details")).toHaveCount(21);
     const firstFaqItem = page
       .locator("details")
-      .filter({ hasText: "Jak se k nám dostanete?" });
+      .filter({ hasText: "Jak se k nám dostaneš?" });
     const firstFaqMark = firstFaqItem.locator(
       "summary > span > span[aria-hidden='true']",
     );

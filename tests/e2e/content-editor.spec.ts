@@ -106,3 +106,54 @@ test("public pricing card has from price without old amount, and newsletter uses
     await sql`delete from pricing_period where id=${id}`;
   }
 });
+
+test("saving one gallery image changes only that setting and never bookings, codes or messages", async ({
+  page,
+}) => {
+  const key = "branding.gallery_1_url";
+  const [old] = await sql`select * from site_setting where key=${key}`;
+  const others =
+    await sql`select key,value from site_setting where key like 'branding.%' and key <> ${key} order by key`;
+  const state = () => sql`select
+    (select md5(coalesce(string_agg(to_jsonb(r)::text,'' order by id),'')) from reservation r) as bookings,
+    (select md5(coalesce(string_agg(to_jsonb(r)::text,'' order by id),'')) from access_code r) as codes,
+    (select md5(coalesce(string_agg(to_jsonb(r)::text,'' order by id),'')) from message_delivery r) as messages`;
+  const before = await state();
+  try {
+    await page.goto("/admin/content?section=gallery");
+    const field = page.getByLabel("Fotografie galerie 1", { exact: true });
+    await field.fill("/images/photos/gallery-2.webp");
+    await field
+      .locator("xpath=ancestor::form")
+      .getByRole("button", { name: "Uložit fotografii" })
+      .click();
+    await expect(
+      page.getByText("Změna je uložená a projeví se na webu."),
+    ).toBeVisible();
+    expect(
+      (await sql`select value from site_setting where key=${key}`)[0]?.value,
+    ).toBe("/images/photos/gallery-2.webp");
+    expect(
+      await sql`select key,value from site_setting where key like 'branding.%' and key <> ${key} order by key`,
+    ).toEqual(others);
+    expect(await state()).toEqual(before);
+  } finally {
+    // Invalidate the isolated public cache before restoring the fixture row.
+    const field = page.getByLabel("Fotografie galerie 1", { exact: true });
+    await field.fill(
+      typeof old?.value === "string"
+        ? old.value
+        : "/images/photos/gallery-1.webp",
+    );
+    await field
+      .locator("xpath=ancestor::form")
+      .getByRole("button", { name: "Uložit fotografii" })
+      .click();
+    await expect(
+      page.getByText("Změna je uložená a projeví se na webu."),
+    ).toBeVisible();
+    if (old)
+      await sql`update site_setting set value=${sql.json(old.value)}, updated_at=${old.updated_at}, updated_by_admin_id=${old.updated_by_admin_id} where key=${key}`;
+    else await sql`delete from site_setting where key=${key}`;
+  }
+});

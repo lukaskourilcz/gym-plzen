@@ -146,11 +146,15 @@ export function CustomerPreview({
     <>
       <div className="border-b border-warning/40 bg-warning/15 px-4 py-3 text-sm">
         <div className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-3">
-          <Eye className="size-5 shrink-0" aria-hidden="true" />
-          <strong>Ukázkový zákaznický náhled</strong>
-          <span className="flex-1">
-            Všechny rezervace i platby jsou simulované. Nikomu nic neodejde.
-          </span>
+          <div className="flex min-w-0 basis-full items-start gap-3 lg:basis-auto lg:flex-1">
+            <Eye className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+            <div>
+              <strong>Ukázkový zákaznický náhled</strong>
+              <p className="mt-1">
+                Všechny rezervace i platby jsou simulované. Nikomu nic neodejde.
+              </p>
+            </div>
+          </div>
           <Button variant="outline" onClick={reset}>
             <RotateCcw aria-hidden="true" />
             Začít znovu
