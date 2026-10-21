@@ -115,8 +115,9 @@ test.describe("Admin : pages load", () => {
 test.describe("Admin : forms", () => {
   test("content editor saves a block", async ({ page }) => {
     await page.goto("/admin/content");
-    const hero = page.locator("section").filter({
-      has: page.getByRole("heading", { name: "Hero", exact: true }),
+    const hero = page.getByRole("region", {
+      name: "Upravitelné rozložení: Hero",
+      exact: true,
     });
     await hero
       .getByRole("button", { name: "Upravit: Hlavní nadpis", exact: true })
