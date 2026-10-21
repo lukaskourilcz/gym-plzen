@@ -167,8 +167,7 @@ export const SITE_DEFAULTS = {
   // Three lines in the hero's format, the last one carrying the gold accent.
   "home.pricing.title": "Bez závazků.\nBez předplatného.",
   "home.pricing.titleAccent": "Bez měsíčních plateb.",
-  "home.pricing.promoNote":
-    "Akční cena platí pro návštěvy v akčním období, i při rezervaci předem.",
+  "home.pricing.promoNote": "Akční cena platí pro návštěvy v akčním období.",
   "home.pricing.feature1": "Soukromé využití prostoru během rezervace",
   "home.pricing.feature2": "Online platba přes Comgate",
   "home.pricing.feature3": "Pokyny ke vstupu po potvrzení rezervace",

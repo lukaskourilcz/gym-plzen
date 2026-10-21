@@ -23,7 +23,8 @@
       "codex/calendar-blocking-evening": false,
       "codex/blocking-periods-legacy-cleanup": false,
       "codex/compact-blocking-history": false,
-      "codex/period-price-priority": false
+      "codex/period-price-priority": false,
+      "codex/public-copy-pricing": false
     }
   },
   "regions": ["cdg1"]

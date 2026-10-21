@@ -95,7 +95,7 @@ export default async function HomePage() {
    * Promotions follow the visit date. Show the configured end to avoid stale copy.
    */
   const promoNote = content.promoEndsAt
-    ? `Akční cena pro návštěvy do ${formatDate(content.promoEndsAt)}. Platí i při rezervaci předem.`
+    ? `Akční cena pro návštěvy do ${formatDate(content.promoEndsAt)}.`
     : t("home.pricing.promoNote");
   const address = publicAddress(t("contact.address"));
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(PUBLIC_MAP_QUERY)}`;
@@ -449,6 +449,9 @@ export default async function HomePage() {
                 <div className="flex flex-1 flex-col justify-center border-b border-border px-7 py-12 text-center">
                   <div className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
                     {/* 60px: the top of the documented display range. */}
+                    <span className="text-base font-bold text-muted-foreground">
+                      od
+                    </span>
                     <span className="text-6xl font-extrabold leading-none tracking-[-.01em] text-gold">
                       {price}
                     </span>
@@ -459,15 +462,9 @@ export default async function HomePage() {
                   <p className="mt-4 text-sm font-semibold text-card-foreground">
                     Uvedená cena platí za celý prostor, nikoli za osobu.
                   </p>
-                  {/*
-                   * During a promotion the standard price stays visible, so the
-                   * saving is a fact the visitor can check rather than a claim.
-                   */}
+                  {/* Keep the configured promotion end, without a second price. */}
                   {content.isPromoPrice && (
                     <p className="mt-4 text-sm font-bold text-muted-foreground">
-                      <span className="line-through">
-                        {formatMoney(content.standardEntryPriceCents)}
-                      </span>{" "}
                       <span className="text-accent-foreground">
                         {promoNote}
                       </span>
