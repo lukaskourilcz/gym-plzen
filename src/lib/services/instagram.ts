@@ -175,6 +175,7 @@ export async function connectInstagram(
       connectedAt: now,
       connectedByAdminId: adminId,
       lastProblem: null,
+      lastAttemptAt: null,
       leaseId: null,
       leaseUntil: null,
     };

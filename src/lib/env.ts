@@ -55,10 +55,13 @@ const serverSchema = z.object({
   META_DOMAIN_VERIFICATION: z.string().optional(),
   INSTAGRAM_APP_ID: z.string().optional(),
   INSTAGRAM_APP_SECRET: z.string().optional(),
-  INSTAGRAM_TOKEN_ENCRYPTION_KEY: z
-    .string()
-    .regex(/^[a-fA-F0-9]{64}$/)
-    .optional(),
+  INSTAGRAM_TOKEN_ENCRYPTION_KEY: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z
+      .string()
+      .regex(/^[a-fA-F0-9]{64}$/)
+      .optional(),
+  ),
   INSTAGRAM_GRAPH_VERSION: z
     .string()
     .regex(/^v\d+\.0$/)
