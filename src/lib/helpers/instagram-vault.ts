@@ -6,7 +6,10 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 import { env } from "@/lib/env";
-import { InstagramError } from "@/lib/integrations/instagram";
+import {
+  InstagramError,
+  parseInstagramJson,
+} from "@/lib/integrations/instagram";
 
 function decode(value: string) {
   const bytes = Buffer.from(value, "base64url");
@@ -114,7 +117,11 @@ export function verifyInstagramSignedRequest(signed: string) {
       .update(payload)
       .digest();
     if (!equal(expected, decode(mac))) throw new Error();
-    const data = JSON.parse(decode(payload).toString("utf8"));
+    const data = parseInstagramJson(decode(payload).toString("utf8")) as {
+      algorithm?: unknown;
+      user_id?: unknown;
+      issued_at: number;
+    };
     if (
       data.algorithm !== "HMAC-SHA256" ||
       !/^\d{1,30}$/.test(String(data.user_id)) ||

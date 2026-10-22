@@ -82,6 +82,21 @@ export async function readLimitedBody(
     reader.releaseLock();
   }
 }
+/** Meta sometimes returns 64-bit IDs as JSON numbers. Node 22 supplies their exact source. */
+export function parseInstagramJson(value: string): unknown {
+  return JSON.parse(
+    value,
+    (key: string, item: unknown, context?: { source?: string }) => {
+      if ((key === "id" || key === "user_id") && typeof item === "number") {
+        if (context?.source && /^\d{1,30}$/.test(context.source))
+          return context.source;
+        if (Number.isSafeInteger(item)) return String(item);
+        throw new InstagramError("provider");
+      }
+      return item;
+    },
+  );
+}
 async function jsonRequest(url: URL, init: RequestInit = {}) {
   try {
     const response = await fetch(url, {
@@ -90,7 +105,7 @@ async function jsonRequest(url: URL, init: RequestInit = {}) {
       redirect: "error",
       signal: AbortSignal.timeout(10_000),
     });
-    const data: unknown = JSON.parse(
+    const data = parseInstagramJson(
       (await readLimitedBody(response, 512_000)).toString("utf8"),
     );
     const errorCode = (data as { error?: { code?: number } })?.error?.code;

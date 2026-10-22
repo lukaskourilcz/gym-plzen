@@ -28,6 +28,7 @@ import { readInstagramImage } from "../../src/lib/integrations/instagram-image";
 import {
   instagramAuthorizationUrl,
   readLimitedBody,
+  parseInstagramJson,
 } from "../../src/lib/integrations/instagram";
 import {
   createInstagramState,
@@ -346,4 +347,17 @@ test("signed Meta callbacks reject tampering and user-controlled fetch links", (
     false,
   );
   assert.equal(isInstagramImageUrl("https://evilcdninstagram.com/x"), false);
+});
+
+test("64-bit Meta identifiers retain exact digits before account matching", () => {
+  assert.deepEqual(
+    parseInstagramJson(
+      '{"user_id":17841400008460057,"id":17841400008460059,"expires_in":5184000}',
+    ),
+    {
+      user_id: "17841400008460057",
+      id: "17841400008460059",
+      expires_in: 5184000,
+    },
+  );
 });
