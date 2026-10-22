@@ -56,7 +56,7 @@ export function instagramAuthorizationUrl(redirectUri: string, state: string) {
   return url.toString();
 }
 export async function readLimitedBody(
-  response: Response,
+  response: Pick<Response, "body" | "headers">,
   limit: number,
   problem: InstagramProblem = "provider",
 ) {
