@@ -30,20 +30,25 @@ import { AssetEditor } from "./asset-editor";
 import { ContentCanvas } from "./content-canvas";
 import type { ContentPreviewData } from "./canvas-controls";
 import type { Announcement } from "@/lib/config/opening";
+import type { InstagramAdminState } from "@/lib/config/instagram";
+import { InstagramEditor } from "./instagram-editor";
 import { AnnouncementEditor } from "./announcement-editor";
 
 /** Focus one website section at a time, with a visual reference and explicit data sources. */
 export function ContentEditor({
   announcement,
+  instagram: initialInstagram,
   values,
   assets,
   preview,
 }: {
   announcement: Announcement;
+  instagram: InstagramAdminState;
   values: Record<string, string>;
   assets: Record<string, string>;
   preview: ContentPreviewData;
 }) {
+  const [instagram, setInstagram] = useState(initialInstagram);
   const params = useSearchParams();
   const active = params.get("section") ?? "hero";
   const section =
@@ -115,10 +120,16 @@ export function ContentEditor({
             <ArrowUpRight aria-hidden="true" />
           </Button>
         </div>
+        {visual.id === "instagram" && (
+          <InstagramEditor value={instagram} onChange={setInstagram} />
+        )}
         {visual.id === "opening" ? (
           <AnnouncementEditor initialValue={announcement} />
         ) : (
           <ContentCanvas
+            instagramPosts={instagram.posts
+              .filter((p) => !p.hidden)
+              .slice(0, 12)}
             section={section}
             preview={{ ...preview, texts: rendered }}
             assets={images}

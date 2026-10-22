@@ -136,6 +136,16 @@ export const CONTENT_EDITOR_SECTIONS: readonly ContentEditorSection[] = [
     ],
   },
   {
+    title: "Instagram",
+    description: "Příspěvky z profilu @navi_plzen.",
+    items: [
+      item("home.instagram.title", "Nadpis Instagramu"),
+      item("home.instagram.button", "Tlačítko profilu"),
+      item("home.instagram.fallback", "Text bez načtených příspěvků"),
+      item("home.instagram.more", "Tlačítko dalších příspěvků"),
+    ],
+  },
+  {
     title: "Mapa a kontakt",
     description: "Kontaktní údaje, popisek mapy a sociální sítě.",
     items: [

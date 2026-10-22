@@ -21,6 +21,7 @@ export interface ContentPreviewData {
   isPromo: boolean;
 }
 export interface CanvasContextValue {
+  instagramPosts?: import("@/lib/config/instagram").InstagramPost[];
   preview: ContentPreviewData;
   assets: Record<string, string>;
   onEdit: (item: ContentEditorItem) => void;

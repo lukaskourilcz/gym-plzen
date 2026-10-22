@@ -53,6 +53,21 @@ const serverSchema = z.object({
   // Meta domain verification code (the `content` of the meta tag); rendered
   // into <head> by the root layout so Business Settings can verify navigym.cz.
   META_DOMAIN_VERIFICATION: z.string().optional(),
+  INSTAGRAM_APP_ID: z.string().optional(),
+  INSTAGRAM_APP_SECRET: z.string().optional(),
+  INSTAGRAM_TOKEN_ENCRYPTION_KEY: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z
+      .string()
+      .regex(/^[a-fA-F0-9]{64}$/)
+      .optional(),
+  ),
+  INSTAGRAM_GRAPH_VERSION: z
+    .string()
+    .regex(/^v\d+\.0$/)
+    .default("v24.0"),
+  // Accepted only with test mode and a loopback host by the integration adapter.
+  INSTAGRAM_TEST_BASE_URL: z.string().url().optional(),
   GOOGLE_SITE_VERIFICATION: z.string().optional(),
 
   WHATSAPP_ACCESS_TOKEN: z.string().optional(),

@@ -269,6 +269,7 @@ test("visual editing controls remain accessible across all sections", async ({
     "equipment",
     "faq",
     "contact",
+    "instagram",
     "newsletter",
     "opening",
     "rules",

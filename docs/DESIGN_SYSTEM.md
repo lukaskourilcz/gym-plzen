@@ -812,3 +812,13 @@ fokus patří bezpečné volbě „Ponechat rezervaci“. Klávesa Escape a náv
 zůstávají součástí nativního modálního dialogu.
 
 Provozní incidenty zůstávají pod `/admin/alerts` s názvem „Provozní upozornění“.
+
+### Instagram in the content editor
+
+The connection card sits above the inert public-layout canvas. It groups the
+visibility switch, account status and last refresh time; reconnect, refresh and
+disconnect actions remain separate from text pencils. Disclosure reveals per-post
+visibility controls. Hiding a post uses a neutral placeholder in administration.
+Disconnect requires the standard accessible admin dialog. Pending/lost responses
+show feedback and a reload action; no optimistic success is shown. The canvas
+preserves public brand typography while the controls use the admin system font.

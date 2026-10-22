@@ -6,6 +6,7 @@ import { requireTestDatabaseUrl } from "../tests/helpers/test-database";
 import { createLocalAuth } from "../tests/e2e/local-auth";
 import { createResendMock } from "../tests/integration/mocks";
 import { captureContentPreviews } from "./capture-content-previews";
+import { createInstagramMock } from "../tests/helpers/instagram-mock";
 import { BOOKING_TABLES } from "../tests/helpers/booking-tables";
 
 const database = requireTestDatabaseUrl();
@@ -45,6 +46,10 @@ const testEnv: NodeJS.ProcessEnv = {
   RESEND_BASE_URL: "http://127.0.0.1:4548",
   RESEND_API_KEY: "re_local_test_only",
   RESEND_FROM_EMAIL: "noreply@example.test",
+  INSTAGRAM_APP_ID: "local-instagram-app",
+  INSTAGRAM_APP_SECRET: "local-instagram-secret",
+  INSTAGRAM_TOKEN_ENCRYPTION_KEY: "ab".repeat(32),
+  INSTAGRAM_TEST_BASE_URL: "http://127.0.0.1:4546",
   ACCESS_CODE_ENCRYPTION_KEY: randomBytes(32).toString("hex"),
   COMGATE_API_URL: "http://127.0.0.1:4547/v2.0",
   COMGATE_MERCHANT_ID: "test-merchant",
@@ -78,6 +83,8 @@ try {
   // Provider fixtures restart their message IDs on every run. Retained email
   // bodies from an earlier run must not collide with this run's fake IDs.
   await sql`delete from email_archive`;
+  await sql`delete from instagram_connection`;
+  await sql`delete from site_setting where key='features.instagram_feed'`;
   await sql`delete from content_block where key = 'home.hero.title' and locale = 'cs'`;
   for (let weekday = 0; weekday < 7; weekday++)
     await sql`insert into opening_hours (day_of_week, open_minute, close_minute, slot_minutes)
@@ -116,6 +123,7 @@ try {
   await sql.end({ timeout: 2 });
 }
 await run(["node_modules/next/dist/bin/next", "build"]);
+const instagram = createInstagramMock(4546);
 const auth = createLocalAuth(4549);
 const resend = createResendMock(4548);
 let app: ChildProcess | undefined;
@@ -161,6 +169,7 @@ async function waitForApp(app: ChildProcess) {
   if (!ready) throw new Error("Local E2E app did not become ready.");
 }
 try {
+  await instagram.start();
   await auth.start();
   await resend.start();
   app = startApp();
@@ -185,6 +194,7 @@ try {
       ? args
       : [
           "public.spec.ts",
+          "instagram.spec.ts",
           "customer-preview.spec.ts",
           "content-editor.spec.ts",
           "announcement.spec.ts",
@@ -222,6 +232,7 @@ try {
     app.kill("SIGTERM");
     await stopped;
   }
+  await instagram.stop();
   await resend.stop();
   await auth.stop();
 }
