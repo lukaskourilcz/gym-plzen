@@ -2,7 +2,8 @@
 
 import { useState, type ReactNode } from "react";
 import Image from "next/image";
-import { Instagram, Layers, Play, ImageOff } from "lucide-react";
+import { Layers, Play, ImageOff } from "lucide-react";
+import { InstagramIcon as Instagram } from "@/components/site/social-icons";
 import {
   INSTAGRAM_PROFILE_URL,
   INSTAGRAM_USERNAME,

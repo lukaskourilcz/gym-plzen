@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Instagram, RefreshCw, Eye, EyeOff } from "lucide-react";
+import { RefreshCw, Eye, EyeOff } from "lucide-react";
+import { InstagramIcon as Instagram } from "@/components/site/social-icons";
 import {
   INSTAGRAM_PROBLEMS,
   INSTAGRAM_USERNAME,

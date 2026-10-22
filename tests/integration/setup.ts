@@ -51,11 +51,18 @@ process.env.NEXT_PUBLIC_APP_URL = "https://navigym.test";
 // must never reach a live lock, inbox, phone or project.
 for (const key of Object.keys(process.env))
   if (
-    /^(SUPABASE_|NEXT_PUBLIC_SUPABASE_|NUKI_|ZERNIO_|WHATSAPP_|GOSMS_|STRIPE_|SENTRY_|NEXT_PUBLIC_SENTRY_|UPTIMEROBOT_|ALERT_|CRON_SECRET|VERCEL_|DEMO_AUTH_|BOOKING_PREVIEW_)/.test(
+    /^(INSTAGRAM_|SUPABASE_|NEXT_PUBLIC_SUPABASE_|NUKI_|ZERNIO_|WHATSAPP_|GOSMS_|STRIPE_|SENTRY_|NEXT_PUBLIC_SENTRY_|UPTIMEROBOT_|ALERT_|CRON_SECRET|VERCEL_|DEMO_AUTH_|BOOKING_PREVIEW_)/.test(
       key,
     )
   )
     delete process.env[key];
+
+// Fictional Instagram credentials are settled synchronously before any application import.
+export const INSTAGRAM_PORT = base + 2;
+process.env.INSTAGRAM_APP_ID = "local-instagram-app";
+process.env.INSTAGRAM_APP_SECRET = "local-instagram-secret";
+process.env.INSTAGRAM_TOKEN_ENCRYPTION_KEY = "ab".repeat(32);
+process.env.INSTAGRAM_TEST_BASE_URL = `http://127.0.0.1:${INSTAGRAM_PORT}`;
 
 /*
  * Network kill-switch: the only hosts a test may reach are the local

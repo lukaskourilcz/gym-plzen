@@ -8,6 +8,12 @@ import {
 import { env } from "@/lib/env";
 import { InstagramError } from "@/lib/integrations/instagram";
 
+function decode(value: string) {
+  const bytes = Buffer.from(value, "base64url");
+  if (!/^[A-Za-z0-9_-]+$/.test(value) || bytes.toString("base64url") !== value)
+    throw new Error("Invalid encoding");
+  return bytes;
+}
 function key(purpose: string) {
   if (!env.INSTAGRAM_TOKEN_ENCRYPTION_KEY)
     throw new InstagramError("not_configured");
@@ -40,12 +46,12 @@ export function decryptInstagramToken(value: string, accountId: string) {
     const decipher = createDecipheriv(
       "aes-256-gcm",
       key("token"),
-      Buffer.from(nonce, "base64url"),
+      decode(nonce),
     );
     decipher.setAAD(Buffer.from(accountId));
-    decipher.setAuthTag(Buffer.from(tag, "base64url"));
+    decipher.setAuthTag(decode(tag));
     return Buffer.concat([
-      decipher.update(Buffer.from(data, "base64url")),
+      decipher.update(decode(data)),
       decipher.final(),
     ]).toString("utf8");
   } catch {
@@ -82,10 +88,10 @@ export function verifyInstagramState(
       !payload ||
       !mac ||
       extra ||
-      !equal(signature(payload, "oauth"), Buffer.from(mac, "base64url"))
+      !equal(signature(payload, "oauth"), decode(mac))
     )
       return false;
-    const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    const data = JSON.parse(decode(payload).toString("utf8"));
     return (
       typeof data.nonce === "string" &&
       typeof data.at === "number" &&
@@ -107,8 +113,8 @@ export function verifyInstagramSignedRequest(signed: string) {
     const expected = createHmac("sha256", env.INSTAGRAM_APP_SECRET)
       .update(payload)
       .digest();
-    if (!equal(expected, Buffer.from(mac, "base64url"))) throw new Error();
-    const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    if (!equal(expected, decode(mac))) throw new Error();
+    const data = JSON.parse(decode(payload).toString("utf8"));
     if (
       data.algorithm !== "HMAC-SHA256" ||
       !/^\d{1,30}$/.test(String(data.user_id)) ||
@@ -141,9 +147,8 @@ export function verifyInstagramDeletionReceipt(value: string) {
       payload &&
       mac &&
       !extra &&
-      equal(signature(payload, "receipt"), Buffer.from(mac, "base64url")) &&
-      JSON.parse(Buffer.from(payload, "base64url").toString("utf8")).expires >
-        Date.now(),
+      equal(signature(payload, "receipt"), decode(mac)) &&
+      JSON.parse(decode(payload).toString("utf8")).expires > Date.now(),
     );
   } catch {
     return false;

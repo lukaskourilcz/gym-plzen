@@ -240,8 +240,8 @@ export async function syncInstagram({
     .where(
       and(
         eq(instagramConnection.id, "main"),
-        sql`(${instagramConnection.leaseUntil} is null or ${instagramConnection.leaseUntil} < ${now})`,
-        sql`(${instagramConnection.lastAttemptAt} is null or ${instagramConnection.lastAttemptAt} < ${new Date(now.getTime() - (force ? 10_000 : INSTAGRAM_SYNC_MINUTES * 60_000))})`,
+        sql`(${instagramConnection.leaseUntil} is null or ${instagramConnection.leaseUntil} < ${now.toISOString()})`,
+        sql`(${instagramConnection.lastAttemptAt} is null or ${instagramConnection.lastAttemptAt} < ${new Date(now.getTime() - (force ? 10_000 : INSTAGRAM_SYNC_MINUTES * 60_000)).toISOString()})`,
       ),
     )
     .returning();
