@@ -27,7 +27,8 @@
       "codex/public-copy-pricing": false,
       "codex/inline-content-editor": false,
       "codex/single-announcement-banner": false,
-      "codex/editable-public-notices": false
+      "codex/editable-public-notices": false,
+      "codex/instagram-feed": false
     }
   },
   "regions": ["cdg1"]

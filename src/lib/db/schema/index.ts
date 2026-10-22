@@ -16,3 +16,5 @@ export * from "./marketing";
 export * from "./billing";
 
 export * from "./participants";
+
+export * from "./instagram";
