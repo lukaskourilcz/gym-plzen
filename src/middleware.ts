@@ -31,9 +31,10 @@ export const config = {
      * a Supabase Auth round trip and makes a payment notification depend on it.
      * The public availability API reads no session either, and a stalled Auth
      * round trip there hung the homepage calendar (28. 9. 2026). The remaining
-     * /api routes (calendar file, invoice download) do read the visitor's
+     * Instagram thumbnails and signed callbacks also use no browser session.
+     * Other /api routes (calendar file, invoice download) do read the visitor's
      * session and stay covered.
      */
-    "/((?!_next/static|_next/image|favicon.ico|api/webhooks|api/cron|api/availability|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/webhooks|api/cron|api/availability|api/instagram|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

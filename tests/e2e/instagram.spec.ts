@@ -139,7 +139,9 @@ test("Instagram connects via local OAuth, shows lazy private thumbnails, hides p
       /Forbidden|přístup|oprávnění|admin|zakáz|přihl/i,
     );
     await member.close();
-    const plain = await browser.newContext();
+    const plain = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
     const unauthorized = await plain.request.get(
       new URL("/api/admin/instagram/connect", page.url()).toString(),
     );
