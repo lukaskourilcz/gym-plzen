@@ -89,6 +89,18 @@ test("Instagram connects via local OAuth, shows lazy private thumbnails, hides p
             ),
         ),
     ).toBe(true);
+    await publicPage.setViewportSize({ width: 1440, height: 1000 });
+    await section.screenshot({
+      path: test.info().outputPath("instagram-public.jpg"),
+      type: "jpeg",
+      quality: 90,
+    });
+    await page.screenshot({
+      path: test.info().outputPath("instagram-admin.jpg"),
+      fullPage: true,
+      type: "jpeg",
+      quality: 90,
+    });
     await publicPage.setViewportSize({ width: 390, height: 844 });
     await expect(links.nth(3)).toBeVisible();
     await expect(links.nth(4)).toBeHidden();

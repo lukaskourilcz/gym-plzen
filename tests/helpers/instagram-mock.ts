@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import sharp from "sharp";
 
@@ -79,14 +80,15 @@ export function createInstagramMock(port: number) {
     if (url.pathname === "/image") {
       const bytes = state.imageBroken
         ? Buffer.from("broken")
-        : await sharp({
-            create: {
-              width: 480,
-              height: 480,
-              channels: 3,
-              background: "#0e4937",
-            },
-          })
+        : await sharp(
+            await readFile(
+              new URL(
+                `../../public/images/photos/gallery-${(Number(new URL(url.searchParams.get("source")!).pathname.match(/\d+/)?.[0] ?? 0) % 4) + 1}.webp`,
+                import.meta.url,
+              ),
+            ),
+          )
+            .resize(480, 480, { fit: "cover" })
             .png()
             .toBuffer();
       res.writeHead(200, { "Content-Type": state.imageType });
