@@ -39,6 +39,7 @@ export const instagramMedia = pgTable(
     kind: text("kind").notNull(),
     imageUrl: text("image_url").notNull(),
     publishedAt: timestamp("published_at", { withTimezone: true }).notNull(),
+    available: boolean("available").notNull().default(true),
     hidden: boolean("hidden").notNull().default(false),
   },
   (t) => [

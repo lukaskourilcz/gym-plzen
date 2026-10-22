@@ -24,6 +24,7 @@ CREATE TABLE public.instagram_media (
   kind text NOT NULL CHECK (kind IN ('IMAGE','VIDEO','CAROUSEL_ALBUM')),
   image_url text NOT NULL,
   published_at timestamptz NOT NULL,
+  available boolean NOT NULL DEFAULT true,
   hidden boolean NOT NULL DEFAULT false
 );
 ALTER TABLE public.instagram_connection ENABLE ROW LEVEL SECURITY;
