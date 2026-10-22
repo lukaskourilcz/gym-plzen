@@ -71,6 +71,23 @@ export default async function DesignSystemPage() {
         detail="Doplňující kontext"
         description="Referenční galerie komponent. Pravidla a tokeny jsou v docs/DESIGN_SYSTEM.md."
       />
+      <section
+        aria-label="Správa Instagramu"
+        className="my-6 rounded-lg border bg-card p-6"
+      >
+        <h2 className="text-xl font-bold">Propojení a upravitelný náhled</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Stav účtu a obnova jsou nad náhledem. Viditelnost příspěvků se
+          rozbalí; odpojení potvrdí dialog.
+        </p>
+        <Button
+          href="/admin/content?section=instagram"
+          variant="outline"
+          className="mt-4"
+        >
+          Otevřít správu Instagramu
+        </Button>
+      </section>
       <section aria-label="Typ zákazníka" className="my-6 flex flex-wrap gap-3">
         <MemberRegistrationBadge registered />
         <MemberRegistrationBadge registered={false} />
