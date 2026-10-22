@@ -193,7 +193,9 @@ export async function readInstagramProfile(token: string) {
   if (
     profile.username.toLowerCase() !== INSTAGRAM_USERNAME ||
     (profile.account_type &&
-      !["BUSINESS", "MEDIA_CREATOR", "CREATOR"].includes(profile.account_type))
+      !["BUSINESS", "MEDIA_CREATOR", "CREATOR"].includes(
+        profile.account_type.toUpperCase(),
+      ))
   )
     throw new InstagramError("wrong_account");
   return {

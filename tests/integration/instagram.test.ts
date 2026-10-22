@@ -67,6 +67,7 @@ beforeEach(async () => {
   await setSetting(INSTAGRAM_ENABLED_KEY, true);
   Object.assign(mock.state, {
     username: "navi_plzen",
+    accountType: "Business",
     failure: 0,
     imageType: "image/png",
     imageBroken: false,
@@ -237,6 +238,9 @@ dbTest(
     mock.state.flatToken = true;
     await connect();
     await syncInstagram();
+    mock.state.accountType = "PERSONAL";
+    await assert.rejects(connect, /wrong_account/);
+    mock.state.accountType = "Business";
     mock.state.username = "wrong_account";
     await assert.rejects(connect, /wrong_account/);
     assert.equal((await getInstagramAdminState()).username, "navi_plzen");

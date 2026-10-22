@@ -6,6 +6,7 @@ import sharp from "sharp";
 export function createInstagramMock(port: number) {
   const state = {
     username: "navi_plzen",
+    accountType: "Business",
     failure: 0,
     imageType: "image/png",
     imageBroken: false,
@@ -59,7 +60,7 @@ export function createInstagramMock(port: number) {
         id: "1234",
         user_id: "5678",
         username: state.username,
-        account_type: "BUSINESS",
+        account_type: state.accountType,
       });
     if (url.pathname === "/graph/v24.0/5678/media") {
       if (req.headers.authorization !== "Bearer long-local-token")
