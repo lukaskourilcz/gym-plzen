@@ -30,8 +30,8 @@ import {
   HeroAvailability,
   type HeroAvailabilityDay,
 } from "@/components/site/hero-availability";
-import { getPublicInstagramFeed } from "@/lib/services/instagram-cache";
-import { InstagramFeed } from "@/components/site/instagram-feed";
+import { Suspense } from "react";
+import { HomeInstagram } from "@/components/site/home-instagram";
 import { NewsletterSignup } from "@/components/site/newsletter-signup";
 import { IllustrativePhoto } from "@/components/site/illustrative-photo";
 import {
@@ -73,10 +73,7 @@ export const revalidate = 60;
 export default async function HomePage() {
   const now = new Date();
   const previewStart = firstBookableDateKey(now);
-  const [content, instagram] = await Promise.all([
-    loadSiteContent(),
-    getPublicInstagramFeed(),
-  ]);
+  const content = await loadSiteContent();
   const availability = await getSlotsForRange(
     previewStart,
     addDaysToDateKey(previewStart, HERO_INITIAL_DAYS),
@@ -581,9 +578,8 @@ export default async function HomePage() {
           </Container>
         </Section>
 
-        {instagram.enabled && (
-          <InstagramFeed
-            posts={instagram.posts}
+        <Suspense fallback={null}>
+          <HomeInstagram
             copy={{
               title: t("home.instagram.title"),
               button: t("home.instagram.button"),
@@ -591,7 +587,7 @@ export default async function HomePage() {
               more: t("home.instagram.more"),
             }}
           />
-        )}
+        </Suspense>
 
         <section id="novinky" className="bg-ink text-ink-foreground">
           <Container className="grid gap-10 py-12 md:grid-cols-2 md:items-center md:gap-12 lg:py-14">

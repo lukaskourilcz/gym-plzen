@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { createHmac } from "node:crypto";
 import { join } from "node:path";
 import postgres from "postgres";
 import { requireTestDatabaseUrl } from "../helpers/test-database";
@@ -191,4 +192,40 @@ test("invalid OAuth state and unauthenticated cron or deletion callbacks do not 
       })
     ).status(),
   ).toBe(400);
+});
+
+test("signed Meta deletion callback removes only Instagram data and returns a verifiable receipt", async ({
+  page,
+}) => {
+  const before = await snapshot();
+  await page.goto("/admin/content?section=instagram");
+  await page
+    .getByRole("link", { name: "Připojit Instagram", exact: true })
+    .click();
+  await expect(page).toHaveURL(/instagram=connected/);
+  const payload = Buffer.from(
+    JSON.stringify({
+      algorithm: "HMAC-SHA256",
+      user_id: "1234",
+      issued_at: Math.floor(Date.now() / 1000),
+    }),
+  ).toString("base64url");
+  const mac = createHmac("sha256", "local-instagram-secret")
+    .update(payload)
+    .digest("base64url");
+  const result = await page.request.post("/api/instagram/deauthorize", {
+    form: { signed_request: `${mac}.${payload}` },
+  });
+  expect(result.status()).toBe(200);
+  const receipt = await result.json();
+  expect(receipt.confirmation_code).toBeTruthy();
+  expect((await page.request.get(receipt.url)).status()).toBe(200);
+  expect(
+    (
+      await page.request.get("/api/instagram/deletion-status?code=forged")
+    ).status(),
+  ).toBe(404);
+  expect(await sql`select * from instagram_connection`).toHaveLength(0);
+  expect(await sql`select * from instagram_media`).toHaveLength(0);
+  expect(await snapshot()).toEqual(before);
 });
