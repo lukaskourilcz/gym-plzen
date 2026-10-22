@@ -30,6 +30,8 @@ import {
   HeroAvailability,
   type HeroAvailabilityDay,
 } from "@/components/site/hero-availability";
+import { getPublicInstagramFeed } from "@/lib/services/instagram-cache";
+import { InstagramFeed } from "@/components/site/instagram-feed";
 import { NewsletterSignup } from "@/components/site/newsletter-signup";
 import { IllustrativePhoto } from "@/components/site/illustrative-photo";
 import {
@@ -71,7 +73,10 @@ export const revalidate = 60;
 export default async function HomePage() {
   const now = new Date();
   const previewStart = firstBookableDateKey(now);
-  const content = await loadSiteContent();
+  const [content, instagram] = await Promise.all([
+    loadSiteContent(),
+    getPublicInstagramFeed(),
+  ]);
   const availability = await getSlotsForRange(
     previewStart,
     addDaysToDateKey(previewStart, HERO_INITIAL_DAYS),
@@ -576,42 +581,17 @@ export default async function HomePage() {
           </Container>
         </Section>
 
-        <div
-          id="kontakt"
-          className="relative h-[480px] w-full scroll-mt-[var(--header-h)] bg-muted sm:h-[540px]"
-        >
-          <LocationMap
-            address={address}
-            apiKey={publicEnv.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
-            mapId={publicEnv.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID}
-            fallbackEmbedUrl={mapsEmbedUrl}
-            position={GYM_POSITION}
+        {instagram.enabled && (
+          <InstagramFeed
+            posts={instagram.posts}
+            copy={{
+              title: t("home.instagram.title"),
+              button: t("home.instagram.button"),
+              fallback: t("home.instagram.fallback"),
+              more: t("home.instagram.more"),
+            }}
           />
-          <div
-            data-testid="location-card"
-            className="absolute left-5 top-5 max-w-[calc(100%_-_2.5rem)] border border-border bg-card p-5 shadow-md sm:left-8 sm:top-8 sm:max-w-sm sm:p-6"
-          >
-            <p className="text-sm font-extrabold uppercase tracking-[.08em] text-accent-foreground">
-              {t("home.contact.mapHeading")}
-            </p>
-            <p className="mt-2 font-bold">{address}</p>
-            <p className="mt-3 text-sm text-muted-foreground">
-              {t("home.contact.hours").replace(
-                "{hours}",
-                content.openingHoursLabel,
-              )}
-            </p>
-          </div>
-          <Button
-            href={mapsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            variant="ink"
-            className="absolute bottom-5 left-5 sm:left-8"
-          >
-            {t("home.contact.mapsButton")}
-          </Button>
-        </div>
+        )}
 
         <section id="novinky" className="bg-ink text-ink-foreground">
           <Container className="grid gap-10 py-12 md:grid-cols-2 md:items-center md:gap-12 lg:py-14">
@@ -654,6 +634,42 @@ export default async function HomePage() {
             </div>
           </Container>
         </section>
+        <div
+          id="kontakt"
+          className="relative h-[480px] w-full scroll-mt-[var(--header-h)] bg-muted sm:h-[540px]"
+        >
+          <LocationMap
+            address={address}
+            apiKey={publicEnv.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+            mapId={publicEnv.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID}
+            fallbackEmbedUrl={mapsEmbedUrl}
+            position={GYM_POSITION}
+          />
+          <div
+            data-testid="location-card"
+            className="absolute left-5 top-5 max-w-[calc(100%_-_2.5rem)] border border-border bg-card p-5 shadow-md sm:left-8 sm:top-8 sm:max-w-sm sm:p-6"
+          >
+            <p className="text-sm font-extrabold uppercase tracking-[.08em] text-accent-foreground">
+              {t("home.contact.mapHeading")}
+            </p>
+            <p className="mt-2 font-bold">{address}</p>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {t("home.contact.hours").replace(
+                "{hours}",
+                content.openingHoursLabel,
+              )}
+            </p>
+          </div>
+          <Button
+            href={mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            variant="ink"
+            className="absolute bottom-5 left-5 sm:left-8"
+          >
+            {t("home.contact.mapsButton")}
+          </Button>
+        </div>
       </main>
       <script
         type="application/ld+json"

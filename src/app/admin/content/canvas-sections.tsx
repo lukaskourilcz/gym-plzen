@@ -1,5 +1,6 @@
 "use client";
 
+import { InstagramFeed } from "@/components/site/instagram-feed";
 import { BrandMark } from "@/components/site/brand";
 import { Check, Clock3, MapPin } from "lucide-react";
 import { FAQ_NUMBERS } from "@/lib/content/faq";
@@ -19,6 +20,33 @@ const eyebrow =
   "text-xs font-extrabold uppercase tracking-[.16em] text-accent-foreground";
 const padding = "p-5 @2xl:p-8 @4xl:p-12";
 
+function InstagramPreview() {
+  const posts = useCanvas().instagramPosts ?? [];
+  return (
+    <>
+      <InstagramFeed
+        posts={posts}
+        preview
+        copy={{
+          title: <Text field="home.instagram.title" />,
+          button: <Text field="home.instagram.button" />,
+          fallback: <Text field="home.instagram.fallback" />,
+          more: "",
+        }}
+      />
+      <div className="canvas-meta px-5 pb-5 text-sm text-muted-foreground">
+        {posts.length > 0 && (
+          <p>
+            Text bez načtených příspěvků:{" "}
+            <Text field="home.instagram.fallback" />
+          </p>
+        )}
+        Tlačítko na mobilu při více než čtyřech příspěvcích:{" "}
+        <Text field="home.instagram.more" />
+      </div>
+    </>
+  );
+}
 function Quote() {
   return (
     <blockquote className="flex items-start gap-5 py-6 text-ink-foreground/80">
@@ -587,6 +615,8 @@ function Rules() {
 }
 export function CanvasSection({ id }: { id: string }) {
   switch (id) {
+    case "instagram":
+      return <InstagramPreview />;
     case "hero":
       return <Hero />;
     case "facts":

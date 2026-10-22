@@ -1,3 +1,4 @@
+import { getInstagramAdminState } from "@/lib/services/instagram";
 import { formatMoney } from "@/lib/helpers/format";
 import { requireAdmin } from "@/lib/auth/guards";
 import { loadSiteContent, SITE_DEFAULTS } from "@/lib/content/site";
@@ -12,10 +13,21 @@ export const dynamic = "force-dynamic";
 export default async function ContentPage() {
   await requireAdmin();
   const demo = await hasDemoAdminSession();
-  const content = await loadSiteContent("cs", {
-    strict: !demo,
-    defaultsOnly: demo,
-  });
+  const [content, instagram] = await Promise.all([
+    loadSiteContent("cs", { strict: !demo, defaultsOnly: demo }),
+    demo
+      ? Promise.resolve({
+          enabled: true,
+          posts: [],
+          configured: false,
+          connected: false,
+          username: null,
+          expiresAt: null,
+          lastSyncedAt: null,
+          problem: null,
+        })
+      : getInstagramAdminState(),
+  ]);
   const values = Object.fromEntries(
     Object.keys(SITE_DEFAULTS).map((key) => [
       key,
@@ -48,6 +60,7 @@ export default async function ContentPage() {
     <div>
       <PageHeader title="Obsah webu" />
       <ContentEditor
+        instagram={instagram}
         announcement={content.announcement}
         values={values}
         assets={assets}

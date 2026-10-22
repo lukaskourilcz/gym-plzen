@@ -144,6 +144,12 @@ export const CONTENT_VISUALS: Record<string, ContentVisual> = {
     ),
   },
   FAQ: { id: "faq", href: "/faq", dependencies: [prices, hours], assets: [] },
+  Instagram: {
+    id: "instagram",
+    href: "/#instagram",
+    dependencies: [],
+    assets: [],
+  },
   "Mapa a kontakt": {
     id: "contact",
     href: "/#kontakt",
