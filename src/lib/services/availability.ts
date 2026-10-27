@@ -92,7 +92,7 @@ async function isWithinOpeningHours(
 export async function checkAvailability(
   startsAt: Date,
   endsAt: Date,
-  opts: { excludeReservationId?: string } = {},
+  opts: { excludeReservationId?: string; excludeBlockedSlotId?: string } = {},
   executor: DatabaseExecutor = db,
 ): Promise<AvailabilityResult> {
   if (minutesBetween(startsAt, endsAt) <= 0) {
@@ -127,7 +127,14 @@ export async function checkAvailability(
   const blockConflict = await executor
     .select({ id: blockedSlot.id })
     .from(blockedSlot)
-    .where(overlaps(blockedSlot.startsAt, blockedSlot.endsAt, startsAt, endsAt))
+    .where(
+      and(
+        overlaps(blockedSlot.startsAt, blockedSlot.endsAt, startsAt, endsAt),
+        opts.excludeBlockedSlotId
+          ? ne(blockedSlot.id, opts.excludeBlockedSlotId)
+          : undefined,
+      ),
+    )
     .limit(1);
 
   if (blockConflict.length > 0) {
