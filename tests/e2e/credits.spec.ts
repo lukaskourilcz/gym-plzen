@@ -304,5 +304,39 @@ test.describe("customer", () => {
       ["critical", "serious"].includes(v.impact || ""),
     );
     expect(violations).toEqual([]);
+    // Isolated fixture grant; exercise returning to a mixed companion payment.
+    await sql.begin(async (tx) => {
+      const [account] =
+        await tx`select id from credit_account where user_id=${memberId}`;
+      await tx`insert into credit_entry(account_id,amount_cents,reason,operation_key) values(${account!.id},5000,'Fixture companion credit',${`fixture:${process.env.E2E_RUN_ID}`})`;
+      await tx`update credit_account set balance_cents=5000 where id=${account!.id}`;
+    });
+    await sql`update site_setting set value='true' where key='features.additional_people'`;
+    await page.goto(`/account/rezervace/${firstId}/osoby`);
+    await page
+      .getByRole("button", { name: "Zaplatit doplatek 50 Kč", exact: true })
+      .click();
+    await expect(page).toHaveURL(/payments\.comgate\.cz/);
+    await page.goto(`/account/rezervace/${firstId}/osoby`);
+    await expect(
+      page.getByText(
+        "V původní platbě rezervováno 50 Kč kreditů; přes bránu zbývá 50 Kč.",
+        { exact: true },
+      ),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Pokračovat v původní platbě", exact: true })
+      .click();
+    await expect(page).toHaveURL(/payments\.comgate\.cz/);
+    expect(gateway.creates).toHaveLength(2);
+    expect((gateway.creates[1] as { price: number }).price).toBe(5000);
+    gateway.settle("CREDIT-0002", "PAID");
+    await page.goto(`/account/rezervace/${firstId}/osoby`);
+    const [companion] =
+      await sql`select extra_people,starts_at from reservation where id=${firstId}`;
+    expect(companion!.extra_people).toBe(1);
+    const [after] =
+      await sql`select balance_cents,reserved_cents from credit_account where user_id=${memberId}`;
+    expect(after).toMatchObject({ balance_cents: 0, reserved_cents: 0 });
   });
 });

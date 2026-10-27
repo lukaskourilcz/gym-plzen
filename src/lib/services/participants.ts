@@ -138,6 +138,14 @@ export async function addParticipants(params: {
           throw new ActionError(
             "Nejdříve dokončete rozpracovanou platbu za doprovod.",
           );
+        if (
+          params.quotedCents !== existing.amountCents ||
+          (params.quotedCreditCents !== undefined &&
+            params.quotedCreditCents !== existing.creditCents)
+        )
+          throw new ActionError(
+            "Rozpracovaná platba má jiné použití kreditů nebo cenu. Obnovte stránku; původní doplatek neměníme.",
+          );
         const [attempt] = await tx
           .select()
           .from(payment)

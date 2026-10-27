@@ -22,12 +22,14 @@ export function ParticipantsForm({
   pricing,
   fixedTarget,
   availableCreditCents = 0,
+  heldCreditCents,
 }: {
   reservationId: string;
   fromCount: number;
   pricing: ParticipantPricing;
   fixedTarget?: number;
   availableCreditCents?: number;
+  heldCreditCents?: number;
 }) {
   const router = useRouter();
   const { form, submit, serverError, success } = useActionForm({
@@ -35,11 +37,13 @@ export function ParticipantsForm({
     action: async (input) => {
       const result = await addParticipantsAction({
         ...input,
-        quotedCreditCents: creditTender(
-          participantAdditionPrice(fromCount, input.toCount, pricing),
-          availableCreditCents,
-          Boolean(input.useCredits),
-        ),
+        quotedCreditCents:
+          heldCreditCents ??
+          creditTender(
+            participantAdditionPrice(fromCount, input.toCount, pricing),
+            availableCreditCents,
+            Boolean(input.useCredits),
+          ),
         quotedCents: participantAdditionPrice(
           fromCount,
           input.toCount,
@@ -58,7 +62,10 @@ export function ParticipantsForm({
     },
     defaultValues: {
       reservationId,
-      useCredits: availableCreditCents > 0,
+      useCredits:
+        heldCreditCents !== undefined
+          ? heldCreditCents > 0
+          : availableCreditCents > 0,
       toCount: fixedTarget ?? fromCount + 1,
       quotedCents: participantAdditionPrice(
         fromCount,
@@ -70,11 +77,13 @@ export function ParticipantsForm({
   });
   const toCount = form.watch("toCount");
   const price = participantAdditionPrice(fromCount, toCount, pricing);
-  const usedCredits = creditTender(
-    price,
-    availableCreditCents,
-    Boolean(form.watch("useCredits")),
-  );
+  const usedCredits =
+    heldCreditCents ??
+    creditTender(
+      price,
+      availableCreditCents,
+      Boolean(form.watch("useCredits")),
+    );
   const cashDue = price - usedCredits;
   return (
     <form onSubmit={submit} noValidate>
@@ -119,6 +128,12 @@ export function ParticipantsForm({
           Použít kredity: {formatMoney(usedCredits)} · zbývá{" "}
           {formatMoney(cashDue)}
         </label>
+      ) : null}
+      {heldCreditCents !== undefined && heldCreditCents > 0 ? (
+        <p className="mb-4 text-sm">
+          V původní platbě rezervováno {formatMoney(heldCreditCents)} kreditů;
+          přes bránu zbývá {formatMoney(cashDue)}.
+        </p>
       ) : null}
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={form.formState.isSubmitting}>

@@ -493,6 +493,35 @@ describe("priced reservation changes", { skip: !databaseReady }, () => {
     assert.equal(r!.additional_people_paid_cents, 10000);
     assert.equal(resend.sent.length, 0);
   });
+  test("pending companion payment resumes its original credit split and cannot silently change the quote", async () => {
+    const id = await paidBooking();
+    await grant(5000);
+    const params = {
+      userId,
+      reservationId: id,
+      toCount: 1,
+      quotedCents: 10000,
+      useCredits: true,
+      quotedCreditCents: 5000,
+    };
+    const first = await addParticipants(params);
+    assert.equal(first.kind, "checkout");
+    await assert.rejects(
+      addParticipants({ ...params, useCredits: false, quotedCreditCents: 0 }),
+      /Rozpracovaná platba/,
+    );
+    const resumed = await addParticipants(params);
+    assert.equal(resumed.kind, "checkout");
+    assert.equal(resumed.additionId, first.additionId);
+    assert.equal(comgate.creates.length, 2);
+    assert.equal((comgate.creates[1] as { price: number }).price, 5000);
+    assert.equal((await getCreditWallet(userId)).reservedCents, 5000);
+    comgate.settle("TEST-0002", "PAID");
+    await synchronizeComgatePayment("TEST-0002");
+    assert.equal((await getCreditWallet(userId)).balanceCents, 0);
+    assert.equal((await getReservation(id))!.extraPeople, 1);
+    assert.equal(resend.sent.length, 0);
+  });
   test("credit consumed elsewhere invalidates a shown quote without a larger unapproved gateway charge", async () => {
     const id = await paidBooking();
     await grant(1000);
