@@ -575,6 +575,7 @@ export function RescheduleCalendar({
               <label className="mt-4 flex items-center gap-3 text-sm font-bold">
                 <input
                   type="checkbox"
+                  disabled={isSubmitting || interrupted}
                   checked={useCredits}
                   onChange={(e) => {
                     setUseCredits(e.target.checked);

@@ -357,6 +357,18 @@ export async function applyPaidChange(id: string) {
       .from(reservationChange)
       .where(eq(reservationChange.id, id));
     if (!change || change.status !== "applying") return;
+    if (change.expiresAt <= new Date()) {
+      await db
+        .update(reservationChange)
+        .set({
+          status: "review_needed",
+          error:
+            "Platnost nabídky vypršela před dokončením změny. Původní rezervace se nepřesouvá; doplatek bude vrácen.",
+          updatedAt: new Date(),
+        })
+        .where(eq(reservationChange.id, id));
+      return;
+    }
     try {
       await rescheduleReservation({
         reservationId: change.reservationId,
@@ -557,11 +569,13 @@ export async function recoverFailedChange(id: string) {
         .where(eq(reservation.id, change.reservationId));
       if (
         !original ||
-        original.status !== "confirmed" ||
+        !["confirmed", "completed", "no_show"].includes(original.status) ||
         original.startsAt.getTime() !== change.previousStartsAt.getTime()
       )
         return;
       if (
+        original.status === "confirmed" &&
+        original.endsAt > new Date() &&
         (await getOperations()).accessCodesEnabled &&
         isAccessCodePreparationDue(original.startsAt)
       ) {

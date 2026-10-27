@@ -111,7 +111,11 @@ export function ParticipantsForm({
       </p>
       {availableCreditCents > 0 && fixedTarget === undefined ? (
         <label className="mb-4 flex items-center gap-3 text-sm font-bold">
-          <input type="checkbox" {...form.register("useCredits")} />
+          <input
+            type="checkbox"
+            disabled={form.formState.isSubmitting}
+            {...form.register("useCredits")}
+          />
           Použít kredity: {formatMoney(usedCredits)} · zbývá{" "}
           {formatMoney(cashDue)}
         </label>

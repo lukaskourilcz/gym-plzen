@@ -154,6 +154,14 @@ async function rescheduleLocked(
         throw new ActionError(rescheduleReasonMessage(eligibility.reason));
       }
 
+      if (
+        financial &&
+        (financial.expiresAt <= new Date() || current.startsAt <= new Date())
+      )
+        throw new ActionError(
+          "Platnost nabídky změny vypršela. Původní rezervace zůstává zachovaná.",
+        );
+
       const [hours] = await tx
         .select()
         .from(openingHours)
@@ -281,7 +289,12 @@ async function rescheduleLocked(
         },
         tx,
       );
-      if (!available.available || target.startsAt <= new Date())
+      if (
+        !available.available ||
+        target.startsAt <= new Date() ||
+        (financial &&
+          (financial.expiresAt <= new Date() || current.startsAt <= new Date()))
+      )
         throw new ActionError("Tento termín není k dispozici.");
       const financialFields = input.financialChangeId
         ? await settleReservationChangeIn(tx, input.financialChangeId, current)

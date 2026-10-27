@@ -446,4 +446,32 @@ describe("priced reservation changes", { skip: !databaseReady }, () => {
     assert.equal((await getCreditWallet(userId)).availableCents, 0);
     assert.equal(comgate.creates.length, 0);
   });
+  test("a worker crash cannot apply a once-paid move after its offer has expired", async () => {
+    const id = await paidBooking();
+    await setSetting("pricing.entry_price_cents", 25900);
+    const input = await changeInput(id);
+    await startPricedReschedule(input);
+    comgate.settle("TEST-0002", "PAID");
+    // Durable boundary: provider verification committed, worker died before apply.
+    await rows(
+      "update payment set status='succeeded',paid_at=now() where reservation_change_id=$1",
+      [input.id],
+    );
+    await rows(
+      "update reservation_change set status='applying',expires_at=now()-interval '1 second' where id=$1",
+      [input.id],
+    );
+    await retryPaidChanges();
+    const [r] = await rows<{ starts_at: Date }>(
+      "select * from reservation where id=$1",
+      [id],
+    );
+    assert.equal(r!.starts_at.getTime(), slot(5).getTime());
+    assert.equal(
+      (await rows("select * from reservation_reschedule")).length,
+      0,
+    );
+    assert.equal(comgate.refunds.length, 1);
+    assert.equal(resend.sent.length, 0);
+  });
 });
