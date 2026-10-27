@@ -549,6 +549,8 @@ async function startOrderUnlocked(params: {
                 baseCents: basePrices[index]!,
                 companionCents: surcharge,
                 reward: Boolean(rewards[index]),
+                purchasePriceCents: prices[index]!,
+                purchasedStartsAt: slot.startsAt.toISOString(),
                 discount: null,
               },
               priceCents: prices[index]!,
@@ -625,6 +627,7 @@ async function startOrderUnlocked(params: {
           .set({
             priceSnapshot: {
               ...item.priceSnapshot!,
+              purchasePriceCents: finals[i]!,
               discount:
                 savedVoucher?.kind === "percentage"
                   ? { kind: "percentage", value: savedVoucher.value }
@@ -698,7 +701,8 @@ async function startOrderUnlocked(params: {
       token,
     });
   } catch (error) {
-    await releasePendingOrder(order.id, "payment_start_failed");
+    if (!(await hasOpenOrderPayment(order.id)))
+      await releasePendingOrder(order.id, "payment_start_failed");
     throw error;
   }
 }

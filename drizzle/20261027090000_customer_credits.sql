@@ -66,3 +66,5 @@ REVOKE ALL ON credit_account, credit_entry, credit_hold, reservation_change FROM
 GRANT ALL ON credit_account, credit_entry, credit_hold, reservation_change TO service_role;
 
 ALTER TABLE payment ADD CONSTRAINT payment_change_binding_check CHECK(reservation_change_id IS NULL OR (reservation_id IS NULL AND order_id IS NULL AND participant_addition_id IS NULL AND membership_id IS NULL));
+
+ALTER TABLE invoice ADD COLUMN credit_cents integer NOT NULL DEFAULT 0 CHECK(credit_cents >= 0 AND credit_cents <= total_cents);

@@ -1,6 +1,12 @@
 import { and, desc, eq, gt, isNotNull, sql } from "drizzle-orm";
 import { db, type DatabaseExecutor } from "@/lib/db";
-import { documentCounter, invoice, payment, profiles } from "@/lib/db/schema";
+import {
+  creditEntry,
+  documentCounter,
+  invoice,
+  payment,
+  profiles,
+} from "@/lib/db/schema";
 import type { InvoiceItem } from "@/lib/db/schema";
 import type { Invoice, Reservation } from "@/lib/db/types";
 import {
@@ -131,6 +137,7 @@ export interface IssueParams {
   customerEmail: string | null;
   /** What the customer actually paid, in cents. */
   totalCents: number | null;
+  creditCents?: number;
   /** The slot the payment was for, used in the item description. */
   startsAt: Date;
   paidAt?: Date;
@@ -222,6 +229,7 @@ export async function issueForReservation(
           userId: params.userId,
           suppliedAt: paidAt,
           totalCents: amounts.totalCents,
+          creditCents: params.creditCents ?? 0,
           baseCents: amounts.baseCents,
           vatCents: amounts.vatCents,
           vatRatePercent: amounts.vatRatePercent,
@@ -275,11 +283,27 @@ export async function issueDocumentFor(
     return { issued: false, reason: "not_billable" };
   // The date of taxable supply is when the customer paid, not when the
   // document happens to be issued (a later manual issue, a New Year retry).
-  const paidAt = await paidAtFor(
+  const cashCents =
+    (order?.totalCents ?? reservation.priceCents ?? 0) -
+    (order?.creditCents ?? reservation.creditPaidCents);
+  let paidAt = await paidAtFor(
     order ? { orderId: order.id } : { reservationId: reservation.id },
-    order?.totalCents ?? reservation.priceCents,
+    cashCents,
     order?.currency ?? reservation.currency,
   );
+  if (cashCents === 0 && order && order.creditCents > 0) {
+    const [entry] = await db
+      .select()
+      .from(creditEntry)
+      .where(
+        and(
+          eq(creditEntry.operationKey, `spend:order:${order.id}`),
+          eq(creditEntry.amountCents, -order.creditCents),
+        ),
+      )
+      .limit(1);
+    paidAt = entry?.createdAt;
+  }
   if (!(order?.totalCents ?? reservation.priceCents))
     return { issued: false, reason: "not_billable" };
   if (
@@ -318,7 +342,10 @@ export async function issueDocumentFor(
     customerName: order.contactName ?? profile?.name ?? null,
     customerEmail: order.contactEmail ?? profile?.email ?? null,
     totalCents: order.totalCents,
-    startsAt: first.startsAt,
+    creditCents: order.creditCents,
+    startsAt: first.priceSnapshot?.purchasedStartsAt
+      ? new Date(first.priceSnapshot.purchasedStartsAt)
+      : first.startsAt,
     force: options.force,
     description:
       slots.length === 1
@@ -328,8 +355,9 @@ export async function issueDocumentFor(
       slots.length === 1
         ? undefined
         : slots.map((slot) => ({
-            description: `Vstup ${formatDateTime(slot.startsAt)}${slot.loyaltyReward ? " (věrnostní vstup zdarma)" : ""}`,
-            totalCents: slot.priceCents ?? 0,
+            description: `Vstup ${formatDateTime(slot.priceSnapshot?.purchasedStartsAt ? new Date(slot.priceSnapshot.purchasedStartsAt) : slot.startsAt)}${slot.loyaltyReward ? " (věrnostní vstup zdarma)" : ""}`,
+            totalCents:
+              slot.priceSnapshot?.purchasePriceCents ?? slot.priceCents ?? 0,
           })),
   });
 }
@@ -371,6 +399,7 @@ function toDocument(row: Invoice): InvoiceDocument {
     description: row.description,
     items: row.items ?? [],
     totalCents: row.totalCents,
+    creditCents: row.creditCents,
     baseCents: row.baseCents,
     vatCents: row.vatCents,
     vatRatePercent: row.vatRatePercent,
