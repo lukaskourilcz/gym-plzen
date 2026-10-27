@@ -263,3 +263,28 @@ export async function adminCreditAccount(
     .where(eq(creditAccount.guestEmail, email));
   return account!;
 }
+
+/** Positive tender must have a matching live reservation of this owner's funds. */
+export async function assertCreditFundingIn(
+  tx: DatabaseExecutor,
+  key: string,
+  amountCents: number,
+  userId: string | null,
+) {
+  if (amountCents === 0) return;
+  const [funding] = await tx
+    .select({ hold: creditHold, owner: creditAccount.userId })
+    .from(creditHold)
+    .innerJoin(creditAccount, eq(creditAccount.id, creditHold.accountId))
+    .where(eq(creditHold.operationKey, key));
+  if (
+    !userId ||
+    !funding ||
+    funding.owner !== userId ||
+    funding.hold.amountCents !== amountCents ||
+    funding.hold.status !== "reserved"
+  )
+    throw new ActionError(
+      "Kreditní úhradu se nepodařilo ověřit. Další platbu nezakládejte a kontaktujte obsluhu.",
+    );
+}

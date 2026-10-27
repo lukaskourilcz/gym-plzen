@@ -16,6 +16,7 @@ import {
   getCreditWallet,
   adminCreditAccount,
   claimGuestCredits,
+  assertCreditFundingIn,
 } from "../../src/lib/services/credits";
 const userId = "44444444-4444-4444-8444-444444444444";
 describe("credit ledger", { skip: !databaseReady }, () => {
@@ -84,6 +85,35 @@ describe("credit ledger", { skip: !databaseReady }, () => {
       /rezervovaný/,
     );
     await db.transaction((tx) => finishCreditIn(tx, "hold", false));
+    assert.equal((await getCreditWallet(userId)).availableCents, 10000);
+  });
+  test("positive payment funding must match a live hold, amount and verified owner", async () => {
+    await grant();
+    await assert.rejects(
+      db.transaction((tx) =>
+        assertCreditFundingIn(tx, "missing", 10000, userId),
+      ),
+      /ověřit/,
+    );
+    await db.transaction((tx) =>
+      reserveCreditIn(tx, userId, "funded", 8000, true),
+    );
+    await db.transaction((tx) =>
+      assertCreditFundingIn(tx, "funded", 8000, userId),
+    );
+    await assert.rejects(
+      db.transaction((tx) => assertCreditFundingIn(tx, "funded", 7900, userId)),
+      /ověřit/,
+    );
+    await assert.rejects(
+      db.transaction((tx) => assertCreditFundingIn(tx, "funded", 8000, null)),
+      /ověřit/,
+    );
+    await db.transaction((tx) => finishCreditIn(tx, "funded", false));
+    await assert.rejects(
+      db.transaction((tx) => assertCreditFundingIn(tx, "funded", 8000, userId)),
+      /ověřit/,
+    );
     assert.equal((await getCreditWallet(userId)).availableCents, 10000);
   });
   test("guest grants stay unclaimed until verified identity transfer, with a paired audit trail", async () => {

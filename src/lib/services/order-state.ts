@@ -1,4 +1,4 @@
-import { finishCreditIn } from "./credits";
+import { assertCreditFundingIn, finishCreditIn } from "./credits";
 import { allocateCredit } from "@/lib/config/credits";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { db, type DatabaseExecutor } from "@/lib/db";
@@ -70,6 +70,12 @@ export async function confirmOrderIn(
       and(eq(reservation.orderId, orderId), eq(reservation.status, "pending")),
     )
     .returning();
+  await assertCreditFundingIn(
+    executor,
+    `order:${orderId}`,
+    order.creditCents,
+    order.userId,
+  );
   await finishCreditIn(executor, `order:${orderId}`, true);
   const sorted = confirmed.sort((a, b) => a.id.localeCompare(b.id));
   const amounts = allocateCredit(

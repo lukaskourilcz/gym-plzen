@@ -3,7 +3,12 @@ import type { DatabaseExecutor } from "@/lib/db";
 import { creditAccount, blockedSlot, reservationChange } from "@/lib/db/schema";
 import type { Reservation } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
-import { creditAccountForUser, finishCreditIn, postCreditIn } from "./credits";
+import {
+  assertCreditFundingIn,
+  creditAccountForUser,
+  finishCreditIn,
+  postCreditIn,
+} from "./credits";
 
 /** Financial settlement belongs to the same transaction as the actual move. */
 export async function settleReservationChangeIn(
@@ -29,6 +34,12 @@ export async function settleReservationChangeIn(
   )
     throw new ActionError("Podklady změny rezervace už nejsou aktuální.");
   const delta = change.newPriceCents - change.previousPriceCents;
+  await assertCreditFundingIn(
+    tx,
+    `change:${id}`,
+    change.creditCents,
+    change.userId,
+  );
   await finishCreditIn(tx, `change:${id}`, true, current.id);
   if (delta < 0) {
     const account = await creditAccountForUser(change.userId, tx);

@@ -1,5 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { reserveCreditIn, finishCreditIn } from "./credits";
+import {
+  assertCreditFundingIn,
+  reserveCreditIn,
+  finishCreditIn,
+} from "./credits";
 import { ownReservationChange } from "./priced-rescheduling";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
@@ -375,6 +379,12 @@ export async function synchronizeParticipantPayment(
             eligible(booking, intent.userId) &&
             booking.extraPeople === intent.fromCount
           ) {
+            await assertCreditFundingIn(
+              tx,
+              `participant:${intent.id}`,
+              intent.creditCents,
+              intent.userId,
+            );
             await finishCreditIn(
               tx,
               `participant:${intent.id}`,
