@@ -155,7 +155,7 @@ describe("credit ledger", { skip: !databaseReady }, () => {
     for (const [id, email] of [
       [emptyId, "empty@example.test"],
       [spentId, "spent@example.test"],
-    ])
+    ] as const)
       await seedProfile({ id, email, fullName: email });
     await db.transaction(async (tx) => {
       await creditAccountForUser(emptyId, tx);
