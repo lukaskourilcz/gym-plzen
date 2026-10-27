@@ -9,7 +9,10 @@ import assert from "node:assert/strict";
 import { after, beforeEach, describe, test } from "node:test";
 import { db } from "../../src/lib/db";
 import { loadSiteContent } from "../../src/lib/content/site";
-import { getEntryPriceCents } from "../../src/lib/services/loyalty";
+import {
+  getEntryPriceCents,
+  getEntryPrices,
+} from "../../src/lib/services/loyalty";
 import {
   resolveBookableSlot,
   resolveBookableSlots,
@@ -50,6 +53,52 @@ describe(
       assert.equal(batch[3], null);
       assert.ok(batch[4]);
       assert.deepEqual(await resolveBookableSlots([]), []);
+    });
+
+    test("order pricing batches twenty starts with identical prices and constant query count", async () => {
+      const starts = Array.from({ length: 20 }, (_, i) =>
+        localDateTimeToDate("2026-10-25", i * 60),
+      );
+      await rows(
+        "insert into pricing_period(name,price_cents,starts_at,ends_at) values('DST fixture',19900,$1,$2)",
+        [starts[3], starts[9]],
+      );
+      const original = db.$client.options.debug;
+      let queries = 0;
+      db.$client.options.debug = () => {
+        queries++;
+      };
+      try {
+        const beforeAt = performance.now();
+        const before = await Promise.all(starts.map(getEntryPriceCents));
+        const beforeQueries = queries,
+          beforeMs = performance.now() - beforeAt;
+        queries = 0;
+        const afterAt = performance.now();
+        const result = await getEntryPrices(starts);
+        const afterQueries = queries,
+          afterMs = performance.now() - afterAt;
+        assert.deepEqual(
+          result.map((p) => p.priceCents),
+          before,
+        );
+        assert.equal(afterQueries, 3);
+        assert.ok(beforeQueries >= 20 * afterQueries);
+        queries = 0;
+        await getEntryPrices([starts[0]!]);
+        assert.equal(queries, afterQueries);
+        console.log(
+          JSON.stringify({
+            audit: "batched-entry-price",
+            beforeQueries,
+            afterQueries,
+            beforeMs: Math.round(beforeMs),
+            afterMs: Math.round(afterMs),
+          }),
+        );
+      } finally {
+        db.$client.options.debug = original;
+      }
     });
 
     test("ten-slot selection keeps exact date prices while reducing database round trips", async () => {

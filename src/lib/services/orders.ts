@@ -28,11 +28,11 @@ import {
 } from "@/lib/helpers/order-pricing";
 import { isComgateConfigured } from "@/lib/integrations/comgate";
 import { createReservation, releasePendingHold } from "./reservations";
-import { countEntries, getEntryPriceCents, hasClaimedReward } from "./loyalty";
+import { countEntries, getEntryPrices, hasClaimedReward } from "./loyalty";
 import {
   getBookingHorizonDays,
   isWithinBookingHorizon,
-  resolveBookableSlot,
+  resolveBookableSlots,
 } from "./slots";
 import { claimVoucher } from "./vouchers";
 import { getOperations } from "./operations";
@@ -134,14 +134,15 @@ export async function resolveOrderSlots(
     throw new ActionError(
       `V jedné objednávce může být nejvýše ${MAX_SLOTS_PER_ORDER} termínů.`,
     );
-  const [operations, horizon] = await Promise.all([
+  const [operations, horizon, configured] = await Promise.all([
     getOperations(),
     getBookingHorizonDays(),
+    resolveBookableSlots(unique),
   ]);
   const now = new Date();
   const resolved: ResolvedSlot[] = [];
-  for (const startsAt of unique) {
-    const slot = await resolveBookableSlot(startsAt);
+  for (const [index, startsAt] of unique.entries()) {
+    const slot = configured[index];
     const date = dateKeyInTimeZone(startsAt);
     if (
       !slot ||
@@ -409,9 +410,9 @@ export async function quoteOrder(params: {
   const surcharge = pricing.enabled
     ? participantSurcharge(params.extraPeople ?? 0, pricing)
     : 0;
-  const prices = await Promise.all(
-    params.slots.map((slot) => getEntryPriceCents(slot.startsAt)),
-  );
+  const prices = (
+    await getEntryPrices(params.slots.map((slot) => slot.startsAt))
+  ).map((price) => price.priceCents);
   let rewards: (number | null)[] = params.slots.map(() => null);
   if (params.userId) {
     const allocated = allocateLoyaltyRewards(
@@ -483,9 +484,9 @@ async function startOrderUnlocked(params: {
       "Doprovod je momentálně vypnutý. Obnovte stránku a pokračujte bez příplatku.",
     );
 
-  const basePrices = await Promise.all(
-    slots.map((slot) => getEntryPriceCents(slot.startsAt)),
-  );
+  const basePrices = (
+    await getEntryPrices(slots.map((slot) => slot.startsAt))
+  ).map((price) => price.priceCents);
   const token = randomBytes(32).toString("hex");
   const tokenHash = hashCode(token);
   const { order, reservations } = await db.transaction(async (tx) => {

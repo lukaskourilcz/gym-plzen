@@ -106,9 +106,10 @@ export default async function BookingDetailsPage({
   });
   const ownAt = new Map(own.map((row) => [row.startsAt.getTime(), row]));
 
+  const configured = await slots.resolveBookableSlots(starts);
   const selection = await Promise.all(
-    starts.map(async (startsAt) => {
-      const resolved = await slots.resolveBookableSlot(startsAt);
+    starts.map(async (startsAt, index) => {
+      const resolved = configured[index];
       const dateKey = dateKeyInTimeZone(startsAt);
       const endsAt = resolved?.endsAt ?? null;
       let state: SlotState = "bookable";
