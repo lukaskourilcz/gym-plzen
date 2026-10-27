@@ -65,6 +65,11 @@ async function paidBooking(startsAt: Date): Promise<string> {
     [outcome.orderId],
   );
   assert.equal(row?.status, "confirmed");
+  // This suite protects the legacy unchanged-price contracts.
+  await rows(
+    "update reservation set pricing_version=1, terms_version=null, price_snapshot=null where id=$1",
+    [row!.id],
+  );
   resend.sent.length = 0;
   return row!.id;
 }

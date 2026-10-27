@@ -18,7 +18,7 @@ test("approved terms contain 21 structured sections", () => {
   assert.equal(sections.at(-1)?.clauses.at(-1)?.number, "21.8");
   assert.equal(
     sections.at(-1)?.clauses.at(-1)?.text,
-    parseTermsBody(DEFAULT_TERMS_BODY).at(-1)?.clauses.at(-1)?.text,
+    "Pravidla kreditů a přepočtu změny termínu se použijí pouze na rezervace zakoupené s verzí podmínek 2026-10-27-credits-v1 po jejím zveřejnění. U dříve zakoupených rezervací zůstává zachována původní cena při změně termínu podle dříve přijatých podmínek.",
   );
   assert.equal(
     sections.find((section) => section.number === "20")?.clauses.at(-1)?.text,

@@ -336,7 +336,6 @@ export const DEFAULT_TERMS_BODY = LEGACY_TERMS_BODY.replace(
     /21\.8\. [^\n]+/,
     "21.8. Pravidla kreditů a přepočtu změny termínu se použijí pouze na rezervace zakoupené s verzí podmínek 2026-10-27-credits-v1 po jejím zveřejnění. U dříve zakoupených rezervací zůstává zachována původní cena při změně termínu podle dříve přijatých podmínek.",
   )
-  .replace("5. PLATEBNÍ PODMÍNKY", "5. PLATEBNÍ PODMÍNKY")
   .replace(
     /(4\.6\. [^\n]+)/,
     "$1\n\n4.7. Kredit je zákaznický zůstatek k úhradě služeb Studia v poměru 1 Kč kreditu za 1 Kč ceny. Lze jej použít při další rezervaci, úhradě více termínů, doplatku změny termínu nebo dokoupení doprovodu; případný zbytek se uhradí platební bránou.\n\n4.8. Kredit nemá stanovenou dobu expirace, je nepřevoditelný mezi zákazníky a nelze požadovat jeho běžný výběr v penězích. Tím nejsou dotčena práva, která nelze podle zákona omezit. Čerpání vyžaduje ověřený zákaznický účet; kredit hosta lze bezpečně přiřadit po ověření jeho identity.\n\n4.9. Zákazník vidí zůstatek a historii v profilu. Kredit rezervovaný v rozpracované platbě nelze současně použít znovu. Při neúspěšné platbě se rezervace kreditu po ověření jejího konečného stavu uvolní.\n\n4.10. Při zákaznickém stornu podle článku 8.10 se nevrací ani část úhrady provedená kreditem, bez ohledu na čas do začátku rezervace. Při zrušení ze strany Poskytovatele se oprávněná kreditní část úhrady vrátí do kreditů a peněžní část původní platební cestou, bez dvojí kompenzace již vypořádaných částek.",
