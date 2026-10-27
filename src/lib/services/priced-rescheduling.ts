@@ -100,6 +100,7 @@ export async function startPricedReschedule(input: {
   startsAt: Date;
   quotedCents: number;
   useCredits: boolean;
+  quotedCreditCents?: number;
 }): Promise<ChangeOutcome> {
   return withReservationLock(input.reservationId, async () => {
     const [existing] = await db
@@ -173,6 +174,13 @@ export async function startPricedReschedule(input: {
         difference,
         input.useCredits,
       );
+      if (
+        input.quotedCreditCents !== undefined &&
+        creditCents !== input.quotedCreditCents
+      )
+        throw new ActionError(
+          "Dostupný kredit se změnil. Obnovte stránku a potvrďte nový doplatek.",
+        );
       const cashCents = difference - creditCents;
       if (
         cashCents &&

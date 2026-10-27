@@ -190,6 +190,7 @@ export function RescheduleCalendar({
         operationId:
           operationRef.current ?? (operationRef.current = crypto.randomUUID()),
         quotedCents: newPrice,
+        quotedCreditCents: usedCredits,
         useCredits,
         startsAt: selectedSlot.startISO,
       }),
@@ -601,9 +602,14 @@ export function RescheduleCalendar({
               {isSubmitting
                 ? "Zpracovávám…"
                 : cashDue > 0
-                  ? `Zaplatit ${formatMoney(cashDue)} a změnit termín`
+                  ? (
+                      copy.payButton || "Zaplatit {amount} a změnit termín"
+                    ).replace("{amount}", formatMoney(cashDue))
                   : difference < 0
-                    ? `Změnit termín a získat ${formatMoney(-difference)} kreditů`
+                    ? (
+                        copy.creditButton ||
+                        "Změnit termín a získat {amount} kreditů"
+                      ).replace("{amount}", formatMoney(-difference))
                     : copy.confirm}
             </Button>
             <p className="mt-3 text-xs leading-5 text-muted-foreground">

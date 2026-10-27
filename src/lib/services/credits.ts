@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { db, type DatabaseExecutor } from "@/lib/db";
 import {
   creditAccount,

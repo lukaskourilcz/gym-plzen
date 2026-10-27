@@ -95,6 +95,7 @@ export async function addParticipants(params: {
   toCount: number;
   quotedCents: number;
   useCredits?: boolean;
+  quotedCreditCents?: number;
 }): Promise<ParticipantOutcome> {
   assertExtraPeople(params.toCount);
   return withReservationLock(params.reservationId, async () => {
@@ -161,6 +162,13 @@ export async function addParticipants(params: {
         amountCents,
         params.useCredits ?? false,
       );
+      if (
+        params.quotedCreditCents !== undefined &&
+        creditCents !== params.quotedCreditCents
+      )
+        throw new ActionError(
+          "Dostupný kredit se změnil. Obnovte stránku a potvrďte nový doplatek.",
+        );
       const cashCents = amountCents - creditCents;
       if (
         cashCents > 0 &&

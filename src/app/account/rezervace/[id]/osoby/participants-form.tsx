@@ -35,6 +35,11 @@ export function ParticipantsForm({
     action: async (input) => {
       const result = await addParticipantsAction({
         ...input,
+        quotedCreditCents: creditTender(
+          participantAdditionPrice(fromCount, input.toCount, pricing),
+          availableCreditCents,
+          Boolean(input.useCredits),
+        ),
         quotedCents: participantAdditionPrice(
           fromCount,
           input.toCount,

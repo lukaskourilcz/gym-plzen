@@ -246,6 +246,7 @@ async function continueOwnOrder(
     details: BookingDetails;
     voucherCode?: string;
     useCredits?: boolean;
+    quotedCreditCents?: number;
     extraPeople?: number;
     hold?: BookingHold | null;
   },
@@ -648,24 +649,36 @@ async function startOrderUnlocked(params: {
     }
   }
 
-  if (params.userId && params.useCredits && totalCents > 0) {
-    const used = await withOrderLock(order.id, () =>
-      db.transaction(async (tx) => {
-        const amount = await reserveCreditIn(
-          tx,
-          params.userId!,
-          `order:${order.id}`,
-          totalCents,
-          true,
-        );
-        await tx
-          .update(bookingOrder)
-          .set({ creditCents: amount })
-          .where(eq(bookingOrder.id, order.id));
-        return amount;
-      }),
-    );
-    totalCents -= used;
+  try {
+    if (params.userId && params.useCredits && totalCents > 0) {
+      const used = await withOrderLock(order.id, () =>
+        db.transaction(async (tx) => {
+          const amount = await reserveCreditIn(
+            tx,
+            params.userId!,
+            `order:${order.id}`,
+            totalCents,
+            true,
+          );
+          if (
+            params.quotedCreditCents !== undefined &&
+            params.quotedCreditCents !== amount
+          )
+            throw new ActionError(
+              "Dostupný kredit se změnil. Obnovte rekapitulaci a potvrďte novou částku.",
+            );
+          await tx
+            .update(bookingOrder)
+            .set({ creditCents: amount })
+            .where(eq(bookingOrder.id, order.id));
+          return amount;
+        }),
+      );
+      totalCents -= used;
+    }
+  } catch (error) {
+    await releasePendingOrder(order.id, "credit_quote_changed");
+    throw error;
   }
 
   if (totalCents === 0) {

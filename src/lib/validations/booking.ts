@@ -39,6 +39,7 @@ export const bookingDetailsSchema = z.object({
     invalid_type_error: "Vyberte, kolik lidí přijde.",
   }),
   useCredits: z.boolean().optional(),
+  quotedCreditCents: z.number().int().nonnegative().optional(),
   voucherCode: z.string().max(64, "Kód je příliš dlouhý.").optional(),
   /** Signed-in members only: keep this number in the profile for next time. */
   savePhone: z.boolean().optional(),

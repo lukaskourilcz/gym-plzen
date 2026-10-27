@@ -91,7 +91,7 @@ export const NOTICE_DEFINITIONS: readonly Definition[] = [
       field(
         "body",
         "Vysvětlení změny",
-        "Vyberte nový den a čas. Změní se pouze tato rezervace; její cena zůstane stejná. Původní termín platí až do potvrzení změny.",
+        "Vyberte nový den a čas. Změní se pouze tato rezervace. Před potvrzením uvidíte cenu a případný doplatek nebo připsaný kredit. Původní termín platí až do dokončení změny.",
       ),
       field(
         "creditRefund",
@@ -110,6 +110,18 @@ export const NOTICE_DEFINITIONS: readonly Definition[] = [
         "Vybraný nový termín a cena",
         "Nový termín: {time}\nCena zůstává {price}.",
         ["time", "price"],
+      ),
+      field(
+        "payButton",
+        "Potvrzení doplatku",
+        "Zaplatit {amount} a změnit termín",
+        ["amount"],
+      ),
+      field(
+        "creditButton",
+        "Potvrzení levnějšího termínu",
+        "Změnit termín a získat {amount} kreditů",
+        ["amount"],
       ),
       field("confirmation", "Nadpis potvrzení", "Potvrzení změny"),
       field("oldLabel", "Popisek původního termínu", "Původní"),

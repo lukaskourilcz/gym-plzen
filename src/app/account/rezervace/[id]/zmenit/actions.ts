@@ -40,6 +40,7 @@ const rescheduleImpl = defineAction({
       startsAt: new Date(input.startsAt),
       quotedCents: input.quotedCents ?? quote.newPriceCents,
       useCredits: input.useCredits ?? false,
+      quotedCreditCents: input.quotedCreditCents,
     });
     revalidatePath("/account");
     revalidatePath("/rezervace");
