@@ -23,6 +23,8 @@ import { before, beforeEach, after, describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { db } from "../../src/lib/db";
+import { payment } from "../../src/lib/db/schema";
+import { eq } from "drizzle-orm";
 import {
   creditAccountForUser,
   postCreditIn,
@@ -39,6 +41,7 @@ import {
   startPricedReschedule,
   recoverFailedChange,
   retryPaidChanges,
+  synchronizeChangePayment,
 } from "../../src/lib/services/priced-rescheduling";
 import { checkAvailability } from "../../src/lib/services/availability";
 import {
@@ -324,7 +327,13 @@ describe("priced reservation changes", { skip: !databaseReady }, () => {
     assert.equal(change!.status, "refund_pending");
     assert.equal(change!.refund_state, "requested");
     assert.equal(resend.sent.length, 0, "no completed-change mail");
+    const [stalePayment] = await db
+      .select()
+      .from(payment)
+      .where(eq(payment.reservationChangeId, input.id));
     await confirmChangeRefund(input.id, "Refund verified in fixture", userId);
+    // Dispatcher may have read this row before an operator confirms refund.
+    await synchronizeChangePayment(stalePayment!, "TEST-0002");
     await synchronizeComgatePayment("TEST-0002");
     const [p] = await rows<{ status: string }>(
       "select * from payment where reservation_change_id=$1",
@@ -336,6 +345,81 @@ describe("priced reservation changes", { skip: !databaseReady }, () => {
       [id],
     );
     assert.equal(booking!.starts_at.getTime(), slot(5).getTime());
+  });
+  test("a verified late payment after cancellation is refunded without moving the original", async () => {
+    const id = await paidBooking();
+    await setSetting("pricing.entry_price_cents", 25900);
+    const input = await changeInput(id);
+    await startPricedReschedule(input);
+    comgate.settle("TEST-0002", "CANCELLED");
+    await synchronizeComgatePayment("TEST-0002");
+    comgate.settle("TEST-0002", "PAID");
+    await synchronizeComgatePayment("TEST-0002");
+    await retryPaidChanges();
+    assert.equal(comgate.refunds.length, 1);
+    const [change] = await rows<{ status: string; refund_state: string }>(
+      "select * from reservation_change where id=$1",
+      [input.id],
+    );
+    assert.equal(change!.status, "refund_pending");
+    assert.equal(change!.refund_state, "requested");
+    assert.equal(
+      (await getReservation(id))!.startsAt.getTime(),
+      slot(5).getTime(),
+    );
+    assert.equal(resend.sent.length, 0);
+  });
+  test("refunds waiting for operator confirmation do not starve new recovery work", async () => {
+    const id = await paidBooking();
+    await setSetting("pricing.entry_price_cents", 25900);
+    const first = await changeInput(id);
+    await startPricedReschedule(first);
+    await rows(
+      "update reservation_change set expires_at=now()-interval '1 second' where id=$1",
+      [first.id],
+    );
+    comgate.settle("TEST-0002", "PAID");
+    await synchronizeComgatePayment("TEST-0002");
+    await recoverFailedChange(first.id);
+    await rows(
+      "update reservation_change set updated_at=now()-interval '1 day' where id=$1",
+      [first.id],
+    );
+    const order = await startOrder({
+      userId,
+      starts: [slot(8)],
+      details: {
+        name: "Cenový Test",
+        email: "ceny@example.test",
+        phone: "+420777000444",
+        acceptedAt: new Date(),
+      },
+    });
+    comgate.settle("TEST-0003", "PAID");
+    await synchronizeComgatePayment("TEST-0003");
+    const [other] = await rows<{ id: string }>(
+      "select id from reservation where order_id=$1",
+      [order.orderId],
+    );
+    await setSetting("pricing.entry_price_cents", 28900);
+    const q = await quoteReschedule(userId, other!.id, slot(9));
+    const second = {
+      id: randomUUID(),
+      userId,
+      reservationId: other!.id,
+      startsAt: slot(9),
+      quotedCents: q.newPriceCents,
+      useCredits: false,
+    };
+    await startPricedReschedule(second);
+    await rows(
+      "update reservation_change set expires_at=now()-interval '1 second' where id=$1",
+      [second.id],
+    );
+    comgate.settle("TEST-0004", "PAID");
+    await synchronizeComgatePayment("TEST-0004");
+    await retryPaidChanges(1);
+    assert.equal(comgate.refunds.length, 2);
   });
   test("a lost refund response is never automatically sent twice", async () => {
     const id = await paidBooking();

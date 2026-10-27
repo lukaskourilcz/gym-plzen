@@ -5,7 +5,7 @@ import {
 import { issueAccessCode } from "./access-codes";
 import { isAccessCodePreparationDue } from "@/lib/config/access-code-delivery";
 import { fulfillReservation } from "./fulfillment";
-import { and, asc, eq, inArray, lt } from "drizzle-orm";
+import { and, asc, eq, inArray, lt, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   blockedSlot,
@@ -309,7 +309,8 @@ async function outcomeFor(id: string): Promise<ChangeOutcome> {
   if (
     change?.status === "awaiting_payment" &&
     attempt?.gatewayUrl &&
-    attempt.status === "pending"
+    attempt.status === "pending" &&
+    change.expiresAt > new Date()
   )
     return { kind: "checkout", changeId: id, url: attempt.gatewayUrl };
   return { kind: "processing", changeId: id };
@@ -420,6 +421,9 @@ export async function synchronizeChangePayment(
           .for("update");
         if (!current || !paymentMatches(current, result.payment))
           throw new Error("Vazba doplatku se změnila.");
+        // The dispatcher can have read `known` before an operator completed
+        // a refund. Terminal state must be checked under the same lock.
+        if (current.status === "refunded") return;
         await tx
           .update(payment)
           .set({
@@ -434,14 +438,18 @@ export async function synchronizeChangePayment(
           .from(reservationChange)
           .where(eq(reservationChange.id, change.id))
           .for("update");
-        if (intent?.status === "awaiting_payment")
+        if (intent && ["awaiting_payment", "cancelled"].includes(intent.status))
           await tx
             .update(reservationChange)
             .set({
               status:
-                change.expiresAt > new Date() ? "applying" : "review_needed",
+                intent.status === "awaiting_payment" &&
+                intent.expiresAt > new Date()
+                  ? "applying"
+                  : "review_needed",
               error:
-                change.expiresAt > new Date()
+                intent.status === "awaiting_payment" &&
+                intent.expiresAt > new Date()
                   ? null
                   : "Doplatek dorazil po vypršení nabídky; ověřte vrácení platby.",
               updatedAt: new Date(),
@@ -516,7 +524,13 @@ export async function retryPaidChanges(limit = 10) {
     .select()
     .from(reservationChange)
     .where(
-      inArray(reservationChange.status, ["review_needed", "refund_pending"]),
+      or(
+        eq(reservationChange.status, "review_needed"),
+        and(
+          eq(reservationChange.status, "refund_pending"),
+          eq(reservationChange.refundState, "none"),
+        ),
+      ),
     )
     .orderBy(asc(reservationChange.updatedAt))
     .limit(limit);
