@@ -1,3 +1,4 @@
+import { getCreditWallet } from "@/lib/services/credits";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth/guards";
 import { uuidSchema } from "@/lib/validations/common";
@@ -47,6 +48,7 @@ export default async function ParticipantsPage({
     searchParams,
   ]);
   if (!booking) notFound();
+  const wallet = await getCreditWallet(user.id);
   const returned = query.addition_id
     ? additions.find((a) => a.id === query.addition_id)
     : undefined;
@@ -149,6 +151,7 @@ export default async function ParticipantsPage({
                 <ParticipantsForm
                   key={`${booking.extraPeople}:${pricing.amountCents}:${pricing.mode}`}
                   reservationId={id}
+                  availableCreditCents={wallet.availableCents}
                   fromCount={booking.extraPeople}
                   pricing={pricing}
                 />
