@@ -142,7 +142,7 @@ export async function startOrderPayment(params: {
         orderId: order.id,
         type: "one_off",
         status: "processing",
-        amountCents: order.totalCents,
+        amountCents: order.totalCents - order.creditCents,
         currency: order.currency,
         provider: "comgate",
         providerMerchantId: env.COMGATE_MERCHANT_ID,
@@ -153,7 +153,7 @@ export async function startOrderPayment(params: {
     if (!attempt) throw new Error("Payment attempt missing");
     const outcome = await createComgatePayment({
       orderNumber: attempt.id,
-      amountMinor: order.totalCents,
+      amountMinor: order.totalCents - order.creditCents,
       payer: {
         email: order.contactEmail,
         ...splitFullName(order.contactName ?? ""),
@@ -202,7 +202,7 @@ export async function startOrderPayment(params: {
       kind: "checkout",
       url: outcome.payment.gwUrl!,
       orderId: order.id,
-      totalCents: order.totalCents,
+      totalCents: order.totalCents - order.creditCents,
       token,
     };
   });

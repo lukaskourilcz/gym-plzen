@@ -37,3 +37,22 @@ export function creditTender(
   const used = Math.min(total, available);
   return total > used && total - used < 100 ? Math.max(0, total - 100) : used;
 }
+
+/** Stable integer allocation: sum equals tender exactly, no floating currency. */
+export function allocateCredit(
+  prices: readonly number[],
+  amount: number,
+): number[] {
+  const total = prices.reduce((a, b) => a + b, 0);
+  if (amount < 0 || amount > total)
+    throw new Error("Neplatná alokace kreditu.");
+  let allocated = 0,
+    cumulative = 0;
+  return prices.map((price) => {
+    cumulative += price;
+    const next = total ? Math.floor((amount * cumulative) / total) : 0;
+    const share = next - allocated;
+    allocated = next;
+    return share;
+  });
+}

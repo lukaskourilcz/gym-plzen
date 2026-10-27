@@ -1,3 +1,5 @@
+import { finishCreditIn } from "./credits";
+import { allocateCredit } from "@/lib/config/credits";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { db, type DatabaseExecutor } from "@/lib/db";
 import { bookingOrder, reservation } from "@/lib/db/schema";
@@ -59,7 +61,7 @@ export async function confirmOrderIn(
     .where(
       and(eq(bookingOrder.id, orderId), eq(bookingOrder.status, "pending")),
     )
-    .returning({ id: bookingOrder.id });
+    .returning();
   if (!order) return [];
   const confirmed = await executor
     .update(reservation)
@@ -68,7 +70,20 @@ export async function confirmOrderIn(
       and(eq(reservation.orderId, orderId), eq(reservation.status, "pending")),
     )
     .returning();
-  for (const row of confirmed) await initPipeline(row.id, executor);
+  await finishCreditIn(executor, `order:${orderId}`, true);
+  const sorted = confirmed.sort((a, b) => a.id.localeCompare(b.id));
+  const amounts = allocateCredit(
+    sorted.map((r) => r.priceCents ?? 0),
+    order.creditCents,
+  );
+  for (const [i, row] of sorted.entries()) {
+    await executor
+      .update(reservation)
+      .set({ creditPaidCents: amounts[i]! })
+      .where(eq(reservation.id, row.id));
+    row.creditPaidCents = amounts[i]!;
+    await initPipeline(row.id, executor);
+  }
   await redeemForOrder(orderId, executor);
   return confirmed.sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
 }
@@ -110,6 +125,7 @@ export async function cancelPendingOrderIn(
       and(eq(reservation.orderId, orderId), eq(reservation.status, "pending")),
     )
     .returning();
+  await finishCreditIn(executor, `order:${orderId}`, false);
   await releaseForOrder(orderId, executor);
   return released;
 }
@@ -156,5 +172,8 @@ export async function cancelOrdersOfReleased(
       ),
     )
     .returning({ id: bookingOrder.id });
-  for (const row of cancelled) await releaseForOrder(row.id, executor);
+  for (const row of cancelled) {
+    await finishCreditIn(executor, `order:${row.id}`, false);
+    await releaseForOrder(row.id, executor);
+  }
 }

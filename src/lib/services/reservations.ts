@@ -75,6 +75,9 @@ export interface CreateReservationInput {
   contactEmail?: string | null;
   contactPhone?: string | null;
   priceCents?: number | null;
+  pricingVersion?: number;
+  termsVersion?: string;
+  priceSnapshot?: import("@/lib/config/credits").ReservationPriceSnapshot;
   extraPeople?: number;
   /** When the visitor ticked the house rules; null for admin walk-ins. */
   rulesAcceptedAt?: Date | null;
@@ -123,6 +126,9 @@ export async function createReservation(
     contactEmail: input.contactEmail ?? null,
     contactPhone: input.contactPhone ?? null,
     priceCents: input.priceCents ?? null,
+    pricingVersion: input.pricingVersion ?? 1,
+    termsVersion: input.termsVersion,
+    priceSnapshot: input.priceSnapshot,
     extraPeople: input.extraPeople ?? 0,
     rulesAcceptedAt: input.rulesAcceptedAt ?? null,
     termsAcceptedAt: input.termsAcceptedAt ?? null,

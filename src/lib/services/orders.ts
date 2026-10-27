@@ -1,7 +1,13 @@
+import { withOperationLock } from "./operation-lock";
+import {
+  CREDIT_PRICING_VERSION,
+  CREDIT_TERMS_VERSION,
+} from "@/lib/config/credits";
+import { reserveCreditIn } from "./credits";
 import { randomBytes } from "node:crypto";
 import { and, asc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { bookingOrder, profiles, reservation } from "@/lib/db/schema";
+import { voucher, bookingOrder, profiles, reservation } from "@/lib/db/schema";
 import type { BookingOrder, Reservation } from "@/lib/db/types";
 import type { BookingHold } from "@/lib/helpers/booking-hold";
 import {
@@ -239,6 +245,7 @@ async function continueOwnOrder(
     userId: string | null;
     details: BookingDetails;
     voucherCode?: string;
+    useCredits?: boolean;
     extraPeople?: number;
     hold?: BookingHold | null;
   },
@@ -428,11 +435,21 @@ export async function quoteOrder(params: {
  * reservation commit atomically under the member's row lock: either all of
  * the slots are held, or none is and the visitor learns which one is gone.
  */
-export async function startOrder(params: {
+export async function startOrder(
+  params: Parameters<typeof startOrderUnlocked>[0],
+): Promise<OrderOutcome> {
+  const identity = params.userId ?? params.details.email.trim().toLowerCase();
+  return withOperationLock(`checkout:${identity}`, () =>
+    startOrderUnlocked(params),
+  );
+}
+
+async function startOrderUnlocked(params: {
   userId: string | null;
   starts: readonly Date[];
   details: BookingDetails;
   voucherCode?: string;
+  useCredits?: boolean;
   extraPeople?: number;
   /** The guest's hold cookie, when the browser sent one. */
   hold?: BookingHold | null;
@@ -524,6 +541,14 @@ export async function startOrder(params: {
               contactPhone: params.details.phone,
               rulesAcceptedAt: params.details.acceptedAt,
               termsAcceptedAt: params.details.acceptedAt,
+              pricingVersion: CREDIT_PRICING_VERSION,
+              termsVersion: CREDIT_TERMS_VERSION,
+              priceSnapshot: {
+                baseCents: basePrices[index]!,
+                companionCents: surcharge,
+                reward: Boolean(rewards[index]),
+                discount: null,
+              },
               priceCents: prices[index]!,
               extraPeople,
               status: allFree ? "confirmed" : "pending",
@@ -588,6 +613,27 @@ export async function startOrder(params: {
         quote.finalPriceCents,
         quote.voucherId,
       );
+      const [savedVoucher] = await db
+        .select()
+        .from(voucher)
+        .where(eq(voucher.id, quote.voucherId));
+      for (const [i, item] of paid.entries()) {
+        await db
+          .update(reservation)
+          .set({
+            priceSnapshot: {
+              ...item.priceSnapshot!,
+              discount:
+                savedVoucher?.kind === "percentage"
+                  ? { kind: "percentage", value: savedVoucher.value }
+                  : {
+                      kind: "fixed_amount",
+                      value: (item.priceCents ?? 0) - finals[i]!,
+                    },
+            },
+          })
+          .where(eq(reservation.id, item.id));
+      }
       totalCents = quote.finalPriceCents;
       voucherCode = quote.code;
     } catch (error) {
@@ -595,6 +641,26 @@ export async function startOrder(params: {
       await releasePendingOrder(order.id, "voucher_rejected");
       throw error;
     }
+  }
+
+  if (params.userId && params.useCredits && totalCents > 0) {
+    const used = await withOrderLock(order.id, () =>
+      db.transaction(async (tx) => {
+        const amount = await reserveCreditIn(
+          tx,
+          params.userId!,
+          `order:${order.id}`,
+          totalCents,
+          true,
+        );
+        await tx
+          .update(bookingOrder)
+          .set({ creditCents: amount })
+          .where(eq(bookingOrder.id, order.id));
+        return amount;
+      }),
+    );
+    totalCents -= used;
   }
 
   if (totalCents === 0) {
