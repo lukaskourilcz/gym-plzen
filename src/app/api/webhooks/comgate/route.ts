@@ -1,3 +1,4 @@
+import { readBodyBytes, BodyReadError } from "@/lib/helpers/limited-body";
 import { NextResponse, type NextRequest } from "next/server";
 import { verifyComgateNotification } from "@/lib/integrations/comgate";
 import { synchronizeComgatePayment } from "@/lib/services/payments";
@@ -5,10 +6,19 @@ import { logger } from "@/lib/helpers/logger";
 
 export const maxDuration = 300;
 export async function POST(request: NextRequest) {
-  if (Number(request.headers.get("content-length") ?? 0) > 16_384)
-    return new NextResponse(null, { status: 413 });
-  const raw = await request.text();
-  if (raw.length > 16_384) return new NextResponse(null, { status: 413 });
+  let raw: string;
+  try {
+    raw = (await readBodyBytes(request, 16_384)).toString("utf8");
+  } catch (error) {
+    return new NextResponse(null, {
+      status:
+        error instanceof BodyReadError
+          ? error.reason === "too_large"
+            ? 413
+            : 408
+          : 400,
+    });
+  }
   let body: unknown;
   try {
     body = request.headers.get("content-type")?.includes("application/json")

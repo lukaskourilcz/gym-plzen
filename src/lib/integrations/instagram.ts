@@ -1,3 +1,4 @@
+import { readBodyBytes } from "@/lib/helpers/limited-body";
 import { z } from "zod";
 import { env } from "@/lib/env";
 import {
@@ -60,26 +61,10 @@ export async function readLimitedBody(
   limit: number,
   problem: InstagramProblem = "provider",
 ) {
-  if (Number(response.headers.get("content-length")) > limit)
-    throw new InstagramError(problem);
-  const reader = response.body?.getReader();
-  if (!reader) throw new InstagramError(problem);
-  const chunks: Uint8Array[] = [];
-  let size = 0;
   try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      size += value.byteLength;
-      if (size > limit) {
-        await reader.cancel();
-        throw new InstagramError(problem);
-      }
-      chunks.push(value);
-    }
-    return Buffer.concat(chunks);
-  } finally {
-    reader.releaseLock();
+    return await readBodyBytes(response, limit);
+  } catch {
+    throw new InstagramError(problem);
   }
 }
 /** Meta sometimes returns 64-bit IDs as JSON numbers. Node 22 supplies their exact source. */

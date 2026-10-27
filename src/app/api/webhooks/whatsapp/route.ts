@@ -1,3 +1,4 @@
+import { readBodyBytes, BodyReadError } from "@/lib/helpers/limited-body";
 import { NextResponse, type NextRequest } from "next/server";
 import {
   verifyWebhookChallenge,
@@ -22,7 +23,22 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const rawBody = await request.text();
+  let rawBody: string;
+  try {
+    rawBody = (await readBodyBytes(request, 262_144)).toString("utf8");
+  } catch (error) {
+    return NextResponse.json(
+      { error: "invalid_body" },
+      {
+        status:
+          error instanceof BodyReadError
+            ? error.reason === "too_large"
+              ? 413
+              : 408
+            : 400,
+      },
+    );
+  }
   const signature = request.headers.get("x-hub-signature-256");
 
   if (!verifyWebhookSignature(rawBody, signature)) {
