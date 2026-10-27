@@ -133,7 +133,12 @@ export default async function CreditsPage({
                       {row.name}
                     </Link>
                   ) : (
-                    row.name
+                    <Link
+                      className="underline"
+                      href={`/admin/credits/${row.id}`}
+                    >
+                      {row.name}
+                    </Link>
                   )}
                 </span>
                 <span className="text-xs text-muted-foreground">
