@@ -289,9 +289,8 @@ describe("priced reservation changes", { skip: !databaseReady }, () => {
       /nelze uhradit/,
     );
     assert.equal(
-      (await getCreditWallet(userId)).entries.filter(
-        (e) => e.amountCents < 0,
-      ).length,
+      (await getCreditWallet(userId)).entries.filter((e) => e.amountCents < 0)
+        .length,
       1,
     );
     assert.equal(

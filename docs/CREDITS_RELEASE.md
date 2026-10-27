@@ -6,7 +6,8 @@ The feature is implemented on `codex/customer-credits`. This task does NOT
 apply production migrations, merge main, invoke production jobs, send customer
 messages or touch any production booking/PIN. All verification uses disposable
 loopback PostgreSQL databases, local Auth/Comgate/Resend replacements and blocked
-external provider networking.
+external provider networking. Automatic Vercel deployment is disabled for this
+branch; publishing the review PR cannot connect a preview to live services.
 
 1. Review the PR, local screenshots and green application checks.
 2. Confirm the credit terms and accounting treatment with the operator. The new

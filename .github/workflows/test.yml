@@ -56,6 +56,14 @@ jobs:
           path: test-results/**/instagram-*.jpg
           if-no-files-found: error
           retention-days: 3
+      - name: Retain credit wallet review screenshots
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: credits-review-${{ github.run_id }}
+          path: test-results/**/credits-*.png
+          if-no-files-found: error
+          retention-days: 3
       - name: Retain local browser failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
