@@ -207,12 +207,27 @@ export async function finishCreditIn(
     .set({ status: capture ? "captured" : "released" })
     .where(eq(creditHold.operationKey, key));
 }
-export async function getCreditWallet(userId: string) {
+/** Checkout needs a balance, never a customer's full audit history. */
+export async function getCreditBalance(userId: string) {
   const [account] = await db
-    .select()
+    .select({
+      id: creditAccount.id,
+      balanceCents: creditAccount.balanceCents,
+      reservedCents: creditAccount.reservedCents,
+    })
     .from(creditAccount)
     .where(eq(creditAccount.userId, userId));
-  const entries = account
+  return {
+    accountId: account?.id ?? null,
+    balanceCents: account?.balanceCents ?? 0,
+    reservedCents: account?.reservedCents ?? 0,
+    availableCents:
+      (account?.balanceCents ?? 0) - (account?.reservedCents ?? 0),
+  };
+}
+export async function getCreditWallet(userId: string) {
+  const balance = await getCreditBalance(userId);
+  const entries = balance.accountId
     ? (
         await db
           .select({
@@ -222,7 +237,7 @@ export async function getCreditWallet(userId: string) {
           })
           .from(creditEntry)
           .leftJoin(profiles, eq(profiles.id, creditEntry.actorId))
-          .where(eq(creditEntry.accountId, account.id))
+          .where(eq(creditEntry.accountId, balance.accountId))
           .orderBy(desc(creditEntry.createdAt), desc(creditEntry.id))
           .limit(50)
       ).map(({ entry, actorName, actorEmail }) => ({
@@ -231,14 +246,7 @@ export async function getCreditWallet(userId: string) {
       }))
     : [];
 
-  return {
-    accountId: account?.id ?? null,
-    balanceCents: account?.balanceCents ?? 0,
-    reservedCents: account?.reservedCents ?? 0,
-    availableCents:
-      (account?.balanceCents ?? 0) - (account?.reservedCents ?? 0),
-    entries,
-  };
+  return { ...balance, entries };
 }
 export async function adminCreditAccount(
   input: { userId?: string; email?: string; name?: string },

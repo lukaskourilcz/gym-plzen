@@ -1,5 +1,5 @@
 import { getOrder } from "@/lib/services/order-state";
-import { getCreditWallet } from "@/lib/services/credits";
+import { getCreditBalance } from "@/lib/services/credits";
 import { getParticipantPricing } from "@/lib/services/block-pricing";
 import { isComgateConfigured } from "@/lib/integrations/comgate";
 import { getOperations } from "@/lib/services/operations";
@@ -377,7 +377,7 @@ export default async function BookingDetailsPage({
                   .join(",")}
                 availableCreditCents={
                   session && !session.user.isDemo
-                    ? (await getCreditWallet(session.user.id)).availableCents
+                    ? (await getCreditBalance(session.user.id)).availableCents
                     : 0
                 }
                 paymentsAvailable={paymentsAvailable}

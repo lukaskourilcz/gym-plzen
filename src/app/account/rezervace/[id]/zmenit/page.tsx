@@ -1,5 +1,5 @@
 import { ownReservationChange } from "@/lib/services/priced-rescheduling";
-import { getCreditWallet } from "@/lib/services/credits";
+import { getCreditBalance } from "@/lib/services/credits";
 import { db } from "@/lib/db";
 import { payment } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -81,7 +81,7 @@ export default async function ReschedulePage({
   }
   const wallet = user.isDemo
     ? { availableCents: 0 }
-    : await getCreditWallet(user.id);
+    : await getCreditBalance(user.id);
   const now = new Date();
   const alreadyRescheduled = await rescheduling.hasReservationBeenRescheduled(
     current.id,
