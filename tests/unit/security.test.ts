@@ -149,3 +149,20 @@ test("errors reported to Sentry keep their class and stack but not the raw messa
   assert.doesNotMatch(scrubbed.stack ?? "", /jan\.novak/);
   assert.match(scrubbed.stack ?? "", /security\.test/);
 });
+
+test("log strings redact provider credentials and connection passwords, including wrapped SQL failures", () => {
+  for (const value of [
+    "Authorization: Bearer local_secret_value",
+    "Authorization: Basic bG9jYWw6c2VjcmV0",
+    'Failed query params: {"api_key":"local_secret_value","password":"local_password_value"}',
+    "https://provider.test?secret=local_secret_value",
+    "postgres://local_user:local_password_value@database.test/db",
+  ]) {
+    const result = redactForLogs(value);
+    assert.doesNotMatch(
+      result,
+      /local_secret_value|local_password_value|bG9jYWw6c2VjcmV0/,
+    );
+    assert.match(result, /redacted/);
+  }
+});
