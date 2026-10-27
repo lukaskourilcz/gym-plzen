@@ -109,20 +109,10 @@ export default async function CreditsPage({
               "Zákazník",
               "E-mail",
               "Dostupný kredit",
-              "V rozpracované platbě",
               "Poslední změna",
               "",
             ].map((text, i) => (
-              <TableHead
-                key={i}
-                title={
-                  i === 3
-                    ? "Kredity dočasně držené pro rozpracovanou platbu. Ještě nebyly utraceny."
-                    : undefined
-                }
-              >
-                {text}
-              </TableHead>
+              <TableHead key={i}>{text}</TableHead>
             ))}
           </TableRow>
         </TableHeader>
@@ -159,7 +149,6 @@ export default async function CreditsPage({
               <TableCell className="font-bold tabular-nums">
                 {formatMoney(row.balance - row.reserved)}
               </TableCell>
-              <TableCell>{formatMoney(row.reserved)}</TableCell>
               <TableCell>
                 {row.updated ? formatDateTime(new Date(row.updated)) : "—"}
               </TableCell>

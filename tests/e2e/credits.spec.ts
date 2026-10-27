@@ -86,12 +86,13 @@ test("admin can grant, edit and remove credit with an audit trail", async ({
   await expect(
     page.getByRole("combobox", { name: "Zůstatek", exact: true }),
   ).toHaveCount(0);
-  await expect(
-    page.getByRole("columnheader", {
-      name: "V rozpracované platbě",
-      exact: true,
-    }),
-  ).toBeVisible();
+  await expect(page.getByRole("columnheader")).toHaveText([
+    "Zákazník",
+    "E-mail",
+    "Dostupný kredit",
+    "Poslední změna",
+    "",
+  ]);
   await page
     .getByLabel("Přidat kredit zákazníkovi", { exact: true })
     .fill(email);
