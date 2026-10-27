@@ -140,6 +140,7 @@ const TEST_VARIABLES: Record<string, string> = {
   previous_time: "neděle 2. srpna 2026 v 9:00",
   duration: "75 minut",
   price: "229 Kč",
+  payment_summary: "Úhrada kredity: 100 Kč\nÚhrada platební bránou: 129 Kč",
   price_summary:
     "Původní cena: 259 Kč\nNová cena: 229 Kč\nPřipsaný kredit: 30 Kč",
   reason: "Úprava provozní doby",

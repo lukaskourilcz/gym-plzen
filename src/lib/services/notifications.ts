@@ -325,6 +325,7 @@ export async function sendReservationConfirmation(params: {
   startsAt: Date;
   endsAt: Date;
   priceCents: number | null;
+  creditPaidCents?: number;
   /** Set when the entry is the member's free loyalty entry. */
   loyaltyReward?: number | null;
   email?: string | null;
@@ -383,6 +384,12 @@ export async function sendReservationConfirmation(params: {
       prepareTransactionalEmail({
         id: "reservation_confirmation",
         to: params.email!,
+        requiredSummary: params.creditPaidCents
+          ? {
+              variable: "payment_summary",
+              text: `Úhrada kredity: ${formatMoney(params.creditPaidCents)}\nÚhrada platební bránou: ${formatMoney((params.priceCents ?? 0) - params.creditPaidCents)}`,
+            }
+          : undefined,
         attachments: [
           {
             filename: "rezervace.ics",
@@ -390,6 +397,9 @@ export async function sendReservationConfirmation(params: {
           },
         ],
         variables: {
+          payment_summary: params.creditPaidCents
+            ? `Úhrada kredity: ${formatMoney(params.creditPaidCents)}\nÚhrada platební bránou: ${formatMoney((params.priceCents ?? 0) - params.creditPaidCents)}`
+            : "",
           name: params.name || "zákazníku",
           loyalty,
           time: formatDateTime(params.startsAt),
@@ -475,6 +485,12 @@ export async function sendOrderConfirmation(params: {
       prepareTransactionalEmail({
         id: "order_confirmation",
         to: email,
+        requiredSummary: order.creditCents
+          ? {
+              variable: "payment_summary",
+              text: `Úhrada kredity: ${formatMoney(order.creditCents)}\nÚhrada platební bránou: ${formatMoney(order.totalCents - order.creditCents)}`,
+            }
+          : undefined,
         attachments: [
           {
             filename: "rezervace.ics",
@@ -482,6 +498,9 @@ export async function sendOrderConfirmation(params: {
           },
         ],
         variables: {
+          payment_summary: order.creditCents
+            ? `Úhrada kredity: ${formatMoney(order.creditCents)}\nÚhrada platební bránou: ${formatMoney(order.totalCents - order.creditCents)}`
+            : "",
           name: order.contactName || "zákazníku",
           count: termCount(slots.length),
           slots: slots.map(orderSlotLine).join("\n"),

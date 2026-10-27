@@ -9,6 +9,9 @@ import {
   startProviders,
   stopEverything,
 } from "./setup";
+import { issueDocumentFor } from "../../src/lib/services/invoices";
+import { reservationInvoiceStates } from "../../src/lib/services/invoice-delivery";
+import { getReservation } from "../../src/lib/services/reservations";
 import { addParticipants } from "../../src/lib/services/participants";
 import {
   cancelReservation,
@@ -354,5 +357,93 @@ describe("priced reservation changes", { skip: !databaseReady }, () => {
       ]),
       /immutable/,
     );
+  });
+  test("a credit-only receipt retains original order values even if one slot later becomes cheaper", async () => {
+    await seedProfile({
+      id: userId,
+      email: "ceny@example.test",
+      fullName: "Cenový Test",
+    });
+    await grant(50000);
+    const order = await startOrder({
+      userId,
+      useCredits: true,
+      starts: [slot(5), slot(6)],
+      details: {
+        name: "Cenový Test",
+        email: "ceny@example.test",
+        phone: "+420777000444",
+        acceptedAt: new Date(),
+      },
+    });
+    const [r] = await rows<{ id: string }>(
+      "select id from reservation where order_id=$1 order by starts_at",
+      [order.orderId],
+    );
+    assert.equal(
+      (await reservationInvoiceStates([r!.id])).get(r!.id)!.eligible,
+      true,
+    );
+    await setSetting("pricing.entry_price_cents", 19900);
+    const quote = await quoteReschedule(userId, r!.id, slot(7));
+    await startPricedReschedule({
+      ...(await changeInput(r!.id)),
+      startsAt: slot(7),
+      quotedCents: quote.newPriceCents,
+    });
+    await setSetting("billing.profile", {
+      legalName: "Lokální faktura s.r.o.",
+      street: "Testovací 1",
+      city: "Plzeň",
+      zip: "301 00",
+      ico: "12345678",
+      dic: "",
+      vatRatePercent: 0,
+      bankAccount: "",
+      registryNote: "",
+    });
+    const outcome = await issueDocumentFor((await getReservation(r!.id))!, {
+      force: true,
+    });
+    assert.equal(outcome.issued, true);
+    if (!outcome.issued) throw new Error("receipt missing");
+    assert.equal(outcome.invoice.totalCents, 45800);
+    assert.equal(outcome.invoice.creditCents, 45800);
+    assert.deepEqual(
+      outcome.invoice.items!.map((i) => i.totalCents),
+      [22900, 22900],
+    );
+  });
+  test("the tenth reward stays free and cannot mint a nominal-price credit", async () => {
+    await seedProfile({
+      id: userId,
+      email: "ceny@example.test",
+      fullName: "Cenový Test",
+    });
+    await rows(
+      "insert into reservation(user_id,starts_at,ends_at,status,price_cents) select $1::uuid,'2025-01-01'::timestamptz+n*interval '1 day','2025-01-01 01:00'::timestamptz+n*interval '1 day','completed',19900 from generate_series(1,9)n",
+      [userId],
+    );
+    const order = await startOrder({
+      userId,
+      starts: [slot(5)],
+      details: {
+        name: "Cenový Test",
+        email: "ceny@example.test",
+        phone: "+420777000444",
+        acceptedAt: new Date(),
+      },
+    });
+    assert.equal(order.kind, "free");
+    const [r] = await rows<{ id: string }>(
+      "select id from reservation where order_id=$1",
+      [order.orderId],
+    );
+    await setSetting("pricing.entry_price_cents", 99900);
+    const q = await quoteReschedule(userId, r!.id, slot(6));
+    assert.equal(q.newPriceCents, 0);
+    await startPricedReschedule(await changeInput(r!.id));
+    assert.equal((await getCreditWallet(userId)).availableCents, 0);
+    assert.equal(comgate.creates.length, 0);
   });
 });
