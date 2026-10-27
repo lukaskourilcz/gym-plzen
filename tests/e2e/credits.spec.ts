@@ -272,6 +272,18 @@ test.describe("customer", () => {
     const pdf = await page.request.get((await statement.getAttribute("href"))!);
     expect(pdf.status()).toBe(200);
     expect(pdf.headers()["content-type"]).toBe("application/pdf");
+    expect(pdf.headers()["cache-control"]).toBe("private, no-store");
+    expect((await pdf.body()).subarray(0, 5).toString()).toBe("%PDF-");
+    const anonymous = await page.context().browser()!.newContext();
+    try {
+      const deniedStatement = await anonymous.request.get(
+        new URL((await statement.getAttribute("href"))!, page.url()).toString(),
+      );
+      expect(deniedStatement.status()).toBe(404);
+    } finally {
+      await anonymous.close();
+    }
+
     const denied = await page.request.get("/admin/credits");
     expect(denied.url()).toMatch(/account|login/);
     await page.setViewportSize({ width: 390, height: 844 });

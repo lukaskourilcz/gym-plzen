@@ -1,5 +1,6 @@
 import PDFDocument from "pdfkit";
 import path from "node:path";
+import { readFileSync } from "node:fs";
 import { formatDateTime, formatMoney } from "@/lib/helpers/format";
 import type { reservationChange } from "@/lib/db/schema";
 /** Informational settlement annex; the original invoice remains immutable. */
@@ -7,12 +8,20 @@ export function renderCreditChangePdf(
   change: typeof reservationChange.$inferSelect,
 ): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const pdf = new PDFDocument({ size: "A4", margin: 48 });
+    // Initialize with the embedded font as invoice-pdf does: server bundles
+    // do not contain PDFKit's implicit Helvetica metrics.
+    const font = readFileSync(
+      path.join(process.cwd(), "src/lib/pdf/fonts/Bitter-Regular.ttf"),
+    );
+    const pdf = new PDFDocument({
+      size: "A4",
+      margin: 48,
+      font: font as unknown as string,
+    });
     const buffers: Buffer[] = [];
     pdf.on("data", (chunk) => buffers.push(chunk));
     pdf.on("end", () => resolve(Buffer.concat(buffers)));
     pdf.on("error", reject);
-    pdf.font(path.join(process.cwd(), "src/lib/pdf/fonts/Bitter-Regular.ttf"));
     pdf.fontSize(21).text("Vyúčtování změny rezervace");
     pdf.moveDown();
     pdf.fontSize(10).text(`NAVI Private Gym · ${change.id}`);
