@@ -153,6 +153,14 @@ export const reservationChange = pgTable(
   },
   (t) => [
     index("reservation_change_status_idx").on(t.status, t.updatedAt),
+    index("reservation_change_user_completed_idx")
+      .on(t.userId, t.createdAt.desc())
+      .where(sql`${t.status} = 'completed'`),
+    index("reservation_change_recovery_idx")
+      .on(t.updatedAt)
+      .where(
+        sql`${t.status} = 'review_needed' or (${t.status} = 'refund_pending' and ${t.refundState} = 'none')`,
+      ),
     uniqueIndex("reservation_change_active_uidx")
       .on(t.reservationId)
       .where(
