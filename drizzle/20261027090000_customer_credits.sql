@@ -43,6 +43,8 @@ CREATE TABLE reservation_change (
  status text NOT NULL CHECK(status IN ('awaiting_payment','applying','completed','cancelled','review_needed','refund_pending','refunded')),
  block_id uuid REFERENCES blocked_slot(id) ON DELETE RESTRICT,
  expires_at timestamptz NOT NULL, quote jsonb NOT NULL, error text,
+ refund_state text NOT NULL DEFAULT 'none' CHECK(refund_state IN ('none','submitting','requested','unknown','rejected','confirmed')),
+ refund_reference text,
  created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX reservation_change_status_idx ON reservation_change(status, updated_at);
@@ -62,3 +64,5 @@ ALTER TABLE credit_hold ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reservation_change ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON credit_account, credit_entry, credit_hold, reservation_change FROM anon, authenticated;
 GRANT ALL ON credit_account, credit_entry, credit_hold, reservation_change TO service_role;
+
+ALTER TABLE payment ADD CONSTRAINT payment_change_binding_check CHECK(reservation_change_id IS NULL OR (reservation_id IS NULL AND order_id IS NULL AND participant_addition_id IS NULL AND membership_id IS NULL));

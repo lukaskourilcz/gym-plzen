@@ -507,7 +507,9 @@ async function startOrderUnlocked(params: {
     const totalCents = prices.reduce((sum, price) => sum + price, 0);
     if (
       totalCents > 0 &&
-      (!operations.paymentsEnabled || !isComgateConfigured())
+      (!operations.paymentsEnabled || !isComgateConfigured()) &&
+      !params.useCredits &&
+      !params.voucherCode?.trim()
     )
       throw new ActionError(PAYMENTS_UNAVAILABLE);
     const allFree = totalCents === 0;
@@ -689,11 +691,16 @@ async function startOrderUnlocked(params: {
       summary: `Rezervace na ${formatDateTime(row.startsAt)} vytvořena, čeká na platbu ${formatMoney(totalCents)}${orderNote}${voucherCode ? ` (voucher ${voucherCode})` : ""}.`,
       context: { orderId: order.id, totalCents, voucherCode },
     });
-  return startOrderPayment({
-    orderId: order.id,
-    userId: params.userId,
-    token,
-  });
+  try {
+    return await startOrderPayment({
+      orderId: order.id,
+      userId: params.userId,
+      token,
+    });
+  } catch (error) {
+    await releasePendingOrder(order.id, "payment_start_failed");
+    throw error;
+  }
 }
 
 /** Persist the voucher-adjusted prices of a still-pending order at once. */

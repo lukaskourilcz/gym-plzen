@@ -129,6 +129,18 @@ export const reservationChange = pgTable(
       }>()
       .notNull(),
     error: text("error"),
+    refundState: text("refund_state")
+      .$type<
+        | "none"
+        | "submitting"
+        | "requested"
+        | "unknown"
+        | "rejected"
+        | "confirmed"
+      >()
+      .notNull()
+      .default("none"),
+    refundReference: text("refund_reference"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

@@ -1,3 +1,4 @@
+import { assertNoOpenChange } from "./reservation-finance-guard";
 import { formatTime } from "@/lib/helpers/format";
 import { cancellationPrice } from "@/lib/config/customer-cancellation";
 import { adminOrder, adminTotalCount } from "./admin-list-query";
@@ -207,6 +208,7 @@ export async function cancelReservation(
 async function cancelReservationLocked(
   params: CancelReservationParams,
 ): Promise<void> {
+  await assertNoOpenChange(params.id);
   // Read it before it changes: only a confirmed reservation disappearing is
   // news for the operator. A pending hold that expired or a rejected voucher
   // is the system tidying up after itself.
