@@ -384,7 +384,7 @@ async function cancelReservationLocked(
       severity: "critical",
       dedupeKey: `refund-needed:${params.id}`,
       title: "Zrušená zaplacená rezervace vyžaduje vrácení platby",
-      body: `Rezervace na ${formatDateTime(before.startsAt)} byla zrušena. Zbývající peněžní úhrada k ověření vrácení: ${formatMoney(paidForSlot, before.currency)}. Původní platba za tento termín: ${formatMoney(originalPaidForSlot, before.currency)}, samostatný doplatek změny: ${formatMoney(changeCash, before.currency)}, dokoupený doprovod: ${formatMoney(companionPaidCents, before.currency)}. Ověřte jednotlivé platby v Comgate. Samotné storno peněžní úhradu nevrací.`,
+      body: `Rezervace na ${formatDateTime(before.startsAt)} byla zrušena${before.orderId ? " jako součást objednávky" : ""}. Zbývající peněžní úhrada k ověření vrácení: ${formatMoney(paidForSlot, before.currency)}. Původní platba za tento termín: ${formatMoney(originalPaidForSlot, before.currency)}, samostatný doplatek změny: ${formatMoney(changeCash, before.currency)}, dokoupený doprovod: ${formatMoney(companionPaidCents, before.currency)}. Ověřte jednotlivé platby v Comgate. Samotné storno peněžní úhradu nevrací.`,
       context: {
         reservationId: params.id,
         paymentId:

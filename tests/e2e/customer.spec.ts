@@ -347,7 +347,7 @@ test("a lost cancellation response offers history recovery and sends only one co
   try {
     await page.goto("/account");
     const card = page.locator(`[data-reservation-id="${id}"]`);
-    await expect(card.getByText(/Změna zdarma do/)).toBeVisible();
+    await expect(card.getByText(/Změna termínu do/)).toBeVisible();
     await card.getByRole("button", { name: /Zrušit rezervaci/ }).click();
     await expect(
       page
@@ -492,7 +492,7 @@ test("rescheduling navigates through lightweight availability, ignores delayed r
       "aria-current",
       "true",
     );
-    await page.unroute("**/api/availability/calendar?**");
+    await page.unrouteAll({ behavior: "wait" });
     await page.route("**/api/availability/calendar?**", (route) =>
       route.fulfill({
         status: 503,
@@ -505,7 +505,7 @@ test("rescheduling navigates through lightweight availability, ignores delayed r
       page.getByText("Kalendář se nepodařilo načíst", { exact: true }),
     ).toBeVisible();
     await expect(times).toHaveCount(0);
-    await page.unroute("**/api/availability/calendar?**");
+    await page.unrouteAll({ behavior: "wait" });
     await page
       .getByRole("button", { name: "Zkusit znovu", exact: true })
       .click();
@@ -543,7 +543,7 @@ test("rescheduling navigates through lightweight availability, ignores delayed r
       ).violations,
     ).toEqual([]);
   } finally {
-    await page.unroute("**/api/availability/calendar?**");
+    await page.unrouteAll({ behavior: "wait" });
     await sql!`delete from reservation where id=${id}`;
   }
 });
