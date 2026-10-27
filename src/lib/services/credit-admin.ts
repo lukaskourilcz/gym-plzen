@@ -71,6 +71,7 @@ export interface CreditCustomer {
   reserved: number;
   updated: Date | null;
   registered: boolean;
+  pendingClaim: boolean;
   total: number;
 }
 export async function creditCustomers(input: {
@@ -84,12 +85,12 @@ export async function creditCustomers(input: {
   const result = await db.execute(sql`
     with customers as (
       select p.id,coalesce(nullif(p.full_name,''),p.email,'Zákazník') as name,p.email,
-        coalesce(a.balance_cents,0) as balance,coalesce(a.reserved_cents,0) as reserved,a.updated_at as updated,true as registered
+        coalesce(a.balance_cents,0) as balance,coalesce(a.reserved_cents,0) as reserved,a.updated_at as updated,true as registered,false as "pendingClaim"
       from profiles p left join credit_account a on a.user_id=p.id
       union all
-      select a.id,coalesce(a.guest_name,a.guest_email),a.guest_email,a.balance_cents,a.reserved_cents,a.updated_at,false
+      select a.id,coalesce(a.guest_name,a.guest_email),a.guest_email,a.balance_cents,a.reserved_cents,a.updated_at,false,exists(select 1 from profiles p where lower(p.email)=a.guest_email)
       from credit_account a where a.guest_email is not null
-        and not exists(select 1 from profiles p where lower(p.email)=a.guest_email)
+        and (a.balance_cents>0 or not exists(select 1 from profiles p where lower(p.email)=a.guest_email))
     ) select *,count(*) over()::int as total from customers
     where (translate(lower(coalesce(name,'')), 'áčďéěíňóřšťúůýž', 'acdeeinorstuuyz') like ${q} or lower(coalesce(email,'')) like ${q})
       and (${input.balance} <> 'positive' or balance-reserved>0)

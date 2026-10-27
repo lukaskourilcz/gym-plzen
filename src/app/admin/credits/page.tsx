@@ -148,7 +148,11 @@ export default async function CreditsPage({
                   )}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {row.registered ? "Registrovaný" : "Neregistrovaný"}
+                  {row.registered
+                    ? "Registrovaný"
+                    : row.pendingClaim
+                      ? "Kredit čeká na ověření e-mailu"
+                      : "Neregistrovaný"}
                 </span>
               </TableCell>
               <TableCell>{row.email}</TableCell>

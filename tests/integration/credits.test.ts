@@ -8,6 +8,7 @@ import {
 import { beforeEach, after, describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { db } from "../../src/lib/db";
+import { creditCustomers } from "../../src/lib/services/credit-admin";
 import {
   creditAccountForUser,
   postCreditIn,
@@ -115,6 +116,35 @@ describe("credit ledger", { skip: !databaseReady }, () => {
       /ověřit/,
     );
     assert.equal((await getCreditWallet(userId)).availableCents, 10000);
+  });
+  test("unclaimed guest money remains visible after an unverified profile appears", async () => {
+    await db.transaction(async (tx) => {
+      const account = await adminCreditAccount(
+        { email: "new-account@example.test" },
+        tx,
+      );
+      await postCreditIn(tx, {
+        accountId: account.id,
+        amountCents: 5000,
+        reason: "Guest fixture",
+        key: "unclaimed",
+      });
+    });
+    await seedProfile({
+      id: "55555555-5555-4555-8555-555555555555",
+      email: "new-account@example.test",
+      fullName: "New account",
+    });
+    const guests = await creditCustomers({
+      q: "new-account@example.test",
+      balance: "positive",
+      registration: "guest",
+      sort: "balance",
+      page: 1,
+    });
+    assert.equal(guests.length, 1);
+    assert.equal(guests[0]!.balance, 5000);
+    assert.equal(guests[0]!.pendingClaim, true);
   });
   test("guest grants stay unclaimed until verified identity transfer, with a paired audit trail", async () => {
     await db.transaction(async (tx) => {
