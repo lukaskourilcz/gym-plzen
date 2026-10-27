@@ -82,3 +82,9 @@ Use a SEPARATE migrated test database for browser runs. Test runners deliberatel
 fail on remote DB URLs/provider requests, never fall back to application secrets.
 The migration test bootstraps the previous schema, seeds fictional historical
 records, applies only the new migration, and compares original fields bytewise.
+
+Do not drop the financial tables or roll back the migration once wallets or
+pending payments exist. A rollback must first stop new financial operations and
+retain reconciliation/refund handling for every already-started operation. A
+committed paid intent also expires: a delayed worker never grants a second visit
+after the original entry could have been used.
