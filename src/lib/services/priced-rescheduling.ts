@@ -112,7 +112,9 @@ export async function startPricedReschedule(input: {
         existing.userId !== input.userId ||
         existing.reservationId !== input.reservationId ||
         existing.startsAt.getTime() !== input.startsAt.getTime() ||
-        existing.newPriceCents !== input.quotedCents
+        existing.newPriceCents !== input.quotedCents ||
+        (input.quotedCreditCents !== undefined &&
+          existing.creditCents !== input.quotedCreditCents)
       )
         throw new ActionError("Požadavek změny není platný.");
       return outcomeFor(existing.id);
@@ -451,7 +453,9 @@ export async function synchronizeChangePayment(
                 intent.status === "awaiting_payment" &&
                 intent.expiresAt > new Date()
                   ? null
-                  : "Doplatek dorazil po vypršení nabídky; ověřte vrácení platby.",
+                  : intent.status === "cancelled"
+                    ? "Doplatek dorazil ke zrušené nabídce; ověřte vrácení platby."
+                    : "Doplatek dorazil po vypršení nabídky; ověřte vrácení platby.",
               updatedAt: new Date(),
             })
             .where(eq(reservationChange.id, change.id));

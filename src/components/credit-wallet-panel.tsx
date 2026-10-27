@@ -61,7 +61,11 @@ export async function CreditWalletPanel({
         <summary className="cursor-pointer text-sm font-bold">
           Historie kreditů
         </summary>
-        <div className="mt-3 overflow-x-auto">
+        <div
+          tabIndex={0}
+          aria-label="Historie kreditních pohybů"
+          className="mt-3 overflow-x-auto focus-visible:outline-2 focus-visible:outline-primary"
+        >
           <table className="w-full text-left text-sm">
             <thead>
               <tr>

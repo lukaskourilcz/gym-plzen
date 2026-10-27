@@ -79,9 +79,10 @@ export default async function ReschedulePage({
         .where(eq(payment.reservationChangeId, pending.id))
     )[0];
   }
-  const wallet = user.isDemo
-    ? { availableCents: 0 }
-    : await getCreditBalance(user.id);
+  const wallet =
+    user.isDemo || pending
+      ? { availableCents: 0 }
+      : await getCreditBalance(user.id);
   const now = new Date();
   const alreadyRescheduled = await rescheduling.hasReservationBeenRescheduled(
     current.id,
@@ -102,7 +103,7 @@ export default async function ReschedulePage({
     month: typeof query.month === "string" ? query.month : null,
   };
   let calendar: CalendarView | null = null;
-  if (eligibility.eligible) {
+  if (eligibility.eligible && !pending) {
     try {
       calendar = (await loadCalendarAvailability(input, now)).view;
     } catch {

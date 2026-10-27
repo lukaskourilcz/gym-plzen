@@ -50,13 +50,13 @@ test.beforeAll(async () => {
   memberId = result.data.user.id;
   await sql`insert into profiles(id,email,full_name,first_name,last_name,phone,role) values(${memberId},${email},'Kredit Test','Kredit','Test','+420777000999','member') on conflict(id) do update set phone=excluded.phone`;
   savedSettings =
-    await sql`select * from site_setting where key in ('pricing.entry_price_cents','pricing.time_blocks','features.additional_people','booking.operations')`;
+    await sql`select * from site_setting where key in ('pricing.entry_price_cents','pricing.time_blocks','features.additional_people','booking.operations','pricing.additional_people')`;
   savedPeriods = await sql`select * from pricing_period`;
   savedHours = await sql`select * from opening_hours`;
   await sql`insert into site_setting(key,value) values('pricing.time_blocks','[]'),('booking.operations','{"paymentsEnabled":true,"accessCodesEnabled":false,"bookingsFrom":""}') on conflict(key) do update set value=excluded.value`;
   await sql`delete from pricing_period`;
   await sql`insert into site_setting(key,value) values('pricing.entry_price_cents','22900') on conflict(key) do update set value=excluded.value`;
-  await sql`insert into site_setting(key,value) values('features.additional_people','false') on conflict(key) do update set value=excluded.value`;
+  await sql`insert into site_setting(key,value) values('features.additional_people','false'),('pricing.additional_people','{"amountCents":10000,"mode":"flat"}') on conflict(key) do update set value=excluded.value`;
   await sql`update opening_hours set open_minute=300,close_minute=1425,slot_minutes=75,is_closed=0`;
   [oldReservations] =
     await sql`select jsonb_agg(to_jsonb(r) order by id) as data from reservation r`;
