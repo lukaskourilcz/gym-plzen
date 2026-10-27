@@ -272,7 +272,14 @@ test.describe("customer", () => {
     const pdf = await page.request.get((await statement.getAttribute("href"))!);
     expect(pdf.status()).toBe(200);
     expect(pdf.headers()["content-type"]).toBe("application/pdf");
-    expect(pdf.headers()["cache-control"]).toBe("private, no-store");
+    const cacheDirectives = pdf
+      .headers()
+      ["cache-control"].split(",")
+      .map((value) => value.trim());
+    expect(cacheDirectives).toEqual(
+      expect.arrayContaining(["private", "no-store"]),
+    );
+    expect(cacheDirectives).not.toContain("public");
     expect((await pdf.body()).subarray(0, 5).toString()).toBe("%PDF-");
     const anonymous = await page.context().browser()!.newContext();
     try {
