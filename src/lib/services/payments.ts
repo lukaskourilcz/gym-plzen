@@ -11,6 +11,7 @@ import {
   isNull,
   lt,
   or,
+  sql,
 } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
@@ -835,7 +836,11 @@ export async function reconcilePendingPayments(limit = 10) {
         ),
       ),
     )
-    .orderBy(asc(payment.lastCheckedAt))
+    .orderBy(
+      sql`${payment.lastCheckedAt} asc nulls first`,
+      asc(payment.createdAt),
+      asc(payment.id),
+    )
     .limit(limit);
   for (const attempt of unknown) {
     await raiseAlert({
@@ -872,7 +877,11 @@ export async function reconcilePendingPayments(limit = 10) {
         ),
       ),
     )
-    .orderBy(asc(payment.lastCheckedAt))
+    .orderBy(
+      sql`${payment.lastCheckedAt} asc nulls first`,
+      asc(payment.createdAt),
+      asc(payment.id),
+    )
     .limit(limit);
   let completed = 0;
   for (const row of rows)
