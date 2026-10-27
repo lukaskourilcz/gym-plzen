@@ -1,0 +1,4 @@
+interface:
+  display_name: "CODE AUDIT"
+  short_description: "Důkladný audit bezpečnosti, rychlosti a spolehlivosti"
+  default_prompt: "Použij $code-audit k důkladnému auditu aplikace, oprav doložené chyby a ověř kritické scénáře v izolovaném prostředí."
