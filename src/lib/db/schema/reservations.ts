@@ -34,6 +34,7 @@ export const bookingOrder = pgTable(
     }),
     status: bookingOrderStatus("status").notNull().default("pending"),
     totalCents: integer("total_cents").notNull(),
+    creditCents: integer("credit_cents").notNull().default(0),
     currency: text("currency").default("czk").notNull(),
 
     // Contact snapshot shared by every reservation of the order.
@@ -126,6 +127,13 @@ export const reservation = pgTable(
       .notNull()
       .default(0),
     priceCents: integer("price_cents"), // null when covered by membership
+    pricingVersion: integer("pricing_version").notNull().default(1),
+    termsVersion: text("terms_version"),
+    priceSnapshot:
+      jsonb("price_snapshot").$type<
+        import("@/lib/config/credits").ReservationPriceSnapshot
+      >(),
+    creditPaidCents: integer("credit_paid_cents").notNull().default(0),
     currency: text("currency").default("czk").notNull(),
 
     // Consents ticked at booking time. Required from every visitor, member or

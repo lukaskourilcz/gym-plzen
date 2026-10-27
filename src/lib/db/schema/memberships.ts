@@ -1,3 +1,4 @@
+import { reservationChange } from "./credits";
 import {
   boolean,
   check,
@@ -112,6 +113,10 @@ export const payment = pgTable(
       () => participantAddition.id,
       { onDelete: "restrict" },
     ),
+    reservationChangeId: uuid("reservation_change_id").references(
+      () => reservationChange.id,
+      { onDelete: "restrict" },
+    ),
     membershipId: uuid("membership_id").references(() => membership.id, {
       onDelete: "set null",
     }),
@@ -154,6 +159,7 @@ export const payment = pgTable(
       t.status,
       t.lastCheckedAt,
     ),
+    uniqueIndex("payment_reservation_change_uidx").on(t.reservationChangeId),
     index("payment_user_idx").on(t.userId),
     index("payment_order_idx").on(t.orderId),
     index("payment_reservation_idx").on(t.reservationId),
