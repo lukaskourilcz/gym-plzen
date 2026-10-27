@@ -50,7 +50,12 @@ export async function settleReservationChangeIn(
     .set({
       status: "completed",
       blockId: null,
-      quote: { ...change.quote, creditBalanceCents: balance!.balanceCents },
+      quote: {
+        ...change.quote,
+        creditBalanceCents: balance!.balanceCents,
+        customerName: current.contactName ?? "",
+        customerEmail: current.contactEmail ?? "",
+      },
       updatedAt: new Date(),
     })
     .where(eq(reservationChange.id, id));

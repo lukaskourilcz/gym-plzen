@@ -126,6 +126,8 @@ export const reservationChange = pgTable(
         pricingVersion: number;
         termsVersion: string;
         creditBalanceCents?: number;
+        customerName?: string;
+        customerEmail?: string;
       }>()
       .notNull(),
     error: text("error"),

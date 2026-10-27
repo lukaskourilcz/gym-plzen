@@ -68,3 +68,13 @@ GRANT ALL ON credit_account, credit_entry, credit_hold, reservation_change TO se
 ALTER TABLE payment ADD CONSTRAINT payment_change_binding_check CHECK(reservation_change_id IS NULL OR (reservation_id IS NULL AND order_id IS NULL AND participant_addition_id IS NULL AND membership_id IS NULL));
 
 ALTER TABLE invoice ADD COLUMN credit_cents integer NOT NULL DEFAULT 0 CHECK(credit_cents >= 0 AND credit_cents <= total_cents);
+
+-- Completed changes are evidence, including the exact price and customer snapshot.
+CREATE FUNCTION reservation_change_completed_immutable() RETURNS trigger LANGUAGE plpgsql SET search_path = '' AS $$
+BEGIN
+ IF OLD.status = 'completed' THEN RAISE EXCEPTION 'Completed reservation changes are immutable'; END IF;
+ RETURN NEW;
+END $$;
+CREATE TRIGGER reservation_change_completed_immutable BEFORE UPDATE OR DELETE ON reservation_change
+ FOR EACH ROW EXECUTE FUNCTION reservation_change_completed_immutable();
+REVOKE ALL ON FUNCTION reservation_change_completed_immutable() FROM PUBLIC;

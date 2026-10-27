@@ -1,3 +1,6 @@
+import { and, desc, eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { reservationChange } from "@/lib/db/schema";
 import Link from "next/link";
 import { getCreditWallet } from "@/lib/services/credits";
 import { formatDateTime, formatMoney } from "@/lib/helpers/format";
@@ -9,7 +12,20 @@ export async function CreditWalletPanel({
   userId: string;
   admin?: boolean;
 }) {
-  const wallet = await getCreditWallet(userId);
+  const [wallet, changes] = await Promise.all([
+    getCreditWallet(userId),
+    db
+      .select()
+      .from(reservationChange)
+      .where(
+        and(
+          eq(reservationChange.userId, userId),
+          eq(reservationChange.status, "completed"),
+        ),
+      )
+      .orderBy(desc(reservationChange.createdAt))
+      .limit(20),
+  ]);
   return (
     <section
       aria-label="Kreditní peněženka"
@@ -90,6 +106,26 @@ export async function CreditWalletPanel({
           ) : null}
         </div>
       </details>
+      {changes.length ? (
+        <details className="mt-4">
+          <summary className="cursor-pointer text-sm font-bold">
+            Vyúčtování změn termínů
+          </summary>
+          <ul className="mt-3 space-y-2 text-sm">
+            {changes.map((change) => (
+              <li key={change.id}>
+                <Link
+                  target="_blank"
+                  className="underline"
+                  href={`/account/kredity/zmeny/${change.id}`}
+                >
+                  {formatDateTime(change.updatedAt)} · stáhnout vyúčtování (PDF)
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
     </section>
   );
 }
