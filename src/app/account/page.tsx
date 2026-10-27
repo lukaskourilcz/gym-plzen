@@ -1,3 +1,5 @@
+import { CreditBalanceCard } from "@/components/credit-balance-card";
+import { getCreditBalance } from "@/lib/services/credits";
 import { CreditWalletPanel } from "@/components/credit-wallet-panel";
 import { getParticipantsEnabled } from "@/lib/services/block-pricing";
 import { CustomerAvatar } from "@/components/site/customer-avatar";
@@ -45,7 +47,9 @@ export default async function AccountPage({
   const user = await requireUser("/account");
   const isDemoCustomer = user.isDemo;
   const tab =
-    params.tab === "profile" || params.tab === "orders"
+    params.tab === "profile" ||
+    params.tab === "orders" ||
+    params.tab === "credits"
       ? params.tab
       : "reservations";
   const page = pageFromParam(params.page);
@@ -62,20 +66,29 @@ export default async function AccountPage({
       ? (member?.profile?.avatarSource ?? "google")
       : ("initials" as const),
   };
-  const [status, upcoming, rescheduledIds, content, participantsEnabled] =
-    await Promise.all([
-      isDemoCustomer
-        ? Promise.resolve(deriveLoyaltyStatus(6))
-        : loyalty.getLoyaltyStatus(user.id),
-      isDemoCustomer
-        ? Promise.resolve(demoUpcomingReservations())
-        : reservations.listUpcomingForUser(user.id),
-      isDemoCustomer
-        ? Promise.resolve(new Set<string>())
-        : rescheduling.listRescheduledReservationIds(user.id),
-      loadSiteContent(),
-      isDemoCustomer ? Promise.resolve(false) : getParticipantsEnabled(),
-    ]);
+  const [
+    status,
+    upcoming,
+    rescheduledIds,
+    content,
+    participantsEnabled,
+    credit,
+  ] = await Promise.all([
+    isDemoCustomer
+      ? Promise.resolve(deriveLoyaltyStatus(6))
+      : loyalty.getLoyaltyStatus(user.id),
+    isDemoCustomer
+      ? Promise.resolve(demoUpcomingReservations())
+      : reservations.listUpcomingForUser(user.id),
+    isDemoCustomer
+      ? Promise.resolve(new Set<string>())
+      : rescheduling.listRescheduledReservationIds(user.id),
+    loadSiteContent(),
+    isDemoCustomer ? Promise.resolve(false) : getParticipantsEnabled(),
+    !isDemoCustomer && tab === "reservations"
+      ? getCreditBalance(user.id)
+      : Promise.resolve(null),
+  ]);
 
   const history = splitPage(
     !isDemoCustomer && tab === "reservations" && historyView
@@ -120,7 +133,6 @@ export default async function AccountPage({
                 </p>
               </div>
             </div>
-            {!isDemoCustomer ? <CreditWalletPanel userId={user.id} /> : null}
             <nav
               aria-label="Můj účet"
               className="my-8 flex flex-wrap gap-2 border-b border-border pb-4"
@@ -129,12 +141,14 @@ export default async function AccountPage({
                 [
                   { id: "reservations", label: "Moje rezervace" },
                   { id: "orders", label: "Historie objednávek" },
+                  { id: "credits", label: "Historie kreditů" },
                   { id: "profile", label: "Profil a heslo" },
                 ] as const
               ).map((item) => (
                 <Link
                   key={item.id}
                   href={`/account?tab=${item.id}`}
+                  prefetch={item.id === "credits" ? false : undefined}
                   aria-current={tab === item.id ? "page" : undefined}
                   className={`inline-flex min-h-11 items-center rounded-md px-4 py-3 text-sm font-bold ${tab === item.id ? "bg-primary text-primary-foreground" : "text-accent-foreground hover:bg-accent"}`}
                 >
@@ -142,7 +156,13 @@ export default async function AccountPage({
                 </Link>
               ))}
             </nav>
-            {tab === "profile" ? (
+            {tab === "credits" ? (
+              isDemoCustomer ? (
+                <Notice>Zatím žádné kreditní pohyby.</Notice>
+              ) : (
+                <CreditWalletPanel userId={user.id} historyOnly />
+              )
+            ) : tab === "profile" ? (
               <div className="grid gap-6">
                 <ProfileForm
                   phoneRequired={member?.profile?.phoneRequired ?? false}
@@ -184,30 +204,35 @@ export default async function AccountPage({
 
                 <div className="mt-8 grid gap-5 lg:grid-cols-[1.6fr_1fr] lg:items-start">
                   <LoyaltyWidget status={status} />
-                  <div className="rounded-lg border border-border bg-card p-7">
-                    <div className="text-xs font-extrabold uppercase tracking-[.13em] text-muted-foreground">
-                      Nejbližší trénink
+                  <div className="grid gap-5">
+                    <CreditBalanceCard
+                      availableCents={credit?.availableCents ?? 0}
+                    />
+                    <div className="rounded-lg border border-border bg-card p-7">
+                      <div className="text-xs font-extrabold uppercase tracking-[.13em] text-muted-foreground">
+                        Nejbližší trénink
+                      </div>
+                      {upcoming[0] ? (
+                        <>
+                          <div className="mt-3 text-xl font-extrabold">
+                            {formatDate(upcoming[0].startsAt)}
+                          </div>
+                          <div className="mt-1 text-sm font-bold text-muted-foreground">
+                            {formatTimeRange(
+                              upcoming[0].startsAt,
+                              upcoming[0].endsAt,
+                            )}
+                          </div>
+                          <div className="mt-4 rounded-md bg-accent px-4 py-3 text-sm font-bold text-accent-foreground">
+                            Vstupní údaje obdržíte před začátkem rezervace.
+                          </div>
+                        </>
+                      ) : (
+                        <p className="mt-4 text-sm text-muted-foreground">
+                          Nemáte žádnou naplánovanou rezervaci.
+                        </p>
+                      )}
                     </div>
-                    {upcoming[0] ? (
-                      <>
-                        <div className="mt-3 text-xl font-extrabold">
-                          {formatDate(upcoming[0].startsAt)}
-                        </div>
-                        <div className="mt-1 text-sm font-bold text-muted-foreground">
-                          {formatTimeRange(
-                            upcoming[0].startsAt,
-                            upcoming[0].endsAt,
-                          )}
-                        </div>
-                        <div className="mt-4 rounded-md bg-accent px-4 py-3 text-sm font-bold text-accent-foreground">
-                          Vstupní údaje obdržíte před začátkem rezervace.
-                        </div>
-                      </>
-                    ) : (
-                      <p className="mt-4 text-sm text-muted-foreground">
-                        Nemáte žádnou naplánovanou rezervaci.
-                      </p>
-                    )}
                   </div>
                 </div>
 
