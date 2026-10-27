@@ -23,6 +23,7 @@ import { withReservationLock } from "./operation-lock";
 import {
   invoice,
   participantAddition,
+  reservationChange,
   payment,
   reservation,
   messageDelivery,
@@ -343,23 +344,55 @@ async function cancelReservationLocked(
     (sum, row) => sum + row.amountCents,
     0,
   );
+  const changePayments = await db
+    .select({
+      id: payment.id,
+      providerPaymentId: payment.providerPaymentId,
+      amountCents: payment.amountCents,
+    })
+    .from(payment)
+    .innerJoin(
+      reservationChange,
+      eq(payment.reservationChangeId, reservationChange.id),
+    )
+    .where(
+      and(
+        eq(reservationChange.reservationId, before.id),
+        eq(reservationChange.status, "completed"),
+        eq(payment.status, "succeeded"),
+      ),
+    );
+  const currentCash = Math.max(
+    0,
+    (before.priceCents ?? 0) - before.creditPaidCents,
+  );
+  const originalCash = Math.max(
+    0,
+    (before.priceSnapshot?.purchasePriceCents ?? before.priceCents ?? 0) -
+      (before.priceSnapshot?.purchaseCreditCents ?? 0),
+  );
   const originalPaidForSlot = paid
-    ? paid.orderId
-      ? Math.max(0, (before.priceCents ?? 0) - before.creditPaidCents)
-      : paid.amountCents
+    ? Math.min(currentCash, originalCash, paid.amountCents)
     : 0;
-  const paidForSlot = originalPaidForSlot + companionPaidCents;
+  const changeCash = Math.min(
+    Math.max(0, currentCash - originalPaidForSlot),
+    changePayments.reduce((sum, item) => sum + item.amountCents, 0),
+  );
+  const paidForSlot = originalPaidForSlot + changeCash + companionPaidCents;
   if (paidForSlot > 0 && !params.byCustomer)
     await raiseAlert({
       severity: "critical",
       dedupeKey: `refund-needed:${params.id}`,
       title: "Zrušená zaplacená rezervace vyžaduje vrácení platby",
-      body: `Rezervace na ${formatDateTime(before.startsAt)} byla zrušena. Zákazník za ni zaplatil ${formatMoney(paidForSlot, before.currency)}${paid?.orderId ? ` jako součást objednávky za ${formatMoney(paid.amountCents, paid.currency)}` : ""}${companionPaidCents > 0 ? ` (z toho doprovod ${formatMoney(companionPaidCents, before.currency)})` : ""}; ověřte nárok a stav refundace v Comgate. Samotné storno platbu nevrací.`,
+      body: `Rezervace na ${formatDateTime(before.startsAt)} byla zrušena. Zákazník za ni zaplatil ${formatMoney(paidForSlot, before.currency)}${paid?.orderId ? ` jako součást objednávky za ${formatMoney(paid.amountCents, paid.currency)}` : ""}${companionPaidCents > 0 ? ` (z toho doprovod ${formatMoney(companionPaidCents, before.currency)})` : ""}${changeCash > 0 ? ` (doplatek změny termínu ${formatMoney(changeCash, before.currency)} je samostatná platba)` : ""}; ověřte nárok a stav refundace jednotlivých plateb v Comgate. Samotné storno peněžní úhradu nevrací.`,
       context: {
         reservationId: params.id,
         paymentId: paid?.id ?? companionPayments[0]?.id,
         orderId: paid?.orderId ?? null,
         companionPaymentIds: companionPayments.map((row) => row.id),
+        changePaymentIds: changePayments.map((row) => row.id),
+        originalPaymentRefundCents: originalPaidForSlot,
+        changePaymentRefundCents: changeCash,
         amountCents: paidForSlot,
       },
     });

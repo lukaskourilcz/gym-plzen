@@ -50,6 +50,7 @@ export function CreditEditor({
       </Button>
       {open ? (
         <AdminDialog
+          busy={busy}
           title={`Kredity · ${name || email || "zákazník"}`}
           description="Opravy se zapisují do historie. Použitý nebo rezervovaný kredit nelze odebrat."
           onClose={() => {

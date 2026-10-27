@@ -197,13 +197,24 @@ export async function getCreditWallet(userId: string) {
     .from(creditAccount)
     .where(eq(creditAccount.userId, userId));
   const entries = account
-    ? await db
-        .select()
-        .from(creditEntry)
-        .where(eq(creditEntry.accountId, account.id))
-        .orderBy(desc(creditEntry.createdAt), desc(creditEntry.id))
-        .limit(50)
+    ? (
+        await db
+          .select({
+            entry: creditEntry,
+            actorName: profiles.fullName,
+            actorEmail: profiles.email,
+          })
+          .from(creditEntry)
+          .leftJoin(profiles, eq(profiles.id, creditEntry.actorId))
+          .where(eq(creditEntry.accountId, account.id))
+          .orderBy(desc(creditEntry.createdAt), desc(creditEntry.id))
+          .limit(50)
+      ).map(({ entry, actorName, actorEmail }) => ({
+        ...entry,
+        actorName: actorName || actorEmail || "Systém",
+      }))
     : [];
+
   return {
     accountId: account?.id ?? null,
     balanceCents: account?.balanceCents ?? 0,

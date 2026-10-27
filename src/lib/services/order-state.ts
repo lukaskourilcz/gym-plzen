@@ -79,7 +79,12 @@ export async function confirmOrderIn(
   for (const [i, row] of sorted.entries()) {
     await executor
       .update(reservation)
-      .set({ creditPaidCents: amounts[i]! })
+      .set({
+        creditPaidCents: amounts[i]!,
+        priceSnapshot: row.priceSnapshot
+          ? { ...row.priceSnapshot, purchaseCreditCents: amounts[i]! }
+          : null,
+      })
       .where(eq(reservation.id, row.id));
     row.creditPaidCents = amounts[i]!;
     await initPipeline(row.id, executor);

@@ -67,6 +67,7 @@ export async function CreditWalletPanel({
               <tr>
                 <th className="py-2">Datum</th>
                 <th>Důvod</th>
+                {admin ? <th>Provedl</th> : null}
                 <th className="text-right">Částka</th>
               </tr>
             </thead>
@@ -91,6 +92,19 @@ export async function CreditWalletPanel({
                       </Link>
                     ) : null}
                   </td>
+                  {admin ? (
+                    <td className="pr-4">
+                      {entry.actorName}
+                      {entry.operationKey.startsWith("claim-in:") ? (
+                        <Link
+                          className="ml-2 underline"
+                          href={`/admin/credits/${entry.operationKey.split(":")[1]}`}
+                        >
+                          Historie před registrací
+                        </Link>
+                      ) : null}
+                    </td>
+                  ) : null}
                   <td className="whitespace-nowrap text-right font-bold">
                     {entry.amountCents > 0 ? "+" : ""}
                     {formatMoney(entry.amountCents)}

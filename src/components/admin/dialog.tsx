@@ -10,11 +10,13 @@ export function AdminDialog({
   description,
   children,
   onClose,
+  busy = false,
 }: {
   title: string;
   description?: ReactNode;
   children: ReactNode;
   onClose: () => void;
+  busy?: boolean;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -36,6 +38,9 @@ export function AdminDialog({
       aria-labelledby={titleId}
       aria-describedby={description ? descriptionId : undefined}
       onClose={onClose}
+      onCancel={(event) => {
+        if (busy) event.preventDefault();
+      }}
       onKeyDown={(event) => {
         if (event.key !== "Tab") return;
         const controls = Array.from(
@@ -68,6 +73,7 @@ export function AdminDialog({
           type="button"
           variant="ghost"
           size="icon"
+          disabled={busy}
           aria-label="Zavřít dialog"
           onClick={() => dialog.current?.close()}
         >

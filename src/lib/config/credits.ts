@@ -5,6 +5,7 @@ export interface ReservationPriceSnapshot {
   baseCents: number;
   purchasePriceCents?: number;
   purchasedStartsAt?: string;
+  purchaseCreditCents?: number;
   companionCents: number;
   reward: boolean;
   discount: {
@@ -14,7 +15,7 @@ export interface ReservationPriceSnapshot {
   } | null;
 }
 export function assertMoney(value: number): void {
-  if (!Number.isSafeInteger(value) || Math.abs(value) > 100_000_000)
+  if (!Number.isSafeInteger(value) || Math.abs(value) > 2_147_483_647)
     throw new Error("Neplatná částka.");
 }
 export function changedReservationPrice(
@@ -22,6 +23,7 @@ export function changedReservationPrice(
   saved: ReservationPriceSnapshot,
 ): number {
   assertMoney(baseCents);
+  if (baseCents < 0) throw new Error("Neplatná cena termínu.");
   const gross = (saved.reward ? 0 : baseCents) + saved.companionCents;
   const discount = !saved.discount
     ? 0
@@ -49,6 +51,11 @@ export function allocateCredit(
   prices: readonly number[],
   amount: number,
 ): number[] {
+  assertMoney(amount);
+  for (const price of prices) {
+    assertMoney(price);
+    if (price < 0) throw new Error("Neplatná cena položky.");
+  }
   const total = prices.reduce((a, b) => a + b, 0);
   if (amount < 0 || amount > total)
     throw new Error("Neplatná alokace kreditu.");
