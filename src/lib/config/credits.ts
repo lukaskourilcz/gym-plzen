@@ -7,7 +7,11 @@ export interface ReservationPriceSnapshot {
   purchasedStartsAt?: string;
   companionCents: number;
   reward: boolean;
-  discount: { kind: "percentage" | "fixed_amount"; value: number } | null;
+  discount: {
+    kind: "percentage" | "fixed_amount";
+    value: number;
+    roundingCents?: number;
+  } | null;
 }
 export function assertMoney(value: number): void {
   if (!Number.isSafeInteger(value) || Math.abs(value) > 100_000_000)
@@ -22,9 +26,9 @@ export function changedReservationPrice(
   const discount = !saved.discount
     ? 0
     : saved.discount.kind === "percentage"
-      ? Math.floor((gross * saved.discount.value) / 100)
+      ? Math.round((gross * saved.discount.value) / 100)
       : saved.discount.value;
-  return Math.max(0, gross - discount);
+  return Math.max(0, gross - discount + (saved.discount?.roundingCents ?? 0));
 }
 /** Never silently round a charge up. Leave >= 1 CZK for the gateway. */
 export function creditTender(

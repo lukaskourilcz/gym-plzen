@@ -72,7 +72,7 @@ ALTER TABLE invoice ADD COLUMN credit_cents integer NOT NULL DEFAULT 0 CHECK(cre
 -- Completed changes are evidence, including the exact price and customer snapshot.
 CREATE FUNCTION reservation_change_completed_immutable() RETURNS trigger LANGUAGE plpgsql SET search_path = '' AS $$
 BEGIN
- IF OLD.status = 'completed' THEN RAISE EXCEPTION 'Completed reservation changes are immutable'; END IF;
+ IF TG_OP = 'DELETE' OR OLD.status = 'completed' THEN RAISE EXCEPTION 'Completed reservation changes are immutable'; END IF;
  RETURN NEW;
 END $$;
 CREATE TRIGGER reservation_change_completed_immutable BEFORE UPDATE OR DELETE ON reservation_change

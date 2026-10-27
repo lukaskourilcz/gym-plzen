@@ -632,7 +632,16 @@ async function startOrderUnlocked(params: {
               purchasePriceCents: finals[i]!,
               discount:
                 savedVoucher?.kind === "percentage"
-                  ? { kind: "percentage", value: savedVoucher.value }
+                  ? {
+                      kind: "percentage",
+                      value: savedVoucher.value,
+                      roundingCents:
+                        finals[i]! -
+                        ((item.priceCents ?? 0) -
+                          Math.round(
+                            ((item.priceCents ?? 0) * savedVoucher.value) / 100,
+                          )),
+                    }
                   : {
                       kind: "fixed_amount",
                       value: (item.priceCents ?? 0) - finals[i]!,

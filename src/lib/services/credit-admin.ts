@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { searchPattern } from "@/lib/helpers/admin-list";
 import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { creditAccount, creditEntry } from "@/lib/db/schema";
@@ -69,7 +69,7 @@ export async function creditCustomers(input: {
   page: number;
   sort: string;
 }) {
-  const q = `%${input.q}%`;
+  const q = searchPattern(input.q);
   const result = await db.execute(sql`
     with customers as (
       select p.id,coalesce(nullif(p.full_name,''),p.email,'Zákazník') as name,p.email,
@@ -80,7 +80,7 @@ export async function creditCustomers(input: {
       from credit_account a where a.guest_email is not null
         and not exists(select 1 from profiles p where lower(p.email)=a.guest_email)
     ) select *,count(*) over()::int as total from customers
-    where (name ilike ${q} or email ilike ${q})
+    where (translate(lower(coalesce(name,'')), 'áčďéěíňóřšťúůýž', 'acdeeinorstuuyz') like ${q} or lower(coalesce(email,'')) like ${q})
       and (${input.balance} <> 'positive' or balance-reserved>0)
       and (${input.balance} <> 'zero' or balance-reserved=0)
       and (${input.registration} <> 'registered' or registered)
@@ -89,7 +89,6 @@ export async function creditCustomers(input: {
     limit 21 offset ${(input.page - 1) * 20}`);
   return result as unknown as CreditCustomer[];
 }
-export const newCreditOperationId = () => randomUUID();
 
 export async function confirmChangeRefund(
   id: string,
