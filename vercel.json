@@ -1,7 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
-    { "path": "/api/cron/sync-instagram", "schedule": "*/30 * * * *" },
+    {
+      "path": "/api/cron/sync-instagram",
+      "schedule": "*/30 * * * *"
+    },
     {
       "path": "/api/cron/watchdog",
       "schedule": "* * * * *"
@@ -29,7 +32,8 @@
       "codex/inline-content-editor": false,
       "codex/single-announcement-banner": false,
       "codex/editable-public-notices": false,
-      "codex/instagram-feed": false
+      "codex/instagram-feed": false,
+      "codex/customer-credits": false
     }
   },
   "regions": ["cdg1"]

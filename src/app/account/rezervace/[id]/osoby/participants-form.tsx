@@ -1,4 +1,5 @@
 "use client";
+import { creditTender } from "@/lib/config/credits";
 import { useRouter } from "next/navigation";
 import { useActionForm } from "@/components/admin/use-action-form";
 import {
@@ -20,11 +21,15 @@ export function ParticipantsForm({
   fromCount,
   pricing,
   fixedTarget,
+  availableCreditCents = 0,
+  heldCreditCents,
 }: {
   reservationId: string;
   fromCount: number;
   pricing: ParticipantPricing;
   fixedTarget?: number;
+  availableCreditCents?: number;
+  heldCreditCents?: number;
 }) {
   const router = useRouter();
   const { form, submit, serverError, success } = useActionForm({
@@ -32,6 +37,13 @@ export function ParticipantsForm({
     action: async (input) => {
       const result = await addParticipantsAction({
         ...input,
+        quotedCreditCents:
+          heldCreditCents ??
+          creditTender(
+            participantAdditionPrice(fromCount, input.toCount, pricing),
+            availableCreditCents,
+            Boolean(input.useCredits),
+          ),
         quotedCents: participantAdditionPrice(
           fromCount,
           input.toCount,
@@ -50,6 +62,10 @@ export function ParticipantsForm({
     },
     defaultValues: {
       reservationId,
+      useCredits:
+        heldCreditCents !== undefined
+          ? heldCreditCents > 0
+          : availableCreditCents > 0,
       toCount: fixedTarget ?? fromCount + 1,
       quotedCents: participantAdditionPrice(
         fromCount,
@@ -61,6 +77,14 @@ export function ParticipantsForm({
   });
   const toCount = form.watch("toCount");
   const price = participantAdditionPrice(fromCount, toCount, pricing);
+  const usedCredits =
+    heldCreditCents ??
+    creditTender(
+      price,
+      availableCreditCents,
+      Boolean(form.watch("useCredits")),
+    );
+  const cashDue = price - usedCredits;
   return (
     <form onSubmit={submit} noValidate>
       <Field
@@ -94,13 +118,30 @@ export function ParticipantsForm({
           ? "Další osoba je zahrnutá v jednotném příplatku za doprovod. Přidá se po vašem potvrzení."
           : "Doprovod se přidá až po ověřené úhradě. Původní rezervace a vstupní kód zůstávají platné."}
       </p>
+      {availableCreditCents > 0 && fixedTarget === undefined ? (
+        <label className="mb-4 flex items-center gap-3 text-sm font-bold">
+          <input
+            type="checkbox"
+            disabled={form.formState.isSubmitting}
+            {...form.register("useCredits")}
+          />
+          Použít kredity: {formatMoney(usedCredits)} · zbývá{" "}
+          {formatMoney(cashDue)}
+        </label>
+      ) : null}
+      {heldCreditCents !== undefined && heldCreditCents > 0 ? (
+        <p className="mb-4 text-sm">
+          V původní platbě rezervováno {formatMoney(heldCreditCents)} kreditů;
+          přes bránu zbývá {formatMoney(cashDue)}.
+        </p>
+      ) : null}
       <FormFeedback error={serverError} success={success} />
       <SubmitButton isSubmitting={form.formState.isSubmitting}>
         {fixedTarget !== undefined
           ? "Pokračovat v původní platbě"
-          : price === 0
+          : cashDue === 0
             ? "Potvrdit přidání osoby"
-            : `Zaplatit doplatek ${formatMoney(price)}`}
+            : `Zaplatit doplatek ${formatMoney(cashDue)}`}
       </SubmitButton>
     </form>
   );

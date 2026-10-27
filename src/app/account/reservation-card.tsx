@@ -45,6 +45,7 @@ export function ReservationCard({
             label={label}
             price={{
               priceCents: r.priceCents,
+              creditPaidCents: r.creditPaidCents,
               currency: r.currency,
               loyaltyReward: r.loyaltyReward,
               additionalPeoplePaidCents: r.additionalPeoplePaidCents,

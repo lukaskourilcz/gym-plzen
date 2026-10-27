@@ -265,6 +265,50 @@ export function createComgateClient(
         return { found: false, error: failure("getPayment", error) };
       }
     },
+    async refundPayment(
+      id: string,
+      amount: number,
+      reference: string,
+    ): Promise<{ accepted: boolean; ambiguous: boolean }> {
+      if (
+        !configured ||
+        !idSchema.safeParse(id).success ||
+        !Number.isSafeInteger(amount) ||
+        amount <= 0 ||
+        !idSchema.safeParse(reference).success
+      )
+        throw new Error("comgate_invalid_refund");
+      try {
+        const response = await request(`${API}/refund.json`, {
+          method: "POST",
+          headers,
+          json: {
+            transId: id,
+            amount,
+            refId: reference,
+            test: config.testMode,
+          },
+          retries: 0,
+          redirect: "error",
+          cache: "no-store",
+        });
+        return {
+          accepted: z.object({ code: z.literal(0) }).safeParse(response)
+            .success,
+          ambiguous: !z.object({ code: z.number().int() }).safeParse(response)
+            .success,
+        };
+      } catch (error) {
+        failure("refundPayment", error);
+        return {
+          accepted: false,
+          ambiguous: !(
+            error instanceof HttpError &&
+            [400, 401, 403, 404, 405, 422, 429].includes(error.status)
+          ),
+        };
+      }
+    },
     verifyNotification(input: unknown): boolean {
       if (!configured) return false;
       if (input instanceof URLSearchParams) {
@@ -327,4 +371,13 @@ export async function getComgatePayment(
 /** Authentication only. Caller MUST fetch status and verify the stored payment binding. */
 export function verifyComgateNotification(input: unknown): boolean {
   return isComgateConfigured() && getClient().verifyNotification(input);
+}
+
+export async function refundComgatePayment(
+  id: string,
+  amount: number,
+  reference: string,
+) {
+  if (!isComgateConfigured()) throw new Error("comgate_not_configured");
+  return getClient().refundPayment(id, amount, reference);
 }

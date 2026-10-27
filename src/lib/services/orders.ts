@@ -1,3 +1,9 @@
+import { withOperationLock } from "./operation-lock";
+import {
+  CREDIT_PRICING_VERSION,
+  CREDIT_TERMS_VERSION,
+} from "@/lib/config/credits";
+import { reserveCreditIn } from "./credits";
 import { randomBytes } from "node:crypto";
 import { and, asc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
@@ -22,11 +28,11 @@ import {
 } from "@/lib/helpers/order-pricing";
 import { isComgateConfigured } from "@/lib/integrations/comgate";
 import { createReservation, releasePendingHold } from "./reservations";
-import { countEntries, getEntryPriceCents, hasClaimedReward } from "./loyalty";
+import { countEntries, getEntryPrices, hasClaimedReward } from "./loyalty";
 import {
   getBookingHorizonDays,
   isWithinBookingHorizon,
-  resolveBookableSlot,
+  resolveBookableSlots,
 } from "./slots";
 import { claimVoucher } from "./vouchers";
 import { getOperations } from "./operations";
@@ -128,14 +134,15 @@ export async function resolveOrderSlots(
     throw new ActionError(
       `V jedné objednávce může být nejvýše ${MAX_SLOTS_PER_ORDER} termínů.`,
     );
-  const [operations, horizon] = await Promise.all([
+  const [operations, horizon, configured] = await Promise.all([
     getOperations(),
     getBookingHorizonDays(),
+    resolveBookableSlots(unique),
   ]);
   const now = new Date();
   const resolved: ResolvedSlot[] = [];
-  for (const startsAt of unique) {
-    const slot = await resolveBookableSlot(startsAt);
+  for (const [index, startsAt] of unique.entries()) {
+    const slot = configured[index];
     const date = dateKeyInTimeZone(startsAt);
     if (
       !slot ||
@@ -239,6 +246,8 @@ async function continueOwnOrder(
     userId: string | null;
     details: BookingDetails;
     voucherCode?: string;
+    useCredits?: boolean;
+    quotedCreditCents?: number;
     extraPeople?: number;
     hold?: BookingHold | null;
   },
@@ -308,6 +317,14 @@ async function continueOwnOrder(
       sameSelection &&
       held.every((row) => row.extraPeople === (params.extraPeople ?? 0))
     ) {
+      const pendingOrder = await getOrder(onlyOrder);
+      if (
+        params.quotedCreditCents !== undefined &&
+        params.quotedCreditCents !== (pendingOrder?.creditCents ?? 0)
+      )
+        throw new ActionError(
+          "Rozpracovaná platba má jiné použití kreditů. Obnovte rekapitulaci; původní platbu neměníme.",
+        );
       if (held.every(proves))
         return startOrderPayment({
           orderId: onlyOrder,
@@ -393,9 +410,9 @@ export async function quoteOrder(params: {
   const surcharge = pricing.enabled
     ? participantSurcharge(params.extraPeople ?? 0, pricing)
     : 0;
-  const prices = await Promise.all(
-    params.slots.map((slot) => getEntryPriceCents(slot.startsAt)),
-  );
+  const prices = (
+    await getEntryPrices(params.slots.map((slot) => slot.startsAt))
+  ).map((price) => price.priceCents);
   let rewards: (number | null)[] = params.slots.map(() => null);
   if (params.userId) {
     const allocated = allocateLoyaltyRewards(
@@ -428,11 +445,22 @@ export async function quoteOrder(params: {
  * reservation commit atomically under the member's row lock: either all of
  * the slots are held, or none is and the visitor learns which one is gone.
  */
-export async function startOrder(params: {
+export async function startOrder(
+  params: Parameters<typeof startOrderUnlocked>[0],
+): Promise<OrderOutcome> {
+  const identity = params.userId ?? params.details.email.trim().toLowerCase();
+  return withOperationLock(`checkout:${identity}`, () =>
+    startOrderUnlocked(params),
+  );
+}
+
+async function startOrderUnlocked(params: {
   userId: string | null;
   starts: readonly Date[];
   details: BookingDetails;
   voucherCode?: string;
+  useCredits?: boolean;
+  quotedCreditCents?: number;
   extraPeople?: number;
   /** The guest's hold cookie, when the browser sent one. */
   hold?: BookingHold | null;
@@ -456,9 +484,9 @@ export async function startOrder(params: {
       "Doprovod je momentálně vypnutý. Obnovte stránku a pokračujte bez příplatku.",
     );
 
-  const basePrices = await Promise.all(
-    slots.map((slot) => getEntryPriceCents(slot.startsAt)),
-  );
+  const basePrices = (
+    await getEntryPrices(slots.map((slot) => slot.startsAt))
+  ).map((price) => price.priceCents);
   const token = randomBytes(32).toString("hex");
   const tokenHash = hashCode(token);
   const { order, reservations } = await db.transaction(async (tx) => {
@@ -490,7 +518,9 @@ export async function startOrder(params: {
     const totalCents = prices.reduce((sum, price) => sum + price, 0);
     if (
       totalCents > 0 &&
-      (!operations.paymentsEnabled || !isComgateConfigured())
+      (!operations.paymentsEnabled || !isComgateConfigured()) &&
+      !params.useCredits &&
+      !params.voucherCode?.trim()
     )
       throw new ActionError(PAYMENTS_UNAVAILABLE);
     const allFree = totalCents === 0;
@@ -524,6 +554,16 @@ export async function startOrder(params: {
               contactPhone: params.details.phone,
               rulesAcceptedAt: params.details.acceptedAt,
               termsAcceptedAt: params.details.acceptedAt,
+              pricingVersion: CREDIT_PRICING_VERSION,
+              termsVersion: CREDIT_TERMS_VERSION,
+              priceSnapshot: {
+                baseCents: basePrices[index]!,
+                companionCents: surcharge,
+                reward: Boolean(rewards[index]),
+                purchasePriceCents: prices[index]!,
+                purchasedStartsAt: slot.startsAt.toISOString(),
+                discount: null,
+              },
               priceCents: prices[index]!,
               extraPeople,
               status: allFree ? "confirmed" : "pending",
@@ -584,7 +624,30 @@ export async function startOrder(params: {
       );
       await applyOrderPrices(
         order.id,
-        paid.map((row, index) => ({ id: row.id, priceCents: finals[index]! })),
+        paid.map((item, i) => ({
+          id: item.id,
+          priceCents: finals[i]!,
+          priceSnapshot: {
+            ...item.priceSnapshot!,
+            purchasePriceCents: finals[i]!,
+            discount:
+              quote.kind === "percentage"
+                ? {
+                    kind: "percentage" as const,
+                    value: quote.value,
+                    roundingCents:
+                      finals[i]! -
+                      ((item.priceCents ?? 0) -
+                        Math.round(
+                          ((item.priceCents ?? 0) * quote.value) / 100,
+                        )),
+                  }
+                : {
+                    kind: "fixed_amount" as const,
+                    value: (item.priceCents ?? 0) - finals[i]!,
+                  },
+          },
+        })),
         quote.finalPriceCents,
         quote.voucherId,
       );
@@ -595,6 +658,38 @@ export async function startOrder(params: {
       await releasePendingOrder(order.id, "voucher_rejected");
       throw error;
     }
+  }
+
+  try {
+    if (params.userId && params.useCredits && totalCents > 0) {
+      const used = await withOrderLock(order.id, () =>
+        db.transaction(async (tx) => {
+          const amount = await reserveCreditIn(
+            tx,
+            params.userId!,
+            `order:${order.id}`,
+            totalCents,
+            true,
+          );
+          if (
+            params.quotedCreditCents !== undefined &&
+            params.quotedCreditCents !== amount
+          )
+            throw new ActionError(
+              "Dostupný kredit se změnil. Obnovte rekapitulaci a potvrďte novou částku.",
+            );
+          await tx
+            .update(bookingOrder)
+            .set({ creditCents: amount })
+            .where(eq(bookingOrder.id, order.id));
+          return amount;
+        }),
+      );
+      totalCents -= used;
+    }
+  } catch (error) {
+    await releasePendingOrder(order.id, "credit_quote_changed");
+    throw error;
   }
 
   if (totalCents === 0) {
@@ -608,7 +703,7 @@ export async function startOrder(params: {
         ...actor,
         reservationId: row.id,
         action: "reservation.confirmed",
-        summary: `Rezervace na ${formatDateTime(row.startsAt)} potvrzena, voucher ${voucherCode} pokryl celou cenu${orderNote}.`,
+        summary: `Rezervace na ${formatDateTime(row.startsAt)} potvrzena, cenu pokryla kreditní úhrada nebo voucher${orderNote}.`,
         context: { orderId: order.id, voucherCode },
       });
     for (const row of confirmed) await fulfillReservation(row.id);
@@ -623,17 +718,27 @@ export async function startOrder(params: {
       summary: `Rezervace na ${formatDateTime(row.startsAt)} vytvořena, čeká na platbu ${formatMoney(totalCents)}${orderNote}${voucherCode ? ` (voucher ${voucherCode})` : ""}.`,
       context: { orderId: order.id, totalCents, voucherCode },
     });
-  return startOrderPayment({
-    orderId: order.id,
-    userId: params.userId,
-    token,
-  });
+  try {
+    return await startOrderPayment({
+      orderId: order.id,
+      userId: params.userId,
+      token,
+    });
+  } catch (error) {
+    if (!(await hasOpenOrderPayment(order.id)))
+      await releasePendingOrder(order.id, "payment_start_failed");
+    throw error;
+  }
 }
 
-/** Persist the voucher-adjusted prices of a still-pending order at once. */
+/** Store voucher prices and their immutable purchase evidence atomically. */
 async function applyOrderPrices(
   orderId: string,
-  prices: readonly { id: string; priceCents: number }[],
+  prices: readonly {
+    id: string;
+    priceCents: number;
+    priceSnapshot: NonNullable<Reservation["priceSnapshot"]>;
+  }[],
   totalCents: number,
   voucherId: string,
 ): Promise<void> {
@@ -650,7 +755,11 @@ async function applyOrderPrices(
     for (const row of prices)
       await tx
         .update(reservation)
-        .set({ priceCents: row.priceCents, updatedAt: new Date() })
+        .set({
+          priceCents: row.priceCents,
+          priceSnapshot: row.priceSnapshot,
+          updatedAt: new Date(),
+        })
         .where(
           and(eq(reservation.id, row.id), eq(reservation.status, "pending")),
         );

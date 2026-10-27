@@ -40,7 +40,7 @@ export const deleteBlockedSlotSchema = z.object({ id: uuidSchema });
 /** Shower grace in minutes (code stays valid this long after a slot). */
 export const showerMinutesSchema = z.object({
   showerMinutes: z
-    .number({ invalid_type_error: "Zadejte číslo." })
+    .number({ error: "Zadejte číslo." })
     .int()
     .min(0, "Nesmí být záporné.")
     .max(120, "Maximálně 120 minut."),

@@ -84,14 +84,20 @@ export const NOTICE_DEFINITIONS: readonly Definition[] = [
     label: "Změna termínu",
     description:
       "Dialog ukázkové změny a potvrzení změny termínu ve skutečném zákaznickém účtu.",
-    variables: ["time", "price"],
+    variables: ["time", "price", "amount"],
     fields: [
       field("title", "Nadpis", "Změnit termín"),
       field("original", "Původní termín", "Současný termín: {time}", ["time"]),
       field(
         "body",
         "Vysvětlení změny",
-        "Vyberte nový den a čas. Změní se pouze tato rezervace; její cena zůstane stejná. Původní termín platí až do potvrzení změny.",
+        "Vyberte nový den a čas. Změní se pouze tato rezervace. Před potvrzením uvidíte cenu a případný doplatek nebo připsaný kredit. Původní termín platí až do dokončení změny.",
+      ),
+      field(
+        "creditRefund",
+        "Rozdíl vrácený do kreditů",
+        "Rozdíl {amount} připíšeme do tvých kreditů pro další platbu. Na platební kartu se nevrací.",
+        ["amount"],
       ),
       field("date", "Popisek data", "Nové datum"),
       field(
@@ -104,6 +110,18 @@ export const NOTICE_DEFINITIONS: readonly Definition[] = [
         "Vybraný nový termín a cena",
         "Nový termín: {time}\nCena zůstává {price}.",
         ["time", "price"],
+      ),
+      field(
+        "payButton",
+        "Potvrzení doplatku",
+        "Zaplatit {amount} a změnit termín",
+        ["amount"],
+      ),
+      field(
+        "creditButton",
+        "Potvrzení levnějšího termínu",
+        "Změnit termín a získat {amount} kreditů",
+        ["amount"],
       ),
       field("confirmation", "Nadpis potvrzení", "Potvrzení změny"),
       field("oldLabel", "Popisek původního termínu", "Původní"),
@@ -190,7 +208,10 @@ export function parseNoticeFields(id: NoticeId, raw: unknown): NoticeFields {
   );
 }
 export const saveNoticeSchema = z
-  .object({ id: z.enum(NOTICE_IDS), fields: z.record(z.string().trim()) })
+  .object({
+    id: z.enum(NOTICE_IDS),
+    fields: z.record(z.string(), z.string().trim()),
+  })
   .superRefine((input, ctx) => {
     const def = noticeDefinition(input.id);
     for (const key of Object.keys(input.fields))

@@ -265,7 +265,7 @@ test.describe("independent preview reservations", () => {
       .click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toContainText(
-      "Původní termín platí až do potvrzení změny",
+      "Původní termín platí až do dokončení změny",
     );
     await dialog.getByLabel("Nové datum").fill(addDaysToDateKey(date, 1));
     await dialog.getByRole("button", { name: /–/ }).first().click();

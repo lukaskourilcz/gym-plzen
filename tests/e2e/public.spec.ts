@@ -113,7 +113,7 @@ test.describe("Public site", () => {
         name: "VŠEOBECNÉ OBCHODNÍ PODMÍNKY",
       }),
     ).toBeVisible();
-    await expect(page.getByText("Účinnost od 17. 8. 2026")).toBeVisible();
+    await expect(page.getByText("Účinnost od 27. 10. 2026")).toBeVisible();
     await expect(page.locator("article > section")).toHaveCount(21);
     await expect(page.locator("article h2")).toHaveCount(21);
     await expect(
@@ -128,6 +128,12 @@ test.describe("Public site", () => {
     const target = page.locator("#clanek-21");
     await page.getByRole("link", { name: /21\. ZÁVĚREČNÁ USTANOVENÍ/ }).click();
     await expect(target).toBeInViewport();
+    await page
+      .getByRole("link", { name: "Předchozí podmínky pro starší rezervace" })
+      .click();
+    await expect(page).toHaveURL(/version=legacy/);
+    await expect(page.getByText("Účinnost od 17. 8. 2026")).toBeVisible();
+    await expect(page.locator("#clanek-8")).toContainText("nemění");
   });
 
   test("terms preserve hierarchy and reflow", async ({ page }) => {

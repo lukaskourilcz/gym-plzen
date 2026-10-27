@@ -1,5 +1,9 @@
 /** Tables touched by booking scenarios in a disposable local test database. */
 export const BOOKING_TABLES = [
+  "credit_entry",
+  "credit_hold",
+  "credit_account",
+  "reservation_change",
   "reservation_reschedule",
   "reservation_pipeline",
   "message_delivery",

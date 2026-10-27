@@ -18,10 +18,10 @@ export const createVoucherSchema = z
       .optional(),
     kind: z.enum(["percentage", "fixed_amount"]),
     value: z
-      .number({ invalid_type_error: "Zadejte hodnotu slevy." })
+      .number({ error: "Zadejte hodnotu slevy." })
       .positive("Sleva musí být vyšší než nula."),
     maxRedemptions: z
-      .number({ invalid_type_error: "Zadejte celé číslo." })
+      .number({ error: "Zadejte celé číslo." })
       .int("Limit musí být celé číslo.")
       .positive("Limit musí být vyšší než nula.")
       .optional(),

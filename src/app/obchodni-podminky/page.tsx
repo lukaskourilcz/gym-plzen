@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { footerProps, loadSiteContent } from "@/lib/content/site";
 import {
   DEFAULT_TERMS_BODY,
+  LEGACY_TERMS_BODY,
+  CREDIT_TERMS_EFFECTIVE_DATE,
   TERMS_EFFECTIVE_DATE,
   TERMS_SUBTITLE,
   TERMS_TITLE,
@@ -42,9 +44,16 @@ function linkedText(text: string) {
   });
 }
 
-export default async function TermsPage() {
+export default async function TermsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ version?: string }>;
+}) {
+  const legacy = (await searchParams).version === "legacy";
   const content = await loadSiteContent();
-  const sections = parseTermsBody(DEFAULT_TERMS_BODY);
+  const sections = parseTermsBody(
+    legacy ? LEGACY_TERMS_BODY : DEFAULT_TERMS_BODY,
+  );
 
   return (
     <>
@@ -63,7 +72,20 @@ export default async function TermsPage() {
                 {TERMS_SUBTITLE}
               </p>
               <div className="mt-8 border-y border-border py-4 text-sm leading-6">
-                Účinnost od {TERMS_EFFECTIVE_DATE}
+                Účinnost od{" "}
+                {legacy ? TERMS_EFFECTIVE_DATE : CREDIT_TERMS_EFFECTIVE_DATE} ·{" "}
+                <a
+                  className="underline"
+                  href={
+                    legacy
+                      ? "/obchodni-podminky"
+                      : "/obchodni-podminky?version=legacy"
+                  }
+                >
+                  {legacy
+                    ? "Aktuální podmínky"
+                    : "Předchozí podmínky pro starší rezervace"}
+                </a>
               </div>
             </div>
           </Container>

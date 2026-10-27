@@ -69,11 +69,18 @@ export const EMAIL_TEMPLATE_DEFINITIONS: readonly EmailTemplateDefinition[] = [
     label: "Potvrzení rezervace",
     description:
       "Odešle se po úspěšné platbě nebo při bezplatném věrnostním vstupu.",
-    variables: ["{name}", "{time}", "{duration}", "{price}", "{loyalty}"],
+    variables: [
+      "{name}",
+      "{time}",
+      "{duration}",
+      "{price}",
+      "{loyalty}",
+      "{payment_summary}",
+    ],
     delivery: "application",
     fallback: {
       subject: "Potvrzení rezervace | NAVI Private Gym",
-      body: "Ahoj {name},\n\nvaše rezervace je potvrzená.\n\nTermín: {time}\nDélka: {duration}\nCena: {price}\n\n{loyalty}\n\nPřed začátkem rezervace vám pošleme osobní vstupní kód.\n\nNAVI Private Gym",
+      body: "Ahoj {name},\n\nvaše rezervace je potvrzená.\n\nTermín: {time}\nDélka: {duration}\nCena: {price}\n\n{payment_summary}\n\n{loyalty}\n\nPřed začátkem rezervace vám pošleme osobní vstupní kód.\n\nNAVI Private Gym",
     },
   },
   {
@@ -81,11 +88,18 @@ export const EMAIL_TEMPLATE_DEFINITIONS: readonly EmailTemplateDefinition[] = [
     label: "Potvrzení objednávky více termínů",
     description:
       "Odešle se po zaplacení objednávky se dvěma a více termíny, s pozvánkou do kalendáře pro každý termín. Objednávka jednoho termínu používá Potvrzení rezervace.",
-    variables: ["{name}", "{slots}", "{count}", "{total}", "{loyalty}"],
+    variables: [
+      "{name}",
+      "{slots}",
+      "{count}",
+      "{total}",
+      "{loyalty}",
+      "{payment_summary}",
+    ],
     delivery: "application",
     fallback: {
       subject: "Potvrzení objednávky | NAVI Private Gym",
-      body: "Ahoj {name},\n\nvaše objednávka je potvrzená. Rezervovali jste {count}:\n\n{slots}\n\nCelkem: {total}\n\n{loyalty}\n\nPřed začátkem každého termínu vám pošleme osobní vstupní kód, platný jen pro daný termín.\n\nNAVI Private Gym",
+      body: "Ahoj {name},\n\nvaše objednávka je potvrzená. Rezervovali jste {count}:\n\n{slots}\n\nCelkem: {total}\n\n{payment_summary}\n\n{loyalty}\n\nPřed začátkem každého termínu vám pošleme osobní vstupní kód, platný jen pro daný termín.\n\nNAVI Private Gym",
     },
   },
   {
@@ -93,11 +107,17 @@ export const EMAIL_TEMPLATE_DEFINITIONS: readonly EmailTemplateDefinition[] = [
     label: "Změna termínu",
     description:
       "Odešle se po změně termínu z účtu zákazníka, s aktualizovanou pozvánkou do kalendáře v příloze.",
-    variables: ["{name}", "{previous_time}", "{time}", "{duration}"],
+    variables: [
+      "{name}",
+      "{previous_time}",
+      "{time}",
+      "{duration}",
+      "{price_summary}",
+    ],
     delivery: "application",
     fallback: {
       subject: "Změna termínu rezervace | NAVI Private Gym",
-      body: "Ahoj {name},\n\nváš termín jsme změnili.\n\nPůvodní termín: {previous_time}\nNový termín: {time}\nDélka: {duration}\n\nPůvodní čas je uvolněný a v příloze je aktualizovaná pozvánka do kalendáře. Před začátkem rezervace vám pošleme osobní vstupní kód.\n\nNAVI Private Gym",
+      body: "Ahoj {name},\n\nváš termín jsme změnili.\n\nPůvodní termín: {previous_time}\nNový termín: {time}\nDélka: {duration}\n\n{price_summary}\n\nPůvodní čas je uvolněný a v příloze je aktualizovaná pozvánka do kalendáře. Před začátkem rezervace vám pošleme osobní vstupní kód.\n\nNAVI Private Gym",
     },
   },
   {

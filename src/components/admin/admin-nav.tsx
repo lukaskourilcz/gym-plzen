@@ -48,6 +48,7 @@ const NAV_GROUPS = [
     items: [
       ["/admin/memberships", "Ceník a doprovod", Tags],
       ["/admin/members", "Členové", Users],
+      ["/admin/credits", "Kredity", HandCoins],
       ["/admin/vouchers", "Vouchery", TicketPercent],
       ["/admin/doklady", "Doklady", ReceiptText],
       ["/admin/finance", "Finance", HandCoins],

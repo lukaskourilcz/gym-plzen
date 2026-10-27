@@ -219,6 +219,7 @@ try {
           "pricing-participants.spec.ts",
           "price-period-priority.spec.ts",
           "participants-toggle.spec.ts",
+          "credits.spec.ts",
         ]),
   ]);
   console.log(

@@ -378,6 +378,44 @@ describe(
       assert.equal(claim?.status, "redeemed");
     });
 
+    test("voucher prices and purchase snapshots roll back together if evidence cannot be stored", async () => {
+      await seedVoucher({ code: "ATOMIC33", kind: "percentage", value: 33 });
+      await rows(
+        "create function reject_credit_price_evidence() returns trigger language plpgsql as $$ begin if new.price_snapshot->'discount' is not null and new.price_snapshot->'discount' <> 'null'::jsonb then raise exception 'fixture evidence failure'; end if; return new; end $$",
+      );
+      await rows(
+        "create trigger reject_credit_price_evidence before update on reservation for each row execute function reject_credit_price_evidence()",
+      );
+      try {
+        await assert.rejects(
+          startOrder({
+            userId: null,
+            starts: [slot(3), slot(4)],
+            details: details(),
+            voucherCode: "ATOMIC33",
+          }),
+          (error: unknown) =>
+            error instanceof Error &&
+            error.cause instanceof Error &&
+            /fixture evidence failure/.test(error.cause.message),
+        );
+        const held = await rows<{
+          price_cents: number;
+          price_snapshot: { discount: unknown; purchasePriceCents: number };
+        }>("select price_cents,price_snapshot from reservation");
+        assert.equal(held.length, 2);
+        for (const row of held) {
+          assert.equal(row.price_cents, PRICE);
+          assert.equal(row.price_snapshot.purchasePriceCents, PRICE);
+          assert.equal(row.price_snapshot.discount, null);
+        }
+        assert.equal(comgate.creates.length, 0);
+      } finally {
+        await rows("drop trigger reject_credit_price_evidence on reservation");
+        await rows("drop function reject_credit_price_evidence()");
+      }
+    });
+
     test("order confirmation survives a lost provider response and edited template", async () => {
       await seedVoucher({ code: "ZDARMA100", kind: "percentage", value: 100 });
       resend.loseNextAcceptedResponse();

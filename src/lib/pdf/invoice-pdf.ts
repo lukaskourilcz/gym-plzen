@@ -36,6 +36,7 @@ export interface InvoiceDocument {
   /** Lines of a multi-slot order; empty for a single item. */
   items: { description: string; totalCents: number }[];
   totalCents: number;
+  creditCents?: number;
   baseCents: number;
   vatCents: number;
   vatRatePercent: number;
@@ -295,10 +296,17 @@ export async function renderInvoicePdf(doc: InvoiceDocument): Promise<Buffer> {
     .font(regular)
     .fontSize(9)
     .fillColor(MUTED)
-    .text("Uhrazeno online přes platební bránu Comgate.", left, pdf.y + 16, {
-      width,
-      align: "right",
-    });
+    .text(
+      doc.creditCents
+        ? `Uhrazeno kreditem ${czk(doc.creditCents, true)}${doc.totalCents > doc.creditCents ? ` a přes Comgate ${czk(doc.totalCents - doc.creditCents, true)}` : ""}.`
+        : "Uhrazeno online přes platební bránu Comgate.",
+      left,
+      pdf.y + 16,
+      {
+        width,
+        align: "right",
+      },
+    );
 
   // ── Footer ────────────────────────────────────────────────────────────────
   if (doc.supplier.registryNote) {

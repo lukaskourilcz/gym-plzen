@@ -1,3 +1,5 @@
+import { getOrder } from "@/lib/services/order-state";
+import { getCreditBalance } from "@/lib/services/credits";
 import { getParticipantPricing } from "@/lib/services/block-pricing";
 import { isComgateConfigured } from "@/lib/integrations/comgate";
 import { getOperations } from "@/lib/services/operations";
@@ -104,9 +106,10 @@ export default async function BookingDetailsPage({
   });
   const ownAt = new Map(own.map((row) => [row.startsAt.getTime(), row]));
 
+  const configured = await slots.resolveBookableSlots(starts);
   const selection = await Promise.all(
-    starts.map(async (startsAt) => {
-      const resolved = await slots.resolveBookableSlot(startsAt);
+    starts.map(async (startsAt, index) => {
+      const resolved = configured[index];
       const dateKey = dateKeyInTimeZone(startsAt);
       const endsAt = resolved?.endsAt ?? null;
       let state: SlotState = "bookable";
@@ -189,6 +192,16 @@ export default async function BookingDetailsPage({
     heldCount === bookable.length &&
     heldPeople.every((count) => count === heldPeople[0])
       ? heldPeople[0]
+      : undefined;
+
+  const heldOrderId =
+    heldCount === bookable.length
+      ? ownAt.get(bookable[0]?.startsAt.getTime() ?? 0)?.orderId
+      : null;
+  const heldOrder = heldOrderId ? await getOrder(heldOrderId) : null;
+  const heldCreditCents =
+    heldCount === bookable.length && heldCount > 0
+      ? Math.min(totalCents, heldOrder?.creditCents ?? 0)
       : undefined;
 
   return (
@@ -363,10 +376,16 @@ export default async function BookingDetailsPage({
                 key={bookable
                   .map((item) => item.startsAt.toISOString())
                   .join(",")}
+                availableCreditCents={
+                  session && !session.user.isDemo
+                    ? (await getCreditBalance(session.user.id)).availableCents
+                    : 0
+                }
                 paymentsAvailable={paymentsAvailable}
                 startsISO={bookable.map((item) => item.startsAt.toISOString())}
                 totalCents={totalCents}
                 participantPricing={participantPricing}
+                heldCreditCents={heldCreditCents}
                 heldExtraPeople={heldExtraPeople}
                 blocked={blocked > 0}
                 canSavePhone={Boolean(member) && !session?.user.isDemo}

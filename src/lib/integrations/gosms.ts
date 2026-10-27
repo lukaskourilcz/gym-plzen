@@ -70,7 +70,8 @@ export async function sendSms(params: {
     const res = await httpRequest<{ id?: string | number }>(SEND_URL, {
       method: "POST",
       headers: { authorization: `Bearer ${token}` },
-      retries: 2,
+      // A lost response can hide an accepted SMS. Never blindly POST again.
+      retries: 0,
       json: {
         message: params.message,
         recipients: params.to,

@@ -5,6 +5,7 @@ import {
   blockedSlot,
   openingHours,
   reservation,
+  reservationChange,
   siteSetting,
 } from "@/lib/db/schema";
 import type { BlockedSlot, OpeningHours, Reservation } from "@/lib/db/types";
@@ -124,6 +125,14 @@ export async function getBlockedSlot(id: string): Promise<BlockedSlot | null> {
 }
 
 export async function deleteBlockedSlot(id: string): Promise<void> {
+  const [change] = await db
+    .select({ id: reservationChange.id })
+    .from(reservationChange)
+    .where(eq(reservationChange.blockId, id));
+  if (change)
+    throw new ActionError(
+      "Tento čas drží rozpracovaná změna rezervace. Stav doplatku vyřešte v Kreditech.",
+    );
   await db.delete(blockedSlot).where(eq(blockedSlot.id, id));
 }
 

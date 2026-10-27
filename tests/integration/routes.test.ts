@@ -11,6 +11,7 @@ import {
   stopEverything,
 } from "./setup";
 import assert from "node:assert/strict";
+import { NextRequest } from "next/server";
 import { after, before, beforeEach, describe, test } from "node:test";
 
 process.env.CRON_SECRET = "test-cron-secret";
@@ -77,6 +78,26 @@ describe(
       );
       // 503 makes Comgate retry once the payment row exists; never a 200.
       assert.equal(response.status, 503);
+    });
+
+    test("webhooks reject streamed oversize bodies before signature or business work", async () => {
+      const comgate = await import("../../src/app/api/webhooks/comgate/route");
+      const whatsapp =
+        await import("../../src/app/api/webhooks/whatsapp/route");
+      for (const [path, route, size] of [
+        ["comgate", comgate.POST, 16385],
+        ["whatsapp", whatsapp.POST, 262145],
+      ] as const) {
+        const result = await route(
+          new NextRequest(`http://localhost/api/webhooks/${path}`, {
+            method: "POST",
+            body: "x".repeat(size),
+          }),
+        );
+        assert.equal(result.status, 413);
+      }
+      assert.equal((await rows("select * from webhook_event")).length, 0);
+      assert.equal((await rows("select * from message_delivery")).length, 0);
     });
 
     test("the watchdog refuses a request without the cron secret", async () => {

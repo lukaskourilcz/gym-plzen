@@ -83,6 +83,7 @@ async function announceUnlocked(
         startsAt: reservation.startsAt,
         endsAt: reservation.endsAt,
         priceCents: reservation.priceCents,
+        creditPaidCents: reservation.creditPaidCents,
         loyaltyReward: reservation.loyaltyReward,
         email: reservation.contactEmail,
       });

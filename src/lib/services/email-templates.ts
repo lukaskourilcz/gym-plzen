@@ -80,6 +80,8 @@ export interface TransactionalEmailParams {
   id: EmailTemplateId;
   to: string;
   variables: Record<string, string>;
+  /** Mandatory transaction facts, appended when an older saved template lacks the variable. */
+  requiredSummary?: { variable: string; text: string };
   attachments?: EmailAttachment[];
   idempotencyKey?: string;
   /** Where the template's button leads, when the caller knows better. */
@@ -92,6 +94,11 @@ export async function prepareTransactionalEmail(
 ): Promise<SendEmailParams> {
   const template = await getEmailTemplate(params.id);
   const rendered = renderEmailTemplateText(template, params.variables);
+  if (
+    params.requiredSummary &&
+    !template.body.includes(`{${params.requiredSummary.variable}}`)
+  )
+    rendered.body += `\n\n${params.requiredSummary.text}`;
   const definition = getEmailTemplateDefinition(params.id);
   // A template carries a button when its definition names one. The address
   // is the caller's when it passed one, otherwise the page the template has
@@ -133,6 +140,9 @@ const TEST_VARIABLES: Record<string, string> = {
   previous_time: "neděle 2. srpna 2026 v 9:00",
   duration: "75 minut",
   price: "229 Kč",
+  payment_summary: "Úhrada kredity: 100 Kč\nÚhrada platební bránou: 129 Kč",
+  price_summary:
+    "Původní cena: 259 Kč\nNová cena: 229 Kč\nPřipsaný kredit: 30 Kč",
   reason: "Úprava provozní doby",
   refund_note: "Zaplacených 229 Kč se podle obchodních podmínek nevrací.",
   loyalty:

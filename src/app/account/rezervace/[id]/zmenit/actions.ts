@@ -4,7 +4,13 @@ import { revalidatePath } from "next/cache";
 import { getSessionUser } from "@/lib/auth/guards";
 import { defineAction } from "@/lib/helpers/action";
 import type { Result } from "@/lib/helpers/result";
-import { rescheduling } from "@/lib/services";
+import {
+  quoteReschedule,
+  startPricedReschedule,
+  type ChangeOutcome,
+} from "@/lib/services/priced-rescheduling";
+import { randomUUID } from "node:crypto";
+import { ActionError } from "@/lib/helpers/action";
 import {
   rescheduleReservationSchema,
   type RescheduleReservationValues,
@@ -20,23 +26,31 @@ const rescheduleImpl = defineAction({
   schema: rescheduleReservationSchema,
   authorize: assertMember,
   handler: async (input, user) => {
-    const moved = await rescheduling.rescheduleReservation({
-      reservationId: input.reservationId,
+    const quote = await quoteReschedule(
+      user.id,
+      input.reservationId,
+      new Date(input.startsAt),
+    );
+    if (!quote.legacy && input.quotedCents === undefined)
+      throw new ActionError("Potvrďte cenu nového termínu.");
+    const outcome = await startPricedReschedule({
+      id: input.operationId ?? randomUUID(),
       userId: user.id,
+      reservationId: input.reservationId,
       startsAt: new Date(input.startsAt),
+      quotedCents: input.quotedCents ?? quote.newPriceCents,
+      useCredits: input.useCredits ?? false,
+      quotedCreditCents: input.quotedCreditCents,
     });
     revalidatePath("/account");
     revalidatePath("/rezervace");
     revalidatePath(`/account/rezervace/${input.reservationId}/zmenit`);
-    return {
-      reservationId: moved.id,
-      startsAt: moved.startsAt.toISOString(),
-    };
+    return outcome;
   },
 });
 
 export async function rescheduleReservationAction(
   input: RescheduleReservationValues,
-): Promise<Result<{ reservationId: string; startsAt: string }>> {
+): Promise<Result<ChangeOutcome>> {
   return rescheduleImpl(input);
 }

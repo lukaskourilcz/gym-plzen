@@ -70,6 +70,7 @@ export const invoice = pgTable(
     suppliedAt: timestamp("supplied_at", { withTimezone: true }).notNull(),
 
     totalCents: integer("total_cents").notNull(),
+    creditCents: integer("credit_cents").notNull().default(0),
     baseCents: integer("base_cents").notNull(),
     vatCents: integer("vat_cents").notNull(),
     vatRatePercent: integer("vat_rate_percent").notNull().default(0),

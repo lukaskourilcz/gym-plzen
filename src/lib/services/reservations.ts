@@ -1,3 +1,5 @@
+import { creditAccountForUser, postCreditIn } from "./credits";
+import { assertNoOpenChange } from "./reservation-finance-guard";
 import { formatTime } from "@/lib/helpers/format";
 import { cancellationPrice } from "@/lib/config/customer-cancellation";
 import { adminOrder, adminTotalCount } from "./admin-list-query";
@@ -21,6 +23,7 @@ import { withReservationLock } from "./operation-lock";
 import {
   invoice,
   participantAddition,
+  reservationChange,
   payment,
   reservation,
   messageDelivery,
@@ -75,6 +78,9 @@ export interface CreateReservationInput {
   contactEmail?: string | null;
   contactPhone?: string | null;
   priceCents?: number | null;
+  pricingVersion?: number;
+  termsVersion?: string;
+  priceSnapshot?: import("@/lib/config/credits").ReservationPriceSnapshot;
   extraPeople?: number;
   /** When the visitor ticked the house rules; null for admin walk-ins. */
   rulesAcceptedAt?: Date | null;
@@ -123,6 +129,9 @@ export async function createReservation(
     contactEmail: input.contactEmail ?? null,
     contactPhone: input.contactPhone ?? null,
     priceCents: input.priceCents ?? null,
+    pricingVersion: input.pricingVersion ?? 1,
+    termsVersion: input.termsVersion,
+    priceSnapshot: input.priceSnapshot,
     extraPeople: input.extraPeople ?? 0,
     rulesAcceptedAt: input.rulesAcceptedAt ?? null,
     termsAcceptedAt: input.termsAcceptedAt ?? null,
@@ -201,6 +210,7 @@ export async function cancelReservation(
 async function cancelReservationLocked(
   params: CancelReservationParams,
 ): Promise<void> {
+  await assertNoOpenChange(params.id);
   // Read it before it changes: only a confirmed reservation disappearing is
   // news for the operator. A pending hold that expired or a rejected voucher
   // is the system tidying up after itself.
@@ -235,6 +245,31 @@ async function cancelReservationLocked(
         before.orderId,
         tx,
       );
+    if (params.byAdminId && before.status === "confirmed" && before.userId) {
+      const companions = await tx
+        .select()
+        .from(participantAddition)
+        .where(
+          and(
+            eq(participantAddition.reservationId, before.id),
+            eq(participantAddition.status, "confirmed"),
+          ),
+        );
+      const creditRefund =
+        before.creditPaidCents +
+        companions.reduce((sum, item) => sum + item.creditCents, 0);
+      if (creditRefund > 0) {
+        const account = await creditAccountForUser(before.userId, tx);
+        await postCreditIn(tx, {
+          accountId: account.id,
+          amountCents: creditRefund,
+          key: `operator-cancel:${before.id}`,
+          reason: "Vrácení kreditní úhrady po zrušení provozovatelem",
+          reservationId: before.id,
+          actorId: params.byAdminId,
+        });
+      }
+    }
     if (before.status === "confirmed" && email) {
       await tx
         .insert(messageDelivery)
@@ -309,23 +344,56 @@ async function cancelReservationLocked(
     (sum, row) => sum + row.amountCents,
     0,
   );
+  const changePayments = await db
+    .select({
+      id: payment.id,
+      providerPaymentId: payment.providerPaymentId,
+      amountCents: payment.amountCents,
+    })
+    .from(payment)
+    .innerJoin(
+      reservationChange,
+      eq(payment.reservationChangeId, reservationChange.id),
+    )
+    .where(
+      and(
+        eq(reservationChange.reservationId, before.id),
+        eq(reservationChange.status, "completed"),
+        eq(payment.status, "succeeded"),
+      ),
+    );
+  const currentCash = Math.max(
+    0,
+    (before.priceCents ?? 0) - before.creditPaidCents,
+  );
+  const originalCash = Math.max(
+    0,
+    (before.priceSnapshot?.purchasePriceCents ?? before.priceCents ?? 0) -
+      (before.priceSnapshot?.purchaseCreditCents ?? 0),
+  );
   const originalPaidForSlot = paid
-    ? paid.orderId
-      ? (before.priceCents ?? 0)
-      : paid.amountCents
+    ? Math.min(currentCash, originalCash, paid.amountCents)
     : 0;
-  const paidForSlot = originalPaidForSlot + companionPaidCents;
+  const changeCash = Math.min(
+    Math.max(0, currentCash - originalPaidForSlot),
+    changePayments.reduce((sum, item) => sum + item.amountCents, 0),
+  );
+  const paidForSlot = originalPaidForSlot + changeCash + companionPaidCents;
   if (paidForSlot > 0 && !params.byCustomer)
     await raiseAlert({
       severity: "critical",
       dedupeKey: `refund-needed:${params.id}`,
       title: "Zrušená zaplacená rezervace vyžaduje vrácení platby",
-      body: `Rezervace na ${formatDateTime(before.startsAt)} byla zrušena. Zákazník za ni zaplatil ${formatMoney(paidForSlot, before.currency)}${paid?.orderId ? ` jako součást objednávky za ${formatMoney(paid.amountCents, paid.currency)}` : ""}${companionPaidCents > 0 ? ` (z toho doprovod ${formatMoney(companionPaidCents, before.currency)})` : ""}; ověřte nárok a stav refundace v Comgate. Samotné storno platbu nevrací.`,
+      body: `Rezervace na ${formatDateTime(before.startsAt)} byla zrušena${before.orderId ? " jako součást objednávky" : ""}. Zbývající peněžní úhrada k ověření vrácení: ${formatMoney(paidForSlot, before.currency)}. Původní platba za tento termín: ${formatMoney(originalPaidForSlot, before.currency)}, samostatný doplatek změny: ${formatMoney(changeCash, before.currency)}, dokoupený doprovod: ${formatMoney(companionPaidCents, before.currency)}. Ověřte jednotlivé platby v Comgate. Samotné storno peněžní úhradu nevrací.`,
       context: {
         reservationId: params.id,
-        paymentId: paid?.id ?? companionPayments[0]?.id,
-        orderId: paid?.orderId ?? null,
+        paymentId:
+          paid?.id ?? companionPayments[0]?.id ?? changePayments[0]?.id,
+        orderId: before.orderId ?? null,
         companionPaymentIds: companionPayments.map((row) => row.id),
+        changePaymentIds: changePayments.map((row) => row.id),
+        originalPaymentRefundCents: originalPaidForSlot,
+        changePaymentRefundCents: changeCash,
         amountCents: paidForSlot,
       },
     });

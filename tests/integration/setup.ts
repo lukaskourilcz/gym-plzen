@@ -134,6 +134,7 @@ export async function resetDatabase(): Promise<void> {
   // start with the shipping templates, just like the rest of its fixtures.
   await setSetting("messages.email.reservation_confirmation", null);
   await setSetting("messages.email.order_confirmation", null);
+  await setSetting("messages.email.reservation_rescheduled", null);
   await setSetting("messages.email.access_code", null);
   await setSetting("messages.email.access_code_evening", null);
   await setSetting("messages.access_code_evening_from", 1260);
@@ -146,6 +147,7 @@ export async function resetDatabase(): Promise<void> {
   });
   resend.reset();
   comgate.creates.length = 0;
+  comgate.refunds.length = 0;
   comgate.payments.clear();
 }
 

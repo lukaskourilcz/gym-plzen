@@ -9,10 +9,18 @@ export {
   pluralEntries,
   entriesRemainingPhrase,
 } from "@/lib/helpers/loyalty-display";
-import { and, count, eq, inArray, isNotNull, ne } from "drizzle-orm";
+import { and, count, eq, inArray, isNotNull, ne, gt, lte } from "drizzle-orm";
 import { db, type DatabaseExecutor } from "@/lib/db";
-import { reservation, openingHours } from "@/lib/db/schema";
-import { listBlockPrices } from "./block-pricing";
+import {
+  reservation,
+  openingHours,
+  siteSetting,
+  pricingPeriod,
+} from "@/lib/db/schema";
+import {
+  BLOCK_PRICING_KEY,
+  parseBlockPrices,
+} from "@/lib/config/block-pricing";
 import {
   DEFAULT_ENTRY_PRICE_CENTS,
   ENTRY_PRICE_SETTING_KEY,
@@ -21,7 +29,6 @@ import {
   type EntryPrice,
 } from "@/lib/config/pricing";
 import { getSetting } from "./cms";
-import { getActivePricingPeriod } from "./pricing-periods";
 
 /**
  * Loyalty & entry-pricing service.
@@ -166,20 +173,56 @@ export async function getStandardEntryPriceCents(): Promise<number> {
  * `at` is the visit start, not the purchase moment. All booking paths must
  * supply it so a future October visit gets the October price in September.
  */
-export async function getEntryPrice(at: Date): Promise<EntryPrice> {
-  const [standardPriceCents, period, rules, hours] = await Promise.all([
-    getStandardEntryPriceCents(),
-    getActivePricingPeriod(at),
-    listBlockPrices(),
+export async function getEntryPrices(
+  ats: readonly Date[],
+): Promise<EntryPrice[]> {
+  if (!ats.length) return [];
+  const valid = ats.filter(
+    (at) => at instanceof Date && Number.isFinite(at.getTime()),
+  );
+  const min = valid.length
+    ? new Date(Math.min(...valid.map((at) => at.getTime())))
+    : null;
+  const max = valid.length
+    ? new Date(Math.max(...valid.map((at) => at.getTime())))
+    : null;
+  const [settings, hours, periods] = await Promise.all([
+    db
+      .select({ key: siteSetting.key, value: siteSetting.value })
+      .from(siteSetting)
+      .where(
+        inArray(siteSetting.key, [ENTRY_PRICE_SETTING_KEY, BLOCK_PRICING_KEY]),
+      ),
     db.select().from(openingHours),
+    min && max
+      ? db
+          .select({
+            name: pricingPeriod.name,
+            priceCents: pricingPeriod.priceCents,
+            startsAt: pricingPeriod.startsAt,
+            endsAt: pricingPeriod.endsAt,
+          })
+          .from(pricingPeriod)
+          .where(
+            and(
+              gt(pricingPeriod.endsAt, min),
+              lte(pricingPeriod.startsAt, max),
+            ),
+          )
+      : [],
   ]);
-  return resolveEntryPrice({
-    standardPriceCents,
-    periods: period ? [period] : [],
-    blockPrices: rules,
-    hours,
-    at,
-  });
+  const stored = new Map(settings.map((row) => [row.key, row.value]));
+  const price = stored.get(ENTRY_PRICE_SETTING_KEY);
+  const standardPriceCents =
+    typeof price === "number" && price >= 0 ? price : DEFAULT_ENTRY_PRICE_CENTS;
+  const blockPrices = parseBlockPrices(stored.get(BLOCK_PRICING_KEY));
+  return ats.map((at) =>
+    resolveEntryPrice({ standardPriceCents, periods, blockPrices, hours, at }),
+  );
+}
+
+export async function getEntryPrice(at: Date): Promise<EntryPrice> {
+  return (await getEntryPrices([at]))[0]!;
 }
 
 /** Price for the requested visit start. */

@@ -1,3 +1,4 @@
+import { settleReservationChangeIn } from "./credit-change-state";
 import {
   issueAccessCode,
   listCodesForReservation,
@@ -21,6 +22,7 @@ import {
   messageDelivery,
   reservationPipeline,
   reservationReschedule,
+  reservationChange,
 } from "@/lib/db/schema";
 import type { Reservation } from "@/lib/db/types";
 import { dateKeyInTimeZone, dayOfWeek } from "@/lib/helpers/datetime";
@@ -59,6 +61,7 @@ export interface RescheduleReservationInput {
   userId: string;
   startsAt: Date;
   now?: Date;
+  financialChangeId?: string;
 }
 
 /**
@@ -92,7 +95,22 @@ async function rescheduleLocked(
     !(await abortPendingReschedule(original.id))
   )
     throw new ActionError("Rezervaci se nepodařilo změnit.");
-  const now = input.now ?? new Date();
+  const [financial] = input.financialChangeId
+    ? await db
+        .select()
+        .from(reservationChange)
+        .where(eq(reservationChange.id, input.financialChangeId))
+    : [];
+  if (
+    original.pricingVersion >= 2 &&
+    (!financial ||
+      financial.reservationId !== original.id ||
+      financial.userId !== input.userId ||
+      financial.status !== "applying" ||
+      financial.startsAt.getTime() !== input.startsAt.getTime())
+  )
+    throw new ActionError("Nejdříve potvrďte cenu změny termínu.");
+  const now = financial?.createdAt ?? input.now ?? new Date();
   if (Number.isNaN(input.startsAt.getTime()) || input.startsAt <= now) {
     throw new ActionError("Vyberte platný budoucí termín.");
   }
@@ -135,6 +153,14 @@ async function rescheduleLocked(
       if (!eligibility.eligible) {
         throw new ActionError(rescheduleReasonMessage(eligibility.reason));
       }
+
+      if (
+        financial &&
+        (financial.expiresAt <= new Date() || current.startsAt <= new Date())
+      )
+        throw new ActionError(
+          "Platnost nabídky změny vypršela. Původní rezervace zůstává zachovaná.",
+        );
 
       const [hours] = await tx
         .select()
@@ -183,6 +209,9 @@ async function rescheduleLocked(
           and(
             lt(blockedSlot.startsAt, target.endsAt),
             gt(blockedSlot.endsAt, target.startsAt),
+            financial?.blockId
+              ? ne(blockedSlot.id, financial.blockId)
+              : undefined,
           ),
         )
         .limit(1);
@@ -254,15 +283,27 @@ async function rescheduleLocked(
       const available = await checkAvailability(
         target.startsAt,
         target.endsAt,
-        { excludeReservationId: current.id },
+        {
+          excludeReservationId: current.id,
+          excludeBlockedSlotId: financial?.blockId ?? undefined,
+        },
         tx,
       );
-      if (!available.available || target.startsAt <= new Date())
+      if (
+        !available.available ||
+        target.startsAt <= new Date() ||
+        (financial &&
+          (financial.expiresAt <= new Date() || current.startsAt <= new Date()))
+      )
         throw new ActionError("Tento termín není k dispozici.");
+      const financialFields = input.financialChangeId
+        ? await settleReservationChangeIn(tx, input.financialChangeId, current)
+        : {};
       const changedAt = new Date();
       const [moved] = await tx
         .update(reservation)
         .set({
+          ...financialFields,
           startsAt: target.startsAt,
           endsAt: target.endsAt,
           rescheduleStartsAt: null,

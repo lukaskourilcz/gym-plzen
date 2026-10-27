@@ -1,3 +1,4 @@
+import { synchronizeChangePayment } from "./priced-rescheduling";
 import { synchronizeParticipantPayment } from "./participants";
 import { randomBytes } from "node:crypto";
 import {
@@ -10,6 +11,7 @@ import {
   isNull,
   lt,
   or,
+  sql,
 } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
@@ -108,6 +110,13 @@ export async function startOrderPayment(params: {
       slots[0]!.startsAt <= new Date()
     )
       throw new ActionError("Tuto objednávku nelze uhradit.");
+    if (order.creditCents === order.totalCents) {
+      const confirmed = await db.transaction((tx) =>
+        confirmOrderIn(tx, order.id),
+      );
+      for (const slot of confirmed) await fulfillReservation(slot.id);
+      return { kind: "free", orderId: order.id, token: params.token };
+    }
     if (!(await getOperations()).paymentsEnabled || !isComgateConfigured())
       throw new ActionError(
         "Online platby se připravují. Rezervace je platná pouze po úhradě.",
@@ -142,7 +151,7 @@ export async function startOrderPayment(params: {
         orderId: order.id,
         type: "one_off",
         status: "processing",
-        amountCents: order.totalCents,
+        amountCents: order.totalCents - order.creditCents,
         currency: order.currency,
         provider: "comgate",
         providerMerchantId: env.COMGATE_MERCHANT_ID,
@@ -153,7 +162,7 @@ export async function startOrderPayment(params: {
     if (!attempt) throw new Error("Payment attempt missing");
     const outcome = await createComgatePayment({
       orderNumber: attempt.id,
-      amountMinor: order.totalCents,
+      amountMinor: order.totalCents - order.creditCents,
       payer: {
         email: order.contactEmail,
         ...splitFullName(order.contactName ?? ""),
@@ -202,7 +211,7 @@ export async function startOrderPayment(params: {
       kind: "checkout",
       url: outcome.payment.gwUrl!,
       orderId: order.id,
-      totalCents: order.totalCents,
+      totalCents: order.totalCents - order.creditCents,
       token,
     };
   });
@@ -529,7 +538,10 @@ export async function synchronizeComgatePayment(
   // Never let a public callback trigger arbitrary provider lookups.
   if (
     !known ||
-    (!known.reservationId && !known.orderId && !known.participantAdditionId)
+    (!known.reservationId &&
+      !known.orderId &&
+      !known.participantAdditionId &&
+      !known.reservationChangeId)
   )
     return false;
   if (
@@ -538,6 +550,8 @@ export async function synchronizeComgatePayment(
     known.providerEnvironment !== env.COMGATE_TEST_MODE
   )
     throw new Error("Payment environment mismatch");
+  if (known.reservationChangeId)
+    return synchronizeChangePayment(known, providerId);
   if (known.participantAdditionId)
     return synchronizeParticipantPayment(known, providerId);
   if (known.orderId)
@@ -822,7 +836,11 @@ export async function reconcilePendingPayments(limit = 10) {
         ),
       ),
     )
-    .orderBy(asc(payment.lastCheckedAt))
+    .orderBy(
+      sql`${payment.lastCheckedAt} asc nulls first`,
+      asc(payment.createdAt),
+      asc(payment.id),
+    )
     .limit(limit);
   for (const attempt of unknown) {
     await raiseAlert({
@@ -859,7 +877,11 @@ export async function reconcilePendingPayments(limit = 10) {
         ),
       ),
     )
-    .orderBy(asc(payment.lastCheckedAt))
+    .orderBy(
+      sql`${payment.lastCheckedAt} asc nulls first`,
+      asc(payment.createdAt),
+      asc(payment.id),
+    )
     .limit(limit);
   let completed = 0;
   for (const row of rows)

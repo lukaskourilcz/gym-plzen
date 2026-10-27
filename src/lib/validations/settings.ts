@@ -60,7 +60,7 @@ export const emailTemplateTestSchema = z.object({
 /** How far ahead visitors may book, in days including today. */
 export const bookingHorizonSchema = z.object({
   horizonDays: z
-    .number({ invalid_type_error: "Zadejte číslo." })
+    .number({ error: "Zadejte číslo." })
     .int("Zadejte celé číslo.")
     .min(MIN_BOOKING_HORIZON_DAYS, `Nejméně ${MIN_BOOKING_HORIZON_DAYS} dní.`)
     .max(MAX_BOOKING_HORIZON_DAYS, `Nejvýše ${MAX_BOOKING_HORIZON_DAYS} dní.`),
@@ -101,7 +101,7 @@ export const billingProfileSchema = z.object({
   ico: z.string().trim().max(20, "IČO může mít nejvýše 20 znaků."),
   dic: z.string().trim().max(20, "DIČ může mít nejvýše 20 znaků."),
   vatRatePercent: z
-    .number({ invalid_type_error: "Zadejte číslo." })
+    .number({ error: "Zadejte číslo." })
     .int("Zadejte celé číslo.")
     .min(0, "Sazba nemůže být záporná.")
     .max(MAX_VAT_RATE_PERCENT, "Sazba může být nejvýše 100 %."),

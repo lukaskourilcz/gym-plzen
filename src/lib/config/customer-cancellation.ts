@@ -2,6 +2,7 @@ import { formatMoney } from "@/lib/helpers/format";
 
 export interface CancellationPrice {
   priceCents: number | null;
+  creditPaidCents?: number;
   currency: string;
   loyaltyReward: number | null;
   additionalPeoplePaidCents: number;
@@ -28,7 +29,7 @@ export function cancellationPrice(value: CancellationPrice) {
       (amount === null
         ? "Zrušením nevzniká nárok na vrácení platby."
         : amount > 0
-          ? `Zaplacených ${price} se podle obchodních podmínek nevrací.`
+          ? `Zaplacených ${price} se podle obchodních podmínek nevrací.${value.creditPaidCents ? " Nevrací se ani část uhrazená kreditem." : ""}`
           : bonus
             ? "Jedná se o bonusový 10. vstup zdarma, nebyla za něj uhrazena žádná částka."
             : "Za tento vstup nebyla uhrazena žádná částka, není tedy co vracet.") +

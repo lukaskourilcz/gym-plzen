@@ -9,7 +9,7 @@ export const saveBlockPriceSchema = z
     startMinute: z.number().int().min(0).max(1439),
     endMinute: z.number().int().min(1).max(1440),
     priceCzk: z
-      .number({ invalid_type_error: "Zadejte cenu." })
+      .number({ error: "Zadejte cenu." })
       .int("Cena musí být v celých korunách.")
       .min(1)
       .max(10_000),
@@ -21,11 +21,7 @@ export const saveBlockPriceSchema = z
 export const deleteBlockPriceSchema = z.object({ id: uuidSchema });
 export const setParticipantsEnabledSchema = z.object({ enabled: z.boolean() });
 export const saveParticipantPricingSchema = z.object({
-  priceCzk: z
-    .number({ invalid_type_error: "Zadejte cenu." })
-    .int()
-    .min(0)
-    .max(10_000),
+  priceCzk: z.number({ error: "Zadejte cenu." }).int().min(0).max(10_000),
   mode: z.enum(["flat", "per_person"]),
 });
 export type SaveBlockPriceValues = z.infer<typeof saveBlockPriceSchema>;

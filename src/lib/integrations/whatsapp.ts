@@ -62,7 +62,7 @@ export async function sendTemplateMessage(params: {
       {
         method: "POST",
         headers: authHeader(),
-        retries: 2,
+        retries: 0,
         json: {
           messaging_product: "whatsapp",
           to: params.to,
@@ -85,7 +85,10 @@ export async function sendTemplateMessage(params: {
         },
       },
     );
-    return { sent: true, providerMessageId: res.messages?.[0]?.id };
+    const id = res.messages?.[0]?.id;
+    return typeof id === "string" && id
+      ? { sent: true, providerMessageId: id }
+      : { sent: false, error: "whatsapp_acceptance_unconfirmed" };
   } catch (e) {
     logger.error(e, { where: "whatsapp.sendTemplateMessage" });
     return { sent: false, error: e instanceof Error ? e.message : "unknown" };
@@ -106,7 +109,7 @@ export async function sendTextMessage(params: {
       {
         method: "POST",
         headers: authHeader(),
-        retries: 2,
+        retries: 0,
         json: {
           messaging_product: "whatsapp",
           to: params.to,
@@ -115,7 +118,10 @@ export async function sendTextMessage(params: {
         },
       },
     );
-    return { sent: true, providerMessageId: res.messages?.[0]?.id };
+    const id = res.messages?.[0]?.id;
+    return typeof id === "string" && id
+      ? { sent: true, providerMessageId: id }
+      : { sent: false, error: "whatsapp_acceptance_unconfirmed" };
   } catch (e) {
     logger.error(e, { where: "whatsapp.sendTextMessage" });
     return { sent: false, error: e instanceof Error ? e.message : "unknown" };

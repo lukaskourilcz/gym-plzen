@@ -1,4 +1,10 @@
 "use client";
+import {
+  changedReservationPrice,
+  creditTender,
+  type ReservationPriceSnapshot,
+} from "@/lib/config/credits";
+import { formatMoney } from "@/lib/helpers/format";
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -32,10 +38,16 @@ export function RescheduleCalendar({
   reservationId,
   originalLabel,
   initial,
+  priceCents,
+  priceSnapshot,
+  availableCreditCents,
 }: {
   reservationId: string;
   originalLabel: string;
   initial: CalendarView;
+  priceCents: number;
+  priceSnapshot: ReservationPriceSnapshot | null;
+  availableCreditCents: number;
 }) {
   const copy = usePublicNotices().reschedule;
   const { view, loading, refresh } = useCalendarAvailability(initial);
@@ -56,6 +68,10 @@ export function RescheduleCalendar({
   const [serverError, setServerError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [interrupted, setInterrupted] = useState(false);
+  const [useCredits, setUseCredits] = useState(availableCreditCents > 0);
+  const operationRef = useRef<string | null>(null);
+  const targetPrice = (price: number) =>
+    priceSnapshot ? changedReservationPrice(price, priceSnapshot) : priceCents;
   const grid = monthGrid(monthKey);
   const byDate = new Map(days.map((day) => [day.dateKey, day]));
   const selectedDay = selectedDateKey ? byDate.get(selectedDateKey) : undefined;
@@ -66,6 +82,16 @@ export function RescheduleCalendar({
   const selectedSlot = availableSlots.find(
     (slot) => slot.startISO === selectedStartISO,
   );
+  const newPrice = selectedSlot
+    ? targetPrice(selectedSlot.priceCents)
+    : priceCents;
+  const difference = newPrice - priceCents;
+  const usedCredits = creditTender(
+    Math.max(0, difference),
+    availableCreditCents,
+    useCredits,
+  );
+  const cashDue = Math.max(0, difference) - usedCredits;
   // Paging back stops at the first bookable month; the ones before it hold no
   // day this reservation could move to.
   const minMonth = minDateKey.slice(0, 7);
@@ -161,6 +187,11 @@ export function RescheduleCalendar({
     const response = await receiveAction(() =>
       rescheduleReservationAction({
         reservationId,
+        operationId:
+          operationRef.current ?? (operationRef.current = crypto.randomUUID()),
+        quotedCents: newPrice,
+        quotedCreditCents: usedCredits,
+        useCredits,
         startsAt: selectedSlot.startISO,
       }),
     );
@@ -185,6 +216,15 @@ export function RescheduleCalendar({
     // a second, competing request for the same route, which the browser saw
     // end as "Connection closed" when one of them was abandoned.
     window.dispatchEvent(new Event(CALENDAR_CHANGE_EVENT));
+    if (result.data.kind === "checkout") {
+      window.location.assign(result.data.url);
+      return;
+    }
+    if (result.data.kind === "processing") {
+      router.push(`${basePath}?change_id=${result.data.changeId}`);
+      router.refresh();
+      return;
+    }
     router.push("/account?zmena=uspesna");
   };
 
@@ -444,6 +484,7 @@ export function RescheduleCalendar({
                   variant="outline"
                   aria-pressed={selected}
                   onClick={() => {
+                    operationRef.current = null;
                     setSelectedStartISO(slot.startISO);
                     setServerError(null);
                   }}
@@ -464,7 +505,12 @@ export function RescheduleCalendar({
                           : "text-muted-foreground",
                       )}
                     >
-                      {slot.durationMinutes} min · bez doplatku
+                      {slot.durationMinutes} min ·{" "}
+                      {targetPrice(slot.priceCents) === priceCents
+                        ? "bez doplatku"
+                        : targetPrice(slot.priceCents) > priceCents
+                          ? `doplatek ${formatMoney(targetPrice(slot.priceCents) - priceCents)}`
+                          : `+${formatMoney(priceCents - targetPrice(slot.priceCents))} kreditů`}
                     </span>
                   </span>
                   <span className="text-xs font-extrabold">
@@ -509,6 +555,44 @@ export function RescheduleCalendar({
                 </dl>
               </div>
             </div>
+            <dl className="mt-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <dt>Původní cena</dt>
+                <dd>{formatMoney(priceCents)}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt>Nová cena</dt>
+                <dd>{formatMoney(newPrice)}</dd>
+              </div>
+              {usedCredits > 0 ? (
+                <div className="flex justify-between">
+                  <dt>Úhrada kreditem</dt>
+                  <dd>−{formatMoney(usedCredits)}</dd>
+                </div>
+              ) : null}
+            </dl>
+            {difference > 0 && availableCreditCents > 0 ? (
+              <label className="mt-4 flex items-center gap-3 text-sm font-bold">
+                <input
+                  type="checkbox"
+                  disabled={isSubmitting || interrupted}
+                  checked={useCredits}
+                  onChange={(e) => {
+                    setUseCredits(e.target.checked);
+                    operationRef.current = null;
+                  }}
+                />
+                Použít dostupné kredity ({formatMoney(availableCreditCents)})
+              </label>
+            ) : null}
+            {difference < 0 ? (
+              <p className="mt-4 text-sm font-bold">
+                {(
+                  copy.creditRefund ||
+                  "Rozdíl {amount} připíšeme do tvých kreditů pro další platbu. Na platební kartu se nevrací."
+                ).replace("{amount}", formatMoney(-difference))}
+              </p>
+            ) : null}
             <Button
               type="button"
               size="lg"
@@ -516,7 +600,18 @@ export function RescheduleCalendar({
               disabled={isSubmitting || interrupted || loading}
               onClick={confirmChange}
             >
-              {isSubmitting ? "Měním termín…" : copy.confirm}
+              {isSubmitting
+                ? "Zpracovávám…"
+                : cashDue > 0
+                  ? (
+                      copy.payButton || "Zaplatit {amount} a změnit termín"
+                    ).replace("{amount}", formatMoney(cashDue))
+                  : difference < 0
+                    ? (
+                        copy.creditButton ||
+                        "Změnit termín a získat {amount} kreditů"
+                      ).replace("{amount}", formatMoney(-difference))
+                    : copy.confirm}
             </Button>
             <p className="mt-3 text-xs leading-5 text-muted-foreground">
               {copy.note}

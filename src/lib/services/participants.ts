@@ -1,3 +1,10 @@
+import { randomUUID } from "node:crypto";
+import {
+  assertCreditFundingIn,
+  reserveCreditIn,
+  finishCreditIn,
+} from "./credits";
+import { ownReservationChange } from "./priced-rescheduling";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
@@ -91,9 +98,13 @@ export async function addParticipants(params: {
   reservationId: string;
   toCount: number;
   quotedCents: number;
+  useCredits?: boolean;
+  quotedCreditCents?: number;
 }): Promise<ParticipantOutcome> {
   assertExtraPeople(params.toCount);
   return withReservationLock(params.reservationId, async () => {
+    if (await ownReservationChange(params.userId, params.reservationId))
+      throw new ActionError("Nejdříve dokončete probíhající změnu termínu.");
     const pricing = await getParticipantPricing();
     if (!pricing.enabled)
       throw new ActionError("Doprovod je momentálně vypnutý. Obnovte stránku.");
@@ -127,6 +138,14 @@ export async function addParticipants(params: {
           throw new ActionError(
             "Nejdříve dokončete rozpracovanou platbu za doprovod.",
           );
+        if (
+          params.quotedCents !== existing.amountCents ||
+          (params.quotedCreditCents !== undefined &&
+            params.quotedCreditCents !== existing.creditCents)
+        )
+          throw new ActionError(
+            "Rozpracovaná platba má jiné použití kreditů nebo cenu. Obnovte stránku; původní doplatek neměníme.",
+          );
         const [attempt] = await tx
           .select()
           .from(payment)
@@ -147,8 +166,24 @@ export async function addParticipants(params: {
         throw new ActionError(
           "Příplatek se změnil. Obnovte stránku a potvrďte aktuální cenu.",
         );
+      const additionId = randomUUID();
+      const creditCents = await reserveCreditIn(
+        tx,
+        params.userId,
+        `participant:${additionId}`,
+        amountCents,
+        params.useCredits ?? false,
+      );
       if (
-        amountCents > 0 &&
+        params.quotedCreditCents !== undefined &&
+        creditCents !== params.quotedCreditCents
+      )
+        throw new ActionError(
+          "Dostupný kredit se změnil. Obnovte stránku a potvrďte nový doplatek.",
+        );
+      const cashCents = amountCents - creditCents;
+      if (
+        cashCents > 0 &&
         (!operations.paymentsEnabled || !isComgateConfigured())
       )
         throw new ActionError(
@@ -157,20 +192,27 @@ export async function addParticipants(params: {
       const [addition] = await tx
         .insert(participantAddition)
         .values({
+          id: additionId,
+          creditCents,
           reservationId: booking.id,
           userId: params.userId,
           fromCount: booking.extraPeople,
           toCount: params.toCount,
           amountCents,
           pricingMode: pricing.mode,
-          status: amountCents === 0 ? "confirmed" : "pending",
+          status: cashCents === 0 ? "confirmed" : "pending",
         })
         .returning();
       if (!addition) throw new Error("Participant addition missing");
-      if (amountCents === 0) {
+      if (cashCents === 0) {
+        await finishCreditIn(tx, `participant:${additionId}`, true, booking.id);
         await tx
           .update(reservation)
-          .set({ extraPeople: params.toCount, updatedAt: new Date() })
+          .set({
+            extraPeople: params.toCount,
+            additionalPeoplePaidCents: sql`${reservation.additionalPeoplePaidCents} + ${amountCents}`,
+            updatedAt: new Date(),
+          })
           .where(eq(reservation.id, booking.id));
         await recordIn(tx, {
           action: "reservation.participants_added",
@@ -190,7 +232,7 @@ export async function addParticipants(params: {
           userId: params.userId,
           type: "one_off",
           status: "processing",
-          amountCents,
+          amountCents: cashCents,
           currency: "czk",
           provider: "comgate",
           providerMerchantId: env.COMGATE_MERCHANT_ID,
@@ -209,7 +251,7 @@ export async function addParticipants(params: {
         : { kind: "processing", additionId: addition.id };
     const outcome = await createComgatePayment({
       orderNumber: attempt.id,
-      amountMinor: addition.amountCents,
+      amountMinor: attempt.amountCents,
       payer: {
         email: booking.contactEmail ?? "",
         ...splitFullName(booking.contactName ?? ""),
@@ -231,12 +273,13 @@ export async function addParticipants(params: {
             updatedAt: new Date(),
           })
           .where(eq(payment.id, attempt.id));
-        if (!outcome.ambiguous)
+        if (!outcome.ambiguous) {
+          await finishCreditIn(tx, `participant:${addition.id}`, false);
           await tx
             .update(participantAddition)
             .set({ status: "failed", updatedAt: new Date() })
             .where(eq(participantAddition.id, addition.id));
-        else
+        } else
           await tx.insert(systemAlert).values({
             severity: "critical",
             dedupeKey: `payment-unknown:${attempt.id}`,
@@ -344,6 +387,18 @@ export async function synchronizeParticipantPayment(
             eligible(booking, intent.userId) &&
             booking.extraPeople === intent.fromCount
           ) {
+            await assertCreditFundingIn(
+              tx,
+              `participant:${intent.id}`,
+              intent.creditCents,
+              intent.userId,
+            );
+            await finishCreditIn(
+              tx,
+              `participant:${intent.id}`,
+              true,
+              booking.id,
+            );
             await tx
               .update(reservation)
               .set({
@@ -366,6 +421,7 @@ export async function synchronizeParticipantPayment(
               context: { additionId: intent.id, paymentId: current.id },
             });
           } else {
+            await finishCreditIn(tx, `participant:${intent.id}`, false);
             await tx
               .update(participantAddition)
               .set({ status: "review_needed", updatedAt: new Date() })
@@ -385,6 +441,7 @@ export async function synchronizeParticipantPayment(
             });
           }
         } else if (status === "failed" && intent.status === "pending") {
+          await finishCreditIn(tx, `participant:${intent.id}`, false);
           await tx
             .update(participantAddition)
             .set({ status: "failed", updatedAt: new Date() })

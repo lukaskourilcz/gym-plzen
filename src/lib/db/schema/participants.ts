@@ -26,6 +26,7 @@ export const participantAddition = pgTable(
     fromCount: integer("from_count").notNull(),
     toCount: integer("to_count").notNull(),
     amountCents: integer("amount_cents").notNull(),
+    creditCents: integer("credit_cents").notNull().default(0),
     pricingMode: text("pricing_mode").notNull(),
     status: text("status")
       .$type<"pending" | "confirmed" | "failed" | "review_needed">()

@@ -14,9 +14,7 @@ import { MAX_SLOTS_PER_ORDER } from "@/lib/config/orders";
 
 /** An unticked checkbox arrives as `false`, which this rejects by design. */
 const consentSchema = z.literal(true, {
-  errorMap: () => ({
-    message: "Bez tohoto souhlasu nelze rezervaci dokončit.",
-  }),
+  error: "Bez tohoto souhlasu nelze rezervaci dokončit.",
 });
 
 /** The selected slot starts of one order, as ISO strings. */
@@ -35,9 +33,10 @@ export const bookingDetailsSchema = z.object({
   email: emailSchema,
   phone: phoneSchema,
   extraPeople: z.enum(["0", "1", "2"], {
-    required_error: "Vyberte, kolik lidí přijde.",
-    invalid_type_error: "Vyberte, kolik lidí přijde.",
+    error: "Vyberte, kolik lidí přijde.",
   }),
+  useCredits: z.boolean().optional(),
+  quotedCreditCents: z.number().int().nonnegative().optional(),
   voucherCode: z.string().max(64, "Kód je příliš dlouhý.").optional(),
   /** Signed-in members only: keep this number in the profile for next time. */
   savePhone: z.boolean().optional(),

@@ -3,7 +3,7 @@ export const TERMS_SUBTITLE = "samoobslužného studia NAVI";
 export const TERMS_EFFECTIVE_DATE = "17. 8. 2026";
 
 /** Approved operator-supplied copy, formatted as one clause per paragraph. */
-export const DEFAULT_TERMS_BODY = `1. ZÁKLADNÍ USTANOVENÍ A IDENTIFIKACE PROVOZOVATELEK
+export const LEGACY_TERMS_BODY = `1. ZÁKLADNÍ USTANOVENÍ A IDENTIFIKACE PROVOZOVATELEK
 
 1.1. Samoobslužné studio NAVI (dále jen „Studio“) společně provozují:
 Klára Bílková
@@ -314,6 +314,33 @@ jiné jednání, které může způsobit závažnou škodu nebo újmu.
 21.7. Tyto VOP jsou dostupné na webových stránkách NAVI.
 
 21.8. Tyto VOP nabývají účinnosti dne 17. 8. 2026.`;
+
+/** Earlier purchases keep their accepted price policy, including clause 8.4. */
+export const DEFAULT_TERMS_BODY = LEGACY_TERMS_BODY.replace(
+  "8.1. Klient je oprávněn jednou bezplatně změnit termín rezervace, provede-li změnu nejpozději 24 hodin před začátkem původního rezervovaného termínu.",
+  "8.1. Klient je oprávněn jednou změnit termín rezervace bez poplatku za provedení změny, zahájí-li změnu nejpozději 24 hodin před začátkem původního termínu. Případný rozdíl ceny se vypořádá podle článku 8.4.",
+)
+  .replace(
+    /8\.3\. [^\n]+/,
+    "8.3. Před potvrzením změny systém zobrazí původní cenu rezervace, cenu nového termínu, použití kreditů a případný doplatek nebo připsání kreditu. Již zakoupený doprovod se přenáší; nárok na bonusový vstup zůstává zachován. Nominální cena bonusového vstupu zdarma se nepřevádí na kredit.",
+  )
+  .replace(
+    /8\.4\. [^\n]+/,
+    "8.4. Je-li nový termín dražší, Klient uhradí před dokončením změny rozdíl ceny; může na něj použít své dostupné kredity. Je-li nový termín levnější, rozdíl se po úspěšné změně připíše do kreditního účtu Klienta a nevrací se na platební kartu. Při stejné ceně nevzniká doplatek ani kredit. Do dokončení změny zůstává původní rezervace platná. Neúspěšný platební pokus není změnou termínu.",
+  )
+  .replace(
+    /8\.5\. [^\n]+/,
+    "8.5. Méně než 24 hodin před začátkem původního termínu již zákaznická změna není možná.",
+  )
+  .replace(
+    /21\.8\. [^\n]+/,
+    "21.8. Pravidla kreditů a přepočtu změny termínu se použijí pouze na rezervace zakoupené s verzí podmínek 2026-10-27-credits-v1 po jejím zveřejnění. U dříve zakoupených rezervací zůstává zachována původní cena při změně termínu podle dříve přijatých podmínek.",
+  )
+  .replace(
+    /(4\.6\. [^\n]+)/,
+    "$1\n\n4.7. Kredit je zákaznický zůstatek k úhradě služeb Studia v poměru 1 Kč kreditu za 1 Kč ceny. Lze jej použít při další rezervaci, úhradě více termínů, doplatku změny termínu nebo dokoupení doprovodu; případný zbytek se uhradí platební bránou.\n\n4.8. Kredit nemá stanovenou dobu expirace, je nepřevoditelný mezi zákazníky a nelze požadovat jeho běžný výběr v penězích. Tím nejsou dotčena práva, která nelze podle zákona omezit. Čerpání vyžaduje ověřený zákaznický účet; kredit hosta lze bezpečně přiřadit po ověření jeho identity.\n\n4.9. Zákazník vidí zůstatek a historii v profilu. Kredit rezervovaný v rozpracované platbě nelze současně použít znovu. Při neúspěšné platbě se rezervace kreditu po ověření jejího konečného stavu uvolní.\n\n4.10. Při zákaznickém stornu podle článku 8.10 se nevrací ani část úhrady provedená kreditem, bez ohledu na čas do začátku rezervace. Při zrušení ze strany Poskytovatele se oprávněná kreditní část úhrady vrátí do kreditů a peněžní část původní platební cestou, bez dvojí kompenzace již vypořádaných částek.",
+  );
+export const CREDIT_TERMS_EFFECTIVE_DATE = "27. 10. 2026";
 
 export interface TermsSubitem {
   marker: string | null;

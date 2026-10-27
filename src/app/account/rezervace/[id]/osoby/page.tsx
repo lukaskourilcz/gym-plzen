@@ -1,3 +1,4 @@
+import { getCreditBalance } from "@/lib/services/credits";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth/guards";
 import { uuidSchema } from "@/lib/validations/common";
@@ -47,6 +48,7 @@ export default async function ParticipantsPage({
     searchParams,
   ]);
   if (!booking) notFound();
+  const wallet = await getCreditBalance(user.id);
   const returned = query.addition_id
     ? additions.find((a) => a.id === query.addition_id)
     : undefined;
@@ -117,8 +119,12 @@ export default async function ParticipantsPage({
                 <>
                   <Notice title="Platba za doprovod se zpracovává">
                     Požadovaný doprovod +{pending.toCount}, doplatek{" "}
-                    {formatMoney(pending.amountCents)}. Dokončete původní
-                    platbu, případně obnovte stránku po její úhradě.
+                    {formatMoney(pending.amountCents - pending.creditCents)}
+                    {pending.creditCents > 0
+                      ? ` a rezervovaný kredit ${formatMoney(pending.creditCents)}`
+                      : ""}
+                    . Dokončete původní platbu, případně obnovte stránku po její
+                    úhradě.
                   </Notice>
                   <Button
                     variant="outline"
@@ -130,6 +136,7 @@ export default async function ParticipantsPage({
                   <ParticipantsForm
                     key={pending.id}
                     fixedTarget={pending.toCount}
+                    heldCreditCents={pending.creditCents}
                     reservationId={id}
                     fromCount={pending.fromCount}
                     pricing={{
@@ -149,6 +156,7 @@ export default async function ParticipantsPage({
                 <ParticipantsForm
                   key={`${booking.extraPeople}:${pricing.amountCents}:${pricing.mode}`}
                   reservationId={id}
+                  availableCreditCents={wallet.availableCents}
                   fromCount={booking.extraPeople}
                   pricing={pricing}
                 />

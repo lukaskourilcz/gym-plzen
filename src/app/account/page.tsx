@@ -1,3 +1,4 @@
+import { CreditWalletPanel } from "@/components/credit-wallet-panel";
 import { getParticipantsEnabled } from "@/lib/services/block-pricing";
 import { CustomerAvatar } from "@/components/site/customer-avatar";
 import Link from "next/link";
@@ -119,6 +120,7 @@ export default async function AccountPage({
                 </p>
               </div>
             </div>
+            {!isDemoCustomer ? <CreditWalletPanel userId={user.id} /> : null}
             <nav
               aria-label="Můj účet"
               className="my-8 flex flex-wrap gap-2 border-b border-border pb-4"

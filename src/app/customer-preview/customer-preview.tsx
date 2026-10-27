@@ -1,4 +1,5 @@
 "use client";
+import { creditTender } from "@/lib/config/credits";
 
 import { useCallback, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -40,6 +41,7 @@ const INITIAL_PROFILE = {
 interface PreviewOrder {
   slots: PreviewReservation[];
   totalCents: number;
+  creditCents?: number;
   extraPeople: number;
   customer: typeof INITIAL_PROFILE;
 }
@@ -58,6 +60,14 @@ export function CustomerPreview({
   const [orders, setOrders] = useState<PreviewOrder[]>([]);
   const [pending, setPending] = useState<PreviewOrder | null>(null);
   const [message, setMessage] = useState("");
+  const [creditCents, setCreditCents] = useState(0);
+  const [pendingChange, setPendingChange] = useState<{
+    id: string;
+    startISO: string;
+    priceCents: number;
+    creditCents: number;
+    cashCents: number;
+  } | null>(null);
   const [resetKey, setResetKey] = useState(0);
   const purchased = new Set(
     orders.flatMap((order) =>
@@ -118,6 +128,7 @@ export function CustomerPreview({
         isReward: rewards[index],
       })),
       totalCents: total,
+      creditCents: creditTender(total, creditCents, Boolean(values.useCredits)),
       extraPeople: Number(values.extraPeople),
       customer: {
         firstName: values.firstName,
@@ -128,13 +139,51 @@ export function CustomerPreview({
     });
     navigate("payment");
   };
+  const applyChange = (id: string, startISO: string, priceCents: number) => {
+    const [next] = previewSelection(config, [startISO], purchased);
+    if (!next) return;
+    setOrders((all) =>
+      all.map((order) => ({
+        ...order,
+        slots: order.slots.map((slot) =>
+          slot.id === id
+            ? {
+                ...slot,
+                startISO: next.startISO,
+                label: next.label,
+                durationMinutes: next.durationMinutes,
+                changed: true,
+                priceCents,
+              }
+            : slot,
+        ),
+      })),
+    );
+  };
   const pay = () => {
+    if (pendingChange) {
+      applyChange(
+        pendingChange.id,
+        pendingChange.startISO,
+        pendingChange.priceCents,
+      );
+      setCreditCents((v) => v - pendingChange.creditCents);
+      setPendingChange(null);
+      navigate("account");
+      setMessage(
+        "Ukázkový doplatek byl ověřený a termín změněný. Žádná platba ani e-mail neodešly.",
+      );
+      return;
+    }
     if (!pending) return;
+    setCreditCents((v) => v - (pending.creditCents ?? 0));
     setOrders((previous) => [...previous, pending]);
     setPending(null);
     navigate("confirmation");
   };
   const reset = () => {
+    setCreditCents(0);
+    setPendingChange(null);
     setOrders([]);
     setPending(null);
     setProfile(INITIAL_PROFILE);
@@ -167,25 +216,30 @@ export function CustomerPreview({
   };
   const changeReservation = (id: string, startISO: string) => {
     const [next] = previewSelection(config, [startISO], purchased);
-    if (!next) return;
-    setOrders((all) =>
-      all.map((order) => ({
-        ...order,
-        slots: order.slots.map((slot) =>
-          slot.id === id
-            ? {
-                ...slot,
-                startISO: next.startISO,
-                label: next.label,
-                durationMinutes: next.durationMinutes,
-                changed: true,
-              }
-            : slot,
-        ),
-      })),
-    );
+    const original = orders
+      .flatMap((o) => o.slots)
+      .find((slot) => slot.id === id);
+    if (!next || !original) return;
+    const price = original.isReward ? 0 : next.priceCents;
+    const delta = price - original.priceCents;
+    if (delta > 0) {
+      const used = creditTender(delta, creditCents, true);
+      setPendingChange({
+        id,
+        startISO,
+        priceCents: price,
+        creditCents: used,
+        cashCents: delta - used,
+      });
+      navigate("payment");
+      return;
+    }
+    applyChange(id, startISO, price);
+    setCreditCents((v) => v - delta);
     setMessage(
-      "Změněn byl pouze vybraný ukázkový termín. Cena a ostatní rezervace zůstávají stejné. Žádný e-mail nebyl odeslán.",
+      delta < 0
+        ? `Termín byl změněný a ${formatMoney(-delta)} se připsalo do ukázkových kreditů. Žádný e-mail nebyl odeslán.`
+        : "Změněn byl pouze vybraný ukázkový termín. Cena a ostatní rezervace zůstávají stejné. Žádný e-mail nebyl odeslán.",
     );
   };
   const summary = (slots: PreviewSlot[], removable = false) => (
@@ -332,6 +386,7 @@ export function CustomerPreview({
                     <h2 className="mb-6 text-xl font-extrabold">Tvoje údaje</h2>
                     <BookingDetailsForm
                       startsISO={selected.map((s) => s.startISO)}
+                      availableCreditCents={creditCents}
                       totalCents={totalCents}
                       participantPricing={config.participants}
                       defaultValues={profile}
@@ -349,7 +404,32 @@ export function CustomerPreview({
               )
             ) : null}
             {screen === "payment" ? (
-              pending ? (
+              pendingChange ? (
+                <Card className="mt-8 max-w-2xl p-6">
+                  <Notice title="Simulace doplatku změny">
+                    Původní ukázkový termín zatím platí. Comgate se neotevře a
+                    žádné peníze se neposílají.
+                  </Notice>
+                  <p className="mt-5">
+                    Použité kredity: {formatMoney(pendingChange.creditCents)}
+                  </p>
+                  <p className="mt-2 text-xl font-bold">
+                    Doplatek: {formatMoney(pendingChange.cashCents)}
+                  </p>
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <Button onClick={pay}>Simulovat úspěšnou platbu</Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setPendingChange(null);
+                        navigate("account");
+                      }}
+                    >
+                      Ponechat původní termín
+                    </Button>
+                  </div>
+                </Card>
+              ) : pending ? (
                 <Card className="mt-8 max-w-2xl p-6 sm:p-8">
                   <Notice title="Simulace platby">
                     Platební brána Comgate se neotevře. Tlačítkem níže pouze
@@ -366,8 +446,16 @@ export function CustomerPreview({
                     </p>
                   ) : null}
                   <p className="mt-5 text-2xl font-extrabold">
-                    K platbě {formatMoney(pending.totalCents)}
+                    K platbě{" "}
+                    {formatMoney(
+                      pending.totalCents - (pending.creditCents ?? 0),
+                    )}
                   </p>
+                  {pending.creditCents ? (
+                    <p className="mt-2 text-sm">
+                      Úhrada kreditem {formatMoney(pending.creditCents)}
+                    </p>
+                  ) : null}
                   <div className="mt-6 flex flex-wrap gap-3">
                     <Button onClick={pay}>Simulovat úspěšnou platbu</Button>
                     <Button
@@ -414,6 +502,20 @@ export function CustomerPreview({
                   Přejít do mého účtu
                 </Button>
               </Card>
+            ) : null}
+            {screen === "account" ? (
+              <section
+                aria-label="Ukázkové kredity"
+                className="mt-8 rounded-lg border border-border bg-card p-5"
+              >
+                <h2 className="text-xl font-bold">Tvoje kredity</h2>
+                <p className="mt-2 text-3xl font-bold">
+                  {formatMoney(creditCents)}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Ukázkový zůstatek lze použít při další simulované platbě.
+                </p>
+              </section>
             ) : null}
             {screen === "account" ? (
               <>

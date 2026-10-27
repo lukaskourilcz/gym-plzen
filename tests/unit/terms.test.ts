@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   DEFAULT_TERMS_BODY,
+  LEGACY_TERMS_BODY,
   parseTermsBody,
 } from "../../src/lib/content/terms";
 
@@ -17,7 +18,7 @@ test("approved terms contain 21 structured sections", () => {
   assert.equal(sections.at(-1)?.clauses.at(-1)?.number, "21.8");
   assert.equal(
     sections.at(-1)?.clauses.at(-1)?.text,
-    "Tyto VOP nabývají účinnosti dne 17. 8. 2026.",
+    "Pravidla kreditů a přepočtu změny termínu se použijí pouze na rezervace zakoupené s verzí podmínek 2026-10-27-credits-v1 po jejím zveřejnění. U dříve zakoupených rezervací zůstává zachována původní cena při změně termínu podle dříve přijatých podmínek.",
   );
   assert.equal(
     sections.find((section) => section.number === "20")?.clauses.at(-1)?.text,
@@ -66,7 +67,19 @@ test("terms state the owners' decisions of 29. 9. 2026", () => {
       ?.clauses.find((item) => item.number === number)?.text ?? "";
   assert.match(DEFAULT_TERMS_BODY, /telefon: \+420 732 817 217/);
   assert.match(clause("7", "7.1"), /5 osob/);
-  assert.match(clause("8", "8.4"), /nemění/);
+  assert.match(clause("8", "8.4"), /rozdíl/);
+  assert.match(LEGACY_TERMS_BODY, /8\.4\. [^\n]*nemění/);
   assert.match(clause("8", "8.10"), /zrušit/);
   assert.match(clause("8", "8.10"), /nevrací/);
+});
+
+test("credit terms describe tender, no-expiry, cancellation and legacy protection", () => {
+  assert.match(DEFAULT_TERMS_BODY, /4\.7\. Kredit/);
+  assert.match(DEFAULT_TERMS_BODY, /nemá stanovenou dobu expirace/);
+  assert.match(
+    DEFAULT_TERMS_BODY,
+    /nevrací ani část úhrady provedená kreditem/,
+  );
+  assert.match(DEFAULT_TERMS_BODY, /2026-10-27-credits-v1/);
+  assert.doesNotMatch(LEGACY_TERMS_BODY, /4\.7\. Kredit/);
 });

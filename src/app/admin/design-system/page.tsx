@@ -72,6 +72,24 @@ export default async function DesignSystemPage() {
         description="Referenční galerie komponent. Pravidla a tokeny jsou v docs/DESIGN_SYSTEM.md."
       />
       <section
+        aria-label="Kreditní zůstatek"
+        className="my-6 rounded-lg border border-border bg-card p-6"
+      >
+        <h2 className="text-xl font-bold">Kredity zákazníka</h2>
+        <p className="mt-3 text-3xl font-bold tabular-nums">500 Kč</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Dostupný kredit · dalších 100 Kč rezervováno v platbě
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Button disabled variant="outline">
+            Spravovat kredity
+          </Button>
+          <Button disabled variant="ghost">
+            Historie kreditů
+          </Button>
+        </div>
+      </section>
+      <section
         aria-label="Správa Instagramu"
         className="my-6 rounded-lg border bg-card p-6"
       >
