@@ -52,7 +52,7 @@ export function CreditEditor({
         <AdminDialog
           busy={busy}
           title={`Kredity · ${name || email || "zákazník"}`}
-          description="Opravy se zapisují do historie. Použitý nebo rezervovaný kredit nelze odebrat."
+          description="Opravy se zapisují do historie. Utracený kredit ani kredit držený v rozpracované platbě nelze odebrat."
           onClose={() => {
             if (!busy) setOpen(false);
           }}
@@ -131,7 +131,7 @@ export function CreditEditor({
               Nový zůstatek:{" "}
               <strong>{Number.isFinite(next) ? formatMoney(next) : "—"}</strong>
               {reserved > 0
-                ? ` · z toho rezervováno ${formatMoney(reserved)}`
+                ? ` · z toho v rozpracované platbě ${formatMoney(reserved)}`
                 : ""}
             </p>
             {error ? (

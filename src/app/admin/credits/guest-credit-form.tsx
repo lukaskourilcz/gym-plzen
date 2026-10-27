@@ -7,7 +7,7 @@ export function GuestCreditForm() {
   return (
     <div className="flex flex-wrap items-end gap-3">
       <label className="grid gap-2 text-sm">
-        Kredit pro neregistrovaného zákazníka
+        Přidat kredit zákazníkovi
         <Input
           type="email"
           placeholder="E-mail zákazníka"
@@ -16,7 +16,7 @@ export function GuestCreditForm() {
         />
       </label>
       {/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) ? (
-        <CreditEditor email={email} label="Přidat kredit hostovi" />
+        <CreditEditor email={email} label="Přidat kredit" />
       ) : null}
     </div>
   );

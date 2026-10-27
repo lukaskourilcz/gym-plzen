@@ -137,7 +137,6 @@ describe("credit ledger", { skip: !databaseReady }, () => {
     });
     const guests = await creditCustomers({
       q: "new-account@example.test",
-      balance: "positive",
       registration: "guest",
       sort: "balance",
       page: 1,
@@ -145,6 +144,83 @@ describe("credit ledger", { skip: !databaseReady }, () => {
     assert.equal(guests.length, 1);
     assert.equal(guests[0]!.balance, 5000);
     assert.equal(guests[0]!.pendingClaim, true);
+  });
+  test("credit overview excludes empty and spent accounts but retains fully held credit", async () => {
+    await grant();
+    await db.transaction((tx) =>
+      reserveCreditIn(tx, userId, "fully-held", 10000, true),
+    );
+    const emptyId = "55555555-5555-4555-8555-555555555555";
+    const spentId = "66666666-6666-4666-8666-666666666666";
+    for (const [id, email] of [
+      [emptyId, "empty@example.test"],
+      [spentId, "spent@example.test"],
+    ] as const)
+      await seedProfile({ id, email, fullName: email });
+    await db.transaction(async (tx) => {
+      await creditAccountForUser(emptyId, tx);
+      const spent = await creditAccountForUser(spentId, tx);
+      await postCreditIn(tx, {
+        accountId: spent.id,
+        amountCents: 3000,
+        reason: "Spent fixture",
+        key: "spent-grant",
+      });
+      await reserveCreditIn(tx, spentId, "spent-order", 3000, true);
+      await finishCreditIn(tx, "spent-order", true);
+      const guest = await adminCreditAccount(
+        { email: "positive-guest@example.test" },
+        tx,
+      );
+      await postCreditIn(tx, {
+        accountId: guest.id,
+        amountCents: 5000,
+        reason: "Guest fixture",
+        key: "guest-grant",
+      });
+      await adminCreditAccount({ email: "empty-guest@example.test" }, tx);
+    });
+    const filters = { q: "", registration: "all", page: 1, sort: "balance" };
+    const all = await creditCustomers(filters);
+    assert.deepEqual(
+      all.map(({ email, balance, reserved, total }) => ({
+        email,
+        balance,
+        reserved,
+        total,
+      })),
+      [
+        {
+          email: "kredit@example.test",
+          balance: 10000,
+          reserved: 10000,
+          total: 2,
+        },
+        {
+          email: "positive-guest@example.test",
+          balance: 5000,
+          reserved: 0,
+          total: 2,
+        },
+      ],
+    );
+    const registered = await creditCustomers({
+      ...filters,
+      registration: "registered",
+    });
+    assert.deepEqual(
+      registered.map((row) => row.id),
+      [userId],
+    );
+    const guests = await creditCustomers({ ...filters, registration: "guest" });
+    assert.deepEqual(
+      guests.map((row) => row.email),
+      ["positive-guest@example.test"],
+    );
+    assert.equal((await creditCustomers({ ...filters, q: "empty" })).length, 0);
+    assert.equal((await creditCustomers({ ...filters, q: "spent" })).length, 0);
+    assert.equal((await getCreditWallet(userId)).reservedCents, 10000);
+    assert.equal((await getCreditWallet(spentId)).balanceCents, 0);
   });
   test("guest grants stay unclaimed until verified identity transfer, with a paired audit trail", async () => {
     await db.transaction(async (tx) => {

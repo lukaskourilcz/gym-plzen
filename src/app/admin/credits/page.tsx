@@ -41,7 +41,6 @@ export default async function CreditsPage({
   );
   const filters = {
     q: (query.q || "").slice(0, 120),
-    balance: query.balance || "all",
     registration: query.registration || "all",
     sort: query.sort || "balance",
     page,
@@ -81,14 +80,6 @@ export default async function CreditsPage({
           />
         </label>
         <label className="grid gap-2 text-sm">
-          Zůstatek
-          <Select name="balance" defaultValue={filters.balance}>
-            <option value="all">Všichni</option>
-            <option value="positive">S dostupným kreditem</option>
-            <option value="zero">Bez dostupného kreditu</option>
-          </Select>
-        </label>
-        <label className="grid gap-2 text-sm">
           Registrace
           <Select name="registration" defaultValue={filters.registration}>
             <option value="all">Všichni zákazníci</option>
@@ -109,7 +100,7 @@ export default async function CreditsPage({
         </Button>
       </form>
       <p className="mb-3 text-sm text-muted-foreground">
-        {rows[0]?.total ?? 0} zákazníků · 20 na stránce
+        Zákazníci s kreditem: {rows[0]?.total ?? 0} · 20 na stránce
       </p>
       <Table>
         <TableHeader>
@@ -118,7 +109,6 @@ export default async function CreditsPage({
               "Zákazník",
               "E-mail",
               "Dostupný kredit",
-              "Rezervováno",
               "Poslední změna",
               "",
             ].map((text, i) => (
@@ -159,7 +149,6 @@ export default async function CreditsPage({
               <TableCell className="font-bold tabular-nums">
                 {formatMoney(row.balance - row.reserved)}
               </TableCell>
-              <TableCell>{formatMoney(row.reserved)}</TableCell>
               <TableCell>
                 {row.updated ? formatDateTime(new Date(row.updated)) : "—"}
               </TableCell>
@@ -177,7 +166,9 @@ export default async function CreditsPage({
         </TableBody>
       </Table>
       {!rows.length ? (
-        <p className="mt-5 text-sm">Žádní zákazníci neodpovídají filtru.</p>
+        <p className="mt-5 text-sm">
+          Žádní zákazníci s kreditem neodpovídají filtru.
+        </p>
       ) : null}
       <Pagination
         page={page}

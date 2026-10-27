@@ -105,6 +105,18 @@ test.describe("isolated administrator walkthrough", () => {
       page.getByRole("heading", { name: "Ahoj, Jana" }),
     ).toBeVisible();
     await expect(page.getByText("Potvrzená", { exact: true })).toHaveCount(2);
+    await expect(
+      page.getByRole("region", { name: "Tvoje kredity" }),
+    ).toHaveCount(0);
+    await page
+      .getByRole("link", { name: "Historie kreditů", exact: true })
+      .click();
+    await expect(
+      page.getByText("Zatím žádné kreditní pohyby.", { exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("link", { name: "Profil a heslo", exact: true })
+      .click();
     await page.getByLabel("Jméno", { exact: true }).fill("Petra");
     await page.getByRole("button", { name: "Uložit údaje" }).click();
     await expect(
@@ -118,6 +130,9 @@ test.describe("isolated administrator walkthrough", () => {
         ),
       ).toBeLessThanOrEqual(1);
     }
+    await page
+      .getByRole("link", { name: "Moje rezervace", exact: true })
+      .click();
     await expect(
       page.getByRole("article", { name: /^Rezervace / }),
     ).toHaveCount(2);

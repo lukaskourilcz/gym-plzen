@@ -78,9 +78,26 @@ test.afterAll(async () => {
 test("admin can grant, edit and remove credit with an audit trail", async ({
   page,
 }, info) => {
-  await page.goto(`/admin/credits?q=${email}`);
+  // Old balance query strings must not bring empty accounts back into the list.
+  await page.goto(`/admin/credits?q=${email}&balance=all`);
+  await expect(
+    page.getByRole("link", { name: "Kredit Test", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("combobox", { name: "Zůstatek", exact: true }),
+  ).toHaveCount(0);
+  await expect(page.getByRole("columnheader")).toHaveText([
+    "Zákazník",
+    "E-mail",
+    "Dostupný kredit",
+    "Poslední změna",
+    "",
+  ]);
   await page
-    .getByRole("button", { name: "Spravovat kredity", exact: true })
+    .getByLabel("Přidat kredit zákazníkovi", { exact: true })
+    .fill(email);
+  await page
+    .getByRole("button", { name: "Přidat kredit", exact: true })
     .click();
   let dialog = page.getByRole("dialog");
   await dialog.getByLabel("Částka v Kč").fill("500");
@@ -141,6 +158,14 @@ test("admin can grant, edit and remove credit with an audit trail", async ({
   await expect(
     page.getByRole("region", { name: "Kreditní peněženka" }),
   ).toContainText("500 Kč");
+  const adminWallet = page.getByRole("region", { name: "Kreditní peněženka" });
+  await adminWallet.getByText("Historie kreditů", { exact: true }).click();
+  await expect(
+    adminWallet.getByRole("columnheader", { name: "Provedl" }),
+  ).toBeVisible();
+  await expect(
+    adminWallet.getByRole("region", { name: "Historie kreditních pohybů" }),
+  ).toContainText("Admin Test");
   await page.goto(`/admin/credits?q=${email}`);
   await page.screenshot({
     path: info.outputPath("credits-admin.png"),
@@ -169,8 +194,35 @@ test.describe("customer", () => {
       .click();
     await expect(page).toHaveURL(/\/account/);
     await expect(
-      page.getByRole("region", { name: "Kreditní peněženka" }),
+      page.getByRole("region", { name: "Tvoje kredity" }),
     ).toContainText("500 Kč");
+    const tabs = page.getByRole("navigation", {
+      name: "Můj účet",
+      exact: true,
+    });
+    await expect(tabs.getByRole("link")).toHaveText([
+      "Moje rezervace",
+      "Historie objednávek",
+      "Historie kreditů",
+      "Profil a heslo",
+    ]);
+    await expect(
+      page.getByRole("region", { name: "Historie kreditních pohybů" }),
+    ).toHaveCount(0);
+    const creditCard = await page
+      .getByRole("region", { name: "Tvoje kredity" })
+      .boundingBox();
+    const nextTraining = await page
+      .getByText("Nejbližší trénink", { exact: true })
+      .locator("..")
+      .boundingBox();
+    expect(creditCard!.y + creditCard!.height).toBeLessThanOrEqual(
+      nextTraining!.y,
+    );
+    await page.screenshot({
+      path: info.outputPath("credits-account-overview.png"),
+      fullPage: true,
+    });
     const consent = page
       .getByTestId("tracking-consent")
       .getByRole("button", { name: "Pouze nezbytné" });
@@ -221,7 +273,7 @@ test.describe("customer", () => {
       .click();
     await expect(page).toHaveURL(/\/account\?zmena=uspesna/);
     await expect(
-      page.getByRole("region", { name: "Kreditní peněženka" }),
+      page.getByRole("region", { name: "Tvoje kredity" }),
     ).toContainText("72 Kč");
     await sql`update site_setting set value='32900' where key='pricing.entry_price_cents'`;
     await page.goto(
@@ -265,6 +317,20 @@ test.describe("customer", () => {
     const [codes] =
       await sql`select jsonb_agg(to_jsonb(c) order by id) as data from access_code c`;
     expect(codes).toEqual(oldCodes);
+    await expect(
+      page.getByRole("region", { name: "Tvoje kredity" }),
+    ).toHaveCount(0);
+    await page
+      .getByRole("link", { name: "Historie kreditů", exact: true })
+      .click();
+    await expect(page).toHaveURL(/tab=credits/);
+    await expect(
+      page.getByRole("region", { name: "Historie kreditních pohybů" }),
+    ).toContainText("-72 Kč");
+    await page.screenshot({
+      path: info.outputPath("credits-account-history.png"),
+      fullPage: true,
+    });
     await page.getByText("Vyúčtování změn termínů", { exact: true }).click();
     const statement = page
       .getByRole("link", { name: /stáhnout vyúčtování/ })
@@ -298,7 +364,12 @@ test.describe("customer", () => {
       path: info.outputPath("credits-customer-mobile.png"),
       fullPage: true,
     });
-    await page.getByText("Historie kreditů", { exact: true }).click();
+    await expect(
+      page.getByRole("region", { name: "Tvoje kredity" }),
+    ).toHaveCount(0);
+    await page
+      .getByRole("link", { name: "Historie kreditů", exact: true })
+      .click();
     const history = page.getByRole("region", {
       name: "Historie kreditních pohybů",
     });
@@ -345,5 +416,35 @@ test.describe("customer", () => {
     const [after] =
       await sql`select balance_cents,reserved_cents from credit_account where user_id=${memberId}`;
     expect(after).toMatchObject({ balance_cents: 0, reserved_cents: 0 });
+  });
+});
+
+test.describe("empty credit account", () => {
+  test.use({
+    storageState: join(process.cwd(), "tests/e2e/.auth/member.json"),
+  });
+  test("zero balance hides the card but keeps the history tab available", async ({
+    page,
+  }) => {
+    await page.goto("/account");
+    await expect(
+      page.getByRole("region", { name: "Tvoje kredity" }),
+    ).toHaveCount(0);
+    await page
+      .getByRole("link", { name: "Historie kreditů", exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Historie kreditů", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Zatím žádné kreditní pohyby.", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Spravovat kredity", exact: true }),
+    ).toHaveCount(0);
+    await page.reload();
+    await expect(
+      page.getByRole("link", { name: "Historie kreditů", exact: true }),
+    ).toHaveAttribute("aria-current", "page");
   });
 });

@@ -1,4 +1,10 @@
 "use client";
+import Link from "next/link";
+import { CreditBalanceCard } from "@/components/credit-balance-card";
+import {
+  CreditHistoryTable,
+  type CreditHistoryEntry,
+} from "@/components/credit-history-table";
 import { creditTender } from "@/lib/config/credits";
 
 import { useCallback, useState } from "react";
@@ -56,11 +62,19 @@ export function CustomerPreview({
   const [config] = useState(initial);
   const params = useSearchParams();
   const screen = params.get("screen") ?? "calendar";
+  const requestedTab = params.get("tab");
+  const accountTab =
+    requestedTab === "profile" ||
+    requestedTab === "orders" ||
+    requestedTab === "credits"
+      ? requestedTab
+      : "reservations";
   const [profile, setProfile] = useState(INITIAL_PROFILE);
   const [orders, setOrders] = useState<PreviewOrder[]>([]);
   const [pending, setPending] = useState<PreviewOrder | null>(null);
   const [message, setMessage] = useState("");
   const [creditCents, setCreditCents] = useState(0);
+  const [creditEntries, setCreditEntries] = useState<CreditHistoryEntry[]>([]);
   const [pendingChange, setPendingChange] = useState<{
     id: string;
     startISO: string;
@@ -160,6 +174,19 @@ export function CustomerPreview({
       })),
     );
   };
+  const changeCredits = (amountCents: number, reason: string) => {
+    if (amountCents === 0) return;
+    setCreditCents((v) => v + amountCents);
+    setCreditEntries((entries) => [
+      {
+        id: crypto.randomUUID(),
+        createdAt: new Date(),
+        reason,
+        amountCents,
+      },
+      ...entries,
+    ]);
+  };
   const pay = () => {
     if (pendingChange) {
       applyChange(
@@ -167,7 +194,7 @@ export function CustomerPreview({
         pendingChange.startISO,
         pendingChange.priceCents,
       );
-      setCreditCents((v) => v - pendingChange.creditCents);
+      changeCredits(-pendingChange.creditCents, "Doplatek změny termínu");
       setPendingChange(null);
       navigate("account");
       setMessage(
@@ -176,13 +203,14 @@ export function CustomerPreview({
       return;
     }
     if (!pending) return;
-    setCreditCents((v) => v - (pending.creditCents ?? 0));
+    changeCredits(-(pending.creditCents ?? 0), "Úhrada ukázkové rezervace");
     setOrders((previous) => [...previous, pending]);
     setPending(null);
     navigate("confirmation");
   };
   const reset = () => {
     setCreditCents(0);
+    setCreditEntries([]);
     setPendingChange(null);
     setOrders([]);
     setPending(null);
@@ -235,7 +263,7 @@ export function CustomerPreview({
       return;
     }
     applyChange(id, startISO, price);
-    setCreditCents((v) => v - delta);
+    changeCredits(-delta, "Rozdíl ceny při změně na levnější termín");
     setMessage(
       delta < 0
         ? `Termín byl změněný a ${formatMoney(-delta)} se připsalo do ukázkových kreditů. Žádný e-mail nebyl odeslán.`
@@ -504,77 +532,132 @@ export function CustomerPreview({
               </Card>
             ) : null}
             {screen === "account" ? (
-              <section
-                aria-label="Ukázkové kredity"
-                className="mt-8 rounded-lg border border-border bg-card p-5"
+              <nav
+                aria-label="Můj účet"
+                className="my-8 flex flex-wrap gap-2 border-b border-border pb-4"
               >
-                <h2 className="text-xl font-bold">Tvoje kredity</h2>
-                <p className="mt-2 text-3xl font-bold">
-                  {formatMoney(creditCents)}
-                </p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Ukázkový zůstatek lze použít při další simulované platbě.
-                </p>
+                {[
+                  { id: "reservations", label: "Moje rezervace" },
+                  { id: "orders", label: "Historie objednávek" },
+                  { id: "credits", label: "Historie kreditů" },
+                  { id: "profile", label: "Profil a heslo" },
+                ].map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`${href("account")}&tab=${item.id}`}
+                    scroll={false}
+                    aria-current={accountTab === item.id ? "page" : undefined}
+                    className={`inline-flex min-h-11 items-center rounded-md px-4 py-3 text-sm font-bold ${accountTab === item.id ? "bg-primary text-primary-foreground" : "text-accent-foreground hover:bg-accent"}`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+            ) : null}
+            {screen === "account" && accountTab === "credits" ? (
+              <section
+                aria-label="Historie kreditů"
+                className="rounded-lg border border-border bg-card p-5 sm:p-6"
+              >
+                <h2 className="text-xl font-bold">Historie kreditů</h2>
+                <CreditHistoryTable entries={creditEntries} />
               </section>
             ) : null}
-            {screen === "account" ? (
+            {screen === "account" && accountTab === "orders" ? (
+              <section aria-label="Historie objednávek" className="grid gap-5">
+                <h2 className="text-xl font-bold">Historie objednávek</h2>
+                {orders.length ? (
+                  orders.map((order, index) => (
+                    <Card key={index} className="p-6">
+                      <h3 className="font-bold">
+                        Ukázková objednávka {index + 1}
+                      </h3>
+                      {summary(order.slots)}
+                      <p className="mt-4 font-bold">
+                        Celkem {formatMoney(order.totalCents)}
+                      </p>
+                    </Card>
+                  ))
+                ) : (
+                  <p>Zatím žádné ukázkové objednávky.</p>
+                )}
+              </section>
+            ) : null}
+            {screen === "account" && accountTab === "profile" ? (
+              <Card className="p-6">
+                <h2 className="text-xl font-extrabold">Osobní údaje</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Úpravy platí jen v tomto náhledu.
+                </p>
+                <form
+                  className="mt-5 grid gap-4"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    const data = new FormData(event.currentTarget);
+                    setProfile({
+                      ...profile,
+                      firstName: String(data.get("firstName")),
+                      lastName: String(data.get("lastName")),
+                      phone: String(data.get("phone")),
+                    });
+                    setMessage(
+                      "Ukázkový profil byl uložen pouze v tomto okně.",
+                    );
+                  }}
+                >
+                  <label className="grid gap-2">
+                    Jméno
+                    <Input
+                      name="firstName"
+                      defaultValue={profile.firstName}
+                      required
+                      maxLength={60}
+                    />
+                  </label>
+                  <label className="grid gap-2">
+                    Příjmení
+                    <Input
+                      name="lastName"
+                      defaultValue={profile.lastName}
+                      required
+                      maxLength={60}
+                    />
+                  </label>
+                  <label className="grid gap-2">
+                    Telefon
+                    <Input
+                      name="phone"
+                      defaultValue={profile.phone}
+                      required
+                      type="tel"
+                    />
+                  </label>
+                  <p className="break-all text-sm">E-mail: {profile.email}</p>
+                  <Button type="submit">Uložit údaje</Button>
+                </form>
+              </Card>
+            ) : null}
+            {screen === "account" && accountTab === "reservations" ? (
               <>
                 <div className="mt-8 grid items-start gap-6 lg:grid-cols-2">
                   <LoyaltyWidget status={loyalty} />
-                  <Card className="p-6">
-                    <h2 className="text-xl font-extrabold">Osobní údaje</h2>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Úpravy platí jen v tomto náhledu.
-                    </p>
-                    <form
-                      className="mt-5 grid gap-4"
-                      onSubmit={(event) => {
-                        event.preventDefault();
-                        const data = new FormData(event.currentTarget);
-                        setProfile({
-                          ...profile,
-                          firstName: String(data.get("firstName")),
-                          lastName: String(data.get("lastName")),
-                          phone: String(data.get("phone")),
-                        });
-                        setMessage(
-                          "Ukázkový profil byl uložen pouze v tomto okně.",
-                        );
-                      }}
-                    >
-                      <label className="grid gap-2">
-                        Jméno
-                        <Input
-                          name="firstName"
-                          defaultValue={profile.firstName}
-                          required
-                          maxLength={60}
-                        />
-                      </label>
-                      <label className="grid gap-2">
-                        Příjmení
-                        <Input
-                          name="lastName"
-                          defaultValue={profile.lastName}
-                          required
-                          maxLength={60}
-                        />
-                      </label>
-                      <label className="grid gap-2">
-                        Telefon
-                        <Input
-                          name="phone"
-                          defaultValue={profile.phone}
-                          required
-                          type="tel"
-                        />
-                      </label>
-                      <p className="break-all text-sm">
-                        E-mail: {profile.email}
+                  <div className="grid gap-5">
+                    <CreditBalanceCard availableCents={creditCents} />
+                    <Card className="p-7">
+                      <h2 className="text-xs font-extrabold uppercase tracking-[.13em] text-muted-foreground">
+                        Nejbližší trénink
+                      </h2>
+                      <p className="mt-4 text-sm text-muted-foreground">
+                        {orders
+                          .flatMap((o) => o.slots)
+                          .filter((slot) => slot.status === "confirmed")
+                          .sort((a, b) =>
+                            a.startISO.localeCompare(b.startISO),
+                          )[0]?.label ??
+                          "Nemáte žádnou naplánovanou rezervaci."}
                       </p>
-                      <Button type="submit">Uložit údaje</Button>
-                    </form>
-                  </Card>
+                    </Card>
+                  </div>
                 </div>
                 <h2 className="mb-4 mt-10 text-2xl font-extrabold">
                   Nadcházející rezervace

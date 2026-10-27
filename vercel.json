@@ -33,7 +33,8 @@
       "codex/single-announcement-banner": false,
       "codex/editable-public-notices": false,
       "codex/instagram-feed": false,
-      "codex/customer-credits": false
+      "codex/customer-credits": false,
+      "codex/credit-holders-only": false
     }
   },
   "regions": ["cdg1"]
