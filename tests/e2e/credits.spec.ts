@@ -78,9 +78,25 @@ test.afterAll(async () => {
 test("admin can grant, edit and remove credit with an audit trail", async ({
   page,
 }, info) => {
-  await page.goto(`/admin/credits?q=${email}`);
+  // Old balance query strings must not bring empty accounts back into the list.
+  await page.goto(`/admin/credits?q=${email}&balance=all`);
+  await expect(
+    page.getByRole("link", { name: "Kredit Test", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("combobox", { name: "Zůstatek", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("columnheader", {
+      name: "V rozpracované platbě",
+      exact: true,
+    }),
+  ).toBeVisible();
   await page
-    .getByRole("button", { name: "Spravovat kredity", exact: true })
+    .getByLabel("Přidat kredit zákazníkovi", { exact: true })
+    .fill(email);
+  await page
+    .getByRole("button", { name: "Přidat kredit", exact: true })
     .click();
   let dialog = page.getByRole("dialog");
   await dialog.getByLabel("Částka v Kč").fill("500");
