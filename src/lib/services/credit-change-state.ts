@@ -55,6 +55,7 @@ export async function settleReservationChangeIn(
         creditBalanceCents: balance!.balanceCents,
         customerName: current.contactName ?? "",
         customerEmail: current.contactEmail ?? "",
+        additionalPeoplePaidCents: current.additionalPeoplePaidCents,
       },
       updatedAt: new Date(),
     })

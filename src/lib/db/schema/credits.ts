@@ -128,6 +128,7 @@ export const reservationChange = pgTable(
         creditBalanceCents?: number;
         customerName?: string;
         customerEmail?: string;
+        additionalPeoplePaidCents?: number;
       }>()
       .notNull(),
     error: text("error"),

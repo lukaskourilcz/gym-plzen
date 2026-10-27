@@ -50,9 +50,10 @@ test.beforeAll(async () => {
   memberId = result.data.user.id;
   await sql`insert into profiles(id,email,full_name,first_name,last_name,phone,role) values(${memberId},${email},'Kredit Test','Kredit','Test','+420777000999','member') on conflict(id) do update set phone=excluded.phone`;
   savedSettings =
-    await sql`select * from site_setting where key in ('pricing.entry_price_cents','features.additional_people')`;
+    await sql`select * from site_setting where key in ('pricing.entry_price_cents','pricing.time_blocks','features.additional_people','booking.operations')`;
   savedPeriods = await sql`select * from pricing_period`;
   savedHours = await sql`select * from opening_hours`;
+  await sql`insert into site_setting(key,value) values('pricing.time_blocks','[]'),('booking.operations','{"paymentsEnabled":true,"accessCodesEnabled":false,"bookingsFrom":""}') on conflict(key) do update set value=excluded.value`;
   await sql`delete from pricing_period`;
   await sql`insert into site_setting(key,value) values('pricing.entry_price_cents','22900') on conflict(key) do update set value=excluded.value`;
   await sql`insert into site_setting(key,value) values('features.additional_people','false') on conflict(key) do update set value=excluded.value`;

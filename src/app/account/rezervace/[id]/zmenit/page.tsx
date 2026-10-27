@@ -11,7 +11,12 @@ import { uuidSchema } from "@/lib/validations/common";
 import { requireUser } from "@/lib/auth/guards";
 import { footerProps, loadSiteContent } from "@/lib/content/site";
 import { dateKeyInTimeZone } from "@/lib/helpers/datetime";
-import { formatDate, formatTimeRange } from "@/lib/helpers/format";
+import {
+  formatDate,
+  formatDateTime,
+  formatMoney,
+  formatTimeRange,
+} from "@/lib/helpers/format";
 import { reservations, rescheduling } from "@/lib/services";
 import { loadCalendarAvailability } from "@/lib/services/calendar-availability";
 import {
@@ -145,6 +150,14 @@ export default async function ReschedulePage({
               </p>
             </div>
 
+            {current.additionalPeoplePaidCents > 0 ? (
+              <p className="mt-4 text-sm text-muted-foreground">
+                Dodatečně zakoupený doprovod za{" "}
+                {formatMoney(current.additionalPeoplePaidCents)} se přenese beze
+                změny. Cenový rozdíl níže nezahrnuje tento již uhrazený
+                příplatek.
+              </p>
+            ) : null}
             {pending ? (
               <div className="mt-8 max-w-2xl">
                 <Notice
@@ -163,9 +176,16 @@ export default async function ReschedulePage({
                       ? "Dokončení nebo vrácení doplatku řeší obsluha; další platbu nezakládejte."
                       : "Po úhradě ověříme a dokončíme změnu."}
                 </Notice>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Nabídka ceny platí do {formatDateTime(pending.expiresAt)}.{" "}
+                  {pending.expiresAt <= new Date()
+                    ? "Platbu už znovu nezahajujte; ověřujeme její konečný stav."
+                    : ""}
+                </p>
                 <div className="mt-4 flex flex-wrap gap-3">
                   {pending.status === "awaiting_payment" &&
-                  pendingPayment?.gatewayUrl ? (
+                  pendingPayment?.gatewayUrl &&
+                  pending.expiresAt > new Date() ? (
                     <Button href={pendingPayment.gatewayUrl}>
                       Pokračovat k doplatku
                     </Button>

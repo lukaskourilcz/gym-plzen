@@ -25,8 +25,8 @@ export function renderCreditChangePdf(
     const lines = [
       `Původní termín: ${formatDateTime(change.previousStartsAt)}`,
       `Nový termín: ${formatDateTime(change.startsAt)}`,
-      `Původní cena: ${formatMoney(change.previousPriceCents)}`,
-      `Nová cena: ${formatMoney(change.newPriceCents)}`,
+      `Původní cena: ${formatMoney(change.previousPriceCents + (change.quote.additionalPeoplePaidCents ?? 0))}`,
+      `Nová cena: ${formatMoney(change.newPriceCents + (change.quote.additionalPeoplePaidCents ?? 0))}`,
       `Doplatek přes Comgate: ${formatMoney(change.cashCents)}`,
       `Úhrada kreditem: ${formatMoney(change.creditCents)}`,
       `Připsaný kredit: ${formatMoney(Math.max(0, change.previousPriceCents - change.newPriceCents))}`,

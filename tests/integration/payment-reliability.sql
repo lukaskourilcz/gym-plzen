@@ -149,3 +149,23 @@ BEGIN
 END $$;
 ROLLBACK;
 SELECT 'companion limits, single purchase/payment, payment isolation and RLS passed' AS result;
+
+BEGIN;
+DO $$
+DECLARE tab text; aid uuid; eid uuid; rejected boolean;
+BEGIN
+ FOREACH tab IN ARRAY ARRAY['credit_account','credit_entry','credit_hold','reservation_change'] LOOP
+  IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid=('public.'||tab)::regclass) THEN RAISE EXCEPTION 'wallet RLS missing on %',tab; END IF;
+  IF has_table_privilege('anon','public.'||tab,'SELECT') OR has_table_privilege('authenticated','public.'||tab,'INSERT') OR has_table_privilege('authenticated','public.'||tab,'UPDATE') THEN RAISE EXCEPTION 'wallet data exposed on %',tab; END IF;
+ END LOOP;
+ INSERT INTO credit_account(guest_email,balance_cents) VALUES('sql-credit@example.test',100) RETURNING id INTO aid;
+ INSERT INTO credit_entry(account_id,amount_cents,reason,operation_key) VALUES(aid,100,'Local SQL invariant','sql-invariant') RETURNING id INTO eid;
+ rejected:=false;
+ BEGIN UPDATE credit_account SET reserved_cents=101 WHERE id=aid; EXCEPTION WHEN check_violation THEN rejected:=true; END;
+ IF NOT rejected THEN RAISE EXCEPTION 'wallet overdraft allowed'; END IF;
+ rejected:=false;
+ BEGIN DELETE FROM credit_entry WHERE id=eid; EXCEPTION WHEN raise_exception THEN rejected:=true; END;
+ IF NOT rejected THEN RAISE EXCEPTION 'credit history was erasable'; END IF;
+END $$;
+ROLLBACK;
+SELECT 'private credit access, nonnegative spendable balance and immutable history passed' AS result;

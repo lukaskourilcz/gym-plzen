@@ -554,7 +554,7 @@ export async function prepareRescheduleConfirmation(params: {
     )
     .limit(1);
   const summary = change
-    ? `Původní cena: ${formatMoney(change.previousPriceCents)}\nNová cena: ${formatMoney(change.newPriceCents)}\nDoplatek platební bránou: ${formatMoney(change.cashCents)}\nPoužité kredity: ${formatMoney(change.creditCents)}\nPřipsaný kredit: ${formatMoney(Math.max(0, change.previousPriceCents - change.newPriceCents))}\nZůstatek kreditů po změně: ${formatMoney(change.quote.creditBalanceCents ?? 0)}`
+    ? `Původní cena: ${formatMoney(change.previousPriceCents + (change.quote.additionalPeoplePaidCents ?? 0))}\nNová cena: ${formatMoney(change.newPriceCents + (change.quote.additionalPeoplePaidCents ?? 0))}\nDoplatek platební bránou: ${formatMoney(change.cashCents)}\nPoužité kredity: ${formatMoney(change.creditCents)}\nPřipsaný kredit: ${formatMoney(Math.max(0, change.previousPriceCents - change.newPriceCents))}\nZůstatek kreditů po změně: ${formatMoney(change.quote.creditBalanceCents ?? 0)}`
     : "Cena rezervace zůstává podle původních podmínek stejná.";
   return prepareTransactionalEmail({
     id: "reservation_rescheduled",
