@@ -1,3 +1,4 @@
+import { retryPaidChanges } from "@/lib/services/priced-rescheduling";
 import { reconcileReservationWhatsApp } from "@/lib/services/whatsapp-delivery";
 import { retryCancellationEmails } from "@/lib/services/cancellation-delivery";
 import { monitorLockConnectivity } from "@/lib/services/lock-health";
@@ -56,6 +57,8 @@ export async function GET(request: NextRequest) {
     releaseExpiredPendingReservations: () =>
       reservations.releaseExpiredPendingReservations(),
   });
+
+  await stage("retryPaidChanges", () => retryPaidChanges(), 0);
 
   const revocations = await stage(
     "reconcileRevocations",

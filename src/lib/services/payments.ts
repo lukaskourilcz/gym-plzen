@@ -1,3 +1,4 @@
+import { synchronizeChangePayment } from "./priced-rescheduling";
 import { synchronizeParticipantPayment } from "./participants";
 import { randomBytes } from "node:crypto";
 import {
@@ -529,7 +530,10 @@ export async function synchronizeComgatePayment(
   // Never let a public callback trigger arbitrary provider lookups.
   if (
     !known ||
-    (!known.reservationId && !known.orderId && !known.participantAdditionId)
+    (!known.reservationId &&
+      !known.orderId &&
+      !known.participantAdditionId &&
+      !known.reservationChangeId)
   )
     return false;
   if (
@@ -538,6 +542,8 @@ export async function synchronizeComgatePayment(
     known.providerEnvironment !== env.COMGATE_TEST_MODE
   )
     throw new Error("Payment environment mismatch");
+  if (known.reservationChangeId)
+    return synchronizeChangePayment(known, providerId);
   if (known.participantAdditionId)
     return synchronizeParticipantPayment(known, providerId);
   if (known.orderId)
