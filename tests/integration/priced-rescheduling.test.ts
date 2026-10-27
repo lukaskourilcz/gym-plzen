@@ -27,9 +27,13 @@ import {
   creditAccountForUser,
   postCreditIn,
   getCreditWallet,
+  reserveCreditIn,
 } from "../../src/lib/services/credits";
 import { startOrder } from "../../src/lib/services/orders";
-import { synchronizeComgatePayment } from "../../src/lib/services/payments";
+import {
+  synchronizeComgatePayment,
+  startOrderPayment,
+} from "../../src/lib/services/payments";
 import {
   quoteReschedule,
   startPricedReschedule,
@@ -220,6 +224,84 @@ describe("priced reservation changes", { skip: !databaseReady }, () => {
     assert.deepEqual(
       booked.map((r) => r.credit_paid_cents),
       [22900, 22900],
+    );
+  });
+  test("resuming a partly credit-paid checkout preserves the agreed cash and credit amounts", async () => {
+    await seedProfile({
+      id: userId,
+      email: "ceny@example.test",
+      fullName: "Cenový Test",
+    });
+    await grant(10000);
+    const params = {
+      userId,
+      useCredits: true,
+      quotedCreditCents: 10000,
+      starts: [slot(5)],
+      details: {
+        name: "Cenový Test",
+        email: "ceny@example.test",
+        phone: "+420777000444",
+        acceptedAt: new Date(),
+      },
+    };
+    const first = await startOrder(params);
+    assert.equal(first.kind, "checkout");
+    await assert.rejects(
+      startOrder({ ...params, quotedCreditCents: 0, useCredits: false }),
+      /Rozpracovaná platba/,
+    );
+    const resumed = await startOrder(params);
+    assert.equal(resumed.kind, "checkout");
+    assert.equal(resumed.orderId, first.orderId);
+    assert.equal(comgate.creates.length, 1);
+    assert.equal((comgate.creates[0] as { price: number }).price, 12900);
+    assert.equal((await getCreditWallet(userId)).reservedCents, 10000);
+    comgate.settle("TEST-0001", "PAID");
+    await synchronizeComgatePayment("TEST-0001");
+    assert.equal((await getCreditWallet(userId)).balanceCents, 0);
+  });
+  test("an interrupted fully credit-funded order resumes without a gateway or duplicate debit", async () => {
+    await seedProfile({
+      id: userId,
+      email: "ceny@example.test",
+      fullName: "Cenový Test",
+    });
+    await grant(50000);
+    const [order] = await rows<{ id: string }>(
+      "insert into booking_order(user_id,status,total_cents,credit_cents,contact_email) values($1,'pending',22900,22900,'ceny@example.test') returning id",
+      [userId],
+    );
+    await rows(
+      "insert into reservation(user_id,order_id,starts_at,ends_at,status,price_cents,contact_email) values($1,$2,$3,$4,'pending',22900,'ceny@example.test')",
+      [userId, order!.id, slot(5), new Date(+slot(5) + 75 * 60000)],
+    );
+    // Simulate a process stop between durable funding and final confirmation.
+    await db.transaction((tx) =>
+      reserveCreditIn(tx, userId, `order:${order!.id}`, 22900, true),
+    );
+    const result = await startOrderPayment({ userId, orderId: order!.id });
+    assert.equal(result.kind, "free");
+    assert.equal(comgate.creates.length, 0);
+    assert.equal((await getCreditWallet(userId)).availableCents, 27100);
+    await assert.rejects(
+      startOrderPayment({ userId, orderId: order!.id }),
+      /nelze uhradit/,
+    );
+    assert.equal(
+      (await getCreditWallet(userId)).entries.filter(
+        (e) => e.amountCents < 0,
+      ).length,
+      1,
+    );
+    assert.equal(
+      (
+        await rows<{ status: string }>(
+          "select status from reservation where order_id=$1",
+          [order!.id],
+        )
+      )[0]!.status,
+      "confirmed",
     );
   });
   test("a failed paid move restores availability and requests one refund, then an admin confirms provider completion", async () => {

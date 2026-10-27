@@ -109,6 +109,13 @@ export async function startOrderPayment(params: {
       slots[0]!.startsAt <= new Date()
     )
       throw new ActionError("Tuto objednávku nelze uhradit.");
+    if (order.creditCents === order.totalCents) {
+      const confirmed = await db.transaction((tx) =>
+        confirmOrderIn(tx, order.id),
+      );
+      for (const slot of confirmed) await fulfillReservation(slot.id);
+      return { kind: "free", orderId: order.id, token: params.token };
+    }
     if (!(await getOperations()).paymentsEnabled || !isComgateConfigured())
       throw new ActionError(
         "Online platby se připravují. Rezervace je platná pouze po úhradě.",

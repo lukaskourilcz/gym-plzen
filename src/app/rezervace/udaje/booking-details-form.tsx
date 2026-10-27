@@ -41,6 +41,7 @@ export function BookingDetailsForm({
   blocked = false,
   canSavePhone = false,
   availableCreditCents = 0,
+  heldCreditCents,
   defaultValues,
   simulation,
 }: {
@@ -49,6 +50,7 @@ export function BookingDetailsForm({
     submit: (values: BookingDetailsValues, totalCents: number) => void;
   };
   availableCreditCents?: number;
+  heldCreditCents?: number;
   paymentsAvailable?: boolean;
   /** The bookable slots of the selection, in start order. */
   startsISO: string[];
@@ -102,7 +104,10 @@ export function BookingDetailsForm({
         starts: startsISO,
         ...defaultValues,
         voucherCode: "",
-        useCredits: availableCreditCents > 0,
+        useCredits:
+          heldCreditCents !== undefined
+            ? heldCreditCents > 0
+            : availableCreditCents > 0,
         extraPeople:
           heldExtraPeople === undefined
             ? participantPricing.enabled
@@ -125,11 +130,9 @@ export function BookingDetailsForm({
         participantSurcharge(Number(people ?? 0), participantPricing)
       : 0);
   const subtotal = voucherQuote?.finalPriceCents ?? selectionTotalCents;
-  const usedCreditCents = creditTender(
-    subtotal,
-    availableCreditCents,
-    Boolean(watch("useCredits")),
-  );
+  const usedCreditCents =
+    heldCreditCents ??
+    creditTender(subtotal, availableCreditCents, Boolean(watch("useCredits")));
   const effectivePriceCents = subtotal - usedCreditCents;
   const voucherUnavailable = !paymentsAvailable && selectionTotalCents > 0;
   const voucherField = register("voucherCode");
@@ -372,7 +375,7 @@ export function BookingDetailsForm({
         </fieldset>
       ) : null}
 
-      {selectionTotalCents > 0 ? (
+      {selectionTotalCents > 0 && heldCreditCents === undefined ? (
         <fieldset className="mt-7 border-t border-border pt-6">
           <legend className="flex items-center gap-2 text-sm font-extrabold">
             <TicketPercent
@@ -429,7 +432,8 @@ export function BookingDetailsForm({
         </fieldset>
       ) : null}
 
-      {availableCreditCents > 0 && subtotal > 0 ? (
+      {(availableCreditCents > 0 || (heldCreditCents ?? 0) > 0) &&
+      subtotal > 0 ? (
         <section
           aria-label="Úhrada kredity"
           className="mt-7 rounded-lg border border-border p-4"
@@ -437,10 +441,18 @@ export function BookingDetailsForm({
           <label className="flex items-start gap-3 text-sm font-bold">
             <input
               type="checkbox"
+              disabled={
+                heldCreditCents !== undefined ||
+                formState.isSubmitting ||
+                redirecting ||
+                checkoutInterrupted
+              }
               className="mt-1 size-4"
               {...register("useCredits")}
             />
-            Použít dostupné kredity ({formatMoney(availableCreditCents)})
+            {heldCreditCents !== undefined
+              ? `V původní platbě rezervováno ${formatMoney(heldCreditCents)} kreditů`
+              : `Použít dostupné kredity (${formatMoney(availableCreditCents)})`}
           </label>
           <dl className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between">
@@ -514,11 +526,11 @@ export function BookingDetailsForm({
             : checkoutInterrupted
               ? "Zkusit pokračovat znovu"
               : effectivePriceCents === 0
-                ? startsISO.length === 1
-                  ? usedCreditCents > 0
-                    ? "Potvrdit a uhradit kreditem"
-                    : "Potvrdit vstup zdarma"
-                  : "Potvrdit vstupy zdarma"
+                ? usedCreditCents > 0
+                  ? "Potvrdit a uhradit kreditem"
+                  : startsISO.length === 1
+                    ? "Potvrdit vstup zdarma"
+                    : "Potvrdit vstupy zdarma"
                 : `Pokračovat k platbě ${formatMoney(effectivePriceCents)}`}{" "}
         <ArrowRight aria-hidden="true" />
       </Button>
@@ -532,7 +544,9 @@ export function BookingDetailsForm({
       ) : null}
       <p className="mt-3 text-xs text-muted-foreground">
         {effectivePriceCents === 0
-          ? "Vstup zdarma je platný po potvrzení rezervace."
+          ? usedCreditCents > 0
+            ? `Po potvrzení bude ${formatMoney(usedCreditCents)} uhrazeno z kreditů.`
+            : "Vstup zdarma je platný po potvrzení rezervace."
           : startsISO.length === 1
             ? "Rezervace je platná až po ověřené úhradě. Termín držíme pouze po dobu zpracování platby."
             : "Všechny termíny zaplatíte jednou platbou. Rezervace jsou platné až po ověřené úhradě a termíny držíme pouze po dobu zpracování platby."}

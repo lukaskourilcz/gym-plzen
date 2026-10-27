@@ -316,6 +316,14 @@ async function continueOwnOrder(
       sameSelection &&
       held.every((row) => row.extraPeople === (params.extraPeople ?? 0))
     ) {
+      const pendingOrder = await getOrder(onlyOrder);
+      if (
+        params.quotedCreditCents !== undefined &&
+        params.quotedCreditCents !== (pendingOrder?.creditCents ?? 0)
+      )
+        throw new ActionError(
+          "Rozpracovaná platba má jiné použití kreditů. Obnovte rekapitulaci; původní platbu neměníme.",
+        );
       if (held.every(proves))
         return startOrderPayment({
           orderId: onlyOrder,

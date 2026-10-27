@@ -1,3 +1,4 @@
+import { getOrder } from "@/lib/services/order-state";
 import { getCreditWallet } from "@/lib/services/credits";
 import { getParticipantPricing } from "@/lib/services/block-pricing";
 import { isComgateConfigured } from "@/lib/integrations/comgate";
@@ -192,6 +193,16 @@ export default async function BookingDetailsPage({
       ? heldPeople[0]
       : undefined;
 
+  const heldOrderId =
+    heldCount === bookable.length
+      ? ownAt.get(bookable[0]?.startsAt.getTime() ?? 0)?.orderId
+      : null;
+  const heldOrder = heldOrderId ? await getOrder(heldOrderId) : null;
+  const heldCreditCents =
+    heldCount === bookable.length && heldCount > 0
+      ? Math.min(totalCents, heldOrder?.creditCents ?? 0)
+      : undefined;
+
   return (
     <>
       <SiteHeader
@@ -373,6 +384,7 @@ export default async function BookingDetailsPage({
                 startsISO={bookable.map((item) => item.startsAt.toISOString())}
                 totalCents={totalCents}
                 participantPricing={participantPricing}
+                heldCreditCents={heldCreditCents}
                 heldExtraPeople={heldExtraPeople}
                 blocked={blocked > 0}
                 canSavePhone={Boolean(member) && !session?.user.isDemo}
