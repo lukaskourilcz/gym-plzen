@@ -29,7 +29,17 @@ export async function adjustCustomerCredit(
       .from(creditEntry)
       .where(eq(creditEntry.operationKey, `admin:${input.key}`));
     if (existing) {
-      if (existing.accountId !== account.id || existing.actorId !== actorId)
+      if (
+        existing.accountId !== account.id ||
+        existing.actorId !== actorId ||
+        existing.reason !== input.reason.trim() ||
+        existing.amountCents !==
+          (input.mode === "set"
+            ? input.amountCents - input.expectedBalance
+            : input.mode === "remove"
+              ? -input.amountCents
+              : input.amountCents)
+      )
         throw new ActionError("Operace nepatří tomuto zákazníkovi.");
       return;
     }
@@ -43,6 +53,7 @@ export async function adjustCustomerCredit(
         : input.mode === "remove"
           ? -input.amountCents
           : input.amountCents;
+    if (amount === 0) return;
     await postCreditIn(tx, {
       accountId: account.id,
       amountCents: amount,

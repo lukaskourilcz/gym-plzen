@@ -384,11 +384,12 @@ async function cancelReservationLocked(
       severity: "critical",
       dedupeKey: `refund-needed:${params.id}`,
       title: "Zrušená zaplacená rezervace vyžaduje vrácení platby",
-      body: `Rezervace na ${formatDateTime(before.startsAt)} byla zrušena. Zákazník za ni zaplatil ${formatMoney(paidForSlot, before.currency)}${paid?.orderId ? ` jako součást objednávky za ${formatMoney(paid.amountCents, paid.currency)}` : ""}${companionPaidCents > 0 ? ` (z toho doprovod ${formatMoney(companionPaidCents, before.currency)})` : ""}${changeCash > 0 ? ` (doplatek změny termínu ${formatMoney(changeCash, before.currency)} je samostatná platba)` : ""}; ověřte nárok a stav refundace jednotlivých plateb v Comgate. Samotné storno peněžní úhradu nevrací.`,
+      body: `Rezervace na ${formatDateTime(before.startsAt)} byla zrušena. Zbývající peněžní úhrada k ověření vrácení: ${formatMoney(paidForSlot, before.currency)}. Původní platba za tento termín: ${formatMoney(originalPaidForSlot, before.currency)}, samostatný doplatek změny: ${formatMoney(changeCash, before.currency)}, dokoupený doprovod: ${formatMoney(companionPaidCents, before.currency)}. Ověřte jednotlivé platby v Comgate. Samotné storno peněžní úhradu nevrací.`,
       context: {
         reservationId: params.id,
-        paymentId: paid?.id ?? companionPayments[0]?.id,
-        orderId: paid?.orderId ?? null,
+        paymentId:
+          paid?.id ?? companionPayments[0]?.id ?? changePayments[0]?.id,
+        orderId: before.orderId ?? null,
         companionPaymentIds: companionPayments.map((row) => row.id),
         changePaymentIds: changePayments.map((row) => row.id),
         originalPaymentRefundCents: originalPaidForSlot,

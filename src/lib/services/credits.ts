@@ -24,6 +24,13 @@ export async function creditAccountForUser(
 /** Called ONLY with a Supabase-verified, confirmed email, never booking input. */
 export async function claimGuestCredits(userId: string, verifiedEmail: string) {
   const email = verifiedEmail.trim().toLowerCase();
+  // Most signed-in requests have no guest wallet. Avoid a transaction/advisory
+  // lock on every page, while still rechecking the actual transfer under lock.
+  const [candidate] = await db
+    .select({ balance: creditAccount.balanceCents })
+    .from(creditAccount)
+    .where(eq(creditAccount.guestEmail, email));
+  if (!candidate?.balance) return;
   await db.transaction(async (tx) => {
     await tx.execute(
       sql`select pg_advisory_xact_lock(hashtextextended(${`credit-claim:${email}`}, 0))`,
@@ -39,17 +46,26 @@ export async function claimGuestCredits(userId: string, verifiedEmail: string) {
     if (guest.reservedCents)
       throw new ActionError("Kredit hosta je právě použit v platbě.");
     if (guest.balanceCents) {
+      const [lastEntry] = await tx
+        .select({ id: creditEntry.id })
+        .from(creditEntry)
+        .where(eq(creditEntry.accountId, guest.id))
+        .orderBy(desc(creditEntry.createdAt), desc(creditEntry.id))
+        .limit(1);
+      if (!lastEntry)
+        throw new ActionError("Historii kreditu musí ověřit obsluha.");
+      const revision = lastEntry.id;
       await postCreditIn(tx, {
         accountId: guest.id,
         amountCents: -guest.balanceCents,
         reason: "Převod do ověřeného zákaznického profilu",
-        key: `claim-out:${guest.id}:${userId}`,
+        key: `claim-out:${guest.id}:${userId}:${revision}`,
       });
       await postCreditIn(tx, {
         accountId: own.id,
         amountCents: guest.balanceCents,
         reason: "Kredit z předchozích návštěv bez registrace",
-        key: `claim-in:${guest.id}:${userId}`,
+        key: `claim-in:${guest.id}:${userId}:${revision}`,
       });
     }
     // Future admin grants find the registered account, not this historical one.
