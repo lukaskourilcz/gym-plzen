@@ -45,12 +45,14 @@ export async function reservationInvoiceStates(ids: string[]) {
         r.status in ('confirmed','completed','cancelled','no_show')
         and lower(coalesce(o.currency,r.currency))='czk'
         and coalesce(o.total_cents,r.price_cents)>0
-        and exists (select 1 from public.payment pay
+        and (exists (select 1 from public.payment pay
           where (case when r.order_id is not null then pay.order_id=r.order_id
             else pay.reservation_id=r.id end)
           and pay.status='succeeded' and pay.paid_at is not null
-          and pay.amount_cents=coalesce(o.total_cents,r.price_cents)
+          and pay.amount_cents=coalesce(o.total_cents,r.price_cents)-coalesce(o.credit_cents,r.credit_paid_cents)
           and lower(pay.currency)=lower(coalesce(o.currency,r.currency)))
+        or (o.credit_cents=o.total_cents and o.credit_cents>0 and exists (
+          select 1 from public.credit_entry ce where ce.operation_key='spend:order:'||o.id::text and ce.amount_cents=-o.credit_cents)))
       )) as eligible
     from public.reservation r
     left join public.booking_order o on o.id=r.order_id

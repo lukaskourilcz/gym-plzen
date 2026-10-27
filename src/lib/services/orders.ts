@@ -451,6 +451,7 @@ async function startOrderUnlocked(params: {
   details: BookingDetails;
   voucherCode?: string;
   useCredits?: boolean;
+  quotedCreditCents?: number;
   extraPeople?: number;
   /** The guest's hold cookie, when the browser sent one. */
   hold?: BookingHold | null;
@@ -692,7 +693,7 @@ async function startOrderUnlocked(params: {
         ...actor,
         reservationId: row.id,
         action: "reservation.confirmed",
-        summary: `Rezervace na ${formatDateTime(row.startsAt)} potvrzena, voucher ${voucherCode} pokryl celou cenu${orderNote}.`,
+        summary: `Rezervace na ${formatDateTime(row.startsAt)} potvrzena, cenu pokryla kreditní úhrada nebo voucher${orderNote}.`,
         context: { orderId: order.id, voucherCode },
       });
     for (const row of confirmed) await fulfillReservation(row.id);

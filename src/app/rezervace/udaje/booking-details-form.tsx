@@ -515,7 +515,9 @@ export function BookingDetailsForm({
               ? "Zkusit pokračovat znovu"
               : effectivePriceCents === 0
                 ? startsISO.length === 1
-                  ? "Potvrdit vstup zdarma"
+                  ? usedCreditCents > 0
+                    ? "Potvrdit a uhradit kreditem"
+                    : "Potvrdit vstup zdarma"
                   : "Potvrdit vstupy zdarma"
                 : `Pokračovat k platbě ${formatMoney(effectivePriceCents)}`}{" "}
         <ArrowRight aria-hidden="true" />

@@ -104,12 +104,14 @@ test("a term change has its own customer e-mail with the old and new time", () =
     "{previous_time}",
     "{time}",
     "{duration}",
+    "{price_summary}",
   ]);
   const rendered = renderEmailTemplateText(rescheduled.fallback, {
     name: "Klára",
     previous_time: "2. 8. 2026 9:00",
     time: "3. 8. 2026 18:00",
     duration: "75 minut",
+    price_summary: "Připsaný kredit: 30 Kč",
   });
   assert.match(rendered.body, /Původní termín: 2\. 8\. 2026 9:00/);
   assert.match(rendered.body, /Nový termín: 3\. 8\. 2026 18:00/);

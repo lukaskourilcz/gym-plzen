@@ -56,7 +56,7 @@ export function ReservationActions({
     <div className="mt-4 border-t border-border pt-4">
       <p className="text-sm leading-6 text-muted-foreground">
         {eligibility.eligible
-          ? `Změna zdarma do ${formatDateTime(eligibility.deadline)}. Termín můžete změnit jednou.`
+          ? `Změna termínu do ${formatDateTime(eligibility.deadline)}. Termín můžete změnit jednou; případný rozdíl ceny uvidíte před potvrzením.`
           : rescheduleReasonMessage(eligibility.reason)}
       </p>
       {canCancel ? (

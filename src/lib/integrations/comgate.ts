@@ -295,7 +295,8 @@ export function createComgateClient(
         return {
           accepted: z.object({ code: z.literal(0) }).safeParse(response)
             .success,
-          ambiguous: false,
+          ambiguous: !z.object({ code: z.number().int() }).safeParse(response)
+            .success,
         };
       } catch (error) {
         failure("refundPayment", error);
