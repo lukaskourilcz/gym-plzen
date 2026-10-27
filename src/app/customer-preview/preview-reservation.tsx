@@ -16,7 +16,7 @@ import {
 } from "@/lib/config/rescheduling";
 import { participantSurcharge } from "@/lib/config/participants";
 import { dateKeyInTimeZone } from "@/lib/helpers/datetime";
-import { formatDateTime } from "@/lib/helpers/format";
+import { formatDateTime, formatMoney } from "@/lib/helpers/format";
 import {
   previewCalendar,
   type CustomerPreviewConfig,
@@ -91,6 +91,12 @@ export function PreviewReservationCard({
       ? calendar.selectedSlots.filter((s) => !s.booked)
       : [];
   const chosen = choices.find((s) => s.startISO === replacement);
+  const newPrice = chosen
+    ? slot.isReward
+      ? 0
+      : chosen.priceCents
+    : slot.priceCents;
+  const difference = newPrice - slot.priceCents;
   const change = () => {
     setDate(dateKeyInTimeZone(startsAt));
     setReplacement(null);
@@ -108,7 +114,7 @@ export function PreviewReservationCard({
           <div className="mt-4 border-t border-border pt-4">
             <p className="text-sm leading-6 text-muted-foreground">
               {eligibility.eligible
-                ? `Změna zdarma do ${formatDateTime(eligibility.deadline)}. Termín můžete změnit jednou.`
+                ? `Změna do ${formatDateTime(eligibility.deadline)}. Termín můžete změnit jednou; rozdíl ceny uvidíte před potvrzením.`
                 : rescheduleReasonMessage(eligibility.reason)}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -228,10 +234,12 @@ export function PreviewReservationCard({
           ) : null}
           {chosen ? (
             <p className="mt-5 whitespace-pre-line rounded-md bg-accent p-3 text-sm text-accent-foreground">
-              {changeText(
-                "selection",
-                formatDateTime(new Date(chosen.startISO)),
-              )}
+              {difference === 0
+                ? changeText(
+                    "selection",
+                    formatDateTime(new Date(chosen.startISO)),
+                  )
+                : `Nový termín: ${formatDateTime(new Date(chosen.startISO))}\nNová cena: ${formatMoney(newPrice)}\n${difference < 0 ? `Získáš ${formatMoney(-difference)} kreditů pro další platbu.` : `Doplatek ${formatMoney(difference)} se nejdřív nasimuluje na další obrazovce.`}`}
             </p>
           ) : null}
           <DialogActions>
@@ -252,7 +260,11 @@ export function PreviewReservationCard({
                 }
               }}
             >
-              {changeText("confirm")}
+              {difference > 0
+                ? "Pokračovat k ukázkovému doplatku"
+                : difference < 0
+                  ? `Změnit a získat ${formatMoney(-difference)} kreditů`
+                  : changeText("confirm")}
             </Button>
           </DialogActions>
         </Dialog>
