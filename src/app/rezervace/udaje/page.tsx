@@ -1,3 +1,4 @@
+import { getCreditWallet } from "@/lib/services/credits";
 import { getParticipantPricing } from "@/lib/services/block-pricing";
 import { isComgateConfigured } from "@/lib/integrations/comgate";
 import { getOperations } from "@/lib/services/operations";
@@ -363,6 +364,11 @@ export default async function BookingDetailsPage({
                 key={bookable
                   .map((item) => item.startsAt.toISOString())
                   .join(",")}
+                availableCreditCents={
+                  session && !session.user.isDemo
+                    ? (await getCreditWallet(session.user.id)).availableCents
+                    : 0
+                }
                 paymentsAvailable={paymentsAvailable}
                 startsISO={bookable.map((item) => item.startsAt.toISOString())}
                 totalCents={totalCents}

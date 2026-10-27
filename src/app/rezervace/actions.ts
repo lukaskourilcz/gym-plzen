@@ -66,6 +66,7 @@ const startImpl = defineAction({
       },
       extraPeople: Number(input.extraPeople),
       voucherCode: input.voucherCode,
+      useCredits: input.useCredits,
       hold,
     });
     /*

@@ -1,4 +1,5 @@
 "use client";
+import { creditTender } from "@/lib/config/credits";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -39,6 +40,7 @@ export function BookingDetailsForm({
   heldExtraPeople,
   blocked = false,
   canSavePhone = false,
+  availableCreditCents = 0,
   defaultValues,
   simulation,
 }: {
@@ -46,6 +48,7 @@ export function BookingDetailsForm({
   simulation?: {
     submit: (values: BookingDetailsValues, totalCents: number) => void;
   };
+  availableCreditCents?: number;
   paymentsAvailable?: boolean;
   /** The bookable slots of the selection, in start order. */
   startsISO: string[];
@@ -99,6 +102,7 @@ export function BookingDetailsForm({
         starts: startsISO,
         ...defaultValues,
         voucherCode: "",
+        useCredits: availableCreditCents > 0,
         extraPeople:
           heldExtraPeople === undefined
             ? participantPricing.enabled
@@ -120,8 +124,13 @@ export function BookingDetailsForm({
       ? startsISO.length *
         participantSurcharge(Number(people ?? 0), participantPricing)
       : 0);
-  const effectivePriceCents =
-    voucherQuote?.finalPriceCents ?? selectionTotalCents;
+  const subtotal = voucherQuote?.finalPriceCents ?? selectionTotalCents;
+  const usedCreditCents = creditTender(
+    subtotal,
+    availableCreditCents,
+    Boolean(watch("useCredits")),
+  );
+  const effectivePriceCents = subtotal - usedCreditCents;
   const voucherUnavailable = !paymentsAvailable && selectionTotalCents > 0;
   const voucherField = register("voucherCode");
 
@@ -415,6 +424,43 @@ export function BookingDetailsForm({
           ) : null}
         </fieldset>
       ) : null}
+
+      {availableCreditCents > 0 && subtotal > 0 ? (
+        <section
+          aria-label="Úhrada kredity"
+          className="mt-7 rounded-lg border border-border p-4"
+        >
+          <label className="flex items-start gap-3 text-sm font-bold">
+            <input
+              type="checkbox"
+              className="mt-1 size-4"
+              {...register("useCredits")}
+            />
+            Použít dostupné kredity ({formatMoney(availableCreditCents)})
+          </label>
+          <dl className="mt-3 space-y-2 text-sm">
+            <div className="flex justify-between">
+              <dt>Cena rezervací</dt>
+              <dd>{formatMoney(subtotal)}</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt>Úhrada kreditem</dt>
+              <dd>−{formatMoney(usedCreditCents)}</dd>
+            </div>
+            <div className="flex justify-between font-bold">
+              <dt>Zbývá zaplatit</dt>
+              <dd>{formatMoney(effectivePriceCents)}</dd>
+            </div>
+          </dl>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Konečný dostupný zůstatek ověříme při potvrzení objednávky.
+          </p>
+        </section>
+      ) : null}
+      <p className="mt-5 text-sm text-muted-foreground">
+        Při změně na dražší termín doplatíš rozdíl. Při změně na levnější se
+        rozdíl připíše do kreditů pro další platbu.
+      </p>
 
       <fieldset className="mt-7 border-t border-border pt-6">
         <legend className="sr-only">Souhlas s dokumenty</legend>
