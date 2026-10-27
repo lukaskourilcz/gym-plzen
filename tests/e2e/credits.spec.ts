@@ -22,7 +22,7 @@ if (!localAuth)
   );
 const sql = postgres(requireTestDatabaseUrl(), { prepare: false, max: 1 });
 const gateway = createComgateMock(4547, "CREDIT");
-const email = "credit-member@example.test";
+const email = `credit-${process.env.E2E_RUN_ID}@example.test`;
 let memberId: string;
 const day = addDaysToDateKey(dateKeyInTimeZone(new Date()), 50);
 let firstId: string, secondId: string;
