@@ -298,6 +298,13 @@ test.describe("customer", () => {
       path: info.outputPath("credits-customer-mobile.png"),
       fullPage: true,
     });
+    await page.getByText("Historie kreditů", { exact: true }).click();
+    const history = page.getByRole("region", {
+      name: "Historie kreditních pohybů",
+    });
+    await expect(history).toBeVisible();
+    await history.focus();
+    await expect(history).toBeFocused();
     const violations = (
       await new AxeBuilder({ page }).include("main").analyze()
     ).violations.filter((v) =>

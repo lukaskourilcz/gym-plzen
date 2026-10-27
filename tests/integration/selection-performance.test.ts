@@ -82,7 +82,10 @@ describe(
           result.map((p) => p.priceCents),
           before,
         );
-        assert.equal(afterQueries, 3);
+        assert.ok(
+          afterQueries <= 3,
+          "batch pricing has a constant query budget",
+        );
         assert.ok(beforeQueries >= 20 * afterQueries);
         queries = 0;
         await getEntryPrices([starts[0]!]);

@@ -2,20 +2,20 @@
 
 ## Deployment boundary
 
-The feature is implemented on `codex/customer-credits`. This task does NOT
-apply production migrations, merge main, invoke production jobs, send customer
-messages or touch any production booking/PIN. All verification uses disposable
-loopback PostgreSQL databases, local Auth/Comgate/Resend replacements and blocked
-external provider networking. Automatic Vercel deployment is disabled for this
-branch; publishing the review PR cannot connect a preview to live services.
+The feature is implemented on `codex/customer-credits`. The initial implementation
+was local-only; the subsequent user request explicitly authorizes auditing,
+fixing, merging PR #274, production migration and deployment. All destructive or
+provider-effect verification still uses disposable loopback databases and local
+replacements. Never exercise a real customer workflow as a release test.
+Automatic Vercel preview deployment remains disabled for this branch.
 
 1. Review the PR, local screenshots and green application checks.
-2. Confirm the credit terms and accounting treatment with the operator. The new
-   terms version is `2026-10-27-credits-v1`; the previous document remains at
+2. The approved terms version is `2026-10-27-credits-v1`; the previous document remains at
    `/obchodni-podminky?version=legacy`. Update the publication date if needed.
-3. Only with deployment approval, apply
+3. With the deployment approval already granted, apply
    `drizzle/20261027090000_customer_credits.sql` through the existing migration
-   process BEFORE deploying code that reads wallets. No seeds/settings are run.
+   process, followed by `drizzle/20261027180000_credit_audit_indexes.sql`,
+   BEFORE deploying code that reads wallets. No seeds/settings are run.
 4. Verify old reservation, access-code, payment and message fields read-only
    before/after; additive columns must not be mistaken for changed old data.
 5. Deploy the reviewed commit and verify private routes, public calendar and

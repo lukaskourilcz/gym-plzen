@@ -62,6 +62,7 @@ export async function CreditWalletPanel({
           Historie kreditů
         </summary>
         <div
+          role="region"
           tabIndex={0}
           aria-label="Historie kreditních pohybů"
           className="mt-3 overflow-x-auto focus-visible:outline-2 focus-visible:outline-primary"
