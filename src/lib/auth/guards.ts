@@ -1,3 +1,4 @@
+import { claimGuestCredits } from "@/lib/services/credits";
 import { cache } from "react";
 import { googleAvatarUrl } from "@/lib/helpers/profile";
 import { phoneCompletionHref } from "@/lib/helpers/phone-policy";
@@ -92,6 +93,9 @@ async function resolveSessionUser(): Promise<SessionUser | null> {
         : null,
     createdAt: user.created_at,
   });
+
+  if (user.email && user.email_confirmed_at)
+    await claimGuestCredits(user.id, user.email);
 
   return {
     id: user.id,
