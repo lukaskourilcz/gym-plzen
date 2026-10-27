@@ -272,9 +272,8 @@ test.describe("customer", () => {
     const pdf = await page.request.get((await statement.getAttribute("href"))!);
     expect(pdf.status()).toBe(200);
     expect(pdf.headers()["content-type"]).toBe("application/pdf");
-    const cacheDirectives = pdf
-      .headers()
-      ["cache-control"].split(",")
+    const cacheDirectives = (pdf.headers()["cache-control"] ?? "")
+      .split(",")
       .map((value) => value.trim());
     expect(cacheDirectives).toEqual(
       expect.arrayContaining(["private", "no-store"]),
