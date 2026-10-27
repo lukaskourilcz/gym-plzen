@@ -1,3 +1,7 @@
+import { db } from "@/lib/db";
+import { reservationChange, profiles } from "@/lib/db/schema";
+import { eq, inArray, desc } from "drizzle-orm";
+import { CreditChangeRecovery } from "@/components/admin/credit-change-recovery";
 import { GuestCreditForm } from "./guest-credit-form";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/guards";
@@ -37,6 +41,24 @@ export default async function CreditsPage({
     page,
   };
   const rows = admin.isDemo ? [] : await creditCustomers(filters);
+  const unresolved = admin.isDemo
+    ? []
+    : await db
+        .select({
+          change: reservationChange,
+          name: profiles.fullName,
+          email: profiles.email,
+        })
+        .from(reservationChange)
+        .leftJoin(profiles, eq(profiles.id, reservationChange.userId))
+        .where(
+          inArray(reservationChange.status, [
+            "review_needed",
+            "refund_pending",
+          ]),
+        )
+        .orderBy(desc(reservationChange.updatedAt))
+        .limit(20);
   return (
     <>
       <PageHeader
@@ -150,6 +172,55 @@ export default async function CreditsPage({
           `/admin/credits?${new URLSearchParams({ ...filters, page: String(n) })}`
         }
       />
+      {unresolved.length ? (
+        <section className="mt-8">
+          <h2 className="mb-4 text-xl font-bold">Změny vyžadující ověření</h2>
+          <div className="grid gap-4">
+            {unresolved.map(({ change, name, email }) => (
+              <article
+                key={change.id}
+                className="grid gap-4 rounded-lg border border-border bg-card p-5 md:grid-cols-[1fr_20rem]"
+              >
+                <div>
+                  <p className="font-bold">
+                    {name || email} · {formatMoney(change.cashCents)}
+                  </p>
+                  <p className="mt-2 text-sm">
+                    {change.error || "Změnu se nepodařilo bezpečně dokončit."}
+                  </p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Stav vrácení:{" "}
+                    {
+                      (
+                        {
+                          none: "Čeká na nápravu",
+                          submitting:
+                            "Požadavek mohl být odeslán — ověřte Comgate",
+                          requested:
+                            "Požadavek přijat Comgate, ověřte dokončení",
+                          unknown: "Nejistý výsledek — ověřte Comgate",
+                          rejected: "Požadavek odmítnut — vyřešte v Comgate",
+                          confirmed: "Vráceno",
+                        } as const
+                      )[change.refundState]
+                    }
+                  </p>
+                  <Link
+                    className="mt-2 inline-block text-sm underline"
+                    href={`/admin/reservations?q=${change.reservationId}`}
+                  >
+                    Rezervace
+                  </Link>
+                </div>
+                <CreditChangeRecovery
+                  id={change.id}
+                  refundPending={change.status === "refund_pending"}
+                />
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
       {!admin.isDemo ? (
         <div className="mt-6 border-t border-border pt-5">
           <GuestCreditForm />

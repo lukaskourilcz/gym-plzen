@@ -28,3 +28,35 @@ const action = defineAction({
 export async function adjustCreditAction(input: Parameters<typeof action>[0]) {
   return action(input);
 }
+
+const recover = defineAction({
+  schema: z.object({ id: z.string().uuid() }),
+  authorize: assertAdmin,
+  handler: async ({ id }) => {
+    const { recoverFailedChange } =
+      await import("@/lib/services/priced-rescheduling");
+    await recoverFailedChange(id);
+    revalidatePath("/admin/credits");
+  },
+});
+export async function recoverCreditChangeAction(input: { id: string }) {
+  return recover(input);
+}
+const confirmRefund = defineAction({
+  schema: z.object({
+    id: z.string().uuid(),
+    reference: z.string().trim().min(3).max(200),
+  }),
+  authorize: assertAdmin,
+  handler: async (input, admin) => {
+    const { confirmChangeRefund } = await import("@/lib/services/credit-admin");
+    await confirmChangeRefund(input.id, input.reference, admin.id);
+    revalidatePath("/admin/credits");
+  },
+});
+export async function confirmCreditRefundAction(input: {
+  id: string;
+  reference: string;
+}) {
+  return confirmRefund(input);
+}

@@ -90,3 +90,53 @@ export async function creditCustomers(input: {
   return result as unknown as CreditCustomer[];
 }
 export const newCreditOperationId = () => randomUUID();
+
+export async function confirmChangeRefund(
+  id: string,
+  reference: string,
+  actorId: string,
+) {
+  const { payment, reservationChange } = await import("@/lib/db/schema");
+  const { withReservationLock } = await import("./operation-lock");
+  const { resolveAlert } = await import("./alerts");
+  const [known] = await db
+    .select()
+    .from(reservationChange)
+    .where(eq(reservationChange.id, id));
+  if (!known) throw new ActionError("Změna nebyla nalezena.");
+  await withReservationLock(known.reservationId, () =>
+    db.transaction(async (tx) => {
+      const [change] = await tx
+        .select()
+        .from(reservationChange)
+        .where(eq(reservationChange.id, id))
+        .for("update");
+      if (change?.status === "refunded") return;
+      if (change?.status !== "refund_pending")
+        throw new ActionError(
+          "Nejdříve musí být ověřená náprava rezervace a připravená refundace.",
+        );
+      const [attempt] = await tx
+        .select()
+        .from(payment)
+        .where(eq(payment.reservationChangeId, id))
+        .for("update");
+      if (!attempt || attempt.status !== "succeeded")
+        throw new ActionError("Přijatý doplatek nebyl nalezen.");
+      await tx
+        .update(reservationChange)
+        .set({
+          status: "refunded",
+          refundState: "confirmed",
+          refundReference: `${reference} · správce ${actorId}`,
+          updatedAt: new Date(),
+        })
+        .where(eq(reservationChange.id, id));
+      await tx
+        .update(payment)
+        .set({ status: "refunded", updatedAt: new Date() })
+        .where(eq(payment.id, attempt.id));
+    }),
+  );
+  await resolveAlert(`reservation-change:${id}`);
+}
