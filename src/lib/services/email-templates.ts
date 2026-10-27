@@ -80,6 +80,8 @@ export interface TransactionalEmailParams {
   id: EmailTemplateId;
   to: string;
   variables: Record<string, string>;
+  /** Mandatory transaction facts, appended when an older saved template lacks the variable. */
+  requiredSummary?: { variable: string; text: string };
   attachments?: EmailAttachment[];
   idempotencyKey?: string;
   /** Where the template's button leads, when the caller knows better. */
@@ -92,6 +94,11 @@ export async function prepareTransactionalEmail(
 ): Promise<SendEmailParams> {
   const template = await getEmailTemplate(params.id);
   const rendered = renderEmailTemplateText(template, params.variables);
+  if (
+    params.requiredSummary &&
+    !template.body.includes(`{${params.requiredSummary.variable}}`)
+  )
+    rendered.body += `\n\n${params.requiredSummary.text}`;
   const definition = getEmailTemplateDefinition(params.id);
   // A template carries a button when its definition names one. The address
   // is the caller's when it passed one, otherwise the page the template has

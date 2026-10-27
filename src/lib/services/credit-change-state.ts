@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import type { DatabaseExecutor } from "@/lib/db";
-import { blockedSlot, reservationChange } from "@/lib/db/schema";
+import { creditAccount, blockedSlot, reservationChange } from "@/lib/db/schema";
 import type { Reservation } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
 import { creditAccountForUser, finishCreditIn, postCreditIn } from "./credits";
@@ -40,9 +40,19 @@ export async function settleReservationChangeIn(
       reservationId: current.id,
     });
   }
+  const account = await creditAccountForUser(change.userId, tx);
+  const [balance] = await tx
+    .select()
+    .from(creditAccount)
+    .where(eq(creditAccount.id, account.id));
   await tx
     .update(reservationChange)
-    .set({ status: "completed", blockId: null, updatedAt: new Date() })
+    .set({
+      status: "completed",
+      blockId: null,
+      quote: { ...change.quote, creditBalanceCents: balance!.balanceCents },
+      updatedAt: new Date(),
+    })
     .where(eq(reservationChange.id, id));
   if (change.blockId)
     await tx.delete(blockedSlot).where(eq(blockedSlot.id, change.blockId));

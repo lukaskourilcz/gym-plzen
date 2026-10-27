@@ -93,11 +93,17 @@ export const EMAIL_TEMPLATE_DEFINITIONS: readonly EmailTemplateDefinition[] = [
     label: "Změna termínu",
     description:
       "Odešle se po změně termínu z účtu zákazníka, s aktualizovanou pozvánkou do kalendáře v příloze.",
-    variables: ["{name}", "{previous_time}", "{time}", "{duration}"],
+    variables: [
+      "{name}",
+      "{previous_time}",
+      "{time}",
+      "{duration}",
+      "{price_summary}",
+    ],
     delivery: "application",
     fallback: {
       subject: "Změna termínu rezervace | NAVI Private Gym",
-      body: "Ahoj {name},\n\nváš termín jsme změnili.\n\nPůvodní termín: {previous_time}\nNový termín: {time}\nDélka: {duration}\n\nPůvodní čas je uvolněný a v příloze je aktualizovaná pozvánka do kalendáře. Před začátkem rezervace vám pošleme osobní vstupní kód.\n\nNAVI Private Gym",
+      body: "Ahoj {name},\n\nváš termín jsme změnili.\n\nPůvodní termín: {previous_time}\nNový termín: {time}\nDélka: {duration}\n\n{price_summary}\n\nPůvodní čas je uvolněný a v příloze je aktualizovaná pozvánka do kalendáře. Před začátkem rezervace vám pošleme osobní vstupní kód.\n\nNAVI Private Gym",
     },
   },
   {

@@ -122,7 +122,11 @@ export const reservationChange = pgTable(
     }),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     quote: jsonb("quote")
-      .$type<{ pricingVersion: number; termsVersion: string }>()
+      .$type<{
+        pricingVersion: number;
+        termsVersion: string;
+        creditBalanceCents?: number;
+      }>()
       .notNull(),
     error: text("error"),
     createdAt: timestamp("created_at", { withTimezone: true })

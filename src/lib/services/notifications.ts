@@ -12,7 +12,7 @@ import { deliverySummary } from "@/lib/helpers/delivery";
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { readDatabase } from "@/lib/db/read";
-import { profiles, messageDelivery } from "@/lib/db/schema";
+import { reservationChange, profiles, messageDelivery } from "@/lib/db/schema";
 import type { MessageDelivery } from "@/lib/db/types";
 import {
   formatDateTime,
@@ -524,9 +524,23 @@ export async function prepareRescheduleConfirmation(params: {
     }),
   );
 
+  const [change] = await db
+    .select()
+    .from(reservationChange)
+    .where(
+      and(
+        eq(reservationChange.reservationId, params.reservationId),
+        eq(reservationChange.status, "completed"),
+      ),
+    )
+    .limit(1);
+  const summary = change
+    ? `Původní cena: ${formatMoney(change.previousPriceCents)}\nNová cena: ${formatMoney(change.newPriceCents)}\nDoplatek platební bránou: ${formatMoney(change.cashCents)}\nPoužité kredity: ${formatMoney(change.creditCents)}\nPřipsaný kredit: ${formatMoney(Math.max(0, change.previousPriceCents - change.newPriceCents))}\nZůstatek kreditů po změně: ${formatMoney(change.quote.creditBalanceCents ?? 0)}`
+    : "Cena rezervace zůstává podle původních podmínek stejná.";
   return prepareTransactionalEmail({
     id: "reservation_rescheduled",
     to: params.email,
+    requiredSummary: { variable: "price_summary", text: summary },
     attachments: [
       {
         filename: "rezervace.ics",
@@ -534,6 +548,7 @@ export async function prepareRescheduleConfirmation(params: {
       },
     ],
     variables: {
+      price_summary: summary,
       name: params.name || "zákazníku",
       previous_time: formatDateTime(params.previousStartsAt),
       time: formatDateTime(params.startsAt),
