@@ -822,3 +822,23 @@ visibility controls. Hiding a post uses a neutral placeholder in administration.
 Disconnect requires the standard accessible admin dialog. Pending/lost responses
 show feedback and a reload action; no optimistic success is shown. The canvas
 preserves public brand typography while the controls use the admin system font.
+
+### Credit balances and financial corrections
+
+Credits use one prominent available balance, a separate reserved amount, and an
+expandable chronological ledger. Monetary columns use tabular numerals and keep
+the sign visible. The administration list is filtered on the server, paginated
+20/page and scrolls horizontally on compact screens. Customer screens keep the
+public brand typography; only new wallet/payment controls are added.
+
+`CreditEditor` uses the standard native `AdminDialog`: add, remove and set-balance
+are explicit modes, reason is required, and the resulting balance is shown before
+submission. Two equal-width footer actions remain adjacent; pending submissions
+prevent closing the dialog. Corrections never erase ledger evidence. No success is
+shown for an unknown response; the operator checks current history before retry.
+
+Reservation move confirmation shows old/new price, credit tender, cash due or
+credit gained. The primary action names the actual financial effect. A payment
+awaiting verification has its own status panel with a refresh action, while the
+original term remains valid. The admin component gallery contains an inert
+balance example; no gallery control may mutate a wallet.
