@@ -120,9 +120,23 @@ export interface GatewayPayment {
 export function createComgateMock(port: number, prefix = "TEST") {
   const payments = new Map<string, GatewayPayment>();
   const creates: unknown[] = [];
+  const refunds: unknown[] = [];
+  let loseRefund = false;
   let nextCreateFailure: "reject" | "lose" | null = null;
   const server = createServer(async (request, response) => {
     const url = new URL(request.url ?? "/", "http://127.0.0.1");
+    if (request.method === "POST" && url.pathname === "/v2.0/refund.json") {
+      const body = await readJson(request);
+      refunds.push(body);
+      if (loseRefund) {
+        loseRefund = false;
+        response.destroy();
+        return;
+      }
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify({ code: 0 }));
+      return;
+    }
     if (request.method === "POST" && url.pathname === "/v2.0/payment.json") {
       const body = (await readJson(request)) as {
         refId: string;
@@ -190,6 +204,10 @@ export function createComgateMock(port: number, prefix = "TEST") {
   return {
     payments,
     creates,
+    refunds,
+    loseNextRefundResponse() {
+      loseRefund = true;
+    },
     rejectNextCreation() {
       nextCreateFailure = "reject";
     },

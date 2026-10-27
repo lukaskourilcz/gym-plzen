@@ -146,6 +146,7 @@ export async function resetDatabase(): Promise<void> {
   });
   resend.reset();
   comgate.creates.length = 0;
+  comgate.refunds.length = 0;
   comgate.payments.clear();
 }
 
