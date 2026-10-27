@@ -7,7 +7,7 @@ import { reserveCreditIn } from "./credits";
 import { randomBytes } from "node:crypto";
 import { and, asc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { voucher, bookingOrder, profiles, reservation } from "@/lib/db/schema";
+import { bookingOrder, profiles, reservation } from "@/lib/db/schema";
 import type { BookingOrder, Reservation } from "@/lib/db/types";
 import type { BookingHold } from "@/lib/helpers/booking-hold";
 import {
@@ -623,41 +623,33 @@ async function startOrderUnlocked(params: {
       );
       await applyOrderPrices(
         order.id,
-        paid.map((row, index) => ({ id: row.id, priceCents: finals[index]! })),
+        paid.map((item, i) => ({
+          id: item.id,
+          priceCents: finals[i]!,
+          priceSnapshot: {
+            ...item.priceSnapshot!,
+            purchasePriceCents: finals[i]!,
+            discount:
+              quote.kind === "percentage"
+                ? {
+                    kind: "percentage" as const,
+                    value: quote.value,
+                    roundingCents:
+                      finals[i]! -
+                      ((item.priceCents ?? 0) -
+                        Math.round(
+                          ((item.priceCents ?? 0) * quote.value) / 100,
+                        )),
+                  }
+                : {
+                    kind: "fixed_amount" as const,
+                    value: (item.priceCents ?? 0) - finals[i]!,
+                  },
+          },
+        })),
         quote.finalPriceCents,
         quote.voucherId,
       );
-      const [savedVoucher] = await db
-        .select()
-        .from(voucher)
-        .where(eq(voucher.id, quote.voucherId));
-      for (const [i, item] of paid.entries()) {
-        await db
-          .update(reservation)
-          .set({
-            priceSnapshot: {
-              ...item.priceSnapshot!,
-              purchasePriceCents: finals[i]!,
-              discount:
-                savedVoucher?.kind === "percentage"
-                  ? {
-                      kind: "percentage",
-                      value: savedVoucher.value,
-                      roundingCents:
-                        finals[i]! -
-                        ((item.priceCents ?? 0) -
-                          Math.round(
-                            ((item.priceCents ?? 0) * savedVoucher.value) / 100,
-                          )),
-                    }
-                  : {
-                      kind: "fixed_amount",
-                      value: (item.priceCents ?? 0) - finals[i]!,
-                    },
-            },
-          })
-          .where(eq(reservation.id, item.id));
-      }
       totalCents = quote.finalPriceCents;
       voucherCode = quote.code;
     } catch (error) {
@@ -738,10 +730,14 @@ async function startOrderUnlocked(params: {
   }
 }
 
-/** Persist the voucher-adjusted prices of a still-pending order at once. */
+/** Store voucher prices and their immutable purchase evidence atomically. */
 async function applyOrderPrices(
   orderId: string,
-  prices: readonly { id: string; priceCents: number }[],
+  prices: readonly {
+    id: string;
+    priceCents: number;
+    priceSnapshot: NonNullable<Reservation["priceSnapshot"]>;
+  }[],
   totalCents: number,
   voucherId: string,
 ): Promise<void> {
@@ -758,7 +754,11 @@ async function applyOrderPrices(
     for (const row of prices)
       await tx
         .update(reservation)
-        .set({ priceCents: row.priceCents, updatedAt: new Date() })
+        .set({
+          priceCents: row.priceCents,
+          priceSnapshot: row.priceSnapshot,
+          updatedAt: new Date(),
+        })
         .where(
           and(eq(reservation.id, row.id), eq(reservation.status, "pending")),
         );
