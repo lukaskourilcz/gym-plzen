@@ -1,13 +1,3 @@
-import { addParticipants } from "../../src/lib/services/participants";
-import {
-  cancelReservation,
-  cancelByCustomer,
-} from "../../src/lib/services/reservations";
-import { confirmChangeRefund } from "../../src/lib/services/credit-admin";
-import {
-  issueDocumentFor,
-  getInvoiceForOrder,
-} from "../../src/lib/services/invoices";
 import {
   comgate,
   databaseReady,
@@ -19,6 +9,13 @@ import {
   startProviders,
   stopEverything,
 } from "./setup";
+import { addParticipants } from "../../src/lib/services/participants";
+import {
+  cancelReservation,
+  cancelByCustomer,
+} from "../../src/lib/services/reservations";
+import { confirmChangeRefund } from "../../src/lib/services/credit-admin";
+
 import { before, beforeEach, after, describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -229,7 +226,7 @@ describe("priced reservation changes", { skip: !databaseReady }, () => {
     const input = await changeInput(id, true);
     await startPricedReschedule(input);
     // The schedule was edited after quoting/payment; never move to rounded times.
-    await rows("update opening_hours set slot_minutes=75");
+    await rows("update opening_hours set is_closed=1");
     comgate.settle("TEST-0002", "PAID");
     await synchronizeComgatePayment("TEST-0002");
     await recoverFailedChange(input.id);

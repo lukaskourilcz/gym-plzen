@@ -25,10 +25,16 @@ export const dynamic = "force-dynamic";
 export default async function CreditsPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | undefined>>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const admin = await requireAdmin();
-  const query = await searchParams;
+  const raw = await searchParams;
+  const query = Object.fromEntries(
+    Object.entries(raw).map(([key, value]) => [
+      key,
+      typeof value === "string" ? value : undefined,
+    ]),
+  );
   const page = Math.max(
     1,
     Math.min(100000, Number.parseInt(query.page || "1", 10) || 1),
