@@ -208,7 +208,10 @@ export function parseNoticeFields(id: NoticeId, raw: unknown): NoticeFields {
   );
 }
 export const saveNoticeSchema = z
-  .object({ id: z.enum(NOTICE_IDS), fields: z.record(z.string().trim()) })
+  .object({
+    id: z.enum(NOTICE_IDS),
+    fields: z.record(z.string(), z.string().trim()),
+  })
   .superRefine((input, ctx) => {
     const def = noticeDefinition(input.id);
     for (const key of Object.keys(input.fields))

@@ -42,7 +42,7 @@ export const hhmmSchema = z
 
 /** Non-negative integer amount in the smallest currency unit (haléř). */
 export const priceCentsSchema = z
-  .number({ invalid_type_error: "Zadejte číslo." })
+  .number({ error: "Zadejte číslo." })
   .int("Cena musí být celé číslo.")
   .nonnegative("Cena nesmí být záporná.");
 

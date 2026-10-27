@@ -17,7 +17,7 @@ export const upsertPlanSchema = z.object({
 /** The single editable commercial setting: entry price in Kč. */
 export const entryPriceSchema = z.object({
   priceCzk: z
-    .number({ invalid_type_error: "Zadejte číslo." })
+    .number({ error: "Zadejte číslo." })
     // Zero is not "free entry": it would skip payment for every booking and
     // issue access codes to anyone. Free entries come from loyalty rewards.
     .positive("Cena musí být větší než nula."),
@@ -29,7 +29,7 @@ export const pricingPeriodSchema = z
     id: uuidSchema.optional(),
     name: z.string().trim().min(1, "Zadejte název období.").max(120),
     priceCzk: z
-      .number({ invalid_type_error: "Zadejte číslo." })
+      .number({ error: "Zadejte číslo." })
       .int("Cena musí být v celých korunách.")
       .positive("Cena musí být větší než nula."),
     startsOn: z.string().refine(isDateKey, "Zadejte platné datum začátku."),

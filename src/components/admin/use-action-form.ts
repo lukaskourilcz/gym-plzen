@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   useForm,
   type DefaultValues,
+  type FieldValues,
   type Path,
   type UseFormReturn,
 } from "react-hook-form";
@@ -22,22 +23,25 @@ import type { Result } from "@/lib/helpers/result";
  *
  * Every admin/login form is built on this hook.
  */
-export function useActionForm<S extends z.ZodTypeAny>(config: {
-  schema: S;
-  action: (input: z.infer<S>) => Promise<Result<unknown>>;
-  defaultValues?: DefaultValues<z.infer<S>>;
+export function useActionForm<
+  Input extends FieldValues,
+  Output extends FieldValues = Input,
+>(config: {
+  schema: z.ZodType<Output, Input>;
+  action: (input: Output) => Promise<Result<unknown>>;
+  defaultValues?: DefaultValues<Input>;
   successMessage?: string;
   resetOnSuccess?: boolean;
   onSuccess?: () => void;
 }): {
-  form: UseFormReturn<z.infer<S>>;
+  form: UseFormReturn<Input, unknown, Output>;
   submit: (e?: React.BaseSyntheticEvent) => Promise<void>;
   serverError: string | null;
   success: string | null;
 } {
-  type Values = z.infer<S>;
-  const form = useForm<Values>({
-    resolver: zodResolver(config.schema),
+  type Values = Input;
+  const form = useForm<Values, unknown, Output>({
+    resolver: zodResolver<Input, unknown, Output>(config.schema),
     defaultValues: config.defaultValues,
   });
   const [serverError, setServerError] = useState<string | null>(null);
