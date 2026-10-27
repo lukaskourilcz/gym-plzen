@@ -206,36 +206,9 @@ test("October visits cost 199 Kč regardless of purchase date; later visits cost
   );
 });
 
-test("booking, details and voucher quotes all pass the visit date to pricing", async () => {
-  const { readFile } = await import("node:fs/promises");
-  const booking = await readFile("src/lib/services/booking.ts", "utf8");
-  const orders = await readFile("src/lib/services/orders.ts", "utf8");
-  const details = await readFile("src/app/rezervace/udaje/page.tsx", "utf8");
-  const calendar = await readFile("src/app/rezervace/page.tsx", "utf8");
-  const vouchers = await readFile("src/app/rezervace/actions.ts", "utf8");
-  assert.match(booking, /getEntryPriceCents\(params.startsAt\)/);
-  // Every slot of an order is priced at its own start, in the order itself
-  // and in the quote the details step and the voucher check read.
-  assert.equal(
-    orders.match(/getEntryPriceCents\(slot\.startsAt\)/g)?.length,
-    2,
-  );
-  assert.match(details, /orders\.quoteOrder\(/);
-  assert.match(vouchers, /orders\.quoteOrder\(/);
-  // The page reuses the already-loaded date resolver; the integration test
-  // compares all selected prices with the server authority at period edges.
-  assert.match(calendar, /content\.entryPriceForDate\(startsAt\)/);
-});
-
-test("rescheduling never re-prices a reservation", async () => {
-  // Moving a slot must not re-run pricing: a customer who booked during the
-  // promotion keeps their price when they move the booking afterwards.
-  const source = await import("node:fs/promises").then((fs) =>
-    fs.readFile("src/lib/services/rescheduling.ts", "utf8"),
-  );
-  assert.doesNotMatch(source, /priceCents\s*[:=]/);
-  assert.doesNotMatch(source, /getEntryPrice|priceForNextEntry/);
-});
+// End-to-end date pricing and legacy moves are asserted behaviorally in
+// integration/price-priority.test.ts and integration/priced-rescheduling.test.ts.
+// Matching service source text would reject equivalent batch implementations.
 
 test("price resolution never throws on a missing moment or a malformed period", () => {
   // The account page failed in production with `at` undefined at runtime;

@@ -66,9 +66,19 @@ test(
         "drizzle/20261027180000_credit_audit_indexes.sql",
         "utf8",
       );
+      const beforeGuard = await readFile(
+        "scripts/release/credits-initial-before.sql",
+        "utf8",
+      );
+      const afterGuard = await readFile(
+        "scripts/release/credits-initial-after.sql",
+        "utf8",
+      );
       await sql.begin(async (tx) => {
+        await tx.unsafe(beforeGuard);
         await tx.unsafe(migration);
         await tx.unsafe(indexes);
+        await tx.unsafe(afterGuard);
       });
       const [indexed] =
         await sql`select count(*)::int as n from pg_indexes where schemaname='public' and indexname in ('reservation_change_user_completed_idx','reservation_change_recovery_idx')`;
@@ -94,6 +104,31 @@ test(
           ),
           before[i],
         );
+      await assert.rejects(
+        sql.begin(async (tx) => {
+          await tx.unsafe(beforeGuard);
+          await tx`update reservation set price_cents=1 where id=${booking!.id}`;
+          await tx.unsafe(afterGuard);
+        }),
+        /modified pre-existing row fields/,
+      );
+      assert.deepEqual(
+        await fingerprint("reservation", [
+          "pricing_version",
+          "terms_version",
+          "price_snapshot",
+          "credit_paid_cents",
+        ]),
+        before[0],
+      );
+      await assert.rejects(
+        sql.begin(async (tx) => {
+          await tx.unsafe(beforeGuard);
+          await tx`insert into credit_account(user_id) values(${member!.id})`;
+          await tx.unsafe(afterGuard);
+        }),
+        /must contain no wallets/,
+      );
       const [legacy] =
         await sql`select pricing_version,terms_version,credit_paid_cents from reservation where id=${booking!.id}`;
       assert.deepEqual(legacy, {
