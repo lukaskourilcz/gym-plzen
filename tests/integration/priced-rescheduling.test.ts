@@ -115,7 +115,7 @@ describe("priced reservation changes", { skip: !databaseReady }, () => {
     const result = await startPricedReschedule(await changeInput(id, true));
     assert.equal(result.kind, "checkout");
     assert.equal((await getCreditWallet(userId)).reservedCents, 1000);
-    assert.equal(comgate.creates[1]!.price, 2000);
+    assert.equal((comgate.creates[1] as { price: number }).price, 2000);
     const [r] = await rows<{
       starts_at: Date;
       reschedule_starts_at: Date | null;

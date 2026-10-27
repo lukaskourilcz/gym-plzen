@@ -1,3 +1,4 @@
+import { CreditWalletPanel } from "@/components/credit-wallet-panel";
 import {
   AdminListTotal,
   AdminListFilters,
@@ -218,6 +219,7 @@ export default async function MemberProfilePage({
           <MemberNoteEditor userId={id} name={name} note={profile?.note} />
         ) : null}
       </PageHeader>
+      {!demo ? <CreditWalletPanel userId={id} admin /> : null}
 
       <div className="mb-8 flex flex-wrap gap-4">
         <StatCard label="Návštěv celkem" value={status.totalEntries} />
