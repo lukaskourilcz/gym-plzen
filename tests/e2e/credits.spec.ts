@@ -27,6 +27,9 @@ let memberId: string;
 const day = addDaysToDateKey(dateKeyInTimeZone(new Date()), 50);
 let firstId: string, secondId: string;
 let oldReservations: unknown, oldCodes: unknown;
+let savedSettings: postgres.Row[] = [],
+  savedPeriods: postgres.Row[] = [],
+  savedHours: postgres.Row[] = [];
 test.describe.configure({ mode: "serial" });
 test.use({ storageState: join(process.cwd(), "tests/e2e/.auth/admin.json") });
 test.beforeAll(async () => {
@@ -46,6 +49,10 @@ test.beforeAll(async () => {
     throw new Error("Local credit member fixture failed");
   memberId = result.data.user.id;
   await sql`insert into profiles(id,email,full_name,first_name,last_name,phone,role) values(${memberId},${email},'Kredit Test','Kredit','Test','+420777000999','member') on conflict(id) do update set phone=excluded.phone`;
+  savedSettings =
+    await sql`select * from site_setting where key in ('pricing.entry_price_cents','features.additional_people')`;
+  savedPeriods = await sql`select * from pricing_period`;
+  savedHours = await sql`select * from opening_hours`;
   await sql`delete from pricing_period`;
   await sql`insert into site_setting(key,value) values('pricing.entry_price_cents','22900') on conflict(key) do update set value=excluded.value`;
   await sql`insert into site_setting(key,value) values('features.additional_people','false') on conflict(key) do update set value=excluded.value`;
@@ -56,6 +63,13 @@ test.beforeAll(async () => {
     await sql`select jsonb_agg(to_jsonb(c) order by id) as data from access_code c`;
 });
 test.afterAll(async () => {
+  for (const row of savedSettings)
+    await sql`update site_setting set value=${sql.json(row.value)},updated_at=${row.updated_at} where key=${row.key}`;
+  await sql`delete from pricing_period`;
+  if (savedPeriods.length)
+    await sql`insert into pricing_period ${sql(savedPeriods)}`;
+  for (const row of savedHours)
+    await sql`update opening_hours set open_minute=${row.open_minute},close_minute=${row.close_minute},slot_minutes=${row.slot_minutes},is_closed=${row.is_closed},updated_at=${row.updated_at} where id=${row.id}`;
   await gateway.stop();
   await sql.end({ timeout: 2 });
 });
