@@ -1,3 +1,10 @@
+import { ownReservationChange } from "@/lib/services/priced-rescheduling";
+import { getCreditWallet } from "@/lib/services/credits";
+import { db } from "@/lib/db";
+import { payment } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { synchronizeComgatePayment } from "@/lib/services/payments";
+import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { uuidSchema } from "@/lib/validations/common";
@@ -42,6 +49,34 @@ export default async function ReschedulePage({
   ]);
   if (!current || current.userId !== user.id) notFound();
 
+  let pending = user.isDemo ? null : await ownReservationChange(user.id, id);
+  let pendingPayment = pending
+    ? (
+        await db
+          .select()
+          .from(payment)
+          .where(eq(payment.reservationChangeId, pending.id))
+      )[0]
+    : null;
+  let paymentUnavailable = false;
+  if (pendingPayment?.providerPaymentId) {
+    try {
+      await synchronizeComgatePayment(pendingPayment.providerPaymentId);
+    } catch {
+      paymentUnavailable = true;
+    }
+    pending = await ownReservationChange(user.id, id);
+    if (!pending) redirect("/account");
+    pendingPayment = (
+      await db
+        .select()
+        .from(payment)
+        .where(eq(payment.reservationChangeId, pending.id))
+    )[0];
+  }
+  const wallet = user.isDemo
+    ? { availableCents: 0 }
+    : await getCreditWallet(user.id);
   const now = new Date();
   const alreadyRescheduled = await rescheduling.hasReservationBeenRescheduled(
     current.id,
@@ -103,12 +138,50 @@ export default async function ReschedulePage({
               </p>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 Původní rezervace platí až do potvrzení změny. Termín můžete
-                bezplatně změnit jednou, nejpozději 24 hodin před začátkem. Cena
-                původní rezervace se nemění.
+                změnit jednou, nejpozději 24 hodin před začátkem.{" "}
+                {current.pricingVersion < 2
+                  ? "U této dříve zakoupené rezervace se cena nemění."
+                  : "U dražšího termínu doplatíš rozdíl, u levnějšího získáš rozdíl do kreditů."}
               </p>
             </div>
 
-            {!eligibility.eligible ? (
+            {pending ? (
+              <div className="mt-8 max-w-2xl">
+                <Notice
+                  title={
+                    pending.status === "awaiting_payment"
+                      ? "Čeká se na doplatek"
+                      : "Změna se ověřuje"
+                  }
+                >
+                  Původní rezervace zůstává platná. Nový termín je dočasně
+                  držený.{" "}
+                  {paymentUnavailable
+                    ? "Stav platby se nyní nepodařilo ověřit."
+                    : pending.status === "review_needed" ||
+                        pending.status === "refund_pending"
+                      ? "Dokončení nebo vrácení doplatku řeší obsluha; další platbu nezakládejte."
+                      : "Po úhradě ověříme a dokončíme změnu."}
+                </Notice>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {pending.status === "awaiting_payment" &&
+                  pendingPayment?.gatewayUrl ? (
+                    <Button href={pendingPayment.gatewayUrl}>
+                      Pokračovat k doplatku
+                    </Button>
+                  ) : null}
+                  <Button
+                    variant="outline"
+                    href={`/account/rezervace/${id}/zmenit?change_id=${pending.id}`}
+                  >
+                    Obnovit stav
+                  </Button>
+                  <Button variant="ghost" href="/account">
+                    Zpět do profilu
+                  </Button>
+                </div>
+              </div>
+            ) : !eligibility.eligible ? (
               <div className="mt-8 max-w-2xl">
                 <Notice tone="warning" title="Termín nelze změnit" role="alert">
                   {rescheduling.rescheduleReasonMessage(eligibility.reason)}
@@ -120,6 +193,11 @@ export default async function ReschedulePage({
             ) : (
               <div className="mt-10">
                 <RescheduleCalendar
+                  priceCents={current.priceCents ?? 0}
+                  priceSnapshot={
+                    current.pricingVersion >= 2 ? current.priceSnapshot : null
+                  }
+                  availableCreditCents={wallet.availableCents}
                   reservationId={current.id}
                   initial={calendar!}
                   originalLabel={`${formatDate(current.startsAt)} · ${formatTimeRange(

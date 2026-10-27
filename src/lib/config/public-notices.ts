@@ -84,7 +84,7 @@ export const NOTICE_DEFINITIONS: readonly Definition[] = [
     label: "Změna termínu",
     description:
       "Dialog ukázkové změny a potvrzení změny termínu ve skutečném zákaznickém účtu.",
-    variables: ["time", "price"],
+    variables: ["time", "price", "amount"],
     fields: [
       field("title", "Nadpis", "Změnit termín"),
       field("original", "Původní termín", "Současný termín: {time}", ["time"]),
@@ -92,6 +92,12 @@ export const NOTICE_DEFINITIONS: readonly Definition[] = [
         "body",
         "Vysvětlení změny",
         "Vyberte nový den a čas. Změní se pouze tato rezervace; její cena zůstane stejná. Původní termín platí až do potvrzení změny.",
+      ),
+      field(
+        "creditRefund",
+        "Rozdíl vrácený do kreditů",
+        "Rozdíl {amount} připíšeme do tvých kreditů pro další platbu. Na platební kartu se nevrací.",
+        ["amount"],
       ),
       field("date", "Popisek data", "Nové datum"),
       field(

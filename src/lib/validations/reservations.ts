@@ -43,6 +43,9 @@ export const cancelReservationSchema = z.object({
 });
 
 export const rescheduleReservationSchema = z.object({
+  operationId: z.string().uuid().optional(),
+  quotedCents: z.number().int().min(0).max(100000000).optional(),
+  useCredits: z.boolean().optional(),
   reservationId: z.string().uuid(),
   startsAt: dateTimeStringSchema,
 });
