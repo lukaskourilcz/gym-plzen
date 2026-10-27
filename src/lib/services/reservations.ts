@@ -1,3 +1,4 @@
+import { creditAccountForUser, postCreditIn } from "./credits";
 import { assertNoOpenChange } from "./reservation-finance-guard";
 import { formatTime } from "@/lib/helpers/format";
 import { cancellationPrice } from "@/lib/config/customer-cancellation";
@@ -243,6 +244,31 @@ async function cancelReservationLocked(
         before.orderId,
         tx,
       );
+    if (params.byAdminId && before.status === "confirmed" && before.userId) {
+      const companions = await tx
+        .select()
+        .from(participantAddition)
+        .where(
+          and(
+            eq(participantAddition.reservationId, before.id),
+            eq(participantAddition.status, "confirmed"),
+          ),
+        );
+      const creditRefund =
+        before.creditPaidCents +
+        companions.reduce((sum, item) => sum + item.creditCents, 0);
+      if (creditRefund > 0) {
+        const account = await creditAccountForUser(before.userId, tx);
+        await postCreditIn(tx, {
+          accountId: account.id,
+          amountCents: creditRefund,
+          key: `operator-cancel:${before.id}`,
+          reason: "Vrácení kreditní úhrady po zrušení provozovatelem",
+          reservationId: before.id,
+          actorId: params.byAdminId,
+        });
+      }
+    }
     if (before.status === "confirmed" && email) {
       await tx
         .insert(messageDelivery)
@@ -319,7 +345,7 @@ async function cancelReservationLocked(
   );
   const originalPaidForSlot = paid
     ? paid.orderId
-      ? (before.priceCents ?? 0)
+      ? Math.max(0, (before.priceCents ?? 0) - before.creditPaidCents)
       : paid.amountCents
     : 0;
   const paidForSlot = originalPaidForSlot + companionPaidCents;

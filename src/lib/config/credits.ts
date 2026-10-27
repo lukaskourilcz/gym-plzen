@@ -52,7 +52,9 @@ export function allocateCredit(
     cumulative = 0;
   return prices.map((price) => {
     cumulative += price;
-    const next = total ? Math.floor((amount * cumulative) / total) : 0;
+    const next = total
+      ? Number((BigInt(amount) * BigInt(cumulative)) / BigInt(total))
+      : 0;
     const share = next - allocated;
     allocated = next;
     return share;
