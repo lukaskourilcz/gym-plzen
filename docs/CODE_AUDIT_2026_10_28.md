@@ -138,8 +138,20 @@ Opakování nezakládá platbu, refundaci ani zákaznickou zprávu.
 ### A10 — Test bootstrap nerozpoznal chybné kódování databáze (P3, testovací prostředí)
 
 Při přípravě nových místních databází zdědil pracovní PostgreSQL výchozí
-SQL_ASCII. Šest integračních kontrol českého vyhledávání proto správně selhalo;
-nejde o regresi aplikace ani nastavení produkce (UTF8). Závěrečné databáze byly
+SQL_ASCII. Toto neplatné testovací prostředí nesmí být podkladem pro závěr
+o produkci (UTF8). Závěrečné databáze byly
 vytvořeny z template0 explicitně jako UTF8. Bootstrap nyní ještě před migrací
 odmítá jiné kódování; regresní test ověřuje prázdné schéma po odmítnutí.
 Tím se neskrývají chyby vyhledávání a budoucí chybný lokální běh selže včas.
+
+### A11 — Hledání jmen záviselo na locale a neumělo obecné latinské akcenty (P2)
+
+Opakovaný běh na UTF8 s locale C prokázal samostatnou chybu aplikace: SQL
+lower neodstraňovalo velká česká písmena, ruční translate neuměl například
+Müller ani rozložené E + akcent. Prohlížeč přitom dotaz normalizuje jako NFD.
+Společný SQL výraz nyní nejprve provede NFD a odstraní kombinující latinské
+akcenty, poté převede ASCII na malá písmena. Používají ho všechny admin seznamy
+i kredity; původní data a nastavení databáze zůstávají beze změny. Regrese
+ověřuje ŽLUŤOUČKÝ, Zoë Müller a rozložené ÉLODIE v obou seznamech. Funkce je
+nativní v PostgreSQL 17, bez nové extension nebo migrace:
+[PostgreSQL string functions](https://www.postgresql.org/docs/17/functions-string.html).

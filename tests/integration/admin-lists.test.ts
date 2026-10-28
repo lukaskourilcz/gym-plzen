@@ -12,6 +12,7 @@ import { splitAdminPage } from "../../src/lib/helpers/admin-list";
 import { programmeCodeStates } from "../../src/lib/services/admin-programme";
 import { listEntriesForDay } from "../../src/lib/services/entry-log";
 import { splitPage } from "../../src/lib/helpers/pagination";
+import { creditCustomers } from "../../src/lib/services/credit-admin";
 import {
   accessCodePage,
   activityPage,
@@ -204,6 +205,38 @@ describe(
           .n,
         106,
       );
+    });
+
+    test("member and credit search find uppercase and decomposed Latin names independently of database locale", async () => {
+      for (const [name, query] of [
+        ["ŽLUŤOUČKÝ", "zlutoucky"],
+        ["Zoë Müller", "zoe muller"],
+        ["E\u0301LODIE", "élodie"],
+      ] as const) {
+        const [profile] = await rows<{ id: string }>(
+          "insert into profiles(id,email,full_name) values(gen_random_uuid(),gen_random_uuid()::text||'@example.test',$1) returning id",
+          [name],
+        );
+        await rows(
+          "insert into credit_account(user_id,balance_cents) values($1,100)",
+          [profile!.id],
+        );
+        const members = await memberPage(1, filters({ q: query }), now);
+        assert.deepEqual(
+          members.map((row) => row.user.id),
+          [profile!.id],
+        );
+        const credits = await creditCustomers({
+          q: query,
+          registration: "",
+          page: 1,
+          sort: "name",
+        });
+        assert.deepEqual(
+          credits.map((row) => row.id),
+          [profile!.id],
+        );
+      }
     });
 
     test("daily entries paginate all records in a Prague day with stable tie ordering", async () => {

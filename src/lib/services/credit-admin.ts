@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { creditAccount, creditEntry } from "@/lib/db/schema";
 import { ActionError } from "@/lib/helpers/action";
 import { adminCreditAccount, postCreditIn } from "./credits";
+import { normalizedAdminText } from "./admin-list-query";
 export async function adjustCustomerCredit(
   input: {
     userId?: string;
@@ -91,7 +92,7 @@ export async function creditCustomers(input: {
       select a.id,coalesce(a.guest_name,a.guest_email),a.guest_email,a.balance_cents,a.reserved_cents,a.updated_at,false,exists(select 1 from profiles p where lower(p.email)=a.guest_email)
       from credit_account a where a.guest_email is not null and a.balance_cents>0
     ) select *,count(*) over()::int as total from customers
-    where (translate(lower(coalesce(name,'')), 'áčďéěíňóřšťúůýž', 'acdeeinorstuuyz') like ${q} or lower(coalesce(email,'')) like ${q})
+    where (${normalizedAdminText(sql`name`)} like ${q} or ${normalizedAdminText(sql`email`)} like ${q})
       and (${input.registration} <> 'registered' or registered)
       and (${input.registration} <> 'guest' or not registered)
     order by ${input.sort === "name" ? sql`name asc` : input.sort === "updated" ? sql`updated desc nulls last` : sql`balance desc`},id
