@@ -1,5 +1,15 @@
 import { pageLimit, pageOffset } from "@/lib/helpers/pagination";
-import { and, desc, eq, gte, lt, inArray, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  gte,
+  lt,
+  inArray,
+  sql,
+  isNull,
+  like,
+} from "drizzle-orm";
 import { db } from "@/lib/db";
 import { entryLog, accessCode, reservation, profiles } from "@/lib/db/schema";
 import type { EntryLog } from "@/lib/db/types";
@@ -106,6 +116,34 @@ export async function listRecentEntries(limit = 100): Promise<EntryLog[]> {
     .from(entryLog)
     .orderBy(desc(entryLog.occurredAt))
     .limit(limit);
+}
+
+/** Stored usage details belong only to codes on the authorized admin page. */
+export async function storedCodeUsage(codeIds: string[]) {
+  const [uses, counts] = await Promise.all([
+    codeIds.length
+      ? db
+          .select({
+            id: entryLog.id,
+            action: entryLog.action,
+            codeId: entryLog.accessCodeId,
+            at: entryLog.occurredAt,
+          })
+          .from(entryLog)
+          .where(inArray(entryLog.accessCodeId, codeIds))
+          .orderBy(desc(entryLog.occurredAt), desc(entryLog.id))
+      : Promise.resolve([]),
+    db
+      .select({ count: sql<number>`count(*)`.mapWith(Number) })
+      .from(entryLog)
+      .where(
+        and(
+          isNull(entryLog.accessCodeId),
+          like(entryLog.action, "keypad_failure_%"),
+        ),
+      ),
+  ]);
+  return { uses, unassignedFailureCount: counts[0]!.count };
 }
 
 /**

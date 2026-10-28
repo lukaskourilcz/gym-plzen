@@ -43,14 +43,14 @@ export default async function AccessCodesPage({
   const filters = readAdminFilters(params);
   const {
     rows,
-    unassignedFailures,
+    unassignedFailureCount,
     hasNext,
     nukiUnavailable,
     usageUnavailable,
   } = admin.isDemo
     ? {
         rows: [],
-        unassignedFailures: [],
+        unassignedFailureCount: 0,
         hasNext: false,
         nukiUnavailable: false,
         usageUnavailable: false,
@@ -93,8 +93,7 @@ export default async function AccessCodesPage({
         </p>
       )}
       <p className="mb-4 text-sm text-muted-foreground">
-        Nepřiřazené neúspěšné pokusy:{" "}
-        <strong>{unassignedFailures.length}</strong>
+        Nepřiřazené neúspěšné pokusy: <strong>{unassignedFailureCount}</strong>
         {usageUnavailable ? " (historie není úplná)" : ""}. Tyto pokusy Nuki
         nespojilo s konkrétním kódem. Sloupec u zákazníka počítá pouze pokusy
         přiřazené k jeho kódu.

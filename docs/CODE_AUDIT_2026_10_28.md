@@ -112,3 +112,14 @@ stav se navíc překládal jako „odesláno“. Dva regresní testy nejprve sel
 Obálka se nyní validuje před zápisem, vadné jednotlivé stavy se izolují,
 neznámý stav se nevymýšlí a podepsané platné potvrzení se zapíše. Šest testů
 vnějších rout prošlo; fiktivní podpisový klíč nevytváří oprávnění odesílat.
+
+### A08 — Stránka kódů přenášela nesouvisející historii pokusů (P2)
+
+Pro každou stránku se stahovaly všechny historické neúspěšné pokusy, přestože
+UI potřebuje detaily jen pro viditelné kódy a celkový počet nepřiřazených pokusů.
+Na izolovaném fixture 5 003 vstupů původní dotaz přenesl 5 002 řádků / 685 343 B;
+nový vrací 2 řádky / 343 B a SQL souhrn se stejným počtem 2 500. Jednorázové
+lokální měření celé funkce: 27,90 → 9,05 ms (bez tvrzení o produkční latenci).
+Regrese ověřuje úplné použití i selhání viditelného kódu, prázdnou stránku,
+správný souhrn a zachování celé uložené historie. Neomezuje se historie kódu,
+jen se nečtou a neserializují cizí podrobnosti.
