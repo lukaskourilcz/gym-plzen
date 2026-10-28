@@ -6,17 +6,20 @@ import { getCreditWallet } from "@/lib/services/credits";
 import { formatDateTime, formatMoney } from "@/lib/helpers/format";
 import { CreditHistoryTable } from "./credit-history-table";
 import { CreditEditor } from "@/components/admin/credit-editor";
+import { Pagination } from "@/components/ui/pagination";
 export async function CreditWalletPanel({
   userId,
   admin = false,
   historyOnly = false,
+  page = 1,
 }: {
   userId: string;
   admin?: boolean;
   historyOnly?: boolean;
+  page?: number;
 }) {
   const [wallet, changes] = await Promise.all([
-    getCreditWallet(userId),
+    getCreditWallet(userId, historyOnly ? page : undefined),
     db
       .select()
       .from(reservationChange)
@@ -96,6 +99,14 @@ export async function CreditWalletPanel({
             ))}
           </ul>
         </details>
+      ) : null}
+      {historyOnly ? (
+        <Pagination
+          page={page}
+          hasNext={wallet.hasNext}
+          hrefForPage={(next) => `/account?tab=credits&page=${next}`}
+          label="Stránkování historie kreditů"
+        />
       ) : null}
     </section>
   );

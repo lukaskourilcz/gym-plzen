@@ -8,6 +8,13 @@ import {
 } from "@/lib/db/schema";
 import { assertMoney, creditTender } from "@/lib/config/credits";
 import { ActionError } from "@/lib/helpers/action";
+import { CREDIT_HISTORY_PAGE_SIZE } from "@/lib/config/credits";
+import {
+  pageFromParam,
+  pageLimit,
+  pageOffset,
+  splitPage,
+} from "@/lib/helpers/pagination";
 
 export async function creditAccountForUser(
   userId: string,
@@ -225,8 +232,9 @@ export async function getCreditBalance(userId: string) {
       (account?.balanceCents ?? 0) - (account?.reservedCents ?? 0),
   };
 }
-export async function getCreditWallet(userId: string) {
+export async function getCreditWallet(userId: string, historyPage?: number) {
   const balance = await getCreditBalance(userId);
+  const page = pageFromParam(String(historyPage ?? 1));
   const entries = balance.accountId
     ? (
         await db
@@ -239,14 +247,28 @@ export async function getCreditWallet(userId: string) {
           .leftJoin(profiles, eq(profiles.id, creditEntry.actorId))
           .where(eq(creditEntry.accountId, balance.accountId))
           .orderBy(desc(creditEntry.createdAt), desc(creditEntry.id))
-          .limit(50)
+          .limit(
+            historyPage === undefined
+              ? 50
+              : pageLimit(CREDIT_HISTORY_PAGE_SIZE),
+          )
+          .offset(
+            historyPage === undefined
+              ? 0
+              : pageOffset(page, CREDIT_HISTORY_PAGE_SIZE),
+          )
       ).map(({ entry, actorName, actorEmail }) => ({
         ...entry,
         actorName: actorName || actorEmail || "Systém",
       }))
     : [];
 
-  return { ...balance, entries };
+  const history = splitPage(entries, CREDIT_HISTORY_PAGE_SIZE);
+  return {
+    ...balance,
+    entries: historyPage === undefined ? entries : history.rows,
+    hasNext: historyPage !== undefined && history.hasNext,
+  };
 }
 export async function adminCreditAccount(
   input: { userId?: string; email?: string; name?: string },

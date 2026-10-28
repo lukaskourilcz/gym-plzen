@@ -160,7 +160,7 @@ export default async function AccountPage({
               isDemoCustomer ? (
                 <Notice>Zatím žádné kreditní pohyby.</Notice>
               ) : (
-                <CreditWalletPanel userId={user.id} historyOnly />
+                <CreditWalletPanel userId={user.id} historyOnly page={page} />
               )
             ) : tab === "profile" ? (
               <div className="grid gap-6">
