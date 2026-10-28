@@ -79,7 +79,7 @@ export function startMetaPixel(pathname: string) {
   } catch (error) {
     // Third-party instrumentation must never abort navigation or a checkout
     // whose reservation/payment intent may already have committed.
-    reportTransportError(error, "analytics.meta.start");
+    reportTransportError(error, "analytics.meta.start", "nonessential");
     return false;
   }
 }
@@ -105,7 +105,7 @@ export function trackMetaEvent(
   try {
     window.fbq?.("track", eventName, parameters, { eventID: eventId });
   } catch (error) {
-    reportTransportError(error, "analytics.meta.track");
+    reportTransportError(error, "analytics.meta.track", "nonessential");
     return;
   }
   try {

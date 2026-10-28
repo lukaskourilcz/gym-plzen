@@ -1,6 +1,10 @@
 import { isTransportError, isStaleActionError } from "./browser-errors";
 
-export function reportTransportError(error: unknown, operation: string) {
+export function reportTransportError(
+  error: unknown,
+  operation: string,
+  recovery: "shown" | "nonessential" = "shown",
+) {
   if (!process.env.NEXT_PUBLIC_SENTRY_DSN) return;
   void import("@sentry/nextjs")
     .then(({ captureException }) =>
@@ -11,7 +15,7 @@ export function reportTransportError(error: unknown, operation: string) {
             : "error",
         tags: {
           operation,
-          recovery: "shown",
+          recovery,
           online: String(navigator.onLine),
           ...(error instanceof Error &&
           "digest" in error &&

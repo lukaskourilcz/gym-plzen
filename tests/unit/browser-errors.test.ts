@@ -5,6 +5,7 @@ import {
   isGoogleMapsModuleError,
   isInjectedFacebookError,
   isInjectedBrowserError,
+  isFriendlyBridgeError,
   isTransportError,
   isStaleActionError,
   markMapErrorRecovered,
@@ -158,4 +159,38 @@ test("map worker and renderer failures recover only with a confirmed Maps stack"
   const unknown = new Error("Script error.");
   unknown.stack = "at app:///maps-api-v3/api/js/66/11a/intl/cs_ALL/main.js:1:9";
   assert.equal(isGoogleMapsModuleError(unknown), false);
+});
+
+test("Friendly's injected media bridge is classified without discarding the event or unrelated application errors", () => {
+  const event = bridge("app:///rezervace");
+  const exception = event.exception!.values![0]!;
+  exception.value =
+    "undefined is not an object (evaluating 'window.__83066_Friendly.mediaPlayerBridge.resumePlayingInBackground')";
+  exception.stacktrace!.frames!.push({
+    filename: "app:///_next/static/chunks/4295.797383053ca96e64.js",
+    function: "n",
+  });
+  assert.equal(
+    isFriendlyBridgeError(
+      event,
+      "Mozilla/5.0 (iPhone) AppleWebKit Safari/604.1",
+    ),
+    true,
+  );
+  assert.equal(
+    isInjectedBrowserError(
+      event,
+      "Mozilla/5.0 (iPhone) AppleWebKit Safari/604.1",
+    ),
+    false,
+  );
+  assert.equal(isFriendlyBridgeError(event, "Chrome"), false);
+  exception.value = "Cannot read properties of undefined";
+  assert.equal(
+    isFriendlyBridgeError(
+      event,
+      "Mozilla/5.0 (iPhone) AppleWebKit Safari/604.1",
+    ),
+    false,
+  );
 });

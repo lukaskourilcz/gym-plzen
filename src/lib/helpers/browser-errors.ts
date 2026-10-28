@@ -111,3 +111,20 @@ export function isInjectedFacebookError(event: ErrorEvent, userAgent: string) {
     isInjectedBrowserError(event, userAgent)
   );
 }
+
+/** Friendly injects a native media bridge even though its UA says Safari. */
+export function isFriendlyBridgeError(event: ErrorEvent, userAgent: string) {
+  if (!/iPhone|iPad/.test(userAgent) || !/Safari/.test(userAgent)) return false;
+  const values = event.exception?.values ?? [];
+  if (values.length !== 1) return false;
+  const exception = values[0]!;
+  return (
+    exception.type === "TypeError" &&
+    /^undefined is not an object \(evaluating 'window\.__\d+_Friendly\.mediaPlayerBridge\.resumePlayingInBackground'\)$/.test(
+      exception.value ?? "",
+    ) &&
+    (exception.stacktrace?.frames ?? []).some((frame) =>
+      isInlinePageFrame(frame.filename ?? ""),
+    )
+  );
+}

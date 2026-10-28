@@ -9,6 +9,7 @@
  */
 import {
   isInjectedBrowserError,
+  isFriendlyBridgeError,
   isTransportError,
   wasMapErrorRecovered,
 } from "@/lib/helpers/browser-errors";
@@ -32,6 +33,23 @@ if (dsn) {
             wasMapErrorRecovered(hint.originalException)
           )
             return null;
+          // Keep unproven/unsupported host-browser failures visible. Friendly
+          // adds an inline frame plus a monitoring wrapper, so retain the
+          // event at warning severity rather than discarding an application frame.
+          if (isFriendlyBridgeError(event, navigator.userAgent)) {
+            event.level = "warning";
+            event.tags = {
+              ...event.tags,
+              external_source: "friendly_native_bridge",
+            };
+          }
+          event.contexts = {
+            ...event.contexts,
+            browser_runtime: {
+              visibility: document.visibilityState,
+              has_focus: document.hasFocus(),
+            },
+          };
           if (isTransportError(hint.originalException)) {
             event.tags = { ...event.tags, online: String(navigator.onLine) };
             if (!navigator.onLine) event.level = "warning";
