@@ -203,6 +203,7 @@ describe("priced reservation changes", { skip: !databaseReady }, () => {
     );
     const original = await rows("select * from reservation order by id");
     const codes = await rows("select * from access_code order by id");
+    const messages = await rows("select * from message_delivery order by id");
     const pipelines = await rows(
       "select * from reservation_pipeline order by id",
     );
@@ -224,6 +225,10 @@ describe("priced reservation changes", { skip: !databaseReady }, () => {
       codes,
     );
     assert.equal(resend.sent.length, 0);
+    assert.deepEqual(
+      await rows("select * from message_delivery order by id"),
+      messages,
+    );
     const input = await changeInput(id);
     assert.equal((await startPricedReschedule(input)).kind, "checkout");
     assert.equal((comgate.creates[1] as { price: number }).price, 4000);
@@ -240,6 +245,10 @@ describe("priced reservation changes", { skip: !databaseReady }, () => {
       pipelines,
     );
     assert.equal(resend.sent.length, 0);
+    assert.deepEqual(
+      await rows("select * from message_delivery order by id"),
+      messages,
+    );
     comgate.settle("TEST-0002", "PAID");
     await synchronizeComgatePayment("TEST-0002");
     await synchronizeComgatePayment("TEST-0002");

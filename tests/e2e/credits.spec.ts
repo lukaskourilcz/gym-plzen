@@ -288,6 +288,33 @@ test.describe("customer", () => {
     await expect(
       page.getByRole("button", { name: /Zaplatit 28 Kč a změnit termín/ }),
     ).toBeVisible();
+    const original = await sql`select * from reservation where id=${secondId}`;
+    await page.route("**/account/rezervace/**/zmenit**", (route) => {
+      const request = route.request();
+      if (request.method() !== "POST") return route.continue();
+      const body = request.postData()!;
+      expect(body).toContain("2026-10-28-credits-v2");
+      return route.continue({
+        postData: body.replace(
+          "2026-10-28-credits-v2",
+          "2026-10-27-credits-v1",
+        ),
+      });
+    });
+    await page
+      .getByRole("button", { name: /Zaplatit 28 Kč a změnit termín/ })
+      .click();
+    await expect(page.getByRole("alert")).toContainText(
+      "Pravidla změny termínu se aktualizovala",
+    );
+    expect(await sql`select * from reservation where id=${secondId}`).toEqual(
+      original,
+    );
+    expect(
+      await sql`select id from reservation_change where reservation_id=${secondId}`,
+    ).toHaveLength(0);
+    expect(gateway.creates).toHaveLength(0);
+    await page.unroute("**/account/rezervace/**/zmenit**");
     await page.route("https://payments.comgate.cz/**", (route) =>
       route.fulfill({
         contentType: "text/html",
