@@ -11,20 +11,26 @@ oddělené místní databáze a náhrady poskytovatelů s blokováním vnější
 Inventář a předchozí audit nejsou důkazem nové kontroly. Stav se doplňuje až
 po přečtení celých kritických toků, ověření jejich volajících a konkrétních testů.
 
-| Oblast                          | Vstupy a související moduly                                                                | Stav a důkaz     |
-| ------------------------------- | ------------------------------------------------------------------------------------------ | ---------------- |
-| Identita, role a profil         | auth guards/demo, Supabase middleware/callbacky, customer-profile/password, členové        | Rozpracováno     |
-| Rezervace a kapacita            | booking/orders/reservations, availability/schedule/slots, blokace a uzávěry                | Čeká na kontrolu |
-| Změny a storna                  | rescheduling/priced-rescheduling, finance-guard, původní přístup, kompenzace               | Čeká na kontrolu |
-| Peníze a kredity                | payments/order-state, credit ledger/holds/admin/change-state, vouchers/loyalty/memberships | Čeká na kontrolu |
-| Kódy a integrace zámku          | access-codes, Nuki, lock-health, entry-log, recovery                                       | Čeká na kontrolu |
-| Komunikace a dokumenty          | fulfillment/pipeline/messages, e-mail/SMS/WhatsApp, invoice/archive/delivery               | Čeká na kontrolu |
-| Vnější vstupy a plánované úlohy | všechny API routes, webhooky, OAuth, cron a omezené retry fronty                           | Čeká na kontrolu |
-| Web, obsah a média              | veřejné stránky, dostupnost, CMS, upload, Instagram, newsletter, právní dokumenty          | Rozpracováno     |
-| Administrace a náhledy          | všechny admin actions, seznamy/filtry, finanční přehledy, simulace zákazníka               | Čeká na kontrolu |
-| Databáze a migrace              | schéma, constraints/FK/indexy, RLS/GRANTs, migrační historie, souběh/DST                   | Čeká na kontrolu |
-| Výkon a dostupnost              | plány dotazů a počty čtení, cache/realtime, timeouty, payloady a klientské hranice         | Čeká na měření   |
-| Závislosti a provoz             | advisories/lockfile, prostředí, build/CI, monitoring, release a rollback                   | Rozpracováno     |
+| Oblast                  | Provedená kontrola a důkazy                                                                                                                                                                                                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Identita, role a profil | Trasy login/callback/confirm/reset, middleware, guards/demo-policy, customer-profile/password a změny rolí. Role pochází z profiles, Auth metadata nejsou autorita. E2E auth/customer/required-phone/admin + A03.                                                                                |
+| Rezervace a kapacita    | Celé orders/booking/availability/order-state a jejich volající, createReservation, slots/schedule, blocking/calendar-blocking/closures. Exclusion constraint, zámek rozvrhu a kontrola po zámku; integrační orders/reservations/admin-operations/blocking + SQL.                                 |
+| Změny a storna          | priced-rescheduling → rescheduling → credit-change-state, finance-guard, abort/recovery, reservations/cancellation-delivery. Původní a nový čas se drží do ověření přístupu; compensation/refund má trvalý intent. Integrační repricing/rescheduling/credit-change/cancellation + A05/A09.       |
+| Peníze a kredity        | payments včetně všech čtyř dispatcher větví, order-state, credits/credit-admin, vouchers/loyalty/memberships, snapshot nákupních podmínek. Dedupe, částka/měna/merchant/environment, rezervace kreditů a immutable ledger; integrační concurrency/late/unknown/refund scénáře.                   |
+| Kódy a zámek            | Celý access-codes/fulfillment/pipeline/operation-lock, Nuki readback/ambiguous PUT/revoke/expiry, lock-health, entry-log a autorizované PIN projekce. Příprava −24 h, doručení −1 h, nezávislost na nové otevírací době; fiktivní Nuki integrační testy.                                         |
+| Komunikace a dokumenty  | notifications a trvalé outboxy cancellation/reschedule/invoice/operator, transporty, archive/messages, invoices/PDF. Exact bytes, dedupe a bezpečná retry lhůta, povinný email versus volitelný WhatsApp; A05/A06/A07.                                                                           |
+| Vnější vstupy a úlohy   | Inventář všech 17 API routes a 29 action modulů. Podpisy, tajemství cron, body limity, OAuth state, autorizace PDF/ICS, veřejná projekce dostupnosti, retry a fronty. E2E/integrační routes, webhooks, outage/recovery; A07/A09.                                                                 |
+| Web, obsah a média      | CMS text/asset allowlist, escapování šablon/JSON-LD, newsletter consent/unsubscribe HMAC, upload podle obsahu/rozměrů, Instagram OAuth/vault/image allowlist/cache/deauthorize, právní texty a analytický souhlas. Public/content/Instagram/analytics E2E + media/OAuth/ICS jednotkové kontroly. |
+| Administrace a náhledy  | Každý admin page má vlastní requireAdmin, každá mutace authorize/assertAdmin. Filtry mají allowlist SQL řazení a escapované LIKE; member notes jsou pouze admin. Customer-preview používá místní stav bez DB/provider zápisů; E2E průchody, A02/A08/A11.                                         |
+| Databáze a migrace      | Celá historie aplikovaná na nové izolované DB, RLS/GRANT/execute/search_path a immutable evidence ověřují SQL testy. Nový index testován proti starým i finančním datům; concurrency, překryvy, DST a inkluzivní období v integračních testech. A04/A10.                                         |
+| Výkon a dostupnost      | Veřejné availability snapshoty, 15s cache, coalescing/invalidation/stale response/keyboard/history, read-only retry a DB/provider timeouts. Syntetický profil 50 500 rezervací, měření FK i přenosu historie; A04/A08.                                                                           |
+| Závislosti a provoz     | Reprodukovaná instalace z lockfile, 0 npm advisories po A01, CI permissions/read-only, podporovaný Node 22, cdg1 deployment ověřen u PR #281. Audit branch má Vercel deploy vypnutý. Externí omezení a provozní nastavení viz níže.                                                              |
+
+Kontrola je založená na trasování kritických toků, všech vstupních hranic a
+uvedených regresích. Není tvrzením, že každá ze 446 TS/TSX implementací byla
+ručně přečtena řádek po řádku. Transitivní graf 81 klientských vstupů (191
+interních modulů, s ukončením na server actions a vyloučením type imports)
+nenašel cestu k DB, serverovému env ani modulu označenému server-only.
 
 ## Výchozí ověření
 
@@ -155,3 +161,46 @@ i kredity; původní data a nastavení databáze zůstávají beze změny. Regre
 ověřuje ŽLUŤOUČKÝ, Zoë Müller a rozložené ÉLODIE v obou seznamech. Funkce je
 nativní v PostgreSQL 17, bez nové extension nebo migrace:
 [PostgreSQL string functions](https://www.postgresql.org/docs/17/functions-string.html).
+
+## Výkon — izolovaná reprezentativní data
+
+Benchmark `scripts/profile-launch-audit.ts`, PostgreSQL 17, UTF8/C, místní síť:
+50 500 rezervací, 50 000 plateb, 50 000 zpráv, 5 000 nákupů jednoho ukázkového
+člena. Před/po běhu souhlasily počty všech tří tabulek. Časy jsou diagnostická
+měření konkrétního stroje; nezaručují stejnou produkční latenci.
+
+| Tok                            | SQL statements včetně transakční režie | Celá funkce |
+| ------------------------------ | -------------------------------------: | ----------: |
+| Měsíc slotů                    |                                     15 |       51 ms |
+| Jedna dostupnost               |                                      2 |        2 ms |
+| Statistiky celé historie       |                                      1 |       55 ms |
+| Finance                        |                                      7 |       15 ms |
+| Stránka nákupů zákazníka       |                                      5 |       10 ms |
+| Poslední zprávy                |                                      1 |        2 ms |
+| Zítřejší přehled bez rezervací |                                      1 |        2 ms |
+
+PR #281 po nasazení: veřejná dostupnost pro zahřáté požadavky 324 a 244 ms.
+Žádná auditní oprava se v těchto produkčních číslech neuplatnila. Novější
+profil bude potřeba znovu změřit až po samostatném schválení auditního release.
+
+## Záměrně nezměněná provozní nastavení a omezení
+
+- Produkční Supabase security advisor hlásí vypnutou ochranu proti uniklým
+  heslům. Audit její aktivaci připravuje jako provozní doporučení; uživatel
+  zakázal nasazení auditních změn, proto se Auth konfigurace nemění.
+  [Supabase password security](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+- INFO RLS-enabled/no-policies u serverových tabulek znamená úmyslně zamítnutý
+  klientský přístup, nikoli důvod přidat veřejné policies. Oprávnění ověřuje
+  samostatná SQL sada. INFO unused-index a ostatní FK indexy nejsou automaticky
+  označené za chybu bez měření příslušného toku; měřená vazba A04 je opravena.
+- Reálná doručitelnost do schránek, chování fyzického Nuki během dlouhého
+  výpadku, živé Comgate refundace, Meta granty a heartbeat poskytovatele se
+  záměrně nevyvolávaly. Testy ověřují smlouvy s náhradami poskytovatelů.
+- Lokální omezení počtu požadavků zůstává doplňkem ochrany infrastruktury,
+  nikoli distribuovanou zárukou mezi všemi serverless instancemi.
+- Nová auditní migrace vytváří pouze částečný index. CREATE INDEX může po dobu
+  sestavení zdržet zápisy do reservation_change; před budoucím samostatným
+  nasazením je nutné zkontrolovat její velikost a zvolit přiměřené provozní okno.
+  Žádný zákaznický řádek, kód, seed, trigger ani fronta se migrací nepřepisují.
+- Případný rollback auditní aplikace ponechá finanční ledger a idempotency
+  záznamy. Nový index lze ponechat; pro rollback kódu není potřeba nic mazat.
