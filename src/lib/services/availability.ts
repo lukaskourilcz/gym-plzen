@@ -1,8 +1,15 @@
-import { and, eq, gt, lt, ne, or, sql, type SQL } from "drizzle-orm";
+import { and, eq, gt, lt, ne, or, sql, inArray, type SQL } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
 import { db, type DatabaseExecutor } from "@/lib/db";
+import { readDatabase } from "@/lib/db/read";
+import { MAX_SLOTS_PER_ORDER } from "@/lib/config/orders";
 import { blockedSlot, openingHours, reservation } from "@/lib/db/schema";
-import { dayOfWeek, minuteOfDay, minutesBetween } from "@/lib/helpers/datetime";
+import {
+  dayOfWeek,
+  minuteOfDay,
+  minutesBetween,
+  intervalsOverlap,
+} from "@/lib/helpers/datetime";
 
 /**
  * Availability rules for the single-occupancy gym. A requested [start, end)
@@ -142,6 +149,108 @@ export async function checkAvailability(
   }
 
   return { available: true };
+}
+
+/**
+ * Read-only checkout preview: three bounded SELECTs for the whole selection,
+ * rather than three concurrent queries per slot. Writers still use the
+ * authoritative per-window check under the schedule lock and DB exclusion.
+ */
+export async function checkAvailabilityBatch(
+  windows: readonly { startsAt: Date; endsAt: Date }[],
+): Promise<AvailabilityResult[]> {
+  if (windows.length > MAX_SLOTS_PER_ORDER)
+    throw new RangeError("Too many preview windows");
+  const valid = (window: (typeof windows)[number]) =>
+    window.startsAt instanceof Date &&
+    window.endsAt instanceof Date &&
+    Number.isFinite(window.startsAt.getTime()) &&
+    Number.isFinite(window.endsAt.getTime()) &&
+    window.endsAt > window.startsAt;
+  const requested = windows.filter(valid);
+  if (requested.length === 0)
+    return windows.map(() => ({ available: false, reason: "invalid_range" }));
+  return readDatabase(async (tx) => {
+    const [hours, bookings, blocks] = await Promise.all([
+      tx
+        .select()
+        .from(openingHours)
+        .where(
+          inArray(openingHours.dayOfWeek, [
+            ...new Set(requested.map((window) => dayOfWeek(window.startsAt))),
+          ]),
+        ),
+      tx
+        .select({
+          startsAt: reservation.startsAt,
+          endsAt: reservation.endsAt,
+          rescheduleStartsAt: reservation.rescheduleStartsAt,
+          rescheduleEndsAt: reservation.rescheduleEndsAt,
+        })
+        .from(reservation)
+        .where(
+          and(
+            or(
+              ...requested.map((window) =>
+                reservationOverlaps(window.startsAt, window.endsAt),
+              ),
+            ),
+            or(
+              inArray(reservation.status, [...ACTIVE_STATUSES]),
+              eq(reservation.accessRevocationPending, true),
+            ),
+          ),
+        ),
+      tx
+        .select({ startsAt: blockedSlot.startsAt, endsAt: blockedSlot.endsAt })
+        .from(blockedSlot)
+        .where(
+          or(
+            ...requested.map((window) =>
+              overlaps(
+                blockedSlot.startsAt,
+                blockedSlot.endsAt,
+                window.startsAt,
+                window.endsAt,
+              ),
+            ),
+          ),
+        ),
+    ]);
+    const byDay = new Map(hours.map((row) => [row.dayOfWeek, row]));
+    const busy = bookings.flatMap((row) => [
+      row,
+      ...(row.rescheduleStartsAt && row.rescheduleEndsAt
+        ? [{ startsAt: row.rescheduleStartsAt, endsAt: row.rescheduleEndsAt }]
+        : []),
+    ]);
+    return windows.map((window): AvailabilityResult => {
+      if (!valid(window)) return { available: false, reason: "invalid_range" };
+      const h = byDay.get(dayOfWeek(window.startsAt));
+      const start = minuteOfDay(window.startsAt),
+        end = minuteOfDay(window.endsAt);
+      if (
+        !h ||
+        h.isClosed ||
+        end <= start ||
+        start < h.openMinute ||
+        end > h.closeMinute
+      )
+        return { available: false, reason: "closed" };
+      const conflicts = (other: { startsAt: Date; endsAt: Date }) =>
+        intervalsOverlap(
+          window.startsAt,
+          window.endsAt,
+          other.startsAt,
+          other.endsAt,
+        );
+      if (busy.some(conflicts))
+        return { available: false, reason: "overlap_reservation" };
+      if (blocks.some(conflicts))
+        return { available: false, reason: "overlap_block" };
+      return { available: true };
+    });
+  });
 }
 
 /**

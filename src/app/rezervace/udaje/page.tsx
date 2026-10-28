@@ -107,29 +107,31 @@ export default async function BookingDetailsPage({
   const ownAt = new Map(own.map((row) => [row.startsAt.getTime(), row]));
 
   const configured = await slots.resolveBookableSlots(starts);
-  const selection = await Promise.all(
-    starts.map(async (startsAt, index) => {
-      const resolved = configured[index];
-      const dateKey = dateKeyInTimeZone(startsAt);
-      const endsAt = resolved?.endsAt ?? null;
-      let state: SlotState = "bookable";
-      const mine = ownAt.get(startsAt.getTime());
-      if (
-        !resolved ||
-        startsAt <= now ||
-        !slots.isWithinBookingHorizon(dateKey, now, horizonDays)
-      )
-        state = "unavailable";
-      else if (mine?.status === "confirmed") state = "confirmed";
-      else if (mine?.status === "pending") state = "held";
-      else if (
-        !(await availability.checkAvailability(startsAt, resolved.endsAt))
-          .available
-      )
-        state = "taken";
-      return { startsAt, endsAt, dateKey, state };
-    }),
+  const windows = configured.flatMap((window) => (window ? [window] : []));
+  const checks = await availability.checkAvailabilityBatch(windows);
+  const available = new Map(
+    windows.map((window, index) => [
+      window.startsAt.getTime(),
+      checks[index]!.available,
+    ]),
   );
+  const selection = starts.map((startsAt, index) => {
+    const resolved = configured[index];
+    const dateKey = dateKeyInTimeZone(startsAt);
+    const endsAt = resolved?.endsAt ?? null;
+    let state: SlotState = "bookable";
+    const mine = ownAt.get(startsAt.getTime());
+    if (
+      !resolved ||
+      startsAt <= now ||
+      !slots.isWithinBookingHorizon(dateKey, now, horizonDays)
+    )
+      state = "unavailable";
+    else if (mine?.status === "confirmed") state = "confirmed";
+    else if (mine?.status === "pending") state = "held";
+    else if (!available.get(startsAt.getTime())) state = "taken";
+    return { startsAt, endsAt, dateKey, state };
+  });
   const bookable = selection.filter(
     (item): item is typeof item & { endsAt: Date } =>
       (item.state === "bookable" || item.state === "held") &&
