@@ -356,6 +356,49 @@ describe(
     });
 
     describe("manual bookings", () => {
+      test("selecting an existing member snapshots their known contact without changing older reservations", async () => {
+        const memberId = "33333333-3333-4333-8333-333333333333";
+        await seedProfile({
+          id: memberId,
+          email: "manual-member@example.test",
+          fullName: "Jana Ruční",
+        });
+        await rows("update profiles set phone='+420777111222' where id=$1", [
+          memberId,
+        ]);
+        const previous = await insertReservation(at(4), at(4, 11 * 60));
+        const before = await rows("select * from reservation where id=$1", [
+          previous,
+        ]);
+        const created = await createManualReservation({
+          startsAt: at(2),
+          userId: memberId,
+          admin: ADMIN,
+        });
+        assert.equal(created.contactEmail, "manual-member@example.test");
+        assert.equal(created.contactName, "Jana Ruční");
+        assert.equal(created.contactPhone, "+420777111222");
+        assert.deepEqual(
+          await rows("select * from reservation where id=$1", [previous]),
+          before,
+        );
+        const explicit = await createManualReservation({
+          startsAt: at(3),
+          userId: memberId,
+          contactName: "Jiný kontakt",
+          contactEmail: "explicit@example.test",
+          contactPhone: "+420777222333",
+          admin: ADMIN,
+        });
+        assert.equal(explicit.contactEmail, "explicit@example.test");
+        assert.equal(explicit.contactName, "Jiný kontakt");
+        assert.equal(explicit.contactPhone, "+420777222333");
+        assert.equal(
+          resend.sent.length,
+          0,
+          "saving a contact snapshot alone sends nothing",
+        );
+      });
       test("the end comes from the configured window, not from the form", async () => {
         // The test database runs 60-minute windows from midnight.
         const startsAt = at(2, 10 * 60);

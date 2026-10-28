@@ -9,6 +9,7 @@ import {
   getReservation,
 } from "./reservations";
 import { resolveConfiguredSlot } from "./slots";
+import { getMember } from "./members";
 
 /**
  * What an administrator may do to a reservation by hand, on top of the shared
@@ -66,13 +67,18 @@ export async function createManualReservation(
       "Pro rezervaci vyplňte kontakt zákazníka. Prázdné termíny blokujte tlačítkem Vybrat termíny k zablokování v Kalendáři.",
     );
 
+  // Selecting a member is sufficient input in the admin form. Preserve their
+  // known delivery contact in this new booking, without backfilling older ones.
+  const member = input.userId ? await getMember(input.userId) : null;
+  if (input.userId && !member) throw new ActionError("Člen nebyl nalezen.");
+
   const reservation = await createReservation({
     userId: input.userId ?? null,
     startsAt: slot.startsAt,
     endsAt: slot.endsAt,
-    contactName: input.contactName ?? null,
-    contactEmail: input.contactEmail ?? null,
-    contactPhone: input.contactPhone ?? null,
+    contactName: input.contactName?.trim() || member?.profile?.fullName || null,
+    contactEmail: input.contactEmail?.trim() || member?.profile?.email || null,
+    contactPhone: input.contactPhone?.trim() || member?.profile?.phone || null,
     priceCents: input.priceCents ?? null,
     extraPeople: input.extraPeople ?? 0,
     status: "confirmed", // admin bookings are confirmed immediately
