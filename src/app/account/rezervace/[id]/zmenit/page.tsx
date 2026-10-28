@@ -30,6 +30,9 @@ import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { RealtimeRefresher } from "@/components/realtime-refresher";
 import { RescheduleCalendar } from "./reschedule-calendar";
+import { getReschedulePriceSnapshot } from "@/lib/services/reschedule-price-snapshot";
+import { ActionError } from "@/lib/helpers/action";
+import type { ReservationPriceSnapshot } from "@/lib/config/credits";
 
 export const metadata: Metadata = { title: "Změna termínu" };
 // Initial render is authenticated and server-side; date/month navigation uses
@@ -103,7 +106,17 @@ export default async function ReschedulePage({
     month: typeof query.month === "string" ? query.month : null,
   };
   let calendar: CalendarView | null = null;
+  let priceSnapshot: ReservationPriceSnapshot | null = null;
+  let priceError: string | null = null;
   if (eligibility.eligible && !pending) {
+    try {
+      priceSnapshot = await getReschedulePriceSnapshot(current);
+    } catch (error) {
+      if (!(error instanceof ActionError)) throw error;
+      priceError = error.message;
+    }
+  }
+  if (eligibility.eligible && !pending && !priceError) {
     try {
       calendar = (await loadCalendarAvailability(input, now)).view;
     } catch {
@@ -144,10 +157,8 @@ export default async function ReschedulePage({
               </p>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 Původní rezervace platí až do potvrzení změny. Termín můžete
-                změnit jednou, nejpozději 24 hodin před začátkem.{" "}
-                {current.pricingVersion < 2
-                  ? "U této dříve zakoupené rezervace se cena nemění."
-                  : "U dražšího termínu doplatíš rozdíl, u levnějšího získáš rozdíl do kreditů."}
+                změnit jednou, nejpozději 24 hodin před začátkem. U dražšího
+                termínu doplatíš rozdíl, u levnějšího získáš rozdíl do kreditů.
               </p>
             </div>
 
@@ -202,6 +213,19 @@ export default async function ReschedulePage({
                   </Button>
                 </div>
               </div>
+            ) : priceError ? (
+              <div className="mt-8 max-w-2xl">
+                <Notice
+                  tone="warning"
+                  title="Cenu musí ověřit obsluha"
+                  role="alert"
+                >
+                  {priceError}
+                </Notice>
+                <Button href="/account" variant="outline" className="mt-5">
+                  Zpět do profilu
+                </Button>
+              </div>
             ) : !eligibility.eligible ? (
               <div className="mt-8 max-w-2xl">
                 <Notice tone="warning" title="Termín nelze změnit" role="alert">
@@ -215,9 +239,7 @@ export default async function ReschedulePage({
               <div className="mt-10">
                 <RescheduleCalendar
                   priceCents={current.priceCents ?? 0}
-                  priceSnapshot={
-                    current.pricingVersion >= 2 ? current.priceSnapshot : null
-                  }
+                  priceSnapshot={priceSnapshot!}
                   availableCreditCents={wallet.availableCents}
                   reservationId={current.id}
                   initial={calendar!}

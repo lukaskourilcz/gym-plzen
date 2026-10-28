@@ -316,7 +316,7 @@ jiné jednání, které může způsobit závažnou škodu nebo újmu.
 21.8. Tyto VOP nabývají účinnosti dne 17. 8. 2026.`;
 
 /** Earlier purchases keep their accepted price policy, including clause 8.4. */
-export const DEFAULT_TERMS_BODY = LEGACY_TERMS_BODY.replace(
+export const PREVIOUS_CREDIT_TERMS_BODY = LEGACY_TERMS_BODY.replace(
   "8.1. Klient je oprávněn jednou bezplatně změnit termín rezervace, provede-li změnu nejpozději 24 hodin před začátkem původního rezervovaného termínu.",
   "8.1. Klient je oprávněn jednou změnit termín rezervace bez poplatku za provedení změny, zahájí-li změnu nejpozději 24 hodin před začátkem původního termínu. Případný rozdíl ceny se vypořádá podle článku 8.4.",
 )
@@ -340,7 +340,12 @@ export const DEFAULT_TERMS_BODY = LEGACY_TERMS_BODY.replace(
     /(4\.6\. [^\n]+)/,
     "$1\n\n4.7. Kredit je zákaznický zůstatek k úhradě služeb Studia v poměru 1 Kč kreditu za 1 Kč ceny. Lze jej použít při další rezervaci, úhradě více termínů, doplatku změny termínu nebo dokoupení doprovodu; případný zbytek se uhradí platební bránou.\n\n4.8. Kredit nemá stanovenou dobu expirace, je nepřevoditelný mezi zákazníky a nelze požadovat jeho běžný výběr v penězích. Tím nejsou dotčena práva, která nelze podle zákona omezit. Čerpání vyžaduje ověřený zákaznický účet; kredit hosta lze bezpečně přiřadit po ověření jeho identity.\n\n4.9. Zákazník vidí zůstatek a historii v profilu. Kredit rezervovaný v rozpracované platbě nelze současně použít znovu. Při neúspěšné platbě se rezervace kreditu po ověření jejího konečného stavu uvolní.\n\n4.10. Při zákaznickém stornu podle článku 8.10 se nevrací ani část úhrady provedená kreditem, bez ohledu na čas do začátku rezervace. Při zrušení ze strany Poskytovatele se oprávněná kreditní část úhrady vrátí do kreditů a peněžní část původní platební cestou, bez dvojí kompenzace již vypořádaných částek.",
   );
-export const CREDIT_TERMS_EFFECTIVE_DATE = "27. 10. 2026";
+export const DEFAULT_TERMS_BODY = PREVIOUS_CREDIT_TERMS_BODY.replace(
+  /21\.8\. [^\n]+/,
+  "21.8. Tato verze podmínek je účinná od 28. 10. 2026. Přepočet ceny podle článku 8.4 se uplatní při každé nově vyžádané a zákazníkem potvrzené změně termínu, včetně dříve zakoupených rezervací. Před potvrzením změny zákazník vidí aktuální cenu, případný doplatek nebo připsání kreditu a souhlasí s těmito pravidly změny. Bez vyžádané změny zůstávají rezervace, uhrazené ceny a vstupní kódy beze změny. Již dokončené změny termínu se zpětně nepřepočítávají.",
+);
+export const PREVIOUS_CREDIT_TERMS_EFFECTIVE_DATE = "27. 10. 2026";
+export const CREDIT_TERMS_EFFECTIVE_DATE = "28. 10. 2026";
 
 export interface TermsSubitem {
   marker: string | null;

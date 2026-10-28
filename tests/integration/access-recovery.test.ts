@@ -28,7 +28,7 @@ import { checkAvailability } from "../../src/lib/services/availability";
 import { decryptPin } from "../../src/lib/helpers/pin-vault";
 import { GET as watchdog } from "../../src/app/api/cron/watchdog/route";
 
-import { rescheduleReservation } from "../../src/lib/services/rescheduling";
+import { fundedReschedule as rescheduleReservation } from "./funded-reschedule";
 import { getSlotsForRange } from "../../src/lib/services/slots";
 import { findOverlappingReservations } from "../../src/lib/services/schedule";
 

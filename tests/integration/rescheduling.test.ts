@@ -19,7 +19,7 @@ import assert from "node:assert/strict";
 import { after, before, beforeEach, describe, test } from "node:test";
 import { startOrder } from "../../src/lib/services/orders";
 import { synchronizeComgatePayment } from "../../src/lib/services/payments";
-import { rescheduleReservation } from "../../src/lib/services/rescheduling";
+import { fundedReschedule as rescheduleReservation } from "./funded-reschedule";
 import { retryRescheduleConfirmations } from "../../src/lib/services/reschedule-delivery";
 import {
   CUSTOMER_CANCEL_REASON,
@@ -65,7 +65,7 @@ async function paidBooking(startsAt: Date): Promise<string> {
     [outcome.orderId],
   );
   assert.equal(row?.status, "confirmed");
-  // This suite protects the legacy unchanged-price contracts.
+  // Exercise historical rows through the financially authorized move engine.
   await rows(
     "update reservation set pricing_version=1, terms_version=null, price_snapshot=null where id=$1",
     [row!.id],

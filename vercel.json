@@ -20,6 +20,7 @@
   ],
   "git": {
     "deploymentEnabled": {
+      "codex/credit-history-pagination": false,
       "codex/block-pricing-guests": false,
       "codex/admin-daily-refinements": false,
       "codex/fix-audit-braces": false,

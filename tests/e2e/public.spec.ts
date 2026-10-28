@@ -113,7 +113,7 @@ test.describe("Public site", () => {
         name: "VŠEOBECNÉ OBCHODNÍ PODMÍNKY",
       }),
     ).toBeVisible();
-    await expect(page.getByText("Účinnost od 27. 10. 2026")).toBeVisible();
+    await expect(page.getByText("Účinnost od 28. 10. 2026")).toBeVisible();
     await expect(page.locator("article > section")).toHaveCount(21);
     await expect(page.locator("article h2")).toHaveCount(21);
     await expect(
@@ -134,6 +134,20 @@ test.describe("Public site", () => {
     await expect(page).toHaveURL(/version=legacy/);
     await expect(page.getByText("Účinnost od 17. 8. 2026")).toBeVisible();
     await expect(page.locator("#clanek-8")).toContainText("nemění");
+    await page
+      .getByRole("link", { name: "Podmínky z 27. 10. 2026", exact: true })
+      .click();
+    await expect(page).toHaveURL(/version=2026-10-27-credits-v1/);
+    await expect(page.getByText("Účinnost od 27. 10. 2026")).toBeVisible();
+    await expect(page.locator("#clanek-21")).toContainText(
+      "U dříve zakoupených rezervací zůstává zachována původní cena",
+    );
+    await page
+      .getByRole("link", { name: "Aktuální podmínky", exact: true })
+      .click();
+    await expect(page.locator("#clanek-21")).toContainText(
+      "každé nově vyžádané a zákazníkem potvrzené změně termínu",
+    );
   });
 
   test("terms preserve hierarchy and reflow", async ({ page }) => {

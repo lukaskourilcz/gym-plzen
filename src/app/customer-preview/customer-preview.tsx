@@ -5,7 +5,14 @@ import {
   CreditHistoryTable,
   type CreditHistoryEntry,
 } from "@/components/credit-history-table";
-import { creditTender } from "@/lib/config/credits";
+import { creditTender, CREDIT_HISTORY_PAGE_SIZE } from "@/lib/config/credits";
+import { Pagination } from "@/components/ui/pagination";
+import {
+  pageFromParam,
+  pageOffset,
+  pageLimit,
+  splitPage,
+} from "@/lib/helpers/pagination";
 
 import { useCallback, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -75,6 +82,15 @@ export function CustomerPreview({
   const [message, setMessage] = useState("");
   const [creditCents, setCreditCents] = useState(0);
   const [creditEntries, setCreditEntries] = useState<CreditHistoryEntry[]>([]);
+  const creditPage = pageFromParam(params.get("page") ?? undefined);
+  const creditHistory = splitPage(
+    creditEntries.slice(
+      pageOffset(creditPage, CREDIT_HISTORY_PAGE_SIZE),
+      pageOffset(creditPage, CREDIT_HISTORY_PAGE_SIZE) +
+        pageLimit(CREDIT_HISTORY_PAGE_SIZE),
+    ),
+    CREDIT_HISTORY_PAGE_SIZE,
+  );
   const [pendingChange, setPendingChange] = useState<{
     id: string;
     startISO: string;
@@ -560,7 +576,15 @@ export function CustomerPreview({
                 className="rounded-lg border border-border bg-card p-5 sm:p-6"
               >
                 <h2 className="text-xl font-bold">Historie kreditů</h2>
-                <CreditHistoryTable entries={creditEntries} />
+                <CreditHistoryTable entries={creditHistory.rows} />
+                <Pagination
+                  page={creditPage}
+                  hasNext={creditHistory.hasNext}
+                  hrefForPage={(next) =>
+                    `${BASE}?screen=account&tab=credits&page=${next}`
+                  }
+                  label="Stránkování historie kreditů"
+                />
               </section>
             ) : null}
             {screen === "account" && accountTab === "orders" ? (

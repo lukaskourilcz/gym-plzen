@@ -1,6 +1,7 @@
 "use client";
 import {
   changedReservationPrice,
+  CREDIT_TERMS_VERSION,
   creditTender,
   type ReservationPriceSnapshot,
 } from "@/lib/config/credits";
@@ -46,7 +47,7 @@ export function RescheduleCalendar({
   originalLabel: string;
   initial: CalendarView;
   priceCents: number;
-  priceSnapshot: ReservationPriceSnapshot | null;
+  priceSnapshot: ReservationPriceSnapshot;
   availableCreditCents: number;
 }) {
   const copy = usePublicNotices().reschedule;
@@ -71,7 +72,7 @@ export function RescheduleCalendar({
   const [useCredits, setUseCredits] = useState(availableCreditCents > 0);
   const operationRef = useRef<string | null>(null);
   const targetPrice = (price: number) =>
-    priceSnapshot ? changedReservationPrice(price, priceSnapshot) : priceCents;
+    changedReservationPrice(price, priceSnapshot);
   const grid = monthGrid(monthKey);
   const byDate = new Map(days.map((day) => [day.dateKey, day]));
   const selectedDay = selectedDateKey ? byDate.get(selectedDateKey) : undefined;
@@ -190,6 +191,7 @@ export function RescheduleCalendar({
         operationId:
           operationRef.current ?? (operationRef.current = crypto.randomUUID()),
         quotedCents: newPrice,
+        changeTermsVersion: CREDIT_TERMS_VERSION,
         quotedCreditCents: usedCredits,
         useCredits,
         startsAt: selectedSlot.startISO,
@@ -571,6 +573,19 @@ export function RescheduleCalendar({
                 </div>
               ) : null}
             </dl>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Potvrzením změny souhlasíš s{" "}
+              <a
+                className="underline"
+                target="_blank"
+                rel="noopener noreferrer"
+                href={`/obchodni-podminky?version=${CREDIT_TERMS_VERSION}`}
+              >
+                pravidly změny termínu
+              </a>
+              : u dražšího termínu uhradíš rozdíl, u levnějšího získáš rozdíl do
+              kreditů. Platí i pro dříve zakoupené rezervace.
+            </p>
             {difference > 0 && availableCreditCents > 0 ? (
               <label className="mt-4 flex items-center gap-3 text-sm font-bold">
                 <input

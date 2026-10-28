@@ -262,7 +262,9 @@ test("a lost rescheduling response offers account recovery without repeating the
       await sql!`select count(*)::int as n from reservation_reschedule where reservation_id=${id}`;
     expect(result?.n).toBe(1);
   } finally {
-    await sql!`delete from reservation where id=${id}`;
+    // The completed financial intent must remain immutable. Release this
+    // fictional slot without deleting its audit trail from the local fixture.
+    await sql!`update reservation set status='cancelled' where id=${id}`;
   }
 });
 

@@ -90,11 +90,6 @@ async function rescheduleLocked(
     input.reservationId,
     input.userId,
   );
-  if (
-    original.rescheduleStartsAt &&
-    !(await abortPendingReschedule(original.id))
-  )
-    throw new ActionError("Rezervaci se nepodařilo změnit.");
   const [financial] = input.financialChangeId
     ? await db
         .select()
@@ -102,14 +97,18 @@ async function rescheduleLocked(
         .where(eq(reservationChange.id, input.financialChangeId))
     : [];
   if (
-    original.pricingVersion >= 2 &&
-    (!financial ||
-      financial.reservationId !== original.id ||
-      financial.userId !== input.userId ||
-      financial.status !== "applying" ||
-      financial.startsAt.getTime() !== input.startsAt.getTime())
+    !financial ||
+    financial.reservationId !== original.id ||
+    financial.userId !== input.userId ||
+    financial.status !== "applying" ||
+    financial.startsAt.getTime() !== input.startsAt.getTime()
   )
     throw new ActionError("Nejdříve potvrďte cenu změny termínu.");
+  if (
+    original.rescheduleStartsAt &&
+    !(await abortPendingReschedule(original.id))
+  )
+    throw new ActionError("Rezervaci se nepodařilo změnit.");
   const now = financial?.createdAt ?? input.now ?? new Date();
   if (Number.isNaN(input.startsAt.getTime()) || input.startsAt <= now) {
     throw new ActionError("Vyberte platný budoucí termín.");

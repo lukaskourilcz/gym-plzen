@@ -125,6 +125,7 @@ export const reservationChange = pgTable(
       .$type<{
         pricingVersion: number;
         termsVersion: string;
+        priceSnapshot?: import("@/lib/config/credits").ReservationPriceSnapshot;
         creditBalanceCents?: number;
         customerName?: string;
         customerEmail?: string;

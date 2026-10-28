@@ -1,6 +1,8 @@
 /** Version 1 belongs to every reservation made before this release. */
 export const CREDIT_PRICING_VERSION = 2;
-export const CREDIT_TERMS_VERSION = "2026-10-27-credits-v1";
+export const CREDIT_HISTORY_PAGE_SIZE = 20;
+export const PREVIOUS_CREDIT_TERMS_VERSION = "2026-10-27-credits-v1";
+export const CREDIT_TERMS_VERSION = "2026-10-28-credits-v2";
 export interface ReservationPriceSnapshot {
   baseCents: number;
   purchasePriceCents?: number;

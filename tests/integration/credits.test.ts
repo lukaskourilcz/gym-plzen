@@ -42,6 +42,56 @@ describe("credit ledger", { skip: !databaseReady }, () => {
       return a;
     });
   }
+  test("customer history reads twenty stable movements per page beyond the former fifty-row limit", async () => {
+    const otherId = "55555555-5555-4555-8555-555555555555";
+    await seedProfile({
+      id: otherId,
+      email: "jiny@example.test",
+      fullName: "Jiný zákazník",
+    });
+    const account = await db.transaction((tx) =>
+      creditAccountForUser(userId, tx),
+    );
+    const other = await db.transaction((tx) =>
+      creditAccountForUser(otherId, tx),
+    );
+    await rows(
+      `insert into credit_entry (account_id, amount_cents, reason, operation_key, created_at)
+      select $1, 100, 'Pohyb ' || n, 'page:' || n, '2026-10-28T09:00:00Z'::timestamptz from generate_series(1,55) n`,
+      [account.id],
+    );
+    await db.transaction((tx) =>
+      postCreditIn(tx, {
+        accountId: other.id,
+        amountCents: 100,
+        reason: "Cizí pohyb",
+        key: "other",
+      }),
+    );
+    const pages = await Promise.all(
+      [1, 2, 3, 4].map((page) => getCreditWallet(userId, page)),
+    );
+    assert.deepEqual(
+      pages.map((page) => page.entries.length),
+      [20, 20, 15, 0],
+    );
+    assert.deepEqual(
+      pages.map((page) => page.hasNext),
+      [true, true, false, false],
+    );
+    const entries = pages.flatMap((page) => page.entries);
+    assert.equal(new Set(entries.map((entry) => entry.id)).size, 55);
+    assert.ok(entries.every((entry) => entry.accountId === account.id));
+    assert.deepEqual(
+      (await getCreditWallet(userId, 2)).entries,
+      pages[1]!.entries,
+    );
+    assert.equal((await getCreditWallet(userId)).entries.length, 50);
+    assert.equal(
+      (await getCreditWallet(userId, -1)).entries[0]!.id,
+      pages[0]!.entries[0]!.id,
+    );
+  });
   test("retry posts once and history cannot be changed or deleted", async () => {
     await grant();
     await grant();
