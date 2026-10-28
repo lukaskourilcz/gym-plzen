@@ -45,9 +45,24 @@ export function isGoogleMapsModuleError(error: unknown): error is Error {
 
 /** Inline scripts injected by a native browser, never our bundled application. */
 function isInlinePageFrame(filename: string) {
-  return /^(?:app:\/\/\/|https:\/\/(?:www\.)?navigym\.cz\/)[^?#.]*$/.test(
-    filename,
-  );
+  try {
+    const url = new URL(filename);
+    const page =
+      (url.protocol === "app:" && url.host === "") ||
+      (url.protocol === "https:" &&
+        ["navigym.cz", "www.navigym.cz"].includes(url.host));
+    // Native scripts inherit the document URL, including booking query
+    // parameters. Match the actual origin/path, never a substring in a query.
+    return (
+      page &&
+      !url.username &&
+      !url.password &&
+      !url.pathname.includes(".") &&
+      !url.pathname.startsWith("/_next/")
+    );
+  } catch {
+    return false;
+  }
 }
 
 /** Exact native signatures confirmed in Sentry, with browser and stack evidence. */

@@ -73,6 +73,33 @@ test("Instagram and Android native bridges need exact browser, message and nativ
   assert.equal(isInjectedBrowserError(event, ua), false);
 });
 
+test("inline bridge provenance accepts document queries but rejects bundles and lookalike origins", () => {
+  assert.equal(
+    isInjectedBrowserError(
+      bridge(
+        "https://www.navigym.cz/rezervace?date=2030-10-01&start=synthetic#times",
+      ),
+      ua,
+    ),
+    true,
+  );
+  assert.equal(
+    isInjectedBrowserError(
+      bridge("app:///rezervace/udaje?start=synthetic"),
+      ua,
+    ),
+    true,
+  );
+  for (const file of [
+    "https://www.navigym.cz.evil.test/rezervace",
+    "https://www.navigym.cz@evil.test/rezervace",
+    "https://evil.test/?url=https://www.navigym.cz/",
+    "app://evil/rezervace",
+    "https://www.navigym.cz/_next/static/chunks/app.js?inline=true",
+  ])
+    assert.equal(isInjectedBrowserError(bridge(file), ua), false, file);
+});
+
 test("Facebook submit instrumentation is distinguished from an application InvalidAccessError", () => {
   const event = bridge();
   const exception = event.exception!.values![0]!;
