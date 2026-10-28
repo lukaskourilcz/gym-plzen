@@ -123,15 +123,23 @@ export function LocationMap({
       setFailed(true);
     };
     const readyTimeout = window.setTimeout(fail, 10_000);
-    const onModuleFailure = (event: PromiseRejectionEvent) => {
-      if (!isGoogleMapsModuleError(event.reason)) return;
+    const recoverRuntimeFailure = (error: unknown) => {
+      if (cancelled || !isGoogleMapsModuleError(error)) return false;
       fail();
-      markMapErrorRecovered(event.reason);
+      markMapErrorRecovered(error);
+      return true;
+    };
+    const onModuleFailure = (event: PromiseRejectionEvent) => {
+      if (!recoverRuntimeFailure(event.reason)) return;
       // Google's internal promise is outside importLibrary's catch. Only
       // consume this exact failure while our mounted map provides a fallback.
       event.preventDefault();
     };
+    const onRuntimeFailure = (event: ErrorEvent) => {
+      if (recoverRuntimeFailure(event.error)) event.preventDefault();
+    };
     window.addEventListener("unhandledrejection", onModuleFailure);
+    window.addEventListener("error", onRuntimeFailure);
     const previousAuthFailure = window.gm_authFailure;
 
     // Google reports credential failures outside the importLibrary promise.
@@ -148,12 +156,15 @@ export function LocationMap({
         configureLoader(apiKey, mapId);
         return Promise.all([importLibrary("maps"), importLibrary("marker")]);
       })
-      .then(([{ Map }, { AdvancedMarkerElement }]) => {
+      .then(([{ Map, RenderingType }, { AdvancedMarkerElement }]) => {
         if (cancelled || mapFailed) return;
         map = new Map(container, {
           center: position,
           zoom: 17,
           mapId,
+          // A location marker needs no 3D/WebGL worker or WASM compilation.
+          // Override vector Map IDs rather than weakening the site's CSP.
+          renderingType: RenderingType.RASTER,
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: true,
@@ -182,11 +193,16 @@ export function LocationMap({
       cancelled = true;
       window.clearTimeout(readyTimeout);
       window.removeEventListener("unhandledrejection", onModuleFailure);
+      window.removeEventListener("error", onRuntimeFailure);
       readyListener?.remove();
       if (window.gm_authFailure === handleAuthFailure) {
         window.gm_authFailure = previousAuthFailure;
       }
-      marker?.remove();
+      if (marker) {
+        marker.map = null;
+        marker.remove();
+      }
+      if (map) google.maps.event.clearInstanceListeners(map);
       map?.unbindAll();
       container.replaceChildren();
     };

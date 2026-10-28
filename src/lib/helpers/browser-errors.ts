@@ -20,11 +20,17 @@ export function isTransportError(error: unknown): boolean {
   );
 }
 
-/** An internal Google Maps module failure, not an application error. */
+/** Known Google Maps runtime failures; a matching Maps stack is mandatory. */
 export function isGoogleMapsModuleError(error: unknown): boolean {
   return (
     error instanceof Error &&
-    /^Could not load "[a-z0-9_]+"\.$/i.test(error.message) &&
+    (/^Could not load "[a-z0-9_]+"\.$/i.test(error.message) ||
+      /^~#!#~[0-3]~#!#~(?:Script error\.|EpochMismatch,\d+,\s*\d+|CompileError: call to WebAssembly\.instantiate\(\) blocked by CSP)~#!#~$/.test(
+        error.message,
+      ) ||
+      (error instanceof TypeError &&
+        error.message ===
+          "undefined is not an object (evaluating 'a.getRootNode')")) &&
     /(?:maps\.googleapis\.com|maps-api-v3)\//.test(error.stack ?? "")
   );
 }

@@ -124,3 +124,24 @@ test("monitoring drops only the individual error recovered by the mounted map", 
   assert.equal(wasMapErrorRecovered(unhandled), false);
   assert.equal(wasMapErrorRecovered(undefined), false);
 });
+
+test("map worker and renderer failures recover only with a confirmed Maps stack", () => {
+  const errors = [
+    new Error("~#!#~0~#!#~Script error.~#!#~"),
+    new Error("~#!#~3~#!#~EpochMismatch,796, 794~#!#~"),
+    new Error(
+      "~#!#~3~#!#~CompileError: call to WebAssembly.instantiate() blocked by CSP~#!#~",
+    ),
+    new TypeError("undefined is not an object (evaluating 'a.getRootNode')"),
+  ];
+  for (const error of errors) {
+    assert.equal(isGoogleMapsModuleError(error), false);
+    error.stack = `${error.name}: ${error.message}\n at app:///maps-api-v3/api/js/66/11a/intl/cs_ALL/webgl.js:148:79`;
+    assert.equal(isGoogleMapsModuleError(error), true);
+    error.stack = `${error.name}: ${error.message}\n at app:///_next/static/chunks/app.js:1:9`;
+    assert.equal(isGoogleMapsModuleError(error), false);
+  }
+  const unknown = new Error("Script error.");
+  unknown.stack = "at app:///maps-api-v3/api/js/66/11a/intl/cs_ALL/main.js:1:9";
+  assert.equal(isGoogleMapsModuleError(unknown), false);
+});
