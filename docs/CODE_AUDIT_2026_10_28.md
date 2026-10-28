@@ -93,3 +93,13 @@ main commit `f9b35c4c3ba3b485e413ba96fd5f992325111a5e`, region `cdg1`, doména
 `www.navigym.cz`. Žádná migrace ani auditní oprava se do tohoto release nepřidala.
 Následné ověření používá pouze veřejné GET pro úvodní stránku, dostupnost a
 podmínky; žádné potvrzovací/platební URL, cron, zásah do zámku nebo testovací nákup.
+
+### A06 — Retence mazala archiv, ale ponechávala kopie e-mailů v outboxu (P2)
+
+Neúspěšné outboxy uchovávaly zmrazené HTML a případné přílohy i po 30 dnech,
+kdy administrace slibuje odstranění uloženého obsahu. Reprodukce prokázala
+ponechané tělo právě na hranici retence. Úklid nyní atomicky odstraní archiv
+a staré emailové payloady. Zachovává klíče deduplikace, ID poskytovatele,
+stavy, časy i údaje jiných kanálů pro jejich reconciliaci. Outboxy už v této
+chvíli dávno překročily 23hodinovou hranici automatického odesílání. Regresní
+test ověřuje hraniční čas, novější obsah, WhatsApp metadata a opakovaný úklid.
