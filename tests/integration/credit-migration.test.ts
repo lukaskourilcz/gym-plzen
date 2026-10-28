@@ -152,6 +152,50 @@ test(
           customer: false,
         });
       }
+      // The follow-up audit index must also preserve populated financial
+      // evidence and a live target hold, not only empty newly created tables.
+      const [account] =
+        await sql`insert into credit_account(user_id,balance_cents,reserved_cents) values(${member!.id},500,100) returning id`;
+      await sql`insert into credit_entry(account_id,amount_cents,reason,operation_key,reservation_id,actor_id) values(${account!.id},500,'Fiktivní kredit','audit-migration-grant',${booking!.id},${member!.id})`;
+      await sql`insert into credit_hold(operation_key,account_id,amount_cents) values('audit-migration-hold',${account!.id},100)`;
+      const [block] =
+        await sql`insert into blocked_slot(starts_at,ends_at,reason) values('2030-10-29 09:00Z','2030-10-29 10:00Z','other') returning id`;
+      await sql`insert into reservation_change(id,reservation_id,user_id,starts_at,ends_at,previous_starts_at,previous_price_cents,new_price_cents,credit_cents,cash_cents,status,expires_at,quote,block_id) values(gen_random_uuid(),${booking!.id},${member!.id},'2030-10-29 09:00Z','2030-10-29 10:00Z','2030-10-28 09:00Z',19900,20100,100,100,'awaiting_payment','2030-10-28 08:00Z','{"pricingVersion":2,"termsVersion":"fixture-only"}',${block!.id})`;
+      const preserved = [
+        ...tables,
+        "credit_account",
+        "credit_entry",
+        "credit_hold",
+        "reservation_change",
+        "blocked_slot",
+        "reservation_pipeline",
+        "activity_log",
+      ];
+      const snapshot = async () =>
+        Promise.all(
+          preserved.map(async (table) => {
+            const [state] =
+              await sql`select coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb) as data from ${sql(table)} t`;
+            return state!.data;
+          }),
+        );
+      const prior = await snapshot();
+      const lookupIndex = await readFile(
+        "drizzle/20261028133538_audit_change_block_lookup.sql",
+        "utf8",
+      );
+      await sql.begin((tx) => tx.unsafe(lookupIndex));
+      assert.deepEqual(await snapshot(), prior);
+      const [lookup] =
+        await sql`select indexdef from pg_indexes where schemaname='public' and indexname='reservation_change_block_idx'`;
+      assert.match(
+        lookup!.indexdef,
+        /\(block_id\).*WHERE \(block_id IS NOT NULL\)/,
+      );
+      await assert.rejects(
+        sql`delete from blocked_slot where id=${block!.id}`,
+        /foreign key/,
+      );
     } finally {
       await sql.end({ timeout: 2 });
       await admin`drop database ${admin(name)}`;

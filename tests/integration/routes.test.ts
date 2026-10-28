@@ -12,6 +12,7 @@ import {
 } from "./setup";
 import assert from "node:assert/strict";
 import { NextRequest } from "next/server";
+import { createHmac } from "node:crypto";
 import { after, before, beforeEach, describe, test } from "node:test";
 
 process.env.CRON_SECRET = "test-cron-secret";
@@ -118,6 +119,86 @@ describe(
         }) as never,
       );
       assert.equal(right.status, 200);
+    });
+
+    test("signed malformed WhatsApp JSON is rejected without changing delivery records", async () => {
+      const { POST } =
+        await import("../../src/app/api/webhooks/whatsapp/route");
+      for (const payload of [
+        null,
+        { entry: {} },
+        { entry: [{ changes: [{ value: null }] }] },
+      ]) {
+        const body = JSON.stringify(payload);
+        const response = await POST(
+          new NextRequest("http://localhost/api/webhooks/whatsapp", {
+            method: "POST",
+            body,
+            headers: {
+              "x-hub-signature-256": `sha256=${createHmac("sha256", "local-webhook-signing-secret").update(body).digest("hex")}`,
+            },
+          }),
+        );
+        assert.equal(response.status, 400);
+      }
+      assert.equal((await rows("select * from message_delivery")).length, 0);
+    });
+
+    test("an invalid signed status does not poison the rest of a WhatsApp batch or invent a sent status", async () => {
+      const { POST } =
+        await import("../../src/app/api/webhooks/whatsapp/route");
+      await rows(`insert into message_delivery(channel,kind,status,recipient,provider_message_id)
+        values('whatsapp','access_code','sent','+420777000000','valid-message'),
+              ('whatsapp','access_code','queued','+420777000000','unknown-status')`);
+      const body = JSON.stringify({
+        entry: [
+          {
+            changes: [
+              {
+                value: {
+                  statuses: [
+                    {
+                      id: "valid-message",
+                      status: "delivered",
+                      timestamp: "not-a-date",
+                    },
+                    { id: "unknown-status", status: "future-provider-status" },
+                    null,
+                    {
+                      id: "valid-message",
+                      status: "delivered",
+                      timestamp: "1793188800",
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      });
+      const response = await POST(
+        new NextRequest("http://localhost/api/webhooks/whatsapp", {
+          method: "POST",
+          body,
+          headers: {
+            "x-hub-signature-256": `sha256=${createHmac("sha256", "local-webhook-signing-secret").update(body).digest("hex")}`,
+          },
+        }),
+      );
+      assert.equal(response.status, 200);
+      const states = await rows<{
+        provider_message_id: string;
+        status: string;
+        delivered_at: Date | null;
+      }>(
+        "select provider_message_id,status,delivered_at from message_delivery order by provider_message_id",
+      );
+      assert.equal(states[0]!.status, "queued");
+      assert.equal(states[1]!.status, "delivered");
+      assert.equal(
+        states[1]!.delivered_at!.toISOString(),
+        new Date(1793188800000).toISOString(),
+      );
     });
   },
 );

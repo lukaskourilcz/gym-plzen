@@ -5,6 +5,11 @@ import { requireTestDatabaseUrl } from "../tests/helpers/test-database";
 // Deliberately never loads .env.local or falls back to application credentials.
 const sql = postgres(requireTestDatabaseUrl(), { max: 1, prepare: false });
 try {
+  const [encoding] = await sql`show server_encoding`;
+  if (encoding?.server_encoding !== "UTF8")
+    throw new Error(
+      "Test database must use UTF8. Create it from template0 with encoding 'UTF8'; refusing to run migrations with incorrect Czech text handling.",
+    );
   const [existing] =
     await sql`select count(*)::int as n from information_schema.tables where table_schema = 'public'`;
   if (existing!.n !== 0)

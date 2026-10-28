@@ -1,6 +1,6 @@
-import { lte } from "drizzle-orm";
+import { and, eq, isNotNull, lte } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { emailArchive } from "@/lib/db/schema";
+import { emailArchive, messageDelivery } from "@/lib/db/schema";
 import {
   emailRetentionCutoff,
   isEmailRetained,
@@ -18,9 +18,25 @@ export async function archiveSentEmail(
 
 /** Keep delivery/dedupe records: deleting those could resend reservation emails. */
 export async function purgeExpiredEmails(now = new Date()) {
-  const deleted = await db
-    .delete(emailArchive)
-    .where(lte(emailArchive.sentAt, emailRetentionCutoff(now)))
-    .returning({ id: emailArchive.id });
-  return deleted.length;
+  const cutoff = emailRetentionCutoff(now);
+  return db.transaction(async (tx) => {
+    const deleted = await tx
+      .delete(emailArchive)
+      .where(lte(emailArchive.sentAt, cutoff))
+      .returning({ id: emailArchive.id });
+    // Failed email outboxes can hold the same body (including attachments).
+    // Their 23-hour retry windows have long expired. Keep delivery identity,
+    // status and dedupe keys; other channels may still need reconciliation IDs.
+    await tx
+      .update(messageDelivery)
+      .set({ providerResponse: null })
+      .where(
+        and(
+          eq(messageDelivery.channel, "email"),
+          lte(messageDelivery.createdAt, cutoff),
+          isNotNull(messageDelivery.providerResponse),
+        ),
+      );
+    return deleted.length;
+  });
 }

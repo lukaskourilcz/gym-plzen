@@ -64,6 +64,52 @@ test.describe("Auth", () => {
     await expect(page).toHaveURL(/\/login$/);
   });
 
+  test("non-text identity metadata cannot break the account or grant an admin role", async ({
+    page,
+    request,
+  }) => {
+    test.skip(!localAuth || !sql, "requires isolated local Auth");
+    const email = `metadata-${process.env.E2E_RUN_ID}@example.test`;
+    const response = await request.post(
+      "http://127.0.0.1:4549/auth/v1/admin/users",
+      {
+        headers: { Authorization: "Bearer local-admin-key" },
+        data: {
+          email,
+          password: process.env.E2E_TEST_PASSWORD,
+          email_confirm: true,
+          user_metadata: {
+            full_name: { role: "admin" },
+            role: "admin",
+            phone: "+420777111222",
+          },
+        },
+      },
+    );
+    expect(response.ok()).toBe(true);
+    const user = (await response.json()) as { id: string };
+    await sql!`insert into profiles(id,email,full_name,phone,role) values(${user.id},${email},null,'+420777111222','member')`;
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.getByLabel("E-mail", { exact: true }).fill(email);
+    await page
+      .getByLabel("Heslo", { exact: true })
+      .fill(process.env.E2E_TEST_PASSWORD!);
+    await page
+      .getByRole("button", { name: "Přihlásit se", exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/account$/);
+    await expect(
+      page.getByRole("heading", { name: /Dobrý den/ }),
+    ).toBeVisible();
+    expect(errors).toEqual([]);
+    await page.goto("/admin");
+    // The login page redirects an already signed-in non-admin back to account.
+    await expect(page).toHaveURL(/\/account$/);
+    const [profile] = await sql!`select role from profiles where id=${user.id}`;
+    expect(profile!.role).toBe("member");
+  });
+
   test("registration validates a short password before submission", async ({
     page,
   }) => {

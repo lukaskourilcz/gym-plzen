@@ -5,13 +5,20 @@ import {
   type AdminFilters,
 } from "@/lib/helpers/admin-list";
 
+/** Strip canonical Latin accents before lowercasing, even under the C locale.
+ * Matches the browser's NFD search for Czech and other accented Latin names;
+ * no unaccent extension, stored-data rewrite or database-locale change needed.
+ */
+export function normalizedAdminText(field: SQLWrapper) {
+  return sql`lower(regexp_replace(normalize(coalesce(${field}, ''), NFD), ${"[\u0300-\u036f]"}, '', 'g'))`;
+}
+
 export function adminTextSearch(query: string, ...fields: SQLWrapper[]) {
   if (!query) return undefined;
   const pattern = searchPattern(query);
   return or(
     ...fields.map(
-      (field) =>
-        sql`translate(lower(coalesce(${field}, '')), 'áčďéěíňóřšťúůýž', 'acdeeinorstuuyz') like ${pattern}`,
+      (field) => sql`${normalizedAdminText(field)} like ${pattern}`,
     ),
   );
 }

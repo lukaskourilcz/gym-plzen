@@ -58,6 +58,7 @@ for (const key of Object.keys(process.env))
     delete process.env[key];
 
 // Fictional Instagram credentials are settled synchronously before any application import.
+process.env.WHATSAPP_APP_SECRET = "local-webhook-signing-secret";
 export const INSTAGRAM_PORT = base + 2;
 process.env.INSTAGRAM_APP_ID = "local-instagram-app";
 process.env.INSTAGRAM_APP_SECRET = "local-instagram-secret";

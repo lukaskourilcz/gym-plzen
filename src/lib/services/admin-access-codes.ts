@@ -1,7 +1,8 @@
 import { accessCodePage } from "./admin-lists";
 import { readAdminFilters, type AdminFilters } from "@/lib/helpers/admin-list";
 import "server-only";
-import { desc, eq, inArray, sql, or, like } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
+import { storedCodeUsage } from "./entry-log";
 import { assertAdmin } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { accessCode, reservation, entryLog } from "@/lib/db/schema";
@@ -98,24 +99,9 @@ export async function listAdminAccessCodes(
           trigger: sql`excluded.trigger`,
         },
       });
-  const storedUses = await db
-    .select({
-      id: entryLog.id,
-      action: entryLog.action,
-      codeId: entryLog.accessCodeId,
-      at: entryLog.occurredAt,
-    })
-    .from(entryLog)
-    .where(
-      or(
-        inArray(
-          entryLog.accessCodeId,
-          visible.map((r) => r.code.id),
-        ),
-        like(entryLog.action, "keypad_failure_%"),
-      ),
-    )
-    .orderBy(desc(entryLog.occurredAt));
+  const { uses: storedUses, unassignedFailureCount } = await storedCodeUsage(
+    visible.map((r) => r.code.id),
+  );
   const failures = storedUses.filter((use) =>
     use.action?.startsWith("keypad_failure_"),
   );
@@ -126,9 +112,6 @@ export async function listAdminAccessCodes(
       Number(use.action?.replace("keypad_failure_", "")),
     ),
   });
-  const unassignedFailures = failures
-    .filter((use) => !use.codeId)
-    .map(failureDetail);
   const rows = records.slice(0, filters.pageSize).map(({ code, ...row }) => {
     const auth = pins.find(
       (pin) =>
@@ -157,7 +140,7 @@ export async function listAdminAccessCodes(
   });
   return {
     rows,
-    unassignedFailures,
+    unassignedFailureCount,
     nukiUnavailable,
     usageUnavailable,
     hasNext: records.length > filters.pageSize,
