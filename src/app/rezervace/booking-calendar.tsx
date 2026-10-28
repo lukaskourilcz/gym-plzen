@@ -641,6 +641,11 @@ export function BookingCalendar({
              */}
             {availableSlots.map((slot) => {
               const picked = selectedStarts.has(slot.startISO);
+              const statusLabel = slot.booked
+                ? "Obsazeno"
+                : picked
+                  ? "Vybráno"
+                  : "Vybrat";
               return (
                 <button
                   key={slot.startISO}
@@ -679,16 +684,13 @@ export function BookingCalendar({
                       !picked && !slot.booked && "text-accent-foreground",
                     )}
                   >
-                    {slot.booked ? (
-                      "Obsazeno"
-                    ) : picked ? (
-                      <>
-                        <Check aria-hidden="true" />
-                        Vybráno
-                      </>
-                    ) : (
-                      "Vybrat"
-                    )}
+                    <Check
+                      aria-hidden="true"
+                      className={cn(!picked && "hidden")}
+                    />
+                    {/* Replace an owned element, never a bare text node that
+                        browser translation may have wrapped in <font>. */}
+                    <span key={statusLabel}>{statusLabel}</span>
                   </span>
                 </button>
               );
