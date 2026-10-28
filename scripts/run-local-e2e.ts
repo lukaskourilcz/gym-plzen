@@ -194,6 +194,7 @@ try {
       ? args
       : [
           "public.spec.ts",
+          "map-runtime.spec.ts",
           "instagram.spec.ts",
           "customer-preview.spec.ts",
           "content-editor.spec.ts",

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
 import { cn } from "@/lib/utils";
+import { reportTransportError } from "@/lib/helpers/report-transport-error";
 import {
   isGoogleMapsModuleError,
   markMapErrorRecovered,
@@ -115,16 +116,49 @@ export function LocationMap({
     let map: google.maps.Map | null = null;
     let marker: google.maps.marker.AdvancedMarkerElement | null = null;
     let readyListener: google.maps.MapsEventListener | undefined;
+    const disposeMap = () => {
+      // Detach ownership first: failure recovery and unmount may both run.
+      const currentMap = map;
+      const currentMarker = marker;
+      const currentListener = readyListener;
+      map = null;
+      marker = null;
+      readyListener = undefined;
+      const cleanup = [
+        () => currentListener?.remove(),
+        () => {
+          if (currentMarker) currentMarker.map = null;
+        },
+        () => currentMarker?.remove(),
+        () => {
+          if (currentMap) google.maps.event.clearInstanceListeners(currentMap);
+        },
+        () => currentMap?.unbindAll(),
+        () => container.replaceChildren(),
+      ];
+      for (const release of cleanup) {
+        try {
+          release();
+        } catch (error) {
+          // A provider cleanup failure must not prevent the usable fallback
+          // or the release of the remaining resources.
+          reportTransportError(error, "map.cleanup", "nonessential");
+        }
+      }
+    };
     // The iframe remains usable while the enhanced map loads its tiles.
     const fail = () => {
-      if (cancelled) return;
+      if (cancelled || mapFailed) return;
       mapFailed = true;
+      window.clearTimeout(readyTimeout);
+      disposeMap();
       setReady(false);
       setFailed(true);
     };
     const readyTimeout = window.setTimeout(fail, 10_000);
     const recoverRuntimeFailure = (error: unknown) => {
-      if (cancelled || !isGoogleMapsModuleError(error)) return false;
+      if (cancelled || mapFailed || !isGoogleMapsModuleError(error))
+        return false;
       fail();
       markMapErrorRecovered(error);
       return true;
@@ -194,17 +228,10 @@ export function LocationMap({
       window.clearTimeout(readyTimeout);
       window.removeEventListener("unhandledrejection", onModuleFailure);
       window.removeEventListener("error", onRuntimeFailure);
-      readyListener?.remove();
       if (window.gm_authFailure === handleAuthFailure) {
         window.gm_authFailure = previousAuthFailure;
       }
-      if (marker) {
-        marker.map = null;
-        marker.remove();
-      }
-      if (map) google.maps.event.clearInstanceListeners(map);
-      map?.unbindAll();
-      container.replaceChildren();
+      disposeMap();
     };
   }, [address, apiKey, canLoadEnhancedMap, mapId, position, shouldLoad]);
 
