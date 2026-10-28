@@ -221,7 +221,7 @@ describe(
           "insert into credit_account(user_id,balance_cents) values($1,100)",
           [profile!.id],
         );
-        const members = await memberPage(1, filters({ q: query }), now);
+        const members = await memberPage(1, filters({ q: query }));
         assert.deepEqual(
           members.map((row) => row.user.id),
           [profile!.id],
