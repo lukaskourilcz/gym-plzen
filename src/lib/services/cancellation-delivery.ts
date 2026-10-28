@@ -4,32 +4,39 @@ import { messageDelivery, reservation } from "@/lib/db/schema";
 import { withReservationLock } from "./operation-lock";
 import { sendEmail, type SendEmailParams } from "@/lib/integrations/resend";
 import { z } from "zod";
-import {
-  prepareTransactionalEmail,
-  sendTransactionalEmail,
-} from "./email-templates";
-import { formatDateTime } from "@/lib/helpers/format";
+import { prepareTransactionalEmail } from "./email-templates";
 import { raiseAlert, resolveAlert } from "./alerts";
 
-const customerIntentSchema = z.object({
-  version: z.literal(1),
-  templateId: z.literal("customer_reservation_cancellation"),
-  variables: z.object({
-    name: z.string(),
-    time: z.string(),
-    price: z.string(),
-    refund_note: z.string(),
-  }),
-  email: z
-    .object({
-      to: z.string(),
-      subject: z.string(),
-      html: z.string(),
-      text: z.string().optional(),
-    })
-    .optional(),
+const preparedEmailSchema = z.object({
+  to: z.string(),
+  subject: z.string(),
+  html: z.string(),
+  text: z.string().optional(),
 });
-const CUSTOMER_SAFE_WINDOW_MS = 23 * 3_600_000;
+const cancellationIntentSchema = z.discriminatedUnion("templateId", [
+  z.object({
+    version: z.literal(1),
+    templateId: z.literal("customer_reservation_cancellation"),
+    variables: z.object({
+      name: z.string(),
+      time: z.string(),
+      price: z.string(),
+      refund_note: z.string(),
+    }),
+    email: preparedEmailSchema.optional(),
+  }),
+  z.object({
+    version: z.literal(1),
+    templateId: z.literal("reservation_cancellation"),
+    variables: z.object({
+      name: z.string(),
+      time: z.string(),
+      reason: z.string(),
+    }),
+    email: preparedEmailSchema.optional(),
+  }),
+]);
+const SAFE_WINDOW_MS = 23 * 3_600_000;
 const MANUAL_REASON = "customer_cancellation_reconcile_required";
 
 /** Persisted atomically with cancellation; provider key survives worker crashes. */
@@ -55,14 +62,12 @@ export async function deliverCancellation(reservationId: string) {
       cancellation?: unknown;
       submitted?: boolean;
     } | null;
-    const customer = metadata?.cancellation !== undefined;
-    const intent = customerIntentSchema.safeParse(metadata?.cancellation);
+    const intent = cancellationIntentSchema.safeParse(metadata?.cancellation);
     if (
-      customer &&
-      (!intent.success ||
-        Number(stored!.ageMs) >= CUSTOMER_SAFE_WINDOW_MS ||
-        Number(stored!.ageMs) < 0 ||
-        message.failureReason === MANUAL_REASON)
+      !intent.success ||
+      Number(stored!.ageMs) >= SAFE_WINDOW_MS ||
+      Number(stored!.ageMs) < 0 ||
+      message.failureReason === MANUAL_REASON
     ) {
       await db
         .update(messageDelivery)
@@ -82,44 +87,30 @@ export async function deliverCancellation(reservationId: string) {
     }
     let result: { sent: boolean; providerMessageId?: string; error?: string };
     try {
-      if (customer && intent.success) {
-        const email: SendEmailParams =
-          intent.data.email ??
-          (await prepareTransactionalEmail({
-            id: intent.data.templateId,
-            to: message.recipient,
-            variables: intent.data.variables,
-          }));
-        // Freeze exact text/HTML before contacting the provider. Editing the
-        // template while an uncertain request retries cannot change its bytes.
-        await db
-          .update(messageDelivery)
-          .set({
-            providerResponse: {
-              cancellation: { ...intent.data, email },
-              submitted: true,
-            },
-            updatedAt: new Date(),
-          })
-          .where(eq(messageDelivery.id, message.id));
-        result = await sendEmail({
-          ...email,
+      const email: SendEmailParams =
+        intent.data.email ??
+        (await prepareTransactionalEmail({
+          id: intent.data.templateId,
           to: message.recipient,
-          idempotencyKey: `cancellation/${reservationId}`,
-        });
-      } else {
-        // Rows created before this change retain the original admin template.
-        result = await sendTransactionalEmail({
-          id: "reservation_cancellation",
-          to: message.recipient,
-          idempotencyKey: `cancellation/${reservationId}`,
-          variables: {
-            name: booking.contactName || "zákazníku",
-            time: formatDateTime(booking.startsAt),
-            reason: booking.cancelReason || "Rezervace byla zrušena.",
+          variables: intent.data.variables,
+        }));
+      // Freeze exact text/HTML before contacting the provider. Editing the
+      // template while an uncertain request retries cannot change its bytes.
+      await db
+        .update(messageDelivery)
+        .set({
+          providerResponse: {
+            cancellation: { ...intent.data, email },
+            submitted: true,
           },
-        });
-      }
+          updatedAt: new Date(),
+        })
+        .where(eq(messageDelivery.id, message.id));
+      result = await sendEmail({
+        ...email,
+        to: message.recipient,
+        idempotencyKey: `cancellation/${reservationId}`,
+      });
     } catch {
       result = { sent: false, error: "cancellation_email_unconfirmed" };
     }
@@ -127,12 +118,12 @@ export async function deliverCancellation(reservationId: string) {
       .update(messageDelivery)
       .set({
         status: result.sent ? "sent" : "failed",
-        ...(customer && result.sent
+        ...(result.sent
           ? {
               providerResponse: {
                 cancellation: {
                   version: 1,
-                  templateId: "customer_reservation_cancellation",
+                  templateId: intent.data.templateId,
                 },
                 submitted: true,
               },
@@ -149,7 +140,7 @@ export async function deliverCancellation(reservationId: string) {
       await raiseAlert({
         dedupeKey: `cancellation-email:${reservationId}`,
         title: "Storno e-mail čeká na odeslání",
-        body: "Rezervace je zrušena. Odeslání e-mailu se automaticky zopakuje.",
+        body: "Rezervace je zrušena. Odeslání e-mailu se automaticky zopakuje pouze v bezpečném časovém okně; později je nutné ověřit doručení u poskytovatele.",
         context: { reservationId },
       });
   });

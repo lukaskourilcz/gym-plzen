@@ -49,6 +49,43 @@ Audit lockfile po odstranění: **0 zranitelností**, bez vypnutí bezpečnostn�
 kontrol nebo změny transportu/zpráv. Prokázaný nález je zranitelná závislost;
 zneužitelná cesta přes skutečné doručování v této aplikaci nebyla prokázána.
 
+### A02 — Ruční rezervace vybraného člena zahazovala kontakty (P2)
+
+Formulář dovoluje pouze `userId`, ale služba zapisovala NULL kontakt a následný
+fulfillment pracuje s kontaktem rezervace. Reprodukce selhala na očekávaném
+e-mailu člena. Nová ruční rezervace přebírá známé jméno/e-mail/telefon jen tam,
+kde správce nepředal vlastní kontakt. Staré rezervace se nedoplňují, samotné
+uložení nic neposílá. Čtyři scénáře ručních rezervací po opravě prošly.
+
+### A03 — Netextové jméno z Auth metadata shodilo účet (P2)
+
+Zákazník může měnit metadata své identity; `full_name` se nebezpečně přetypovalo
+na string. S objektem a prázdným profilovým jménem `/account` končil TypeError
+`trim is not a function`. Guard nyní přijímá jen text, jinak použije profil nebo
+e-mail. Browser regresní scénář navíc ověřuje, že metadata `role: admin`
+nezmění databázovou roli ani nepovolí administraci.
+
+### A04 — Mazání dočasné blokace procházelo finanční historii (P2)
+
+Cizí klíč `reservation_change.block_id` neměl podpůrný index. S 110 000 výhradně
+fiktivními řádky dotaz pro kontrolu vazby četl celou tabulku (2445 bufferů;
+první diagnostické měření 137,562 ms). Nový částečný index používá index-only
+scan, 2 buffery a 0,015 ms. Nejde o produkční časové měření ani garantovaný
+násobek zrychlení. Migrace obsahuje pouze CREATE INDEX, žádný backfill či seed.
+Migrační test zachoval původní rezervace/PINy a také existující finanční ledger,
+rezervovaný kredit, připravenou platbu, blokaci a doručovací záznamy.
+
+### A05 — Opakování admin storna nemělo stejné záruky jako zákaznické (P1)
+
+Tři regresní scénáře nejprve selhaly: po ztracené přijaté odpovědi a editaci
+šablony vznikl konflikt idempotency klíče; po 23 hodinách se znovu POSTovalo;
+u staré neznámé odpovědi bez původních bajtů se zpráva znovu sestavovala.
+Nová admin storna mají stejně jako zákaznická atomický verzovaný intent,
+zmrazené bajty před providerem a 23hodinovou bezpečnou hranici. Historická
+nepotvrzená storna bez spolehlivého intentu se předají k ručnímu ověření,
+nikoli k novému sestavení/odeslání. Osm integračních scénářů po opravě prošlo.
+Status již zrušené rezervace a stávající kódy tato oprava sama nemění.
+
 ### Samostatně dokončený release PR #281
 
 Produkční Vercel deployment `dpl_2vmZL4ojDyCZV1avakfwi2M9PY5w` je READY,

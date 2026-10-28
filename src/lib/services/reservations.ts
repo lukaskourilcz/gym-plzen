@@ -295,7 +295,18 @@ async function cancelReservationLocked(
                 },
                 submitted: false,
               }
-            : null,
+            : {
+                cancellation: {
+                  version: 1,
+                  templateId: "reservation_cancellation",
+                  variables: {
+                    name: before.contactName || "zákazníku",
+                    time: formatDateTime(before.startsAt),
+                    reason: params.reason || "Rezervace byla zrušena.",
+                  },
+                },
+                submitted: false,
+              },
         })
         .onConflictDoNothing();
     }

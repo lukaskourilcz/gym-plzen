@@ -144,6 +144,67 @@ describe("customer cancellation outbox", { skip: !databaseReady }, () => {
       "customer_cancellation_reconcile_required",
     );
   });
+  test("administrator cancellation retries the exact frozen message after a lost response and a template edit", async () => {
+    const id = await fixture();
+    resend.loseNextAcceptedResponse();
+    await cancelReservation({ id, reason: "Údržba" });
+    assert.equal(resend.sent.length, 1);
+    await setSetting("messages.email.reservation_cancellation", {
+      subject: "Nové znění",
+      body: "{reason} se teď změnilo.",
+    });
+    await rows(
+      "update message_delivery set updated_at=now()-interval '6 minutes' where dedupe_key=$1",
+      [`cancellation/${id}`],
+    );
+    await retryCancellationEmails();
+    const [stored] = await rows<{ status: string }>(
+      "select status from message_delivery where dedupe_key=$1",
+      [`cancellation/${id}`],
+    );
+    assert.equal(stored!.status, "sent");
+    assert.equal(resend.sent.length, 1);
+  });
+  test("administrator cancellation never posts after the safe provider window", async () => {
+    const id = await fixture();
+    resend.rateLimitNext(2);
+    await cancelReservation({ id, reason: "Údržba" });
+    await rows(
+      "update message_delivery set created_at=now()-interval '23 hours',updated_at=now()-interval '6 minutes' where dedupe_key=$1",
+      [`cancellation/${id}`],
+    );
+    resend.rateLimitNext(0);
+    await retryCancellationEmails();
+    await deliverCancellation(id);
+    assert.equal(resend.sent.length, 0);
+    const [stored] = await rows<{ failure_reason: string }>(
+      "select failure_reason from message_delivery where dedupe_key=$1",
+      [`cancellation/${id}`],
+    );
+    assert.equal(
+      stored!.failure_reason,
+      "customer_cancellation_reconcile_required",
+    );
+  });
+  test("legacy uncertain administrator sends without their original bytes require review instead of rebuilding a message", async () => {
+    const id = await fixture();
+    resend.loseNextAcceptedResponse();
+    await cancelReservation({ id, reason: "Údržba" });
+    await rows(
+      "update message_delivery set provider_response=null,updated_at=now()-interval '6 minutes' where dedupe_key=$1",
+      [`cancellation/${id}`],
+    );
+    await retryCancellationEmails();
+    const [stored] = await rows<{ failure_reason: string }>(
+      "select failure_reason from message_delivery where dedupe_key=$1",
+      [`cancellation/${id}`],
+    );
+    assert.equal(
+      stored!.failure_reason,
+      "customer_cancellation_reconcile_required",
+    );
+    assert.equal(resend.sent.length, 1);
+  });
   test("cancelling a bonus removes it from loyalty without changing other reservations, codes, payments or invoices", async () => {
     const id = await fixture(0, 1);
     const other = await fixture();
