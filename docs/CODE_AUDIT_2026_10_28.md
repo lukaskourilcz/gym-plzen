@@ -81,7 +81,7 @@ násobek zrychlení. Migrace obsahuje pouze CREATE INDEX, žádný backfill či 
 Migrační test zachoval původní rezervace/PINy a také existující finanční ledger,
 rezervovaný kredit, připravenou platbu, blokaci a doručovací záznamy.
 
-### A05 — Opakování admin storna nemělo stejné záruky jako zákaznické (P1)
+### A05 — Opakování admin storna nemělo stejné záruky jako zákaznické (P2)
 
 Tři regresní scénáře nejprve selhaly: po ztracené přijaté odpovědi a editaci
 šablony vznikl konflikt idempotency klíče; po 23 hodinách se znovu POSTovalo;
@@ -204,3 +204,25 @@ profil bude potřeba znovu změřit až po samostatném schválení auditního r
   Žádný zákaznický řádek, kód, seed, trigger ani fronta se migrací nepřepisují.
 - Případný rollback auditní aplikace ponechá finanční ledger a idempotency
   záznamy. Nový index lze ponechat; pro rollback kódu není potřeba nic mazat.
+
+## Závěrečné místní ověření
+
+Aplikační opravy: commit `452eee4`; konečná oprava volání regresního testu:
+`eb0314a40086f2cae120618eb40b7db92120a2ad`. Následující dokumentační commity
+nemění testovanou aplikaci.
+
+- **335/335 jednotkových**, **292/292 integračních**, **169/169 browser testů**:
+  celkem **796**, bez přeskočených scénářů v těchto sadách.
+- SQL permissions/RLS, capacity, platební izolace a immutable credit ledger:
+  všechny soubory prošly; databázové migrace na nových UTF8 DB prošly.
+- Produkční Next build v E2E harnessu, lint, TypeScript a Prettier: úspěšné.
+- Čistá instalace z package-lock a úplný npm audit: 0 advisories.
+- Browser ověřil desktop/mobil, keyboard/dialogy, výpadek s retry,
+  přepínání/cache/realtime, nákup více termínů, účty/role, doklady, kredity,
+  doplatky, blokace, CMS/Instagram, preview a přístupnost veřejných stránek.
+- Testovací DB byly na 127.0.0.1; náhrady všech poskytovatelů a síťový zákaz
+  vnějších volání. Zprávy zaznamenané fixture nejsou zprávy zákazníkům.
+- Main při poslední kontrole stále `f9b35c4`. Audit je draft PR #283,
+  bez auto-merge, se zakázaným Vercel deploymentem této větve. Žádná auditní
+  migrace ani aplikační oprava není nasazená. Stav GitHub CI je vidět přímo
+  v PR a musí být zelený před případným budoucím samostatně schváleným release.
