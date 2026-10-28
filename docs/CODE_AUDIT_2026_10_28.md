@@ -134,3 +134,12 @@ před LIMIT, s deterministickým pořadím; druhá kontrola pod zámkem zůstáv
 Regrese prokazuje uvolnění pouze osiřelé blokace a jejího kreditu, zachování
 11 nejistých pokusů, všech rezervací, připravených kódů, plateb i ledgeru.
 Opakování nezakládá platbu, refundaci ani zákaznickou zprávu.
+
+### A10 — Test bootstrap nerozpoznal chybné kódování databáze (P3, testovací prostředí)
+
+Při přípravě nových místních databází zdědil pracovní PostgreSQL výchozí
+SQL_ASCII. Šest integračních kontrol českého vyhledávání proto správně selhalo;
+nejde o regresi aplikace ani nastavení produkce (UTF8). Závěrečné databáze byly
+vytvořeny z template0 explicitně jako UTF8. Bootstrap nyní ještě před migrací
+odmítá jiné kódování; regresní test ověřuje prázdné schéma po odmítnutí.
+Tím se neskrývají chyby vyhledávání a budoucí chybný lokální běh selže včas.
