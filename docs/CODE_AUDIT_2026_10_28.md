@@ -37,3 +37,22 @@ Resend/deepmerge jsou známý podnět pro tento audit, nikoli výjimka z CI prah
 
 Doplní se pouze reprodukované nálezy, jejich dopad a regresní důkazy. Zelená
 sada testů neznamená záruku absence všech chyb ani externí penetrační test.
+
+### A01 — Nepoužívaný SDK přinášel zranitelný řetězec závislostí (P3)
+
+`resend` SDK není importován v aplikaci ani testech. Doručování používá vlastní
+časově omezený HTTP transport `resend-transport.ts`, včetně idempotency klíčů a
+klasifikace neznámé odpovědi. Odstranění nepoužívaného balíčku eliminuje SDK i
+jeho tranzitivní React renderer/html-to-text/deepmerge a čtyři advisories
+[GHSA-gcqx-w48m-w2h4](https://github.com/advisories/GHSA-gcqx-w48m-w2h4).
+Audit lockfile po odstranění: **0 zranitelností**, bez vypnutí bezpečnostních
+kontrol nebo změny transportu/zpráv. Prokázaný nález je zranitelná závislost;
+zneužitelná cesta přes skutečné doručování v této aplikaci nebyla prokázána.
+
+### Samostatně dokončený release PR #281
+
+Produkční Vercel deployment `dpl_2vmZL4ojDyCZV1avakfwi2M9PY5w` je READY,
+main commit `f9b35c4c3ba3b485e413ba96fd5f992325111a5e`, region `cdg1`, doména
+`www.navigym.cz`. Žádná migrace ani auditní oprava se do tohoto release nepřidala.
+Následné ověření používá pouze veřejné GET pro úvodní stránku, dostupnost a
+podmínky; žádné potvrzovací/platební URL, cron, zásah do zámku nebo testovací nákup.
