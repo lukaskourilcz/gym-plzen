@@ -1,5 +1,9 @@
 # Credit wallet release and operating guide
 
+For the subsequent change-request pricing policy and twenty-row customer history,
+see [the 28 October follow-up](CREDIT_RESCHEDULING_2026_10_28.md). The deployment
+authorization and migrations below describe the original credit release only.
+
 ## Deployment boundary
 
 The feature is implemented on `codex/customer-credits`. The initial implementation
@@ -29,7 +33,8 @@ original per-item prices/discounts and original cash/credit allocation.
 
 ## Customer and administrator behavior
 
-- Profile shows available credit, reserved credit and the last 50 movements.
+- Profile shows available credit when positive; the dedicated history tab pages
+  movements twenty at a time. Administrator wallet history shows the last 50.
 - Checkout, reschedule difference and additional companions accept credit; any
   remainder uses Comgate. Full-credit purchases do not open a gateway and are
   still purchases for loyalty purposes. Rewards never mint nominal-price credit.

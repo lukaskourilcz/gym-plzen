@@ -276,6 +276,8 @@ test.describe("customer", () => {
       page.getByRole("region", { name: "Tvoje kredity" }),
     ).toContainText("72 Kč");
     await sql`update site_setting set value='32900' where key='pricing.entry_price_cents'`;
+    // A historical reservation must use the same visible, paid change flow.
+    await sql`update reservation set pricing_version=1,price_snapshot=null,terms_version=null where id=${secondId}`;
     await page.goto(
       `/account/rezervace/${secondId}/zmenit?date=${addDaysToDateKey(day, 2)}`,
     );
@@ -416,6 +418,82 @@ test.describe("customer", () => {
     const [after] =
       await sql`select balance_cents,reserved_cents from credit_account where user_id=${memberId}`;
     expect(after).toMatchObject({ balance_cents: 0, reserved_cents: 0 });
+  });
+});
+
+test.describe("credit history pagination", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+  test("twenty movements per page, stable navigation, reload and mobile layout", async ({
+    page,
+  }, info) => {
+    const [account] =
+      await sql`select id from credit_account where user_id=${memberId}`;
+    await sql`insert into credit_entry(account_id,amount_cents,reason,operation_key,created_at)
+      select ${account!.id},100,'Stránkovací pohyb '||n,'paging:'||gen_random_uuid(),'2099-01-01T12:00:00Z'::timestamptz from generate_series(1,55) n`;
+    await sql`update credit_account set balance_cents=balance_cents+5500 where id=${account!.id}`;
+    const expected =
+      await sql`select reason from credit_entry where account_id=${account!.id} order by created_at desc,id desc`;
+    await page.goto("/login");
+    await page
+      .getByTestId("tracking-consent")
+      .getByRole("button", { name: "Pouze nezbytné" })
+      .click();
+    await page.getByLabel("E-mail", { exact: true }).fill(email);
+    await page
+      .getByLabel("Heslo", { exact: true })
+      .fill(process.env.E2E_TEST_PASSWORD!);
+    await page
+      .getByRole("button", { name: "Přihlásit se", exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/account/);
+    await page
+      .getByRole("link", { name: "Historie kreditů", exact: true })
+      .click();
+    const history = page.getByRole("region", {
+      name: "Historie kreditních pohybů",
+      exact: true,
+    });
+    const navigation = page.getByRole("navigation", {
+      name: "Stránkování historie kreditů",
+    });
+    const reasons = () => history.locator("tbody tr td:nth-child(2)");
+    await expect(reasons()).toHaveText(
+      expected.slice(0, 20).map((row) => String(row.reason)),
+    );
+    await expect(history.getByRole("row")).toHaveCount(21);
+    await expect(navigation).toContainText("Strana 1");
+    await navigation.getByRole("link", { name: "Další", exact: true }).click();
+    await expect(page).toHaveURL(/tab=credits&page=2/);
+    await expect(reasons()).toHaveText(
+      expected.slice(20, 40).map((row) => String(row.reason)),
+    );
+    await page.reload();
+    await expect(reasons()).toHaveText(
+      expected.slice(20, 40).map((row) => String(row.reason)),
+    );
+    await navigation.getByRole("link", { name: "Další", exact: true }).click();
+    await expect(reasons()).toHaveCount(Math.min(20, expected.length - 40));
+    await expect(reasons()).toContainText(
+      expected.slice(40, 60).map((row) => String(row.reason)),
+    );
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(
+      navigation.getByRole("link", { name: "Předchozí", exact: true }),
+    ).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: info.outputPath("credit-history-pagination-mobile.png"),
+      fullPage: true,
+    });
+    await navigation
+      .getByRole("link", { name: "Předchozí", exact: true })
+      .click();
+    await expect(page).toHaveURL(/tab=credits&page=2/);
+    await expect(reasons()).toHaveCount(20);
   });
 });
 

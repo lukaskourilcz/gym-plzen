@@ -389,6 +389,38 @@ describe("priced reservation changes", { skip: !databaseReady }, () => {
     );
     assert.equal(resend.sent.length, 0);
   });
+  test("a separately purchased companion on an old booking is carried without another companion charge", async () => {
+    const id = await paidBooking();
+    await grant(10000);
+    await addParticipants({
+      userId,
+      reservationId: id,
+      toCount: 1,
+      quotedCents: 10000,
+      useCredits: true,
+      quotedCreditCents: 10000,
+    });
+    await rows(
+      "update reservation set pricing_version=1,price_snapshot=null,terms_version=null where id=$1",
+      [id],
+    );
+    await setSetting("pricing.entry_price_cents", 23900);
+    await setSetting("pricing.additional_people", {
+      amountCents: 20000,
+      mode: "per_person",
+    });
+    const quote = await quoteReschedule(userId, id, slot(6));
+    assert.equal(quote.newPriceCents, 23900);
+    assert.equal(quote.differenceCents, 1000);
+    assert.equal(quote.priceSnapshot.companionCents, 0);
+    await startPricedReschedule(await changeInput(id));
+    comgate.settle("TEST-0002", "PAID");
+    await synchronizeComgatePayment("TEST-0002");
+    const current = (await getReservation(id))!;
+    assert.equal(current.extraPeople, 1);
+    assert.equal(current.additionalPeoplePaidCents, 10000);
+    assert.equal(current.priceCents, 23900);
+  });
   test("a credit-only order uses no gateway and allocates tender to each item", async () => {
     await seedProfile({
       id: userId,
