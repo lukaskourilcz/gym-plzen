@@ -103,3 +103,12 @@ a staré emailové payloady. Zachovává klíče deduplikace, ID poskytovatele,
 stavy, časy i údaje jiných kanálů pro jejich reconciliaci. Outboxy už v této
 chvíli dávno překročily 23hodinovou hranici automatického odesílání. Regresní
 test ověřuje hraniční čas, novější obsah, WhatsApp metadata a opakovaný úklid.
+
+### A07 — Vadná položka WhatsApp webhooku blokovala celou dávku (P2)
+
+I správně podepsané JSON `null` nebo objekt namísto pole končily 500. Neplatný
+čas v první položce zabránil zpracování dalších platných potvrzení; neznámý
+stav se navíc překládal jako „odesláno“. Dva regresní testy nejprve selhaly.
+Obálka se nyní validuje před zápisem, vadné jednotlivé stavy se izolují,
+neznámý stav se nevymýšlí a podepsané platné potvrzení se zapíše. Šest testů
+vnějších rout prošlo; fiktivní podpisový klíč nevytváří oprávnění odesílat.
