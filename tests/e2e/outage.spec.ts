@@ -66,6 +66,25 @@ test("database outage never offers invented availability or a usable checkout (#
     await expect(page.getByRole("button", { name: /Vybrat$/ })).toHaveCount(0);
     await expect(page.getByRole("link", { name: /Pokračovat/ })).toHaveCount(0);
     await expect(page.locator("main").getByRole("alert")).toBeVisible();
+    const starts = new Date(Date.now() + 86400000 * 7).toISOString();
+    const detailsUrl = `http://localhost:3132/rezervace/udaje?start=${encodeURIComponent(starts)}`;
+    const writes: string[] = [];
+    page.on("request", (request) => {
+      if (request.method() === "POST") writes.push(request.url());
+    });
+    await page.goto(detailsUrl);
+    await expect(
+      page.getByRole("heading", { name: "Stránku se nepodařilo načíst" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Zkontrolovat rezervace v účtu" }),
+    ).toHaveAttribute("href", "/account");
+    await page.getByRole("button", { name: "Obnovit stránku" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Stránku se nepodařilo načíst" }),
+    ).toBeVisible();
+    expect(new URL(page.url()).searchParams.get("start")).toBe(starts);
+    expect(writes).toEqual([]);
   } finally {
     if (child.exitCode === null) {
       const stopped = new Promise<void>((resolve) =>

@@ -13,10 +13,18 @@ export function wasMapErrorRecovered(error: unknown): boolean {
 
 export function isTransportError(error: unknown): boolean {
   return (
-    error instanceof TypeError &&
-    /^(Load failed|Failed to fetch|NetworkError when attempting to fetch resource\.?|network error|Error in input stream)$/.test(
-      error.message,
-    )
+    (error instanceof Error && error.message === "Connection closed.") ||
+    (error instanceof TypeError &&
+      /^(Load failed|Failed to fetch|NetworkError when attempting to fetch resource\.?|network error|Error in input stream)$/.test(
+        error.message,
+      ))
+  );
+}
+
+export function isStaleActionError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    /^Failed to find Server Action\b/.test(error.message)
   );
 }
 

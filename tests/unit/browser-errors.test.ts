@@ -6,6 +6,7 @@ import {
   isInjectedFacebookError,
   isInjectedBrowserError,
   isTransportError,
+  isStaleActionError,
   markMapErrorRecovered,
   wasMapErrorRecovered,
 } from "../../src/lib/helpers/browser-errors";
@@ -104,6 +105,19 @@ test("only known transport TypeErrors receive recoverable severity", () => {
     false,
   );
   assert.equal(isTransportError(new Error("Load failed")), false);
+  assert.equal(isTransportError(new Error("Connection closed.")), true);
+  assert.equal(
+    isStaleActionError(
+      new Error(
+        'Failed to find Server Action "abc". This request might be from an older or newer deployment.',
+      ),
+    ),
+    true,
+  );
+  assert.equal(
+    isStaleActionError(new Error("Unexpected server failure")),
+    false,
+  );
 });
 test("Google Maps fallback does not consume similar application errors", () => {
   const error = new Error('Could not load "onion".');
