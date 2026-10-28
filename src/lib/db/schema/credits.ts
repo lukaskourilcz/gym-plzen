@@ -153,6 +153,9 @@ export const reservationChange = pgTable(
       .notNull(),
   },
   (t) => [
+    index("reservation_change_block_idx")
+      .on(t.blockId)
+      .where(sql`${t.blockId} is not null`),
     index("reservation_change_status_idx").on(t.status, t.updatedAt),
     index("reservation_change_user_completed_idx")
       .on(t.userId, t.createdAt.desc())
