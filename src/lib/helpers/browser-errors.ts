@@ -29,32 +29,71 @@ export function isGoogleMapsModuleError(error: unknown): boolean {
   );
 }
 
-/** Match only the two native-bridge signatures observed in Facebook's browser. */
-export function isInjectedFacebookError(
+/** Inline scripts injected by a native browser, never our bundled application. */
+function isInlinePageFrame(filename: string) {
+  return /^(?:app:\/\/\/|https:\/\/(?:www\.)?navigym\.cz\/)[^?#.]*$/.test(
+    filename,
+  );
+}
+
+/** Exact native signatures confirmed in Sentry, with browser and stack evidence. */
+export function isInjectedBrowserError(
   event: ErrorEvent,
   userAgent: string,
 ): boolean {
-  if (!/FBAN|FBAV|\bFacebook\b/.test(userAgent)) return false;
+  const facebook = /FBAN|FBAV|\bFacebook\b/.test(userAgent);
+  const instagram = /\bInstagram\b/.test(userAgent);
+  if (!facebook && !instagram) return false;
   const exceptions = event.exception?.values ?? [];
   return (
     exceptions.length === 1 &&
     exceptions.every((exception) => {
-      if (
-        exception.type !== "TypeError" ||
-        ![
-          "undefined is not an object (evaluating 'window.webkit.messageHandlers')",
-          "null is not an object (evaluating 'e.contentWindow.postMessage')",
-        ].includes(exception.value ?? "")
-      )
-        return false;
       const frames = exception.stacktrace?.frames ?? [];
+      if (frames.length === 0) return false;
+      const value = exception.value ?? "";
+      if (
+        facebook &&
+        exception.type === "Error" &&
+        value === "Error invoking postMessage: Java object is gone"
+      ) {
+        return frames.every((frame) =>
+          /^(?:app:\/\/|https:\/\/www\.navigym\.cz\/)navigation_performance_logger_android$/.test(
+            frame.filename ?? "",
+          ),
+        );
+      }
+      if (!frames.every((frame) => isInlinePageFrame(frame.filename ?? "")))
+        return false;
+      if (
+        facebook &&
+        exception.type === "InvalidAccessError" &&
+        value === "The object does not support the operation or argument."
+      ) {
+        // Other DOM InvalidAccessErrors remain application errors. These two
+        // functions identify Facebook's injected submit-button instrumentation.
+        return ["dispatchToBridge", "logSubmitButtonClicked"].every((name) =>
+          frames.some((frame) => frame.function === name),
+        );
+      }
+      if (exception.type !== "TypeError") return false;
       return (
-        frames.length > 0 &&
-        frames.every((frame) => {
-          const file = frame.filename ?? "";
-          return /^(?:app:\/\/\/|https:\/\/www\.navigym\.cz\/)\s*$/.test(file);
-        })
+        (facebook &&
+          [
+            "undefined is not an object (evaluating 'window.webkit.messageHandlers')",
+            "null is not an object (evaluating 'e.contentWindow.postMessage')",
+          ].includes(value)) ||
+        (instagram &&
+          value ===
+            "undefined is not an object (evaluating 'window._META.IABInnerFrame')")
       );
     })
+  );
+}
+
+/** Compatibility for existing callers; Instagram is deliberately excluded. */
+export function isInjectedFacebookError(event: ErrorEvent, userAgent: string) {
+  return (
+    /FBAN|FBAV|\bFacebook\b/.test(userAgent) &&
+    isInjectedBrowserError(event, userAgent)
   );
 }

@@ -8,7 +8,7 @@
  * whole branch is dropped from the bundle.
  */
 import {
-  isInjectedFacebookError,
+  isInjectedBrowserError,
   isTransportError,
   wasMapErrorRecovered,
 } from "@/lib/helpers/browser-errors";
@@ -28,7 +28,7 @@ if (dsn) {
         replaysOnErrorSampleRate: 1.0,
         beforeSend(event, hint) {
           if (
-            isInjectedFacebookError(event, navigator.userAgent) ||
+            isInjectedBrowserError(event, navigator.userAgent) ||
             wasMapErrorRecovered(hint.originalException)
           )
             return null;

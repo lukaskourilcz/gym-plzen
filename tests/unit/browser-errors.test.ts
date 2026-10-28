@@ -4,6 +4,7 @@ import type { ErrorEvent } from "@sentry/nextjs";
 import {
   isGoogleMapsModuleError,
   isInjectedFacebookError,
+  isInjectedBrowserError,
   isTransportError,
   markMapErrorRecovered,
   wasMapErrorRecovered,
@@ -44,6 +45,51 @@ test("native Facebook bridges are filtered only with matching message, browser a
   const mixed = bridge();
   mixed.exception!.values!.push({ type: "Error", value: "Application bug" });
   assert.equal(isInjectedFacebookError(mixed, ua), false);
+});
+
+test("Instagram and Android native bridges need exact browser, message and native frames", () => {
+  const event = bridge();
+  const exception = event.exception!.values![0]!;
+  exception.value =
+    "undefined is not an object (evaluating 'window._META.IABInnerFrame')";
+  assert.equal(isInjectedBrowserError(event, "Instagram 452.0.1"), true);
+  assert.equal(isInjectedBrowserError(event, "Mobile Safari"), false);
+  assert.equal(isInjectedBrowserError(event, ua), false);
+  exception.type = "Error";
+  exception.value = "Error invoking postMessage: Java object is gone";
+  exception.stacktrace!.frames = [
+    {
+      filename: "app://navigation_performance_logger_android",
+      function: "sendDataToNative",
+    },
+  ];
+  assert.equal(isInjectedBrowserError(event, ua), true);
+  assert.equal(isInjectedBrowserError(event, "Chrome Mobile"), false);
+  exception.stacktrace!.frames.push({
+    filename: "app:///_next/static/chunks/app.js",
+  });
+  assert.equal(isInjectedBrowserError(event, ua), false);
+});
+
+test("Facebook submit instrumentation is distinguished from an application InvalidAccessError", () => {
+  const event = bridge();
+  const exception = event.exception!.values![0]!;
+  exception.type = "InvalidAccessError";
+  exception.value = "The object does not support the operation or argument.";
+  exception.stacktrace!.frames = [
+    { filename: "app:///rezervace", function: "dispatchToBridge" },
+    { filename: "app:///rezervace", function: "sendPostMessage" },
+    { filename: "app:///rezervace", function: "logSubmitButtonClicked" },
+  ];
+  assert.equal(isInjectedBrowserError(event, ua), true);
+  assert.equal(isInjectedBrowserError(event, "Chrome"), false);
+  exception.stacktrace!.frames[0]!.filename =
+    "app:///_next/static/chunks/app.js";
+  assert.equal(isInjectedBrowserError(event, ua), false);
+  exception.stacktrace!.frames = [
+    { filename: "app:///rezervace", function: "submitReservation" },
+  ];
+  assert.equal(isInjectedBrowserError(event, ua), false);
 });
 test("only known transport TypeErrors receive recoverable severity", () => {
   for (const message of [
