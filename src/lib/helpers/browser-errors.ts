@@ -29,7 +29,7 @@ export function isStaleActionError(error: unknown): boolean {
 }
 
 /** Known Google Maps runtime failures; a matching Maps stack is mandatory. */
-export function isGoogleMapsModuleError(error: unknown): boolean {
+export function isGoogleMapsModuleError(error: unknown): error is Error {
   return (
     error instanceof Error &&
     (/^Could not load "[a-z0-9_]+"\.$/i.test(error.message) ||
