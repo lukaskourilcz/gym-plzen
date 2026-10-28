@@ -1,4 +1,5 @@
 import { logger } from "@/lib/helpers/logger";
+import { OperationBusyError } from "@/lib/helpers/operation-busy";
 
 /** Keep already-due PIN work ahead of potentially slow provider status reads. */
 export async function runPriorityWatchdogStages(work: {
@@ -17,7 +18,17 @@ export async function runPriorityWatchdogStages(work: {
       await work.fulfillReservation(id);
       processed++;
     } catch (error) {
-      logger.error(error, { where: "cron.watchdog", reservationId: id });
+      if (error instanceof OperationBusyError) {
+        // Another worker owns this reservation. Keep its pipeline untouched;
+        // the next normal cycle will read the authoritative state again.
+        logger.warn(
+          "Watchdog reservation deferred: operation already running",
+          {
+            where: "cron.watchdog",
+            reservationId: id,
+          },
+        );
+      } else logger.error(error, { where: "cron.watchdog", reservationId: id });
     }
   }
   let reconciledPayments = 0;
