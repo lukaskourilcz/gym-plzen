@@ -82,7 +82,9 @@ async function resolveSessionUser(): Promise<SessionUser | null> {
   if (isProductionDeployment() && isReservedDemoEmail(user.email)) return null;
 
   const fullName =
-    (user.user_metadata?.full_name as string | undefined) ?? null;
+    typeof user.user_metadata?.full_name === "string"
+      ? user.user_metadata.full_name
+      : null;
   const profile = await ensureProfileForUser({
     id: user.id,
     email: user.email ?? null,
