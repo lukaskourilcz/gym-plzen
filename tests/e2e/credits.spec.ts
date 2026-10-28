@@ -209,16 +209,21 @@ test.describe("customer", () => {
     await expect(
       page.getByRole("region", { name: "Historie kreditních pohybů" }),
     ).toHaveCount(0);
-    const creditCard = await page
-      .getByRole("region", { name: "Tvoje kredity" })
-      .boundingBox();
-    const nextTraining = await page
-      .getByText("Nejbližší trénink", { exact: true })
-      .locator("..")
-      .boundingBox();
-    expect(creditCard!.y + creditCard!.height).toBeLessThanOrEqual(
-      nextTraining!.y,
-    );
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+    });
+    await expect
+      .poll(async () => {
+        const [creditCard, nextTraining] = await Promise.all([
+          page.getByRole("region", { name: "Tvoje kredity" }).boundingBox(),
+          page
+            .getByText("Nejbližší trénink", { exact: true })
+            .locator("..")
+            .boundingBox(),
+        ]);
+        return nextTraining!.y - creditCard!.y - creditCard!.height;
+      })
+      .toBeGreaterThanOrEqual(0);
     await page.screenshot({
       path: info.outputPath("credits-account-overview.png"),
       fullPage: true,
@@ -304,7 +309,7 @@ test.describe("customer", () => {
     await page
       .getByRole("button", { name: /Zaplatit 28 Kč a změnit termín/ })
       .click();
-    await expect(page.getByRole("alert")).toContainText(
+    await expect(page.locator("main").getByRole("alert")).toContainText(
       "Pravidla změny termínu se aktualizovala",
     );
     expect(await sql`select * from reservation where id=${secondId}`).toEqual(
