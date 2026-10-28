@@ -22,8 +22,10 @@ test("slot toggles survive translated text nodes without removeChild failures", 
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(`/rezervace?date=${dateA}`, { waitUntil: "networkidle" });
-  const slot = page.getByRole("button", { name: /Vybrat$/ }).first();
-  await expect(slot).toBeVisible();
+  const initialSlot = page.getByRole("button", { name: /Vybrat$/ }).first();
+  await expect(initialSlot).toBeVisible();
+  const timeLabel = (await initialSlot.innerText()).split("\n")[0]!;
+  const slot = page.getByRole("button").filter({ hasText: timeLabel }).first();
   // Reproduce Google Translate / native translator replacing a React-owned
   // text node. No global DOM patch or suppression of React errors is used.
   await slot.getByText("Vybrat", { exact: true }).evaluate((label) => {
@@ -39,7 +41,7 @@ test("slot toggles survive translated text nodes without removeChild failures", 
     font.textContent = "Selected";
     label.replaceChildren(font);
   });
-  await picked.click();
+  await slot.click();
   await expect(
     page.getByRole("button", { name: /Vybrat$/ }).first(),
   ).toHaveAttribute("aria-pressed", "false");
