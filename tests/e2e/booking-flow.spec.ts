@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import postgres from "postgres";
 import { createComgateMock } from "../integration/mocks";
 import { isTestDatabaseUrl } from "../helpers/test-database";
+import { CONSENT_STORAGE_KEY } from "../../src/lib/config/analytics";
 
 /**
  * The public booking flow in a browser against a production build with a
@@ -198,6 +199,45 @@ test.describe("Booking flow", () => {
     await expect(otherPage).toHaveURL(/\/rezervace\?date=.*&stav=obsazeno/);
     await other.close();
   });
+  test("a failing third-party tracker cannot interrupt an already-created checkout", async ({
+    page,
+  }) => {
+    const createsBefore = gateway.creates.length;
+    await page.route("https://payments.comgate.cz/**", (route) =>
+      route.fulfill({
+        contentType: "text/html",
+        body: "<h1>Test payment</h1>",
+      }),
+    );
+    await page.route("https://connect.facebook.net/**", (route) =>
+      route.fulfill({ contentType: "text/javascript", body: "" }),
+    );
+    await openFirstFreeSlot(page);
+    await fillDetails(page, "e2e-tracker-failure@example.test");
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.evaluate((key) => {
+      window.localStorage.setItem(
+        key,
+        JSON.stringify({ analytics: false, marketing: true }),
+      );
+      window.fbq = Object.assign(
+        (...args: unknown[]) => {
+          if (args[0] === "track" && args[1] === "InitiateCheckout")
+            throw new TypeError("Load failed");
+        },
+        { queue: [] as unknown[][] },
+      );
+    }, CONSENT_STORAGE_KEY);
+    await page.getByRole("button", { name: /Pokračovat k platbě/ }).click();
+    await page.waitForURL("https://payments.comgate.cz/**");
+    expect(gateway.creates.length - createsBefore).toBe(1);
+    expect(errors).toEqual([]);
+    const [row] =
+      await sql!`select count(*)::int as n from reservation where contact_email='e2e-tracker-failure@example.test'`;
+    expect(row?.n).toBe(1);
+  });
+
   test("a lost checkout response preserves details and resumes the same payment", async ({
     page,
   }) => {
