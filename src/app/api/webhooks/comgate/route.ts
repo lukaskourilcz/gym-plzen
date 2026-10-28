@@ -3,6 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { verifyComgateNotification } from "@/lib/integrations/comgate";
 import { synchronizeComgatePayment } from "@/lib/services/payments";
 import { logger } from "@/lib/helpers/logger";
+import { operationalFailure } from "@/lib/helpers/operational-failure";
+import { OperationBusyError } from "@/lib/helpers/operation-busy";
 
 export const maxDuration = 300;
 export async function POST(request: NextRequest) {
@@ -41,11 +43,29 @@ export async function POST(request: NextRequest) {
       status: 200,
       headers: { "Cache-Control": "no-store" },
     });
-  } catch {
+  } catch (error) {
     // Never log request bodies: Comgate notifications contain the shared secret.
-    logger.error("Payment notification could not be processed", {
+    const details = operationalFailure(error);
+    const context = {
       where: "comgate.webhook",
+      ...details,
+    };
+    if (error instanceof OperationBusyError) {
+      logger.warn(
+        "Payment notification deferred: operation already running",
+        context,
+      );
+    } else {
+      logger.error(
+        `Payment notification could not be processed: ${details.kind}`,
+        context,
+      );
+    }
+    // A successful gateway response does not mean the SQL commit succeeded.
+    // Preserve the non-acknowledgement; provider/watchdog reconciliation owns retry.
+    return new NextResponse(null, {
+      status: 503,
+      headers: { "Retry-After": "5", "Cache-Control": "no-store" },
     });
-    return new NextResponse(null, { status: 503 });
   }
 }
