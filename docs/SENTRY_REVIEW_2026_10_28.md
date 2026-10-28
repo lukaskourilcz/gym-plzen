@@ -1,6 +1,6 @@
 # Kontrola Sentry NaviGym od 14. září 2026
 
-Stav: opravy jsou na samostatné větvi, úplné ověření ještě probíhá. Bez sloučení a nasazení.
+Stav: opravy jsou na samostatné větvi a místní ověření je zelené. Bez sloučení a nasazení. Draft PR: [#285](https://github.com/lukaskourilcz/gym-plzen/pull/285).
 Větev: `codex/sentry-errors-2026-10-28`. Výchozí main: `c41ef6a8045f28bf6eaa0d244113725e2b3cce27`.
 GitHub issue: [#284](https://github.com/lukaskourilcz/gym-plzen/issues/284).
 
@@ -58,26 +58,27 @@ Identifikátory v tabulce mají předponu `GYM-PLZEN-`. „Ověřeno v mainu“ 
 
 ## Mapa kontroly a ověření
 
-| Oblast                         | Projitá cesta / testy                                                                                                                                                                                              |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Nativní prostředí a monitoring | `instrumentation-client.ts`, `browser-errors.ts`, `report-transport-error.ts`; přesné pozitivní a negativní unit scénáře.                                                                                          |
-| Mapa a lifecycle               | `location-map.tsx`, CSP v `next.config.ts`; raster, iframe, časový limit, odmítnutý import, runtime rejection/error, odpojení markeru a listenerů. Google API během testů nenahrazuje skutečný placený/ostrý test. |
-| Kalendář                       | `rezervace/booking-calendar.tsx`; browser regrese DOM překladu, souběžné načítání a cache, reakce na chybu API, výběr více termínů.                                                                                |
-| Náhled dostupnosti             | `availability.ts`, `slots.ts`, `rezervace/udaje/page.tsx`; porovnání s původními výsledky, blokace, připravovaná změna, odvolávání kódu, neměnnost původních řádků a měření počtu SELECTů.                         |
-| Checkout a obnova              | `booking-details-form.tsx`, `meta-pixel.ts`, `LoadError`; ztracená odpověď, jediný checkout, výpadek DB a obnovení GET se zachovaným odkazem, nefunkční tracker.                                                   |
-| Změny a kódy                   | Existující integrační a browser testy změn, doplatků, kreditů, původních termínů, deduplikace a Nuki náhrad. Žádné volání ostrého zámku.                                                                           |
-| Souběh a watchdog              | `operation-lock.ts`, `watchdog-priority.ts`, jejich volající; čekání na zámek před callbackem, zachování chyb uvnitř callbacku, souběžné vnořené zámky.                                                            |
-| Webhook a diagnostika          | `comgate/route.ts`, `logger.ts`, `operational-failure.ts`; odmítnutí podvržené notifikace, konkrétní necitlivé kategorie, 503 místo falešného potvrzení, žádné obchodní zápisy při injektované chybě.              |
-| Staré/neplatné akce            | `middleware.ts`, `server-action-request.ts`; 400 před Auth/sítí/tělem, legitimní akce a nativní formuláře beze změny.                                                                                              |
-| Již opravené chyby             | Cenové unit/integration testy a `action.test.ts`; celé existující sady se opakují nad závěrečným kódem.                                                                                                            |
+| Oblast                         | Projitá cesta / testy                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Nativní prostředí a monitoring | `instrumentation-client.ts`, `browser-errors.ts`, `report-transport-error.ts`; přesné pozitivní a negativní unit scénáře.                                                                                                                                                                                                                                                                   |
+| Mapa a lifecycle               | `location-map.tsx`, CSP v `next.config.ts`; raster, iframe, časový limit, odmítnutý import, runtime rejection/error, odpojení markeru a listenerů. Běžné browser testy používají iframe bez ostrých Maps klíčů; přesné chybové klasifikace mají unit regrese. Živý Google renderer se během testů nespouští, tato část stojí také na kontrole lifecycle kódu a primární dokumentaci Google. |
+| Kalendář                       | `rezervace/booking-calendar.tsx`; browser regrese DOM překladu, souběžné načítání a cache, reakce na chybu API, výběr více termínů.                                                                                                                                                                                                                                                         |
+| Náhled dostupnosti             | `availability.ts`, `slots.ts`, `rezervace/udaje/page.tsx`; porovnání s původními výsledky, blokace, připravovaná změna, odvolávání kódu, neměnnost původních řádků a měření počtu SELECTů.                                                                                                                                                                                                  |
+| Checkout a obnova              | `booking-details-form.tsx`, `meta-pixel.ts`, `LoadError`; ztracená odpověď, jediný checkout, výpadek DB a obnovení GET se zachovaným odkazem, nefunkční tracker.                                                                                                                                                                                                                            |
+| Změny a kódy                   | Existující integrační a browser testy změn, doplatků, kreditů, původních termínů, deduplikace a Nuki náhrad. Žádné volání ostrého zámku.                                                                                                                                                                                                                                                    |
+| Souběh a watchdog              | `operation-lock.ts`, `watchdog-priority.ts`, jejich volající; čekání na zámek před callbackem, zachování chyb uvnitř callbacku, souběžné vnořené zámky.                                                                                                                                                                                                                                     |
+| Webhook a diagnostika          | `comgate/route.ts`, `logger.ts`, `operational-failure.ts`; odmítnutí podvržené notifikace, konkrétní necitlivé kategorie, 503 místo falešného potvrzení, žádné obchodní zápisy při injektované chybě.                                                                                                                                                                                       |
+| Staré/neplatné akce            | `middleware.ts`, `server-action-request.ts`; 400 před Auth/sítí/tělem, legitimní akce a nativní formuláře beze změny.                                                                                                                                                                                                                                                                       |
+| Již opravené chyby             | Cenové unit/integration testy a `action.test.ts`; celé existující sady se opakují nad závěrečným kódem.                                                                                                                                                                                                                                                                                     |
 
 ### Stav testů
 
-- Jednotkové testy: 344/344 zelené.
-- Integrační testy: běží; konečný součet bude doplněn.
-- Produkční build a browser testy: běží; konečný součet bude doplněn.
-- Lint: zelený; TypeScript odhalil a opravil zpřesnění typu při mapovém fallbacku, finální kontrola se opakuje.
-- SQL bezpečnostní testy, formátování a závislosti: čekají na dokončení finálního ověření.
+- Jednotkové testy: 345/345 zelené.
+- Integrační testy: 297/297 zelené, bez přeskočených scénářů.
+- Produkční build a browser testy: zelené, 171/171 browser scénářů. Celkem 813 testů ve třech sadách.
+- Lint a závěrečný TypeScript: zelené.
+- SQL bezpečnostní testy (RLS, neměnná finanční historie, omezení plateb/kódů), formátování a audit závislostí: zelené, 0 zranitelností.
+- GitHub spouští stejné oddělené kontroly nad posledním commitem; jejich aktuální závěr je v PR #285. Draft zůstává bez auto-merge.
 
 ### Měřený dopad
 
@@ -87,7 +88,7 @@ Místní integrační test pro plnou volnou desetipoložkovou objednávku namě�
 
 U G/H nejsou ve zpřístupněné 30denní historii dostupné původní event stacky. U X starý catch příčinu zahodil. U Y ani dvě dostupné události neobsahují aplikační místo chyby. Tyto mezery nejsou zakryté filtrem ani označením „vyřešeno“. Přesná příčina Y zůstává otevřená; další výskyt bude mít bezpečný kontext, bez aktivace záznamu obrazovky nebo sledování vstupních údajů návštěvníků.
 
-Opravy v mainu nejsou nasazené, dokud uživatel nezkontroluje tento přehled a výslovně nepovolí sloučení.
+Opravy této větve nejsou v mainu ani v produkci. Sloučení a nasazení čeká na výslovný souhlas uživatele po kontrole tohoto přehledu.
 
 ## Primární dokumentace použitá při kontrole
 
