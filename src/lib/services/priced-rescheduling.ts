@@ -44,6 +44,7 @@ import {
   abortPendingReschedule,
 } from "./rescheduling";
 import { raiseAlert } from "./alerts";
+import { getReschedulePriceSnapshot } from "./reschedule-price-snapshot";
 
 export async function quoteReschedule(
   userId: string,
@@ -69,16 +70,12 @@ export async function quoteReschedule(
   const [target] = await resolveOrderSlots([startsAt]);
   if (!target || current.startsAt.getTime() === startsAt.getTime())
     throw new ActionError("Vyberte jiný budoucí termín.");
-  if (current.pricingVersion >= 2 && !current.priceSnapshot)
-    throw new ActionError("Cenu rezervace musí ověřit obsluha.");
+  const priceSnapshot = await getReschedulePriceSnapshot(current);
   const oldPrice = current.priceCents ?? 0;
-  const newPrice =
-    current.pricingVersion < 2
-      ? oldPrice
-      : changedReservationPrice(
-          await getEntryPriceCents(startsAt),
-          current.priceSnapshot!,
-        );
+  const newPrice = changedReservationPrice(
+    await getEntryPriceCents(startsAt),
+    priceSnapshot,
+  );
   return {
     current,
     target,
@@ -86,7 +83,7 @@ export async function quoteReschedule(
     oldPriceCents: oldPrice,
     newPriceCents: newPrice,
     differenceCents: newPrice - oldPrice,
-    legacy: current.pricingVersion < 2,
+    priceSnapshot,
   };
 }
 export type ChangeOutcome =
@@ -129,14 +126,6 @@ export async function startPricedReschedule(input: {
       throw new ActionError(
         "Cena termínu se změnila. Vyberte ho znovu a potvrďte aktuální cenu.",
       );
-    if (quote.legacy) {
-      await rescheduleReservation({
-        reservationId: input.reservationId,
-        userId: input.userId,
-        startsAt: input.startsAt,
-      });
-      return { kind: "completed", changeId: input.id };
-    }
     const expiresAt = new Date(
       Math.min(
         Date.now() + PAYMENT_SESSION_MINUTES * 60000,
@@ -222,6 +211,7 @@ export async function startPricedReschedule(input: {
           quote: {
             pricingVersion: locked.pricingVersion,
             termsVersion: CREDIT_TERMS_VERSION,
+            priceSnapshot: quote.priceSnapshot,
           },
         })
         .returning();

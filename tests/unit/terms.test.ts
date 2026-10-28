@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   DEFAULT_TERMS_BODY,
   LEGACY_TERMS_BODY,
+  PREVIOUS_CREDIT_TERMS_BODY,
   parseTermsBody,
 } from "../../src/lib/content/terms";
 
@@ -16,9 +17,9 @@ test("approved terms contain 21 structured sections", () => {
   );
   assert.equal(sections[0]?.clauses[0]?.number, "1.1");
   assert.equal(sections.at(-1)?.clauses.at(-1)?.number, "21.8");
-  assert.equal(
-    sections.at(-1)?.clauses.at(-1)?.text,
-    "Pravidla kreditů a přepočtu změny termínu se použijí pouze na rezervace zakoupené s verzí podmínek 2026-10-27-credits-v1 po jejím zveřejnění. U dříve zakoupených rezervací zůstává zachována původní cena při změně termínu podle dříve přijatých podmínek.",
+  assert.match(
+    sections.at(-1)?.clauses.at(-1)?.text ?? "",
+    /každé nově vyžádané a zákazníkem potvrzené změně termínu, včetně dříve zakoupených rezervací/,
   );
   assert.equal(
     sections.find((section) => section.number === "20")?.clauses.at(-1)?.text,
@@ -73,13 +74,25 @@ test("terms state the owners' decisions of 29. 9. 2026", () => {
   assert.match(clause("8", "8.10"), /nevrací/);
 });
 
-test("credit terms describe tender, no-expiry, cancellation and legacy protection", () => {
+test("credit terms apply repricing only on a newly confirmed move and preserve both accepted archives", () => {
   assert.match(DEFAULT_TERMS_BODY, /4\.7\. Kredit/);
   assert.match(DEFAULT_TERMS_BODY, /nemá stanovenou dobu expirace/);
   assert.match(
     DEFAULT_TERMS_BODY,
     /nevrací ani část úhrady provedená kreditem/,
   );
-  assert.match(DEFAULT_TERMS_BODY, /2026-10-27-credits-v1/);
+  assert.match(
+    DEFAULT_TERMS_BODY,
+    /Bez vyžádané změny zůstávají rezervace, uhrazené ceny a vstupní kódy beze změny/,
+  );
+  assert.match(
+    DEFAULT_TERMS_BODY,
+    /Ji[žz] dokončené změny termínu se zpětně nepřepočítávají/,
+  );
+  assert.match(PREVIOUS_CREDIT_TERMS_BODY, /2026-10-27-credits-v1/);
+  assert.match(
+    PREVIOUS_CREDIT_TERMS_BODY,
+    /dříve zakoupených rezervací zůstává zachována původní cena/,
+  );
   assert.doesNotMatch(LEGACY_TERMS_BODY, /4\.7\. Kredit/);
 });

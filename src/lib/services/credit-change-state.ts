@@ -75,6 +75,9 @@ export async function settleReservationChangeIn(
     await tx.delete(blockedSlot).where(eq(blockedSlot.id, change.blockId));
   return {
     priceCents: change.newPriceCents,
+    // Only the successfully confirmed move stores reconstructed purchase
+    // evidence, needed for later refunds. Original accepted terms stay intact.
+    priceSnapshot: current.priceSnapshot ?? change.quote.priceSnapshot ?? null,
     creditPaidCents: Math.min(
       change.newPriceCents,
       current.creditPaidCents + change.creditCents,

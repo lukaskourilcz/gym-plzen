@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { footerProps, loadSiteContent } from "@/lib/content/site";
 import {
   DEFAULT_TERMS_BODY,
+  PREVIOUS_CREDIT_TERMS_BODY,
+  PREVIOUS_CREDIT_TERMS_EFFECTIVE_DATE,
   LEGACY_TERMS_BODY,
   CREDIT_TERMS_EFFECTIVE_DATE,
   TERMS_EFFECTIVE_DATE,
@@ -9,6 +11,7 @@ import {
   TERMS_TITLE,
   parseTermsBody,
 } from "@/lib/content/terms";
+import { PREVIOUS_CREDIT_TERMS_VERSION } from "@/lib/config/credits";
 import { Container, Section } from "@/components/ui/container";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
@@ -49,10 +52,16 @@ export default async function TermsPage({
 }: {
   searchParams: Promise<{ version?: string }>;
 }) {
-  const legacy = (await searchParams).version === "legacy";
+  const version = (await searchParams).version;
+  const legacy = version === "legacy";
+  const previous = version === PREVIOUS_CREDIT_TERMS_VERSION;
   const content = await loadSiteContent();
   const sections = parseTermsBody(
-    legacy ? LEGACY_TERMS_BODY : DEFAULT_TERMS_BODY,
+    legacy
+      ? LEGACY_TERMS_BODY
+      : previous
+        ? PREVIOUS_CREDIT_TERMS_BODY
+        : DEFAULT_TERMS_BODY,
   );
 
   return (
@@ -73,19 +82,36 @@ export default async function TermsPage({
               </p>
               <div className="mt-8 border-y border-border py-4 text-sm leading-6">
                 Účinnost od{" "}
-                {legacy ? TERMS_EFFECTIVE_DATE : CREDIT_TERMS_EFFECTIVE_DATE} ·{" "}
+                {legacy
+                  ? TERMS_EFFECTIVE_DATE
+                  : previous
+                    ? PREVIOUS_CREDIT_TERMS_EFFECTIVE_DATE
+                    : CREDIT_TERMS_EFFECTIVE_DATE}{" "}
+                ·{" "}
                 <a
                   className="underline"
                   href={
-                    legacy
+                    legacy || previous
                       ? "/obchodni-podminky"
                       : "/obchodni-podminky?version=legacy"
                   }
                 >
-                  {legacy
+                  {legacy || previous
                     ? "Aktuální podmínky"
                     : "Předchozí podmínky pro starší rezervace"}
                 </a>
+                {!previous ? (
+                  <>
+                    {" "}
+                    ·{" "}
+                    <a
+                      className="underline"
+                      href={`/obchodni-podminky?version=${PREVIOUS_CREDIT_TERMS_VERSION}`}
+                    >
+                      Podmínky z 27. 10. 2026
+                    </a>
+                  </>
+                ) : null}
               </div>
             </div>
           </Container>

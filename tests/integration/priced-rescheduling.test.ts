@@ -5,6 +5,7 @@ import {
   resetDatabase,
   rows,
   seedProfile,
+  seedVoucher,
   setSetting,
   startProviders,
   stopEverything,
@@ -44,6 +45,7 @@ import {
   synchronizeChangePayment,
 } from "../../src/lib/services/priced-rescheduling";
 import { checkAvailability } from "../../src/lib/services/availability";
+import { rescheduleReservation } from "../../src/lib/services/rescheduling";
 import {
   addDaysToDateKey,
   dateKeyInTimeZone,
@@ -66,7 +68,7 @@ async function grant(amount: number) {
     });
   });
 }
-async function paidBooking() {
+async function paidBooking(voucherCode?: string) {
   await seedProfile({
     id: userId,
     email: "ceny@example.test",
@@ -74,6 +76,7 @@ async function paidBooking() {
   });
   const order = await startOrder({
     userId,
+    voucherCode,
     starts: [slot(5)],
     details: {
       name: "Cenový Test",
@@ -184,20 +187,207 @@ describe("priced reservation changes", { skip: !databaseReady }, () => {
       1,
     );
   });
-  test("old bookings retain unchanged-price policy", async () => {
+  test("a newly requested legacy move requires the surcharge and leaves every reservation and PIN untouched until paid", async () => {
+    await setSetting("pricing.entry_price_cents", 19900);
     const id = await paidBooking();
     await rows(
-      "update reservation set pricing_version=1, price_snapshot=null where id=$1",
+      "update reservation set pricing_version=1, price_snapshot=null, terms_version=null where id=$1",
+      [id],
+    );
+    await rows(
+      "insert into reservation(starts_at,ends_at,status,price_cents,contact_email) values ($1,$2,'confirmed',19900,'unrelated@example.test')",
+      [slot(8), new Date(+slot(8) + 3600000)],
+    );
+    await rows(
+      "insert into access_code(reservation_id,code_hash,encrypted_pin,provision_state,status,valid_from,valid_until) select id,'fictional-hash','fictional-ciphertext','prepared','scheduled',starts_at,ends_at from reservation",
+    );
+    const original = await rows("select * from reservation order by id");
+    const codes = await rows("select * from access_code order by id");
+    const pipelines = await rows(
+      "select * from reservation_pipeline order by id",
+    );
+    await setSetting("pricing.entry_price_cents", 23900);
+    const q = await quoteReschedule(userId, id, slot(6));
+    assert.equal(q.oldPriceCents, 19900);
+    assert.equal(q.newPriceCents, 23900);
+    assert.equal(q.differenceCents, 4000);
+    await assert.rejects(
+      rescheduleReservation({ reservationId: id, userId, startsAt: slot(6) }),
+      /potvrďte cenu/,
+    );
+    assert.deepEqual(
+      await rows("select * from reservation order by id"),
+      original,
+    );
+    assert.deepEqual(
+      await rows("select * from access_code order by id"),
+      codes,
+    );
+    assert.equal(resend.sent.length, 0);
+    const input = await changeInput(id);
+    assert.equal((await startPricedReschedule(input)).kind, "checkout");
+    assert.equal((comgate.creates[1] as { price: number }).price, 4000);
+    assert.deepEqual(
+      await rows("select * from reservation order by id"),
+      original,
+    );
+    assert.deepEqual(
+      await rows("select * from access_code order by id"),
+      codes,
+    );
+    assert.deepEqual(
+      await rows("select * from reservation_pipeline order by id"),
+      pipelines,
+    );
+    assert.equal(resend.sent.length, 0);
+    comgate.settle("TEST-0002", "PAID");
+    await synchronizeComgatePayment("TEST-0002");
+    await synchronizeComgatePayment("TEST-0002");
+    const changed = (await getReservation(id))!;
+    assert.equal(changed.startsAt.getTime(), slot(6).getTime());
+    assert.equal(changed.priceCents, 23900);
+    assert.equal(changed.priceSnapshot?.purchasePriceCents, 19900);
+    assert.equal(
+      changed.termsVersion,
+      null,
+      "original purchase consent is not rewritten",
+    );
+    assert.deepEqual(
+      [
+        ...(await rows("select * from reservation where id<>$1 order by id", [
+          id,
+        ])),
+      ],
+      original.filter((row) => row.id !== id),
+    );
+    assert.deepEqual(
+      [
+        ...(await rows(
+          "select * from access_code where reservation_id<>$1 order by id",
+          [id],
+        )),
+      ],
+      codes.filter((row) => row.reservation_id !== id),
+    );
+    assert.equal(
+      (
+        await rows(
+          "select * from reservation_reschedule where reservation_id=$1",
+          [id],
+        )
+      ).length,
+      1,
+    );
+    assert.equal((await getCreditWallet(userId)).availableCents, 0);
+  });
+  test("an abandoned legacy surcharge changes no reservation or code and sends no message", async () => {
+    const id = await paidBooking();
+    await rows(
+      "update reservation set pricing_version=1,price_snapshot=null,terms_version=null where id=$1",
+      [id],
+    );
+    const before = await rows("select * from reservation order by id");
+    await setSetting("pricing.entry_price_cents", 25900);
+    await startPricedReschedule(await changeInput(id));
+    comgate.settle("TEST-0002", "CANCELLED");
+    await synchronizeComgatePayment("TEST-0002");
+    assert.deepEqual(
+      await rows("select * from reservation order by id"),
+      before,
+    );
+    assert.equal((await rows("select * from access_code")).length, 0);
+    assert.equal(
+      (await rows("select * from reservation_reschedule")).length,
+      0,
+    );
+    assert.equal(resend.sent.length, 0);
+  });
+  test("a cheaper legacy move credits exactly the paid difference and retains original purchase evidence", async () => {
+    const id = await paidBooking();
+    await rows(
+      "update reservation set pricing_version=1,price_snapshot=null,terms_version=null where id=$1",
+      [id],
+    );
+    await setSetting("pricing.entry_price_cents", 19900);
+    const input = await changeInput(id);
+    assert.equal((await startPricedReschedule(input)).kind, "completed");
+    await startPricedReschedule(input);
+    assert.equal((await getCreditWallet(userId)).availableCents, 3000);
+    assert.equal((await getCreditWallet(userId)).entries.length, 1);
+    assert.equal(
+      (await getReservation(id))!.priceSnapshot?.purchasePriceCents,
+      22900,
+    );
+  });
+  test("an old loyalty reward stays free instead of creating a nominal-price credit", async () => {
+    const id = await paidBooking();
+    await rows(
+      "update reservation set pricing_version=1,price_snapshot=null,terms_version=null,price_cents=0,loyalty_reward=1 where id=$1",
       [id],
     );
     await setSetting("pricing.entry_price_cents", 99900);
-    const q = await quoteReschedule(userId, id, slot(6));
-    assert.equal(q.newPriceCents, 22900);
+    assert.equal((await quoteReschedule(userId, id, slot(6))).newPriceCents, 0);
     assert.equal(
       (await startPricedReschedule(await changeInput(id))).kind,
       "completed",
     );
     assert.equal((await getCreditWallet(userId)).availableCents, 0);
+    assert.equal(comgate.creates.length, 1);
+  });
+  test("a historical companion tariff is never guessed from mutable current prices", async () => {
+    const id = await paidBooking();
+    await rows(
+      "update reservation set pricing_version=1,price_snapshot=null,extra_people=1 where id=$1",
+      [id],
+    );
+    const before = await rows("select * from reservation where id=$1", [id]);
+    await assert.rejects(
+      quoteReschedule(userId, id, slot(6)),
+      /ověřit obsluha/,
+    );
+    assert.deepEqual(
+      await rows("select * from reservation where id=$1", [id]),
+      before,
+    );
+    assert.equal(resend.sent.length, 0);
+    assert.equal((await rows("select * from reservation_change")).length, 0);
+  });
+  test("a saved voucher price survives later edits, while missing historical voucher evidence requires review", async () => {
+    await seedVoucher({ code: "MOVE10", kind: "percentage", value: 10 });
+    const id = await paidBooking("MOVE10");
+    await rows("update voucher set value=100 where code='MOVE10'");
+    await setSetting("pricing.entry_price_cents", 25900);
+    const quote = await quoteReschedule(userId, id, slot(6));
+    assert.equal(quote.oldPriceCents, 20610);
+    assert.equal(quote.newPriceCents, 23310);
+    await rows(
+      "update reservation set pricing_version=1,price_snapshot=null,terms_version=null where id=$1",
+      [id],
+    );
+    const before = await rows("select * from reservation where id=$1", [id]);
+    await assert.rejects(
+      quoteReschedule(userId, id, slot(6)),
+      /ověřit obsluha/,
+    );
+    assert.deepEqual(
+      await rows("select * from reservation where id=$1", [id]),
+      before,
+    );
+    assert.equal(resend.sent.length, 0);
+  });
+  test("an incomplete modern snapshot cannot fall through to the historical policy", async () => {
+    const id = await paidBooking();
+    await rows("update reservation set price_snapshot=null where id=$1", [id]);
+    const before = await rows("select * from reservation where id=$1", [id]);
+    await assert.rejects(
+      quoteReschedule(userId, id, slot(6)),
+      /ověřit obsluha/,
+    );
+    assert.deepEqual(
+      await rows("select * from reservation where id=$1", [id]),
+      before,
+    );
+    assert.equal(resend.sent.length, 0);
   });
   test("a credit-only order uses no gateway and allocates tender to each item", async () => {
     await seedProfile({

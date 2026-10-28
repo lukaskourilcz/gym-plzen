@@ -5,12 +5,12 @@ import { getSessionUser } from "@/lib/auth/guards";
 import { defineAction } from "@/lib/helpers/action";
 import type { Result } from "@/lib/helpers/result";
 import {
-  quoteReschedule,
   startPricedReschedule,
   type ChangeOutcome,
 } from "@/lib/services/priced-rescheduling";
 import { randomUUID } from "node:crypto";
 import { ActionError } from "@/lib/helpers/action";
+import { CREDIT_TERMS_VERSION } from "@/lib/config/credits";
 import {
   rescheduleReservationSchema,
   type RescheduleReservationValues,
@@ -26,19 +26,18 @@ const rescheduleImpl = defineAction({
   schema: rescheduleReservationSchema,
   authorize: assertMember,
   handler: async (input, user) => {
-    const quote = await quoteReschedule(
-      user.id,
-      input.reservationId,
-      new Date(input.startsAt),
-    );
-    if (!quote.legacy && input.quotedCents === undefined)
+    if (input.changeTermsVersion !== CREDIT_TERMS_VERSION)
+      throw new ActionError(
+        "Pravidla změny termínu se aktualizovala. Obnovte stránku a potvrďte aktuální cenu a pravidla změny.",
+      );
+    if (input.quotedCents === undefined)
       throw new ActionError("Potvrďte cenu nového termínu.");
     const outcome = await startPricedReschedule({
       id: input.operationId ?? randomUUID(),
       userId: user.id,
       reservationId: input.reservationId,
       startsAt: new Date(input.startsAt),
-      quotedCents: input.quotedCents ?? quote.newPriceCents,
+      quotedCents: input.quotedCents,
       useCredits: input.useCredits ?? false,
       quotedCreditCents: input.quotedCreditCents,
     });
