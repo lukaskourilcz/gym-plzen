@@ -123,3 +123,14 @@ lokální měření celé funkce: 27,90 → 9,05 ms (bez tvrzení o produkční 
 Regrese ověřuje úplné použití i selhání viditelného kódu, prázdnou stránku,
 správný souhrn a zachování celé uložené historie. Neomezuje se historie kódu,
 jen se nečtou a neserializují cizí podrobnosti.
+
+### A09 — Fronta opuštěných změn mohla trvale držet neuhrazený termín (P2)
+
+Po pádu procesu před vložením platby má watchdog opuštěnou změnu uvolnit.
+Dotaz ale nejprve omezoval všechny prošlé změny na deset a teprve poté hledal
+ty bez platby. Jedenáct starých nejistých plateb tak vyhladovělo další osiřelý
+záznam; reprodukce ponechala stav awaiting_payment. Filtr NOT EXISTS je nyní
+před LIMIT, s deterministickým pořadím; druhá kontrola pod zámkem zůstává.
+Regrese prokazuje uvolnění pouze osiřelé blokace a jejího kreditu, zachování
+11 nejistých pokusů, všech rezervací, připravených kódů, plateb i ledgeru.
+Opakování nezakládá platbu, refundaci ani zákaznickou zprávu.

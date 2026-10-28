@@ -5,7 +5,7 @@ import {
 import { issueAccessCode } from "./access-codes";
 import { isAccessCodePreparationDue } from "@/lib/config/access-code-delivery";
 import { fulfillReservation } from "./fulfillment";
-import { and, asc, eq, inArray, lt, or } from "drizzle-orm";
+import { and, asc, eq, inArray, lt, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   blockedSlot,
@@ -503,8 +503,12 @@ export async function retryPaidChanges(limit = 10) {
       and(
         eq(reservationChange.status, "awaiting_payment"),
         lt(reservationChange.expiresAt, new Date()),
+        // Filter before LIMIT: unresolved provider attempts intentionally keep
+        // their holds, but must not starve crash-orphans behind the first page.
+        sql`not exists (select 1 from public.payment abandoned_payment where abandoned_payment.reservation_change_id = ${reservationChange.id})`,
       ),
     )
+    .orderBy(asc(reservationChange.expiresAt), asc(reservationChange.id))
     .limit(limit);
   for (const change of abandoned)
     await withReservationLock(change.reservationId, async () => {
