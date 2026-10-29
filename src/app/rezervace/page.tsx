@@ -165,6 +165,9 @@ export default async function BookingPage({
                 {...view}
                 selected={selected}
                 loyalty={loyalty}
+                registrationCadence={
+                  session ? undefined : content.freeEntryEvery
+                }
               />
             </div>
           </Container>

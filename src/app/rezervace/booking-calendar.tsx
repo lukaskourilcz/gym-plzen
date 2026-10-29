@@ -85,14 +85,18 @@ function displayDate(dateKey: string, options: Intl.DateTimeFormatOptions) {
   }).format(new Date(`${dateKey}T12:00:00Z`));
 }
 
+import { RegistrationNotice } from "@/components/site/registration-notice";
+
 export function BookingCalendar({
   selected,
   loyalty,
   simulation,
+  registrationCadence,
   ...initial
 }: CalendarView & {
   selected: SelectedSlotView[];
   loyalty: SelectionLoyalty | null;
+  registrationCadence?: number;
   /** Admin-only isolated walkthrough, with no live availability requests. */
   simulation?: {
     calendarHref: string;
@@ -335,6 +339,13 @@ export function BookingCalendar({
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(320px,.78fr)] lg:gap-12">
+      {registrationCadence ? (
+        <RegistrationNotice
+          cadence={registrationCadence}
+          returnTo={buildHref({ month: monthKey, date: selectedDateKey })}
+          className="lg:col-span-2"
+        />
+      ) : null}
       <section aria-labelledby="calendar-heading">
         <div className="flex items-center justify-between gap-3">
           <div>
