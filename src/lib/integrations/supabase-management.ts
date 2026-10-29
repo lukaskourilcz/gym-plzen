@@ -1,6 +1,6 @@
 import {
   EMAIL_BRAND,
-  emailTemplateBodyToHtml,
+  emailTemplateToHtml,
   getEmailTemplateDefinition,
   renderEmailTemplateText,
   SUPABASE_AUTH_TEMPLATE_IDS,
@@ -122,7 +122,7 @@ export async function syncSupabaseAuthEmailTemplate(params: {
   };
   const rendered = renderEmailTemplateText(params.template, variables);
   const fields = SUPABASE_AUTH_TEMPLATE_FIELDS[params.id];
-  const body = emailTemplateBodyToHtml(params.template.body, variables, {
+  const body = emailTemplateToHtml(params.template, variables, {
     actionUrl: supabaseAuthActionUrl(params.id),
     actionLabel: definition.actionLabel,
   });

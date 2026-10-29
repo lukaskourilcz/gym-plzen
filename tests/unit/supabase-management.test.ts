@@ -150,3 +150,49 @@ test("auth template emphasis preserves hosted variables and confirmation links",
     "only the mocked configuration PATCH; no email send",
   );
 });
+
+test("structured rich auth templates retain hosted substitutions and the single confirmation action", async () => {
+  const calls = stubFetch(() => jsonResponse(200, {}));
+  const result = await management.syncSupabaseAuthEmailTemplate({
+    id: "signup_confirmation",
+    template: {
+      subject: "Potvrzení registrace",
+      body: "Ahoj {name}, potvrď svůj e-mail.",
+      bodyDocument: {
+        type: "doc",
+        content: [
+          {
+            type: "heading",
+            attrs: { level: 2 },
+            content: [
+              {
+                type: "text",
+                text: "Vítej, {name}",
+                marks: [{ type: "italic" }],
+              },
+            ],
+          },
+          {
+            type: "paragraph",
+            content: [
+              {
+                type: "text",
+                text: "Potvrď svůj e-mail.",
+                marks: [{ type: "underline" }],
+              },
+            ],
+          },
+        ],
+      },
+    },
+  });
+  assert.deepEqual(result, { synced: true });
+  const payload = JSON.parse(String(calls[0]!.init.body));
+  const html = payload.mailer_templates_confirmation_content;
+  assert.match(html, /<h2[^>]*>/);
+  assert.match(html, /{{ if \.Data.full_name }}/);
+  assert.match(html, /text-decoration:underline/);
+  assert.match(html, /token_hash={{ \.TokenHash }}/);
+  assert.match(html, /redirect_to={{ \.RedirectTo }}/);
+  assert.equal(calls.length, 1);
+});

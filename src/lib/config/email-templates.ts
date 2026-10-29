@@ -1,3 +1,8 @@
+import {
+  emailDocumentHtml,
+  emailDocumentToText,
+  type EmailDocument,
+} from "./email-document";
 import { siteHost, siteUrl } from "@/lib/helpers/site-url";
 
 /**
@@ -25,6 +30,7 @@ export type EmailTemplateId = (typeof EMAIL_TEMPLATE_IDS)[number];
 export interface EmailTemplate {
   subject: string;
   body: string;
+  bodyDocument?: EmailDocument;
 }
 
 export interface EmailTemplateDefinition {
@@ -320,7 +326,9 @@ export function renderEmailTemplateText(
   return {
     subject: replaceEmailVariables(template.subject, variables).trim(),
     body: collapseBlankParagraphs(
-      replaceEmailVariables(plainEmailBody(template.body), variables),
+      template.bodyDocument
+        ? emailDocumentToText(template.bodyDocument, variables)
+        : replaceEmailVariables(plainEmailBody(template.body), variables),
     ),
   };
 }
@@ -505,6 +513,27 @@ function renderEmailHtml(
         : renderParagraph(paragraph, inline);
     })
     .join("");
+  return emailHtmlShell(body, options);
+}
+
+/** Rich templates and legacy text share exactly the same branded shell and auth action. */
+export function emailTemplateToHtml(
+  template: EmailTemplate,
+  variables: Record<string, string>,
+  options?: EmailHtmlOptions,
+): string {
+  return template.bodyDocument
+    ? emailHtmlShell(
+        emailDocumentHtml(template.bodyDocument, variables, {
+          font: MAIL.font,
+          color: MAIL.text,
+        }),
+        options,
+      )
+    : emailTemplateBodyToHtml(template.body, variables, options);
+}
+
+function emailHtmlShell(body: string, options?: EmailHtmlOptions): string {
   const action =
     options?.actionUrl && options.actionLabel
       ? renderAction(options.actionUrl, options.actionLabel)

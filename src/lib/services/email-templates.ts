@@ -1,8 +1,14 @@
 import {
+  emailDocumentSchema,
+  emailDocumentToText,
+  mapEmailDocumentText,
+  type EmailDocument,
+} from "@/lib/config/email-document";
+import {
   EMAIL_TEMPLATE_IDS,
   brandedSubject,
   emailTemplateSettingKey,
-  emailTemplateBodyToHtml,
+  emailTemplateToHtml,
   getEmailTemplateDefinition,
   isSupabaseAuthEmailTemplate,
   type EmailTemplate,
@@ -33,11 +39,18 @@ export async function getEmailTemplate(
   const saved = await getSetting<Partial<EmailTemplate>>(
     emailTemplateSettingKey(id),
   );
+  const parsed = emailDocumentSchema.safeParse(saved?.bodyDocument);
+  const document = parsed.success
+    ? mapEmailDocumentText(parsed.data, rebrand)
+    : undefined;
   return {
     subject: brandedSubject(
       rebrand(saved?.subject?.trim() || definition.fallback.subject),
     ),
-    body: rebrand(saved?.body?.trim() || definition.fallback.body),
+    body: document
+      ? emailDocumentToText(document)
+      : rebrand(saved?.body?.trim() || definition.fallback.body),
+    ...(document ? { bodyDocument: document } : {}),
   };
 }
 
@@ -57,10 +70,20 @@ export async function saveEmailTemplate(params: {
   subject: string;
   body: string;
   updatedByAdminId: string;
+  bodyDocument?: EmailDocument;
 }): Promise<{ supabaseSync?: SupabaseAuthSyncResult }> {
-  const template = {
+  const document = params.bodyDocument
+    ? mapEmailDocumentText(
+        emailDocumentSchema.parse(params.bodyDocument),
+        rebrand,
+      )
+    : undefined;
+  const template: EmailTemplate = {
     subject: brandedSubject(rebrand(params.subject.trim())),
-    body: rebrand(params.body.trim()),
+    body: document
+      ? emailDocumentToText(document)
+      : rebrand(params.body.trim()),
+    ...(document ? { bodyDocument: document } : {}),
   };
   await setSetting(
     emailTemplateSettingKey(params.id),
@@ -100,6 +123,19 @@ export async function prepareTransactionalEmail(
     !template.body.includes(`{${params.requiredSummary.variable}}`)
   ) {
     bodyTemplate.body += `\n\n{${params.requiredSummary.variable}}`;
+    if (bodyTemplate.bodyDocument)
+      bodyTemplate.bodyDocument = {
+        type: "doc",
+        content: [
+          ...bodyTemplate.bodyDocument.content,
+          {
+            type: "paragraph",
+            content: [
+              { type: "text", text: `{${params.requiredSummary.variable}}` },
+            ],
+          },
+        ],
+      };
     variables[params.requiredSummary.variable] = params.requiredSummary.text;
   }
   const rendered = renderEmailTemplateText(bodyTemplate, variables);
@@ -127,7 +163,7 @@ export async function prepareTransactionalEmail(
       : rendered.body,
     attachments: params.attachments,
     idempotencyKey: params.idempotencyKey,
-    html: emailTemplateBodyToHtml(bodyTemplate.body, variables, action),
+    html: emailTemplateToHtml(bodyTemplate, variables, action),
   };
 }
 
