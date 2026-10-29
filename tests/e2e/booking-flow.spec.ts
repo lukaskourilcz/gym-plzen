@@ -95,6 +95,10 @@ test.describe("Booking flow", () => {
     await page.goto(futureBookingCalendarHref(), {
       waitUntil: "domcontentloaded",
     });
+    await page
+      .getByTestId("tracking-consent")
+      .getByRole("button", { name: "Pouze nezbytné", exact: true })
+      .click();
     const notice = page
       .locator("main")
       .getByText("S účtem máš každý vstup přehledně", { exact: true });
