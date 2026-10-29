@@ -569,6 +569,20 @@ test("email emphasis previews and persists without touching reservations, codes 
     await page.goto("/admin/emails");
     await page.getByRole("tab", { name: "Vstupní kód", exact: true }).click();
     const body = page.getByLabel("Text e-mailu", { exact: true });
+    await expect(body).toHaveValue(/Vstupní kód: \{code\}/);
+    const multiLine = "Klidnější cvičení.\nHudbu pouze do sluchátek.";
+    await body.fill(multiLine);
+    await body.evaluate((element) => {
+      const input = element as HTMLTextAreaElement;
+      input.focus();
+      input.select();
+    });
+    await page.getByRole("button", { name: "Tučně", exact: true }).click();
+    await expect(body).toHaveValue(
+      "**Klidnější cvičení.**\n**Hudbu pouze do sluchátek.**",
+    );
+    await page.getByRole("button", { name: "Tučně", exact: true }).click();
+    await expect(body).toHaveValue(multiLine);
     const source =
       "Ahoj {name},\n\nPravidla: hudbu pouze do sluchátek.\n\nKód: {code}\nČas: {time}";
     await body.fill(source);

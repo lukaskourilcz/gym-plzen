@@ -110,6 +110,7 @@ test.describe("Booking flow", () => {
       exact: true,
     });
     await registration.click();
+    await expect(page).toHaveURL(/\/login\?next=/);
     let next = new URL(
       new URL(page.url()).searchParams.get("next")!,
       "https://example.test",
@@ -122,6 +123,7 @@ test.describe("Booking flow", () => {
       .click();
     await expect(notice).toBeVisible();
     await registration.click();
+    await expect(page).toHaveURL(/\/login\?next=/);
     next = new URL(
       new URL(page.url()).searchParams.get("next")!,
       "https://example.test",
