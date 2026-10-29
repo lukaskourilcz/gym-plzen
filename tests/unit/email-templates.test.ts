@@ -117,3 +117,71 @@ test("a term change has its own customer e-mail with the old and new time", () =
   assert.match(rendered.body, /Nový termín: 3\. 8\. 2026 18:00/);
   assert.doesNotMatch(rendered.body, /\{[a-z_]+\}/);
 });
+
+test("authored emphasis renders safely and plain text has no formatting markers", async () => {
+  const { emailTemplateBodyToHtml } =
+    await import("../../src/lib/config/email-templates");
+  const template = {
+    subject: "Kód pro {name}",
+    body: "Ahoj {name},\n\n**Dodržuj noční klid.**\nHudbu **jen do sluchátek**.\n\nKód: **{code}**",
+  };
+  const variables = {
+    name: "<img src=x onerror=alert(1)> **jméno**",
+    code: "123456",
+  };
+  const plain = renderEmailTemplateText(template, variables);
+  const html = emailTemplateBodyToHtml(template.body, variables);
+  assert.match(html, /<strong>Dodržuj noční klid\.<\/strong>/);
+  assert.match(html, /<strong>jen do sluchátek<\/strong>/);
+  assert.match(html, /<strong>123456<\/strong>/);
+  assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt; \*\*jméno\*\*/);
+  assert.doesNotMatch(html, /<img src=x|<strong>jméno<\/strong>/);
+  assert.match(plain.body, /Dodržuj noční klid\./);
+  assert.match(plain.body, /\*\*jméno\*\*/);
+  assert.doesNotMatch(plain.body, /\*\*Dodržuj|\*\*123456/);
+});
+
+test("formatting supports empty and multiline variables without treating their contents as markup", async () => {
+  const { emailTemplateBodyToHtml } =
+    await import("../../src/lib/config/email-templates");
+  const html = emailTemplateBodyToHtml(
+    "**Pravidla**\n\n**{loyalty}**\n\n{slots}\n\n**{name}**\n\nNeuzavřené **zvýraznění",
+    { loyalty: "", slots: "1. **ráno**\n2. <večer>", name: "A & B" },
+  );
+  assert.match(html, /1\. \*\*ráno\*\*<br \/>2\. &lt;večer&gt;/);
+  assert.match(html, /<strong>A &amp; B<\/strong>/);
+  assert.doesNotMatch(html, /<strong><\/strong>/);
+  assert.match(html, /Neuzavřené \*\*zvýraznění/);
+});
+
+test("unformatted templates keep their existing HTML and auth actions", async () => {
+  const { EMAIL_TEMPLATE_DEFINITIONS, emailTemplateBodyToHtml } =
+    await import("../../src/lib/config/email-templates");
+  const variables = {
+    name: "Klára",
+    code: "123456",
+    time: "18:00",
+    loyalty: "",
+    slots: "první\ndruhý",
+  };
+  const action = {
+    actionUrl: "https://example.test/potvrdit?a=1&b=2",
+    actionLabel: "Potvrdit",
+  };
+  for (const { fallback } of EMAIL_TEMPLATE_DEFINITIONS) {
+    assert.equal(
+      emailTemplateBodyToHtml(fallback.body, variables, action),
+      emailTextToHtml(
+        renderEmailTemplateText(fallback, variables).body,
+        action,
+      ),
+    );
+  }
+  const html = emailTemplateBodyToHtml(
+    "Ahoj **{name}**",
+    { name: "{{ .Email }}" },
+    action,
+  );
+  assert.match(html, /<strong>{{ \.Email }}<\/strong>/);
+  assert.match(html, /href="https:\/\/example\.test\/potvrdit\?a=1&amp;b=2"/);
+});

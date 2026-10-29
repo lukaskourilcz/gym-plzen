@@ -842,3 +842,13 @@ credit gained. The primary action names the actual financial effect. A payment
 awaiting verification has its own status panel with a refresh action, while the
 original term remains valid. The admin component gallery contains an inert
 balance example; no gallery control may mutate a wallet.
+
+### E-mail emphasis
+
+In **E-maily**, select text in the existing textarea and use **Tučně**. Repeating
+it removes emphasis; separate selected lines are emphasized individually. The
+preview uses fictional data and the same escaped renderer as outgoing mail.
+Only paired `**text**` supports formatting; HTML remains literal text. Subject
+lines and variable values never acquire formatting from customer input. Saving
+is separate from the existing explicit test-send form. No new UI primitive or
+public design treatment is introduced.
