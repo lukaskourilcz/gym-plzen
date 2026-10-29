@@ -2,7 +2,6 @@
 
 import { RegistrationNotice } from "@/components/site/registration-notice";
 import { registrationNoticeFields } from "@/lib/content/registration-notice";
-("use client");
 
 import { InstagramFeed } from "@/components/site/instagram-feed";
 import { BrandMark } from "@/components/site/brand";

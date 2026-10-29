@@ -550,7 +550,7 @@ test("rescheduling navigates through lightweight availability, ignores delayed r
   }
 });
 
-test("email emphasis previews and persists without touching reservations, codes or messages", async ({
+test("rich email authoring previews and persists headings, emphasis and lists without changing bookings or sending", async ({
   browser,
 }) => {
   const key = "messages.email.access_code";
@@ -568,42 +568,72 @@ test("email emphasis previews and persists without touching reservations, codes 
   try {
     await page.goto("/admin/emails");
     await page.getByRole("tab", { name: "Vstupní kód", exact: true }).click();
-    const body = page.getByLabel("Text e-mailu", { exact: true });
-    await expect(body).toHaveValue(/Vstupní kód: \{code\}/);
-    const multiLine = "Klidnější cvičení.\nHudbu pouze do sluchátek.";
-    await body.fill(multiLine);
-    await body.evaluate((element) => {
-      const input = element as HTMLTextAreaElement;
-      input.focus();
-      input.select();
+    const editor = page.getByRole("textbox", {
+      name: "Text e-mailu",
+      exact: true,
     });
-    await page.getByRole("button", { name: "Tučně", exact: true }).click();
-    await expect(body).toHaveValue(
-      "**Klidnější cvičení.**\n**Hudbu pouze do sluchátek.**",
-    );
-    await page.getByRole("button", { name: "Tučně", exact: true }).click();
-    await expect(body).toHaveValue(multiLine);
-    const source =
-      "Ahoj {name},\n\nPravidla: hudbu pouze do sluchátek.\n\nKód: {code}\nČas: {time}";
-    await body.fill(source);
-    const phrase = "hudbu pouze do sluchátek";
-    await body.evaluate((element, phrase) => {
-      const input = element as HTMLTextAreaElement;
-      input.focus();
-      const start = input.value.indexOf(phrase);
-      input.setSelectionRange(start, start + phrase.length);
-    }, phrase);
-    await page.getByRole("button", { name: "Tučně", exact: true }).click();
-    await expect(body).toHaveValue(source.replace(phrase, `**${phrase}**`));
-    await expect(
-      page.locator("strong").filter({ hasText: phrase }),
-    ).toBeVisible();
-    await page.getByRole("button", { name: "Tučně", exact: true }).click();
-    await expect(body).toHaveValue(source);
-    await expect(
-      page.locator("strong").filter({ hasText: phrase }),
-    ).toHaveCount(0);
-    await page.getByRole("button", { name: "Tučně", exact: true }).click();
+    const preview = page.getByTestId("email-template-preview");
+    await expect(editor).toContainText("{code}");
+    await editor.fill("Pravidla pro {name}");
+    for (const level of [1, 2, 3]) {
+      await page.getByLabel("Styl textu").selectOption(String(level));
+      await expect(preview.locator(`h${level}`)).toContainText(
+        "Pravidla pro Klára",
+      );
+    }
+    await page.getByLabel("Styl textu").selectOption("1");
+    await editor.press("End");
+    await editor.press("Enter");
+    await editor.pressSequentially("Hudbu pouze do sluchátek.");
+    await editor.evaluate((element) => {
+      element.focus();
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+      let node: Node | null;
+      while ((node = walker.nextNode())) {
+        const index = node.textContent?.indexOf("pouze do sluchátek") ?? -1;
+        if (index < 0) continue;
+        const range = document.createRange();
+        range.setStart(node, index);
+        range.setEnd(node, index + "pouze do sluchátek".length);
+        const selection = window.getSelection()!;
+        selection.removeAllRanges();
+        selection.addRange(range);
+        break;
+      }
+    });
+    for (const [label, tag] of [
+      ["Tučně", "strong"],
+      ["Kurzíva", "em"],
+      ["Podtržení", "u"],
+    ] as const) {
+      await page.getByRole("button", { name: label, exact: true }).click();
+      await expect(
+        preview.locator(tag).filter({ hasText: "pouze do sluchátek" }),
+      ).toBeVisible();
+    }
+    await editor.press("End");
+    await editor.press("Enter");
+    await editor.pressSequentially("První pravidlo.");
+    await page
+      .getByRole("button", { name: "Seznam s odrážkami", exact: true })
+      .click();
+    await expect(editor.locator("ul li")).toHaveCount(1);
+    await editor.press("End");
+    await editor.press("Enter");
+    await editor.pressSequentially("Druhé pravidlo.");
+    await expect(preview.locator("ul li")).toHaveCount(2);
+    await page
+      .getByRole("button", { name: "Číslovaný seznam", exact: true })
+      .click();
+    await expect(preview.locator("ol li")).toHaveCount(2);
+    await editor.press("End");
+    await editor.press("Enter");
+    await editor.press("Enter");
+    await editor.pressSequentially("Kód: {code}");
+    const text = await editor.innerText();
+    await page.getByRole("button", { name: "Zpět", exact: true }).click();
+    await page.getByRole("button", { name: "Znovu", exact: true }).click();
+    await expect(editor).toHaveText(text);
     await page
       .getByRole("button", { name: "Uložit šablonu", exact: true })
       .click();
@@ -615,10 +645,17 @@ test("email emphasis previews and persists without touching reservations, codes 
     ).toBeVisible();
     await page.reload();
     await page.getByRole("tab", { name: "Vstupní kód", exact: true }).click();
-    await expect(body).toHaveValue(source.replace(phrase, `**${phrase}**`));
-    await expect(
-      page.locator("strong").filter({ hasText: phrase }),
-    ).toBeVisible();
+    await expect(editor).toContainText("Kód: {code}");
+    await expect(preview.locator("h1")).toContainText("Pravidla pro Klára");
+    await expect(preview.locator("ol li")).toHaveCount(2);
+    for (const tag of ["strong", "em", "u"])
+      await expect(
+        preview.locator(tag).filter({ hasText: "pouze do sluchátek" }),
+      ).toBeVisible();
+    await page.screenshot({
+      path: "test-results/rich-email-editor.png",
+      fullPage: true,
+    });
     await page.setViewportSize({ width: 390, height: 844 });
     expect(
       await page.evaluate(
@@ -654,9 +691,9 @@ test("administrator can edit the new customer cancellation template and preview 
     await page
       .getByRole("tab", { name: "Zrušení rezervace zákazníkem", exact: true })
       .click();
-    await expect(page.getByLabel("Text e-mailu", { exact: true })).toHaveValue(
-      /\{refund_note\}/,
-    );
+    await expect(
+      page.getByLabel("Text e-mailu", { exact: true }),
+    ).toContainText(/\{refund_note\}/);
     await expect(
       page.getByText(
         "Zaplacených 229 Kč se podle obchodních podmínek nevrací.",

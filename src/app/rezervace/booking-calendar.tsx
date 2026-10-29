@@ -2,7 +2,6 @@
 
 import { RegistrationNotice } from "@/components/site/registration-notice";
 import type { RegistrationNoticeCopy } from "@/lib/content/registration-notice";
-("use client");
 
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
