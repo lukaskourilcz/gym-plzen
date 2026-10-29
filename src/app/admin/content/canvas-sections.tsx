@@ -1,5 +1,8 @@
 "use client";
 
+import { RegistrationNotice } from "@/components/site/registration-notice";
+import { registrationNoticeFields } from "@/lib/content/registration-notice";
+
 import { InstagramFeed } from "@/components/site/instagram-feed";
 import { BrandMark } from "@/components/site/brand";
 import { Check, Clock3, MapPin } from "lucide-react";
@@ -613,8 +616,37 @@ function Rules() {
     </div>
   );
 }
+function RegistrationNotices() {
+  return (
+    <div className={`grid gap-8 ${padding}`}>
+      {(["calendar", "checkout"] as const).map((placement) => {
+        const fields = registrationNoticeFields(placement);
+        return (
+          <div key={placement}>
+            <p className="canvas-meta mb-3 text-muted-foreground">
+              {placement === "calendar"
+                ? "Před výběrem termínu"
+                : "V rekapitulaci před zaplacením"}
+            </p>
+            <RegistrationNotice
+              copy={{
+                title: <Text field={fields.title} />,
+                body: <Text field={fields.body} />,
+                link: <Text field={fields.link} />,
+                guestNote: <Text field={fields.guestNote} />,
+              }}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function CanvasSection({ id }: { id: string }) {
   switch (id) {
+    case "registration":
+      return <RegistrationNotices />;
     case "instagram":
       return <InstagramPreview />;
     case "hero":

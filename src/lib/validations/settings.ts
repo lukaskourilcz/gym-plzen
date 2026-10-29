@@ -1,3 +1,7 @@
+import {
+  emailDocumentSchema,
+  emailDocumentToText,
+} from "@/lib/config/email-document";
 import { z } from "zod";
 import { optionalText } from "./common";
 import {
@@ -37,19 +41,30 @@ export const smsTemplateSchema = z.object({
 const emailTemplateIdSchema = z.enum(EMAIL_TEMPLATE_IDS);
 
 /** Editable sender-owned e-mail template. Variables remain in `{braces}`. */
-export const emailTemplateSchema = z.object({
-  id: emailTemplateIdSchema,
-  subject: z
-    .string()
-    .trim()
-    .min(3, "Předmět musí obsahovat alespoň 3 znaky.")
-    .max(160, "Předmět může mít nejvýše 160 znaků."),
-  body: z
-    .string()
-    .trim()
-    .min(10, "Text šablony musí obsahovat alespoň 10 znaků.")
-    .max(8_000, "Text šablony může mít nejvýše 8 000 znaků."),
-});
+export const emailTemplateSchema = z
+  .object({
+    id: emailTemplateIdSchema,
+    subject: z
+      .string()
+      .trim()
+      .min(3, "Předmět musí obsahovat alespoň 3 znaky.")
+      .max(160, "Předmět může mít nejvýše 160 znaků."),
+    body: z
+      .string()
+      .trim()
+      .min(10, "Text šablony musí obsahovat alespoň 10 znaků.")
+      .max(8_000, "Text šablony může mít nejvýše 8 000 znaků."),
+    bodyDocument: emailDocumentSchema.optional(),
+  })
+  .superRefine((value, context) => {
+    const parsed = emailDocumentSchema.safeParse(value.bodyDocument);
+    if (parsed.success && emailDocumentToText(parsed.data).length < 10)
+      context.addIssue({
+        code: "custom",
+        path: ["bodyDocument"],
+        message: "Text šablony musí obsahovat alespoň 10 znaků.",
+      });
+  });
 
 /** Admin-triggered delivery of the current e-mail template to a test inbox. */
 export const emailTemplateTestSchema = z.object({

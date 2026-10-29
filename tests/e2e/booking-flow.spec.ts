@@ -89,6 +89,58 @@ test.describe("Booking flow", () => {
     await page.locator("form").getByRole("checkbox").check();
   }
 
+  test("guest notices preserve live selections through login on the calendar and recap", async ({
+    page,
+  }) => {
+    await page.goto(futureBookingCalendarHref(), {
+      waitUntil: "domcontentloaded",
+    });
+    await page
+      .getByTestId("tracking-consent")
+      .getByRole("button", { name: "Pouze nezbytné", exact: true })
+      .click();
+    const notice = page
+      .locator("main")
+      .getByText("S účtem máš každý vstup přehledně", { exact: true });
+    await expect(notice).toBeVisible();
+    await expect(page.getByText(/každý 10. vstup máš zdarma/)).toBeVisible();
+    const slots = page.getByRole("button", { name: /Vybrat$/ });
+    await slots.nth(0).click();
+    await slots.nth(1).click();
+    const starts = new URL(page.url()).searchParams.getAll("start");
+    expect(starts).toHaveLength(2);
+    const registration = page.getByRole("link", {
+      name: "Přihlásit se nebo se zaregistrovat",
+      exact: true,
+    });
+    await registration.click();
+    await expect(page).toHaveURL(/\/login\?next=/);
+    let next = new URL(
+      new URL(page.url()).searchParams.get("next")!,
+      "https://example.test",
+    );
+    expect(next.searchParams.getAll("start")).toEqual(starts);
+    await page.getByRole("link", { name: /bez registrace/ }).click();
+    await page
+      .getByRole("region", { name: "Vybrané termíny" })
+      .getByRole("link", { name: /Pokračovat/ })
+      .click();
+    await expect(notice).toBeVisible();
+    await registration.click();
+    await expect(page).toHaveURL(/\/login\?next=/);
+    next = new URL(
+      new URL(page.url()).searchParams.get("next")!,
+      "https://example.test",
+    );
+    expect(next.pathname).toBe("/rezervace/udaje");
+    expect(next.searchParams.getAll("start")).toEqual(starts);
+    await page.getByRole("button", { name: /Nemáte účet/ }).click();
+    await expect(page.getByLabel("Telefon")).toBeVisible();
+    await page.getByRole("link", { name: /bez registrace/ }).click();
+    await expect(page).toHaveURL(/\/rezervace\/udaje/);
+    expect(new URL(page.url()).searchParams.getAll("start")).toEqual(starts);
+  });
+
   test("a voucher covering the whole price confirms the entry without a payment", async ({
     page,
   }) => {

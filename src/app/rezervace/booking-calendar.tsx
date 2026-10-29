@@ -1,5 +1,8 @@
 "use client";
 
+import { RegistrationNotice } from "@/components/site/registration-notice";
+import type { RegistrationNoticeCopy } from "@/lib/content/registration-notice";
+
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -89,10 +92,12 @@ export function BookingCalendar({
   selected,
   loyalty,
   simulation,
+  registrationCopy,
   ...initial
 }: CalendarView & {
   selected: SelectedSlotView[];
   loyalty: SelectionLoyalty | null;
+  registrationCopy?: RegistrationNoticeCopy;
   /** Admin-only isolated walkthrough, with no live availability requests. */
   simulation?: {
     calendarHref: string;
@@ -335,6 +340,13 @@ export function BookingCalendar({
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(320px,.78fr)] lg:gap-12">
+      {registrationCopy ? (
+        <RegistrationNotice
+          copy={registrationCopy}
+          returnTo={buildHref({ month: monthKey, date: selectedDateKey })}
+          className="lg:col-span-2"
+        />
+      ) : null}
       <section aria-labelledby="calendar-heading">
         <div className="flex items-center justify-between gap-3">
           <div>

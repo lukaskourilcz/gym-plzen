@@ -1,6 +1,6 @@
 import {
   EMAIL_BRAND,
-  emailTextToHtml,
+  emailTemplateToHtml,
   getEmailTemplateDefinition,
   renderEmailTemplateText,
   SUPABASE_AUTH_TEMPLATE_IDS,
@@ -117,11 +117,12 @@ export async function syncSupabaseAuthEmailTemplate(params: {
   if (!auth) return { synced: false, reason: "not_configured" };
 
   const definition = getEmailTemplateDefinition(params.id);
-  const rendered = renderEmailTemplateText(params.template, {
+  const variables = {
     name: "{{ if .Data.full_name }}{{ .Data.full_name }}{{ else }}{{ .Email }}{{ end }}",
-  });
+  };
+  const rendered = renderEmailTemplateText(params.template, variables);
   const fields = SUPABASE_AUTH_TEMPLATE_FIELDS[params.id];
-  const body = emailTextToHtml(rendered.body, {
+  const body = emailTemplateToHtml(params.template, variables, {
     actionUrl: supabaseAuthActionUrl(params.id),
     actionLabel: definition.actionLabel,
   });

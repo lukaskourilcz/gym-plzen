@@ -1,13 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+import {
+  emailDocumentSchema,
+  emailDocumentToText,
+  legacyEmailDocument,
+  type EmailDocument,
+} from "@/lib/config/email-document";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { siteUrl } from "@/lib/helpers/site-url";
 import {
   EMAIL_TEMPLATE_DEFINITIONS,
   describeSupabaseAuthFailure,
-  emailTextToHtml,
+  emailTemplateToHtml,
   getEmailTemplateDefinition,
   renderEmailTemplateText,
   type EmailTemplate,
@@ -23,13 +30,27 @@ import {
 } from "@/lib/validations/settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { FormFeedback } from "@/components/admin/form-controls";
 import {
   saveEmailTemplateAction,
   sendEmailTemplateTestAction,
 } from "../emails/actions";
+
+const EmailRichTextEditor = dynamic(
+  () =>
+    import("./email-rich-text-editor").then(
+      (module) => module.EmailRichTextEditor,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <p role="status" className="py-4 text-sm text-muted-foreground">
+        Načítám editor…
+      </p>
+    ),
+  },
+);
 
 const PREVIEW_VALUES: Record<string, string> = {
   name: "Klára",
@@ -73,9 +94,20 @@ export function EmailTemplateForms({
   const [testError, setTestError] = useState<string | null>(null);
   const [testSuccess, setTestSuccess] = useState<string | null>(null);
 
+  const initialDocument = useMemo(
+    () =>
+      templates[selectedId].bodyDocument ??
+      legacyEmailDocument(templates[selectedId].body),
+    [selectedId, templates],
+  );
   const form = useForm<EmailTemplateValues>({
     resolver: zodResolver(emailTemplateSchema),
-    defaultValues: { id: selectedId, ...templates[selectedId] },
+    defaultValues: {
+      id: selectedId,
+      ...templates[selectedId],
+      body: emailDocumentToText(initialDocument),
+      bodyDocument: initialDocument,
+    },
   });
   const testForm = useForm<EmailTemplateTestValues>({
     resolver: zodResolver(emailTemplateTestSchema),
@@ -85,9 +117,14 @@ export function EmailTemplateForms({
   // Load the selected template, and reload it after a save: the saved copy
   // may differ from what was typed (the subject suffix is added on save).
   useEffect(() => {
-    form.reset({ id: selectedId, ...templates[selectedId] });
+    form.reset({
+      id: selectedId,
+      ...templates[selectedId],
+      body: emailDocumentToText(initialDocument),
+      bodyDocument: initialDocument,
+    });
     testForm.setValue("id", selectedId);
-  }, [form, selectedId, templates, testForm]);
+  }, [form, selectedId, templates, testForm, initialDocument]);
 
   // Feedback belongs to the template it was shown for; it stays until the
   // next action or a switch, not until the page re-renders behind it.
@@ -98,15 +135,37 @@ export function EmailTemplateForms({
     setTestSuccess(null);
   }, [selectedId]);
 
+  function changeDocument(document: EmailDocument) {
+    const valid = emailDocumentSchema.safeParse(document);
+    form.setValue(
+      "body",
+      valid.success ? emailDocumentToText(valid.data) : "",
+      { shouldDirty: true },
+    );
+    form.setValue("bodyDocument", document, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }
+
   const watchedSubject = form.watch("subject");
   const watchedBody = form.watch("body");
+  const watchedDocument = form.watch("bodyDocument");
+  const previewDocument = useMemo(() => {
+    const parsed = emailDocumentSchema.safeParse(watchedDocument);
+    return parsed.success ? parsed.data : undefined;
+  }, [watchedDocument]);
   const preview = useMemo(
     () =>
       renderEmailTemplateText(
-        { subject: watchedSubject ?? "", body: watchedBody ?? "" },
+        {
+          subject: watchedSubject ?? "",
+          body: watchedBody ?? "",
+          bodyDocument: previewDocument,
+        },
         PREVIEW_VALUES,
       ),
-    [watchedBody, watchedSubject],
+    [watchedBody, watchedSubject, previewDocument],
   );
   const definition = getEmailTemplateDefinition(selectedId);
 
@@ -203,12 +262,15 @@ export function EmailTemplateForms({
           </div>
           <div className="mb-4">
             <Label htmlFor="emailTemplateBody">Text e-mailu</Label>
-            <Textarea
-              id="emailTemplateBody"
-              rows={14}
-              {...form.register("body")}
-              aria-invalid={Boolean(form.formState.errors.body)}
+            <EmailRichTextEditor
+              initialDocument={initialDocument}
+              onChange={changeDocument}
             />
+            {form.formState.errors.bodyDocument?.message ? (
+              <p className="mt-1 text-xs text-destructive">
+                {form.formState.errors.bodyDocument.message}
+              </p>
+            ) : null}
             {form.formState.errors.body?.message ? (
               <p className="mt-1 text-xs text-destructive">
                 {form.formState.errors.body.message}
@@ -237,18 +299,27 @@ export function EmailTemplateForms({
           </p>
           <div
             className="bg-card shadow-sm"
+            data-testid="email-template-preview"
             dangerouslySetInnerHTML={{
-              __html: emailTextToHtml(
-                preview.body,
-                definition.delivery === "supabase_auth"
-                  ? {
-                      actionUrl:
-                        selectedId === "signup_confirmation"
-                          ? siteUrl("/login")
-                          : siteUrl("/reset-password"),
-                      actionLabel: definition.actionLabel,
-                    }
-                  : undefined,
+              __html: emailTemplateToHtml(
+                {
+                  subject: watchedSubject ?? "",
+                  body: watchedBody ?? "",
+                  bodyDocument: previewDocument,
+                },
+                PREVIEW_VALUES,
+                {
+                  preview: true,
+                  ...(definition.delivery === "supabase_auth"
+                    ? {
+                        actionUrl:
+                          selectedId === "signup_confirmation"
+                            ? siteUrl("/login")
+                            : siteUrl("/reset-password"),
+                        actionLabel: definition.actionLabel,
+                      }
+                    : {}),
+                },
               ),
             }}
           />

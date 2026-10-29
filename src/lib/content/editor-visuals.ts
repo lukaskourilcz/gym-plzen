@@ -120,6 +120,27 @@ export const CONTENT_VISUALS: Record<string, ContentVisual> = {
       },
     ],
   },
+  "Výzvy k registraci": {
+    id: "registration",
+    href: "/rezervace",
+    dependencies: [
+      {
+        label: "Věrnostní vstup",
+        description:
+          "Značka {freeEntryEvery} doplní skutečný počet vstupů do bonusu. Úprava textu pravidla věrnostního programu nemění.",
+        href: "/admin/how-it-works",
+        linkLabel: "Pravidla věrnostních vstupů",
+      },
+      {
+        label: "Přihlášení a vybrané termíny",
+        description:
+          "Obě výzvy vidí pouze nepřihlášení návštěvníci. Text odkazu můžete přepsat; cíl přihlášení a návrat k vybraným termínům zachovává systém.",
+        href: "/rezervace",
+        linkLabel: "Otevřít rezervační kalendář",
+      },
+    ],
+    assets: [],
+  },
   Galerie: {
     id: "gallery",
     href: "/#prostor",

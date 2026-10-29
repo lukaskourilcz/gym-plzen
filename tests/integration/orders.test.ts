@@ -431,6 +431,22 @@ describe(
       await setSetting("messages.email.order_confirmation", {
         subject: "Nová šablona",
         body: "Změněný obsah {slots}",
+        bodyDocument: {
+          type: "doc",
+          content: [
+            {
+              type: "heading",
+              attrs: { level: 1 },
+              content: [
+                {
+                  type: "text",
+                  text: "Změněný obsah {slots}",
+                  marks: [{ type: "italic" }],
+                },
+              ],
+            },
+          ],
+        },
       });
       const [first] = await slotsOf(outcome.orderId);
       await fulfillReservation(first!.id);

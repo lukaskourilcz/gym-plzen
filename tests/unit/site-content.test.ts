@@ -34,3 +34,19 @@ test("opening hours display follows the actual weekly schedule", async () => {
     /Po–Pá 5:00.*22:00 · So–Ne 6:00.*22:00/,
   );
 });
+
+test("registration notices expose editable source with the actual loyalty cadence in public copy", async () => {
+  const { loadSiteContent } = await import("../../src/lib/content/site");
+  const { registrationNoticeCopy } =
+    await import("../../src/lib/content/registration-notice");
+  const content = await loadSiteContent("cs", { defaultsOnly: true });
+  for (const placement of ["calendar", "checkout"] as const) {
+    const source = registrationNoticeCopy(content.raw, placement);
+    const published = registrationNoticeCopy(content.get, placement);
+    assert.match(source.body, /\{freeEntryEvery\}/);
+    assert.doesNotMatch(published.body, /\{freeEntryEvery\}/);
+    assert.ok(
+      published.body.includes(`každý ${content.freeEntryEvery}. vstup`),
+    );
+  }
+});

@@ -1,3 +1,8 @@
+import {
+  emailDocumentHtml,
+  emailDocumentToText,
+  type EmailDocument,
+} from "./email-document";
 import { siteHost, siteUrl } from "@/lib/helpers/site-url";
 
 /**
@@ -25,6 +30,7 @@ export type EmailTemplateId = (typeof EMAIL_TEMPLATE_IDS)[number];
 export interface EmailTemplate {
   subject: string;
   body: string;
+  bodyDocument?: EmailDocument;
 }
 
 export interface EmailTemplateDefinition {
@@ -296,18 +302,34 @@ function collapseBlankParagraphs(value: string): string {
   return value.replace(/[^\S\n]*\n(?:[^\S\n]*\n)+/g, "\n\n").trim();
 }
 
-/** Plain text only: template authoring never injects arbitrary HTML into mail. */
+/** Bold is the only authoring syntax. Incomplete markers stay visible. */
+const BOLD_TEXT = /\*\*([^*\n]+)\*\*/g;
+
+function plainEmailBody(value: string): string {
+  return value.replace(BOLD_TEXT, "$1");
+}
+
+function replaceEmailVariables(
+  value: string,
+  variables: Record<string, string>,
+): string {
+  return value.replace(/\{([a-z_]+)\}/g, (token, key: string) =>
+    Object.hasOwn(variables, key) ? variables[key]! : token,
+  );
+}
+
+/** Strip author markup before substitution: customer data always stays literal. */
 export function renderEmailTemplateText(
   template: EmailTemplate,
   variables: Record<string, string>,
 ): EmailTemplate {
-  const replace = (value: string) =>
-    value.replace(/\{([a-z_]+)\}/g, (token, key: string) =>
-      Object.hasOwn(variables, key) ? variables[key]! : token,
-    );
   return {
-    subject: replace(template.subject).trim(),
-    body: collapseBlankParagraphs(replace(template.body)),
+    subject: replaceEmailVariables(template.subject, variables).trim(),
+    body: collapseBlankParagraphs(
+      template.bodyDocument
+        ? emailDocumentToText(template.bodyDocument, variables)
+        : replaceEmailVariables(plainEmailBody(template.body), variables),
+    ),
   };
 }
 
@@ -394,23 +416,21 @@ function detailLines(paragraph: string): DetailLine[] | null {
  * The reservation detail of an e-mail: what the customer looks for first, so
  * it is a quiet table of labels and values rather than three lines of prose.
  */
-function renderDetails(lines: DetailLine[]): string {
+function renderDetails(lines: DetailLine[], inline = escapeEmailHtml): string {
   const cell = (index: number) =>
     `padding:11px 16px;font-family:${MAIL.font};${index ? `border-top:1px solid ${MAIL.border};` : ""}`;
   const rows = lines
     .map(
       ({ label, value }, index) =>
-        `<tr><td style="${cell(index)}font-size:14px;line-height:1.5;color:${MAIL.muted}">${escapeEmailHtml(label)}</td>` +
-        `<td style="${cell(index)}font-size:15px;line-height:1.5;font-weight:bold;color:${MAIL.text}">${escapeEmailHtml(value)}</td></tr>`,
+        `<tr><td style="${cell(index)}font-size:14px;line-height:1.5;color:${MAIL.muted}">${inline(label)}</td>` +
+        `<td style="${cell(index)}font-size:15px;line-height:1.5;font-weight:bold;color:${MAIL.text}">${inline(value)}</td></tr>`,
     )
     .join("");
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:0 0 20px;border:1px solid ${MAIL.border};background:${MAIL.detail};border-collapse:collapse">${rows}</table>`;
 }
 
-function renderParagraph(paragraph: string): string {
-  return `<p style="margin:0 0 18px;font-family:${MAIL.font};font-size:16px;line-height:1.65;color:${MAIL.text}">${escapeEmailHtml(
-    paragraph,
-  ).replaceAll("\n", "<br />")}</p>`;
+function renderParagraph(paragraph: string, inline = escapeEmailHtml): string {
+  return `<p style="margin:0 0 18px;font-family:${MAIL.font};font-size:16px;line-height:1.65;color:${MAIL.text}">${inline(paragraph).replaceAll("\n", "<br />")}</p>`;
 }
 
 /**
@@ -437,28 +457,94 @@ function column(content: string, style = ""): string {
  * blank lines become paragraphs, and a paragraph whose every line reads
  * "label: value" becomes the detail table.
  */
+type EmailHtmlOptions = {
+  actionUrl?: string;
+  actionLabel?: string;
+  preview?: boolean;
+};
+
 export function emailTextToHtml(
   text: string,
-  options?: { actionUrl?: string; actionLabel?: string },
+  options?: EmailHtmlOptions,
+): string {
+  return renderEmailHtml(text, options);
+}
+
+/** Parse formatting in the template only; escaped variable values cannot create tags or emphasis. */
+export function emailTemplateBodyToHtml(
+  body: string,
+  variables: Record<string, string>,
+  options?: EmailHtmlOptions,
+): string {
+  const plain = (value: string) =>
+    replaceEmailVariables(plainEmailBody(value), variables);
+  // Keep existing unformatted templates byte-for-byte compatible.
+  if (!/\*\*([^*\n]+)\*\*/.test(body))
+    return emailTextToHtml(collapseBlankParagraphs(plain(body)), options);
+  const literal = (value: string) =>
+    escapeEmailHtml(replaceEmailVariables(value, variables));
+  const inline = (value: string): string => {
+    let result = "";
+    let cursor = 0;
+    for (const match of value.matchAll(BOLD_TEXT)) {
+      result += literal(value.slice(cursor, match.index));
+      result += `<strong>${literal(match[1]!)}</strong>`;
+      cursor = match.index + match[0].length;
+    }
+    return result + literal(value.slice(cursor));
+  };
+  return renderEmailHtml(body, options, inline, plain);
+}
+
+function renderEmailHtml(
+  text: string,
+  options?: EmailHtmlOptions,
+  inline = escapeEmailHtml,
+  plain = (value: string) => value,
 ): string {
   const body = text
     .split(/\n{2,}/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean)
     .map((paragraph) => {
+      if (!plain(paragraph).trim()) return "";
       const details = detailLines(paragraph);
-      return details ? renderDetails(details) : renderParagraph(paragraph);
+      const resolvedDetails = detailLines(plain(paragraph));
+      return details &&
+        resolvedDetails &&
+        details.length === resolvedDetails.length
+        ? renderDetails(details, inline)
+        : renderParagraph(paragraph, inline);
     })
     .join("");
+  return emailHtmlShell(body, options);
+}
+
+/** Rich templates and legacy text share exactly the same branded shell and auth action. */
+export function emailTemplateToHtml(
+  template: EmailTemplate,
+  variables: Record<string, string>,
+  options?: EmailHtmlOptions,
+): string {
+  return template.bodyDocument
+    ? emailHtmlShell(
+        emailDocumentHtml(template.bodyDocument, variables, {
+          font: MAIL.font,
+          color: MAIL.text,
+        }),
+        options,
+      )
+    : emailTemplateBodyToHtml(template.body, variables, options);
+}
+
+function emailHtmlShell(body: string, options?: EmailHtmlOptions): string {
   const action =
     options?.actionUrl && options.actionLabel
       ? renderAction(options.actionUrl, options.actionLabel)
       : "";
   const card = column(
     `<tr><td style="height:4px;background:${MAIL.ink};font-size:1px;line-height:4px">&nbsp;</td></tr>` +
-      `<tr><td align="center" style="padding:28px 28px 20px;border-bottom:1px solid ${MAIL.border}"><img src="${siteUrl(
-        "/images/navi-logo-email.png",
-      )}" alt="${EMAIL_BRAND}" width="150" style="display:block;width:150px;max-width:150px;height:auto;border:0;margin:0 auto" /></td></tr>` +
+      `<tr><td align="center" style="padding:28px 28px 20px;border-bottom:1px solid ${MAIL.border}"><img src="${escapeEmailHtml(options?.preview ? "/images/navi-logo-email.png" : siteUrl("/images/navi-logo-email.png"))}" alt="${EMAIL_BRAND}" width="150" style="display:block;width:150px;max-width:150px;height:auto;border:0;margin:0 auto" /></td></tr>` +
       `<tr><td style="padding:30px 28px 14px">${body}${action}</td></tr>`,
     `background:${MAIL.surface};border:1px solid ${MAIL.border}`,
   );

@@ -1,3 +1,4 @@
+import { registrationNoticeCopy } from "@/lib/content/registration-notice";
 import { getOrder } from "@/lib/services/order-state";
 import { getCreditBalance } from "@/lib/services/credits";
 import { getParticipantPricing } from "@/lib/services/block-pricing";
@@ -25,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
+import { RegistrationNotice } from "@/components/site/registration-notice";
 import { BookingDetailsForm } from "./booking-details-form";
 
 export const metadata: Metadata = {
@@ -353,16 +355,11 @@ export default async function BookingDetailsPage({
               </Notice>
             ) : null}
             {session ? null : (
-              <Notice className="mt-6" role="status">
-                {`Rezervaci dokončíte i bez registrace. S účtem se počítá každý ${content.freeEntryEvery}. vstup zdarma.`}{" "}
-                <Link
-                  href={`/login?next=${encodeURIComponent(detailsHref(allStarts))}`}
-                  className="font-bold text-accent-foreground underline"
-                >
-                  Přihlásit se nebo se zaregistrovat
-                </Link>
-                .
-              </Notice>
+              <RegistrationNotice
+                className="mt-6"
+                copy={registrationNoticeCopy(content.get, "checkout")}
+                returnTo={detailsHref(allStarts)}
+              />
             )}
 
             {!paymentsAvailable && totalCents > 0 ? (

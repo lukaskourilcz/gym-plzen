@@ -95,6 +95,8 @@ const savePublicTextImpl = defineAction({
     for (const path of [
       "/",
       "/faq",
+      "/rezervace",
+      "/rezervace/udaje",
       "/vybaveni",
       "/provozni-rad",
       "/obchodni-podminky",

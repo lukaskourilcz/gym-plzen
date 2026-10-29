@@ -27,7 +27,7 @@ export function Notice({
   role,
 }: {
   tone?: keyof typeof styles;
-  title?: string;
+  title?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
   role?: "alert" | "status";

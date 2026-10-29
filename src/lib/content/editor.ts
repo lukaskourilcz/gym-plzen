@@ -1,3 +1,4 @@
+import { registrationNoticeFields } from "./registration-notice";
 // Dependency-free on purpose: this map is bundled into a client component.
 import { FAQ_NUMBERS } from "./faq";
 
@@ -93,6 +94,21 @@ export const CONTENT_EDITOR_SECTIONS: readonly ContentEditorSection[] = [
       item("home.cta.quoteAuthor", "Autor citátu"),
       item("home.cta.button", "Závěrečné tlačítko"),
     ],
+  },
+  {
+    title: "Výzvy k registraci",
+    description:
+      "Dvě samostatná upozornění pro nepřihlášené návštěvníky při rezervaci.",
+    items: (["calendar", "checkout"] as const).flatMap((placement) => {
+      const fields = registrationNoticeFields(placement);
+      const label = placement === "calendar" ? "Kalendář" : "Rekapitulace";
+      return [
+        item(fields.title, `${label}: nadpis`),
+        item(fields.body, `${label}: hlavní text`),
+        item(fields.link, `${label}: text odkazu`),
+        item(fields.guestNote, `${label}: poznámka bez registrace`),
+      ];
+    }),
   },
   {
     title: "Galerie",

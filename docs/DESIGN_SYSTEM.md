@@ -842,3 +842,27 @@ credit gained. The primary action names the actual financial effect. A payment
 awaiting verification has its own status panel with a refresh action, while the
 original term remains valid. The admin component gallery contains an inert
 balance example; no gallery control may mutate a wallet.
+
+### Rich e-mail authoring
+
+**E-maily** uses Tiptap in an admin-only lazy-loaded chunk. The toolbar offers
+paragraph/H1/H2/H3, bold, italic, underline, bullet and numbered lists, and
+undo/redo. It keeps selection when pointer users apply marks. The editor is
+height-limited; controls wrap on mobile and retain keyboard access.
+
+The live preview uses fictional data and the same renderer as delivery. Saved
+content is a bounded, server-validated document, alongside its plain-text
+alternative. Only supported nodes/marks render, with fixed email styles; pasted
+HTML never becomes arbitrary outgoing markup. Variables remain literal data,
+including tokens split across formatting boundaries. Existing text templates
+remain valid, and saving never regenerates an existing outbox or sends mail.
+
+### Registration notices in website content
+
+**Obsah webu → Výzvy k registraci** renders the same notice component as the
+public calendar and checkout. Each placement has its own title, body, link label
+and guest note, edited using the existing pencil controls and save dialog. The
+preview has no active authentication link or booking form. The original source
+retains `{freeEntryEvery}` while the preview shows the actual loyalty cadence;
+its rules and the authentication return destination remain controlled by the
+booking flow and are explained under **Co se načítá odjinud**.
