@@ -66,7 +66,15 @@ test.describe("isolated administrator walkthrough", () => {
       )
         dangerous.push(`${request.method()} ${request.url()}`);
     });
-    const firstDate = addDaysToDateKey(dateKeyInTimeZone(new Date()), 2);
+    // Always exercise the month boundary; a date in the next month is not a
+    // link in the currently displayed grid. Keep both dates in the future.
+    const month = addDaysToDateKey(dateKeyInTimeZone(new Date()), 2).slice(
+      0,
+      7,
+    );
+    const monthEnd = new Date(`${month}-01T12:00:00Z`);
+    monthEnd.setUTCMonth(monthEnd.getUTCMonth() + 1, 0);
+    const firstDate = monthEnd.toISOString().slice(0, 10);
     const secondDate = addDaysToDateKey(firstDate, 1);
     await page.goto(`/customer-preview?date=${firstDate}`);
     await expect(
@@ -74,6 +82,12 @@ test.describe("isolated administrator walkthrough", () => {
     ).toBeVisible();
     const freeSlots = page.getByRole("button", { name: /Vybrat$/ });
     await freeSlots.nth(0).click();
+    await page
+      .getByRole("link", { name: "Následující měsíc", exact: true })
+      .click();
+    await expect(
+      page.getByRole("region", { name: "Vybrané termíny" }),
+    ).toContainText("1 termín");
     await page.locator(`a[data-date="${secondDate}"]`).click();
     await freeSlots.nth(0).click();
     await expect(
