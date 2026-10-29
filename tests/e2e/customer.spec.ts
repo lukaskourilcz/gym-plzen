@@ -582,7 +582,6 @@ test("rich email authoring previews and persists headings, emphasis and lists wi
       );
     }
     await page.getByLabel("Styl textu").selectOption("1");
-    await editor.press("End");
     await editor.press("Enter");
     await editor.pressSequentially("Hudbu pouze do sluchátek.");
     await editor.evaluate((element) => {
@@ -590,11 +589,11 @@ test("rich email authoring previews and persists headings, emphasis and lists wi
       const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
       let node: Node | null;
       while ((node = walker.nextNode())) {
-        const index = node.textContent?.indexOf("pouze do sluchátek") ?? -1;
+        const index = node.textContent?.indexOf("pouze do sluchátek.") ?? -1;
         if (index < 0) continue;
         const range = document.createRange();
         range.setStart(node, index);
-        range.setEnd(node, index + "pouze do sluchátek".length);
+        range.setEnd(node, index + "pouze do sluchátek.".length);
         const selection = window.getSelection()!;
         selection.removeAllRanges();
         selection.addRange(range);
@@ -611,14 +610,13 @@ test("rich email authoring previews and persists headings, emphasis and lists wi
         preview.locator(tag).filter({ hasText: "pouze do sluchátek" }),
       ).toBeVisible();
     }
-    await editor.press("End");
+    await editor.press("ArrowRight"); // Collapse the formatted text selection.
     await editor.press("Enter");
     await editor.pressSequentially("První pravidlo.");
     await page
       .getByRole("button", { name: "Seznam s odrážkami", exact: true })
       .click();
     await expect(editor.locator("ul li")).toHaveCount(1);
-    await editor.press("End");
     await editor.press("Enter");
     await editor.pressSequentially("Druhé pravidlo.");
     await expect(preview.locator("ul li")).toHaveCount(2);
@@ -626,14 +624,13 @@ test("rich email authoring previews and persists headings, emphasis and lists wi
       .getByRole("button", { name: "Číslovaný seznam", exact: true })
       .click();
     await expect(preview.locator("ol li")).toHaveCount(2);
-    await editor.press("End");
     await editor.press("Enter");
     await editor.press("Enter");
     await editor.pressSequentially("Kód: {code}");
     const text = await editor.innerText();
     await page.getByRole("button", { name: "Zpět", exact: true }).click();
     await page.getByRole("button", { name: "Znovu", exact: true }).click();
-    await expect(editor).toHaveText(text);
+    await expect(editor).toHaveText(text, { useInnerText: true });
     await page
       .getByRole("button", { name: "Uložit šablonu", exact: true })
       .click();

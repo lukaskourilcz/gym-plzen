@@ -1,5 +1,8 @@
 .admin-shell .email-rich-editor {
   overflow-wrap: anywhere;
+  max-height: 36rem;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
   line-height: 1.65;
 }
 .admin-shell .email-rich-editor p {

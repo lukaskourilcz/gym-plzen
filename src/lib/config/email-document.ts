@@ -238,24 +238,57 @@ export function emailDocumentHtml(
 ): string {
   const base = `font-family:${style.font};color:${style.color};`;
   function inline(content: EmailInline[] = []): string {
-    return content
-      .map((node) => {
-        if (node.type === "hardBreak") return "<br />";
-        let text = escape(replace(node.text, variables)).replaceAll(
-          "\n",
-          "<br />",
+    // Resolve tokens across formatting boundaries. Styling half of {code}
+    // must never make the HTML lose a PIN that the plain-text version contains.
+    const source = inlineText(content);
+    let offset = 0;
+    const runs = content.map((node) => {
+      const text = node.type === "hardBreak" ? "\n" : node.text;
+      const start = offset;
+      offset += text.length;
+      return {
+        start,
+        end: offset,
+        marks: node.type === "text" ? (node.marks ?? []) : [],
+      };
+    });
+    const tokens = [...source.matchAll(/\{([a-z_]+)\}/g)];
+    let cursor = 0,
+      runIndex = 0,
+      tokenIndex = 0;
+    let html = "";
+    function styled(value: string, marks: EmailMark[]): string {
+      let text = escape(value).replaceAll("\n", "<br />");
+      for (const mark of marks) {
+        if (mark.type === "bold")
+          text = `<strong style="font-weight:bold">${text}</strong>`;
+        if (mark.type === "italic")
+          text = `<em style="font-style:italic">${text}</em>`;
+        if (mark.type === "underline")
+          text = `<u style="text-decoration:underline">${text}</u>`;
+      }
+      return text;
+    }
+    while (cursor < source.length) {
+      while (runs[runIndex] && runs[runIndex]!.end <= cursor) runIndex++;
+      const run = runs[runIndex]!;
+      const token = tokens[tokenIndex];
+      if (token?.index === cursor) {
+        html += styled(
+          Object.hasOwn(variables, token[1]!)
+            ? variables[token[1]!]!
+            : token[0],
+          run.marks,
         );
-        for (const mark of node.marks ?? []) {
-          if (mark.type === "bold")
-            text = `<strong style="font-weight:bold">${text}</strong>`;
-          if (mark.type === "italic")
-            text = `<em style="font-style:italic">${text}</em>`;
-          if (mark.type === "underline")
-            text = `<u style="text-decoration:underline">${text}</u>`;
-        }
-        return text;
-      })
-      .join("");
+        cursor += token[0].length;
+        tokenIndex++;
+      } else {
+        const end = Math.min(run.end, token?.index ?? source.length);
+        html += styled(source.slice(cursor, end), run.marks);
+        cursor = end;
+      }
+    }
+    return html;
   }
   function blocks(content: EmailBlock[], list = false): string {
     return content

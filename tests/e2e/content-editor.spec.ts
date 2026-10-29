@@ -290,6 +290,7 @@ test("registration notices edit independently in the existing canvas and appear 
   page,
   browser,
 }) => {
+  test.setTimeout(60_000); // Eight separate saves plus guest/member round trips.
   const prefix = "booking.registration.";
   const saved =
     await sql`select * from content_block where key like ${`${prefix}%`} and locale='cs'`;

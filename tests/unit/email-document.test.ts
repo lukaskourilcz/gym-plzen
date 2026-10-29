@@ -216,3 +216,28 @@ test("importing legacy templates preserves variables and literal HTML and only c
     true,
   );
 });
+
+test("formatting part of a variable never prevents its complete safe substitution", () => {
+  const bodyDocument: EmailDocument = {
+    type: "doc",
+    content: [
+      {
+        type: "paragraph",
+        content: [
+          { type: "text", text: "Kód: " },
+          { type: "text", text: "{co", marks: [{ type: "bold" }] },
+          { type: "text", text: "de}", marks: [{ type: "italic" }] },
+          { type: "text", text: " pro {na" },
+          { type: "text", text: "me}", marks: [{ type: "underline" }] },
+        ],
+      },
+    ],
+  };
+  const html = emailTemplateToHtml(
+    { subject: "Kód", body: emailDocumentToText(bodyDocument), bodyDocument },
+    { code: "123456", name: "<Host> {code}" },
+  );
+  assert.match(html, /<strong[^>]*>123456<\/strong>/);
+  assert.match(html, /&lt;Host&gt; \{code\}/);
+  assert.doesNotMatch(html, /\{name\}|\{co<|\{na<|de}<\/em>/);
+});
