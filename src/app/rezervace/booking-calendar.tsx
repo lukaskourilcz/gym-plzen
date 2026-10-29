@@ -1,3 +1,5 @@
+"use client";
+
 import { RegistrationNotice } from "@/components/site/registration-notice";
 import type { RegistrationNoticeCopy } from "@/lib/content/registration-notice";
 ("use client");

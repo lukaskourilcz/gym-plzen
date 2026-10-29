@@ -852,3 +852,13 @@ Only paired `**text**` supports formatting; HTML remains literal text. Subject
 lines and variable values never acquire formatting from customer input. Saving
 is separate from the existing explicit test-send form. No new UI primitive or
 public design treatment is introduced.
+
+### Registration notices in website content
+
+**Obsah webu → Výzvy k registraci** renders the same notice component as the
+public calendar and checkout. Each placement has its own title, body, link label
+and guest note, edited using the existing pencil controls and save dialog. The
+preview has no active authentication link or booking form. The original source
+retains `{freeEntryEvery}` while the preview shows the actual loyalty cadence;
+its rules and the authentication return destination remain controlled by the
+booking flow and are explained under **Co se načítá odjinud**.
