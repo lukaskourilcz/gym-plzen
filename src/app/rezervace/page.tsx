@@ -1,3 +1,4 @@
+import { registrationNoticeCopy } from "@/lib/content/registration-notice";
 import type { Metadata } from "next";
 import { footerProps, loadSiteContent } from "@/lib/content/site";
 import { getSession } from "@/lib/auth/guards";
@@ -165,8 +166,10 @@ export default async function BookingPage({
                 {...view}
                 selected={selected}
                 loyalty={loyalty}
-                registrationCadence={
-                  session ? undefined : content.freeEntryEvery
+                registrationCopy={
+                  session
+                    ? undefined
+                    : registrationNoticeCopy(content.get, "calendar")
                 }
               />
             </div>

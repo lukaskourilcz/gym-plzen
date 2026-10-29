@@ -1,3 +1,4 @@
+import { REGISTRATION_NOTICE_DEFAULTS } from "./registration-notice";
 import { openingHoursLabel } from "@/lib/helpers/opening-hours-label";
 import { DEFAULT_SLOT_MINUTES } from "@/lib/config/schedule";
 import { revisePublicCopy } from "./public-copy";
@@ -135,6 +136,7 @@ export function publicWhatsApp(phone?: string | null) {
  */
 
 export const SITE_DEFAULTS = {
+  ...REGISTRATION_NOTICE_DEFAULTS,
   "home.instagram.title": "NAVI na Instagramu",
   "home.instagram.button": "Sleduj nás",
   "home.instagram.fallback":
@@ -570,6 +572,7 @@ export async function loadSiteContent(
   const fillPrices = (value: string) =>
     value
       .replaceAll("{duration}", duration)
+      .replaceAll("{freeEntryEvery}", String(FREE_ENTRY_EVERY))
       .replaceAll(
         "{promoEndsAt}",
         price.promoEndsAt

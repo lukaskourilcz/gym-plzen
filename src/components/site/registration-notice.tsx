@@ -1,31 +1,42 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { Notice } from "@/components/ui/notice";
+import type { RegistrationNoticeCopy } from "@/lib/content/registration-notice";
 
-/** Guests keep their selected slots and may still purchase without an account. */
+/** Shared public/editor layout. Without a destination the preview has no live auth link. */
 export function RegistrationNotice({
-  cadence,
+  copy,
   returnTo,
   className,
 }: {
-  cadence: number;
-  returnTo: string;
+  copy: RegistrationNoticeCopy<ReactNode>;
+  returnTo?: string;
   className?: string;
 }) {
+  const linkClass =
+    "font-bold text-accent-foreground underline whitespace-pre-wrap break-words";
   return (
-    <Notice title="S účtem máš každý vstup přehledně" className={className}>
-      <p>
-        Zaregistruj se a přihlas ještě před zaplacením. Rezervace vytvořené po
-        přihlášení najdeš ve svém účtu a každý {cadence}. vstup máš zdarma.
-        Dřívější rezervace bez přihlášení se k účtu automaticky nepřiřazují.
-      </p>
+    <Notice
+      title={
+        <span className="whitespace-pre-wrap break-words">{copy.title}</span>
+      }
+      className={className}
+    >
+      <p className="whitespace-pre-wrap break-words">{copy.body}</p>
       <p className="mt-2">
-        <Link
-          href={`/login?next=${encodeURIComponent(returnTo)}`}
-          className="font-bold text-accent-foreground underline"
-        >
-          Přihlásit se nebo se zaregistrovat
-        </Link>
-        <span className="ml-2">Pokračovat můžeš i bez registrace.</span>
+        {returnTo ? (
+          <Link
+            href={`/login?next=${encodeURIComponent(returnTo)}`}
+            className={linkClass}
+          >
+            {copy.link}
+          </Link>
+        ) : (
+          <span className={linkClass}>{copy.link}</span>
+        )}
+        <span className="ml-2 whitespace-pre-wrap break-words">
+          {copy.guestNote}
+        </span>
       </p>
     </Notice>
   );

@@ -1,3 +1,4 @@
+import { registrationNoticeCopy } from "@/lib/content/registration-notice";
 import { getOrder } from "@/lib/services/order-state";
 import { getCreditBalance } from "@/lib/services/credits";
 import { getParticipantPricing } from "@/lib/services/block-pricing";
@@ -356,7 +357,7 @@ export default async function BookingDetailsPage({
             {session ? null : (
               <RegistrationNotice
                 className="mt-6"
-                cadence={content.freeEntryEvery}
+                copy={registrationNoticeCopy(content.get, "checkout")}
                 returnTo={detailsHref(allStarts)}
               />
             )}
