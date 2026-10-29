@@ -53,7 +53,14 @@ Resend, Comgate a dalších poskytovatelů. Žádná produkční testovací data
   nácvik úspěšné opravy, odmítnutí změněné identity/seznamu/kódu, opakovaného
   běhu a kontrolu nulového opakovaného odesílání při následném fulfillmentu.
 - SQL omezení, formát, lint a typy prošly.
-- Kompletní prohlížečová sada se ověřuje před předáním PR.
+- Všech 177 prohlížečových scénářů prošlo: 176 v celé sadě a opravený nový
+  test společně se 14 navazujícími scénáři při opakovaném průchodu. Oprava
+  testu pouze zavírá cookie lištu a čeká na dokončení navigace/formuláře.
+  Zahrnuto je přihlášení/registrace se zachovaným výběrem, nákup hosta i člena,
+  jednotlivé změny/storna, zvýraznění/odznačení více řádků, uložení, mobilní
+  šířka a zachování rezervací, kódů i odeslaných zpráv při editaci.
+- Celkem ověřeno 826 aplikačních testů plus SQL sady. GitHub kontroly jsou
+  dohledatelné přímo v PR #290; tento dokument popisuje místní ověření.
 
 Nový kód zůstává v samostatném PR. Automatický Vercel deployment této větve je
 vypnutý. Sloučení a nasazení těchto webových úprav nejsou součástí tohoto kroku.
