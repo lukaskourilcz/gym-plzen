@@ -3,6 +3,8 @@ import { test, expect } from "@playwright/test";
 import { join } from "node:path";
 import postgres from "postgres";
 import { CONTENT_EDITOR_SECTIONS } from "../../src/lib/content/editor";
+import { futureBookingCalendarHref } from "../helpers/calendar-date";
+import { registrationNoticeFields } from "../../src/lib/content/registration-notice";
 import { randomUUID } from "node:crypto";
 import { requireTestDatabaseUrl } from "../helpers/test-database";
 const sql = postgres(requireTestDatabaseUrl(), { prepare: false, max: 1 });
@@ -265,6 +267,7 @@ test("visual editing controls remain accessible across all sections", async ({
     "facts",
     "steps",
     "pricing",
+    "registration",
     "gallery",
     "equipment",
     "faq",
@@ -280,5 +283,182 @@ test("visual editing controls remain accessible across all sections", async ({
       .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
       .analyze();
     expect(results.violations, id).toEqual([]);
+  }
+});
+
+test("registration notices edit independently in the existing canvas and appear only to guests without booking or delivery side effects", async ({
+  page,
+  browser,
+}) => {
+  const prefix = "booking.registration.";
+  const saved =
+    await sql`select * from content_block where key like ${`${prefix}%`} and locale='cs'`;
+  const unrelated =
+    await sql`select * from content_block where key not like ${`${prefix}%`} order by id`;
+  const state = () => sql`select
+    (select md5(coalesce(string_agg(to_jsonb(r)::text,'' order by id),'')) from reservation r) as reservations,
+    (select md5(coalesce(string_agg(to_jsonb(o)::text,'' order by id),'')) from booking_order o) as orders,
+    (select md5(coalesce(string_agg(to_jsonb(p)::text,'' order by id),'')) from payment p) as payments,
+    (select md5(coalesce(string_agg(to_jsonb(c)::text,'' order by id),'')) from access_code c) as codes,
+    (select md5(coalesce(string_agg(to_jsonb(m)::text,'' order by id),'')) from message_delivery m) as messages,
+    (select md5(coalesce(string_agg(to_jsonb(e)::text,'' order by id),'')) from email_archive e) as emails`;
+  const before = await state();
+  const guestContext = await browser.newContext();
+  const memberContext = await browser.newContext({
+    storageState: join(process.cwd(), "tests/e2e/.auth/member.json"),
+  });
+  const guest = await guestContext.newPage();
+  const member = await memberContext.newPage();
+  const copies = {
+    calendar: {
+      title: "Účet před výběrem",
+      body: '<img src=x onerror="window.registrationInjection=true"> Získej každý {freeEntryEvery}. vstup zdarma.\nStarší nákupy se automaticky nepřiřazují.',
+      link: "Založit účet před výběrem",
+      guestNote: "Výběr můžeš dokončit jako host.",
+    },
+    checkout: {
+      title: "Výhody účtu před platbou",
+      body: "Pro přehled rezervací se přihlas před zaplacením. Každý {freeEntryEvery}. vstup zdarma.",
+      link: "Přihlášení před platbou",
+      guestNote: "Účet není podmínkou nákupu.",
+    },
+  };
+  try {
+    await page.setViewportSize({ width: 1440, height: 1100 });
+    await page.goto("/admin/content?section=registration");
+    const canvas = page.getByRole("region", {
+      name: "Upravitelné rozložení: Výzvy k registraci",
+    });
+    await expect(canvas).toBeVisible();
+    await expect(canvas.locator("a[href^='/login'],form")).toHaveCount(0);
+    await page.screenshot({
+      path: "test-results/registration-notices-editor.png",
+      fullPage: true,
+    });
+    for (const placement of ["calendar", "checkout"] as const) {
+      const fields = registrationNoticeFields(placement);
+      for (const field of ["title", "body", "link", "guestNote"] as const) {
+        await canvas
+          .locator(`[data-content-field="${fields[field]}"]`)
+          .getByRole("button")
+          .click();
+        const dialog = page.getByRole("dialog");
+        await dialog.getByRole("textbox").fill(copies[placement][field]);
+        await dialog
+          .getByRole("button", { name: "Uložit změny", exact: true })
+          .click();
+        await expect(
+          dialog.getByText("Text je uložený a projeví se na webu."),
+        ).toBeVisible();
+        await dialog
+          .getByRole("button", { name: "Hotovo", exact: true })
+          .click();
+        await expect(
+          canvas.locator(`[data-content-field="${fields[field]}"]`),
+        ).toContainText(
+          copies[placement][field].replaceAll("{freeEntryEvery}", "10"),
+        );
+      }
+    }
+    await page.reload();
+    await expect(
+      canvas.getByText(copies.calendar.title, { exact: true }),
+    ).toBeVisible();
+    await expect(
+      canvas.getByText(copies.checkout.title, { exact: true }),
+    ).toBeVisible();
+    // Editor preserves source tokens; the public copy and preview resolve them.
+    await canvas
+      .locator('[data-content-field="booking.registration.calendar.body"]')
+      .getByRole("button")
+      .click();
+    await expect(page.getByRole("dialog").getByRole("textbox")).toHaveValue(
+      copies.calendar.body,
+    );
+    await page.keyboard.press("Escape");
+    await guest.goto(futureBookingCalendarHref());
+    await guest
+      .getByTestId("tracking-consent")
+      .getByRole("button", { name: "Pouze nezbytné", exact: true })
+      .click();
+    await expect(
+      guest.getByText(copies.calendar.title, { exact: true }),
+    ).toBeVisible();
+    await expect(
+      guest.getByText(
+        copies.calendar.body.replaceAll("{freeEntryEvery}", "10"),
+        { exact: true },
+      ),
+    ).toBeVisible();
+    await expect(
+      guest.getByText(copies.calendar.guestNote, { exact: true }),
+    ).toBeVisible();
+    await expect(
+      guest.getByText(copies.checkout.title, { exact: true }),
+    ).toHaveCount(0);
+    await expect(guest.locator('img[src="x"]')).toHaveCount(0);
+    expect(
+      await guest.evaluate(
+        () =>
+          (window as typeof window & { registrationInjection?: boolean })
+            .registrationInjection,
+      ),
+    ).toBeUndefined();
+    await guest
+      .getByRole("button", { name: /Vybrat$/ })
+      .first()
+      .click();
+    const selected = new URL(guest.url()).searchParams.getAll("start");
+    const calendarLink = await guest
+      .getByRole("link", { name: copies.calendar.link, exact: true })
+      .getAttribute("href");
+    const calendarReturn = new URL(
+      new URL(calendarLink!, "https://example.test").searchParams.get("next")!,
+      "https://example.test",
+    );
+    expect(calendarReturn.searchParams.getAll("start")).toEqual(selected);
+    await guest
+      .getByRole("region", { name: "Vybrané termíny" })
+      .getByRole("link", { name: /Pokračovat/ })
+      .click();
+    await expect(
+      guest.getByText(copies.checkout.title, { exact: true }),
+    ).toBeVisible();
+    await expect(
+      guest.getByText(
+        copies.checkout.body.replaceAll("{freeEntryEvery}", "10"),
+        { exact: true },
+      ),
+    ).toBeVisible();
+    await expect(
+      guest.getByText(copies.checkout.guestNote, { exact: true }),
+    ).toBeVisible();
+    await expect(
+      guest.getByText(copies.calendar.title, { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      guest.getByRole("link", { name: copies.checkout.link, exact: true }),
+    ).toHaveAttribute(
+      "href",
+      `/login?next=${encodeURIComponent(`/rezervace/udaje?start=${encodeURIComponent(selected[0]!)}`)}`,
+    );
+    const detailsUrl = new URL(guest.url());
+    await member.goto(futureBookingCalendarHref());
+    await expect(
+      member.getByText(copies.calendar.title, { exact: true }),
+    ).toHaveCount(0);
+    await member.goto(`${detailsUrl.pathname}${detailsUrl.search}`);
+    await expect(
+      member.getByText(copies.checkout.title, { exact: true }),
+    ).toHaveCount(0);
+    expect(
+      await sql`select * from content_block where key not like ${`${prefix}%`} order by id`,
+    ).toEqual(unrelated);
+    expect(await state()).toEqual(before);
+  } finally {
+    await sql`delete from content_block where key like ${`${prefix}%`} and locale='cs'`;
+    for (const row of saved) await sql`insert into content_block ${sql(row)}`;
+    await guestContext.close();
+    await memberContext.close();
   }
 });
