@@ -550,6 +550,76 @@ test("rescheduling navigates through lightweight availability, ignores delayed r
   }
 });
 
+test("email emphasis previews and persists without touching reservations, codes or messages", async ({
+  browser,
+}) => {
+  const key = "messages.email.access_code";
+  const [saved] = await sql!`select * from site_setting where key=${key}`;
+  const state = () => sql!`select
+    (select md5(coalesce(string_agg(to_jsonb(r)::text,'' order by id),'')) from reservation r) as reservations,
+    (select md5(coalesce(string_agg(to_jsonb(c)::text,'' order by id),'')) from access_code c) as codes,
+    (select md5(coalesce(string_agg(to_jsonb(m)::text,'' order by id),'')) from message_delivery m) as messages,
+    (select md5(coalesce(string_agg(to_jsonb(e)::text,'' order by id),'')) from email_archive e) as emails`;
+  const before = await state();
+  const context = await browser.newContext({
+    storageState: join(process.cwd(), "tests/e2e/.auth/admin.json"),
+  });
+  const page = await context.newPage();
+  try {
+    await page.goto("/admin/emails");
+    await page.getByRole("tab", { name: "Vstupní kód", exact: true }).click();
+    const body = page.getByLabel("Text e-mailu", { exact: true });
+    const source =
+      "Ahoj {name},\n\nPravidla: hudbu pouze do sluchátek.\n\nKód: {code}\nČas: {time}";
+    await body.fill(source);
+    const phrase = "hudbu pouze do sluchátek";
+    await body.evaluate((element, phrase) => {
+      const input = element as HTMLTextAreaElement;
+      input.focus();
+      const start = input.value.indexOf(phrase);
+      input.setSelectionRange(start, start + phrase.length);
+    }, phrase);
+    await page.getByRole("button", { name: "Tučně", exact: true }).click();
+    await expect(body).toHaveValue(source.replace(phrase, `**${phrase}**`));
+    await expect(
+      page.locator("strong").filter({ hasText: phrase }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Tučně", exact: true }).click();
+    await expect(body).toHaveValue(source);
+    await expect(
+      page.locator("strong").filter({ hasText: phrase }),
+    ).toHaveCount(0);
+    await page.getByRole("button", { name: "Tučně", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Uložit šablonu", exact: true })
+      .click();
+    await expect(
+      page.getByText(
+        "Šablona uložená. Další odpovídající e-mail použije nový text.",
+        { exact: true },
+      ),
+    ).toBeVisible();
+    await page.reload();
+    await page.getByRole("tab", { name: "Vstupní kód", exact: true }).click();
+    await expect(body).toHaveValue(source.replace(phrase, `**${phrase}**`));
+    await expect(
+      page.locator("strong").filter({ hasText: phrase }),
+    ).toBeVisible();
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+    expect(await state()).toEqual(before);
+  } finally {
+    if (saved)
+      await sql!`update site_setting set value=${sql!.json(saved.value)},updated_at=${saved.updated_at},updated_by_admin_id=${saved.updated_by_admin_id} where key=${key}`;
+    else await sql!`delete from site_setting where key=${key}`;
+    await context.close();
+  }
+});
+
 test("administrator can edit the new customer cancellation template and preview the no-refund text without sending messages", async ({
   browser,
 }) => {
