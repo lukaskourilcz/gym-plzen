@@ -843,15 +843,19 @@ awaiting verification has its own status panel with a refresh action, while the
 original term remains valid. The admin component gallery contains an inert
 balance example; no gallery control may mutate a wallet.
 
-### E-mail emphasis
+### Rich e-mail authoring
 
-In **E-maily**, select text in the existing textarea and use **Tučně**. Repeating
-it removes emphasis; separate selected lines are emphasized individually. The
-preview uses fictional data and the same escaped renderer as outgoing mail.
-Only paired `**text**` supports formatting; HTML remains literal text. Subject
-lines and variable values never acquire formatting from customer input. Saving
-is separate from the existing explicit test-send form. No new UI primitive or
-public design treatment is introduced.
+**E-maily** uses Tiptap in an admin-only lazy-loaded chunk. The toolbar offers
+paragraph/H1/H2/H3, bold, italic, underline, bullet and numbered lists, and
+undo/redo. It keeps selection when pointer users apply marks. The editor is
+height-limited; controls wrap on mobile and retain keyboard access.
+
+The live preview uses fictional data and the same renderer as delivery. Saved
+content is a bounded, server-validated document, alongside its plain-text
+alternative. Only supported nodes/marks render, with fixed email styles; pasted
+HTML never becomes arbitrary outgoing markup. Variables remain literal data,
+including tokens split across formatting boundaries. Existing text templates
+remain valid, and saving never regenerates an existing outbox or sends mail.
 
 ### Registration notices in website content
 

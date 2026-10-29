@@ -34,14 +34,22 @@ pět přiřazených rezervací, nezměněnou platbu a pouze dvě původní zprá
   rezervace se automaticky nepřiřadí. Nákup bez registrace zůstává možný.
 - Přihlášeným zákazníkům se výzva nezobrazuje. Odkaz uchovává aktuální výběr
   termínů i při přepínání dnů v kalendáři a návratu z přihlašovacího formuláře.
-- V E-mailech lze označený text zvýraznit tlačítkem Tučně a opětovným použitím
-  zvýraznění odstranit. Podporovaný zápis je `**text**`, včetně více řádků.
-- Náhled pracuje výhradně s ukázkovými proměnnými. HTML je vždy escapované;
-  proměnné od zákazníka nezakládají formátování. Prostý text neobsahuje značky
-  zvýraznění. Předměty a autentizační odkazy si zachovávají původní chování.
+- Obě registrační výzvy lze samostatně upravit v **Obsah webu → Výzvy
+  k registraci**. Používají stávající tužky, dialogy a skutečné rozložení;
+  samostatně se ukládá nadpis, hlavní text, popisek odkazu a poznámka pro hosty.
+  Značka `{freeEntryEvery}` zůstává v původním textu a náhled ji doplní aktuálním
+  intervalem. Cíl přihlášení a návrat k vybraným termínům řídí systém.
+- V E-mailech je skutečný editor Tiptap 3.32.1: běžný text, H1–H3, tučné písmo,
+  kurzíva, podtržení, odrážky, číslované seznamy a zpět/znovu. Je načítaný až
+  v administraci; veřejný kalendář editor nestahuje.
+- Dokument má výslovně povolené uzly a značky, omezení velikosti a hloubky a
+  validaci na klientu i serveru. HTML se sestavuje z pevných značek a escapovaného
+  textu. Proměnné nemohou vkládat HTML ani formátování a doplní se i při rozdělení
+  mezi různě formátované části textu. Vedle dokumentu se uchovává čitelný prostý
+  text. Starší textové šablony dál fungují bez převodu v databázi.
 - Uložené žádosti o odeslání nejsou přerenderované a změna šablony nic nerozesílá.
-  Nezvýrazněné šablony zachovávají dosavadní HTML. Nová závislost ani migrace
-  nejsou potřeba. Provozní SQL se při nasazení nespouští.
+  Nezvýrazněné starší šablony zachovávají dosavadní HTML. Migrace není potřeba;
+  ruční provozní SQL se při nasazení nespouští.
 
 ## Ověření
 
@@ -49,18 +57,17 @@ Samostatné lokální databáze `navi_registration_integration_test` a
 `navi_registration_browser_test`, Node.js 22.23.4 a síťově omezené náhrady Auth,
 Resend, Comgate a dalších poskytovatelů. Žádná produkční testovací data.
 
-- 349 základních a 300 integračních testů prošlo; integrační sada obsahuje
-  nácvik úspěšné opravy, odmítnutí změněné identity/seznamu/kódu, opakovaného
-  běhu a kontrolu nulového opakovaného odesílání při následném fulfillmentu.
-- SQL omezení, formát, lint a typy prošly.
-- Všech 177 prohlížečových scénářů prošlo: 176 v celé sadě a opravený nový
-  test společně se 14 navazujícími scénáři při opakovaném průchodu. Oprava
-  testu pouze zavírá cookie lištu a čeká na dokončení navigace/formuláře.
-  Zahrnuto je přihlášení/registrace se zachovaným výběrem, nákup hosta i člena,
-  jednotlivé změny/storna, zvýraznění/odznačení více řádků, uložení, mobilní
-  šířka a zachování rezervací, kódů i odeslaných zpráv při editaci.
-- Celkem ověřeno 826 aplikačních testů plus SQL sady. GitHub kontroly jsou
-  dohledatelné přímo v PR #290; tento dokument popisuje místní ověření.
+- 355 základních a 302 integračních testů prošlo. Zahrnuté jsou zpětná
+  kompatibilita textových šablon, odmítnutí nebezpečného/rozsáhlého dokumentu,
+  dosazení proměnných přes hranice formátování, autentizační odkazy, povinné
+  finanční údaje a přesná obnova rozpracovaného outboxu po změně šablony.
+- SQL omezení, formát, lint a typy prošly. Audit závislostí má nula nálezů.
+- Prohlížečová sada navíc ověřuje osm samostatných textových polí obou výzev,
+  jejich promítnutí na veřejné stránky, zobrazení jen hostům, bezpečné zobrazení
+  doslovného HTML, bohaté formátování, uložení/načtení a mobilní šířku.
+- Testy porovnávají rezervace, objednávky, platby, kódy i zprávy před a po
+  ukládání. Používají jen oddělené lokální databáze a náhrady poskytovatelů.
+- Aktuální výsledek kompletního nezávislého ověření je dohledatelný v PR #290.
 
 Nový kód zůstává v samostatném PR. Automatický Vercel deployment této větve je
 vypnutý. Sloučení a nasazení těchto webových úprav nejsou součástí tohoto kroku.
