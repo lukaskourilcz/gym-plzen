@@ -661,6 +661,10 @@ test("rich email authoring previews and persists headings, emphasis and lists wi
       await expect(
         preview.locator(tag).filter({ hasText: "pouze do sluchátek" }),
       ).toBeVisible();
+    await page.evaluate(() => {
+      (document.activeElement as HTMLElement | null)?.blur();
+      window.scrollTo(0, 0);
+    });
     await page.screenshot({
       path: "test-results/rich-email-editor.png",
       fullPage: true,

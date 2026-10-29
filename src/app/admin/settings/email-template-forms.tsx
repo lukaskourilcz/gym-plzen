@@ -308,15 +308,18 @@ export function EmailTemplateForms({
                   bodyDocument: previewDocument,
                 },
                 PREVIEW_VALUES,
-                definition.delivery === "supabase_auth"
-                  ? {
-                      actionUrl:
-                        selectedId === "signup_confirmation"
-                          ? siteUrl("/login")
-                          : siteUrl("/reset-password"),
-                      actionLabel: definition.actionLabel,
-                    }
-                  : undefined,
+                {
+                  preview: true,
+                  ...(definition.delivery === "supabase_auth"
+                    ? {
+                        actionUrl:
+                          selectedId === "signup_confirmation"
+                            ? siteUrl("/login")
+                            : siteUrl("/reset-password"),
+                        actionLabel: definition.actionLabel,
+                      }
+                    : {}),
+                },
               ),
             }}
           />

@@ -308,7 +308,7 @@ export function emailDocumentHtml(
           node.type === "orderedList"
             ? ` start="${node.attrs?.start ?? 1}"${node.attrs?.type ? ` type="${node.attrs.type}"` : ""}`
             : "";
-        return `<${tag}${start} style="${base}font-size:16px;line-height:1.65;margin:0 0 18px;padding-left:24px;${tag === "ul" ? "list-style-type:disc;" : ""}">${node.content.map((item) => `<li style="margin:0 0 6px">${blocks(item.content, true)}</li>`).join("")}</${tag}>`;
+        return `<${tag}${start} style="${base}font-size:16px;line-height:1.65;margin:0 0 18px;padding-left:24px;list-style-type:${node.type === "bulletList" ? "disc" : { "1": "decimal", a: "lower-alpha", A: "upper-alpha", i: "lower-roman", I: "upper-roman" }[node.attrs?.type ?? "1"]};">${node.content.map((item) => `<li style="margin:0 0 6px">${blocks(item.content, true)}</li>`).join("")}</${tag}>`;
       })
       .join("");
   }

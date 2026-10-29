@@ -91,6 +91,7 @@ test("rich mail renders headings, emphasis and lists with a readable text altern
   assert.match(html, /font-size:22px/);
   assert.match(html, /font-size:18px/);
   assert.match(html, /<ol start="2"/);
+  assert.match(html, /list-style-type:decimal/);
   assert.match(
     html,
     /&lt;img src=x onerror=&quot;alert\(1\)&quot;&gt; \*\*Host\*\*/,
@@ -240,4 +241,20 @@ test("formatting part of a variable never prevents its complete safe substitutio
   assert.match(html, /<strong[^>]*>123456<\/strong>/);
   assert.match(html, /&lt;Host&gt; \{code\}/);
   assert.doesNotMatch(html, /\{name\}|\{co<|\{na<|de}<\/em>/);
+});
+
+test("preview uses the same brand asset without requiring the configured public hostname", () => {
+  const template = {
+    subject: "Kód",
+    body: "Ukázka bezpečného textu",
+    bodyDocument: legacyEmailDocument("Ukázka bezpečného textu"),
+  };
+  assert.match(
+    emailTemplateToHtml(template, {}, { preview: true }),
+    /src="\/images\/navi-logo-email\.png"/,
+  );
+  assert.match(
+    emailTemplateToHtml(template, {}),
+    /src="https?:\/\/[^" ]+\/images\/navi-logo-email\.png"/,
+  );
 });

@@ -457,7 +457,11 @@ function column(content: string, style = ""): string {
  * blank lines become paragraphs, and a paragraph whose every line reads
  * "label: value" becomes the detail table.
  */
-type EmailHtmlOptions = { actionUrl?: string; actionLabel?: string };
+type EmailHtmlOptions = {
+  actionUrl?: string;
+  actionLabel?: string;
+  preview?: boolean;
+};
 
 export function emailTextToHtml(
   text: string,
@@ -540,9 +544,7 @@ function emailHtmlShell(body: string, options?: EmailHtmlOptions): string {
       : "";
   const card = column(
     `<tr><td style="height:4px;background:${MAIL.ink};font-size:1px;line-height:4px">&nbsp;</td></tr>` +
-      `<tr><td align="center" style="padding:28px 28px 20px;border-bottom:1px solid ${MAIL.border}"><img src="${siteUrl(
-        "/images/navi-logo-email.png",
-      )}" alt="${EMAIL_BRAND}" width="150" style="display:block;width:150px;max-width:150px;height:auto;border:0;margin:0 auto" /></td></tr>` +
+      `<tr><td align="center" style="padding:28px 28px 20px;border-bottom:1px solid ${MAIL.border}"><img src="${escapeEmailHtml(options?.preview ? "/images/navi-logo-email.png" : siteUrl("/images/navi-logo-email.png"))}" alt="${EMAIL_BRAND}" width="150" style="display:block;width:150px;max-width:150px;height:auto;border:0;margin:0 auto" /></td></tr>` +
       `<tr><td style="padding:30px 28px 14px">${body}${action}</td></tr>`,
     `background:${MAIL.surface};border:1px solid ${MAIL.border}`,
   );
