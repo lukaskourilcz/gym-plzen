@@ -611,6 +611,18 @@ test("rich email authoring previews and persists headings, emphasis and lists wi
       ).toBeVisible();
     }
     await editor.press("ArrowRight"); // Collapse the formatted text selection.
+    await expect
+      .poll(() =>
+        editor.evaluate(
+          (element) =>
+            (
+              element as HTMLElement & {
+                editor: { state: { selection: { empty: boolean } } };
+              }
+            ).editor.state.selection.empty,
+        ),
+      )
+      .toBe(true);
     await editor.press("Enter");
     await editor.pressSequentially("První pravidlo.");
     await page

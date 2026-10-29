@@ -49,7 +49,9 @@ export function EmailRichTextEditor({
         class: "email-rich-editor min-h-80 p-3 outline-none",
       },
     },
-    onUpdate: ({ editor }) => onChange(editor.getJSON() as EmailDocument),
+    // ProseMirror attributes have null prototypes; transport plain JSON through Server Actions.
+    onUpdate: ({ editor }) =>
+      onChange(JSON.parse(JSON.stringify(editor.getJSON())) as EmailDocument),
   });
   const active = useEditorState({
     editor,
@@ -80,6 +82,10 @@ export function EmailRichTextEditor({
   return (
     <div className="rounded-md border border-input bg-card focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-1">
       <div
+        onMouseDown={(event) => {
+          if (event.target instanceof Element && event.target.closest("button"))
+            event.preventDefault();
+        }}
         role="group"
         aria-label="Formátování e-mailu"
         className="flex flex-wrap items-center gap-1 border-b border-border p-2"

@@ -290,7 +290,6 @@ test("registration notices edit independently in the existing canvas and appear 
   page,
   browser,
 }) => {
-  test.setTimeout(60_000); // Eight separate saves plus guest/member round trips.
   const prefix = "booking.registration.";
   const saved =
     await sql`select * from content_block where key like ${`${prefix}%`} and locale='cs'`;
@@ -304,7 +303,9 @@ test("registration notices edit independently in the existing canvas and appear 
     (select md5(coalesce(string_agg(to_jsonb(m)::text,'' order by id),'')) from message_delivery m) as messages,
     (select md5(coalesce(string_agg(to_jsonb(e)::text,'' order by id),'')) from email_archive e) as emails`;
   const before = await state();
-  const guestContext = await browser.newContext();
+  const guestContext = await browser.newContext({
+    storageState: { cookies: [], origins: [] },
+  });
   const memberContext = await browser.newContext({
     storageState: join(process.cwd(), "tests/e2e/.auth/member.json"),
   });
