@@ -2,7 +2,7 @@ import {
   EMAIL_TEMPLATE_IDS,
   brandedSubject,
   emailTemplateSettingKey,
-  emailTextToHtml,
+  emailTemplateBodyToHtml,
   getEmailTemplateDefinition,
   isSupabaseAuthEmailTemplate,
   type EmailTemplate,
@@ -93,12 +93,16 @@ export async function prepareTransactionalEmail(
   params: TransactionalEmailParams,
 ): Promise<SendEmailParams> {
   const template = await getEmailTemplate(params.id);
-  const rendered = renderEmailTemplateText(template, params.variables);
+  const bodyTemplate = { ...template };
+  const variables = { ...params.variables };
   if (
     params.requiredSummary &&
     !template.body.includes(`{${params.requiredSummary.variable}}`)
-  )
-    rendered.body += `\n\n${params.requiredSummary.text}`;
+  ) {
+    bodyTemplate.body += `\n\n{${params.requiredSummary.variable}}`;
+    variables[params.requiredSummary.variable] = params.requiredSummary.text;
+  }
+  const rendered = renderEmailTemplateText(bodyTemplate, variables);
   const definition = getEmailTemplateDefinition(params.id);
   // A template carries a button when its definition names one. The address
   // is the caller's when it passed one, otherwise the page the template has
@@ -123,7 +127,7 @@ export async function prepareTransactionalEmail(
       : rendered.body,
     attachments: params.attachments,
     idempotencyKey: params.idempotencyKey,
-    html: emailTextToHtml(rendered.body, action),
+    html: emailTemplateBodyToHtml(bodyTemplate.body, variables, action),
   };
 }
 
