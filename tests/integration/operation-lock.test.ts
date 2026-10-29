@@ -3,9 +3,53 @@ import assert from "node:assert/strict";
 import { after, describe, test } from "node:test";
 import { setTimeout } from "node:timers/promises";
 import { withOperationLock } from "../../src/lib/services/operation-lock";
+import { OperationBusyError } from "../../src/lib/helpers/operation-busy";
 
 describe("operation lock pool", { skip: !databaseReady }, () => {
   after(stopEverything);
+  test(
+    "contention never enters or retries business work, while business failures keep their identity",
+    { timeout: 10000 },
+    async () => {
+      let acquired!: () => void;
+      const started = new Promise<void>((resolve) => {
+        acquired = resolve;
+      });
+      let release!: () => void;
+      const finished = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const owner = withOperationLock("test-contention-only", async () => {
+        acquired();
+        await finished;
+      });
+      await started;
+      let entered = 0;
+      try {
+        await assert.rejects(
+          withOperationLock("test-contention-only", async () => {
+            entered++;
+          }),
+          OperationBusyError,
+        );
+        assert.equal(entered, 0);
+      } finally {
+        release();
+        await owner;
+      }
+      const original = Object.assign(new Error("business write timed out"), {
+        code: "55P03",
+      });
+      await assert.rejects(
+        withOperationLock("test-business-timeout", async () => {
+          entered++;
+          throw original;
+        }),
+        (error) => error === original,
+      );
+      assert.equal(entered, 1);
+    },
+  );
   test(
     "five outer operations can all enter nested locks without exhausting the pool",
     { timeout: 5000 },

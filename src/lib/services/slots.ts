@@ -255,14 +255,16 @@ export async function resolveBookableSlots(starts: Date[]) {
   if (starts.length === 0) return [];
   const [operations, hoursRows] = await Promise.all([
     getOperations(),
-    db
-      .select()
-      .from(openingHours)
-      .where(
-        inArray(openingHours.dayOfWeek, [
-          ...new Set(starts.map((start) => dayOfWeek(start))),
-        ]),
-      ),
+    readDatabase(async (db) =>
+      db
+        .select()
+        .from(openingHours)
+        .where(
+          inArray(openingHours.dayOfWeek, [
+            ...new Set(starts.map((start) => dayOfWeek(start))),
+          ]),
+        ),
+    ),
   ]);
   const byDay = new Map(hoursRows.map((hours) => [hours.dayOfWeek, hours]));
   return starts.map((startsAt) => {

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { err, ok, type Result } from "./result";
 import { logger } from "./logger";
+import { OperationBusyError } from "./operation-busy";
 
 /**
  * Factory for type-safe Server Actions. It:
@@ -49,7 +50,7 @@ export function defineAction<
       const data = await config.handler(parsed.data, ctx);
       return ok(data);
     } catch (e) {
-      if (e instanceof ActionError) {
+      if (e instanceof ActionError || e instanceof OperationBusyError) {
         // An outcome the visitor is told about in so many words (a taken
         // slot, an invalid voucher, a rate limit) is context for the next
         // real failure, not a failure of its own: a warning breadcrumb, not a

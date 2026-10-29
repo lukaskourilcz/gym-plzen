@@ -20,6 +20,7 @@
   ],
   "git": {
     "deploymentEnabled": {
+      "codex/sentry-errors-2026-10-28": false,
       "codex/application-audit-2026-10-28": false,
       "codex/credit-history-pagination": false,
       "codex/block-pricing-guests": false,

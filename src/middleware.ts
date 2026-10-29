@@ -1,4 +1,5 @@
-import type { NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
+import { hasMalformedActionReference } from "@/lib/helpers/server-action-request";
 import { updateSession } from "@/lib/supabase/middleware";
 import {
   CONFIRMATION_PROOF_COOKIE,
@@ -9,6 +10,13 @@ import {
 
 /** Keeps the Supabase Auth session cookie fresh across the app. */
 export async function middleware(request: NextRequest) {
+  // Refuse malformed probes before Auth or the action decoder. Valid but
+  // unknown references still go through Next's normal deployment checks.
+  if (hasMalformedActionReference(request))
+    return new NextResponse("Invalid action request.", {
+      status: 400,
+      headers: { "Cache-Control": "no-store" },
+    });
   const response = await updateSession(request);
   if (request.nextUrl.pathname === "/rezervace/hotovo") {
     const proof = confirmationProofFromUrl(request.nextUrl.searchParams);

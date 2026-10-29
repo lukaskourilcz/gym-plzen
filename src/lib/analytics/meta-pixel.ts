@@ -3,6 +3,7 @@ import {
   META_PIXEL_ID,
   parseConsentPreferences,
 } from "@/lib/config/analytics";
+import { reportTransportError } from "@/lib/helpers/report-transport-error";
 
 type MetaPixelFunction = ((...args: unknown[]) => void) & {
   callMethod?: (...args: unknown[]) => void;
@@ -54,25 +55,32 @@ function ensureFbq(): MetaPixelFunction {
 /** Start the browser pixel only after explicit marketing consent. */
 export function startMetaPixel(pathname: string) {
   // No pixel ID configured: nothing to start.
-  if (!META_PIXEL_ID) return;
-  if (!marketingAllowed()) return;
-  const fbq = ensureFbq();
+  if (!META_PIXEL_ID || !marketingAllowed()) return false;
+  try {
+    const fbq = ensureFbq();
 
-  if (!pixelStarted && !document.getElementById(META_SCRIPT_ID)) {
-    fbq("init", META_PIXEL_ID);
-    const script = document.createElement("script");
-    script.id = META_SCRIPT_ID;
-    script.async = true;
-    script.src = "https://connect.facebook.net/en_US/fbevents.js";
-    document.head.append(script);
-    pixelStarted = true;
-  } else if (document.getElementById(META_SCRIPT_ID)) {
-    pixelStarted = true;
-  }
+    if (!pixelStarted && !document.getElementById(META_SCRIPT_ID)) {
+      fbq("init", META_PIXEL_ID);
+      const script = document.createElement("script");
+      script.id = META_SCRIPT_ID;
+      script.async = true;
+      script.src = "https://connect.facebook.net/en_US/fbevents.js";
+      document.head.append(script);
+      pixelStarted = true;
+    } else if (document.getElementById(META_SCRIPT_ID)) {
+      pixelStarted = true;
+    }
 
-  if (lastPageView !== pathname) {
-    fbq("track", "PageView");
-    lastPageView = pathname;
+    if (lastPageView !== pathname) {
+      fbq("track", "PageView");
+      lastPageView = pathname;
+    }
+    return true;
+  } catch (error) {
+    // Third-party instrumentation must never abort navigation or a checkout
+    // whose reservation/payment intent may already have committed.
+    reportTransportError(error, "analytics.meta.start", "nonessential");
+    return false;
   }
 }
 
@@ -93,8 +101,13 @@ export function trackMetaEvent(
     // Continue: Meta can still dedupe a repeated event by eventID.
   }
 
-  startMetaPixel(window.location.pathname);
-  window.fbq?.("track", eventName, parameters, { eventID: eventId });
+  if (!startMetaPixel(window.location.pathname)) return;
+  try {
+    window.fbq?.("track", eventName, parameters, { eventID: eventId });
+  } catch (error) {
+    reportTransportError(error, "analytics.meta.track", "nonessential");
+    return;
+  }
   try {
     window.sessionStorage.setItem(
       `${META_EVENT_SESSION_PREFIX}${eventId}`,

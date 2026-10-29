@@ -4,7 +4,10 @@ import type { ErrorEvent } from "@sentry/nextjs";
 import {
   isGoogleMapsModuleError,
   isInjectedFacebookError,
+  isInjectedBrowserError,
+  isFriendlyBridgeError,
   isTransportError,
+  isStaleActionError,
   markMapErrorRecovered,
   wasMapErrorRecovered,
 } from "../../src/lib/helpers/browser-errors";
@@ -45,6 +48,78 @@ test("native Facebook bridges are filtered only with matching message, browser a
   mixed.exception!.values!.push({ type: "Error", value: "Application bug" });
   assert.equal(isInjectedFacebookError(mixed, ua), false);
 });
+
+test("Instagram and Android native bridges need exact browser, message and native frames", () => {
+  const event = bridge();
+  const exception = event.exception!.values![0]!;
+  exception.value =
+    "undefined is not an object (evaluating 'window._META.IABInnerFrame')";
+  assert.equal(isInjectedBrowserError(event, "Instagram 452.0.1"), true);
+  assert.equal(isInjectedBrowserError(event, "Mobile Safari"), false);
+  assert.equal(isInjectedBrowserError(event, ua), false);
+  exception.type = "Error";
+  exception.value = "Error invoking postMessage: Java object is gone";
+  exception.stacktrace!.frames = [
+    {
+      filename: "app://navigation_performance_logger_android",
+      function: "sendDataToNative",
+    },
+  ];
+  assert.equal(isInjectedBrowserError(event, ua), true);
+  assert.equal(isInjectedBrowserError(event, "Chrome Mobile"), false);
+  exception.stacktrace!.frames.push({
+    filename: "app:///_next/static/chunks/app.js",
+  });
+  assert.equal(isInjectedBrowserError(event, ua), false);
+});
+
+test("inline bridge provenance accepts document queries but rejects bundles and lookalike origins", () => {
+  assert.equal(
+    isInjectedBrowserError(
+      bridge(
+        "https://www.navigym.cz/rezervace?date=2030-10-01&start=synthetic#times",
+      ),
+      ua,
+    ),
+    true,
+  );
+  assert.equal(
+    isInjectedBrowserError(
+      bridge("app:///rezervace/udaje?start=synthetic"),
+      ua,
+    ),
+    true,
+  );
+  for (const file of [
+    "https://www.navigym.cz.evil.test/rezervace",
+    "https://www.navigym.cz@evil.test/rezervace",
+    "https://evil.test/?url=https://www.navigym.cz/",
+    "app://evil/rezervace",
+    "https://www.navigym.cz/_next/static/chunks/app.js?inline=true",
+  ])
+    assert.equal(isInjectedBrowserError(bridge(file), ua), false, file);
+});
+
+test("Facebook submit instrumentation is distinguished from an application InvalidAccessError", () => {
+  const event = bridge();
+  const exception = event.exception!.values![0]!;
+  exception.type = "InvalidAccessError";
+  exception.value = "The object does not support the operation or argument.";
+  exception.stacktrace!.frames = [
+    { filename: "app:///rezervace", function: "dispatchToBridge" },
+    { filename: "app:///rezervace", function: "sendPostMessage" },
+    { filename: "app:///rezervace", function: "logSubmitButtonClicked" },
+  ];
+  assert.equal(isInjectedBrowserError(event, ua), true);
+  assert.equal(isInjectedBrowserError(event, "Chrome"), false);
+  exception.stacktrace!.frames[0]!.filename =
+    "app:///_next/static/chunks/app.js";
+  assert.equal(isInjectedBrowserError(event, ua), false);
+  exception.stacktrace!.frames = [
+    { filename: "app:///rezervace", function: "submitReservation" },
+  ];
+  assert.equal(isInjectedBrowserError(event, ua), false);
+});
 test("only known transport TypeErrors receive recoverable severity", () => {
   for (const message of [
     "Load failed",
@@ -58,6 +133,19 @@ test("only known transport TypeErrors receive recoverable severity", () => {
     false,
   );
   assert.equal(isTransportError(new Error("Load failed")), false);
+  assert.equal(isTransportError(new Error("Connection closed.")), true);
+  assert.equal(
+    isStaleActionError(
+      new Error(
+        'Failed to find Server Action "abc". This request might be from an older or newer deployment.',
+      ),
+    ),
+    true,
+  );
+  assert.equal(
+    isStaleActionError(new Error("Unexpected server failure")),
+    false,
+  );
 });
 test("Google Maps fallback does not consume similar application errors", () => {
   const error = new Error('Could not load "onion".');
@@ -77,4 +165,59 @@ test("monitoring drops only the individual error recovered by the mounted map", 
   assert.equal(wasMapErrorRecovered(recovered), true);
   assert.equal(wasMapErrorRecovered(unhandled), false);
   assert.equal(wasMapErrorRecovered(undefined), false);
+});
+
+test("map worker and renderer failures recover only with a confirmed Maps stack", () => {
+  const errors = [
+    new Error("~#!#~0~#!#~Script error.~#!#~"),
+    new Error("~#!#~3~#!#~EpochMismatch,796, 794~#!#~"),
+    new Error(
+      "~#!#~3~#!#~CompileError: call to WebAssembly.instantiate() blocked by CSP~#!#~",
+    ),
+    new TypeError("undefined is not an object (evaluating 'a.getRootNode')"),
+  ];
+  for (const error of errors) {
+    assert.equal(isGoogleMapsModuleError(error), false);
+    error.stack = `${error.name}: ${error.message}\n at app:///maps-api-v3/api/js/66/11a/intl/cs_ALL/webgl.js:148:79`;
+    assert.equal(isGoogleMapsModuleError(error), true);
+    error.stack = `${error.name}: ${error.message}\n at app:///_next/static/chunks/app.js:1:9`;
+    assert.equal(isGoogleMapsModuleError(error), false);
+  }
+  const unknown = new Error("Script error.");
+  unknown.stack = "at app:///maps-api-v3/api/js/66/11a/intl/cs_ALL/main.js:1:9";
+  assert.equal(isGoogleMapsModuleError(unknown), false);
+});
+
+test("Friendly's injected media bridge is classified without discarding the event or unrelated application errors", () => {
+  const event = bridge("app:///rezervace");
+  const exception = event.exception!.values![0]!;
+  exception.value =
+    "undefined is not an object (evaluating 'window.__83066_Friendly.mediaPlayerBridge.resumePlayingInBackground')";
+  exception.stacktrace!.frames!.push({
+    filename: "app:///_next/static/chunks/4295.797383053ca96e64.js",
+    function: "n",
+  });
+  assert.equal(
+    isFriendlyBridgeError(
+      event,
+      "Mozilla/5.0 (iPhone) AppleWebKit Safari/604.1",
+    ),
+    true,
+  );
+  assert.equal(
+    isInjectedBrowserError(
+      event,
+      "Mozilla/5.0 (iPhone) AppleWebKit Safari/604.1",
+    ),
+    false,
+  );
+  assert.equal(isFriendlyBridgeError(event, "Chrome"), false);
+  exception.value = "Cannot read properties of undefined";
+  assert.equal(
+    isFriendlyBridgeError(
+      event,
+      "Mozilla/5.0 (iPhone) AppleWebKit Safari/604.1",
+    ),
+    false,
+  );
 });

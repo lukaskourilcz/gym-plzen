@@ -14,6 +14,7 @@ import assert from "node:assert/strict";
 import { NextRequest } from "next/server";
 import { createHmac } from "node:crypto";
 import { after, before, beforeEach, describe, test } from "node:test";
+import { OperationBusyError } from "../../src/lib/helpers/operation-busy";
 
 process.env.CRON_SECRET = "test-cron-secret";
 
@@ -79,6 +80,66 @@ describe(
       );
       // 503 makes Comgate retry once the payment row exists; never a 200.
       assert.equal(response.status, 503);
+    });
+
+    test("failed payment callbacks remain retryable and report safe specific diagnostics without business writes", async () => {
+      const { POST } = await import("../../src/app/api/webhooks/comgate/route");
+      const { db } = await import("../../src/lib/db");
+      const select = db.select;
+      const original = { warn: console.warn, error: console.error };
+      for (const failure of [
+        new OperationBusyError(),
+        new Error("secret=test-secret private@example.test", {
+          cause: { code: "57014" },
+        }),
+      ]) {
+        const logs: string[] = [];
+        console.warn = (message: string) => logs.push(message);
+        console.error = (message: string) => logs.push(message);
+        db.select = (() => {
+          throw failure;
+        }) as typeof db.select;
+        try {
+          const result = await POST(
+            new NextRequest("http://localhost/api/webhooks/comgate", {
+              method: "POST",
+              body: new URLSearchParams({
+                merchant: "test-merchant",
+                test: "true",
+                price: "22900",
+                curr: "CZK",
+                refId: "00000000-0000-4000-8000-000000000000",
+                transId: "TEST-FAILURE",
+                status: "PAID",
+                secret: "test-secret",
+              }).toString(),
+              headers: { "content-type": "application/x-www-form-urlencoded" },
+            }),
+          );
+          assert.equal(result.status, 503);
+          assert.equal(result.headers.get("retry-after"), "5");
+          assert.equal(logs.length, 1);
+          assert.match(
+            logs[0]!,
+            failure instanceof OperationBusyError
+              ? /\[warn\].*operation_busy/
+              : /database_statement_timeout/,
+          );
+          assert.doesNotMatch(logs[0]!, /private@example|test-secret/);
+        } finally {
+          db.select = select;
+          console.warn = original.warn;
+          console.error = original.error;
+        }
+      }
+      for (const table of [
+        "payment",
+        "reservation",
+        "access_code",
+        "message_delivery",
+        "webhook_event",
+      ])
+        assert.equal((await rows(`select * from ${table}`)).length, 0);
     });
 
     test("webhooks reject streamed oversize bodies before signature or business work", async () => {

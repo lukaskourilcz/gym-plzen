@@ -1,6 +1,7 @@
 import { redactForLogs } from "./redaction";
 export { redactForLogs } from "./redaction";
 import * as SentryModule from "@sentry/nextjs";
+import { pgErrorCode } from "./pg-error";
 
 type Meta = Record<string, unknown>;
 
@@ -88,7 +89,8 @@ export const logger = {
     const message = redactForLogs(
       error instanceof Error ? error.message : String(error),
     );
-    const clean = cleanMeta(meta);
+    const databaseState = pgErrorCode(error);
+    const clean = cleanMeta(databaseState ? { ...meta, databaseState } : meta);
     line("error", message, clean);
     if (error instanceof Error) {
       // Keep the stack and the error class so Sentry can group the failure,

@@ -1,6 +1,8 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import postgres from "postgres";
 import { requireEnv } from "@/lib/env";
+import { OperationBusyError } from "@/lib/helpers/operation-busy";
+import { pgErrorCode } from "@/lib/helpers/pg-error";
 
 // Separate pool: provider requests cannot exhaust the ordinary query pool.
 // Transaction locks work through Supabase's transaction pooler as well.
@@ -22,6 +24,17 @@ const held = new AsyncLocalStorage<LockContext>();
  */
 const LOCK_POOL_SIZE = 5;
 
+async function acquire(context: LockContext["tx"], key: string) {
+  try {
+    await context`select pg_advisory_xact_lock(hashtextextended(${key}, 0))`;
+  } catch (error) {
+    // Only acquisition can be treated as contention. A timeout from business
+    // work (possibly after a provider call) must retain its original failure.
+    if (pgErrorCode(error) === "55P03") throw new OperationBusyError();
+    throw error;
+  }
+}
+
 export async function withOperationLock<T>(
   key: string,
   work: () => Promise<T>,
@@ -41,7 +54,7 @@ export async function withOperationLock<T>(
     context.siblings.set(key, finished);
     try {
       await previous;
-      await context.tx`select pg_advisory_xact_lock(hashtextextended(${key}, 0))`;
+      await acquire(context.tx, key);
       return await held.run(
         { ...context, keys: new Set([...context.keys, key]) },
         work,
@@ -59,7 +72,7 @@ export async function withOperationLock<T>(
   });
   return locks.begin(async (tx) => {
     await tx`set local lock_timeout = '5s'`;
-    await tx`select pg_advisory_xact_lock(hashtextextended(${key}, 0))`;
+    await acquire(tx, key);
     // Business writes commit independently: never roll back a provider intent
     // after that provider may have performed an external side effect.
     return held.run({ keys: new Set([key]), tx, siblings: new Map() }, work);

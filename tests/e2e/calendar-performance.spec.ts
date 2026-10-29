@@ -16,6 +16,41 @@ test.afterEach(async ({ page }) => {
   await page.unrouteAll({ behavior: "ignoreErrors" });
 });
 
+test("slot toggles survive translated text nodes without removeChild failures", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto(`/rezervace?date=${dateA}`, { waitUntil: "networkidle" });
+  const initialSlot = page.getByRole("button", { name: /Vybrat$/ }).first();
+  await expect(initialSlot).toBeVisible();
+  const timeLabel = (await initialSlot.innerText()).split("\n")[0]!;
+  const slot = page.getByRole("button").filter({ hasText: timeLabel }).first();
+  // Reproduce Google Translate / native translator replacing a React-owned
+  // text node. No global DOM patch or suppression of React errors is used.
+  await slot.getByText("Vybrat", { exact: true }).evaluate((label) => {
+    const font = document.createElement("font");
+    font.textContent = "Select";
+    label.replaceChildren(font);
+  });
+  await slot.click();
+  const picked = page.getByRole("button", { name: /Vybráno$/ }).first();
+  await expect(picked).toHaveAttribute("aria-pressed", "true");
+  await picked.getByText("Vybráno", { exact: true }).evaluate((label) => {
+    const font = document.createElement("font");
+    font.textContent = "Selected";
+    label.replaceChildren(font);
+  });
+  await slot.click();
+  await expect(
+    page.getByRole("button", { name: /Vybrat$/ }).first(),
+  ).toHaveAttribute("aria-pressed", "false");
+  expect(errors).toEqual([]);
+  await expect(
+    page.getByRole("region", { name: "Vybrané termíny" }),
+  ).toHaveCount(0);
+});
+
 test("date changes respond immediately, stale responses cannot replace the latest day and cached days avoid navigation requests", async ({
   page,
 }) => {
