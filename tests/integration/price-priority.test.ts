@@ -37,6 +37,53 @@ describe(
     before(startProviders);
     beforeEach(resetDatabase);
     after(stopEverything);
+    test("public from price follows configured blocks without rewriting existing reservations, codes or messages", async () => {
+      const now = localDateTimeToDate("2026-11-01", 720);
+      await setSetting("pricing.entry_price_cents", 23900);
+      await setSetting(
+        "pricing.time_blocks",
+        Array.from({ length: 7 }, (_, dayOfWeek) => ({
+          id: randomUUID(),
+          dayOfWeek,
+          startMinute: 600,
+          endMinute: 660,
+          priceCents: 19900,
+        })),
+      );
+      await rows(
+        "insert into pricing_period(name,price_cents,starts_at,ends_at) values ('Expired synthetic promotion',9900,'2026-09-30T22:00:00Z','2026-10-31T23:00:00Z')",
+      );
+      const id = randomUUID();
+      await rows(
+        "insert into reservation(id,starts_at,ends_at,status,price_cents,contact_email) values($1,'2026-11-10T07:00:00Z','2026-11-10T08:00:00Z','confirmed',27900,'existing@example.test')",
+        [id],
+      );
+      await rows(
+        "insert into access_code(reservation_id,code_hash,valid_from,valid_until,status) values($1,'synthetic-only','2026-11-10T07:00:00Z','2026-11-10T08:15:00Z','scheduled')",
+        [id],
+      );
+      const saved = await existingData();
+      const settings = await rows("select * from site_setting order by key");
+      const content = await loadSiteContent("cs", { strict: true, at: now });
+      assert.equal(content.standardEntryPriceCents, 23900);
+      assert.equal(content.minimumEntryPriceCents, 19900);
+      assert.equal(
+        content.entryPriceForDate(localDateTimeToDate("2026-11-02", 600)),
+        19900,
+      );
+      assert.equal(
+        content.entryPriceForDate(localDateTimeToDate("2026-11-02", 660)),
+        23900,
+      );
+      assert.equal(content.isPromoPrice, false);
+      assert.deepEqual(await existingData(), saved);
+      assert.deepEqual(
+        await rows("select * from site_setting order by key"),
+        settings,
+      );
+      assert.equal(resend.sent.length, 0);
+      assert.equal(comgate.creates.length, 0);
+    });
     test("each selected visit gets its own price and saved customers and open checkouts retain their amounts", async () => {
       const today = dateKeyInTimeZone(new Date());
       const firstDay = addDaysToDateKey(today, 5),
