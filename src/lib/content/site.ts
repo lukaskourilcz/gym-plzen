@@ -564,8 +564,9 @@ export async function loadSiteContent(
   }
 
   /*
-   * Public copy quotes the selected visit date (opening day before launch).
-   * Calendar slots use the same loaded periods without per-slot DB queries.
+   * Keep the current period for promotion notes. The advertised “from” price
+   * below considers scheduled visits; individual calendar prices retain the
+   * same loaded pricing rules without per-slot database queries.
    */
   const price = resolveEntryPrice({
     standardPriceCents: standardEntryPriceCents,
