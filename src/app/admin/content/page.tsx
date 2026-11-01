@@ -71,7 +71,7 @@ export default async function ContentPage() {
               content.get(key as keyof typeof SITE_DEFAULTS),
             ]),
           ),
-          price: formatMoney(content.entryPriceCents),
+          price: formatMoney(content.minimumEntryPriceCents),
           hours: content.openingHoursLabel,
           freeEntryEvery: content.freeEntryEvery,
           isPromo: content.isPromoPrice,

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import postgres from "postgres";
 import { createComgateMock } from "../integration/mocks";
 import { requireTestDatabaseUrl } from "../helpers/test-database";
+import { openCalendarTomorrow } from "../helpers/admin-calendar";
 import {
   addDaysToDateKey,
   dateKeyInTimeZone,
@@ -384,7 +385,7 @@ test.describe("paid companion addition from account", () => {
     await expect(page.getByText(/doplatek za doprovod 100/)).toBeVisible();
     const admin = await browser.newContext({ storageState: adminState });
     const calendar = await admin.newPage();
-    await calendar.goto("/admin/calendar");
+    await openCalendarTomorrow(calendar, dateKeyInTimeZone(start));
     await expect(
       calendar.getByText("Doprovod Test +2", { exact: true }),
     ).toBeVisible();

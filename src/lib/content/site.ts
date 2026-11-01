@@ -1,6 +1,15 @@
 import { REGISTRATION_NOTICE_DEFAULTS } from "./registration-notice";
 import { openingHoursLabel } from "@/lib/helpers/opening-hours-label";
-import { DEFAULT_SLOT_MINUTES } from "@/lib/config/schedule";
+import {
+  DEFAULT_SLOT_MINUTES,
+  BOOKING_HORIZON_SETTING_KEY,
+  DEFAULT_BOOKING_HORIZON_DAYS,
+} from "@/lib/config/schedule";
+import {
+  OPERATIONS_SETTING_KEY,
+  operationsSchema,
+} from "@/lib/config/operations";
+import { minimumScheduledEntryPrice } from "@/lib/config/display-pricing";
 import { revisePublicCopy } from "./public-copy";
 import {
   BOOKING_PUBLIC_SETTING_KEYS,
@@ -354,6 +363,8 @@ export interface SiteContent {
   raw: (key: SiteContentKey) => string;
   /** What an entry costs right now, promotion included. */
   entryPriceCents: number;
+  /** Lowest configured visit price in the public booking horizon. */
+  minimumEntryPriceCents: number;
   entryPriceForDate: (at: Date) => number;
   /** The price outside the promotion, so the site can show both. */
   standardEntryPriceCents: number;
@@ -410,6 +421,8 @@ export async function loadSiteContent(
   let participantPricing = DEFAULT_PARTICIPANT_PRICING;
   let participantsEnabled = false;
   let pricingHours: PricingHours[] = [];
+  let horizonDays = DEFAULT_BOOKING_HORIZON_DAYS;
+  let bookingsFrom = "";
   let pricingPeriods: {
     name: string;
     priceCents: number;
@@ -496,6 +509,15 @@ export async function loadSiteContent(
       }
 
       for (const s of settings) {
+        if (
+          s.key === BOOKING_HORIZON_SETTING_KEY &&
+          typeof s.value === "number"
+        )
+          horizonDays = s.value;
+        if (s.key === OPERATIONS_SETTING_KEY) {
+          const operations = operationsSchema.safeParse(s.value);
+          if (operations.success) bookingsFrom = operations.data.bookingsFrom;
+        }
         if (s.key === ANNOUNCEMENT_SETTING_KEY) announcementSetting = s.value;
         if (s.key === PARTICIPANTS_ENABLED_KEY)
           participantsEnabled = parseParticipantsEnabled(s.value);
@@ -542,13 +564,26 @@ export async function loadSiteContent(
   }
 
   /*
-   * Public copy quotes the selected visit date (opening day before launch).
-   * Calendar slots use the same loaded periods without per-slot DB queries.
+   * Keep the current period for promotion notes. The advertised “from” price
+   * below considers scheduled visits; individual calendar prices retain the
+   * same loaded pricing rules without per-slot database queries.
    */
   const price = resolveEntryPrice({
     standardPriceCents: standardEntryPriceCents,
     periods: pricingPeriods,
     at: now,
+  });
+  const minimumPriceCents = minimumScheduledEntryPrice({
+    standardPriceCents: standardEntryPriceCents,
+    blockPrices,
+    hours: pricingHours,
+    periods: pricingPeriods,
+    now:
+      options.at instanceof Date && Number.isFinite(options.at.getTime())
+        ? options.at
+        : new Date(),
+    horizonDays,
+    bookingsFrom,
   });
 
   /*
@@ -556,9 +591,9 @@ export async function loadSiteContent(
    * `{pricePerPerson}` so an operator never has to remember which sentences
    * mention a number when the price changes.
    */
-  const priceLabel = formatMoney(price.priceCents);
+  const priceLabel = formatMoney(minimumPriceCents);
   const perPersonLabel = formatMoney(
-    Math.round(price.priceCents / GYM_CAPACITY),
+    Math.round(minimumPriceCents / GYM_CAPACITY),
   );
   const durations = [
     ...new Set(
@@ -610,6 +645,7 @@ export async function loadSiteContent(
       rebrand(revisePublicCopy(values[key] ?? SITE_DEFAULTS[key] ?? "")),
     get: publicText,
     entryPriceCents: price.priceCents,
+    minimumEntryPriceCents: minimumPriceCents,
     entryPriceForDate: (at) =>
       resolveEntryPrice({
         standardPriceCents: standardEntryPriceCents,
@@ -619,7 +655,7 @@ export async function loadSiteContent(
         at,
       }).priceCents,
     standardEntryPriceCents: price.standardPriceCents,
-    isPromoPrice: price.isPromo,
+    isPromoPrice: price.isPromo && price.priceCents === minimumPriceCents,
     promoEndsAt: price.promoEndsAt ?? null,
     freeEntryEvery: FREE_ENTRY_EVERY,
     openingHoursLabel: openingHoursLabel(pricingHours),

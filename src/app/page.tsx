@@ -81,7 +81,7 @@ export default async function HomePage() {
   );
   const t = content.get;
   const brand = t("brand.name");
-  const price = formatMoney(content.entryPriceCents);
+  const price = formatMoney(content.minimumEntryPriceCents);
   /*
    * Promotions follow the visit date. Show the configured end to avoid stale copy.
    */

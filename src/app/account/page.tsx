@@ -128,8 +128,8 @@ export default async function AccountPage({
                   Dobrý den, {user.name.split(" ")[0]}
                 </h1>
                 <p className="mt-2 break-all text-sm text-muted-foreground">
-                  {user.email} · cena vstupu{" "}
-                  {formatMoney(content.entryPriceCents)}
+                  {user.email} · cena vstupu od{" "}
+                  {formatMoney(content.minimumEntryPriceCents)}
                 </p>
               </div>
             </div>

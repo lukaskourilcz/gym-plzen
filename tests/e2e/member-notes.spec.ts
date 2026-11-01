@@ -3,6 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { join } from "node:path";
 import postgres from "postgres";
 import { requireTestDatabaseUrl } from "../helpers/test-database";
+import { openCalendarTomorrow } from "../helpers/admin-calendar";
 import {
   addDaysToDateKey,
   dateKeyInTimeZone,
@@ -164,7 +165,7 @@ test("private member notes save, annotate names and clear without changing booki
       }
     }
 
-    await page.goto("/admin/calendar");
+    await openCalendarTomorrow(page, day);
     await page.bringToFront();
     await page.mouse.move(0, 0);
     await expect(
