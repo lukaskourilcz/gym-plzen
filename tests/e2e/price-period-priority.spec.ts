@@ -19,14 +19,30 @@ test("homepage and CMS preview quote the cheapest configured block instead of th
 }) => {
   const old =
     await sql`select key, value from site_setting where key in ('pricing.time_blocks','pricing.entry_price_cents')`;
-  const periods = await sql`select id, starts_at, ends_at from pricing_period`;
+  const periods = await sql`select * from pricing_period`;
+  const admin = await browser.newContext({
+    storageState: join(process.cwd(), "tests/e2e/.auth/admin.json"),
+  });
+  const adminPage = await admin.newPage();
+  const savePrice = async (czk: number) => {
+    await adminPage.goto("/admin/memberships");
+    await adminPage
+      .getByLabel("Cena jednorázového vstupu (Kč)", { exact: true })
+      .fill(String(czk));
+    await adminPage
+      .getByRole("button", { name: "Uložit cenu", exact: true })
+      .click();
+    await expect(
+      adminPage.getByText("Cena vstupného uložena.", { exact: true }),
+    ).toBeVisible();
+  };
   const before = await sql`select
     (select md5(coalesce(string_agg(to_jsonb(r)::text,'' order by id),'')) from reservation r) as bookings,
     (select md5(coalesce(string_agg(to_jsonb(r)::text,'' order by id),'')) from access_code r) as codes,
     (select md5(coalesce(string_agg(to_jsonb(r)::text,'' order by id),'')) from message_delivery r) as messages`;
   try {
     // Local fixture only: expired promotion must not mask this regression.
-    await sql`update pricing_period set starts_at='2026-09-01T00:00:00Z',ends_at='2026-09-02T00:00:00Z'`;
+    await sql`delete from pricing_period`;
     const rules = Array.from({ length: 7 }, (_, dayOfWeek) => ({
       id: randomUUID(),
       dayOfWeek,
@@ -39,25 +55,20 @@ test("homepage and CMS preview quote the cheapest configured block instead of th
       ["pricing.entry_price_cents", 23900],
     ] as const)
       await sql`insert into site_setting(key,value) values(${key},${sql.json(value)}) on conflict(key) do update set value=excluded.value`;
+    // Exercise real administration invalidation instead of reading a stale
+    // homepage prerender after changing the isolated database directly.
+    await savePrice(239);
     await page.goto("/");
     await expect(page.getByTestId("pricing-card")).toContainText(/199\s*Kč/);
     await expect(page.getByTestId("pricing-card")).not.toContainText(
       /239\s*Kč/,
     );
-    const admin = await browser.newContext({
-      storageState: join(process.cwd(), "tests/e2e/.auth/admin.json"),
-    });
-    try {
-      const adminPage = await admin.newPage();
-      await adminPage.goto("/admin/content?section=pricing");
-      await expect(
-        adminPage
-          .locator('[data-content-field="home.pricing.pricePrefix"]')
-          .locator(".."),
-      ).toContainText(/199\s*Kč/);
-    } finally {
-      await admin.close();
-    }
+    await adminPage.goto("/admin/content?section=pricing");
+    await expect(
+      adminPage
+        .locator('[data-content-field="home.pricing.pricePrefix"]')
+        .locator(".."),
+    ).toContainText(/199\s*Kč/);
     expect(
       await sql`select
       (select md5(coalesce(string_agg(to_jsonb(r)::text,'' order by id),'')) from reservation r) as bookings,
@@ -72,7 +83,17 @@ test("homepage and CMS preview quote the cheapest configured block instead of th
       else await sql`delete from site_setting where key=${key}`;
     }
     for (const period of periods)
-      await sql`update pricing_period set starts_at=${period.starts_at}, ends_at=${period.ends_at} where id=${period.id}`;
+      await sql`insert into pricing_period ${sql(period, ...Object.keys(period))}`;
+    try {
+      await savePrice(
+        Number(
+          old.find((row) => row.key === "pricing.entry_price_cents")?.value ??
+            22900,
+        ) / 100,
+      );
+    } finally {
+      await admin.close();
+    }
   }
 });
 
