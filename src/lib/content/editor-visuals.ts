@@ -25,7 +25,7 @@ export interface ContentVisual {
 const prices: ContentDependency = {
   label: "Cena vstupu a doprovodu",
   description:
-    "Částku nelze přepsat jako text. Počítá se podle data návštěvy, cenových období a cen bloků.",
+    "Částku nelze přepsat jako text. Cena „od“ je nejnižší platná cena bloku v rezervačním období. Cena konkrétního termínu se řídí datem návštěvy, cenovým obdobím a cenou bloku.",
   href: "/admin/memberships",
   linkLabel: "Otevřít Ceník a doprovod",
 };
