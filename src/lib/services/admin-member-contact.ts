@@ -101,8 +101,7 @@ export async function updateMemberContact(
             lastName,
             email,
             phone,
-            phoneVerified:
-              phone === profile.phone ? profile.phoneVerified : false,
+            phoneVerified: sql`case when ${profiles.phone} is not distinct from ${phone} then ${profiles.phoneVerified} else false end`,
             updatedAt: new Date(),
           })
           .where(

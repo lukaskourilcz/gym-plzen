@@ -123,13 +123,13 @@ export async function ensureProfileForUser(
     .returning();
   if (row) return row;
   // Another request created the profile while this request read the policy.
-  const [created] = await db
+  const [createdProfile] = await db
     .select()
     .from(profiles)
     .where(eq(profiles.id, user.id))
     .limit(1);
-  if (!created) throw new ActionError("Profil se nepodařilo najít.");
-  return created;
+  if (!createdProfile) throw new ActionError("Profil se nepodařilo najít.");
+  return createdProfile;
 }
 
 /**
