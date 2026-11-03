@@ -43,6 +43,22 @@ export async function updateMemberContact(
       .limit(1);
     if (!profile) throw new ActionError("Zákazníka se nepodařilo najít.");
     const before = memberContactSnapshot(profile);
+    const email = normalizeEmail(input.email);
+    const fullName = input.fullName.trim().replace(/\s+/g, " ");
+    const { firstName, lastName } = splitFullName(fullName);
+    const phone = input.phone?.trim() ? toE164(input.phone) : null;
+    if ((input.phone?.trim() && !phone) || (profile.phoneRequired && !phone))
+      throw new ActionError("Zadejte platné telefonní číslo.");
+    const desired = { fullName, firstName, lastName, email, phone };
+    // A successful save whose response was lost is safe to submit again.
+    if (
+      Object.keys(before).every(
+        (key) =>
+          before[key as keyof typeof before] ===
+          desired[key as keyof typeof desired],
+      )
+    )
+      return;
     if (
       Object.keys(before).some(
         (key) =>
@@ -53,12 +69,6 @@ export async function updateMemberContact(
       throw new ActionError(
         "Údaje zákazníka se mezitím změnily. Obnovte profil a zkuste to znovu.",
       );
-    const email = normalizeEmail(input.email);
-    const fullName = input.fullName.trim().replace(/\s+/g, " ");
-    const { firstName, lastName } = splitFullName(fullName);
-    const phone = input.phone?.trim() ? toE164(input.phone) : null;
-    if ((input.phone?.trim() && !phone) || (profile.phoneRequired && !phone))
-      throw new ActionError("Zadejte platné telefonní číslo.");
     const emailChanged = normalizeEmail(profile.email) !== email;
     if (emailChanged) {
       const [duplicate] = await db
@@ -120,9 +130,7 @@ export async function updateMemberContact(
             changedFields: Object.keys(before).filter(
               (key) =>
                 before[key as keyof typeof before] !==
-                { fullName, firstName, lastName, email, phone }[
-                  key as keyof typeof before
-                ],
+                desired[key as keyof typeof before],
             ),
           },
         });

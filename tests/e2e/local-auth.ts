@@ -79,13 +79,33 @@ export function createLocalAuth(port: number) {
       }
       if (url.pathname.startsWith("/auth/v1/admin/users")) {
         if (token !== "local-admin-key") return reply(403, {});
-        if (request.method === "GET")
-          return reply(200, { users: [...users.values()].map(publicUser) });
+        if (request.method === "GET") {
+          if (url.pathname === "/auth/v1/admin/users")
+            return reply(200, { users: [...users.values()].map(publicUser) });
+          const user = users.get(url.pathname.split("/").at(-1)!);
+          return user
+            ? reply(200, publicUser(user))
+            : reply(404, { msg: "Not found" });
+        }
         const input = await body(request);
         if (request.method === "PUT") {
           const user = users.get(url.pathname.split("/").at(-1)!);
           if (!user) return reply(404, {});
-          user.password = String(input.password);
+          if (typeof input.email === "string") {
+            const email = input.email.trim().toLowerCase();
+            if (
+              [...users.values()].some(
+                (other) => other.id !== user.id && other.email === email,
+              )
+            )
+              return reply(422, {
+                code: "email_exists",
+                msg: "Email already registered",
+              });
+            user.email = email;
+          }
+          if (typeof input.password === "string")
+            user.password = input.password;
           return reply(200, publicUser(user));
         }
         const email = String(input.email);
