@@ -100,6 +100,7 @@ export function createLocalAuth(port: number) {
             )
               return reply(422, {
                 code: "email_exists",
+                error_code: "email_exists",
                 msg: "Email already registered",
               });
             user.email = email;

@@ -45,7 +45,7 @@ export function toMember(p: Profile): MemberWithProfile {
 
 /**
  * Ensure a profile row exists for a signed-in Supabase user (fallback to the
- * DB trigger) and keep the mirrored email/name fresh. Returns the profile.
+ * DB trigger). Only a fresh verified reader may refresh a mirrored email.
  */
 export async function ensureProfileForUser(
   user: {
@@ -75,9 +75,10 @@ export async function ensureProfileForUser(
     // A request verified just before an admin correction may still carry the
     // old address. Recheck Auth under the same operation lock before mirroring
     // a mismatch. Registration logging has no fresh reader and must not undo it.
-    if (!options.refreshIdentity) return existing;
+    const refreshIdentity = options.refreshIdentity;
+    if (!refreshIdentity) return existing;
     return withOperationLock(`member-contact:${user.id}`, async () => {
-      const fresh = await options.refreshIdentity!();
+      const fresh = await refreshIdentity();
       if (!fresh || fresh.id !== user.id)
         throw new ActionError(
           "Přihlašovací účet se nepodařilo ověřit. Zkuste to znovu.",
@@ -94,17 +95,16 @@ export async function ensureProfileForUser(
         .set({ email: fresh.email ?? null, updatedAt: new Date() })
         .where(eq(profiles.id, user.id))
         .returning();
-      return updated!;
+      if (!updated) throw new ActionError("Profil se nepodařilo najít.");
+      return updated;
     });
   }
 
-  const [policy] = existing
-    ? []
-    : await db
-        .select({ value: siteSetting.value })
-        .from(siteSetting)
-        .where(eq(siteSetting.key, "registration.phone_required_from"))
-        .limit(1);
+  const [policy] = await db
+    .select({ value: siteSetting.value })
+    .from(siteSetting)
+    .where(eq(siteSetting.key, "registration.phone_required_from"))
+    .limit(1);
   const since =
     typeof policy?.value === "string" ? Date.parse(policy.value) : NaN;
   const created = user.createdAt ? Date.parse(user.createdAt) : NaN;

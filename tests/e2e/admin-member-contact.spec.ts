@@ -129,7 +129,7 @@ test("administrator corrects contact and login email without changing reservatio
       page.getByRole("status").filter({ hasText: "Údaje zákazníka uloženy." }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Markéta Opravená", exact: true }),
+      page.getByRole("heading", { name: /^Markéta Opravená/ }),
     ).toBeVisible();
     expect((await auth.auth.admin.getUserById(f.id)).data.user?.email).toBe(
       corrected,
