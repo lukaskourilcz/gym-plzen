@@ -11,7 +11,10 @@ import {
   type UpdateMemberValues,
   updateMemberNoteSchema,
   type UpdateMemberNoteValues,
+  updateMemberContactSchema,
+  type UpdateMemberContactValues,
 } from "@/lib/validations/members";
+import { updateMemberContact } from "@/lib/services/admin-member-contact";
 import { activity, members } from "@/lib/services";
 import { logger } from "@/lib/helpers/logger";
 
@@ -21,7 +24,7 @@ const updateMemberImpl = defineAction({
   authorize: assertAdmin,
   handler: async (input, admin) => {
     await members.updateProfile(input.userId, {
-      phone: input.phone || null,
+      ...(input.phone !== undefined ? { phone: input.phone || null } : {}),
       notifyByWhatsapp: input.notifyByWhatsapp,
       notifyBySms: input.notifyBySms,
       marketingConsent: input.marketingConsent,
@@ -32,7 +35,7 @@ const updateMemberImpl = defineAction({
       actorId: admin.id,
       actorLabel: admin.email,
       memberId: input.userId,
-      summary: `Profil člena upraven správcem: telefon ${input.phone || "neuveden"}, WhatsApp ${input.notifyByWhatsapp ? "zapnut" : "vypnut"}, SMS ${input.notifyBySms ? "zapnuty" : "vypnuty"}, marketing ${input.marketingConsent ? "se souhlasem" : "bez souhlasu"}.`,
+      summary: `Nastavení člena upraveno správcem: WhatsApp ${input.notifyByWhatsapp ? "zapnut" : "vypnut"}, SMS ${input.notifyBySms ? "zapnuty" : "vypnuty"}, marketing ${input.marketingConsent ? "se souhlasem" : "bez souhlasu"}.`,
     });
     revalidatePath("/admin/members");
     revalidatePath(`/admin/members/${input.userId}`);
@@ -44,6 +47,21 @@ export async function updateMemberAction(
   input: UpdateMemberValues,
 ): Promise<Result<unknown>> {
   return updateMemberImpl(input);
+}
+
+const updateMemberContactImpl = defineAction({
+  schema: updateMemberContactSchema,
+  authorize: assertAdmin,
+  handler: async (input, admin) => {
+    await updateMemberContact(input, { id: admin.id, email: admin.email });
+    revalidatePath("/admin", "layout");
+    revalidatePath("/account", "layout");
+  },
+});
+export async function updateMemberContactAction(
+  input: UpdateMemberContactValues,
+): Promise<Result<unknown>> {
+  return updateMemberContactImpl(input);
 }
 
 const updateMemberNoteImpl = defineAction({

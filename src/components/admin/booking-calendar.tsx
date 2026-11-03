@@ -607,7 +607,12 @@ export function BookingCalendar({
           startTime: minutesToHHmm(openMinute),
           endTime: minutesToHHmm(closeMinute),
         }}
-        events={[...events, ...selectionEvents]}
+        events={[
+          ...events.map((event) =>
+            selecting ? { ...event, url: undefined } : event,
+          ),
+          ...selectionEvents,
+        ]}
       />
       {actionError ? (
         <p role="alert" className="mt-3 text-sm text-destructive">
