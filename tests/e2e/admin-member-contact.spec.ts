@@ -213,7 +213,10 @@ test("administrator corrects contact and login email without changing reservatio
         .click();
       await expect(account).toHaveURL(/\/account$/);
       await expect(
-        account.getByText("Markéta Opravená", { exact: true }).first(),
+        account.getByRole("heading", {
+          name: "Dobrý den, Markéta",
+          exact: true,
+        }),
       ).toBeVisible();
       await account.goto("/account?tab=profile");
       await expect(
