@@ -202,10 +202,14 @@ test("administrator corrects contact and login email without changing reservatio
     try {
       const account = await customer.newPage();
       await account.goto("/login");
+      await account
+        .getByTestId("tracking-consent")
+        .getByRole("button", { name: "Pouze nezbytné", exact: true })
+        .click();
       await account.getByLabel("E-mail", { exact: true }).fill(corrected);
       await account.getByLabel("Heslo", { exact: true }).fill(f.password);
       await account
-        .getByRole("button", { name: "Přihlásit", exact: true })
+        .getByRole("button", { name: "Přihlásit se", exact: true })
         .click();
       await expect(account).toHaveURL(/\/account$/);
       await expect(
