@@ -196,6 +196,32 @@ test("administrator corrects contact and login email without changing reservatio
     );
     await page.keyboard.press("Escape");
     await expect(dialog).not.toBeVisible();
+    const customer = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
+    try {
+      const account = await customer.newPage();
+      await account.goto("/login");
+      await account.getByLabel("E-mail", { exact: true }).fill(corrected);
+      await account.getByLabel("Heslo", { exact: true }).fill(f.password);
+      await account
+        .getByRole("button", { name: "Přihlásit", exact: true })
+        .click();
+      await expect(account).toHaveURL(/\/account$/);
+      await expect(
+        account.getByText("Markéta Opravená", { exact: true }).first(),
+      ).toBeVisible();
+      await account.goto("/account?tab=profile");
+      await expect(
+        account.getByLabel("Jméno pro doklady", { exact: true }),
+      ).toHaveValue("Markéta");
+      await expect(
+        account.getByLabel("Příjmení pro doklady", { exact: true }),
+      ).toHaveValue("Opravená");
+    } finally {
+      await customer.close();
+    }
+    expect(await protectedState()).toEqual(before);
   } finally {
     await cleanup(f.id);
   }
