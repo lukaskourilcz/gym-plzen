@@ -105,6 +105,9 @@ async function resolveSessionUser(): Promise<SessionUser | null> {
     },
   );
 
+  // The authoritative refresh above can observe an email changed during this request.
+  if (isProductionDeployment() && isReservedDemoEmail(user.email)) return null;
+
   if (user.email && user.email_confirmed_at)
     await claimGuestCredits(user.id, user.email);
 

@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { idSchema, uuidSchema, optionalPhone } from "./common";
-import { emailSchema } from "./common";
+import { idSchema, uuidSchema, optionalPhone, emailSchema } from "./common";
+import { isReservedDemoEmail } from "@/lib/auth/demo-policy";
 
 export const memberContactSnapshotSchema = z.object({
   email: z.string().max(1000).nullable(),
@@ -21,6 +21,10 @@ export const updateMemberContactSchema = z.object({
     .refine(
       (s) => emailSchema.safeParse(s.trim()).success,
       "Zadejte platný e-mail.",
+    )
+    .refine(
+      (s) => !isReservedDemoEmail(s),
+      "Tento e-mail je vyhrazený pro ukázkový náhled.",
     ),
   phone: optionalPhone,
   expected: memberContactSnapshotSchema,

@@ -21,6 +21,7 @@ test("contact input rejects malformed identity, empty name, bad email and bad ph
     { fullName: "  " },
     { fullName: "x".repeat(121) },
     { email: "bad" },
+    { email: "admin@namaste.demo" },
     { phone: "bad" },
   ])
     assert.equal(
