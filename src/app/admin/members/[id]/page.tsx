@@ -49,6 +49,7 @@ import { hasDemoAdminSession } from "@/lib/auth/demo";
 import { loadDemoData } from "@/lib/demo/dummy";
 import { deriveLoyaltyStatus } from "@/lib/services/loyalty";
 import { MemberForm } from "../member-form";
+import { MemberContactEditor } from "../member-contact-editor";
 import { MemberRoleForm } from "../member-role-form";
 import { ActivityActor } from "@/components/admin/activity-actor";
 
@@ -215,6 +216,11 @@ export default async function MemberProfilePage({
         <Badge variant={member.user.role === "admin" ? "accent" : "muted"}>
           {member.user.role === "admin" ? "Správce" : "Člen"}
         </Badge>
+        {!demo ? (
+          profile ? (
+            <MemberContactEditor profile={profile} />
+          ) : null
+        ) : null}
         {!demo ? (
           <MemberNoteEditor userId={id} name={name} note={profile?.note} />
         ) : null}
@@ -509,7 +515,7 @@ export default async function MemberProfilePage({
       {demo ? null : (
         <section aria-labelledby="member-edit" className="mt-10 max-w-xl">
           <h2 id="member-edit" className="mb-3 text-lg font-semibold">
-            Úprava člena
+            Další nastavení člena
           </h2>
           <Card>
             <CardContent className="p-6">

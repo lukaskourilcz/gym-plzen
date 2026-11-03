@@ -45,15 +45,23 @@ export function toMember(p: Profile): MemberWithProfile {
 
 /**
  * Ensure a profile row exists for a signed-in Supabase user (fallback to the
- * DB trigger) and keep the mirrored email/name fresh. Returns the profile.
+ * DB trigger). Only a fresh verified reader may refresh a mirrored email.
  */
-export async function ensureProfileForUser(user: {
-  id: string;
-  email: string | null;
-  fullName: string | null;
-  phone?: string | null;
-  createdAt?: string;
-}): Promise<Profile> {
+export async function ensureProfileForUser(
+  user: {
+    id: string;
+    email: string | null;
+    fullName: string | null;
+    phone?: string | null;
+    createdAt?: string;
+  },
+  options: {
+    refreshIdentity?: () => Promise<{
+      id: string;
+      email?: string | null;
+    } | null>;
+  } = {},
+): Promise<Profile> {
   // The common case is a plain read: the row exists and the mirrored e-mail is
   // current. Writing on every session lookup would turn each page view of a
   // signed-in visitor into an upsert.
@@ -63,14 +71,40 @@ export async function ensureProfileForUser(user: {
     .where(eq(profiles.id, user.id))
     .limit(1);
   if (existing && existing.email === user.email) return existing;
-
-  const [policy] = existing
-    ? []
-    : await db
-        .select({ value: siteSetting.value })
-        .from(siteSetting)
-        .where(eq(siteSetting.key, "registration.phone_required_from"))
+  if (existing) {
+    // A request verified just before an admin correction may still carry the
+    // old address. Recheck Auth under the same operation lock before mirroring
+    // a mismatch. Registration logging has no fresh reader and must not undo it.
+    const refreshIdentity = options.refreshIdentity;
+    if (!refreshIdentity) return existing;
+    return withOperationLock(`member-contact:${user.id}`, async () => {
+      const fresh = await refreshIdentity();
+      if (!fresh || fresh.id !== user.id)
+        throw new ActionError(
+          "Přihlašovací účet se nepodařilo ověřit. Zkuste to znovu.",
+        );
+      const [current] = await db
+        .select()
+        .from(profiles)
+        .where(eq(profiles.id, user.id))
         .limit(1);
+      if (!current) throw new ActionError("Profil se nepodařilo najít.");
+      if (current.email === (fresh.email ?? null)) return current;
+      const [updated] = await db
+        .update(profiles)
+        .set({ email: fresh.email ?? null, updatedAt: new Date() })
+        .where(eq(profiles.id, user.id))
+        .returning();
+      if (!updated) throw new ActionError("Profil se nepodařilo najít.");
+      return updated;
+    });
+  }
+
+  const [policy] = await db
+    .select({ value: siteSetting.value })
+    .from(siteSetting)
+    .where(eq(siteSetting.key, "registration.phone_required_from"))
+    .limit(1);
   const since =
     typeof policy?.value === "string" ? Date.parse(policy.value) : NaN;
   const created = user.createdAt ? Date.parse(user.createdAt) : NaN;
@@ -85,13 +119,17 @@ export async function ensureProfileForUser(user: {
       phone: user.phone ? toE164(user.phone) : null,
       phoneRequired,
     })
-    .onConflictDoUpdate({
-      target: profiles.id,
-      // Refresh the mirrored identity fields; never overwrite role/prefs.
-      set: { email: user.email, updatedAt: new Date() },
-    })
+    .onConflictDoNothing({ target: profiles.id })
     .returning();
-  return row!;
+  if (row) return row;
+  // Another request created the profile while this request read the policy.
+  const [createdProfile] = await db
+    .select()
+    .from(profiles)
+    .where(eq(profiles.id, user.id))
+    .limit(1);
+  if (!createdProfile) throw new ActionError("Profil se nepodařilo najít.");
+  return createdProfile;
 }
 
 /**

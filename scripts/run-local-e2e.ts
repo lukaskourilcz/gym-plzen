@@ -211,6 +211,7 @@ try {
           "admin-filtering.spec.ts",
           "manual-invoices.spec.ts",
           "member-notes.spec.ts",
+          "admin-member-contact.spec.ts",
           "booking-flow.spec.ts",
           "customer.spec.ts",
           "analytics.spec.ts",

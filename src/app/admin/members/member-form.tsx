@@ -3,11 +3,9 @@
 import { useActionForm } from "@/components/admin/use-action-form";
 import {
   CheckboxField,
-  Field,
   FormFeedback,
   SubmitButton,
 } from "@/components/admin/form-controls";
-import { Input } from "@/components/ui/input";
 import { updateMemberSchema } from "@/lib/validations/members";
 import type { MemberWithProfile } from "@/lib/services/members";
 import { updateMemberAction } from "./actions";
@@ -20,7 +18,6 @@ export function MemberForm({ member }: { member: MemberWithProfile }) {
     action: updateMemberAction,
     defaultValues: {
       userId: member.user.id,
-      phone: p?.phone ?? "",
       notifyByWhatsapp: p?.notifyByWhatsapp ?? false,
       notifyBySms: p?.notifyBySms ?? false,
       marketingConsent: p?.marketingConsent ?? false,
@@ -31,13 +28,6 @@ export function MemberForm({ member }: { member: MemberWithProfile }) {
   return (
     <form onSubmit={submit}>
       <input type="hidden" {...register("userId")} />
-      <Field
-        name="phone"
-        label="Telefon (s předvolbou, např. +420 777 123 456)"
-        error={formState.errors.phone}
-      >
-        <Input id="phone" placeholder="+420…" {...register("phone")} />
-      </Field>
       <CheckboxField
         name="notifyByWhatsapp"
         label="Posílat kódy přes WhatsApp"

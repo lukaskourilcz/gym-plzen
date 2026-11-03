@@ -73,7 +73,7 @@ async function resolveSessionUser(): Promise<SessionUser | null> {
   const supabase = await createClient();
   if (!supabase) return null;
 
-  const user = await verifiedAuthUser(supabase.auth.getUser());
+  let user = await verifiedAuthUser(supabase.auth.getUser());
   if (!user) return null;
 
   // The fixture credentials are intentionally committed for local previews.
@@ -85,16 +85,28 @@ async function resolveSessionUser(): Promise<SessionUser | null> {
     typeof user.user_metadata?.full_name === "string"
       ? user.user_metadata.full_name
       : null;
-  const profile = await ensureProfileForUser({
-    id: user.id,
-    email: user.email ?? null,
-    fullName,
-    phone:
-      typeof user.user_metadata?.phone === "string"
-        ? user.user_metadata.phone
-        : null,
-    createdAt: user.created_at,
-  });
+  const profile = await ensureProfileForUser(
+    {
+      id: user.id,
+      email: user.email ?? null,
+      fullName,
+      phone:
+        typeof user.user_metadata?.phone === "string"
+          ? user.user_metadata.phone
+          : null,
+      createdAt: user.created_at,
+    },
+    {
+      refreshIdentity: async () => {
+        const fresh = await verifiedAuthUser(supabase.auth.getUser());
+        if (fresh?.id === user?.id) user = fresh;
+        return fresh;
+      },
+    },
+  );
+
+  // The authoritative refresh above can observe an email changed during this request.
+  if (isProductionDeployment() && isReservedDemoEmail(user.email)) return null;
 
   if (user.email && user.email_confirmed_at)
     await claimGuestCredits(user.id, user.email);

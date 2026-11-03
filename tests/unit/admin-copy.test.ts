@@ -43,11 +43,11 @@ test("every stored enum value the administration shows has a Czech label", () =>
 
 test("form labels speak to the operator, not to the developer", async () => {
   const memberForm = await readFile(
-    "src/app/admin/members/member-form.tsx",
+    "src/app/admin/members/member-contact-editor.tsx",
     "utf8",
   );
   assert.doesNotMatch(memberForm, /E\.164/);
-  assert.match(memberForm, /např\. \+420 777 123 456/);
+  assert.match(memberForm, /\+420 777 123 456/);
   const messagesPage = await readFile(
     "src/app/admin/messages/page.tsx",
     "utf8",
