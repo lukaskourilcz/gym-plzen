@@ -59,6 +59,9 @@ export default async function CalendarPage() {
           title: `${r.contactName?.trim() || "Zákazník bez jména"}${participantsEnabled && r.extraPeople > 0 ? ` +${r.extraPeople}` : ""}`,
           start: r.startsAt.toISOString(),
           end: r.endsAt.toISOString(),
+          url: r.userId
+            ? `/admin/members/${r.userId}`
+            : `/admin/reservations?id=${r.id}`,
           backgroundColor:
             r.status === "confirmed" ? "var(--success)" : "var(--warning)",
           borderColor: "transparent",
@@ -71,6 +74,9 @@ export default async function CalendarPage() {
                 title: `${r.contactName?.trim() || "Zákazník bez jména"}${participantsEnabled && r.extraPeople > 0 ? ` +${r.extraPeople}` : ""}`,
                 start: r.rescheduleStartsAt.toISOString(),
                 end: r.rescheduleEndsAt.toISOString(),
+                url: r.userId
+                  ? `/admin/members/${r.userId}`
+                  : `/admin/reservations?id=${r.id}`,
                 backgroundColor: "var(--warning)",
                 borderColor: "transparent",
                 extendedProps: { memberNote: memberNotes.get(r.userId ?? "") },
