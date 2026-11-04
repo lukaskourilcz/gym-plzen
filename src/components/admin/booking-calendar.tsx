@@ -198,7 +198,7 @@ export function BookingCalendar({
   // choices only when their actual contents change, never on object identity.
   const eventRevision = JSON.stringify(events);
   useEffect(() => {
-    if (!selecting || !range) return;
+    if (!selecting || !range || pendingRequest.current) return;
     let active = true;
     setLoadingChoices(true);
     setChoices(null);
@@ -249,16 +249,21 @@ export function BookingCalendar({
     );
   }
   async function saveSelection() {
-    if (saving.current || !selected.length || !choices) return;
+    if (saving.current) return;
+    const request =
+      pendingRequest.current ??
+      (selected.length && choices
+        ? {
+            operationId: crypto.randomUUID(),
+            windows: selected,
+            scheduleFingerprint: choices.scheduleFingerprint,
+          }
+        : null);
+    if (!request) return;
     saving.current = true;
     setBusy(true);
     setActionError(null);
     setNotice(null);
-    const request = pendingRequest.current ?? {
-      operationId: crypto.randomUUID(),
-      windows: selected,
-      scheduleFingerprint: choices.scheduleFingerprint,
-    };
     pendingRequest.current = request;
     try {
       const result = await saveCalendarBlockSelectionAction(request);
@@ -415,7 +420,9 @@ export function BookingCalendar({
               <Button
                 type="button"
                 disabled={
-                  busy || loadingChoices || !choices || !selected.length
+                  busy ||
+                  (!uncertain &&
+                    (loadingChoices || !choices || !selected.length))
                 }
                 onClick={() => void saveSelection()}
               >
