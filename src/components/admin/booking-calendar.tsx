@@ -571,7 +571,11 @@ export function BookingCalendar({
             event.display === "inverse-background" ? null : (
             <span
               className="admin-calendar-name"
-              title={event.title}
+              title={
+                event.extendedProps.outsidePlan
+                  ? `${event.title} · Rezervace mimo aktuální rozvrh`
+                  : event.title
+              }
               data-start-minute={
                 event.start ? minuteOfDay(event.start) : undefined
               }

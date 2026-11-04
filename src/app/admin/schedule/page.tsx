@@ -1,3 +1,6 @@
+import { listPlannedSchedules } from "@/lib/services/planned-schedules";
+import { PlannedSchedules } from "./planned-schedules";
+import { dateKeyInTimeZone } from "@/lib/helpers/datetime";
 import {
   AdminListTotal,
   AdminListFilters,
@@ -56,12 +59,13 @@ export default async function SchedulePage({
     direction: query.direction ?? "asc",
   });
   const page = pageFromParam(query.page);
-  const [hours, loaded, showerMinutes] = demo
-    ? [[], [], DEFAULT_SHOWER_MINUTES]
+  const [hours, loaded, showerMinutes, planned] = demo
+    ? [[], [], DEFAULT_SHOWER_MINUTES, []]
     : await Promise.all([
         schedule.listOpeningHours(),
         blockPage(page, filters),
         schedule.getShowerMinutes(),
+        listPlannedSchedules(),
       ]);
   const {
     rows: blocks,
@@ -76,8 +80,16 @@ export default async function SchedulePage({
     <div>
       <PageHeader title="Otevírací doba a bloky" />
 
-      <section>
-        <h2 className="mb-1 text-lg font-semibold">Týdenní otevírací doba</h2>
+      <PlannedSchedules
+        schedules={planned}
+        today={dateKeyInTimeZone(now)}
+        readOnly={demo}
+      />
+
+      <section className="mt-8">
+        <h2 className="mb-1 text-lg font-semibold">
+          Běžná týdenní otevírací doba
+        </h2>
         <p className="mb-3 text-sm text-muted-foreground">
           Časová okna navazují na sebe od otevírací doby (např. 05:00–06:15,
           06:15–07:30). Výchozí provoz je denně{" "}

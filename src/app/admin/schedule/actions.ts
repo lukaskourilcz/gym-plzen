@@ -1,5 +1,7 @@
 "use server";
 
+import { z } from "zod";
+import { plannedScheduleInputSchema } from "@/lib/config/planned-schedules";
 import { revalidatePath } from "next/cache";
 import { assertAdmin } from "@/lib/auth/guards";
 import { defineAction } from "@/lib/helpers/action";
@@ -111,4 +113,30 @@ export async function deleteBlockedSlotAction(input: {
   id: string;
 }): Promise<Result<unknown>> {
   return deleteBlockedSlotImpl(input);
+}
+
+const changePlannedScheduleImpl = defineAction({
+  schema: z.union([
+    z.object({
+      id: z.string().uuid(),
+      revision: z.string().uuid(),
+      remove: z.literal(true),
+    }),
+    plannedScheduleInputSchema,
+  ]),
+  authorize: assertAdmin,
+  handler: async (input, admin) => {
+    await schedule.changePlannedSchedule(input, admin.id);
+    for (const path of [
+      "/",
+      "/rezervace",
+      "/admin/schedule",
+      "/admin/calendar",
+      "/admin/memberships",
+    ])
+      revalidatePath(path);
+  },
+});
+export async function changePlannedScheduleAction(input: unknown) {
+  return changePlannedScheduleImpl(input);
 }

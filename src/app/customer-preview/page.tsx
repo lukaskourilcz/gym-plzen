@@ -1,3 +1,7 @@
+import {
+  PLANNED_SCHEDULES_KEY,
+  parsePlannedSchedules,
+} from "@/lib/config/planned-schedules";
 import type { Metadata } from "next";
 import { inArray } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth/guards";
@@ -47,6 +51,7 @@ export default async function CustomerPreviewPage() {
           .where(
             inArray(siteSetting.key, [
               BLOCK_PRICING_KEY,
+              PLANNED_SCHEDULES_KEY,
               ENTRY_PRICE_SETTING_KEY,
               PARTICIPANTS_ENABLED_KEY,
               PARTICIPANT_PRICING_KEY,
@@ -69,6 +74,7 @@ export default async function CustomerPreviewPage() {
           startsAt: p.startsAt.toISOString(),
           endsAt: p.endsAt.toISOString(),
         })),
+        planned: parsePlannedSchedules(settings.get(PLANNED_SCHEDULES_KEY)),
         blockPrices: parseBlockPrices(settings.get(BLOCK_PRICING_KEY)),
         standardPriceCents:
           typeof price === "number" && price > 0

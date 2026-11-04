@@ -1,9 +1,19 @@
+import {
+  plannedScheduleForDate,
+  plannedWindowAt,
+} from "@/lib/config/planned-schedules";
+import { listPlannedSchedules } from "@/lib/services/planned-schedules";
+import { getBookingHorizonDays } from "@/lib/services/slots";
 import { getParticipantsEnabled } from "@/lib/services/block-pricing";
 import { requireAdmin } from "@/lib/auth/guards";
 import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import type { EventInput } from "@fullcalendar/core";
 import { availability, schedule } from "@/lib/services";
-import { addMinutes } from "@/lib/helpers/datetime";
+import {
+  addMinutes,
+  dateKeyInTimeZone,
+  minuteOfDay,
+} from "@/lib/helpers/datetime";
 import { PageHeader } from "@/components/admin/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookingCalendar } from "@/components/admin/booking-calendar";
@@ -26,29 +36,49 @@ export default async function CalendarPage() {
   await requireAdmin();
   const now = new Date();
   const rangeStart = addMinutes(now, -14 * 24 * 60);
-  const rangeEnd = addMinutes(now, 60 * 24 * 60);
   const demo = await hasDemoAdminSession();
-  const [{ reservations, blocks }, openingHours] = demo
-    ? [{ reservations: [], blocks: [] }, []]
+  const [{ reservations, blocks }, openingHours, planned] = demo
+    ? [{ reservations: [], blocks: [] }, [], []]
     : await Promise.all([
-        availability.listCalendarEntries(rangeStart, rangeEnd),
+        getBookingHorizonDays().then((horizon) =>
+          availability.listCalendarEntries(
+            rangeStart,
+            addMinutes(now, (Math.max(horizon, 60) + 1) * 24 * 60),
+          ),
+        ),
         schedule.listOpeningHours(),
+        listPlannedSchedules(),
       ]);
   const participantsEnabled = !demo && (await getParticipantsEnabled());
   const activeDays = openingHours.filter((day) => day.isClosed !== 1);
-  const openMinute =
-    activeDays.length > 0
+  const planWindows = planned
+    .filter((plan) => plan.to >= dateKeyInTimeZone(rangeStart))
+    .flatMap((plan) => plan.windows);
+  const openMinute = Math.min(
+    activeDays.length
       ? Math.min(...activeDays.map((day) => day.openMinute))
-      : DEFAULT_OPEN_MINUTE;
-  const closeMinute =
-    activeDays.length > 0
+      : DEFAULT_OPEN_MINUTE,
+    ...planWindows.map((window) => window.startMinute),
+    ...reservations.map((row) => minuteOfDay(row.startsAt)),
+  );
+  const closeMinute = Math.max(
+    activeDays.length
       ? Math.max(...activeDays.map((day) => day.closeMinute))
-      : DEFAULT_CLOSE_MINUTE;
-
+      : DEFAULT_CLOSE_MINUTE,
+    ...planWindows.map((window) => window.endMinute),
+    ...reservations.map((row) => minuteOfDay(row.endsAt)),
+  );
   const slotMinutes = calendarRowMinutes(activeDays, openMinute);
   const memberNotes = demo
     ? new Map<string, string>()
     : await getMemberNotes(reservations.map((r) => r.userId));
+
+  function outsidePlan(start: Date, end: Date) {
+    const plan = plannedScheduleForDate(planned, dateKeyInTimeZone(start));
+    return (
+      !!plan && plannedWindowAt(plan, start)?.endsAt.getTime() !== end.getTime()
+    );
+  }
 
   const events: EventInput[] = [
     ...reservations
@@ -62,10 +92,16 @@ export default async function CalendarPage() {
           url: r.userId
             ? `/admin/members/${r.userId}`
             : `/admin/reservations?id=${r.id}`,
-          backgroundColor:
-            r.status === "confirmed" ? "var(--success)" : "var(--warning)",
+          backgroundColor: outsidePlan(r.startsAt, r.endsAt)
+            ? "var(--muted-foreground)"
+            : r.status === "confirmed"
+              ? "var(--success)"
+              : "var(--warning)",
           borderColor: "transparent",
-          extendedProps: { memberNote: memberNotes.get(r.userId ?? "") },
+          extendedProps: {
+            memberNote: memberNotes.get(r.userId ?? ""),
+            outsidePlan: outsidePlan(r.startsAt, r.endsAt),
+          },
         },
         ...(r.rescheduleStartsAt && r.rescheduleEndsAt
           ? [
