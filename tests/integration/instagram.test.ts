@@ -75,6 +75,8 @@ beforeEach(async () => {
     flatToken: false,
     unifiedScopes: ["instagram_basic"],
     unifiedExpiresAt: 0,
+    unifiedBusinessId: "3333",
+    unifiedAssignmentsEmpty: false,
     media: defaultMedia(),
     delay: 0,
   });
@@ -151,6 +153,32 @@ dbTest(
           path.startsWith("/facebook-graph/"),
         ),
       );
+      assert.deepEqual(await snapshot(), protectedRecords);
+      assert.equal(resend.sent.length, 0);
+    });
+  },
+);
+
+dbTest(
+  "an empty assignment list allows a direct read only for the NAVI portfolio and profile",
+  async () => {
+    await withUnifiedConfiguration(async () => {
+      mock.state.unifiedAssignmentsEmpty = true;
+      const directPath = "/facebook-graph/v26.0/17841427246422536";
+      await assert.rejects(connect, { problem: "wrong_account" });
+      assert.ok(!mock.state.calls.some(({ path }) => path === directPath));
+
+      mock.state.unifiedBusinessId = "1615625080049734";
+      mock.state.username = "different_account";
+      await assert.rejects(connect, { problem: "wrong_account" });
+      assert.equal((await rows("select id from instagram_connection")).length, 0);
+
+      mock.state.username = "navi_plzen";
+      const protectedRecords = await snapshot();
+      await connect();
+      assert.equal((await syncInstagram({ force: true })).synced, true);
+      assert.equal((await loadInstagramFeed()).posts.length, 12);
+      assert.ok(mock.state.calls.some(({ path }) => path === `${directPath}/media`));
       assert.deepEqual(await snapshot(), protectedRecords);
       assert.equal(resend.sent.length, 0);
     });
