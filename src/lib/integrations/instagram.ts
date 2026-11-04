@@ -15,6 +15,8 @@ export class InstagramError extends Error {
   }
 }
 const UNIFIED_GRAPH_VERSION = "v26.0";
+const NAVI_META_BUSINESS_ID = "1615625080049734";
+const NAVI_META_INSTAGRAM_ID = "17841427246422536";
 export const INSTAGRAM_UNLIMITED_EXPIRY = Date.UTC(9999, 11, 31);
 // Plain Node uses the SDK's CommonJS entry point.
 const { suppressTracing } =
@@ -282,9 +284,34 @@ async function exchangeUnifiedInstagramCode(code: string, redirectUri: string) {
     .safeParse(assigned);
   if (!identity.success || !profiles.success)
     throw new InstagramError("authorization");
-  const profile = profiles.data.data.find(
+  let profile = profiles.data.data.find(
     (account) => account.username.toLowerCase() === INSTAGRAM_USERNAME,
   );
+  // Meta can return an empty assignment list even after the owning portfolio
+  // shares its account. Let Meta authorize a direct read of that one asset
+  // using the same grant. An explicit list of other accounts stays authoritative.
+  if (
+    !profile &&
+    profiles.data.data.length === 0 &&
+    identity.data.client_business_id === NAVI_META_BUSINESS_ID
+  ) {
+    const direct = graph(
+      `/${NAVI_META_INSTAGRAM_ID}`,
+      token,
+      "id,username",
+      true,
+    );
+    const result = unifiedAccountSchema.safeParse(
+      await jsonRequest(direct.url, direct.init),
+    );
+    if (
+      result.success &&
+      result.data.id === NAVI_META_INSTAGRAM_ID &&
+      result.data.username.toLowerCase() === INSTAGRAM_USERNAME
+    ) {
+      profile = result.data;
+    }
+  }
   if (!profile) throw new InstagramError("wrong_account");
   return {
     token,

@@ -13,6 +13,8 @@ export function createInstagramMock(port: number) {
     flatToken: false,
     unifiedScopes: ["instagram_basic"],
     unifiedExpiresAt: 0,
+    unifiedBusinessId: "3333",
+    unifiedAssignmentsEmpty: false,
     media: defaultMedia(),
     calls: [] as { path: string; method: string }[],
     delay: 0,
@@ -97,17 +99,22 @@ export function createInstagramMock(port: number) {
     )
       return json({ error: { code: 190 } }, 401);
     if (url.pathname === "/facebook-graph/v26.0/me")
-      return json({ id: "2222", client_business_id: "3333" });
+      return json({ id: "2222", client_business_id: state.unifiedBusinessId });
     if (url.pathname === "/facebook-graph/v26.0/me/assigned_instagram_accounts")
       return json({
-        data: [
-          { id: "4444", username: "other_account" },
-          { id: "5678", username: state.username },
-        ],
+        data: state.unifiedAssignmentsEmpty
+          ? []
+          : [
+              { id: "4444", username: "other_account" },
+              { id: "5678", username: state.username },
+            ],
       });
+    if (url.pathname === "/facebook-graph/v26.0/17841427246422536")
+      return json({ id: "17841427246422536", username: state.username });
     if (
       url.pathname === "/graph/v24.0/5678/media" ||
-      url.pathname === "/facebook-graph/v26.0/5678/media"
+      url.pathname === "/facebook-graph/v26.0/5678/media" ||
+      url.pathname === "/facebook-graph/v26.0/17841427246422536/media"
     ) {
       if (
         url.pathname.startsWith("/graph/") &&
