@@ -1,3 +1,8 @@
+import {
+  PLANNED_SCHEDULES_KEY,
+  parsePlannedSchedules,
+  type PlannedSchedule,
+} from "@/lib/config/planned-schedules";
 import { REGISTRATION_NOTICE_DEFAULTS } from "./registration-notice";
 import { openingHoursLabel } from "@/lib/helpers/opening-hours-label";
 import {
@@ -420,6 +425,7 @@ export async function loadSiteContent(
   let blockPrices: BlockPrice[] = [];
   let participantPricing = DEFAULT_PARTICIPANT_PRICING;
   let participantsEnabled = false;
+  let planned: PlannedSchedule[] = [];
   let pricingHours: PricingHours[] = [];
   let horizonDays = DEFAULT_BOOKING_HORIZON_DAYS;
   let bookingsFrom = "";
@@ -523,6 +529,8 @@ export async function loadSiteContent(
           participantsEnabled = parseParticipantsEnabled(s.value);
         if (s.key === PARTICIPANT_PRICING_KEY)
           participantPricing = parseParticipantPricing(s.value);
+        if (s.key === PLANNED_SCHEDULES_KEY)
+          planned = parsePlannedSchedules(s.value);
         if (s.key === BLOCK_PRICING_KEY)
           blockPrices = parseBlockPrices(s.value);
         if (s.key === ENTRY_PRICE_SETTING_KEY && typeof s.value === "number")
@@ -577,6 +585,7 @@ export async function loadSiteContent(
     standardPriceCents: standardEntryPriceCents,
     blockPrices,
     hours: pricingHours,
+    planned,
     periods: pricingPeriods,
     now:
       options.at instanceof Date && Number.isFinite(options.at.getTime())
@@ -652,6 +661,7 @@ export async function loadSiteContent(
         periods: pricingPeriods,
         blockPrices,
         hours: pricingHours,
+        planned,
         at,
       }).priceCents,
     standardEntryPriceCents: price.standardPriceCents,

@@ -1,3 +1,4 @@
+import { lockSchedule } from "./availability";
 import { withOperationLock } from "./operation-lock";
 import {
   CREDIT_PRICING_VERSION,
@@ -484,12 +485,16 @@ async function startOrderUnlocked(params: {
       "Doprovod je momentálně vypnutý. Obnovte stránku a pokračujte bez příplatku.",
     );
 
-  const basePrices = (
-    await getEntryPrices(slots.map((slot) => slot.startsAt))
-  ).map((price) => price.priceCents);
   const token = randomBytes(32).toString("hex");
   const tokenHash = hashCode(token);
   const { order, reservations } = await db.transaction(async (tx) => {
+    await lockSchedule(tx);
+    const basePrices = (
+      await getEntryPrices(
+        slots.map((slot) => slot.startsAt),
+        tx,
+      )
+    ).map((price) => price.priceCents);
     let rewards: (number | null)[] = slots.map(() => null);
     if (params.userId) {
       const [member] = await tx

@@ -39,19 +39,27 @@ import {
 } from "@/lib/config/participants";
 import {
   addDaysToDateKey,
-  dayOfWeek,
   dateKeyInTimeZone,
   localDateTimeToDate,
   minutesBetween,
 } from "@/lib/helpers/datetime";
 import { formatTimeRange } from "@/lib/helpers/format";
-import { buildDaySlots, resolveSlotFromHours, type DaySlots } from "./slots";
+import {
+  buildConfiguredDay,
+  resolveConfiguredSlotFromSchedule,
+  type DaySlots,
+} from "./slots";
+import {
+  parsePlannedSchedules,
+  PLANNED_SCHEDULES_KEY,
+} from "@/lib/config/planned-schedules";
 import { reservationOverlaps } from "./availability";
 
 export const BOOKING_PUBLIC_SETTING_KEYS = [
   BOOKING_HORIZON_SETTING_KEY,
   OPERATIONS_SETTING_KEY,
   BLOCK_PRICING_KEY,
+  PLANNED_SCHEDULES_KEY,
   ENTRY_PRICE_SETTING_KEY,
   PARTICIPANTS_ENABLED_KEY,
   PARTICIPANT_PRICING_KEY,
@@ -122,6 +130,7 @@ export async function loadCalendarAvailability(
     ]);
     const ops = operationsSchema.safeParse(stored.get(OPERATIONS_SETTING_KEY));
     const operations = ops.success ? ops.data : DEFAULT_OPERATIONS;
+    const planned = parsePlannedSchedules(stored.get(PLANNED_SCHEDULES_KEY));
     const rules = parseBlockPrices(stored.get(BLOCK_PRICING_KEY));
     const standard = stored.get(ENTRY_PRICE_SETTING_KEY);
     const priceForDate = (at: Date) =>
@@ -131,6 +140,7 @@ export async function loadCalendarAvailability(
         periods,
         blockPrices: rules,
         hours,
+        planned,
         at,
       }).priceCents;
     const busy = [
@@ -142,20 +152,13 @@ export async function loadCalendarAvailability(
           : [],
       ),
     ].map((row) => ({ start: row.startsAt, end: row.endsAt }));
-    const getHours = (date: Date) => {
-      const row = hours.find((row) => row.dayOfWeek === dayOfWeek(date));
-      return row ? { ...row, isClosed: row.isClosed === 1 } : null;
-    };
     const days: DaySlots[] = [];
     for (let key = rangeStart; key < rangeEnd; key = addDaysToDateKey(key, 1)) {
-      const h = getHours(localDateTimeToDate(key, 720));
-      const isClosed =
-        !h || h.isClosed || !isDateOpenForBooking(key, operations);
-      days.push({
-        dateKey: key,
-        isClosed,
-        slots: h && !isClosed ? buildDaySlots(key, h, busy, now) : [],
-      });
+      days.push(
+        isDateOpenForBooking(key, operations)
+          ? buildConfiguredDay(key, hours, planned, busy, now)
+          : { dateKey: key, isClosed: true, slots: [] },
+      );
     }
     const selected = days.find(
       (day) => day.dateKey === location.selectedDateKey,
@@ -188,12 +191,10 @@ export async function loadCalendarAvailability(
       days,
       pricing: { settings, hours, periods } satisfies BookingPricingSnapshot,
       priceForDate,
-      resolveSelection: (start: Date) => {
-        const h = getHours(start);
-        return h && isDateOpenForBooking(dateKeyInTimeZone(start), operations)
-          ? resolveSlotFromHours(start, h)
-          : null;
-      },
+      resolveSelection: (start: Date) =>
+        isDateOpenForBooking(dateKeyInTimeZone(start), operations)
+          ? resolveConfiguredSlotFromSchedule(start, hours, planned)
+          : null,
     };
   });
 }

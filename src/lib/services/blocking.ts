@@ -1,3 +1,8 @@
+import { listPlannedSchedules } from "./planned-schedules";
+import {
+  plannedScheduleForDate,
+  plannedWindowAt,
+} from "@/lib/config/planned-schedules";
 import { createHash } from "node:crypto";
 import { and, asc, desc, eq, gt, inArray, isNull, lt, or } from "drizzle-orm";
 import { db, type DatabaseExecutor } from "@/lib/db";
@@ -165,6 +170,16 @@ async function buildPreview(
     throw new ActionError(
       "Výběr neobsahuje žádné budoucí sloty vybraných šablon.",
     );
+  const planned = await listPlannedSchedules(executor);
+  for (const window of windows) {
+    const schedule = plannedScheduleForDate(planned, window.dateKey);
+    if (!schedule) continue;
+    const slot = plannedWindowAt(schedule, new Date(window.startISO));
+    if (slot?.endsAt.toISOString() !== window.endISO)
+      throw new ActionError(
+        "Některé časy šablony neodpovídají plánovanému rozvrhu. Tyto termíny můžete vybrat přímo v kalendáři.",
+      );
+  }
   const start = new Date(windows[0]!.startISO),
     end = new Date(windows.at(-1)!.endISO);
   const [bookings, blocks] = await Promise.all([

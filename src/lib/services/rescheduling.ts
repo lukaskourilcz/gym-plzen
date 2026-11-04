@@ -17,7 +17,6 @@ import { or, and, eq, gt, inArray, lt, ne } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   blockedSlot,
-  openingHours,
   reservation,
   messageDelivery,
   reservationPipeline,
@@ -25,7 +24,7 @@ import {
   reservationChange,
 } from "@/lib/db/schema";
 import type { Reservation } from "@/lib/db/types";
-import { dateKeyInTimeZone, dayOfWeek } from "@/lib/helpers/datetime";
+import { dateKeyInTimeZone } from "@/lib/helpers/datetime";
 import { ActionError } from "@/lib/helpers/action";
 import {
   PG_EXCLUSION_VIOLATION,
@@ -36,7 +35,7 @@ import { logger } from "@/lib/helpers/logger";
 import {
   getBookingHorizonDays,
   isWithinBookingHorizon,
-  resolveSlotFromHours,
+  resolveConfiguredSlot,
 } from "./slots";
 import { fulfillReservation } from "./fulfillment";
 import { initPipeline } from "./pipeline";
@@ -161,22 +160,9 @@ async function rescheduleLocked(
           "Platnost nabídky změny vypršela. Původní rezervace zůstává zachovaná.",
         );
 
-      const [hours] = await tx
-        .select()
-        .from(openingHours)
-        .where(eq(openingHours.dayOfWeek, dayOfWeek(input.startsAt)))
-        .limit(1);
-      const target = hours
-        ? resolveSlotFromHours(input.startsAt, {
-            openMinute: hours.openMinute,
-            closeMinute: hours.closeMinute,
-            slotMinutes: hours.slotMinutes,
-            isClosed: hours.isClosed === 1,
-          })
-        : null;
-      if (!target) {
-        throw new ActionError("Vybraný čas je mimo otevírací dobu.");
-      }
+      const target = await resolveConfiguredSlot(input.startsAt, tx);
+      if (!target || target.endsAt.getTime() !== financial.endsAt.getTime())
+        throw new ActionError("Vybraný čas už neodpovídá rozvrhu.");
       if (current.startsAt.getTime() === target.startsAt.getTime()) {
         throw new ActionError("Vyberte jiný termín než ten současný.");
       }
@@ -284,7 +270,7 @@ async function rescheduleLocked(
         target.endsAt,
         {
           excludeReservationId: current.id,
-          excludeBlockedSlotId: financial?.blockId ?? undefined,
+          excludeBlockedSlotId: financial.blockId ?? undefined,
         },
         tx,
       );

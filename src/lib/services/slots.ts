@@ -1,7 +1,7 @@
 import { or, and, eq, gt, inArray, lt } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { db, type DatabaseExecutor } from "@/lib/db";
 import { readDatabase } from "@/lib/db/read";
-import { blockedSlot, openingHours, reservation } from "@/lib/db/schema";
+import { blockedSlot, reservation } from "@/lib/db/schema";
 import {
   addDaysToDateKey,
   addMinutes,
@@ -10,6 +10,7 @@ import {
   intervalsOverlap,
   localDateTimeToDate,
   minuteOfDay,
+  minutesBetween,
 } from "@/lib/helpers/datetime";
 import { logger } from "@/lib/helpers/logger";
 import { isBookingPreviewEnabled } from "@/lib/config/preview";
@@ -25,6 +26,14 @@ import { getSetting } from "./cms";
 import { getOperations } from "./operations";
 import { isDateOpenForBooking } from "@/lib/config/operations";
 import { reservationOverlaps } from "./availability";
+import type { PricingHours } from "@/lib/config/block-pricing";
+import {
+  plannedScheduleForDate,
+  plannedWindowAt,
+  plannedWindowTimes,
+  type PlannedSchedule,
+} from "@/lib/config/planned-schedules";
+import { loadBookingSchedule } from "./planned-schedules";
 
 export interface Slot {
   start: Date;
@@ -102,6 +111,42 @@ export function buildDaySlots(
   return slots;
 }
 
+export function buildConfiguredDay(
+  dateKey: string,
+  weekly: readonly PricingHours[],
+  planned: readonly PlannedSchedule[],
+  busy: { start: Date; end: Date }[],
+  now: Date,
+): DaySlots {
+  const schedule = plannedScheduleForDate(planned, dateKey);
+  if (schedule) {
+    const slots = schedule.windows.flatMap((window): Slot[] => {
+      const times = plannedWindowTimes(dateKey, window);
+      if (!times) return [];
+      const { startsAt: start, endsAt: end } = times;
+      const booked = busy.some((item) =>
+        intervalsOverlap(start, end, item.start, item.end),
+      );
+      return [{ start, end, booked, available: start > now && !booked }];
+    });
+    return { dateKey, slots, isClosed: slots.length === 0 };
+  }
+  const weekday = dayOfWeek(localDateTimeToDate(dateKey, 720));
+  const hours = weekly.find((row) => row.dayOfWeek === weekday);
+  return {
+    dateKey,
+    isClosed: !hours || hours.isClosed === 1,
+    slots: hours
+      ? buildDaySlots(
+          dateKey,
+          { ...hours, isClosed: hours.isClosed === 1 },
+          busy,
+          now,
+        )
+      : [],
+  };
+}
+
 /** Load a visible calendar range without ever substituting fictional slots. */
 export async function getSlotsForRange(
   startDateKey: string,
@@ -113,52 +158,42 @@ export async function getSlotsForRange(
 
   try {
     const operations = await getOperations();
-    const [hoursRows, reservations, blocks] = await readDatabase(async (db) =>
-      Promise.all([
-        db.select().from(openingHours),
-        db
-          .select({
-            startsAt: reservation.startsAt,
-            endsAt: reservation.endsAt,
-            rescheduleStartsAt: reservation.rescheduleStartsAt,
-            rescheduleEndsAt: reservation.rescheduleEndsAt,
-          })
-          .from(reservation)
-          .where(
-            and(
-              reservationOverlaps(rangeStart, rangeEnd),
-              or(
-                inArray(reservation.status, ["pending", "confirmed"]),
-                eq(reservation.accessRevocationPending, true),
+    const [{ weekly, planned }, reservations, blocks] = await readDatabase(
+      async (db) =>
+        Promise.all([
+          loadBookingSchedule(db),
+          db
+            .select({
+              startsAt: reservation.startsAt,
+              endsAt: reservation.endsAt,
+              rescheduleStartsAt: reservation.rescheduleStartsAt,
+              rescheduleEndsAt: reservation.rescheduleEndsAt,
+            })
+            .from(reservation)
+            .where(
+              and(
+                reservationOverlaps(rangeStart, rangeEnd),
+                or(
+                  inArray(reservation.status, ["pending", "confirmed"]),
+                  eq(reservation.accessRevocationPending, true),
+                ),
               ),
             ),
-          ),
-        db
-          .select({
-            startsAt: blockedSlot.startsAt,
-            endsAt: blockedSlot.endsAt,
-          })
-          .from(blockedSlot)
-          .where(
-            and(
-              lt(blockedSlot.startsAt, rangeEnd),
-              gt(blockedSlot.endsAt, rangeStart),
+          db
+            .select({
+              startsAt: blockedSlot.startsAt,
+              endsAt: blockedSlot.endsAt,
+            })
+            .from(blockedSlot)
+            .where(
+              and(
+                lt(blockedSlot.startsAt, rangeEnd),
+                gt(blockedSlot.endsAt, rangeStart),
+              ),
             ),
-          ),
-      ]),
+        ]),
     );
 
-    const hoursByDay = new Map<number, DayHours>(
-      hoursRows.map((row) => [
-        row.dayOfWeek,
-        {
-          openMinute: row.openMinute,
-          closeMinute: row.closeMinute,
-          slotMinutes: row.slotMinutes,
-          isClosed: row.isClosed === 1,
-        },
-      ]),
-    );
     const pendingWindows = reservations.flatMap((item) =>
       item.rescheduleStartsAt && item.rescheduleEndsAt
         ? [{ startsAt: item.rescheduleStartsAt, endsAt: item.rescheduleEndsAt }]
@@ -177,19 +212,11 @@ export async function getSlotsForRange(
       dateKey < endDateKeyExclusive;
       dateKey = addDaysToDateKey(dateKey, 1)
     ) {
-      const midday = localDateTimeToDate(dateKey, 12 * 60);
-      const hours = hoursByDay.get(dayOfWeek(midday));
-      days.push({
-        dateKey,
-        isClosed:
-          !hours ||
-          hours.isClosed ||
-          !isDateOpenForBooking(dateKey, operations),
-        slots:
-          hours && isDateOpenForBooking(dateKey, operations)
-            ? buildDaySlots(dateKey, hours, busy, now)
-            : [],
-      });
+      days.push(
+        isDateOpenForBooking(dateKey, operations)
+          ? buildConfiguredDay(dateKey, weekly, planned, busy, now)
+          : { dateKey, isClosed: true, slots: [] },
+      );
     }
     return { days, source: "live" };
   } catch (error) {
@@ -250,59 +277,52 @@ export async function resolveBookableSlot(startsAt: Date) {
   return resolveConfiguredSlot(startsAt);
 }
 
-/** Read one consistent configuration for a selection spanning several days. */
-export async function resolveBookableSlots(starts: Date[]) {
-  if (starts.length === 0) return [];
-  const [operations, hoursRows] = await Promise.all([
-    getOperations(),
-    readDatabase(async (db) =>
-      db
-        .select()
-        .from(openingHours)
-        .where(
-          inArray(openingHours.dayOfWeek, [
-            ...new Set(starts.map((start) => dayOfWeek(start))),
-          ]),
-        ),
-    ),
-  ]);
-  const byDay = new Map(hoursRows.map((hours) => [hours.dayOfWeek, hours]));
-  return starts.map((startsAt) => {
-    const hours = byDay.get(dayOfWeek(startsAt));
-    if (
-      !hours ||
-      !isDateOpenForBooking(dateKeyInTimeZone(startsAt), operations)
-    )
-      return null;
-    return resolveSlotFromHours(startsAt, {
-      openMinute: hours.openMinute,
-      closeMinute: hours.closeMinute,
-      slotMinutes: hours.slotMinutes,
-      isClosed: hours.isClosed === 1,
-    });
-  });
+export function resolveConfiguredSlotFromSchedule(
+  startsAt: Date,
+  weekly: readonly PricingHours[],
+  planned: readonly PlannedSchedule[],
+) {
+  const schedule = plannedScheduleForDate(planned, dateKeyInTimeZone(startsAt));
+  if (schedule) {
+    const window = plannedWindowAt(schedule, startsAt);
+    return (
+      window && {
+        startsAt,
+        endsAt: window.endsAt,
+        durationMinutes: minutesBetween(startsAt, window.endsAt),
+      }
+    );
+  }
+  const hours = weekly.find((row) => row.dayOfWeek === dayOfWeek(startsAt));
+  return hours
+    ? resolveSlotFromHours(startsAt, {
+        ...hours,
+        isClosed: hours.isClosed === 1,
+      })
+    : null;
 }
 
-/**
- * The opening-hours window starting at `startsAt`, or null when it is not the
- * start of one. Unlike `resolveBookableSlot` it ignores the public "bookings
- * from" date: an administrator's manual booking keeps to the same grid as the
- * public calendar (so it can never straddle two public slots) but may be made
- * before public booking opens.
- */
-export async function resolveConfiguredSlot(startsAt: Date) {
-  const [hours] = await db
-    .select()
-    .from(openingHours)
-    .where(eq(openingHours.dayOfWeek, dayOfWeek(startsAt)))
-    .limit(1);
-  if (!hours) return null;
-  return resolveSlotFromHours(startsAt, {
-    openMinute: hours.openMinute,
-    closeMinute: hours.closeMinute,
-    slotMinutes: hours.slotMinutes,
-    isClosed: hours.isClosed === 1,
-  });
+/** Read one configuration for a selection spanning several days. */
+export async function resolveBookableSlots(starts: Date[]) {
+  if (starts.length === 0) return [];
+  const [operations, { weekly, planned }] = await Promise.all([
+    getOperations(),
+    readDatabase(loadBookingSchedule),
+  ]);
+  return starts.map((startsAt) =>
+    isDateOpenForBooking(dateKeyInTimeZone(startsAt), operations)
+      ? resolveConfiguredSlotFromSchedule(startsAt, weekly, planned)
+      : null,
+  );
+}
+
+/** The configured window, ignoring the public "bookings from" date. */
+export async function resolveConfiguredSlot(
+  startsAt: Date,
+  executor: DatabaseExecutor = db,
+) {
+  const { weekly, planned } = await loadBookingSchedule(executor);
+  return resolveConfiguredSlotFromSchedule(startsAt, weekly, planned);
 }
 
 /**

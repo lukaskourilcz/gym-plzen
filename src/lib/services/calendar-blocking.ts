@@ -7,7 +7,6 @@ import { ActionError } from "@/lib/helpers/action";
 import {
   addDaysToDateKey,
   dateKeyInTimeZone,
-  dayOfWeek,
   localDateTimeToDate,
 } from "@/lib/helpers/datetime";
 import {
@@ -16,7 +15,8 @@ import {
   type CalendarBlockRange,
   type CalendarBlockSelection,
 } from "@/lib/config/calendar-blocking";
-import { buildDaySlots } from "./slots";
+import { buildConfiguredDay } from "./slots";
+import { listPlannedSchedules } from "./planned-schedules";
 import { loadBlockingHours } from "./blocking";
 import { lockSchedule, reservationOverlaps } from "./availability";
 import { recordIn } from "./activity";
@@ -32,8 +32,9 @@ async function loadRange(
 ) {
   const start = localDateTimeToDate(from, 0),
     end = localDateTimeToDate(to, 0);
-  const [hours, reservations, blocks] = await Promise.all([
+  const [hours, planned, reservations, blocks] = await Promise.all([
     loadBlockingHours(executor),
+    listPlannedSchedules(executor),
     executor
       .select()
       .from(reservation)
@@ -58,14 +59,15 @@ async function loadRange(
   for (const item of reservations)
     if (item.rescheduleStartsAt && item.rescheduleEndsAt)
       busy.push({ start: item.rescheduleStartsAt, end: item.rescheduleEndsAt });
+  const weekly = hours.map((row) => ({
+    ...row,
+    isClosed: Number(row.isClosed),
+  }));
   const windows = [];
   for (let date = from; date < to; date = addDaysToDateKey(date, 1)) {
     if (selectedDates && !selectedDates.has(date)) continue;
-    const configured = hours.find(
-      (row) => row.dayOfWeek === dayOfWeek(localDateTimeToDate(date, 720)),
-    );
-    if (!configured) continue;
-    for (const slot of buildDaySlots(date, configured, busy, now)) {
+    for (const slot of buildConfiguredDay(date, weekly, planned, busy, now)
+      .slots) {
       if (slot.available)
         windows.push({
           dateKey: date,
@@ -78,25 +80,7 @@ async function loadRange(
   return {
     windows,
     scheduleFingerprint: createHash("sha256")
-      .update(
-        JSON.stringify(
-          hours.map(
-            ({
-              dayOfWeek,
-              openMinute,
-              closeMinute,
-              slotMinutes,
-              isClosed,
-            }) => ({
-              dayOfWeek,
-              openMinute,
-              closeMinute,
-              slotMinutes,
-              isClosed,
-            }),
-          ),
-        ),
-      )
+      .update(JSON.stringify([weekly, planned]))
       .digest("hex"),
   };
 }

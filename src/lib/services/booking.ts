@@ -1,3 +1,4 @@
+import { lockSchedule } from "./availability";
 import { randomBytes } from "node:crypto";
 import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
@@ -26,7 +27,7 @@ import {
 import {
   countEntries,
   deriveLoyaltyStatus,
-  getEntryPriceCents,
+  getEntryPrices,
   hasClaimedReward,
 } from "./loyalty";
 import { fulfillReservation } from "./fulfillment";
@@ -118,11 +119,13 @@ export async function startBooking(params: {
     throw new ActionError(
       "Doprovod je momentálně vypnutý. Obnovte stránku a pokračujte bez příplatku.",
     );
-  const basePrice = await getEntryPriceCents(params.startsAt);
   const token = randomBytes(32).toString("hex");
   // Price, reward claim and reservation commit atomically under one member row
   // lock. No external HTTP call can hold this transaction open.
   const reserved = await db.transaction(async (tx) => {
+    await lockSchedule(tx);
+    const [entryPrice] = await getEntryPrices([params.startsAt], tx);
+    const basePrice = entryPrice!.priceCents;
     let reward: number | undefined;
     if (params.userId) {
       const [member] = await tx
@@ -207,7 +210,7 @@ export async function startBooking(params: {
     await recordActivity({
       ...actor,
       action: "reservation.confirmed",
-      summary: `Rezervace na ${formatDateTime(params.startsAt)} potvrzena, voucher ${voucherCode} pokryl celou cenu ${formatMoney(basePrice)}.`,
+      summary: `Rezervace na ${formatDateTime(params.startsAt)} potvrzena, voucher ${voucherCode} pokryl celou cenu ${formatMoney(reserved.priceCents ?? 0)}.`,
       context: { voucherCode },
     });
     await fulfillReservation(reserved.id);
