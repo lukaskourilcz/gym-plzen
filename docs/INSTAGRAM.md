@@ -21,6 +21,8 @@ Unified Login i Facebook Login používají `graph.facebook.com` a při připoje
 
 ## Správa klientem
 
+Pod stavem připojení administrace ukazuje odpočet do vypršení přístupu a přesné datum. Odpočet běží po minutách. Posledních 14 dní je zvýrazněný, protože se v tom okně synchronizace pokouší token prodloužit. Poslední 3 dny je červený s výzvou k „Obnovit propojení“. Systémový token bez data vypršení odpočet nemá.
+
 Tužkami se upravuje nadpis, tlačítko profilu, text bez dostupných příspěvků a mobilní „Zobrazit další“. Správce může pás vypnout, obnovit příspěvky, skrýt jednotlivý příspěvek nebo odpojit účet. Skrytí přežije další synchronizaci. Titulky a fotografie příspěvků pocházejí z Instagramu; mění se tam.
 
 Nejvýše 12 nejnovějších viditelných příspěvků z posledních 30 načtených příspěvků. Počítač: 6 × 2; mobil: první 4 a rozbalení. Reels ukazují pouze statický náhled s ikonou. Pořadí konce homepage: výzva k rezervaci → Instagram → citát a newsletter → mapa → patička. Odkaz `#kontakt` zůstává funkční.

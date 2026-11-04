@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { RefreshCw, Eye, EyeOff } from "lucide-react";
 import { InstagramIcon as Instagram } from "@/components/site/social-icons";
 import {
   INSTAGRAM_PROBLEMS,
   INSTAGRAM_USERNAME,
+  instagramExpiryCountdown,
   instagramProblemText,
   type InstagramAdminState,
   type InstagramProblem,
@@ -24,6 +25,80 @@ import {
   refreshInstagramAction,
   disconnectInstagramAction,
 } from "./instagram-actions";
+
+const pragueTime = (iso: string) =>
+  new Date(iso).toLocaleString("cs-CZ", {
+    timeZone: "Europe/Prague",
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+/**
+ * Remaining access of the stored token. The clock starts only in the browser,
+ * so server and client markup match; it ticks once a minute without announcing.
+ */
+function InstagramExpiry({ expiresAt }: { expiresAt: string | null }) {
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, [expiresAt]);
+  if (!expiresAt)
+    return (
+      <p className="mt-1 text-sm text-muted-foreground">
+        Přístup nemá datum vypršení.
+      </p>
+    );
+  const when = (
+    <time dateTime={expiresAt} className="whitespace-nowrap">
+      {pragueTime(expiresAt)}
+    </time>
+  );
+  if (now === null)
+    return (
+      <p className="mt-1 text-sm text-muted-foreground">
+        Přístup platí do {when}.
+      </p>
+    );
+  const { tone, remaining } = instagramExpiryCountdown(expiresAt, now);
+  if (tone === "expired")
+    return (
+      <p className="mt-1 text-sm font-semibold text-destructive">
+        Přístup vypršel {when}. Klikněte na „Obnovit propojení“.
+      </p>
+    );
+  return (
+    <div className="mt-1 text-sm">
+      <p
+        className={
+          tone === "urgent"
+            ? "font-semibold text-destructive"
+            : tone === "renewal"
+              ? "font-semibold text-warning"
+              : "text-muted-foreground"
+        }
+      >
+        Do vypršení přístupu: {remaining}{" "}
+        <span className="font-normal text-muted-foreground">(do {when})</span>
+      </p>
+      {tone === "renewal" && (
+        <p className="mt-0.5 text-muted-foreground">
+          Při nejbližší automatické obnově se přístup pokusí prodloužit. Pokud
+          se odpočet neposune, klikněte na „Obnovit propojení“.
+        </p>
+      )}
+      {tone === "urgent" && (
+        <p className="mt-0.5 text-muted-foreground">
+          Klikněte na „Obnovit propojení“, aby se příspěvky na webu neskryly.
+        </p>
+      )}
+    </div>
+  );
+}
 
 /** Connection and visibility controls live outside the inert, editable website canvas. */
 export function InstagramEditor({
@@ -119,6 +194,7 @@ export function InstagramEditor({
               ? `Poslední obnova: ${new Date(value.lastSyncedAt).toLocaleString("cs-CZ", { timeZone: "Europe/Prague" })}`
               : "Po připojení se načte až 12 nejnovějších příspěvků."}
           </p>
+          {value.connected && <InstagramExpiry expiresAt={value.expiresAt} />}
         </div>
         <div className="flex flex-wrap gap-2">
           {value.configured ? (
