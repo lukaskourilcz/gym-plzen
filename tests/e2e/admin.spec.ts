@@ -224,10 +224,17 @@ test.describe("Admin : forms", () => {
   });
 
   test("an operator resolves only the selected alert", async ({ page }) => {
-    const [created] = await sql!<{ id: string }[]>`
+    const fixtures = await sql!<{ id: string; dedupe_key: string }[]>`
       insert into system_alert (title, body, dedupe_key)
-      values ('Lokální kontrola E2E', 'Pouze lokální test.', 'e2e:audit:alert')
-      returning id`;
+      values ('Lokální kontrola E2E', 'Pouze lokální test.', 'e2e:audit:alert'),
+             ('Další lokální upozornění', 'Pouze lokální test.', 'e2e:audit:other-alert')
+      returning id, dedupe_key`;
+    const created = fixtures.find(
+      (alert) => alert.dedupe_key === "e2e:audit:alert",
+    )!;
+    const other = fixtures.find(
+      (alert) => alert.dedupe_key === "e2e:audit:other-alert",
+    )!;
     await page.goto("/admin/alerts");
     const row = page
       .getByRole("row")
@@ -237,13 +244,24 @@ test.describe("Admin : forms", () => {
         name: "Označit jako vyřešené: Lokální kontrola E2E",
       })
       .click();
+    const dialog = page.getByRole("dialog", { name: "Uzavřít incident" });
+    const note = dialog.getByLabel("Jak byl incident vyřešen?");
+    await expect(note).toBeFocused();
+    const outcome = "Výsledek ověřen v místním testu.";
+    await note.fill(outcome);
+    await dialog.getByRole("button", { name: "Uložit a uzavřít" }).click();
+    await expect(dialog).not.toBeVisible();
+    await expect(row).toContainText(outcome);
     await expect
       .poll(async () => {
-        const [saved] = await sql!<{ resolved: boolean }[]>`
-        select resolved_at is not null as resolved from system_alert where id = ${created!.id}`;
-        return saved?.resolved;
+        const rows = await sql!<{ id: string; resolved: boolean }[]>`
+          select id, resolved_at is not null as resolved from system_alert
+          where id in (${created.id}, ${other.id})`;
+        return Object.fromEntries(
+          rows.map(({ id, resolved }) => [id, resolved]),
+        );
       })
-      .toBe(true);
+      .toEqual({ [created.id]: true, [other.id]: false });
   });
 
   test("reservations : admin creates a manual booking", async ({ page }) => {
