@@ -120,6 +120,19 @@ test("Instagram connects via local OAuth, shows lazy private thumbnails, hides p
         ),
     ).toBe(true);
     await publicPage.setViewportSize({ width: 1440, height: 1000 });
+    // Instagram's profile grid: 3:4 tiles, 1px apart, from a 720 × 960 source.
+    const first = (await links.nth(0).boundingBox())!;
+    const second = (await links.nth(1).boundingBox())!;
+    const below = (await links.nth(6).boundingBox())!;
+    expect(first.height / first.width).toBeCloseTo(4 / 3, 2);
+    expect(second.x - (first.x + first.width)).toBeCloseTo(1, 0);
+    expect(below.y - (first.y + first.height)).toBeCloseTo(1, 0);
+    expect(
+      await image.evaluate((e: HTMLImageElement) => [
+        e.naturalWidth,
+        e.naturalHeight,
+      ]),
+    ).toEqual([720, 960]);
     await section.screenshot({
       path: test.info().outputPath("instagram-public.jpg"),
       type: "jpeg",

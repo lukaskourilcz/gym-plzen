@@ -20,7 +20,7 @@ export type InstagramCopy = {
 export function InstagramThumbnail({ post }: { post: InstagramPost }) {
   const [failed, setFailed] = useState(false);
   return (
-    <div className="relative aspect-square overflow-hidden bg-primary/10">
+    <div className="relative aspect-[3/4] overflow-hidden bg-primary/10">
       {failed || post.hidden ? (
         <div className="absolute inset-0 flex items-center justify-center text-primary">
           <ImageOff className="size-7" aria-hidden="true" />
@@ -34,7 +34,7 @@ export function InstagramThumbnail({ post }: { post: InstagramPost }) {
               : "Příspěvek NAVI Private Gym"
           }
           fill
-          sizes="(max-width: 767px) 50vw, 17vw"
+          sizes="(max-width: 767px) 50vw, 192px"
           unoptimized
           loading="lazy"
           className="object-cover transition-transform duration-200 motion-reduce:transition-none group-hover:scale-105"
@@ -102,7 +102,8 @@ export function InstagramFeed({
         </div>
         {posts.length ? (
           <>
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
+            {/* Like Instagram's profile grid: 3:4 tiles separated by 1px. */}
+            <div className="grid grid-cols-2 gap-px md:grid-cols-6">
               {posts.slice(0, 12).map((post, i) => (
                 <div
                   key={post.id}
@@ -115,7 +116,7 @@ export function InstagramFeed({
                       href={post.permalink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group block rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                      className="group relative block focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                       aria-label={`Otevřít příspěvek na Instagramu: ${post.caption.slice(0, 140) || "NAVI Private Gym"}`}
                     >
                       <InstagramThumbnail post={post} />

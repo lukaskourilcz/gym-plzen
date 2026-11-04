@@ -72,6 +72,7 @@ beforeEach(async () => {
     failure: 0,
     imageType: "image/png",
     imageBroken: false,
+    imageSize: [1080, 1350],
     flatToken: false,
     unifiedScopes: ["instagram_basic"],
     unifiedExpiresAt: 0,
@@ -499,14 +500,24 @@ dbTest(
   },
 );
 dbTest(
-  "bounded image proxy converts a thumbnail, rejects SVG, corrupt images and untrusted hosts",
+  "bounded image proxy converts a thumbnail to Instagram's 3:4 grid tile, rejects SVG, corrupt images and untrusted hosts",
   async () => {
-    const data = await readInstagramImage(
-      "https://scontent.cdninstagram.com/a.jpg",
-    );
-    const info = await sharp(Buffer.from(data, "base64")).metadata();
-    assert.equal(info.format, "webp");
-    assert.equal(info.width, 480);
+    // Portrait, square, landscape and a small reel cover all become the same tile.
+    for (const size of [
+      [1080, 1350],
+      [1440, 1440],
+      [1080, 566],
+      [480, 853],
+    ] as [number, number][]) {
+      mock.state.imageSize = size;
+      const data = await readInstagramImage(
+        "https://scontent.cdninstagram.com/a.jpg",
+      );
+      const info = await sharp(Buffer.from(data, "base64")).metadata();
+      assert.equal(info.format, "webp");
+      assert.deepEqual([info.width, info.height], [720, 960], String(size));
+    }
+    mock.state.imageSize = [1080, 1350];
     for (const bad of [
       "http://scontent.cdninstagram.com/a.jpg",
       "https://127.0.0.1/a",

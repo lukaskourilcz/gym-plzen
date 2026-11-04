@@ -2,6 +2,11 @@ import sharp from "sharp";
 import { env } from "@/lib/env";
 import { isInstagramImageUrl } from "@/lib/config/instagram";
 import { InstagramError, readLimitedBody } from "./instagram";
+/**
+ * Instagram's profile grid shows every post as a centred 3:4 tile. 720 × 960
+ * stays sharp on 3× phones and 2× desktops at the sizes this site renders.
+ */
+export const INSTAGRAM_THUMBNAIL = { width: 720, height: 960 } as const;
 /** A bounded image decoder, no third-party iframe/script or full video download. */
 export async function readInstagramImage(source: string) {
   if (!isInstagramImageUrl(source)) throw new InstagramError("image");
@@ -37,8 +42,12 @@ export async function readInstagramImage(source: string) {
       animated: false,
     })
       .rotate()
-      .resize(480, 480, { fit: "cover", withoutEnlargement: true })
-      .webp({ quality: 78 })
+      // Always the exact grid shape; a smaller reel cover is upscaled slightly.
+      .resize(INSTAGRAM_THUMBNAIL.width, INSTAGRAM_THUMBNAIL.height, {
+        fit: "cover",
+        position: "centre",
+      })
+      .webp({ quality: 80 })
       .toBuffer();
     return data.toString("base64");
   } catch {
