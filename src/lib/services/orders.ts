@@ -554,6 +554,7 @@ async function startOrderUnlocked(params: {
               orderId: created.id,
               startsAt: slot.startsAt,
               endsAt: slot.endsAt,
+              requireConfiguredWindow: true,
               contactName: params.details.name,
               contactEmail: params.details.email,
               contactPhone: params.details.phone,

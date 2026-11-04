@@ -5,6 +5,7 @@ import { readDatabase } from "@/lib/db/read";
 import { MAX_SLOTS_PER_ORDER } from "@/lib/config/orders";
 import { blockedSlot, reservation } from "@/lib/db/schema";
 import {
+  addMinutes,
   dayOfWeek,
   dateKeyInTimeZone,
   minuteOfDay,
@@ -82,6 +83,7 @@ function isWithinOpeningHours(
   startsAt: Date,
   endsAt: Date,
   { weekly, planned }: Awaited<ReturnType<typeof loadBookingSchedule>>,
+  requireConfiguredWindow = false,
 ): boolean {
   const schedule = plannedScheduleForDate(planned, dateKeyInTimeZone(startsAt));
   if (schedule)
@@ -95,6 +97,16 @@ function isWithinOpeningHours(
 
   const start = minuteOfDay(startsAt),
     end = minuteOfDay(endsAt);
+  if (requireConfiguredWindow) {
+    const duration = hours.slotMinutes;
+    return (
+      duration > 0 &&
+      start >= hours.openMinute &&
+      start + duration <= hours.closeMinute &&
+      (start - hours.openMinute) % duration === 0 &&
+      addMinutes(startsAt, duration).getTime() === endsAt.getTime()
+    );
+  }
   return end > start && start >= hours.openMinute && end <= hours.closeMinute;
 }
 
@@ -105,7 +117,11 @@ function isWithinOpeningHours(
 export async function checkAvailability(
   startsAt: Date,
   endsAt: Date,
-  opts: { excludeReservationId?: string; excludeBlockedSlotId?: string } = {},
+  opts: {
+    excludeReservationId?: string;
+    excludeBlockedSlotId?: string;
+    requireConfiguredWindow?: boolean;
+  } = {},
   executor: DatabaseExecutor = db,
 ): Promise<AvailabilityResult> {
   if (minutesBetween(startsAt, endsAt) <= 0) {
@@ -113,7 +129,12 @@ export async function checkAvailability(
   }
 
   if (
-    !isWithinOpeningHours(startsAt, endsAt, await loadBookingSchedule(executor))
+    !isWithinOpeningHours(
+      startsAt,
+      endsAt,
+      await loadBookingSchedule(executor),
+      opts.requireConfiguredWindow,
+    )
   ) {
     return { available: false, reason: "closed" };
   }

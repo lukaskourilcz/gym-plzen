@@ -190,6 +190,15 @@ describe("planned booking schedules", { skip: !databaseReady }, () => {
       { id: updated!.id, revision: updated!.revision, remove: true },
       adminId,
     );
+    assert.equal(
+      (
+        await checkAvailability(starts(10, 440), starts(10, 520), {
+          requireConfiguredWindow: true,
+        })
+      ).reason,
+      "closed",
+      "an earlier checkout quote cannot book an off-grid window after removing its plan",
+    );
     assert.deepEqual(await listPlannedSchedules(), []);
     assert.equal(
       (await loadCalendarAvailability({ date: date(10) }, now)).view

@@ -150,7 +150,7 @@ export async function startPricedReschedule(input: {
       const available = await checkAvailability(
         quote.target.startsAt,
         quote.target.endsAt,
-        { excludeReservationId: locked.id },
+        { excludeReservationId: locked.id, requireConfiguredWindow: true },
         tx,
       );
       if (!available.available)

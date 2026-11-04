@@ -154,6 +154,7 @@ export async function startBooking(params: {
         userId: params.userId,
         startsAt: params.startsAt,
         endsAt: resolved.endsAt,
+        requireConfiguredWindow: true,
         contactName: params.details.name,
         contactEmail: params.details.email,
         contactPhone: params.details.phone,

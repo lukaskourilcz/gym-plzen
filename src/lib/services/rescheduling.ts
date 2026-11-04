@@ -270,6 +270,7 @@ async function rescheduleLocked(
         target.endsAt,
         {
           excludeReservationId: current.id,
+          requireConfiguredWindow: true,
           excludeBlockedSlotId: financial.blockId ?? undefined,
         },
         tx,
