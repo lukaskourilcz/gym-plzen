@@ -35,6 +35,7 @@ export const INSTAGRAM_PROBLEMS = [
   "not_configured",
   "authorization",
   "wrong_account",
+  "permissions",
   "provider",
   "busy",
   "invalid_state",
@@ -50,6 +51,8 @@ export function instagramProblemText(problem: InstagramProblem) {
       "Propojení vypršelo nebo Instagram odebral přístup. Propojte účet znovu.",
     wrong_account:
       "Vyberte profesionální účet @navi_plzen. Jiný účet se na tento web nepřipojí.",
+    permissions:
+      "Nastavte v Meta přístup pouze ke čtení profilu a příspěvků (instagram_basic).",
     provider:
       "Instagram teď neodpovídá. Poslední načtené příspěvky zůstávají zachované; zkuste obnovu později.",
     busy: "Obnova právě probíhá. Za chvíli obnovte tento přehled.",

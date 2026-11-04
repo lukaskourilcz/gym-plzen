@@ -45,6 +45,7 @@ import {
   INSTAGRAM_ENABLED_KEY,
 } from "../../src/lib/config/instagram";
 import { BOOKING_TABLES } from "../helpers/booking-tables";
+import { env } from "../../src/lib/env";
 const mock = createInstagramMock(INSTAGRAM_PORT);
 const dbTest = (name: string, fn: () => Promise<void>) =>
   test(name, { skip: !databaseReady }, fn);
@@ -72,6 +73,8 @@ beforeEach(async () => {
     imageType: "image/png",
     imageBroken: false,
     flatToken: false,
+    unifiedScopes: ["instagram_basic"],
+    unifiedExpiresAt: 0,
     media: defaultMedia(),
     delay: 0,
   });
@@ -94,6 +97,93 @@ async function snapshot() {
     ),
   );
 }
+
+async function withUnifiedConfiguration(work: () => Promise<void>) {
+  const configId = env.INSTAGRAM_UNIFIED_CONFIG_ID;
+  const appId = env.INSTAGRAM_APP_ID;
+  env.INSTAGRAM_UNIFIED_CONFIG_ID = "9999";
+  env.INSTAGRAM_APP_ID = "1111";
+  try {
+    await work();
+  } finally {
+    env.INSTAGRAM_UNIFIED_CONFIG_ID = configId;
+    env.INSTAGRAM_APP_ID = appId;
+  }
+}
+
+dbTest(
+  "Unified Login selects only NAVI and synchronizes without refreshing a system-user token as a legacy grant",
+  async () => {
+    await withUnifiedConfiguration(async () => {
+      const login = new URL(
+        instagramAuthorizationUrl("http://localhost/callback", "test-state"),
+      );
+      assert.equal(login.pathname, "/facebook-login/dialog/oauth");
+      assert.equal(login.searchParams.get("config_id"), "9999");
+      assert.equal(login.searchParams.get("state"), "test-state");
+      assert.equal(login.searchParams.has("scope"), false);
+      const protectedRecords = await snapshot();
+      mock.state.unifiedExpiresAt = Math.floor(Date.now() / 1000) + 3600;
+      await connect();
+      const [connection] = await rows<{
+        account_id: string;
+        oauth_user_id: string;
+        token_ciphertext: string;
+      }>(
+        "select account_id, oauth_user_id, token_ciphertext from instagram_connection",
+      );
+      assert.equal(connection!.account_id, "5678");
+      assert.equal(connection!.oauth_user_id, "2222");
+      assert.match(connection!.token_ciphertext, /^v2\./);
+      assert.doesNotMatch(connection!.token_ciphertext, /unified-local-token/);
+      await rows(
+        "update instagram_connection set token_refreshed_at = now() - interval '2 days'",
+      );
+      assert.equal((await syncInstagram({ force: true })).synced, true);
+      assert.equal((await loadInstagramFeed()).posts.length, 12);
+      assert.ok(
+        mock.state.calls.some(
+          ({ path }) => path === "/facebook-graph/v26.0/5678/media",
+        ),
+      );
+      assert.ok(
+        mock.state.calls.every(({ path }) =>
+          path.startsWith("/facebook-graph/"),
+        ),
+      );
+      assert.deepEqual(await snapshot(), protectedRecords);
+      assert.equal(resend.sent.length, 0);
+    });
+  },
+);
+
+dbTest(
+  "an unrelated account, broader permissions or expired Meta grant cannot replace a working connection",
+  async () => {
+    await connect();
+    const before = await rows("select * from instagram_connection");
+    await withUnifiedConfiguration(async () => {
+      mock.state.unifiedScopes = [
+        "instagram_basic",
+        "instagram_manage_messages",
+      ];
+      await assert.rejects(connect, { problem: "permissions" });
+      mock.state.unifiedScopes = ["instagram_basic"];
+      mock.state.username = "different_account";
+      await assert.rejects(connect, { problem: "wrong_account" });
+      mock.state.unifiedExpiresAt = Math.floor(Date.now() / 1000) - 10;
+      await assert.rejects(connect, { problem: "authorization" });
+      assert.deepEqual(
+        await rows("select * from instagram_connection"),
+        before,
+      );
+      assert.equal((await syncInstagram({ force: true })).synced, true);
+      assert.ok(
+        mock.state.calls.some(({ path }) => path === "/graph/v24.0/5678/media"),
+      );
+    });
+  },
+);
 
 dbTest(
   "Instagram connection, sync, visibility and deletion never change reservations, codes, payments or messages",

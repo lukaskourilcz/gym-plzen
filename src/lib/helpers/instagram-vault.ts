@@ -6,6 +6,7 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 import { env } from "@/lib/env";
+import { z } from "zod";
 import {
   InstagramError,
   parseInstagramJson,
@@ -27,16 +28,24 @@ function key(purpose: string) {
     .update(`navi-instagram-v1:${purpose}`)
     .digest();
 }
-export function encryptInstagramToken(token: string, accountId: string) {
+export function encryptInstagramToken(
+  token: string,
+  accountId: string,
+  version: "v1" | "v2" = "v1",
+) {
   const iv = randomBytes(12),
-    cipher = createCipheriv("aes-256-gcm", key("token"), iv);
+    cipher = createCipheriv(
+      "aes-256-gcm",
+      key(version === "v2" ? "unified-token" : "token"),
+      iv,
+    );
   cipher.setAAD(Buffer.from(accountId));
   const ciphertext = Buffer.concat([
     cipher.update(token, "utf8"),
     cipher.final(),
   ]);
   return [
-    "v1",
+    version,
     iv.toString("base64url"),
     cipher.getAuthTag().toString("base64url"),
     ciphertext.toString("base64url"),
@@ -45,10 +54,17 @@ export function encryptInstagramToken(token: string, accountId: string) {
 export function decryptInstagramToken(value: string, accountId: string) {
   try {
     const [version, nonce, tag, data, extra] = value.split(".");
-    if (version !== "v1" || !nonce || !tag || !data || extra) throw new Error();
+    if (
+      (version !== "v1" && version !== "v2") ||
+      !nonce ||
+      !tag ||
+      !data ||
+      extra
+    )
+      throw new Error();
     const decipher = createDecipheriv(
       "aes-256-gcm",
-      key("token"),
+      key(version === "v2" ? "unified-token" : "token"),
       decode(nonce),
     );
     decipher.setAAD(Buffer.from(accountId));
@@ -57,6 +73,27 @@ export function decryptInstagramToken(value: string, accountId: string) {
       decipher.update(decode(data)),
       decipher.final(),
     ]).toString("utf8");
+  } catch {
+    throw new InstagramError("authorization");
+  }
+}
+const unifiedToken = z.object({
+  token: z.string().min(8).max(8192),
+  configId: z.string().regex(/^\d{1,30}$/),
+  businessId: z.string().regex(/^\d{1,30}$/),
+});
+
+/** The encrypted version binds a token to its provider and prevents a legacy refresh. */
+export function readStoredInstagramToken(
+  ciphertext: string,
+  accountId: string,
+) {
+  const raw = decryptInstagramToken(ciphertext, accountId);
+  if (!ciphertext.startsWith("v2.")) return { unified: false, token: raw };
+  try {
+    const grant = unifiedToken.parse(JSON.parse(raw));
+    if (grant.configId !== env.INSTAGRAM_UNIFIED_CONFIG_ID) throw new Error();
+    return { unified: true, token: grant.token };
   } catch {
     throw new InstagramError("authorization");
   }
