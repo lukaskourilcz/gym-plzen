@@ -77,6 +77,8 @@ beforeEach(async () => {
     unifiedExpiresAt: 0,
     unifiedBusinessId: "3333",
     unifiedAssignmentsEmpty: false,
+    facebookUserLogin: false,
+    granularTargets: ["17841427246422536"],
     media: defaultMedia(),
     delay: 0,
   });
@@ -183,6 +185,127 @@ dbTest(
       assert.equal((await loadInstagramFeed()).posts.length, 12);
       assert.ok(
         mock.state.calls.some(({ path }) => path === `${directPath}/media`),
+      );
+      assert.deepEqual(await snapshot(), protectedRecords);
+      assert.equal(resend.sent.length, 0);
+    });
+  },
+);
+
+async function withFacebookUserLogin(work: () => Promise<void>) {
+  const previous = env.INSTAGRAM_FACEBOOK_USER_LOGIN;
+  const appId = env.INSTAGRAM_APP_ID;
+  env.INSTAGRAM_FACEBOOK_USER_LOGIN = "true";
+  env.INSTAGRAM_APP_ID = "1111";
+  mock.state.facebookUserLogin = true;
+  try {
+    await work();
+  } finally {
+    env.INSTAGRAM_FACEBOOK_USER_LOGIN = previous;
+    env.INSTAGRAM_APP_ID = appId;
+    mock.state.facebookUserLogin = false;
+  }
+}
+
+dbTest(
+  "Facebook user login reads only @navi_plzen with instagram_basic, refreshes the long-lived token and leaves customer data alone",
+  async () => {
+    await withFacebookUserLogin(async () => {
+      const login = new URL(
+        instagramAuthorizationUrl("http://localhost/callback", "test-state"),
+      );
+      assert.equal(login.pathname, "/facebook-login/dialog/oauth");
+      assert.equal(login.searchParams.get("scope"), "instagram_basic");
+      assert.equal(login.searchParams.get("response_type"), "code");
+      assert.equal(login.searchParams.get("state"), "test-state");
+      assert.equal(login.searchParams.has("config_id"), false);
+      mock.state.unifiedExpiresAt = Math.floor(Date.now() / 1000) + 60 * 86400;
+
+      // A grant that targets another Instagram asset, another username or
+      // more than reading the feed never creates a connection.
+      mock.state.granularTargets = ["4444"];
+      await assert.rejects(connect, { problem: "wrong_account" });
+      mock.state.granularTargets = ["17841427246422536"];
+      mock.state.username = "different_account";
+      await assert.rejects(connect, { problem: "wrong_account" });
+      mock.state.username = "navi_plzen";
+      mock.state.unifiedScopes = ["instagram_basic", "pages_show_list"];
+      await assert.rejects(connect, { problem: "permissions" });
+      mock.state.unifiedScopes = ["instagram_basic"];
+      assert.equal(
+        (await rows("select id from instagram_connection")).length,
+        0,
+      );
+
+      const protectedRecords = await snapshot();
+      mock.state.calls.length = 0;
+      await connect();
+      const [connection] = await rows<{
+        account_id: string;
+        oauth_user_id: string;
+        token_ciphertext: string;
+      }>(
+        "select account_id, oauth_user_id, token_ciphertext from instagram_connection",
+      );
+      assert.equal(connection!.account_id, "17841427246422536");
+      assert.equal(connection!.oauth_user_id, "2222");
+      assert.match(connection!.token_ciphertext, /^v3\./);
+      assert.doesNotMatch(
+        connection!.token_ciphertext,
+        /fb-(short|long)-token/,
+      );
+      assert.ok(
+        mock.state.calls.every(({ path }) =>
+          path.startsWith("/facebook-graph/"),
+        ),
+      );
+      assert.ok(
+        !mock.state.calls.some(
+          ({ path }) =>
+            path === "/facebook-graph/v26.0/me/assigned_instagram_accounts",
+        ),
+      );
+      assert.equal((await syncInstagram({ force: true })).synced, true);
+      assert.equal((await loadInstagramFeed()).posts.length, 12);
+      assert.ok(
+        mock.state.calls.some(
+          ({ path }) =>
+            path === "/facebook-graph/v26.0/17841427246422536/media",
+        ),
+      );
+
+      // Close to expiry the token is re-exchanged and the account re-verified.
+      await rows(
+        "update instagram_connection set expires_at = now() + interval '5 days', token_refreshed_at = now() - interval '2 days', last_attempt_at = null",
+      );
+      mock.state.calls.length = 0;
+      assert.equal((await syncInstagram({ force: true })).synced, true);
+      assert.ok(
+        mock.state.calls.some(
+          ({ path }) => path === "/facebook-graph/v26.0/oauth/access_token",
+        ),
+      );
+      const [refreshed] = await rows<{
+        expires_at: Date;
+        token_ciphertext: string;
+      }>("select expires_at, token_ciphertext from instagram_connection");
+      assert.ok(
+        new Date(refreshed!.expires_at).getTime() > Date.now() + 30 * 86400_000,
+      );
+      assert.match(refreshed!.token_ciphertext, /^v3\./);
+      assert.notEqual(
+        refreshed!.token_ciphertext,
+        connection!.token_ciphertext,
+      );
+
+      // Losing the asset after connection hides the feed instead of showing stale posts.
+      mock.state.granularTargets = ["4444"];
+      await rows(
+        "update instagram_connection set expires_at = now() + interval '5 days', token_refreshed_at = now() - interval '2 days', last_attempt_at = null",
+      );
+      assert.equal(
+        (await syncInstagram({ force: true })).problem,
+        "wrong_account",
       );
       assert.deepEqual(await snapshot(), protectedRecords);
       assert.equal(resend.sent.length, 0);

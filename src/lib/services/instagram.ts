@@ -24,9 +24,11 @@ import {
   InstagramError,
   INSTAGRAM_UNLIMITED_EXPIRY,
   readInstagramMedia,
+  refreshFacebookUserToken,
   refreshInstagramToken,
 } from "@/lib/integrations/instagram";
 import {
+  encryptFacebookUserToken,
   encryptInstagramToken,
   readStoredInstagramToken,
 } from "@/lib/helpers/instagram-vault";
@@ -162,17 +164,21 @@ export async function connectInstagram(
     oauthUserId,
     expiresAt,
     token,
+    provider,
     configId,
     businessId,
   } = await instagramGrant(code, redirectUri);
   const now = new Date();
-  const tokenCiphertext = configId
-    ? encryptInstagramToken(
-        JSON.stringify({ token, configId, businessId }),
-        accountId,
-        "v2",
-      )
-    : encryptInstagramToken(token, accountId);
+  const tokenCiphertext =
+    provider === "facebook-user"
+      ? encryptFacebookUserToken(token, accountId)
+      : provider === "unified" && configId
+        ? encryptInstagramToken(
+            JSON.stringify({ token, configId, businessId }),
+            accountId,
+            "v2",
+          )
+        : encryptInstagramToken(token, accountId);
   await db.transaction(async (tx) => {
     // Serialise connect/disconnect with committing sync results, independently of booking locks.
     await tx.execute(
@@ -274,19 +280,31 @@ export async function syncInstagram({
       connection.accountId,
     );
     let token = grant.token;
-    if (
-      !grant.unified &&
+    const refreshDue =
       connection.expiresAt.getTime() < now.getTime() + 14 * 86400_000 &&
-      connection.tokenRefreshedAt.getTime() < now.getTime() - 86400_000
-    ) {
-      const refreshed = await refreshInstagramToken(token);
+      connection.tokenRefreshedAt.getTime() < now.getTime() - 86400_000;
+    // A system-user grant never refreshes; the admin re-connects after revocation.
+    if (refreshDue && grant.provider !== "unified") {
+      const refreshed =
+        grant.provider === "facebook-user"
+          ? await refreshFacebookUserToken(token)
+          : await (async () => {
+              const legacy = await refreshInstagramToken(token);
+              return {
+                token: legacy.token,
+                expiresAt: new Date(now.getTime() + legacy.expiresIn * 1000),
+              };
+            })();
       token = refreshed.token;
       const retained = await db
         .update(instagramConnection)
         .set({
-          tokenCiphertext: encryptInstagramToken(token, connection.accountId),
+          tokenCiphertext:
+            grant.provider === "facebook-user"
+              ? encryptFacebookUserToken(token, connection.accountId)
+              : encryptInstagramToken(token, connection.accountId),
           tokenRefreshedAt: now,
-          expiresAt: new Date(now.getTime() + refreshed.expiresIn * 1000),
+          expiresAt: refreshed.expiresAt,
         })
         .where(eq(instagramConnection.leaseId, leaseId))
         .returning({ id: instagramConnection.id });
@@ -296,7 +314,7 @@ export async function syncInstagram({
     const media = await readInstagramMedia(
       connection.accountId,
       token,
-      grant.unified,
+      grant.provider !== "instagram",
     );
     const committed = await db.transaction(async (tx) => {
       await tx.execute(
