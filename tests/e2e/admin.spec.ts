@@ -322,6 +322,7 @@ test("plans a dated schedule, adjusts a window price, and removes the plan", asy
   const today = dateKeyInTimeZone(new Date());
   const from = addDaysToDateKey(today, 40);
   const to = addDaysToDateKey(today, 41);
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/admin/schedule");
   await page.getByRole("button", { name: "Přidat rozvrh" }).click();
   let dialog = page.getByRole("dialog", { name: "Přidat rozvrh" });
@@ -334,6 +335,9 @@ test("plans a dated schedule, adjusts a window price, and removes the plan", asy
   await expect(
     dialog.getByRole("group", { name: "Okno 12", exact: true }),
   ).toBeVisible();
+  expect(
+    await dialog.evaluate((el) => el.scrollWidth - el.clientWidth),
+  ).toBeLessThanOrEqual(1);
   await dialog
     .getByRole("group", { name: "Okno 2", exact: true })
     .getByLabel("Cena (Kč)")

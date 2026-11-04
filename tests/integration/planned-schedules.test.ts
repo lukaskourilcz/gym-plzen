@@ -19,7 +19,11 @@ import {
   loadCalendarBlockChoices,
   saveCalendarBlockSelection,
 } from "../../src/lib/services/calendar-blocking";
-import { resolveOrderSlots, quoteOrder } from "../../src/lib/services/orders";
+import {
+  resolveOrderSlots,
+  quoteOrder,
+  startOrder,
+} from "../../src/lib/services/orders";
 import {
   checkAvailability,
   checkAvailabilityBatch,
