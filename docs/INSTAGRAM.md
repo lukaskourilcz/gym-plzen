@@ -1,17 +1,19 @@
 # Instagram @navi_plzen
 
-Veřejný pás používá oficiální Instagram API s Instagram Login, pouze oprávnění `instagram_business_basic`. Účet musí být profesionální Business nebo Creator. Facebook Page není nutná. Heslo se zadává pouze na Instagramu, nikdy v administraci webu.
+Veřejný pás používá oficiální Instagram API. Účet musí být profesionální Business nebo Creator. Pro novou aplikaci Meta použijte Unified Login s oprávněním `instagram_basic`. Dříve vytvořené aplikace mohou dál používat Instagram Login s oprávněním `instagram_business_basic`.
 
 ## Příprava před prvním propojením
 
-1. V Meta for Developers vytvořit aplikaci s Instagram Login. Přidat profesionální účet @navi_plzen jako testera pro vývoj; pro běžný provoz dokončit požadované ověření/oprávnění a přepnout aplikaci do Live podle podmínek Meta.
+1. Novou aplikaci Meta připojte k firemnímu portfoliu NAVI Gym. Vytvořte konfiguraci Facebook Login for Business pro účet Instagram se systémovým tokenem a čtením `instagram_basic`. Zkontrolujte skutečný rozsah před udělením přístupu. Šablona Meta může zahrnovat zprávy, publikování a reklamu. Aplikace přijme pouze `instagram_basic` a případné výchozí `public_profile`. Připojení s širšími oprávněními odmítne. Pro živý provoz dokončete případné požadavky Meta. [Oficiální postup](https://developers.facebook.com/documentation/instagram-platform/instagram-api-with-unified-login/get-started)
 2. Přesná povolená OAuth redirect URI: `https://www.navigym.cz/api/admin/instagram/callback` (musí odpovídat kanonickému `NEXT_PUBLIC_APP_URL`). Nastavit privacy-policy URL webu. Deauthorization i data-deletion callback: `https://www.navigym.cz/api/instagram/deauthorize`.
-3. Správce nasazení přidá server-only `INSTAGRAM_APP_ID`, `INSTAGRAM_APP_SECRET`, `INSTAGRAM_TOKEN_ENCRYPTION_KEY` (nových 32 náhodných bajtů jako 64 hex znaků). Klíč je vlastní, nesdílí se s klíčem vstupních kódů. Do `NEXT_PUBLIC_*` nepatří žádné tajné hodnoty. Nikdy nenastavovat `INSTAGRAM_TEST_BASE_URL` v nasazení.
+3. Správce nasazení přidá server-only `INSTAGRAM_APP_ID`, `INSTAGRAM_APP_SECRET`, `INSTAGRAM_TOKEN_ENCRYPTION_KEY` (nových 32 náhodných bajtů jako 64 hex znaků). Pro Unified Login použije ID a tajný klíč aplikace Meta a přidá `INSTAGRAM_UNIFIED_CONFIG_ID` z konfigurace. Bez tohoto ID zůstává aktivní starší Instagram Login s údaji Instagram App. Klíč šifrování Instagramu se nesdílí s klíčem vstupních kódů. `INSTAGRAM_TEST_BASE_URL` patří výhradně do místních testů.
 4. Aplikovat pouze migraci `drizzle/20261022190000_instagram_feed.sql`. Vytváří dvě prázdné soukromé tabulky. Nevkládá příspěvky, propojení, nastavení ani testovací obsah. Nemění zákaznické tabulky.
 5. V **Obsah webu → Instagram** kliknout **Připojit Instagram** a schválit čtení účtu @navi_plzen. První synchronizace proběhne po návratu. Jiný účet se odmítne. Otestovat připojení nejdříve v odděleném prostředí s vlastními přístupovými údaji.
 6. Vercel samostatný cron `/api/cron/sync-instagram` každých 30 minut používá stávající `CRON_SECRET`. Když není propojení připravené, nezavolá Meta. Nenapojuje se na pipeline rezervací, kódů ani zpráv.
 
 Dokud nejsou údaje připravené a účet propojený, zobrazuje web pouze upravitelný odkaz na profil. Celý pás lze vypnout. Přímé propojení skutečného účtu a udělení Live oprávnění je externí krok; lokální testy jej nenahrazují.
+
+Unified Login používá `graph.facebook.com` a při připojení kontroluje aplikaci, rozsah tokenu a sdílený účet. Systémový token ukládá zašifrovaný se samostatnou verzí. Při vypršení nebo odebrání přístupu vyžaduje nové propojení. Úprava využívá existující databázové tabulky.
 
 ## Správa klientem
 
