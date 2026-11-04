@@ -35,7 +35,11 @@ export async function monitorLockConnectivity(now = new Date()) {
       return previous;
     const health = nextLockHealth(previous, await readLockConnectivity(), now);
     await setSetting(key, health);
-    if (health.state === "online") await resolveAlert(key);
+    if (health.state === "online")
+      await resolveAlert(key, {
+        kind: "recovered",
+        message: "Nuki znovu potvrdilo dostupnost zámku.",
+      });
     else if (
       health.unavailableSince &&
       now.getTime() - Date.parse(health.unavailableSince) >= 15 * 60_000

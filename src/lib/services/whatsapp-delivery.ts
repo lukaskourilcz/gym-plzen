@@ -248,7 +248,10 @@ export async function reconcileReservationWhatsApp() {
             },
           });
         if (["delivered", "read"].includes(result.status))
-          await resolveAlert(`whatsapp:${message.reservationId}`);
+          await resolveAlert(`whatsapp:${message.reservationId}`, {
+            kind: "recovered",
+            message: "Poskytovatel potvrdil doručení zprávy přes WhatsApp.",
+          });
       });
     } catch {
       /* Read failure is not proof of delivery failure; retry the read. */

@@ -9,7 +9,18 @@ import {
 } from "./setup";
 import assert from "node:assert/strict";
 import { after, before, beforeEach, describe, test } from "node:test";
-import { raiseAlert } from "../../src/lib/services/alerts";
+import {
+  dashboardAlerts,
+  raiseAlert,
+  resolveAlertById,
+} from "../../src/lib/services/alerts";
+import {
+  closePipeline,
+  initPipeline,
+  markStepFailed,
+  markStepSucceeded,
+} from "../../src/lib/services/pipeline";
+import { incidentUpdates } from "../../src/lib/config/incident-updates";
 import { buildReservationIncident } from "../../src/lib/services/reservation-incidents";
 import { getReservation } from "../../src/lib/services/reservations";
 import { dispatchAccessCode } from "../../src/lib/services/notifications";
@@ -103,6 +114,83 @@ describe("specific operational incidents", { skip: !databaseReady }, () => {
     assert.ok(
       resend.sent.every((mail) => JSON.stringify(mail.to).includes(operator)),
     );
+  });
+  test("verified recovery closes only the matching incident and records one final update", async (t) => {
+    const b = await booking();
+    await initPipeline(b.id);
+    const refund = await raiseAlert({
+      dedupeKey: `refund-needed:${b.id}`,
+      title: "Ověřit vrácení platby",
+      context: { reservationId: b.id, amountCents: 19900 },
+    });
+    for (let attempt = 0; attempt < 6; attempt++)
+      await markStepFailed(b.id, "code_created", { code: "code_unconfirmed" });
+    const before = await Promise.all([
+      rows("select * from reservation"),
+      rows("select * from access_code"),
+      rows("select * from payment"),
+      rows("select * from message_delivery"),
+    ]);
+    const sent = resend.sent.length;
+    t.mock.timers.setTime(now.getTime() + 60_000);
+    await markStepSucceeded(b.id, "code_created");
+    await markStepSucceeded(b.id, "code_created");
+
+    const dashboard = await dashboardAlerts(now);
+    assert.equal(dashboard.openCount, 1);
+    assert.equal(dashboard.open[0]?.id, refund?.id);
+    assert.equal(dashboard.recentClosed.length, 1);
+    const recovered = dashboard.recentClosed[0]!;
+    assert.deepEqual(
+      incidentUpdates(recovered.context).map((update) => update.kind),
+      ["opened", "repeated", "recovered"],
+    );
+    assert.match(
+      incidentUpdates(recovered.context).at(-1)!.message,
+      /ověřil vstupní kód/,
+    );
+    assert.equal(parseIncident(recovered.context)?.attempts, 6);
+
+    await resolveAlertById(refund!.id, "Vrácení ověřeno v ukázkovém Comgate.");
+    await resolveAlertById(refund!.id, "Opakované odeslání formuláře.");
+    const [savedRefund] = await rows<{ context: unknown }>(
+      "select context from system_alert where id = $1",
+      [refund!.id],
+    );
+    assert.deepEqual(
+      incidentUpdates(savedRefund!.context).map((update) => update.kind),
+      ["opened", "manual"],
+    );
+    assert.equal(
+      incidentUpdates(savedRefund!.context).at(-1)!.message,
+      "Vrácení ověřeno v ukázkovém Comgate.",
+    );
+    assert.equal(resend.sent.length, sent);
+    assert.deepEqual(
+      await Promise.all([
+        rows("select * from reservation"),
+        rows("select * from access_code"),
+        rows("select * from payment"),
+        rows("select * from message_delivery"),
+      ]),
+      before,
+    );
+  });
+  test("an ended reservation records why attempts stopped without claiming that delivery recovered", async () => {
+    const b = await booking();
+    await initPipeline(b.id);
+    const alert = await raiseAlert(notice(b));
+    const sent = resend.sent.length;
+    await closePipeline(b.id, "Rezervace skončila");
+    const [saved] = await rows<{ context: unknown; resolved_at: Date | null }>(
+      "select context, resolved_at from system_alert where id = $1",
+      [alert!.id],
+    );
+    assert.ok(saved?.resolved_at);
+    const lastUpdate = incidentUpdates(saved.context).at(-1);
+    assert.equal(lastUpdate?.kind, "closed");
+    assert.match(lastUpdate!.message, /Rezervace skončila/);
+    assert.equal(resend.sent.length, sent);
   });
   test("dispatch diagnoses absent recipients without sending to a provider or creating a delivery attempt", async () => {
     const b = await booking();
