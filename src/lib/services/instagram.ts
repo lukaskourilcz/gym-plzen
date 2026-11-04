@@ -19,16 +19,16 @@ import {
   type InstagramProblem,
 } from "@/lib/config/instagram";
 import {
-  exchangeInstagramCode,
+  instagramGrant,
   instagramConfigured,
   InstagramError,
+  INSTAGRAM_UNLIMITED_EXPIRY,
   readInstagramMedia,
-  readInstagramProfile,
   refreshInstagramToken,
 } from "@/lib/integrations/instagram";
 import {
-  decryptInstagramToken,
   encryptInstagramToken,
+  readStoredInstagramToken,
 } from "@/lib/helpers/instagram-vault";
 
 const publicColumns = {
@@ -140,7 +140,11 @@ export async function getInstagramAdminState(): Promise<InstagramAdminState> {
       connected: Boolean(connection),
       enabled: setting?.value !== false,
       username: connection?.username ?? null,
-      expiresAt: connection?.expiresAt.toISOString() ?? null,
+      expiresAt:
+        connection &&
+        connection.expiresAt.getTime() !== INSTAGRAM_UNLIMITED_EXPIRY
+          ? connection.expiresAt.toISOString()
+          : null,
       lastSyncedAt: connection?.lastSyncedAt?.toISOString() ?? null,
       problem,
       posts: posts(rows),
@@ -152,9 +156,23 @@ export async function connectInstagram(
   redirectUri: string,
   adminId: string,
 ) {
-  const token = await exchangeInstagramCode(code, redirectUri);
-  const profile = await readInstagramProfile(token.token);
+  const {
+    accountId,
+    username,
+    oauthUserId,
+    expiresAt,
+    token,
+    configId,
+    businessId,
+  } = await instagramGrant(code, redirectUri);
   const now = new Date();
+  const tokenCiphertext = configId
+    ? encryptInstagramToken(
+        JSON.stringify({ token, configId, businessId }),
+        accountId,
+        "v2",
+      )
+    : encryptInstagramToken(token, accountId);
   await db.transaction(async (tx) => {
     // Serialise connect/disconnect with committing sync results, independently of booking locks.
     await tx.execute(
@@ -163,14 +181,15 @@ export async function connectInstagram(
     const [before] = await tx
       .select({ accountId: instagramConnection.accountId })
       .from(instagramConnection);
-    if (before && before.accountId !== profile.accountId)
+    if (before && before.accountId !== accountId)
       await tx.delete(instagramConnection);
     const value = {
       id: "main",
-      ...profile,
-      oauthUserId: token.oauthUserId,
-      tokenCiphertext: encryptInstagramToken(token.token, profile.accountId),
-      expiresAt: new Date(now.getTime() + token.expiresIn * 1000),
+      accountId,
+      username,
+      oauthUserId,
+      tokenCiphertext,
+      expiresAt,
       tokenRefreshedAt: now,
       connectedAt: now,
       connectedByAdminId: adminId,
@@ -250,11 +269,13 @@ export async function syncInstagram({
     return { synced: false, problem: "busy" as InstagramProblem };
   try {
     if (connection.expiresAt <= now) throw new InstagramError("authorization");
-    let token = decryptInstagramToken(
+    const grant = readStoredInstagramToken(
       connection.tokenCiphertext,
       connection.accountId,
     );
+    let token = grant.token;
     if (
+      !grant.unified &&
       connection.expiresAt.getTime() < now.getTime() + 14 * 86400_000 &&
       connection.tokenRefreshedAt.getTime() < now.getTime() - 86400_000
     ) {
@@ -272,7 +293,11 @@ export async function syncInstagram({
       if (!retained.length)
         return { synced: false, problem: "busy" as InstagramProblem };
     }
-    const media = await readInstagramMedia(connection.accountId, token);
+    const media = await readInstagramMedia(
+      connection.accountId,
+      token,
+      grant.unified,
+    );
     const committed = await db.transaction(async (tx) => {
       await tx.execute(
         sql`select pg_advisory_xact_lock(hashtext('instagram:connection'))`,

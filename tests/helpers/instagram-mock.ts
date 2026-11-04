@@ -11,6 +11,8 @@ export function createInstagramMock(port: number) {
     imageType: "image/png",
     imageBroken: false,
     flatToken: false,
+    unifiedScopes: ["instagram_basic"],
+    unifiedExpiresAt: 0,
     media: defaultMedia(),
     calls: [] as { path: string; method: string }[],
     delay: 0,
@@ -62,8 +64,55 @@ export function createInstagramMock(port: number) {
         username: state.username,
         account_type: state.accountType,
       });
-    if (url.pathname === "/graph/v24.0/5678/media") {
-      if (req.headers.authorization !== "Bearer long-local-token")
+    if (url.pathname === "/facebook-graph/v26.0/oauth/access_token") {
+      if (
+        req.method !== "GET" ||
+        url.searchParams.get("client_id") !== "1111" ||
+        url.searchParams.get("client_secret") !== "local-instagram-secret" ||
+        url.searchParams.get("code") !== "local-test-code" ||
+        url.searchParams.get("redirect_uri") !== "http://localhost/callback"
+      )
+        return json({ error: { code: 190 } }, 400);
+      return json({ access_token: "unified-local-token" });
+    }
+    if (url.pathname === "/facebook-graph/v26.0/debug_token") {
+      if (
+        req.headers.authorization !== "Bearer 1111|local-instagram-secret" ||
+        url.searchParams.get("input_token") !== "unified-local-token"
+      )
+        return json({ error: { code: 190 } }, 400);
+      return json({
+        data: {
+          app_id: "1111",
+          is_valid: true,
+          scopes: state.unifiedScopes,
+          expires_at: state.unifiedExpiresAt,
+          data_access_expires_at: 0,
+        },
+      });
+    }
+    if (
+      url.pathname.startsWith("/facebook-graph/") &&
+      req.headers.authorization !== "Bearer unified-local-token"
+    )
+      return json({ error: { code: 190 } }, 401);
+    if (url.pathname === "/facebook-graph/v26.0/me")
+      return json({ id: "2222", client_business_id: "3333" });
+    if (url.pathname === "/facebook-graph/v26.0/me/assigned_instagram_accounts")
+      return json({
+        data: [
+          { id: "4444", username: "other_account" },
+          { id: "5678", username: state.username },
+        ],
+      });
+    if (
+      url.pathname === "/graph/v24.0/5678/media" ||
+      url.pathname === "/facebook-graph/v26.0/5678/media"
+    ) {
+      if (
+        url.pathname.startsWith("/graph/") &&
+        req.headers.authorization !== "Bearer long-local-token"
+      )
         return json({ error: { code: 190 } }, 401);
       if (state.delay) await new Promise((r) => setTimeout(r, state.delay));
       if (state.failure)

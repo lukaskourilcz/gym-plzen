@@ -283,12 +283,12 @@ export function InstagramEditor({
               Účet @navi_plzen musí být profesionální: Business nebo Creator.
             </li>
             <li>
-              Správce webu připraví aplikaci Meta s Instagram Login a oprávněním
-              pro čtení příspěvků.
+              Správce webu připraví aplikaci Meta s přístupem ke čtení
+              příspěvků. Nová aplikace potřebuje firemní portfolio NAVI Gym.
             </li>
             <li>
               Potom zde zvolíte „Připojit Instagram“ a přihlásíte se přímo na
-              Instagramu. Heslo na tomto webu nezadáváte.
+              obrazovce Meta. Heslo na tomto webu nezadáváte.
             </li>
           </ol>
           <p className="mt-4 text-sm text-muted-foreground">
