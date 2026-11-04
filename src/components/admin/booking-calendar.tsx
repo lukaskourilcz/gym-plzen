@@ -62,6 +62,7 @@ export function BookingCalendar({
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [selecting, setSelecting] = useState(false);
+  const selectingRef = useRef(false);
   const [selected, setSelected] = useState<CalendarBlockWindow[]>([]);
   const [choices, setChoices] = useState<{
     windows: CalendarBlockWindow[];
@@ -90,6 +91,10 @@ export function BookingCalendar({
     setTodayInRange(now >= view.currentStart && now < view.currentEnd);
   }, []);
 
+  useEffect(() => {
+    selectingRef.current = selecting;
+  }, [selecting]);
+
   /*
    * A seven-column time grid is useful on tablets and desktops, but each day
    * becomes too narrow to scan or tap on a phone. Start compact screens in a
@@ -99,9 +104,9 @@ export function BookingCalendar({
    * while selecting slots so transient resizes cannot interrupt the selection.
    */
   useEffect(() => {
-    if (selecting) return;
     const compact = window.matchMedia("(max-width: 639px)");
     const syncView = () => {
+      if (selectingRef.current) return;
       const calendar = calendarRef.current?.getApi();
       if (!calendar) return;
       if (compact.matches && calendar.view.type === "timeGridWeek") {
@@ -114,7 +119,7 @@ export function BookingCalendar({
     syncView();
     compact.addEventListener("change", syncView);
     return () => compact.removeEventListener("change", syncView);
-  }, [selecting]);
+  }, []);
 
   // TimeGrid positions events absolutely, so their text cannot naturally size
   // the table row. Measure only foreground names, then resize that slot alone.
