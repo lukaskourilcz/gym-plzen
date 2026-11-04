@@ -15,6 +15,8 @@ export function createInstagramMock(port: number) {
     unifiedExpiresAt: 0,
     unifiedBusinessId: "3333",
     unifiedAssignmentsEmpty: false,
+    facebookUserLogin: false,
+    granularTargets: ["17841427246422536"] as string[] | null,
     media: defaultMedia(),
     calls: [] as { path: string; method: string }[],
     delay: 0,
@@ -70,24 +72,56 @@ export function createInstagramMock(port: number) {
       if (
         req.method !== "GET" ||
         url.searchParams.get("client_id") !== "1111" ||
-        url.searchParams.get("client_secret") !== "local-instagram-secret" ||
+        url.searchParams.get("client_secret") !== "local-instagram-secret"
+      )
+        return json({ error: { code: 190 } }, 400);
+      if (url.searchParams.get("grant_type") === "fb_exchange_token") {
+        if (
+          !["fb-short-token", "fb-long-token"].includes(
+            url.searchParams.get("fb_exchange_token") ?? "",
+          )
+        )
+          return json({ error: { code: 190 } }, 400);
+        return json({
+          access_token: "fb-long-token",
+          token_type: "bearer",
+          expires_in: 60 * 86400,
+        });
+      }
+      if (
         url.searchParams.get("code") !== "local-test-code" ||
         url.searchParams.get("redirect_uri") !== "http://localhost/callback"
       )
         return json({ error: { code: 190 } }, 400);
-      return json({ access_token: "unified-local-token" });
+      return json(
+        state.facebookUserLogin
+          ? { access_token: "fb-short-token", expires_in: 5000 }
+          : { access_token: "unified-local-token" },
+      );
     }
     if (url.pathname === "/facebook-graph/v26.0/debug_token") {
+      const input = url.searchParams.get("input_token");
       if (
         req.headers.authorization !== "Bearer 1111|local-instagram-secret" ||
-        url.searchParams.get("input_token") !== "unified-local-token"
+        !["unified-local-token", "fb-long-token"].includes(input ?? "")
       )
         return json({ error: { code: 190 } }, 400);
       return json({
         data: {
           app_id: "1111",
+          type: input === "fb-long-token" ? "USER" : "SYSTEM_USER",
           is_valid: true,
           scopes: state.unifiedScopes,
+          ...(input === "fb-long-token" && state.granularTargets
+            ? {
+                granular_scopes: [
+                  {
+                    scope: "instagram_basic",
+                    target_ids: state.granularTargets,
+                  },
+                ],
+              }
+            : {}),
           expires_at: state.unifiedExpiresAt,
           data_access_expires_at: 0,
         },
@@ -95,7 +129,8 @@ export function createInstagramMock(port: number) {
     }
     if (
       url.pathname.startsWith("/facebook-graph/") &&
-      req.headers.authorization !== "Bearer unified-local-token"
+      req.headers.authorization !==
+        `Bearer ${state.facebookUserLogin ? "fb-long-token" : "unified-local-token"}`
     )
       return json({ error: { code: 190 } }, 401);
     if (url.pathname === "/facebook-graph/v26.0/me")
