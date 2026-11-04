@@ -111,6 +111,27 @@ test("incidents explain the actual cause, link to the reservation/member/message
       path: "/tmp/gym-incidents-mobile.png",
       fullPage: true,
     });
+    await card.getByRole("button", { name: /Označit jako vyřešené/ }).click();
+    const dialog = page.getByRole("dialog", { name: "Uzavřít incident" });
+    const note = dialog.getByLabel("Jak byl incident vyřešen?");
+    await expect(note).toBeFocused();
+    await note.fill("Ukázková kontrola doručovacího kontaktu.");
+    await dialog.getByRole("button", { name: "Uložit a uzavřít" }).click();
+    await expect(dialog).not.toBeVisible();
+    await expect(card).toContainText("Uzavřeno správcem");
+    await expect(card).toContainText(
+      "Ukázková kontrola doručovacího kontaktu.",
+    );
+    await page.goto("/admin");
+    const recent = page.getByRole("heading", {
+      name: "Nedávno uzavřené incidenty",
+    });
+    await expect(recent).toBeVisible();
+    await expect(
+      page.getByText("Ukázková kontrola doručovacího kontaktu.", {
+        exact: true,
+      }),
+    ).toBeVisible();
     expect(await sql`select * from reservation order by id`).toEqual(before);
     expect(await sql`select * from access_code order by id`).toEqual(codes);
     expect(await sql`select * from message_delivery order by id`).toEqual(

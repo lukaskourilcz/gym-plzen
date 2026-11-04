@@ -192,6 +192,17 @@ export default async function DesignSystemPage() {
                   title: "Ukázkový provozní problém",
                   body: null,
                   context: {
+                    incidentUpdates: [
+                      {
+                        at: localDateTimeToDate(
+                          calendarDate,
+                          600,
+                        ).toISOString(),
+                        kind: "opened",
+                        message:
+                          "Systém zaznamenal problém a založil incident.",
+                      },
+                    ],
                     incident: {
                       version: 1,
                       code: "contact_missing_all",

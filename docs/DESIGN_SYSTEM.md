@@ -720,7 +720,8 @@ Výrazný titulek pojmenuje problém, následuje termín, zákazník, provozní 
 příčina, dopad a **Co udělat**. K dispozici jsou odkazy na konkrétní rezervaci,
 navázaného člena a související zprávy. Technický kód chyby a očištěné podrobnosti
 jsou v nativním rozbalovacím `details`; dlouhé UUID není hlavním titulkem.
-Kompaktní varianta v Dnes ukazuje příčinu a odkaz na celý incident.
+Kompaktní varianta v Dnes ukazuje příčinu, poslední aktualizaci a odkaz na
+celý incident. Nedávno uzavřené incidenty jsou pod otevřenými upozorněními.
 Historie používá od šířky `md` tabulku, na mobilu plnohodnotné karty se stejným
 obsahem a ovládáním. Dlouhý popis se nesmí mačkat do úzkého sloupce tabulky.
 
@@ -728,6 +729,8 @@ Stav není vyjádřen jen barvou. Časy používají Prahu. Historická obecná 
 výslovně přiznávají nezaznamenanou příčinu; nedoplňují domnělý chybějící kontakt.
 Stejný otevřený incident se aktualizuje a ukazuje poslední zachycení i další
 běžný pokus. Počet pokusů označuje skutečné pokusy, nikoliv počet upozornění.
+Závěrečný zápis rozlišuje potvrzenou nápravu, ukončení pokusů a uzavření správcem.
+Při ručním uzavření vyžaduje standardní dialog stručný výsledek kontroly.
 Ukázka je v chráněné galerii komponent.
 
 ### Platnost šablon a doplňující nadpis

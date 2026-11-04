@@ -8,7 +8,10 @@ import type { Result } from "@/lib/helpers/result";
 import { uuidSchema } from "@/lib/validations/common";
 import { alerts } from "@/lib/services";
 
-const resolveAlertSchema = z.object({ id: uuidSchema });
+const resolveAlertSchema = z.object({
+  id: uuidSchema,
+  note: z.string().trim().min(1, "Napište, jak byl incident vyřešen.").max(500),
+});
 
 /**
  * Close an alert the operator has dealt with (a refund made in Comgate, a
@@ -17,9 +20,10 @@ const resolveAlertSchema = z.object({ id: uuidSchema });
 const resolveImpl = defineAction({
   schema: resolveAlertSchema,
   authorize: assertAdmin,
-  handler: async ({ id }) => {
-    await alerts.resolveAlertById(id);
+  handler: async ({ id, note }) => {
+    await alerts.resolveAlertById(id, note);
     revalidatePath("/admin/alerts");
+    revalidatePath("/admin");
     return null;
   },
 });
