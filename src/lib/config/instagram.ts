@@ -96,3 +96,46 @@ export function isInstagramImageUrl(value: string) {
     return false;
   }
 }
+
+/** Synchronisation re-exchanges a renewable token once it is this close to expiry. */
+export const INSTAGRAM_RENEWAL_WINDOW_DAYS = 14;
+const INSTAGRAM_URGENT_DAYS = 3;
+function czechCount(n: number, one: string, few: string, many: string) {
+  return `${n} ${n === 1 ? one : n >= 2 && n <= 4 ? few : many}`;
+}
+export type InstagramExpiryCountdown = {
+  tone: "ok" | "renewal" | "urgent" | "expired";
+  /** Nominative remaining time, e.g. "59 dní 23 hodin"; null once expired. */
+  remaining: string | null;
+};
+/** Remaining access time for the admin, rounded down to the two largest units. */
+export function instagramExpiryCountdown(
+  expiresAt: string,
+  now: number,
+): InstagramExpiryCountdown {
+  const left = new Date(expiresAt).getTime() - now;
+  if (!Number.isFinite(left) || left <= 0)
+    return { tone: "expired", remaining: null };
+  const minutes = Math.floor(left / 60_000);
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  const rest = minutes % 60;
+  const day = (n: number) => czechCount(n, "den", "dny", "dní");
+  const hour = (n: number) => czechCount(n, "hodina", "hodiny", "hodin");
+  const minute = (n: number) => czechCount(n, "minuta", "minuty", "minut");
+  const remaining =
+    days > 0
+      ? [day(days), hours > 0 ? hour(hours) : null].filter(Boolean).join(" ")
+      : hours > 0
+        ? [hour(hours), rest > 0 ? minute(rest) : null]
+            .filter(Boolean)
+            .join(" ")
+        : minute(Math.max(rest, 1));
+  const tone =
+    left < INSTAGRAM_URGENT_DAYS * 86400_000
+      ? "urgent"
+      : left < INSTAGRAM_RENEWAL_WINDOW_DAYS * 86400_000
+        ? "renewal"
+        : "ok";
+  return { tone, remaining };
+}

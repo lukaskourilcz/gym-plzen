@@ -50,6 +50,36 @@ test("Instagram connects via local OAuth, shows lazy private thumbnails, hides p
     await expect(
       page.getByText("Instagram je připojený.", { exact: true }),
     ).toBeVisible();
+    // The local grant lasts 60 days; the admin sees the remaining time.
+    await expect(
+      page.getByText(/^Do vypršení přístupu: 59 dní 23 hodin/),
+    ).toBeVisible();
+    const connection = page.locator("div", {
+      has: page.getByText(/^Do vypršení přístupu:/),
+    });
+    await connection.last().screenshot({
+      path: test.info().outputPath("instagram-expiry-ok.jpg"),
+      type: "jpeg",
+      quality: 90,
+    });
+    await sql`update instagram_connection set expires_at = now() + interval '2 days 4 hours 30 minutes'`;
+    await page.reload();
+    await expect(
+      page.getByText(/^Do vypršení přístupu: 2 dny 4 hodiny/),
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "Klikněte na „Obnovit propojení“, aby se příspěvky na webu neskryly.",
+        { exact: true },
+      ),
+    ).toBeVisible();
+    await connection.last().screenshot({
+      path: test.info().outputPath("instagram-expiry-urgent.jpg"),
+      type: "jpeg",
+      quality: 90,
+    });
+    await sql`update instagram_connection set expires_at = now() + interval '60 days'`;
+    await page.reload();
     await publicPage.goto("/#instagram");
     await section.scrollIntoViewIfNeeded();
     const links = section.getByRole("link", { name: /Otevřít příspěvek/ });
