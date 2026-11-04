@@ -92,7 +92,10 @@ export async function deliverRescheduleConfirmation(reservationId: string) {
           updatedAt: new Date(),
         })
         .where(eq(messageDelivery.id, message.id));
-      await resolveAlert(`reschedule-email:${reservationId}`);
+      await resolveAlert(`reschedule-email:${reservationId}`, {
+        kind: "closed",
+        message: "Rezervace už není platná. Potvrzení změny se dál neodesílá.",
+      });
       return;
     }
     let email = savedEmail(message.providerResponse, message.recipient);
@@ -141,7 +144,11 @@ export async function deliverRescheduleConfirmation(reservationId: string) {
         updatedAt: new Date(),
       })
       .where(eq(messageDelivery.id, message.id));
-    if (result.sent) await resolveAlert(`reschedule-email:${reservationId}`);
+    if (result.sent)
+      await resolveAlert(`reschedule-email:${reservationId}`, {
+        kind: "recovered",
+        message: "Poskytovatel přijal potvrzení změny termínu k odeslání.",
+      });
     else
       await raiseAlert({
         dedupeKey: `reschedule-email:${reservationId}`,

@@ -12,7 +12,12 @@ import { requireAdmin } from "@/lib/auth/guards";
 import { AdminMemberName } from "@/components/admin/member-name";
 import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import Link from "next/link";
-import { AlertTriangle, DoorOpen, MailWarning } from "lucide-react";
+import {
+  AlertTriangle,
+  CircleCheck,
+  DoorOpen,
+  MailWarning,
+} from "lucide-react";
 import { alerts, entryLog, messages, stats } from "@/lib/services";
 import {
   formatDateTime,
@@ -58,15 +63,20 @@ export default async function AdminDashboard({
   const bounds = pragueDayBounds(now);
   const demo = await hasDemoAdminSession();
   const demoData = demo ? await loadDemoData(now) : null;
-  const [overview, todaysEntries, recentAlerts, recentMessages] = demo
-    ? [aggregateDayOverview(demoData!.reservations, now), [], [], []]
+  const [overview, todaysEntries, incidentOverview, recentMessages] = demo
+    ? [
+        aggregateDayOverview(demoData!.reservations, now),
+        [],
+        { open: [], openCount: 0, recentClosed: [] },
+        [],
+      ]
     : await Promise.all([
         stats.getDayOverview(now),
         entryLog.listEntriesForDay(bounds, {
           page: entriesPage,
           pageSize: entriesPageSize,
         }),
-        alerts.listRecentAlerts(8),
+        alerts.dashboardAlerts(new Date(now.getTime() - 24 * 60 * 60_000)),
         messages.listRecent(12),
       ]);
 
@@ -117,7 +127,7 @@ export default async function AdminDashboard({
         ...todaysReservations.map((r) => r.userId),
         ...entries.map((entry) => entry.userId),
       ]);
-  const openAlerts = recentAlerts.filter((a) => !a.resolvedAt);
+  const { open: openAlerts, openCount, recentClosed } = incidentOverview;
   const failedMessages = messageRows.filter((m) => m.status === "failed");
   const trend = day.last7 - day.previous7;
 
@@ -141,7 +151,7 @@ export default async function AdminDashboard({
           }
           value={formatMoney(day.revenueCents)}
         />
-        <StatCard label="Neuzavřená upozornění" value={openAlerts.length} />
+        <StatCard label="Neuzavřená upozornění" value={openCount} />
         <StatCard label="Nedoručené zprávy" value={failedMessages.length} />
       </div>
 
@@ -311,7 +321,7 @@ export default async function AdminDashboard({
               Co vyžaduje pozornost
             </h2>
             <div className="grid gap-2">
-              {openAlerts.slice(0, 4).map((alert) => (
+              {openAlerts.map((alert) => (
                 <div
                   key={alert.id}
                   className="flex items-start gap-3 rounded-md border border-border bg-card px-4 py-3 text-sm"
@@ -320,11 +330,8 @@ export default async function AdminDashboard({
                     aria-hidden="true"
                     className="mt-0.5 size-4 shrink-0 text-warning"
                   />
-                  <div>
+                  <div className="min-w-0">
                     <IncidentDetails alert={alert} compact />
-                    <div className="text-muted-foreground">
-                      {formatDateTime(alert.createdAt)}
-                    </div>
                   </div>
                 </div>
               ))}
@@ -353,6 +360,27 @@ export default async function AdminDashboard({
                 </p>
               )}
             </div>
+            {recentClosed.length ? (
+              <div className="mt-4 space-y-2">
+                <h3 className="text-sm font-semibold">
+                  Nedávno uzavřené incidenty
+                </h3>
+                {recentClosed.map((alert) => (
+                  <div
+                    key={alert.id}
+                    className="flex items-start gap-3 rounded-md border bg-card px-4 py-3"
+                  >
+                    <CircleCheck
+                      aria-hidden="true"
+                      className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                    />
+                    <div className="min-w-0">
+                      <IncidentDetails alert={alert} compact />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </section>
         </div>
       </div>

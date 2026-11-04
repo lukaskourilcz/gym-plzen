@@ -390,7 +390,11 @@ export async function reconcileRevocations(limit = 20) {
           .update(reservation)
           .set({ accessRevocationPending: false, updatedAt: new Date() })
           .where(eq(reservation.id, hold.id));
-        await resolveAlert(`code-revocation:${hold.id}`);
+        await resolveAlert(`code-revocation:${hold.id}`, {
+          kind: "recovered",
+          message:
+            "Odebrání vstupních kódů bylo potvrzeno a blokace termínu skončila.",
+        });
       });
     } catch {
       /* a busy lock must not keep the other holds from releasing */
@@ -473,7 +477,10 @@ async function expireAccessCode(
         retryAt: null,
         attempts: 0,
       });
-      await resolveAlert(`code-expiry:${id}`);
+      await resolveAlert(`code-expiry:${id}`, {
+        kind: "recovered",
+        message: "Systém ověřil odebrání prošlého kódu ze zámku.",
+      });
       return true;
     }
     const attempts = row.attempts + 1;

@@ -1,52 +1,105 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { AdminDialog } from "@/components/admin/dialog";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { resolveAlertAction } from "./actions";
 
-/** Marks one open alert as dealt with; same pattern as the voucher toggle. */
 export function ResolveAlertButton({
   id,
   title,
+  refund,
 }: {
   id: string;
   /** Names the alert, so every row's control reads differently. */
   title: string;
+  refund: boolean;
 }) {
   const router = useRouter();
+  const noteId = useId();
+  const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  function resolve() {
+  function resolve(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const note = String(new FormData(event.currentTarget).get("note") ?? "");
     setError(null);
     startTransition(async () => {
-      const result = await resolveAlertAction({ id });
+      const result = await resolveAlertAction({ id, note });
       if (!result.ok) {
         setError(result.error);
         return;
       }
+      setOpen(false);
       router.refresh();
     });
   }
 
   return (
-    <div>
+    <>
       <Button
         type="button"
         size="sm"
         variant="outline"
         disabled={pending}
-        onClick={resolve}
+        aria-haspopup="dialog"
+        onClick={() => {
+          setError(null);
+          setOpen(true);
+        }}
         aria-label={`Označit jako vyřešené: ${title}`}
       >
-        {pending ? "Ukládám…" : "Vyřešeno"}
+        Vyřešeno
       </Button>
-      {error ? (
-        <p role="alert" className="mt-1 text-xs text-destructive">
-          {error}
-        </p>
+      {open ? (
+        <AdminDialog
+          title="Uzavřít incident"
+          description={
+            refund
+              ? "Ověřte stav vrácení platby v Comgate a zapište výsledek kontroly."
+              : title
+          }
+          onClose={() => setOpen(false)}
+          busy={pending}
+        >
+          <form onSubmit={resolve} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor={noteId} className="text-sm font-medium">
+                Jak byl incident vyřešen?
+              </label>
+              <Textarea
+                id={noteId}
+                name="note"
+                required
+                maxLength={500}
+                data-initial-focus
+                disabled={pending}
+              />
+            </div>
+            {error ? (
+              <p role="alert" className="text-sm text-destructive">
+                {error}
+              </p>
+            ) : null}
+            <div className="flex flex-wrap gap-2">
+              <Button type="submit" disabled={pending}>
+                {pending ? "Ukládám…" : "Uložit a uzavřít"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={pending}
+                onClick={() => setOpen(false)}
+              >
+                Zpět
+              </Button>
+            </div>
+          </form>
+        </AdminDialog>
       ) : null}
-    </div>
+    </>
   );
 }

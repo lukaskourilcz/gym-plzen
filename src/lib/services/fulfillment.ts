@@ -171,7 +171,12 @@ async function fulfillLocked(reservationId: string): Promise<void> {
           nextRetryAt: null,
         }),
       );
-    else await resolveAlert(contactIncidentKey(reservationId));
+    else
+      await resolveAlert(contactIncidentKey(reservationId), {
+        kind: "recovered",
+        message:
+          "Rezervace už má doručovací e-mail. Doručení se sleduje samostatně.",
+      });
   }
   let plaintext: string | null = null;
   let codeReady = existing.some(

@@ -147,5 +147,8 @@ export async function confirmChangeRefund(
         .where(eq(payment.id, attempt.id));
     }),
   );
-  await resolveAlert(`reservation-change:${id}`);
+  await resolveAlert(`reservation-change:${id}`, {
+    kind: "manual",
+    message: "Správce potvrdil vrácení doplatku za změnu rezervace.",
+  });
 }

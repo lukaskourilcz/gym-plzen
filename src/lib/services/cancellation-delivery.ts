@@ -135,7 +135,11 @@ export async function deliverCancellation(reservationId: string) {
         updatedAt: new Date(),
       })
       .where(eq(messageDelivery.id, message.id));
-    if (result.sent) await resolveAlert(`cancellation-email:${reservationId}`);
+    if (result.sent)
+      await resolveAlert(`cancellation-email:${reservationId}`, {
+        kind: "recovered",
+        message: "Poskytovatel přijal potvrzení storna k odeslání.",
+      });
     else
       await raiseAlert({
         dedupeKey: `cancellation-email:${reservationId}`,

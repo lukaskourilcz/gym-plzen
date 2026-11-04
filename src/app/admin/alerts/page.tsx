@@ -51,7 +51,7 @@ export default async function AlertsPage({
     <div>
       <PageHeader
         title="Provozní upozornění"
-        description="Co se stalo, kterého termínu se problém týká a jak postupovat. Opakované výskyty zůstávají v jednom otevřeném incidentu."
+        description="Co se stalo, co systém ověřil a jak byl incident uzavřen."
       />
       <AdminListFilters
         path="/admin/alerts"
@@ -109,7 +109,11 @@ export default async function AlertsPage({
               {a.resolvedAt ? (
                 <span>Vyřešeno {formatDateTime(a.resolvedAt)}</span>
               ) : (
-                <ResolveAlertButton id={a.id} title={a.title} />
+                <ResolveAlertButton
+                  id={a.id}
+                  title={a.title}
+                  refund={a.dedupeKey?.startsWith("refund-needed:") ?? false}
+                />
               )}
             </div>
           </article>
@@ -158,7 +162,13 @@ export default async function AlertsPage({
                   {a.resolvedAt ? (
                     formatDateTime(a.resolvedAt)
                   ) : (
-                    <ResolveAlertButton id={a.id} title={a.title} />
+                    <ResolveAlertButton
+                      id={a.id}
+                      title={a.title}
+                      refund={
+                        a.dedupeKey?.startsWith("refund-needed:") ?? false
+                      }
+                    />
                   )}
                 </TableCell>
               </TableRow>

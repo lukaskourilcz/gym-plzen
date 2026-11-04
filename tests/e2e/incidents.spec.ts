@@ -44,7 +44,22 @@ test("incidents explain the actual cause, link to the reservation/member/message
   const alertId = randomUUID(),
     legacyId = randomUUID(),
     messageId = randomUUID();
-  await sql`insert into system_alert(id,title,body,severity,dedupe_key,context) values(${alertId},${params.title},${params.body!},'warning',${params.dedupeKey!},${sql.json(JSON.parse(JSON.stringify(params.context)))})`;
+  const context = {
+    ...params.context,
+    incidentUpdates: [
+      {
+        at: new Date(Date.now() - 60_000).toISOString(),
+        kind: "opened",
+        message: "První kontrola kontaktu našla chybějící adresu.",
+      },
+      {
+        at: new Date().toISOString(),
+        kind: "repeated",
+        message: "Druhá kontrola potvrdila chybějící doručovací adresu.",
+      },
+    ],
+  };
+  await sql`insert into system_alert(id,title,body,severity,dedupe_key,context) values(${alertId},${params.title},${params.body!},'warning',${params.dedupeKey!},${sql.json(JSON.parse(JSON.stringify(context)))})`;
   await sql`insert into message_delivery(id,reservation_id,user_id,channel,kind,status,recipient,failure_reason) values(${messageId},${id},${memberId},'email','access_code','failed','synthetic@example.test','synthetic_failure_for_lookup')`;
   const before = await sql`select * from reservation order by id`,
     codes = await sql`select * from access_code order by id`,
@@ -57,6 +72,15 @@ test("incidents explain the actual cause, link to the reservation/member/message
     await expect(row).toContainText("Příprava kódu může pokračovat");
     await expect(row).toContainText("Co udělat:");
     await expect(row).toContainText("Pokusy: 2");
+    await expect(row).toContainText(
+      "Druhá kontrola potvrdila chybějící doručovací adresu.",
+    );
+    await row.getByText("Předchozí aktualizace", { exact: true }).click();
+    await expect(
+      row.getByText("První kontrola kontaktu našla chybějící adresu.", {
+        exact: true,
+      }),
+    ).toBeVisible();
     await expect(
       row.getByRole("link", { name: "Otevřít rezervaci", exact: true }),
     ).toHaveAttribute("href", `/admin/reservations?id=${id}`);
@@ -111,6 +135,27 @@ test("incidents explain the actual cause, link to the reservation/member/message
       path: "/tmp/gym-incidents-mobile.png",
       fullPage: true,
     });
+    await card.getByRole("button", { name: /Označit jako vyřešené/ }).click();
+    const dialog = page.getByRole("dialog", { name: "Uzavřít incident" });
+    const note = dialog.getByLabel("Jak byl incident vyřešen?");
+    await expect(note).toBeFocused();
+    await note.fill("Ukázková kontrola doručovacího kontaktu.");
+    await dialog.getByRole("button", { name: "Uložit a uzavřít" }).click();
+    await expect(dialog).not.toBeVisible();
+    await expect(card).toContainText("Uzavřeno správcem");
+    await expect(card).toContainText(
+      "Ukázková kontrola doručovacího kontaktu.",
+    );
+    await page.goto("/admin");
+    const recent = page.getByRole("heading", {
+      name: "Nedávno uzavřené incidenty",
+    });
+    await expect(recent).toBeVisible();
+    await expect(
+      page.getByText("Ukázková kontrola doručovacího kontaktu.", {
+        exact: true,
+      }),
+    ).toBeVisible();
     expect(await sql`select * from reservation order by id`).toEqual(before);
     expect(await sql`select * from access_code order by id`).toEqual(codes);
     expect(await sql`select * from message_delivery order by id`).toEqual(

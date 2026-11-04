@@ -46,6 +46,11 @@ const STEPS = ["payment", "code_created", "code_delivered"] as const;
 export type PipelineStep = (typeof STEPS)[number];
 
 const MAX_ATTEMPTS = 5;
+const STEP_RECOVERY: Record<PipelineStep, string> = {
+  payment: "Poskytovatel přijal potvrzení rezervace k odeslání.",
+  code_created: "Systém ověřil vstupní kód a jeho platnost pro rezervaci.",
+  code_delivered: "Poskytovatel přijal e-mail se vstupním kódem k odeslání.",
+};
 
 /** Create the pipeline rows for a reservation (idempotent). */
 export async function initPipeline(
@@ -68,23 +73,29 @@ export async function markStepSucceeded(
   reservationId: string,
   step: PipelineStep,
 ): Promise<void> {
-  await db
-    .update(reservationPipeline)
-    .set({
-      status: "succeeded",
-      completedAt: new Date(),
-      nextRetryAt: null,
-      updatedAt: new Date(),
-    })
-    .where(
-      and(
-        eq(reservationPipeline.reservationId, reservationId),
-        eq(reservationPipeline.step, step),
-      ),
+  await db.transaction(async (tx) => {
+    await tx
+      .update(reservationPipeline)
+      .set({
+        status: "succeeded",
+        completedAt: new Date(),
+        nextRetryAt: null,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(reservationPipeline.reservationId, reservationId),
+          eq(reservationPipeline.step, step),
+        ),
+      );
+    const keys = [dedupeKey(reservationId, step)];
+    if (step === "code_delivered") keys.push(contactIncidentKey(reservationId));
+    await resolveAlert(
+      keys,
+      { kind: "recovered", message: STEP_RECOVERY[step] },
+      tx,
     );
-  await resolveAlert(dedupeKey(reservationId, step));
-  if (step === "code_delivered")
-    await resolveAlert(contactIncidentKey(reservationId));
+  });
 }
 
 /**
@@ -272,22 +283,30 @@ export async function closePipeline(
   reservationId: string,
   reason: string,
 ): Promise<void> {
-  await db
-    .update(reservationPipeline)
-    .set({
-      status: "failed",
-      lastError: reason,
-      nextRetryAt: null,
-      updatedAt: new Date(),
-    })
-    .where(
-      and(
-        eq(reservationPipeline.reservationId, reservationId),
-        ne(reservationPipeline.status, "succeeded"),
-      ),
+  await db.transaction(async (tx) => {
+    await tx
+      .update(reservationPipeline)
+      .set({
+        status: "failed",
+        lastError: reason,
+        nextRetryAt: null,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(reservationPipeline.reservationId, reservationId),
+          ne(reservationPipeline.status, "succeeded"),
+        ),
+      );
+    await resolveAlert(
+      [
+        ...STEPS.map((step) => dedupeKey(reservationId, step)),
+        contactIncidentKey(reservationId),
+      ],
+      { kind: "closed", message: `${reason}. Další pokusy byly ukončeny.` },
+      tx,
     );
-  for (const step of STEPS) await resolveAlert(dedupeKey(reservationId, step));
-  await resolveAlert(contactIncidentKey(reservationId));
+  });
 }
 
 /** Watchdog sweep: close the pipelines of cancelled and ended reservations. */
