@@ -10,6 +10,8 @@ export function createInstagramMock(port: number) {
     failure: 0,
     imageType: "image/png",
     imageBroken: false,
+    // Real feed posts arrive at full resolution, commonly 1080 × 1350 (4:5).
+    imageSize: [1080, 1350] as [number, number],
     flatToken: false,
     unifiedScopes: ["instagram_basic"],
     unifiedExpiresAt: 0,
@@ -180,7 +182,7 @@ export function createInstagramMock(port: number) {
               ),
             ),
           )
-            .resize(480, 480, { fit: "cover" })
+            .resize(state.imageSize[0], state.imageSize[1], { fit: "cover" })
             .png()
             .toBuffer();
       res.writeHead(200, { "Content-Type": state.imageType });

@@ -30,7 +30,7 @@ Nejvýše 12 nejnovějších viditelných příspěvků z posledních 30 načten
 ## Soukromí a selhání
 
 - Token je autentizovaně šifrovaný AES-256-GCM a navázaný na účet. Tabulky mají RLS a odebrané přístupy pro anon/authenticated. Veřejné DTO nemá token ani zdrojové CDN URL.
-- Prohlížeč načítá jen náhledy z vlastního webu, žádný Meta iframe, skript ani automatické video. Až kliknutí otevře Instagram. Náhledy jsou líně načítané WebP 480 × 480.
+- Prohlížeč načítá jen náhledy z vlastního webu, žádný Meta iframe, skript ani automatické video. Až kliknutí otevře Instagram. Náhledy jsou líně načítané WebP 720 × 960 s výřezem na střed, stejně jako dlaždice 3:4 v gridu profilu na Instagramu. Pás odděluje dlaždice mezerou 1 px jako Instagram.
 - Proxy přijímá pouze číselné ID dostupného a neskrytého příspěvku, kontroluje platné propojení, allowlist HTTPS Meta CDN, MIME, limit 6 MB a 20 milionů pixelů; zakazuje přesměrování a SVG.
 - Výpadek poskytovatele zachová poslední úspěšná data nejvýše 24 hodin. Vypršení nebo odebrání přístupu skryje příspěvky a nabídne odkaz na profil. Chyba této volitelné sekce nezablokuje homepage ani rezervaci.
 - Synchronizace má atomický pronájem. Pozdní odpověď po odpojení nebo novém propojení nemůže znovu vložit odstraněné příspěvky. Podepsané Meta callbacky nemohou odstranit novější propojení starou událostí.

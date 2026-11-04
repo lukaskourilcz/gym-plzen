@@ -5,7 +5,7 @@ import { instagramImageSource } from "@/lib/services/instagram";
 import { readInstagramImage } from "@/lib/integrations/instagram-image";
 const cachedImage = unstable_cache(
   readInstagramImage,
-  ["instagram-thumbnail-v1"],
+  ["instagram-thumbnail-v2"],
   { revalidate: 1800, tags: [INSTAGRAM_CACHE_TAG] },
 );
 export const maxDuration = 30;
