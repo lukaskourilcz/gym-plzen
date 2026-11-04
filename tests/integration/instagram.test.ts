@@ -171,14 +171,19 @@ dbTest(
       mock.state.unifiedBusinessId = "1615625080049734";
       mock.state.username = "different_account";
       await assert.rejects(connect, { problem: "wrong_account" });
-      assert.equal((await rows("select id from instagram_connection")).length, 0);
+      assert.equal(
+        (await rows("select id from instagram_connection")).length,
+        0,
+      );
 
       mock.state.username = "navi_plzen";
       const protectedRecords = await snapshot();
       await connect();
       assert.equal((await syncInstagram({ force: true })).synced, true);
       assert.equal((await loadInstagramFeed()).posts.length, 12);
-      assert.ok(mock.state.calls.some(({ path }) => path === `${directPath}/media`));
+      assert.ok(
+        mock.state.calls.some(({ path }) => path === `${directPath}/media`),
+      );
       assert.deepEqual(await snapshot(), protectedRecords);
       assert.equal(resend.sent.length, 0);
     });
