@@ -313,3 +313,70 @@ test.describe("Admin : forms", () => {
     }
   });
 });
+
+test("plans a dated schedule, adjusts a window price, and removes the plan", async ({
+  page,
+  request,
+}) => {
+  test.skip(!sql, "requires a disposable local database");
+  const today = dateKeyInTimeZone(new Date());
+  const from = addDaysToDateKey(today, 40);
+  const to = addDaysToDateKey(today, 41);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/admin/schedule");
+  await page.getByRole("button", { name: "Přidat rozvrh" }).click();
+  let dialog = page.getByRole("dialog", { name: "Přidat rozvrh" });
+  await expect(dialog.getByLabel("Název rozvrhu")).toBeFocused();
+  await dialog.getByLabel("Název rozvrhu").fill("Ukázkový sezónní rozvrh");
+  await dialog.getByLabel("Platí od", { exact: true }).fill(from);
+  await dialog.getByLabel("Platí do (včetně)").fill(to);
+  await dialog.getByLabel("Cena okna (Kč)").fill("239");
+  await dialog.getByRole("button", { name: "Vygenerovat okna" }).click();
+  await expect(
+    dialog.getByRole("group", { name: "Okno 12", exact: true }),
+  ).toBeVisible();
+  expect(
+    await dialog.evaluate((el) => el.scrollWidth - el.clientWidth),
+  ).toBeLessThanOrEqual(1);
+  await dialog
+    .getByRole("group", { name: "Okno 2", exact: true })
+    .getByLabel("Cena (Kč)")
+    .fill("199");
+  await dialog.getByRole("button", { name: "Uložit rozvrh" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Ukázkový sezónní rozvrh" }),
+  ).toBeVisible();
+
+  const availability = await request.get(
+    `/api/availability/calendar?date=${from}&month=${from.slice(0, 7)}`,
+  );
+  expect(availability.ok()).toBeTruthy();
+  const snapshot = await availability.json();
+  expect(snapshot.selectedSlots).toHaveLength(12);
+  expect(snapshot.selectedSlots[1]).toMatchObject({
+    durationMinutes: 80,
+    priceCents: 19900,
+  });
+
+  await page
+    .getByRole("button", { name: "Upravit rozvrh Ukázkový sezónní rozvrh" })
+    .click();
+  dialog = page.getByRole("dialog", { name: "Upravit rozvrh" });
+  await expect(
+    dialog
+      .getByRole("group", { name: "Okno 2", exact: true })
+      .getByLabel("Cena (Kč)"),
+  ).toHaveValue("199");
+  await dialog.getByLabel("Název rozvrhu").fill("Upravený sezónní rozvrh");
+  await dialog.getByRole("button", { name: "Uložit rozvrh" }).click();
+  await page
+    .getByRole("button", { name: "Odebrat rozvrh Upravený sezónní rozvrh" })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Odebrat rozvrh", exact: true })
+    .click();
+  await expect(
+    page.getByText("Zatím nemáte žádný plánovaný rozvrh."),
+  ).toBeVisible();
+});

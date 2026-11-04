@@ -15,6 +15,13 @@ import {
   type PricingHours,
 } from "./block-pricing";
 
+import { dateKeyInTimeZone } from "@/lib/helpers/datetime";
+import {
+  plannedScheduleForDate,
+  plannedWindowAt,
+  type PlannedSchedule,
+} from "./planned-schedules";
+
 /** Default price of a single entry, in the smallest currency unit (haléř). */
 export const DEFAULT_ENTRY_PRICE_CENTS = 22_900; // 229 Kč
 
@@ -90,6 +97,7 @@ export function resolveEntryPrice(params: {
   blockPrices?: readonly BlockPrice[];
   hours?: readonly PricingHours[];
   periods?: readonly PricingWindow[];
+  planned?: readonly PlannedSchedule[];
   /** Compatibility input for callers that still provide a single period. */
   promo?: PromoWindow | null;
   at: Date;
@@ -121,6 +129,21 @@ export function resolveEntryPrice(params: {
       promoEndsAt: new Date(active.endsAt.getTime() - 1),
       periodName: active.name,
     };
+  }
+
+  if (params.planned?.length && isInstant(at)) {
+    const schedule = plannedScheduleForDate(
+      params.planned,
+      dateKeyInTimeZone(at),
+    );
+    if (schedule) {
+      const window = plannedWindowAt(schedule, at);
+      return {
+        priceCents: window?.priceCents ?? standardPriceCents,
+        standardPriceCents,
+        isPromo: false,
+      };
+    }
   }
 
   const priceCents = isInstant(at)

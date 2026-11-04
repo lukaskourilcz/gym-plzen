@@ -32,7 +32,7 @@ import {
 } from "@/lib/integrations/comgate";
 import { checkAvailability, lockSchedule } from "./availability";
 import { reserveCreditIn, finishCreditIn } from "./credits";
-import { getEntryPriceCents } from "./loyalty";
+import { getEntryPriceCents, getEntryPrices } from "./loyalty";
 import { getOperations } from "./operations";
 import { resolveOrderSlots } from "./orders";
 import { withReservationLock } from "./operation-lock";
@@ -150,12 +150,22 @@ export async function startPricedReschedule(input: {
       const available = await checkAvailability(
         quote.target.startsAt,
         quote.target.endsAt,
-        { excludeReservationId: locked.id },
+        { excludeReservationId: locked.id, requireConfiguredWindow: true },
         tx,
       );
       if (!available.available)
         throw new ActionError(
           "Tento termín už není dostupný. Vyberte prosím jiný čas.",
+        );
+      const [currentPrice] = await getEntryPrices([input.startsAt], tx);
+      if (
+        changedReservationPrice(
+          currentPrice!.priceCents,
+          quote.priceSnapshot,
+        ) !== input.quotedCents
+      )
+        throw new ActionError(
+          "Cena termínu se změnila. Vyberte ho znovu a potvrďte aktuální cenu.",
         );
       const difference = Math.max(0, quote.differenceCents);
       const creditCents = await reserveCreditIn(

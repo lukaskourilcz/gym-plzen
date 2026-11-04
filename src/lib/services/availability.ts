@@ -3,13 +3,21 @@ import type { PgColumn } from "drizzle-orm/pg-core";
 import { db, type DatabaseExecutor } from "@/lib/db";
 import { readDatabase } from "@/lib/db/read";
 import { MAX_SLOTS_PER_ORDER } from "@/lib/config/orders";
-import { blockedSlot, openingHours, reservation } from "@/lib/db/schema";
+import { blockedSlot, reservation } from "@/lib/db/schema";
 import {
+  addMinutes,
   dayOfWeek,
+  dateKeyInTimeZone,
   minuteOfDay,
   minutesBetween,
   intervalsOverlap,
 } from "@/lib/helpers/datetime";
+
+import {
+  plannedScheduleForDate,
+  plannedWindowAt,
+} from "@/lib/config/planned-schedules";
+import { loadBookingSchedule } from "./planned-schedules";
 
 /**
  * Availability rules for the single-occupancy gym. A requested [start, end)
@@ -70,26 +78,36 @@ export function reservationOverlaps(startsAt: Date, endsAt: Date): SQL {
     end) && tstzmultirange(tstzrange(${startsAt.toISOString()}::timestamptz, ${endsAt.toISOString()}::timestamptz, '[)'))`;
 }
 
-/** Check whether a requested window is within opening hours. */
-async function isWithinOpeningHours(
+/** Planned dates require an exact window; weekly hours retain their existing range rules. */
+function isWithinOpeningHours(
   startsAt: Date,
   endsAt: Date,
-  executor: DatabaseExecutor,
-): Promise<boolean> {
-  const dow = dayOfWeek(startsAt);
-  const [hours] = await executor
-    .select()
-    .from(openingHours)
-    .where(eq(openingHours.dayOfWeek, dow))
-    .limit(1);
+  { weekly, planned }: Awaited<ReturnType<typeof loadBookingSchedule>>,
+  requireConfiguredWindow = false,
+): boolean {
+  const schedule = plannedScheduleForDate(planned, dateKeyInTimeZone(startsAt));
+  if (schedule)
+    return (
+      plannedWindowAt(schedule, startsAt)?.endsAt.getTime() === endsAt.getTime()
+    );
 
+  const dow = dayOfWeek(startsAt);
+  const hours = weekly.find((row) => row.dayOfWeek === dow);
   if (!hours || hours.isClosed) return false;
 
-  const startMin = minuteOfDay(startsAt);
-  const endMin = minuteOfDay(endsAt);
-  // Reject windows that cross midnight for simplicity (sessions are short).
-  if (endMin <= startMin) return false;
-  return startMin >= hours.openMinute && endMin <= hours.closeMinute;
+  const start = minuteOfDay(startsAt),
+    end = minuteOfDay(endsAt);
+  if (requireConfiguredWindow) {
+    const duration = hours.slotMinutes;
+    return (
+      duration > 0 &&
+      start >= hours.openMinute &&
+      start + duration <= hours.closeMinute &&
+      (start - hours.openMinute) % duration === 0 &&
+      addMinutes(startsAt, duration).getTime() === endsAt.getTime()
+    );
+  }
+  return end > start && start >= hours.openMinute && end <= hours.closeMinute;
 }
 
 /**
@@ -99,14 +117,25 @@ async function isWithinOpeningHours(
 export async function checkAvailability(
   startsAt: Date,
   endsAt: Date,
-  opts: { excludeReservationId?: string; excludeBlockedSlotId?: string } = {},
+  opts: {
+    excludeReservationId?: string;
+    excludeBlockedSlotId?: string;
+    requireConfiguredWindow?: boolean;
+  } = {},
   executor: DatabaseExecutor = db,
 ): Promise<AvailabilityResult> {
   if (minutesBetween(startsAt, endsAt) <= 0) {
     return { available: false, reason: "invalid_range" };
   }
 
-  if (!(await isWithinOpeningHours(startsAt, endsAt, executor))) {
+  if (
+    !isWithinOpeningHours(
+      startsAt,
+      endsAt,
+      await loadBookingSchedule(executor),
+      opts.requireConfiguredWindow,
+    )
+  ) {
     return { available: false, reason: "closed" };
   }
 
@@ -171,15 +200,8 @@ export async function checkAvailabilityBatch(
   if (requested.length === 0)
     return windows.map(() => ({ available: false, reason: "invalid_range" }));
   return readDatabase(async (tx) => {
-    const [hours, bookings, blocks] = await Promise.all([
-      tx
-        .select()
-        .from(openingHours)
-        .where(
-          inArray(openingHours.dayOfWeek, [
-            ...new Set(requested.map((window) => dayOfWeek(window.startsAt))),
-          ]),
-        ),
+    const [schedule, bookings, blocks] = await Promise.all([
+      loadBookingSchedule(tx),
       tx
         .select({
           startsAt: reservation.startsAt,
@@ -217,7 +239,6 @@ export async function checkAvailabilityBatch(
           ),
         ),
     ]);
-    const byDay = new Map(hours.map((row) => [row.dayOfWeek, row]));
     const busy = bookings.flatMap((row) => [
       row,
       ...(row.rescheduleStartsAt && row.rescheduleEndsAt
@@ -226,16 +247,7 @@ export async function checkAvailabilityBatch(
     ]);
     return windows.map((window): AvailabilityResult => {
       if (!valid(window)) return { available: false, reason: "invalid_range" };
-      const h = byDay.get(dayOfWeek(window.startsAt));
-      const start = minuteOfDay(window.startsAt),
-        end = minuteOfDay(window.endsAt);
-      if (
-        !h ||
-        h.isClosed ||
-        end <= start ||
-        start < h.openMinute ||
-        end > h.closeMinute
-      )
+      if (!isWithinOpeningHours(window.startsAt, window.endsAt, schedule))
         return { available: false, reason: "closed" };
       const conflicts = (other: { startsAt: Date; endsAt: Date }) =>
         intervalsOverlap(

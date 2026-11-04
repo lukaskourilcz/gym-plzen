@@ -92,6 +92,8 @@ export interface CreateReservationInput {
   status?: Reservation["status"];
   confirmationTokenHash?: string;
   loyaltyReward?: number;
+  /** Revalidate the quoted slot under the schedule lock. */
+  requireConfiguredWindow?: boolean;
 }
 
 /**
@@ -109,7 +111,7 @@ export async function createReservation(
   const availability = await checkAvailability(
     input.startsAt,
     input.endsAt,
-    {},
+    { requireConfiguredWindow: input.requireConfiguredWindow },
     executor,
   );
   if (!availability.available) {

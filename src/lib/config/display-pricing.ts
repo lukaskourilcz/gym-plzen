@@ -3,6 +3,11 @@ import {
   type BlockPrice,
   type PricingHours,
 } from "./block-pricing";
+import {
+  plannedScheduleForDate,
+  plannedWindowTimes,
+  type PlannedSchedule,
+} from "./planned-schedules";
 import { firstBookableDateKey } from "./booking-start";
 import { resolveEntryPrice, type PricingWindow } from "./pricing";
 import { clampBookingHorizonDays } from "./schedule";
@@ -23,6 +28,7 @@ export function minimumScheduledEntryPrice(params: {
   blockPrices: readonly BlockPrice[];
   hours: readonly PricingHours[];
   periods: readonly PricingWindow[];
+  planned?: readonly PlannedSchedule[];
   now: Date;
   horizonDays: number;
   bookingsFrom: string;
@@ -50,6 +56,12 @@ export function minimumScheduledEntryPrice(params: {
     for (const boundary of [period.startsAt, period.endsAt])
       if (boundary > now && boundary < end) boundaries.add(boundary.getTime());
   }
+  for (const schedule of params.planned ?? []) {
+    for (const date of [schedule.from, addDaysToDateKey(schedule.to, 1)]) {
+      const boundary = localDateTimeToDate(date, 0);
+      if (boundary > now && boundary < end) boundaries.add(boundary.getTime());
+    }
+  }
   const opening = localDateTimeToDate(firstDate, 0);
   if (opening > now && opening < end) boundaries.add(opening.getTime());
   const ordered = [...boundaries].sort((a, b) => a - b);
@@ -68,11 +80,14 @@ export function minimumScheduledEntryPrice(params: {
   for (const date of dates) {
     const weekday = dayOfWeek(localDateTimeToDate(date, 720));
     const hours = params.hours.find((row) => row.dayOfWeek === weekday);
-    if (!hours) continue;
-    for (const slot of pricingSlots(hours)) {
+    const plan = plannedScheduleForDate(params.planned ?? [], date);
+    const slots = plan?.windows ?? (hours ? pricingSlots(hours) : []);
+    for (const slot of slots) {
       let at: Date;
       try {
-        at = localDateTimeToDate(date, slot.startMinute);
+        const times = plan ? plannedWindowTimes(date, slot) : null;
+        if (plan && !times) continue;
+        at = times?.startsAt ?? localDateTimeToDate(date, slot.startMinute);
       } catch {
         // A nonexistent local time during the spring DST transition.
         continue;

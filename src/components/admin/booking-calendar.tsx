@@ -62,6 +62,7 @@ export function BookingCalendar({
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [selecting, setSelecting] = useState(false);
+  const selectingRef = useRef(false);
   const [selected, setSelected] = useState<CalendarBlockWindow[]>([]);
   const [choices, setChoices] = useState<{
     windows: CalendarBlockWindow[];
@@ -90,16 +91,22 @@ export function BookingCalendar({
     setTodayInRange(now >= view.currentStart && now < view.currentEnd);
   }, []);
 
+  useEffect(() => {
+    selectingRef.current = selecting;
+  }, [selecting]);
+
   /*
    * A seven-column time grid is useful on tablets and desktops, but each day
    * becomes too narrow to scan or tap on a phone. Start compact screens in a
    * day view and keep the view appropriate when the device rotates. A visitor
    * can still choose another view afterwards; this only reacts to a breakpoint
-   * change, not to their explicit calendar choice.
+   * change, not to their explicit calendar choice. Keep the current view
+   * while selecting slots so transient resizes cannot interrupt the selection.
    */
   useEffect(() => {
     const compact = window.matchMedia("(max-width: 639px)");
     const syncView = () => {
+      if (selectingRef.current) return;
       const calendar = calendarRef.current?.getApi();
       if (!calendar) return;
       if (compact.matches && calendar.view.type === "timeGridWeek") {
@@ -198,7 +205,7 @@ export function BookingCalendar({
   // choices only when their actual contents change, never on object identity.
   const eventRevision = JSON.stringify(events);
   useEffect(() => {
-    if (!selecting || !range) return;
+    if (!selecting || !range || pendingRequest.current) return;
     let active = true;
     setLoadingChoices(true);
     setChoices(null);
@@ -249,16 +256,21 @@ export function BookingCalendar({
     );
   }
   async function saveSelection() {
-    if (saving.current || !selected.length || !choices) return;
+    if (saving.current) return;
+    const request =
+      pendingRequest.current ??
+      (selected.length && choices
+        ? {
+            operationId: crypto.randomUUID(),
+            windows: selected,
+            scheduleFingerprint: choices.scheduleFingerprint,
+          }
+        : null);
+    if (!request) return;
     saving.current = true;
     setBusy(true);
     setActionError(null);
     setNotice(null);
-    const request = pendingRequest.current ?? {
-      operationId: crypto.randomUUID(),
-      windows: selected,
-      scheduleFingerprint: choices.scheduleFingerprint,
-    };
     pendingRequest.current = request;
     try {
       const result = await saveCalendarBlockSelectionAction(request);
@@ -415,7 +427,9 @@ export function BookingCalendar({
               <Button
                 type="button"
                 disabled={
-                  busy || loadingChoices || !choices || !selected.length
+                  busy ||
+                  (!uncertain &&
+                    (loadingChoices || !choices || !selected.length))
                 }
                 onClick={() => void saveSelection()}
               >
@@ -571,7 +585,11 @@ export function BookingCalendar({
             event.display === "inverse-background" ? null : (
             <span
               className="admin-calendar-name"
-              title={event.title}
+              title={
+                event.extendedProps.outsidePlan
+                  ? `${event.title} · Rezervace mimo aktuální rozvrh`
+                  : event.title
+              }
               data-start-minute={
                 event.start ? minuteOfDay(event.start) : undefined
               }

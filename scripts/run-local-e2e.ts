@@ -114,6 +114,7 @@ try {
     ],
     ["pricing.entry_price_cents", 22_900],
     ["pricing.time_blocks", []],
+    ["schedule.planned", []],
     ["features.additional_people", true],
     ["pricing.additional_people", { amountCents: 10000, mode: "flat" }],
   ] as const)

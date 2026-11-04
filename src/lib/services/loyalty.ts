@@ -1,4 +1,8 @@
 import {
+  parsePlannedSchedules,
+  PLANNED_SCHEDULES_KEY,
+} from "@/lib/config/planned-schedules";
+import {
   deriveLoyaltyStatus,
   pluralEntries,
   entriesRemainingPhrase,
@@ -175,6 +179,7 @@ export async function getStandardEntryPriceCents(): Promise<number> {
  */
 export async function getEntryPrices(
   ats: readonly Date[],
+  executor: DatabaseExecutor = db,
 ): Promise<EntryPrice[]> {
   if (!ats.length) return [];
   const valid = ats.filter(
@@ -187,15 +192,19 @@ export async function getEntryPrices(
     ? new Date(Math.max(...valid.map((at) => at.getTime())))
     : null;
   const [settings, hours, periods] = await Promise.all([
-    db
+    executor
       .select({ key: siteSetting.key, value: siteSetting.value })
       .from(siteSetting)
       .where(
-        inArray(siteSetting.key, [ENTRY_PRICE_SETTING_KEY, BLOCK_PRICING_KEY]),
+        inArray(siteSetting.key, [
+          ENTRY_PRICE_SETTING_KEY,
+          BLOCK_PRICING_KEY,
+          PLANNED_SCHEDULES_KEY,
+        ]),
       ),
-    db.select().from(openingHours),
+    executor.select().from(openingHours),
     min && max
-      ? db
+      ? executor
           .select({
             name: pricingPeriod.name,
             priceCents: pricingPeriod.priceCents,
@@ -216,8 +225,16 @@ export async function getEntryPrices(
   const standardPriceCents =
     typeof price === "number" && price >= 0 ? price : DEFAULT_ENTRY_PRICE_CENTS;
   const blockPrices = parseBlockPrices(stored.get(BLOCK_PRICING_KEY));
+  const planned = parsePlannedSchedules(stored.get(PLANNED_SCHEDULES_KEY));
   return ats.map((at) =>
-    resolveEntryPrice({ standardPriceCents, periods, blockPrices, hours, at }),
+    resolveEntryPrice({
+      standardPriceCents,
+      periods,
+      blockPrices,
+      hours,
+      planned,
+      at,
+    }),
   );
 }
 

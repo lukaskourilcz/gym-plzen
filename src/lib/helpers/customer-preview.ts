@@ -1,4 +1,9 @@
 import {
+  plannedScheduleForDate,
+  plannedWindowTimes,
+  type PlannedSchedule,
+} from "@/lib/config/planned-schedules";
+import {
   calendarLocation,
   type CalendarView,
 } from "@/lib/config/booking-calendar";
@@ -15,6 +20,7 @@ import {
   dayOfWeek,
   localDateTimeToDate,
   monthGrid,
+  minutesBetween,
 } from "./datetime";
 import { formatDate, formatTimeRange } from "./format";
 
@@ -23,6 +29,7 @@ export interface CustomerPreviewConfig {
   nowISO: string;
   hours: PricingHours[];
   blockPrices: BlockPrice[];
+  planned?: PlannedSchedule[];
   periods: { priceCents: number; startsAt: string; endsAt: string }[];
   standardPriceCents: number;
   participants: ParticipantOptions;
@@ -54,28 +61,34 @@ export function previewCalendar(
     const hours = config.hours.find(
       (h) => h.dayOfWeek === dayOfWeek(localDateTimeToDate(date, 720)),
     );
-    return hours
-      ? pricingSlots(hours).flatMap((slot, index) => {
-          const start = localDateTimeToDate(date, slot.startMinute);
-          if (start <= now) return [];
-          const end = new Date(start.getTime() + hours.slotMinutes * 60_000);
-          return [
-            {
-              startISO: start.toISOString(),
-              label: formatTimeRange(start, end),
-              durationMinutes: hours.slotMinutes,
-              priceCents: resolveEntryPrice({
-                standardPriceCents: config.standardPriceCents,
-                hours: config.hours,
-                blockPrices: config.blockPrices,
-                periods,
-                at: start,
-              }).priceCents,
-              booked: index === 2 || purchased.has(start.toISOString()),
-            },
-          ];
-        })
-      : [];
+    const plan = plannedScheduleForDate(config.planned ?? [], date);
+    const slots = plan?.windows ?? (hours ? pricingSlots(hours) : []);
+    return slots.flatMap((slot, index) => {
+      const times = plan ? plannedWindowTimes(date, slot) : null;
+      if (plan && !times) return [];
+      const start =
+        times?.startsAt ?? localDateTimeToDate(date, slot.startMinute);
+      if (start <= now) return [];
+      const end =
+        times?.endsAt ??
+        new Date(start.getTime() + hours!.slotMinutes * 60_000);
+      return [
+        {
+          startISO: start.toISOString(),
+          label: formatTimeRange(start, end),
+          durationMinutes: minutesBetween(start, end),
+          priceCents: resolveEntryPrice({
+            standardPriceCents: config.standardPriceCents,
+            hours: config.hours,
+            blockPrices: config.blockPrices,
+            planned: config.planned,
+            periods,
+            at: start,
+          }).priceCents,
+          booked: index === 2 || purchased.has(start.toISOString()),
+        },
+      ];
+    });
   };
   return {
     ...location,

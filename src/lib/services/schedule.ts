@@ -1,6 +1,7 @@
-import { reservationOverlaps } from "./availability";
-import { and, asc, eq, gt, lt, or } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { randomUUID } from "node:crypto";
+import { and, asc, eq, gt, gte, inArray, lt, or, sql } from "drizzle-orm";
+import { db, type Transaction } from "@/lib/db";
+import type { PgColumn } from "drizzle-orm/pg-core";
 import {
   blockedSlot,
   openingHours,
@@ -10,11 +11,157 @@ import {
 } from "@/lib/db/schema";
 import type { BlockedSlot, OpeningHours, Reservation } from "@/lib/db/types";
 import { ActionError } from "@/lib/helpers/action";
-import { lockSchedule } from "./availability";
+import { lockSchedule, reservationOverlaps } from "./availability";
 import {
   DEFAULT_SHOWER_MINUTES,
   SHOWER_MINUTES_SETTING_KEY,
 } from "@/lib/config/schedule";
+
+import {
+  addDaysToDateKey,
+  dateKeyInTimeZone,
+  localDateTimeToDate,
+} from "@/lib/helpers/datetime";
+import {
+  MAX_PLANNED_SCHEDULES,
+  PLANNED_SCHEDULES_KEY,
+  plannedScheduleForDate,
+  plannedSchedulesOverlap,
+  type PlannedSchedule,
+  type PlannedScheduleInput,
+} from "@/lib/config/planned-schedules";
+import { listPlannedSchedules } from "./planned-schedules";
+import { resolveConfiguredSlotFromSchedule } from "./slots";
+
+/** Serialize settings changes with booking writers. Reservation data is untouched. */
+export async function changePlannedSchedule(
+  input: PlannedScheduleInput | { id: string; revision: string; remove: true },
+  adminId: string,
+) {
+  return db.transaction(async (tx) => {
+    await lockSchedule(tx, "exclusive");
+    const schedules = await listPlannedSchedules(tx);
+    const existing = schedules.find((schedule) => schedule.id === input.id);
+    if (input.id && (!existing || existing.revision !== input.revision))
+      throw new ActionError("Rozvrh mezitím někdo změnil. Obnovte stránku.");
+    const remaining = schedules.filter((schedule) => schedule.id !== input.id);
+    if (!("remove" in input)) {
+      const today = dateKeyInTimeZone(new Date());
+      if (
+        input.to < today ||
+        (input.from < today && input.from !== existing?.from)
+      )
+        throw new ActionError(
+          "Naplánujte rozvrh na dnešek nebo budoucí období.",
+        );
+      if (remaining.length >= MAX_PLANNED_SCHEDULES)
+        throw new ActionError("Nejdříve odeberte některý ze starších rozvrhů.");
+      if (
+        remaining.some((schedule) => plannedSchedulesOverlap(schedule, input))
+      )
+        throw new ActionError(
+          "Pro některé vybrané dny už v tomto období existuje rozvrh.",
+        );
+      remaining.push({
+        ...input,
+        id: existing?.id ?? randomUUID(),
+        revision: randomUUID(),
+        weekdays: [...input.weekdays].sort((a, b) => a - b),
+        windows: [...input.windows].sort(
+          (a, b) => a.startMinute - b.startMinute,
+        ),
+      } satisfies PlannedSchedule);
+    }
+    const periods =
+      "remove" in input
+        ? [existing!]
+        : [input, ...(existing ? [existing] : [])];
+    await assertPendingWindowsPreserved(tx, periods, schedules, remaining);
+    const values = {
+      value: remaining.sort((a, b) => a.from.localeCompare(b.from)),
+      updatedByAdminId: adminId,
+      updatedAt: new Date(),
+    };
+    await tx
+      .insert(siteSetting)
+      .values({ key: PLANNED_SCHEDULES_KEY, ...values })
+      .onConflictDoUpdate({ target: siteSetting.key, set: values });
+    // Same privacy-safe invalidation used by the opening_hours trigger.
+    await tx.execute(sql`
+      insert into public.availability_signal (key, version, changed_at)
+      values (1, 1, now())
+      on conflict (key) do update
+        set version = public.availability_signal.version + 1,
+            changed_at = excluded.changed_at
+    `);
+  });
+}
+
+/** Check in-progress checkouts before publishing a different set of slots. */
+async function assertPendingWindowsPreserved(
+  tx: Transaction,
+  periods: Pick<PlannedSchedule, "from" | "to">[],
+  previous: PlannedSchedule[],
+  next: PlannedSchedule[],
+) {
+  const now = new Date();
+  const inPeriods = (column: PgColumn) =>
+    or(
+      ...periods.map(({ from, to }) =>
+        and(
+          gte(column, localDateTimeToDate(from, 0)),
+          lt(column, localDateTimeToDate(addDaysToDateKey(to, 1), 0)),
+        ),
+      ),
+    );
+  const [orders, changes] = await Promise.all([
+    tx
+      .select({ startsAt: reservation.startsAt, endsAt: reservation.endsAt })
+      .from(reservation)
+      .where(
+        and(
+          eq(reservation.status, "pending"),
+          gt(reservation.startsAt, now),
+          inPeriods(reservation.startsAt),
+        ),
+      ),
+    tx
+      .select({
+        startsAt: reservationChange.startsAt,
+        endsAt: reservationChange.endsAt,
+      })
+      .from(reservationChange)
+      .where(
+        and(
+          inArray(reservationChange.status, ["awaiting_payment", "applying"]),
+          gt(reservationChange.expiresAt, now),
+          inPeriods(reservationChange.startsAt),
+        ),
+      ),
+  ]);
+  const holds = [...orders, ...changes];
+  if (!holds.length) return;
+  const weekly = await tx.select().from(openingHours);
+  const invalidated = holds.some((hold) => {
+    const date = dateKeyInTimeZone(hold.startsAt);
+    if (
+      plannedScheduleForDate(previous, date)?.revision ===
+      plannedScheduleForDate(next, date)?.revision
+    )
+      return false;
+    return (
+      resolveConfiguredSlotFromSchedule(
+        hold.startsAt,
+        weekly,
+        next,
+      )?.endsAt.getTime() !== hold.endsAt.getTime()
+    );
+  });
+  if (invalidated)
+    throw new ActionError(
+      "Některý z termínů čeká na dokončení platby nebo změny rezervace. Zkuste rozvrh uložit později.",
+    );
+}
 
 /**
  * Schedule service : opening hours and blocked slots, both managed from the

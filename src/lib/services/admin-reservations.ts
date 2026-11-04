@@ -76,6 +76,7 @@ export async function createManualReservation(
     userId: input.userId ?? null,
     startsAt: slot.startsAt,
     endsAt: slot.endsAt,
+    requireConfiguredWindow: true,
     contactName: input.contactName?.trim() || member?.profile?.fullName || null,
     contactEmail: input.contactEmail?.trim() || member?.profile?.email || null,
     contactPhone: input.contactPhone?.trim() || member?.profile?.phone || null,
