@@ -95,9 +95,11 @@ export function BookingCalendar({
    * becomes too narrow to scan or tap on a phone. Start compact screens in a
    * day view and keep the view appropriate when the device rotates. A visitor
    * can still choose another view afterwards; this only reacts to a breakpoint
-   * change, not to their explicit calendar choice.
+   * change, not to their explicit calendar choice. Keep the current view
+   * while selecting slots so transient resizes cannot interrupt the selection.
    */
   useEffect(() => {
+    if (selecting) return;
     const compact = window.matchMedia("(max-width: 639px)");
     const syncView = () => {
       const calendar = calendarRef.current?.getApi();
@@ -112,7 +114,7 @@ export function BookingCalendar({
     syncView();
     compact.addEventListener("change", syncView);
     return () => compact.removeEventListener("change", syncView);
-  }, []);
+  }, [selecting]);
 
   // TimeGrid positions events absolutely, so their text cannot naturally size
   // the table row. Measure only foreground names, then resize that slot alone.
