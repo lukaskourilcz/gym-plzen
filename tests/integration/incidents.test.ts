@@ -123,8 +123,9 @@ describe("specific operational incidents", { skip: !databaseReady }, () => {
       title: "Ověřit vrácení platby",
       context: { reservationId: b.id, amountCents: 19900 },
     });
-    for (let attempt = 0; attempt < 6; attempt++)
-      await markStepFailed(b.id, "code_created", { code: "code_unconfirmed" });
+    for (let attempt = 0; attempt < 5; attempt++)
+      await markStepFailed(b.id, "code_created", { code: "lock_offline" });
+    await markStepFailed(b.id, "code_created", { code: "code_unconfirmed" });
     const before = await Promise.all([
       rows("select * from reservation"),
       rows("select * from access_code"),
@@ -144,6 +145,14 @@ describe("specific operational incidents", { skip: !databaseReady }, () => {
     assert.deepEqual(
       incidentUpdates(recovered.context).map((update) => update.kind),
       ["opened", "repeated", "recovered"],
+    );
+    assert.match(
+      incidentUpdates(recovered.context)[0]!.message,
+      /ověřit dostupnost zámku/,
+    );
+    assert.match(
+      incidentUpdates(recovered.context)[1]!.message,
+      /časovou platnost/,
     );
     assert.match(
       incidentUpdates(recovered.context).at(-1)!.message,

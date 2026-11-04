@@ -46,7 +46,7 @@ export function IncidentDetails({
       ) : view.phase ? (
         <p className="text-xs text-muted-foreground">{view.phase}</p>
       ) : null}
-      {view.cause ? (
+      {view.cause && !latest?.message.includes(view.cause) ? (
         <p
           className={
             compact

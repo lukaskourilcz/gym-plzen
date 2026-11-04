@@ -1,4 +1,4 @@
-import { parseIncident } from "@/lib/config/incidents";
+import { INCIDENTS, parseIncident } from "@/lib/config/incidents";
 import { withOperationLock } from "./operation-lock";
 import {
   and,
@@ -74,6 +74,10 @@ async function raiseAlertUnlocked(
   params: RaiseAlertParams,
 ): Promise<SystemAlert | null> {
   try {
+    const incoming = parseIncident(params.context);
+    const diagnosis = incoming
+      ? `${incoming.attempts ? `Pokus č. ${incoming.attempts}. ` : ""}${INCIDENTS[incoming.code].cause}`
+      : null;
     if (params.dedupeKey) {
       const [existing] = await db
         .select()
@@ -86,8 +90,7 @@ async function raiseAlertUnlocked(
         )
         .limit(1);
       if (existing) {
-        const incoming = parseIncident(params.context),
-          previous = parseIncident(existing.context);
+        const previous = parseIncident(existing.context);
         const severityRank = { info: 0, warning: 1, critical: 2 };
         const escalated =
           Boolean(incoming) &&
@@ -96,9 +99,7 @@ async function raiseAlertUnlocked(
         const update: IncidentUpdate = {
           at: new Date().toISOString(),
           kind: "repeated",
-          message: incoming?.attempts
-            ? `Kontrola č. ${incoming.attempts} problém stále potvrzuje.`
-            : "Problém byl znovu zachycen.",
+          message: diagnosis ?? "Problém byl znovu zachycen.",
         };
         const context = {
           ...(existing.context && typeof existing.context === "object"
@@ -159,7 +160,8 @@ async function raiseAlertUnlocked(
             {
               at: new Date().toISOString(),
               kind: "opened",
-              message: "Systém zaznamenal problém a založil incident.",
+              message:
+                diagnosis ?? "Systém zaznamenal problém a založil incident.",
             } satisfies IncidentUpdate,
           ],
         },
