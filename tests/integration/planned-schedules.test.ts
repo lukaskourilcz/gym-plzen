@@ -3,12 +3,14 @@ import {
   resetDatabase,
   rows,
   seedProfile,
+  startProviders,
+  resend,
   setSetting,
   stopEverything,
 } from "./setup";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { after, beforeEach, describe, test } from "node:test";
+import { after, before, beforeEach, describe, test } from "node:test";
 import {
   addDaysToDateKey,
   dateKeyInTimeZone,
@@ -50,6 +52,7 @@ const plan = {
 };
 
 describe("planned booking schedules", { skip: !databaseReady }, () => {
+  before(startProviders);
   beforeEach(async () => {
     await resetDatabase();
     await setSetting("booking.horizon_days", 60);
@@ -158,6 +161,7 @@ describe("planned booking schedules", { skip: !databaseReady }, () => {
     assert.deepEqual(await rows("select * from reservation"), reservations);
     assert.deepEqual(await rows("select * from access_code"), codes);
     assert.equal((await rows("select * from message_delivery")).length, 0);
+    assert.equal(resend.sent.length, 0);
   });
 
   test("serializes conflicting saves, rejects stale edits and restores the usual schedule on removal", async () => {
@@ -236,5 +240,6 @@ describe("planned booking schedules", { skip: !databaseReady }, () => {
     assert.equal(resumed.url, order.url);
     assert.equal(resumed.totalCents, 17900);
     assert.equal((await rows("select * from message_delivery")).length, 0);
+    assert.equal(resend.sent.length, 0);
   });
 });
