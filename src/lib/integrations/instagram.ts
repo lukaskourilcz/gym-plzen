@@ -15,6 +15,8 @@ export class InstagramError extends Error {
   }
 }
 const UNIFIED_GRAPH_VERSION = "v26.0";
+const NAVI_META_BUSINESS_ID = "1615625080049734";
+const NAVI_META_INSTAGRAM_ID = "17841427246422536";
 export const INSTAGRAM_UNLIMITED_EXPIRY = Date.UTC(9999, 11, 31);
 // Plain Node uses the SDK's CommonJS entry point.
 const { suppressTracing } =
@@ -27,6 +29,13 @@ export function instagramConfigured() {
     env.INSTAGRAM_APP_SECRET &&
     env.INSTAGRAM_TOKEN_ENCRYPTION_KEY,
   );
+}
+export type InstagramProvider = "instagram" | "unified" | "facebook-user";
+/** Facebook user login wins over a Unified Login configuration; Instagram Login is the legacy default. */
+export function instagramLoginMode(): InstagramProvider {
+  if (env.INSTAGRAM_FACEBOOK_USER_LOGIN === "true") return "facebook-user";
+  if (env.INSTAGRAM_UNIFIED_CONFIG_ID) return "unified";
+  return "instagram";
 }
 function endpoint(
   host: "graph" | "auth" | "login" | "facebook-graph" | "facebook-login",
@@ -57,11 +66,23 @@ function endpoint(
 }
 export function instagramAuthorizationUrl(redirectUri: string, state: string) {
   if (!instagramConfigured()) throw new InstagramError("not_configured");
-  if (env.INSTAGRAM_UNIFIED_CONFIG_ID) {
+  const mode = instagramLoginMode();
+  if (mode === "facebook-user") {
     const url = endpoint("facebook-login", "/dialog/oauth");
     url.search = new URLSearchParams({
       client_id: env.INSTAGRAM_APP_ID!,
-      config_id: env.INSTAGRAM_UNIFIED_CONFIG_ID,
+      redirect_uri: redirectUri,
+      response_type: "code",
+      scope: "instagram_basic",
+      state,
+    }).toString();
+    return url.toString();
+  }
+  if (mode === "unified") {
+    const url = endpoint("facebook-login", "/dialog/oauth");
+    url.search = new URLSearchParams({
+      client_id: env.INSTAGRAM_APP_ID!,
+      config_id: env.INSTAGRAM_UNIFIED_CONFIG_ID!,
       redirect_uri: redirectUri,
       response_type: "code",
       override_default_response_type: "true",
@@ -202,8 +223,164 @@ function graph(path: string, token: string, fields: string, unified = false) {
 const metaId = z.string().regex(/^\d{1,30}$/);
 const tokenValue = z.string().min(8).max(8192);
 const unifiedAccountSchema = z.object({ id: metaId, username: z.string() });
-
+const debugTokenSchema = z.object({
+  data: z.object({
+    app_id: metaId,
+    type: z.string().optional(),
+    is_valid: z.literal(true),
+    scopes: z.array(z.string()).max(100),
+    granular_scopes: z
+      .array(
+        z.object({
+          scope: z.string(),
+          target_ids: z.array(metaId).max(1000).optional(),
+        }),
+      )
+      .max(100)
+      .optional(),
+    expires_at: z.number().int().nonnegative(),
+    data_access_expires_at: z.number().int().nonnegative().optional(),
+  }),
+});
 /** Meta's default template includes messaging. Reject permissions beyond reading the feed. */
+async function debugMetaToken(token: string) {
+  const debugUrl = endpoint(
+    "facebook-graph",
+    `/${UNIFIED_GRAPH_VERSION}/debug_token`,
+  );
+  debugUrl.searchParams.set("input_token", token);
+  const debug = debugTokenSchema.safeParse(
+    await jsonRequest(debugUrl, {
+      headers: {
+        Authorization: `Bearer ${env.INSTAGRAM_APP_ID!}|${env.INSTAGRAM_APP_SECRET!}`,
+      },
+    }),
+  );
+  if (!debug.success || debug.data.data.app_id !== env.INSTAGRAM_APP_ID)
+    throw new InstagramError("authorization");
+  const { scopes, expires_at, data_access_expires_at } = debug.data.data;
+  if (
+    !scopes.includes("instagram_basic") ||
+    scopes.some(
+      (scope) => !["instagram_basic", "public_profile"].includes(scope),
+    )
+  )
+    throw new InstagramError("permissions");
+  const expiry = Math.min(
+    expires_at ? expires_at * 1000 : INSTAGRAM_UNLIMITED_EXPIRY,
+    data_access_expires_at
+      ? data_access_expires_at * 1000
+      : INSTAGRAM_UNLIMITED_EXPIRY,
+  );
+  if (expiry <= Date.now()) throw new InstagramError("authorization");
+  return { ...debug.data.data, expiry };
+}
+async function facebookTokenRequest(params: Record<string, string>) {
+  const url = endpoint(
+    "facebook-graph",
+    `/${UNIFIED_GRAPH_VERSION}/oauth/access_token`,
+  );
+  url.search = new URLSearchParams({
+    client_id: env.INSTAGRAM_APP_ID!,
+    client_secret: env.INSTAGRAM_APP_SECRET!,
+    ...params,
+  }).toString();
+  const parsed = z
+    .object({
+      access_token: tokenValue,
+      expires_in: z
+        .number()
+        .positive()
+        .max(366 * 86400)
+        .optional(),
+    })
+    .safeParse(await jsonRequest(url));
+  if (!parsed.success) throw new InstagramError("authorization");
+  return parsed.data;
+}
+/**
+ * A user token is bound to the NAVI account through its granular scope, then
+ * the account is read directly. Any other grant is refused.
+ */
+async function verifyFacebookUserToken(token: string) {
+  const debug = await debugMetaToken(token);
+  if (debug.type && debug.type !== "USER")
+    throw new InstagramError("authorization");
+  const targets = debug.granular_scopes?.find(
+    (entry) => entry.scope === "instagram_basic",
+  )?.target_ids;
+  if (targets && !targets.includes(NAVI_META_INSTAGRAM_ID))
+    throw new InstagramError("wrong_account");
+  const direct = graph(
+    `/${NAVI_META_INSTAGRAM_ID}`,
+    token,
+    "id,username",
+    true,
+  );
+  const profile = unifiedAccountSchema.safeParse(
+    await jsonRequest(direct.url, direct.init),
+  );
+  if (
+    !profile.success ||
+    profile.data.id !== NAVI_META_INSTAGRAM_ID ||
+    profile.data.username.toLowerCase() !== INSTAGRAM_USERNAME
+  )
+    throw new InstagramError("wrong_account");
+  const principal = graph("/me", token, "id", true);
+  const owner = z
+    .object({ id: metaId })
+    .safeParse(await jsonRequest(principal.url, principal.init));
+  if (!owner.success) throw new InstagramError("authorization");
+  return { expiry: debug.expiry, oauthUserId: owner.data.id };
+}
+/** Facebook Login with a user token: the admin grants instagram_basic for @navi_plzen only. */
+async function exchangeFacebookUserCode(code: string, redirectUri: string) {
+  if (!instagramConfigured()) throw new InstagramError("not_configured");
+  const short = await facebookTokenRequest({ redirect_uri: redirectUri, code });
+  const long = await facebookTokenRequest({
+    grant_type: "fb_exchange_token",
+    fb_exchange_token: short.access_token,
+  });
+  const token = long.access_token;
+  const verified = await verifyFacebookUserToken(token);
+  return {
+    token,
+    provider: "facebook-user" as const,
+    configId: null,
+    businessId: null,
+    oauthUserId: verified.oauthUserId,
+    accountId: NAVI_META_INSTAGRAM_ID,
+    username: INSTAGRAM_USERNAME,
+    expiresAt: new Date(
+      Math.min(
+        verified.expiry,
+        long.expires_in
+          ? Date.now() + long.expires_in * 1000
+          : INSTAGRAM_UNLIMITED_EXPIRY,
+      ),
+    ),
+  };
+}
+/** Re-exchanges a still valid long-lived user token and re-verifies the account. */
+export async function refreshFacebookUserToken(token: string) {
+  const long = await facebookTokenRequest({
+    grant_type: "fb_exchange_token",
+    fb_exchange_token: token,
+  });
+  const verified = await verifyFacebookUserToken(long.access_token);
+  return {
+    token: long.access_token,
+    expiresAt: new Date(
+      Math.min(
+        verified.expiry,
+        long.expires_in
+          ? Date.now() + long.expires_in * 1000
+          : INSTAGRAM_UNLIMITED_EXPIRY,
+      ),
+    ),
+  };
+}
+
 async function exchangeUnifiedInstagramCode(code: string, redirectUri: string) {
   const configId = env.INSTAGRAM_UNIFIED_CONFIG_ID;
   if (!configId || !instagramConfigured())
@@ -223,45 +400,7 @@ async function exchangeUnifiedInstagramCode(code: string, redirectUri: string) {
     .safeParse(await jsonRequest(url));
   if (!exchange.success) throw new InstagramError("authorization");
   const token = exchange.data.access_token;
-  const debugUrl = endpoint(
-    "facebook-graph",
-    `/${UNIFIED_GRAPH_VERSION}/debug_token`,
-  );
-  debugUrl.searchParams.set("input_token", token);
-  const debug = z
-    .object({
-      data: z.object({
-        app_id: metaId,
-        is_valid: z.literal(true),
-        scopes: z.array(z.string()).max(100),
-        expires_at: z.number().int().nonnegative(),
-        data_access_expires_at: z.number().int().nonnegative().optional(),
-      }),
-    })
-    .safeParse(
-      await jsonRequest(debugUrl, {
-        headers: {
-          Authorization: `Bearer ${env.INSTAGRAM_APP_ID!}|${env.INSTAGRAM_APP_SECRET!}`,
-        },
-      }),
-    );
-  if (!debug.success || debug.data.data.app_id !== env.INSTAGRAM_APP_ID)
-    throw new InstagramError("authorization");
-  const { scopes, expires_at, data_access_expires_at } = debug.data.data;
-  if (
-    !scopes.includes("instagram_basic") ||
-    scopes.some(
-      (scope) => !["instagram_basic", "public_profile"].includes(scope),
-    )
-  )
-    throw new InstagramError("permissions");
-  const expiry = Math.min(
-    expires_at ? expires_at * 1000 : INSTAGRAM_UNLIMITED_EXPIRY,
-    data_access_expires_at
-      ? data_access_expires_at * 1000
-      : INSTAGRAM_UNLIMITED_EXPIRY,
-  );
-  if (expiry <= Date.now()) throw new InstagramError("authorization");
+  const { expiry } = await debugMetaToken(token);
   const principal = graph("/me", token, "id,client_business_id", true);
   const accounts = graph(
     "/me/assigned_instagram_accounts",
@@ -282,12 +421,38 @@ async function exchangeUnifiedInstagramCode(code: string, redirectUri: string) {
     .safeParse(assigned);
   if (!identity.success || !profiles.success)
     throw new InstagramError("authorization");
-  const profile = profiles.data.data.find(
+  let profile = profiles.data.data.find(
     (account) => account.username.toLowerCase() === INSTAGRAM_USERNAME,
   );
+  // Meta can return an empty assignment list even after the owning portfolio
+  // shares its account. Let Meta authorize a direct read of that one asset
+  // using the same grant. An explicit list of other accounts stays authoritative.
+  if (
+    !profile &&
+    profiles.data.data.length === 0 &&
+    identity.data.client_business_id === NAVI_META_BUSINESS_ID
+  ) {
+    const direct = graph(
+      `/${NAVI_META_INSTAGRAM_ID}`,
+      token,
+      "id,username",
+      true,
+    );
+    const result = unifiedAccountSchema.safeParse(
+      await jsonRequest(direct.url, direct.init),
+    );
+    if (
+      result.success &&
+      result.data.id === NAVI_META_INSTAGRAM_ID &&
+      result.data.username.toLowerCase() === INSTAGRAM_USERNAME
+    ) {
+      profile = result.data;
+    }
+  }
   if (!profile) throw new InstagramError("wrong_account");
   return {
     token,
+    provider: "unified" as const,
     configId,
     businessId: identity.data.client_business_id,
     oauthUserId: identity.data.id,
@@ -321,12 +486,16 @@ async function readInstagramProfile(token: string) {
   };
 }
 export async function instagramGrant(code: string, redirectUri: string) {
-  if (env.INSTAGRAM_UNIFIED_CONFIG_ID)
+  const mode = instagramLoginMode();
+  if (mode === "facebook-user")
+    return exchangeFacebookUserCode(code, redirectUri);
+  if (mode === "unified")
     return exchangeUnifiedInstagramCode(code, redirectUri);
   const grant = await exchangeInstagramCode(code, redirectUri);
   const profile = await readInstagramProfile(grant.token);
   return {
     ...profile,
+    provider: "instagram" as const,
     token: grant.token,
     oauthUserId: grant.oauthUserId,
     expiresAt: new Date(Date.now() + grant.expiresIn * 1000),

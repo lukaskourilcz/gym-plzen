@@ -62,6 +62,12 @@ const serverSchema = z.object({
       .regex(/^\d{1,30}$/)
       .optional(),
   ),
+  // "true" connects through Facebook Login with a user token limited to
+  // instagram_basic. It takes precedence over the Unified Login configuration.
+  INSTAGRAM_FACEBOOK_USER_LOGIN: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.literal("true").optional(),
+  ),
   INSTAGRAM_TOKEN_ENCRYPTION_KEY: z.preprocess(
     (value) => (value === "" ? undefined : value),
     z

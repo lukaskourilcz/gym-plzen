@@ -28,17 +28,19 @@ function key(purpose: string) {
     .update(`navi-instagram-v1:${purpose}`)
     .digest();
 }
+type TokenVersion = "v1" | "v2" | "v3";
+const purposes: Record<TokenVersion, string> = {
+  v1: "token",
+  v2: "unified-token",
+  v3: "facebook-user-token",
+};
 export function encryptInstagramToken(
   token: string,
   accountId: string,
-  version: "v1" | "v2" = "v1",
+  version: TokenVersion = "v1",
 ) {
   const iv = randomBytes(12),
-    cipher = createCipheriv(
-      "aes-256-gcm",
-      key(version === "v2" ? "unified-token" : "token"),
-      iv,
-    );
+    cipher = createCipheriv("aes-256-gcm", key(purposes[version]), iv);
   cipher.setAAD(Buffer.from(accountId));
   const ciphertext = Buffer.concat([
     cipher.update(token, "utf8"),
@@ -54,17 +56,11 @@ export function encryptInstagramToken(
 export function decryptInstagramToken(value: string, accountId: string) {
   try {
     const [version, nonce, tag, data, extra] = value.split(".");
-    if (
-      (version !== "v1" && version !== "v2") ||
-      !nonce ||
-      !tag ||
-      !data ||
-      extra
-    )
+    if (!(version && version in purposes) || !nonce || !tag || !data || extra)
       throw new Error();
     const decipher = createDecipheriv(
       "aes-256-gcm",
-      key(version === "v2" ? "unified-token" : "token"),
+      key(purposes[version as TokenVersion]),
       decode(nonce),
     );
     decipher.setAAD(Buffer.from(accountId));
@@ -82,18 +78,36 @@ const unifiedToken = z.object({
   configId: z.string().regex(/^\d{1,30}$/),
   businessId: z.string().regex(/^\d{1,30}$/),
 });
+const facebookUserToken = z.object({
+  token: z.string().min(8).max(8192),
+  appId: z.string().min(1).max(64),
+});
+export function encryptFacebookUserToken(token: string, accountId: string) {
+  if (!env.INSTAGRAM_APP_ID) throw new InstagramError("not_configured");
+  return encryptInstagramToken(
+    JSON.stringify({ token, appId: env.INSTAGRAM_APP_ID }),
+    accountId,
+    "v3",
+  );
+}
 
 /** The encrypted version binds a token to its provider and prevents a legacy refresh. */
 export function readStoredInstagramToken(
   ciphertext: string,
   accountId: string,
-) {
+): { provider: "instagram" | "unified" | "facebook-user"; token: string } {
   const raw = decryptInstagramToken(ciphertext, accountId);
-  if (!ciphertext.startsWith("v2.")) return { unified: false, token: raw };
+  if (ciphertext.startsWith("v1."))
+    return { provider: "instagram", token: raw };
   try {
+    if (ciphertext.startsWith("v3.")) {
+      const grant = facebookUserToken.parse(JSON.parse(raw));
+      if (grant.appId !== env.INSTAGRAM_APP_ID) throw new Error();
+      return { provider: "facebook-user", token: grant.token };
+    }
     const grant = unifiedToken.parse(JSON.parse(raw));
     if (grant.configId !== env.INSTAGRAM_UNIFIED_CONFIG_ID) throw new Error();
-    return { unified: true, token: grant.token };
+    return { provider: "unified", token: grant.token };
   } catch {
     throw new InstagramError("authorization");
   }
