@@ -35,7 +35,8 @@ test("daily headings keep the date smaller and regular inside one H1", async ({
     });
     expect(styles.detailSize).toBeLessThan(styles.titleSize);
     expect(styles.detailWeight).toBe("400");
-    expect(styles.text).toMatch(/^\| /);
+    expect(styles.text).toMatch(/\d{1,2}\.\s+\p{L}+/u);
+    expect(styles.text).not.toContain("|");
   }
 });
 async function unchanged(before: unknown[], emails: number) {
@@ -63,7 +64,7 @@ test("tomorrow offers a desktop table, icon tooltips and mobile cards without ch
   try {
     await page.goto("/admin/tomorrow");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      /^Zítra \| kontrola rezervací na/,
+      /^Zítra kontrola rezervací na \d{1,2}\./,
     );
     await expect(page.getByText(/Tady večer uvidíte/)).toHaveCount(0);
     const table = page.getByRole("table");
@@ -173,7 +174,7 @@ test("today paginates all entries by twenty and uses compact gaps beside a long 
   try {
     await page.goto("/admin");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      /^Dnes \| /,
+      /^Dnes \p{L}+ \d{1,2}\./u,
     );
     const programme = page.locator(
       'section[aria-labelledby="today-programme"]',

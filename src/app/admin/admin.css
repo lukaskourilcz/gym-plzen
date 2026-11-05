@@ -117,6 +117,11 @@
   padding: 1rem;
 }
 
+/* Keep the bounded history dense while retaining 44px action targets. */
+.admin-shell #blocking-history :where(td) {
+  padding-block: 0.25rem;
+}
+
 .admin-shell [data-ui="stat-group"] {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
