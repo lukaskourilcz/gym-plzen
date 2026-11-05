@@ -5,7 +5,6 @@ import Image from "next/image";
 import {
   ChevronLeft,
   ChevronRight,
-  ExternalLink,
   Layers,
   Play,
   ImageOff,
@@ -19,7 +18,6 @@ import {
   type InstagramPost,
   type InstagramProfile,
 } from "@/lib/config/instagram";
-import { Dialog } from "@/components/ui/dialog";
 import { BrandMark } from "./brand";
 import "./instagram-feed.css";
 
@@ -49,13 +47,17 @@ function InstagramEngagement({ post }: { post: InstagramPost }) {
     <span className="instagram-engagement" role="img" aria-label={label}>
       {typeof post.likeCount === "number" && (
         <span>
-          <Heart className="size-5 fill-current" aria-hidden="true" />
+          <Heart className="size-6" strokeWidth={1.5} aria-hidden="true" />
           {post.likeCount.toLocaleString("cs-CZ")}
         </span>
       )}
       {typeof post.commentsCount === "number" && (
         <span>
-          <MessageCircle className="size-5 fill-current" aria-hidden="true" />
+          <MessageCircle
+            className="size-6"
+            strokeWidth={1.5}
+            aria-hidden="true"
+          />
           {post.commentsCount.toLocaleString("cs-CZ")}
         </span>
       )}
@@ -109,7 +111,7 @@ function columnsForWidth(width: number) {
   return Math.max(1, Math.floor(width / minimum));
 }
 
-/** Local thumbnails and a native dialog; visiting Instagram is always an explicit link. */
+/** Local thumbnails; each photo links directly to its original Instagram post. */
 export function InstagramFeed({
   posts,
   profile,
@@ -124,17 +126,12 @@ export function InstagramFeed({
   const rail = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(4);
   const [page, setPage] = useState(0);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const railId = useId();
   const visiblePosts = posts.slice(0, 12);
   const perPage = columns * 2;
   const pages = Array.from(
     { length: Math.ceil(visiblePosts.length / perPage) },
     (_, i) => visiblePosts.slice(i * perPage, (i + 1) * perPage),
-  );
-  const selected = visiblePosts.find((post) => post.id === selectedId);
-  const selectedIndex = visiblePosts.findIndex(
-    (post) => post.id === selectedId,
   );
 
   useEffect(() => {
@@ -286,29 +283,31 @@ export function InstagramFeed({
                         <InstagramThumbnail post={post} />
                       </div>
                     ) : (
-                      <button
+                      <a
                         key={post.id}
-                        type="button"
+                        href={post.permalink}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="instagram-post group"
-                        onClick={() => setSelectedId(post.id)}
-                        aria-haspopup="dialog"
-                        aria-label={`Zobrazit příspěvek: ${post.caption.slice(0, 140) || "NAVI Private Gym"}${engagementLabel(post) ? `. ${engagementLabel(post)}` : ""}`}
+                        aria-label={`Otevřít příspěvek na Instagramu: ${post.caption.slice(0, 140) || "NAVI Private Gym"}${engagementLabel(post) ? `. ${engagementLabel(post)}` : ""}`}
                       >
                         <InstagramThumbnail post={post} />
                         <span
                           className="instagram-post-overlay"
                           aria-hidden="true"
                         >
-                          {engagementLabel(post) ? (
-                            <InstagramEngagement post={post} />
-                          ) : (
-                            <Instagram className="mx-auto mb-3 size-6" />
-                          )}
-                          <span className="line-clamp-5 text-sm leading-6">
-                            {post.caption}
+                          <span className="instagram-overlay-content">
+                            {engagementLabel(post) ? (
+                              <InstagramEngagement post={post} />
+                            ) : (
+                              <Instagram className="mx-auto size-6" />
+                            )}
+                            <span className="instagram-caption">
+                              {post.caption}
+                            </span>
                           </span>
                         </span>
-                      </button>
+                      </a>
                     ),
                   )}
                 </div>
@@ -348,67 +347,6 @@ export function InstagramFeed({
           </p>
         )}
       </div>
-      {selected && !preview && (
-        <Dialog
-          title={`@${INSTAGRAM_USERNAME}`}
-          onClose={() => setSelectedId(null)}
-          className="instagram-post-dialog max-w-[640px] rounded-none bg-white p-0 text-neutral-950 sm:p-0"
-        >
-          <InstagramThumbnail key={selected.id} post={selected} />
-          <div className="p-5">
-            <InstagramEngagement post={selected} />
-            <p className="whitespace-pre-wrap break-words text-sm leading-6">
-              {selected.caption}
-            </p>
-            <time
-              dateTime={selected.publishedAt}
-              className="mt-4 block text-xs text-neutral-600"
-            >
-              {new Date(selected.publishedAt).toLocaleDateString("cs-CZ", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-                timeZone: "Europe/Prague",
-              })}
-            </time>
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-              <a
-                href={selected.permalink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-h-11 items-center gap-2 text-sm font-bold underline underline-offset-4"
-              >
-                Otevřít na Instagramu
-                <ExternalLink className="size-4" aria-hidden="true" />
-              </a>
-              <div className="flex gap-1">
-                <button
-                  type="button"
-                  className="instagram-dialog-arrow"
-                  aria-label="Předchozí příspěvek"
-                  disabled={selectedIndex <= 0}
-                  onClick={() =>
-                    setSelectedId(visiblePosts[selectedIndex - 1]!.id)
-                  }
-                >
-                  <ChevronLeft aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className="instagram-dialog-arrow"
-                  aria-label="Další příspěvek"
-                  disabled={selectedIndex >= visiblePosts.length - 1}
-                  onClick={() =>
-                    setSelectedId(visiblePosts[selectedIndex + 1]!.id)
-                  }
-                >
-                  <ChevronRight aria-hidden="true" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </Dialog>
-      )}
     </section>
   );
 }
