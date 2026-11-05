@@ -85,6 +85,7 @@ function useIsCompact() {
     const el = ref.current;
     if (!el) return;
     const observer = new ResizeObserver(([entry]) => {
+      if (!entry) return;
       setIsCompact(entry.contentRect.width < COMPACT_WIDTH);
     });
     observer.observe(el);
