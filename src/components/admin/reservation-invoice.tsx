@@ -33,7 +33,7 @@ export function ReservationInvoice({
       {documentId && (
         <a
           href={`/admin/doklady/${documentId}/pdf`}
-          className="inline-flex min-h-11 items-center text-sm font-bold underline"
+          className="inline-flex min-h-11 items-center text-sm font-medium underline"
         >
           Stáhnout PDF{state.invoiceNumber ? ` · ${state.invoiceNumber}` : ""}
         </a>

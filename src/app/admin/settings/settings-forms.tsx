@@ -165,7 +165,7 @@ export function SitePhotosForm({
       </p>
 
       <fieldset className="mb-6">
-        <legend className="mb-2 text-sm font-extrabold">
+        <legend className="mb-2 text-sm font-semibold">
           Galerie na úvodní stránce
         </legend>
         {[0, 1, 2, 3].map((index) => (
@@ -185,7 +185,7 @@ export function SitePhotosForm({
       </fieldset>
 
       <fieldset className="mb-6">
-        <legend className="mb-2 text-sm font-extrabold">
+        <legend className="mb-2 text-sm font-semibold">
           Fotografie zón na stránce Vybavení
         </legend>
         {[0, 1, 2, 3, 4, 5].map((index) => (

@@ -96,9 +96,19 @@ export default async function SchedulePage({
           {minutesToHHmm(DEFAULT_OPEN_MINUTE)} až{" "}
           {minutesToHHmm(DEFAULT_CLOSE_MINUTE)} po 75 minutách.
         </p>
-        {Array.from({ length: 7 }, (_, day) => (
-          <OpeningHoursRow key={day} dayOfWeek={day} hours={byDay.get(day)} />
-        ))}
+        <div className="admin-opening-hours">
+          <div className="admin-hours-heading" aria-hidden="true">
+            <span>Den</span>
+            <span>Otevřeno</span>
+            <span>Zavřeno</span>
+            <span>Slot (min)</span>
+            <span />
+            <span />
+          </div>
+          {Array.from({ length: 7 }, (_, day) => (
+            <OpeningHoursRow key={day} dayOfWeek={day} hours={byDay.get(day)} />
+          ))}
+        </div>
       </section>
 
       <section className="mt-8">

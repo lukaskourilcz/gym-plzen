@@ -37,7 +37,7 @@ export default async function GuestWalletPage({
           Zpět na kredity
         </Button>
       </PageHeader>
-      <p className="my-5 text-3xl font-bold">
+      <p className="my-5 text-3xl font-medium">
         {formatMoney(account.balanceCents - account.reservedCents)}
       </p>
       <CreditEditor
@@ -46,7 +46,7 @@ export default async function GuestWalletPage({
         balance={account.balanceCents}
         reserved={account.reservedCents}
       />
-      <h2 className="mt-6 text-xl font-bold">Historie kreditů</h2>
+      <h2 className="mt-6 text-xl font-medium">Historie kreditů</h2>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead>

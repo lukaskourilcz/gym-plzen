@@ -140,7 +140,7 @@ export default async function ReservationsPage({
       {query.cancelled === "1" ? (
         <p
           role="status"
-          className="mb-5 rounded-lg border border-primary/30 bg-primary/10 p-4 font-bold"
+          className="mb-5 rounded-lg border border-primary/30 bg-primary/10 p-4 font-medium"
         >
           Rezervace zrušena.
         </p>

@@ -116,7 +116,7 @@ export function BlockingManager({
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2
             id="blocking-templates"
-            className="text-xl font-bold tracking-tight"
+            className="text-xl font-medium tracking-tight"
           >
             Šablony blokací
           </h2>
@@ -198,7 +198,7 @@ export function BlockingManager({
       <section aria-labelledby="blocking-history">
         <h2
           id="blocking-history"
-          className="mb-4 text-xl font-bold tracking-tight"
+          className="mb-4 text-xl font-medium tracking-tight"
         >
           Použité blokace
         </h2>

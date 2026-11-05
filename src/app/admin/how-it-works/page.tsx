@@ -62,7 +62,7 @@ function Section({
       aria-labelledby={`${id}-title`}
       className="scroll-mt-8 space-y-4"
     >
-      <h2 id={`${id}-title`} className="text-2xl font-bold">
+      <h2 id={`${id}-title`} className="text-2xl font-medium">
         {title}
       </h2>
       {children}
@@ -88,7 +88,7 @@ export default async function HowItWorksPage() {
         aria-label="Obsah průvodce"
         className="mb-10 rounded-xl border border-border bg-card p-5"
       >
-        <h2 className="mb-3 font-bold">Přejít na téma</h2>
+        <h2 className="mb-3 font-medium">Přejít na téma</h2>
         <ol className="grid gap-2 text-sm sm:grid-cols-2">
           {TOPICS.map(([id, label]) => (
             <li key={id}>
@@ -133,10 +133,10 @@ export default async function HowItWorksPage() {
                 key={number}
                 className="rounded-lg border border-border bg-card p-4"
               >
-                <span className="mb-2 inline-flex size-7 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                <span className="mb-2 inline-flex size-7 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground">
                   {number}
                 </span>
-                <h3 className="font-bold">{title}</h3>
+                <h3 className="font-medium">{title}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {description}
                 </p>
@@ -226,7 +226,7 @@ export default async function HowItWorksPage() {
         <Section id="kod" title="Životní cyklus vstupního PINu">
           <Card>
             <CardContent className="p-5">
-              <h3 className="font-bold">Tři různé okamžiky</h3>
+              <h3 className="font-medium">Tři různé okamžiky</h3>
               <ol className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
                 <li>
                   <strong>

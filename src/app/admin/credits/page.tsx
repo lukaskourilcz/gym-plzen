@@ -120,7 +120,7 @@ export default async function CreditsPage({
           {rows.slice(0, 20).map((row) => (
             <TableRow key={row.id}>
               <TableCell>
-                <span className="block font-bold">
+                <span className="block font-medium">
                   {row.registered ? (
                     <Link
                       href={`/admin/members/${row.id}`}
@@ -146,7 +146,7 @@ export default async function CreditsPage({
                 </span>
               </TableCell>
               <TableCell>{row.email}</TableCell>
-              <TableCell className="font-bold tabular-nums">
+              <TableCell className="font-medium tabular-nums">
                 {formatMoney(row.balance - row.reserved)}
               </TableCell>
               <TableCell>
@@ -180,7 +180,7 @@ export default async function CreditsPage({
       />
       {unresolved.length ? (
         <section className="mt-8">
-          <h2 className="mb-4 text-xl font-bold">Změny vyžadující ověření</h2>
+          <h2 className="mb-4 text-xl font-medium">Změny vyžadující ověření</h2>
           <div className="grid gap-4">
             {unresolved.map(({ change, name, email }) => (
               <article
@@ -188,7 +188,7 @@ export default async function CreditsPage({
                 className="grid gap-4 rounded-lg border border-border bg-card p-5 md:grid-cols-[1fr_20rem]"
               >
                 <div>
-                  <p className="font-bold">
+                  <p className="font-medium">
                     {name || email} · {formatMoney(change.cashCents)}
                   </p>
                   <p className="mt-2 text-sm">

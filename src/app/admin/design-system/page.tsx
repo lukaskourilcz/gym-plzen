@@ -75,8 +75,8 @@ export default async function DesignSystemPage() {
         aria-label="Kreditní zůstatek"
         className="my-6 rounded-lg border border-border bg-card p-6"
       >
-        <h2 className="text-xl font-bold">Kredity zákazníka</h2>
-        <p className="mt-3 text-3xl font-bold tabular-nums">500 Kč</p>
+        <h2 className="text-xl font-medium">Kredity zákazníka</h2>
+        <p className="mt-3 text-3xl font-medium tabular-nums">500 Kč</p>
         <p className="mt-2 text-sm text-muted-foreground">
           Dostupný kredit · dalších 100 Kč rezervováno v platbě
         </p>
@@ -93,7 +93,7 @@ export default async function DesignSystemPage() {
         aria-label="Správa Instagramu"
         className="my-6 rounded-lg border bg-card p-6"
       >
-        <h2 className="text-xl font-bold">Propojení a upravitelný náhled</h2>
+        <h2 className="text-xl font-medium">Propojení a upravitelný náhled</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           Stav účtu a obnova jsou nad náhledem. Viditelnost příspěvků se
           rozbalí; odpojení potvrdí dialog.
@@ -115,7 +115,7 @@ export default async function DesignSystemPage() {
         className="my-6 rounded-lg border bg-card p-6"
         aria-label="Zákaznické dialogy"
       >
-        <h2 className="text-xl font-bold">Upravitelné dialogy</h2>
+        <h2 className="text-xl font-medium">Upravitelné dialogy</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           Statický náhled zachovává vzhled webu. Tužka u textu otevře přístupný
           dialog; uložení mění jen vybraný obsah. Datum, cena a podmínky storna
@@ -131,7 +131,7 @@ export default async function DesignSystemPage() {
           aria-labelledby="kit-admin-pricing"
           className="rounded-lg border border-border bg-card p-6"
         >
-          <h2 id="kit-admin-pricing" className="text-2xl font-bold">
+          <h2 id="kit-admin-pricing" className="text-2xl font-medium">
             Administrace: jasné volby
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -238,7 +238,7 @@ export default async function DesignSystemPage() {
           </Card>
         </section>
         <section aria-labelledby="kit-calendar">
-          <h2 id="kit-calendar" className="mb-4 text-xl font-extrabold">
+          <h2 id="kit-calendar" className="mb-4 text-xl font-semibold">
             Provozní kalendář
           </h2>
           <p className="mb-4 text-sm text-muted-foreground">
@@ -277,7 +277,7 @@ export default async function DesignSystemPage() {
           />
         </section>
         <section aria-labelledby="kit-avatar">
-          <h2 id="kit-avatar" className="mb-4 text-xl font-extrabold">
+          <h2 id="kit-avatar" className="mb-4 text-xl font-semibold">
             Zákaznický avatar
           </h2>
           <div className="flex flex-wrap items-center gap-5">
@@ -293,7 +293,7 @@ export default async function DesignSystemPage() {
           </div>
         </section>
         <section aria-labelledby="kit-brand">
-          <h2 id="kit-brand" className="mb-4 text-xl font-extrabold">
+          <h2 id="kit-brand" className="mb-4 text-xl font-semibold">
             Značka a typografie
           </h2>
           <Card>
@@ -306,16 +306,16 @@ export default async function DesignSystemPage() {
                 </span>
                 <p className="max-w-xs text-sm text-muted-foreground">
                   Značka se kreslí jako maska obarvená{" "}
-                  <code className="font-bold">currentColor</code>: na světlém
+                  <code className="font-medium">currentColor</code>: na světlém
                   podkladu zelená, na ink zlatá. Zlatá na krémovém pozadí má
                   kontrast jen ~1,9:1, proto se tam nikdy nepoužívá.
                 </p>
               </div>
               <div>
-                <p className="text-4xl font-extrabold tracking-[-0.01em]">
+                <p className="text-4xl font-semibold tracking-[-0.01em]">
                   Tvůj čas. Tvůj prostor. Tvoje NAVI.
                 </p>
-                <p className="mt-4 text-2xl font-extrabold tracking-[-0.01em]">
+                <p className="mt-4 text-2xl font-semibold tracking-[-0.01em]">
                   Klidný prostor pro soustředěný trénink
                 </p>
                 <p className="mt-3 max-w-xl text-muted-foreground">
@@ -329,14 +329,14 @@ export default async function DesignSystemPage() {
         </section>
 
         <section aria-labelledby="kit-navigation">
-          <h2 id="kit-navigation" className="mb-4 text-xl font-extrabold">
+          <h2 id="kit-navigation" className="mb-4 text-xl font-semibold">
             Mobilní navigace administrace
           </h2>
           <Card>
             <CardContent className="max-w-sm p-5">
               <button
                 type="button"
-                className="flex min-h-11 w-full items-center justify-between rounded-md bg-ink px-3 text-left text-sm font-bold text-white"
+                className="flex min-h-11 w-full items-center justify-between rounded-md bg-ink px-3 text-left text-sm font-medium text-white"
               >
                 <span>
                   Menu administrace
@@ -353,7 +353,7 @@ export default async function DesignSystemPage() {
         </section>
 
         <section aria-labelledby="kit-pagination">
-          <h2 id="kit-pagination" className="mb-4 text-xl font-extrabold">
+          <h2 id="kit-pagination" className="mb-4 text-xl font-semibold">
             Stránkování
           </h2>
           <Card>
@@ -376,7 +376,7 @@ export default async function DesignSystemPage() {
         </section>
 
         <section aria-labelledby="kit-confirm">
-          <h2 id="kit-confirm" className="mb-4 text-xl font-extrabold">
+          <h2 id="kit-confirm" className="mb-4 text-xl font-semibold">
             Potvrzení destruktivní akce
           </h2>
           <div className="grid gap-5 xl:grid-cols-2">
@@ -444,12 +444,12 @@ export default async function DesignSystemPage() {
         </section>
 
         <section aria-labelledby="kit-patterns">
-          <h2 id="kit-patterns" className="mb-4 text-xl font-extrabold">
+          <h2 id="kit-patterns" className="mb-4 text-xl font-semibold">
             Schválené vzory veřejného webu
           </h2>
           <div className="grid gap-5 xl:grid-cols-2">
             <div className="rounded-lg bg-ink p-6">
-              <h3 className="flex items-center gap-3 text-lg font-extrabold uppercase tracking-[.04em] text-ink-foreground">
+              <h3 className="flex items-center gap-3 text-lg font-semibold uppercase tracking-[.04em] text-ink-foreground">
                 <BrandMark decorative className="size-8 shrink-0 text-gold" />
                 Jak to u nás funguje
               </h3>
@@ -461,11 +461,11 @@ export default async function DesignSystemPage() {
                   >
                     <span
                       aria-hidden="true"
-                      className="row-span-2 grid size-11 shrink-0 place-items-center rounded-sm bg-gold text-base font-extrabold text-gold-foreground"
+                      className="row-span-2 grid size-11 shrink-0 place-items-center rounded-sm bg-gold text-base font-semibold text-gold-foreground"
                     >
                       {String(index + 1).padStart(2, "0")}
                     </span>
-                    <h4 className="pt-1 text-base font-extrabold uppercase leading-tight tracking-[.04em] text-accent-foreground">
+                    <h4 className="pt-1 text-base font-semibold uppercase leading-tight tracking-[.04em] text-accent-foreground">
                       {title}
                     </h4>
                     <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -485,7 +485,7 @@ export default async function DesignSystemPage() {
             <div className="grid gap-5">
               <div className="grid overflow-hidden rounded-lg bg-ink text-ink-foreground sm:grid-cols-2">
                 <div className="p-6">
-                  <h3 className="text-lg font-extrabold uppercase tracking-[.05em]">
+                  <h3 className="text-lg font-semibold uppercase tracking-[.05em]">
                     Dlaždice zóny
                   </h3>
                   <p className="mt-3 text-sm leading-6 opacity-85">
@@ -499,11 +499,11 @@ export default async function DesignSystemPage() {
               </div>
 
               <div className="rounded-lg border border-border bg-card p-6">
-                <h3 className="mb-2 text-sm font-extrabold">
+                <h3 className="mb-2 text-sm font-semibold">
                   Rozbalovací dotaz
                 </h3>
                 <details className="group border-y border-border py-1">
-                  <summary className="flex min-h-16 cursor-pointer list-none items-center gap-4 py-3 font-extrabold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <summary className="flex min-h-16 cursor-pointer list-none items-center gap-4 py-3 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                     <BrandMark
                       decorative
                       className="size-7 shrink-0 text-muted-foreground transition-[rotate,color] duration-[320ms] ease-brand-spring group-open:rotate-90 group-open:text-accent-foreground"
@@ -520,10 +520,10 @@ export default async function DesignSystemPage() {
           </div>
           <div className="mt-5 grid gap-5 rounded-lg bg-ink p-6 text-ink-foreground lg:grid-cols-[1fr_360px] lg:items-center">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[.14em] text-gold">
+              <p className="text-xs font-semibold uppercase tracking-[.14em] text-gold">
                 Ceník
               </p>
-              <h3 className="mt-3 whitespace-pre-line text-2xl font-extrabold leading-[1.15]">
+              <h3 className="mt-3 whitespace-pre-line text-2xl font-semibold leading-[1.15]">
                 {"Bez závazků.\nBez předplatného.\n"}
                 <span className="text-gold">Bez měsíčních plateb.</span>
               </h3>
@@ -535,14 +535,14 @@ export default async function DesignSystemPage() {
             {/* Stretches to the copy column beside it; gold figure at the top
                 of the display range. Mirrors the homepage pricing band. */}
             <div className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card text-center text-foreground shadow-md">
-              <p className="border-b border-border px-6 py-5 text-lg font-extrabold uppercase tracking-[.14em] text-accent-foreground sm:text-xl">
+              <p className="border-b border-border px-6 py-5 text-lg font-semibold uppercase tracking-[.14em] text-accent-foreground sm:text-xl">
                 Jednorázový vstup
               </p>
               <div className="flex flex-1 flex-col justify-center border-b border-border px-6 py-10">
-                <p className="text-6xl font-extrabold leading-none tracking-[-.01em] text-gold">
+                <p className="text-6xl font-semibold leading-none tracking-[-.01em] text-gold">
                   229 Kč
                 </p>
-                <p className="mt-2 text-base font-bold uppercase tracking-[.1em] text-muted-foreground">
+                <p className="mt-2 text-base font-medium uppercase tracking-[.1em] text-muted-foreground">
                   / 75 minut
                 </p>
               </div>
@@ -554,7 +554,7 @@ export default async function DesignSystemPage() {
         </section>
 
         <section aria-labelledby="kit-variants">
-          <h2 id="kit-variants" className="mb-4 text-xl font-extrabold">
+          <h2 id="kit-variants" className="mb-4 text-xl font-semibold">
             Designové varianty
           </h2>
           <Card>
@@ -564,45 +564,45 @@ export default async function DesignSystemPage() {
             <CardContent className="grid gap-4 text-sm">
               <p className="text-muted-foreground">
                 Veřejný web umí dvě varianty vzhledu. Volba se ukládá do cookie{" "}
-                <code className="font-bold">ns_design</code> a ještě před
+                <code className="font-medium">ns_design</code> a ještě před
                 vykreslením ji inline skript propíše jako{" "}
-                <code className="font-bold">data-design</code> na{" "}
-                <code className="font-bold">&lt;html&gt;</code>. Servrované HTML
-                proto zůstává pro obě varianty stejné a úvodní stránka si drží
-                ISR. Přepínač je jen na stránce /dev. Administrace variantu
+                <code className="font-medium">data-design</code> na{" "}
+                <code className="font-medium">&lt;html&gt;</code>. Servrované
+                HTML proto zůstává pro obě varianty stejné a úvodní stránka si
+                drží ISR. Přepínač je jen na stránce /dev. Administrace variantu
                 nepoužívá.
               </p>
               <p className="text-muted-foreground">
                 Rozdíly smí vzniknout <strong>jen</strong> předefinováním těchto
                 tokenů v bloku{" "}
-                <code className="font-bold">
+                <code className="font-medium">
                   [data-design=&quot;modern&quot;]
                 </code>{" "}
-                v <code className="font-bold">globals.css</code>. Žádné nové
+                v <code className="font-medium">globals.css</code>. Žádné nové
                 barvy, gradienty ani jiné komponenty.
               </p>
               <p className="text-muted-foreground">
                 Přepínač je interní nástroj a je jen na stránce{" "}
-                <code className="font-bold">/dev</code> : nikde jinde se
+                <code className="font-medium">/dev</code> : nikde jinde se
                 nevykresluje, takže na něj návštěvník nemůže narazit. Volba
-                zapíše cookie <code className="font-bold">ns_design</code> a
+                zapíše cookie <code className="font-medium">ns_design</code> a
                 skript před vykreslením doplní{" "}
-                <code className="font-bold">data-design</code>, podle kterého se
-                řídí vzhled zbytku webu.
+                <code className="font-medium">data-design</code>, podle kterého
+                se řídí vzhled zbytku webu.
               </p>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[34rem] text-left text-sm">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="py-2 pr-4 font-extrabold">Token</th>
-                      <th className="py-2 pr-4 font-extrabold">Klasický</th>
-                      <th className="py-2 font-extrabold">Moderní</th>
+                      <th className="py-2 pr-4 font-semibold">Token</th>
+                      <th className="py-2 pr-4 font-semibold">Klasický</th>
+                      <th className="py-2 font-semibold">Moderní</th>
                     </tr>
                   </thead>
                   <tbody className="text-muted-foreground">
                     {designVariantTokens.map(([token, classic, modern]) => (
                       <tr key={token} className="border-b border-border/60">
-                        <td className="py-2 pr-4 font-bold text-foreground">
+                        <td className="py-2 pr-4 font-medium text-foreground">
                           {token}
                         </td>
                         <td className="py-2 pr-4">{classic}</td>
@@ -616,8 +616,8 @@ export default async function DesignSystemPage() {
                 Kde se podoby liší tvarem, jsou v DOM obě a CSS jednu zobrazí:
                 věrnostní ukazatel v účtu je klasicky segmentový pás a v Moderní
                 zlatý prstenec. Skrytá podoba je{" "}
-                <code className="font-bold">display: none</code>, takže mizí i z
-                přístupnostního stromu.
+                <code className="font-medium">display: none</code>, takže mizí i
+                z přístupnostního stromu.
               </p>
               <p className="text-muted-foreground">
                 Varianta je dočasná pomůcka pro srovnání s klientem. Po
@@ -628,7 +628,7 @@ export default async function DesignSystemPage() {
         </section>
 
         <section aria-labelledby="kit-colors">
-          <h2 id="kit-colors" className="mb-4 text-xl font-extrabold">
+          <h2 id="kit-colors" className="mb-4 text-xl font-semibold">
             Barvy a plochy
           </h2>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -637,8 +637,8 @@ export default async function DesignSystemPage() {
                 key={label}
                 className={`${classes} flex min-h-28 flex-col justify-between rounded-lg border p-5`}
               >
-                <span className="font-extrabold">{label}</span>
-                <code className="mt-6 text-sm font-bold tracking-[.08em]">
+                <span className="font-semibold">{label}</span>
+                <code className="mt-6 text-sm font-medium tracking-[.08em]">
                   {hex}
                 </code>
               </div>
@@ -667,11 +667,11 @@ export default async function DesignSystemPage() {
               <Badge variant="outline">Dnes</Badge>
             </CardContent>
             <CardContent className="flex flex-wrap items-center gap-4 rounded-b-lg bg-ink p-6 text-ink-foreground">
-              <span className="text-sm font-bold">
+              <span className="text-sm font-medium">
                 Na tmavé ploše akcentuje jen zlatá:
               </span>
               <BrandMark decorative className="size-8 text-gold" />
-              <span className="text-2xl font-extrabold text-gold">229 Kč</span>
+              <span className="text-2xl font-semibold text-gold">229 Kč</span>
               <span className="flex items-center gap-2 text-gold">
                 <FacebookIcon />
                 <InstagramIcon />
@@ -684,12 +684,12 @@ export default async function DesignSystemPage() {
               <CardTitle>Formuláře</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
-              <label className="grid gap-1.5 text-sm font-bold">
+              <label className="grid gap-1.5 text-sm font-medium">
                 E-mail
                 <Input type="email" placeholder="jmeno@example.cz" />
               </label>
               <div>
-                <label htmlFor="kit-invalid" className="text-sm font-bold">
+                <label htmlFor="kit-invalid" className="text-sm font-medium">
                   Neplatná hodnota
                 </label>
                 <Input
@@ -727,11 +727,11 @@ export default async function DesignSystemPage() {
                 />
                 <span id="kit-consent-label">
                   <label htmlFor="kit-consent">Souhlasím s</label>{" "}
-                  <span className="font-bold text-accent-foreground underline">
+                  <span className="font-medium text-accent-foreground underline">
                     provozním řádem
                   </span>{" "}
                   a{" "}
-                  <span className="font-bold text-accent-foreground underline">
+                  <span className="font-medium text-accent-foreground underline">
                     obchodními podmínkami
                   </span>
                   .
@@ -763,13 +763,13 @@ export default async function DesignSystemPage() {
         </section>
 
         <section aria-labelledby="kit-booking">
-          <h2 id="kit-booking" className="mb-4 text-xl font-extrabold">
+          <h2 id="kit-booking" className="mb-4 text-xl font-semibold">
             Kalendář a rezervace
           </h2>
           <div className="grid gap-5 lg:grid-cols-2">
             <Card>
               <CardContent className="p-5">
-                <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-muted-foreground">
+                <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-muted-foreground">
                   {["Po", "Út", "St", "Čt", "Pá", "So", "Ne"].map((day) => (
                     <span key={day} className="py-2">
                       {day}
@@ -778,12 +778,12 @@ export default async function DesignSystemPage() {
                   {[20, 21, 22, 23, 24, 25, 26].map((day) => (
                     <span
                       key={day}
-                      className={`relative grid min-h-11 place-items-center rounded-md border ${day === 23 ? "border-accent-foreground bg-accent font-extrabold" : day < 22 ? "bg-muted text-muted-foreground line-through" : "bg-card"}`}
+                      className={`relative grid min-h-11 place-items-center rounded-md border ${day === 23 ? "border-accent-foreground bg-accent font-semibold" : day < 22 ? "bg-muted text-muted-foreground line-through" : "bg-card"}`}
                     >
                       {day}
                       {/* Slots picked on that day, for a multi-slot order. */}
                       {day === 23 || day === 25 ? (
-                        <span className="absolute -right-1 -top-1 min-w-4 rounded-sm bg-primary px-1 text-center text-xs font-extrabold leading-4 text-primary-foreground ring-2 ring-card">
+                        <span className="absolute -right-1 -top-1 min-w-4 rounded-sm bg-primary px-1 text-center text-xs font-semibold leading-4 text-primary-foreground ring-2 ring-card">
                           {day === 23 ? 2 : 1}
                         </span>
                       ) : null}
@@ -801,19 +801,19 @@ export default async function DesignSystemPage() {
                   aria-pressed="false"
                 >
                   <span>
-                    <span className="block font-extrabold">08:00 – 09:15</span>
+                    <span className="block font-semibold">08:00 – 09:15</span>
                     <span className="mt-0.5 block text-sm font-medium text-muted-foreground">
                       75 min · 229 Kč
                     </span>
                   </span>
-                  <span className="text-sm font-extrabold text-accent-foreground">
+                  <span className="text-sm font-semibold text-accent-foreground">
                     Vybrat
                   </span>
                 </button>
                 {/* A picked slot stays a toggle: solid primary, two-pixel
                     border and a visible "Vybráno", never colour alone. */}
                 <button
-                  className="flex min-h-12 items-center justify-between rounded-md border-2 border-primary bg-primary px-4 text-left font-extrabold text-primary-foreground"
+                  className="flex min-h-12 items-center justify-between rounded-md border-2 border-primary bg-primary px-4 text-left font-semibold text-primary-foreground"
                   aria-pressed="true"
                 >
                   10:30 až 11:45
@@ -839,7 +839,7 @@ export default async function DesignSystemPage() {
                 anything is picked, one primary action. */}
             <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-lg border border-border bg-card px-5 py-3 shadow-md lg:col-span-2">
               <p className="text-sm">
-                <span className="block text-base font-extrabold">
+                <span className="block text-base font-semibold">
                   Vybráno: 3 termíny · 687 Kč
                 </span>
                 <span className="block text-muted-foreground">
@@ -862,7 +862,7 @@ export default async function DesignSystemPage() {
                   className="mt-0.5 size-6 shrink-0 text-accent-foreground"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="font-extrabold">
+                  <p className="font-semibold">
                     čtvrtek 1. října, 10:00 – 11:15
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -879,10 +879,10 @@ export default async function DesignSystemPage() {
                   className="mt-0.5 size-6 shrink-0 text-accent-foreground"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="font-extrabold">
+                  <p className="font-semibold">
                     sobota 3. října, 18:00 – 19:15
                   </p>
-                  <p className="mt-1 text-sm font-bold text-destructive">
+                  <p className="mt-1 text-sm font-medium text-destructive">
                     Tento termín už není volný. Odeberte ho z výběru.
                   </p>
                 </div>
@@ -897,7 +897,7 @@ export default async function DesignSystemPage() {
         <section aria-labelledby="kit-blocking">
           <h2
             id="kit-blocking"
-            className="mb-4 text-2xl font-bold tracking-tight"
+            className="mb-4 text-2xl font-medium tracking-tight"
           >
             Šablony blokací
           </h2>
@@ -948,10 +948,10 @@ export default async function DesignSystemPage() {
             <CardContent>
               <div className="grid items-start gap-5 sm:grid-cols-2">
                 <div className="content-canvas rounded-lg bg-ink p-6 text-ink-foreground">
-                  <p className="text-xs font-bold uppercase text-gold">
+                  <p className="text-xs font-medium uppercase text-gold">
                     Jednorázový vstup
                   </p>
-                  <p className="mt-3 text-3xl font-extrabold">
+                  <p className="mt-3 text-3xl font-semibold">
                     Bez závazků.{" "}
                     <Button
                       href="/admin/content?section=pricing"
@@ -996,7 +996,7 @@ export default async function DesignSystemPage() {
         >
           <div className="flex flex-wrap items-center justify-between gap-5">
             <div>
-              <h2 id="kit-dark" className="text-2xl font-extrabold">
+              <h2 id="kit-dark" className="text-2xl font-semibold">
                 Tmavá plocha
               </h2>
               <p className="mt-1 text-white/75">

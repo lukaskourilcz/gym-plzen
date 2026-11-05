@@ -14,7 +14,7 @@ export default function AdminError({ reset }: { reset: () => void }) {
         aria-hidden="true"
         className="mb-4 size-6 text-destructive"
       />
-      <h1 className="text-2xl font-extrabold">Data se nepodařilo načíst</h1>
+      <h1 className="text-2xl font-semibold">Data se nepodařilo načíst</h1>
       <p className="mt-3 leading-7 text-muted-foreground">
         Administrace teď nemůže bezpečně ověřit aktuální údaje. Zkuste načtení
         zopakovat. Pokud problém trvá, zkontrolujte připojení databáze.

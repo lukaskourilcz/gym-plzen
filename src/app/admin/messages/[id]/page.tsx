@@ -28,20 +28,20 @@ export default async function EmailDetailPage({
       />
       <dl className="mb-6 grid gap-2 text-sm">
         <div>
-          <dt className="inline font-bold">Příjemce: </dt>
+          <dt className="inline font-medium">Příjemce: </dt>
           <dd className="inline">{email.recipient}</dd>
         </div>
         <div>
-          <dt className="inline font-bold">Odesílatel: </dt>
+          <dt className="inline font-medium">Odesílatel: </dt>
           <dd className="inline">{email.sender}</dd>
         </div>
         <div>
-          <dt className="inline font-bold">Odesláno: </dt>
+          <dt className="inline font-medium">Odesláno: </dt>
           <dd className="inline">{formatDateTime(email.sentAt)}</dd>
         </div>
         {email.attachmentNames.length > 0 && (
           <div>
-            <dt className="inline font-bold">Přílohy: </dt>
+            <dt className="inline font-medium">Přílohy: </dt>
             <dd className="inline">
               {email.attachmentNames.join(", ")} (obsah příloh se neukládá)
             </dd>
@@ -60,7 +60,9 @@ export default async function EmailDetailPage({
       />
       {email.bodyText && (
         <details className="mt-4">
-          <summary className="cursor-pointer font-bold">Textová verze</summary>
+          <summary className="cursor-pointer font-medium">
+            Textová verze
+          </summary>
           <pre className="mt-3 whitespace-pre-wrap font-sans text-sm">
             {email.bodyText}
           </pre>

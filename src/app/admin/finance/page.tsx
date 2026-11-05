@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/guards";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
 import { PageHeader } from "@/components/admin/page-header";
-import { StatCard } from "@/components/admin/stat-card";
+import { StatCard, StatGroup } from "@/components/admin/stat-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDate, formatMoney } from "@/lib/helpers/format";
 import {
@@ -81,12 +81,12 @@ export default async function FinancePage({
       ) : overview ? (
         <>
           <section aria-labelledby="finance-receipts" className="mb-8">
-            <h2 id="finance-receipts" className="mb-3 text-xl font-bold">
+            <h2 id="finance-receipts" className="mb-3 text-xl font-medium">
               {view === "cash"
                 ? "Skutečně přijaté peníze"
                 : "Hodnota rezervací včetně voucherových slev"}
             </h2>
-            <div className="flex flex-wrap gap-4">
+            <StatGroup className="flex flex-wrap gap-4">
               <StatCard
                 label={
                   view === "cash"
@@ -122,7 +122,7 @@ export default async function FinancePage({
                   />
                 </>
               )}
-            </div>
+            </StatGroup>
             <p className="mt-3 text-sm text-muted-foreground">
               {view === "cash"
                 ? "Počítají se jen platby za rezervace, které ostrý Comgate označil jako úspěšné. Sleva voucheru se nepřičítá; zaplacený doplatek ano. Testovací, neúspěšné a jako vrácené označené platby se nezapočítávají. Pozdější plná vratka může změnit i součet za starší období. Nejde o bankovní výpis. Ruční a částečné vratky nejsou spolehlivě synchronizované — jejich skutečný stav ověřte v Comgate."
@@ -133,13 +133,13 @@ export default async function FinancePage({
             {view === "bookings" ? (
               <Card>
                 <CardContent className="p-5">
-                  <h2 className="text-xl font-bold">Vouchery</h2>
+                  <h2 className="text-xl font-medium">Vouchery</h2>
                   <dl className="mt-4 grid gap-4 sm:grid-cols-2">
                     <div>
                       <dt className="text-sm text-muted-foreground">
                         Uplatněné vouchery
                       </dt>
-                      <dd className="mt-1 text-2xl font-bold">
+                      <dd className="mt-1 text-2xl font-medium">
                         {overview.vouchers.count}
                       </dd>
                     </div>
@@ -147,7 +147,7 @@ export default async function FinancePage({
                       <dt className="text-sm text-muted-foreground">
                         Úspora zákazníků
                       </dt>
-                      <dd className="mt-1 text-2xl font-bold">
+                      <dd className="mt-1 text-2xl font-medium">
                         {formatMoney(overview.vouchers.discountCents)}
                       </dd>
                     </div>
@@ -167,13 +167,15 @@ export default async function FinancePage({
             ) : null}
             <Card>
               <CardContent className="p-5">
-                <h2 className="text-xl font-bold">Storna a vratky k ověření</h2>
+                <h2 className="text-xl font-medium">
+                  Storna a vratky k ověření
+                </h2>
                 <dl className="mt-4 grid gap-4 sm:grid-cols-2">
                   <div>
                     <dt className="text-sm text-muted-foreground">
                       Zrušené rezervace
                     </dt>
-                    <dd className="mt-1 text-2xl font-bold">
+                    <dd className="mt-1 text-2xl font-medium">
                       {overview.cancellations.count}
                     </dd>
                   </div>
@@ -181,7 +183,7 @@ export default async function FinancePage({
                     <dt className="text-sm text-muted-foreground">
                       Případy k ověření vratky
                     </dt>
-                    <dd className="mt-1 text-2xl font-bold">
+                    <dd className="mt-1 text-2xl font-medium">
                       {overview.refundAlerts.count}
                     </dd>
                   </div>
@@ -189,7 +191,7 @@ export default async function FinancePage({
                     <dt className="text-sm text-muted-foreground">
                       Částka případů
                     </dt>
-                    <dd className="mt-1 text-2xl font-bold">
+                    <dd className="mt-1 text-2xl font-medium">
                       {formatMoney(overview.refundAlerts.amountCents)}
                     </dd>
                   </div>
@@ -197,7 +199,7 @@ export default async function FinancePage({
                     <dt className="text-sm text-muted-foreground">
                       Stále otevřené
                     </dt>
-                    <dd className="mt-1 text-2xl font-bold">
+                    <dd className="mt-1 text-2xl font-medium">
                       {overview.refundAlerts.openCount} ·{" "}
                       {formatMoney(overview.refundAlerts.openAmountCents)}
                     </dd>

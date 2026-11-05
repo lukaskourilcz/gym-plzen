@@ -148,18 +148,18 @@ export default async function DocumentsPage({
               <table className="w-full min-w-[46rem] text-left text-sm">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="py-2 pr-4 font-extrabold">Číslo</th>
-                    <th className="py-2 pr-4 font-extrabold">Vystaveno</th>
-                    <th className="py-2 pr-4 font-extrabold">Zákazník</th>
-                    <th className="py-2 pr-4 font-extrabold">Částka</th>
-                    <th className="py-2 pr-4 font-extrabold">Odesláno</th>
-                    <th className="py-2 font-extrabold">Akce</th>
+                    <th className="py-2 pr-4 font-semibold">Číslo</th>
+                    <th className="py-2 pr-4 font-semibold">Vystaveno</th>
+                    <th className="py-2 pr-4 font-semibold">Zákazník</th>
+                    <th className="py-2 pr-4 font-semibold">Částka</th>
+                    <th className="py-2 pr-4 font-semibold">Odesláno</th>
+                    <th className="py-2 font-semibold">Akce</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((row) => (
                     <tr key={row.id} className="border-b border-border">
-                      <td className="py-3 pr-4 font-bold">{row.number}</td>
+                      <td className="py-3 pr-4 font-medium">{row.number}</td>
                       <td className="py-3 pr-4 text-muted-foreground">
                         {formatDateTime(row.issuedAt)}
                       </td>
@@ -184,7 +184,7 @@ export default async function DocumentsPage({
                         <div className="flex flex-wrap items-center gap-3">
                           <a
                             href={`/admin/doklady/${row.id}/pdf`}
-                            className="inline-flex min-h-11 items-center font-bold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            className="inline-flex min-h-11 items-center font-medium underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           >
                             Stáhnout PDF
                           </a>

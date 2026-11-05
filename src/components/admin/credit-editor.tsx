@@ -90,7 +90,7 @@ export function CreditEditor({
               }
             }}
           >
-            <label className="grid gap-2 text-sm font-bold">
+            <label className="grid gap-2 text-sm font-medium">
               Úprava
               <Select
                 value={mode}
@@ -102,7 +102,7 @@ export function CreditEditor({
                 <option value="set">Nastavit celkový zůstatek</option>
               </Select>
             </label>
-            <label className="grid gap-2 text-sm font-bold">
+            <label className="grid gap-2 text-sm font-medium">
               Částka v Kč
               <Input
                 data-initial-focus
@@ -116,7 +116,7 @@ export function CreditEditor({
                 onChange={(e) => setAmount(e.target.value)}
               />
             </label>
-            <label className="grid gap-2 text-sm font-bold">
+            <label className="grid gap-2 text-sm font-medium">
               Důvod změny
               <Textarea
                 required

@@ -34,7 +34,7 @@ import {
   formatTimeRange,
 } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
-import { StatCard } from "@/components/admin/stat-card";
+import { StatCard, StatGroup } from "@/components/admin/stat-card";
 import { Badge } from "@/components/admin/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -204,7 +204,7 @@ export default async function MemberProfilePage({
     <div>
       <Link
         href="/admin/members"
-        className="mb-4 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-accent-foreground hover:underline"
+        className="mb-4 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-accent-foreground hover:underline"
       >
         <ArrowLeft aria-hidden="true" className="size-4" />
         Zpět na členy
@@ -227,7 +227,7 @@ export default async function MemberProfilePage({
       </PageHeader>
       {!demo ? <CreditWalletPanel userId={id} admin /> : null}
 
-      <div className="mb-8 flex flex-wrap gap-4">
+      <StatGroup className="mb-8 flex flex-wrap gap-4">
         <StatCard label="Návštěv celkem" value={status.totalEntries} />
         <StatCard
           label={
@@ -242,7 +242,7 @@ export default async function MemberProfilePage({
           value={status.freeEntriesEarned}
         />
         <StatCard label="Zaplaceno celkem" value={formatMoney(spentCents)} />
-      </div>
+      </StatGroup>
 
       <section aria-labelledby="member-details">
         <h2 id="member-details" className="sr-only">

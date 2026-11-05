@@ -71,12 +71,12 @@ export function OpeningHoursRow({
   const { register, formState } = form;
 
   return (
-    <form onSubmit={submit} className="mb-2 flex flex-wrap items-end gap-3">
+    <form onSubmit={submit} className="admin-hours-row">
       <input
         type="hidden"
         {...register("dayOfWeek", { valueAsNumber: true })}
       />
-      <div className="w-20 pb-2 font-medium">{DAY_NAMES[dayOfWeek]}</div>
+      <div className="admin-hours-day">{DAY_NAMES[dayOfWeek]}</div>
       <div>
         <Label htmlFor={`open-${dayOfWeek}`}>Otevřeno</Label>
         <Input
@@ -106,7 +106,7 @@ export function OpeningHoursRow({
           {...register("slotMinutes", { valueAsNumber: true })}
         />
       </div>
-      <label className="flex items-center gap-2 pb-2 text-sm">
+      <label className="admin-hours-closed flex items-center gap-2 text-sm">
         <input
           type="checkbox"
           className="size-4 accent-[var(--color-primary)]"
@@ -114,7 +114,7 @@ export function OpeningHoursRow({
         />
         Zavřeno
       </label>
-      <div className="pb-0.5">
+      <div className="admin-hours-save">
         <SubmitButton isSubmitting={formState.isSubmitting}>
           Uložit
         </SubmitButton>

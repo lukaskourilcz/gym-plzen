@@ -15,7 +15,7 @@ import { AdminMemberName } from "@/components/admin/member-name";
 import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
 import { PageHeader } from "@/components/admin/page-header";
-import { StatCard } from "@/components/admin/stat-card";
+import { StatCard, StatGroup } from "@/components/admin/stat-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatTimeRange } from "@/lib/helpers/format";
 import { getTomorrowOverview } from "@/lib/services/tomorrow";
@@ -74,14 +74,14 @@ export default async function TomorrowPage() {
         </p>
       ) : overview ? (
         <>
-          <div className="mb-7 flex flex-wrap gap-4">
+          <StatGroup className="mb-7 flex flex-wrap gap-4">
             <StatCard label="Potvrzené rezervace" value={overview.confirmed} />
             <StatCard label="Čekající na platbu" value={overview.pending} />
             <StatCard
               label="Vyžadují kontrolu"
               value={overview.needsAttention}
             />
-          </div>
+          </StatGroup>
           <div className="hidden lg:block">
             <Table label="Zítřejší rezervace">
               <TableHeader>
