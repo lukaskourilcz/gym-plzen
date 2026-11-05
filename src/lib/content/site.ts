@@ -155,7 +155,6 @@ export const SITE_DEFAULTS = {
   "home.instagram.button": "Sleduj nás",
   "home.instagram.fallback":
     "Podívej se, co je u nás nového, na Instagramu @navi_plzen.",
-  "home.instagram.more": "Zobrazit další",
 
   "brand.name": "NAVI Private Gym",
   "home.hero.badge": "Privátní fitness v Plzni",

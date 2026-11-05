@@ -22,7 +22,18 @@ export type InstagramPost = {
   publishedAt: string;
   hidden: boolean;
 };
-export type InstagramFeed = { enabled: boolean; posts: InstagramPost[] };
+export const INSTAGRAM_PROFILE_KEY = "instagram.profile";
+export const instagramProfileSchema = z.object({
+  postsCount: z.number().int().nonnegative().safe(),
+  followersCount: z.number().int().nonnegative().safe(),
+  followingCount: z.number().int().nonnegative().safe(),
+});
+export type InstagramProfile = z.infer<typeof instagramProfileSchema>;
+export type InstagramFeed = {
+  enabled: boolean;
+  posts: InstagramPost[];
+  profile?: InstagramProfile | null;
+};
 export type InstagramAdminState = InstagramFeed & {
   configured: boolean;
   connected: boolean;
