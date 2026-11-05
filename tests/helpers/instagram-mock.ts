@@ -239,7 +239,10 @@ export function defaultMedia() {
     media_type: i === 0 ? "VIDEO" : i === 1 ? "CAROUSEL_ALBUM" : "IMAGE",
     media_url: `https://scontent.cdninstagram.com/${i}.jpg`,
     thumbnail_url: `https://scontent.cdninstagram.com/${i}-thumb.jpg`,
-    caption: `Ukázkový příspěvek ${i + 1} — pouze místní test`,
+    caption:
+      i === 0
+        ? "Ukázkový příspěvek 1 —\nTrénink jen pro tebe. 🙂\n#navi #plzen\n#privategym"
+        : `Ukázkový příspěvek ${i + 1} — pouze místní test`,
     permalink: `https://www.instagram.com/${i === 0 ? "reel" : "p"}/TEST_${i}/`,
     timestamp: new Date(Date.UTC(2026, 9, 20, 12 - i)).toISOString(),
   }));
