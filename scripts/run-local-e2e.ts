@@ -207,6 +207,7 @@ try {
           "blocking-templates.spec.ts",
           "auth.spec.ts",
           "admin.spec.ts",
+          "admin-visual.spec.ts",
           "admin-daily.spec.ts",
           "required-phone-members.spec.ts",
           "admin-filtering.spec.ts",
