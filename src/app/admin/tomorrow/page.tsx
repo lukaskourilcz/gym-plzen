@@ -74,7 +74,10 @@ export default async function TomorrowPage() {
         </p>
       ) : overview ? (
         <>
-          <dl className="admin-inline-stats mb-6" aria-label="Zítřejší přehled">
+          <dl
+            className="admin-inline-stats admin-inline-stats--spread mb-6"
+            aria-label="Zítřejší přehled"
+          >
             <div>
               <dt>Potvrzené rezervace:</dt>
               <dd>{overview.confirmed}</dd>

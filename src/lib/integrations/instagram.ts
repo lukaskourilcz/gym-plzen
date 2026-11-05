@@ -8,6 +8,7 @@ import {
   isInstagramPermalink,
   type InstagramProblem,
   instagramProfileSchema,
+  instagramPostStatsSchema,
 } from "@/lib/config/instagram";
 
 export class InstagramError extends Error {
@@ -545,6 +546,48 @@ export async function readInstagramCounters(
       followingCount: raw.follows_count,
     });
     return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Optional engagement metadata is isolated from the essential thumbnail request. */
+export async function readInstagramPostStats(
+  accountId: string,
+  token: string,
+  unified = false,
+) {
+  if (!/^\d{1,30}$/.test(accountId)) return null;
+  const { url, init } = graph(
+    `/${accountId}/media`,
+    token,
+    "id,like_count,comments_count",
+    unified,
+  );
+  url.searchParams.set("limit", "30");
+  try {
+    const counter = z.number().int().nonnegative().safe().nullish();
+    const result = z
+      .object({
+        data: z
+          .array(
+            z.object({
+              id: z.string().regex(/^\d{1,30}$/),
+              like_count: counter,
+              comments_count: counter,
+            }),
+          )
+          .max(100),
+      })
+      .safeParse(await jsonRequest(url, init));
+    if (!result.success) return null;
+    return result.data.data.map((item) =>
+      instagramPostStatsSchema.parse({
+        id: item.id,
+        likeCount: item.like_count ?? null,
+        commentsCount: item.comments_count ?? null,
+      }),
+    );
   } catch {
     return null;
   }

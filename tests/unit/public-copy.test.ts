@@ -5,6 +5,10 @@ import { revisePublicCopy } from "../../src/lib/content/public-copy";
 test("known public defaults use informal copy without rewriting custom or legal text", () => {
   assert.equal(revisePublicCopy("Zázemí pro vás"), "Zázemí pro tebe");
   assert.equal(
+    revisePublicCopy("NAVI na Instagramu"),
+    "NAVI | Private Gym Plzeň",
+  );
+  assert.equal(
     revisePublicCopy("Nahlédněte do NAVI Private Gym."),
     "Nahlédni do NAVI Private Gym.",
   );

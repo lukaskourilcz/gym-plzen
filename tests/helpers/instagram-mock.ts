@@ -19,6 +19,7 @@ export function createInstagramMock(port: number) {
     unifiedAssignmentsEmpty: false,
     facebookUserLogin: false,
     profileFailure: false,
+    postStatsFailure: false,
     granularTargets: ["17841427246422536"] as string[] | null,
     media: defaultMedia(),
     calls: [] as { path: string; method: string }[],
@@ -185,6 +186,16 @@ export function createInstagramMock(port: number) {
           },
           state.failure,
         );
+      if (url.searchParams.get("fields")?.includes("like_count")) {
+        if (state.postStatsFailure) return json({ error: { code: 2 } }, 503);
+        return json({
+          data: state.media.map((post) => ({
+            id: post.id,
+            like_count: post.like_count,
+            comments_count: post.comments_count,
+          })),
+        });
+      }
       return json({ data: state.media });
     }
     if (url.pathname === "/image") {
@@ -223,6 +234,8 @@ export function createInstagramMock(port: number) {
 export function defaultMedia() {
   return Array.from({ length: 14 }, (_, i) => ({
     id: String(100 + i),
+    like_count: i === 1 ? 0 : 42 + i,
+    comments_count: i === 1 ? 0 : 7 + i,
     media_type: i === 0 ? "VIDEO" : i === 1 ? "CAROUSEL_ALBUM" : "IMAGE",
     media_url: `https://scontent.cdninstagram.com/${i}.jpg`,
     thumbnail_url: `https://scontent.cdninstagram.com/${i}-thumb.jpg`,

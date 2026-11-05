@@ -21,7 +21,21 @@ export type InstagramPost = {
   kind: "IMAGE" | "VIDEO" | "CAROUSEL_ALBUM";
   publishedAt: string;
   hidden: boolean;
+  likeCount?: number | null;
+  commentsCount?: number | null;
 };
+export const INSTAGRAM_POST_STATS_KEY = "instagram.post-stats";
+export const instagramPostStatsSchema = z.object({
+  id: z.string().regex(/^\d{1,30}$/),
+  likeCount: z.number().int().nonnegative().safe().nullable(),
+  commentsCount: z.number().int().nonnegative().safe().nullable(),
+});
+export const instagramPostStatsCacheSchema = z.object({
+  accountId: z.string().regex(/^\d{1,30}$/),
+  fetchedAt: z.string().datetime(),
+  posts: z.array(instagramPostStatsSchema).max(100),
+});
+export type InstagramPostStats = z.infer<typeof instagramPostStatsSchema>;
 export const INSTAGRAM_PROFILE_KEY = "instagram.profile";
 export const instagramProfileSchema = z.object({
   postsCount: z.number().int().nonnegative().safe(),
