@@ -25,9 +25,8 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   await sql`delete from email_archive where provider_message_id like ${prefix + "%"}`;
   await sql`delete from message_delivery where user_id=${userId}`;
-  await sql`delete from credit_entry where account_id=${accountId}`;
-  await sql`delete from credit_account where id=${accountId}`;
-  await sql`delete from profiles where id=${userId}`;
+  // Financial history is append-only, including in tests. The isolated runner
+  // owns the database reset; keep this fictional wallet until that reset.
   await sql.end({ timeout: 2 });
 });
 
@@ -180,6 +179,24 @@ test("bulk incident resolution accepts no note, preserves new incidents and reje
   const before = await customerData();
   try {
     await sql`insert into system_alert(id,title,created_at) values(${first},'První ukázkový incident',now()-interval '1 minute'),(${second},'Druhý ukázkový incident',now()-interval '1 minute')`;
+    await page.goto(
+      "/admin/alerts?q=" + encodeURIComponent("První ukázkový incident"),
+    );
+    await page
+      .getByRole("button", {
+        name: "Označit jako vyřešené: První ukázkový incident",
+        exact: true,
+      })
+      .click();
+    const single = page.getByRole("dialog", {
+      name: "Uzavřít incident",
+      exact: true,
+    });
+    await expect(
+      single.getByLabel("Jak byl incident vyřešen?"),
+    ).not.toHaveAttribute("required");
+    await single.getByRole("button", { name: "Uložit a uzavřít" }).click();
+    await expect(single).not.toBeVisible();
     await page.goto("/admin");
     await expect(
       page.getByRole("heading", { name: "Posledních 7 dní" }),
