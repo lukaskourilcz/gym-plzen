@@ -17,6 +17,34 @@ export type DeliveryCheck =
   | "sent_early"
   | "failed";
 
+/** Ready means all work due now is complete; T-60 delivery is not an error. */
+export function tomorrowReadiness(row: {
+  status: string;
+  codeCheck: CodeCheck | "awaiting_payment";
+  codeProblem?: boolean;
+  email: DeliveryCheck | "awaiting_payment";
+  whatsApp: DeliveryCheck | "awaiting_payment";
+  whatsAppEnabled: boolean;
+}) {
+  if (row.status !== "confirmed")
+    return { state: "waiting", label: "Čeká na platbu" } as const;
+  if (
+    row.codeProblem ||
+    ["missing", "mismatch", "unavailable"].includes(row.codeCheck) ||
+    ["failed", "sent_early", "not_applicable"].includes(row.email) ||
+    (row.whatsAppEnabled && ["failed", "sent_early"].includes(row.whatsApp))
+  )
+    return { state: "error", label: "Vyžaduje kontrolu" } as const;
+  if (row.codeCheck !== "match")
+    return { state: "waiting", label: "Čeká na vytvoření kódu" } as const;
+  if (
+    ["pending", "queued"].includes(row.email) ||
+    (row.whatsAppEnabled && ["pending", "queued"].includes(row.whatsApp))
+  )
+    return { state: "waiting", label: "Čeká na odeslání" } as const;
+  return { state: "ready", label: "Připraveno" } as const;
+}
+
 type StoredCode = {
   status: string;
   provisionState: string;

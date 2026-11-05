@@ -208,6 +208,18 @@
   font-variant-numeric: tabular-nums;
 }
 
+.admin-shell [data-readiness="ready"] {
+  background-color: color-mix(in srgb, var(--success) 12%, var(--card));
+}
+
+.admin-shell [data-readiness="error"] {
+  background-color: color-mix(in srgb, var(--destructive) 10%, var(--card));
+}
+
+.admin-shell [data-readiness="waiting"] {
+  background-color: color-mix(in srgb, var(--warning) 12%, var(--card));
+}
+
 .admin-shell [data-ui="list-filters"] label {
   font-size: 0.75rem;
   font-weight: 500;

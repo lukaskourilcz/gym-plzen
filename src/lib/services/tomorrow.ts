@@ -14,6 +14,7 @@ import {
 import {
   checkTomorrowCode,
   checkTomorrowDelivery,
+  tomorrowReadiness,
 } from "@/lib/helpers/tomorrow-readiness";
 import { readKeypadCodes } from "@/lib/integrations/nuki";
 
@@ -123,6 +124,11 @@ export async function getTomorrowOverview(now = new Date()) {
         booking.contactName ?? booking.contactEmail ?? "Kontakt neuveden",
       userId: booking.userId,
       codeCheck,
+      codeProblem: Boolean(
+        code?.failureReason &&
+        code.failureReason !== "awaiting_device" &&
+        code.provisionState !== "ready",
+      ),
       email,
       whatsApp,
       whatsAppEnabled: Boolean(
@@ -136,11 +142,7 @@ export async function getTomorrowOverview(now = new Date()) {
     confirmed: rows.filter((row) => row.status === "confirmed").length,
     pending: rows.filter((row) => row.status === "pending").length,
     needsAttention: rows.filter(
-      (row) =>
-        row.status === "confirmed" &&
-        (["missing", "mismatch"].includes(row.codeCheck) ||
-          ["failed", "sent_early"].includes(row.email) ||
-          ["failed", "sent_early"].includes(row.whatsApp)),
+      (row) => tomorrowReadiness(row).state === "error",
     ).length,
   };
 }

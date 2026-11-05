@@ -15,7 +15,7 @@ import { AdminMemberName } from "@/components/admin/member-name";
 import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
 import { PageHeader } from "@/components/admin/page-header";
-import { StatCard, StatGroup } from "@/components/admin/stat-card";
+import { tomorrowReadiness } from "@/lib/helpers/tomorrow-readiness";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatTimeRange } from "@/lib/helpers/format";
 import { getTomorrowOverview } from "@/lib/services/tomorrow";
@@ -74,16 +74,22 @@ export default async function TomorrowPage() {
         </p>
       ) : overview ? (
         <>
-          <StatGroup className="mb-7 flex flex-wrap gap-4">
-            <StatCard label="Potvrzené rezervace" value={overview.confirmed} />
-            <StatCard label="Čekající na platbu" value={overview.pending} />
-            <StatCard
-              label="Vyžadují kontrolu"
-              value={overview.needsAttention}
-            />
-          </StatGroup>
+          <dl className="admin-inline-stats mb-6" aria-label="Zítřejší přehled">
+            <div>
+              <dt>Potvrzené rezervace:</dt>
+              <dd>{overview.confirmed}</dd>
+            </div>
+            <div>
+              <dt>Čekající na platbu:</dt>
+              <dd>{overview.pending}</dd>
+            </div>
+            <div>
+              <dt>Vyžadují kontrolu:</dt>
+              <dd>{overview.needsAttention}</dd>
+            </div>
+          </dl>
           <div className="hidden lg:block">
-            <Table label="Zítřejší rezervace">
+            <Table label="Zítřejší rezervace" data-density="compact">
               <TableHeader>
                 <TableRow>
                   {[
@@ -108,7 +114,10 @@ export default async function TomorrowPage() {
               </TableHeader>
               <TableBody>
                 {overview.rows.map((row) => (
-                  <TableRow key={row.id}>
+                  <TableRow
+                    key={row.id}
+                    data-readiness={tomorrowReadiness(row).state}
+                  >
                     <TableCell className="whitespace-nowrap font-semibold tabular-nums">
                       {formatTimeRange(row.startsAt, row.endsAt)}
                     </TableCell>
@@ -174,8 +183,8 @@ export default async function TomorrowPage() {
           </div>
           <div className="grid gap-4 lg:hidden">
             {overview.rows.map((row) => (
-              <Card key={row.id}>
-                <CardContent className="p-4 sm:p-5">
+              <Card key={row.id} data-readiness={tomorrowReadiness(row).state}>
+                <CardContent className="p-3">
                   <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
                     <div>
                       <strong className="tabular-nums">
@@ -198,7 +207,7 @@ export default async function TomorrowPage() {
                         : "Potvrzená"}
                     </span>
                   </div>
-                  <dl className="grid gap-3 text-sm sm:grid-cols-3">
+                  <dl className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
                     <div>
                       <dt className="text-muted-foreground">Kód a Nuki</dt>
                       <dd className="font-semibold">
