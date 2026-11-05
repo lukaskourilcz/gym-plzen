@@ -137,23 +137,33 @@ test("Instagram connects via local OAuth, shows lazy private thumbnails, hides p
       exact: true,
       includeHidden: true,
     });
+    const rail = section.locator(".instagram-rail");
     await next.click();
     await expect(section.getByText("Strana 2 z 2", { exact: true })).toHaveText(
       "Strana 2 z 2",
     );
     await expect(next).toBeDisabled();
+    await expect
+      .poll(() =>
+        rail.evaluate((el) => Math.abs(el.scrollLeft - el.clientWidth)),
+      )
+      .toBeLessThan(1);
     await section
       .getByRole("button", { name: "Předchozí příspěvky", exact: true })
       .click();
     await expect(section.getByText("Strana 1 z 2", { exact: true })).toHaveText(
       "Strana 1 z 2",
     );
+    await expect
+      .poll(() => rail.evaluate((el) => el.scrollLeft))
+      .toBeLessThan(1);
     expect(
       await image.evaluate((e: HTMLImageElement) => [
         e.naturalWidth,
         e.naturalHeight,
       ]),
     ).toEqual([720, 960]);
+    await publicPage.mouse.move(0, 0);
     await section.screenshot({
       path: test.info().outputPath("instagram-public.jpg"),
       type: "jpeg",
@@ -181,6 +191,11 @@ test("Instagram connects via local OAuth, shows lazy private thumbnails, hides p
     await expect(section.getByText("Strana 2 z 6", { exact: true })).toHaveText(
       "Strana 2 z 6",
     );
+    await expect
+      .poll(() =>
+        rail.evaluate((el) => Math.abs(el.scrollLeft - el.clientWidth)),
+      )
+      .toBeLessThan(1);
     await links.nth(2).click();
     const dialog = publicPage.getByRole("dialog");
     await expect(dialog).toBeVisible();
@@ -194,6 +209,12 @@ test("Instagram connects via local OAuth, shows lazy private thumbnails, hides p
     await publicPage.keyboard.press("Escape");
     await expect(dialog).toHaveCount(0);
     await expect(links.nth(2)).toBeFocused();
+    await expect
+      .poll(() =>
+        rail.evaluate((el) => Math.abs(el.scrollLeft - el.clientWidth)),
+      )
+      .toBeLessThan(1);
+    await publicPage.mouse.move(0, 0);
     await section.screenshot({
       path: test.info().outputPath("instagram-mobile.jpg"),
       type: "jpeg",

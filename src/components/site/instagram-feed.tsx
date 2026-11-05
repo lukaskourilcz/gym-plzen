@@ -105,8 +105,12 @@ export function InstagramFeed({
   useEffect(() => {
     const element = rail.current;
     if (!element) return;
+    let previousWidth = -1;
     const update = () => {
-      setColumns(columnsForWidth(element.clientWidth));
+      const width = element.clientWidth;
+      if (width === previousWidth) return;
+      previousWidth = width;
+      setColumns(columnsForWidth(width));
       element.scrollLeft = 0;
       setPage(0);
     };
