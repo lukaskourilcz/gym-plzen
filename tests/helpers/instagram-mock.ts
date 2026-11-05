@@ -18,6 +18,7 @@ export function createInstagramMock(port: number) {
     unifiedBusinessId: "3333",
     unifiedAssignmentsEmpty: false,
     facebookUserLogin: false,
+    profileFailure: false,
     granularTargets: ["17841427246422536"] as string[] | null,
     media: defaultMedia(),
     calls: [] as { path: string; method: string }[],
@@ -146,6 +147,21 @@ export function createInstagramMock(port: number) {
               { id: "5678", username: state.username },
             ],
       });
+    if (
+      [
+        "/graph/v24.0/5678",
+        "/facebook-graph/v26.0/5678",
+        "/facebook-graph/v26.0/17841427246422536",
+      ].includes(url.pathname) &&
+      url.searchParams.get("fields")?.includes("media_count")
+    ) {
+      if (state.profileFailure) return json({ error: { code: 2 } }, 503);
+      return json({
+        media_count: 98,
+        followers_count: 1240,
+        follows_count: 315,
+      });
+    }
     if (url.pathname === "/facebook-graph/v26.0/17841427246422536")
       return json({ id: "17841427246422536", username: state.username });
     if (

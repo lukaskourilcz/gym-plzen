@@ -11,12 +11,13 @@ const cached = unstable_cache(loadInstagramFeed, ["instagram-public-v1"], {
 export async function getPublicInstagramFeed(): Promise<InstagramFeed> {
   try {
     const feed = await cached();
+    const valid = Boolean(
+      feed.validUntil && new Date(feed.validUntil).getTime() > Date.now(),
+    );
     return {
       enabled: feed.enabled,
-      posts:
-        feed.validUntil && new Date(feed.validUntil).getTime() > Date.now()
-          ? feed.posts
-          : [],
+      posts: valid ? feed.posts : [],
+      profile: valid ? (feed.profile ?? null) : null,
     };
   } catch {
     return { enabled: false, posts: [] };

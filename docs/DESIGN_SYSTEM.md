@@ -947,7 +947,10 @@ retains `{freeEntryEvery}` while the preview shows the actual loyalty cadence;
 its rules and the authentication return destination remain controlled by the
 booking flow and are explained under **Co se načítá odjinud**.
 
-Dnes and Zítra use inline label/value summaries. Tomorrow tables use compact
+Dnes and Zítra use inline label/value summaries. Dnes spreads its four metrics
+across the full available width with decorative vertical separators and no
+next-reservation teaser; narrow screens wrap into two or one columns.
+Tomorrow tables use compact
 rows with 44px action targets: green means all work due now is ready, yellow
 means expected preparation/delivery or payment is pending, and red identifies
 a failed check. Delivery scheduled for T-60 is expected and does not prevent a

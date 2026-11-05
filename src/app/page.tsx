@@ -584,7 +584,6 @@ export default async function HomePage() {
               title: t("home.instagram.title"),
               button: t("home.instagram.button"),
               fallback: t("home.instagram.fallback"),
-              more: t("home.instagram.more"),
             }}
           />
         </Suspense>

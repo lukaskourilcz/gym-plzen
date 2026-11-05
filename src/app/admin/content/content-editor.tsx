@@ -148,6 +148,7 @@ export function ContentEditor({
             <AnnouncementEditor initialValue={announcement} />
           ) : (
             <ContentCanvas
+              instagramProfile={instagram.profile}
               instagramPosts={instagram.posts
                 .filter((p) => !p.hidden)
                 .slice(0, 12)}

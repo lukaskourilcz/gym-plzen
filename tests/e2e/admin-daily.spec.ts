@@ -233,6 +233,21 @@ test("today paginates all entries by twenty and uses compact gaps beside a long 
       /^Dnes \p{L}+ \d{1,2}\./u,
     );
     const summary = page.locator('dl[aria-label="Dnešní přehled"]');
+    await expect(summary).not.toContainText("· další");
+    const metrics = summary.locator(":scope > div");
+    const widths = await metrics.evaluateAll((items) =>
+      items.map((el) => el.getBoundingClientRect().width),
+    );
+    expect(widths.reduce((sum, width) => sum + width, 0)).toBeGreaterThan(
+      (await summary.boundingBox())!.width - 50,
+    );
+    expect(
+      await metrics
+        .nth(1)
+        .evaluate(
+          (el) => getComputedStyle(el, "::before").borderInlineStartWidth,
+        ),
+    ).toBe("1px");
     const tops = await summary
       .locator(":scope > div")
       .evaluateAll((items) =>

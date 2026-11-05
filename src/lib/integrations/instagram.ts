@@ -7,6 +7,7 @@ import {
   isInstagramImageUrl,
   isInstagramPermalink,
   type InstagramProblem,
+  instagramProfileSchema,
 } from "@/lib/config/instagram";
 
 export class InstagramError extends Error {
@@ -523,6 +524,32 @@ const mediaSchema = z.object({
     })
     .optional(),
 });
+/** Optional public counters. A missing field or provider failure must not hide the feed. */
+export async function readInstagramCounters(
+  accountId: string,
+  token: string,
+  unified = false,
+) {
+  if (!/^\d{1,30}$/.test(accountId)) return null;
+  const { url, init } = graph(
+    `/${accountId}`,
+    token,
+    "media_count,followers_count,follows_count",
+    unified,
+  );
+  try {
+    const raw = (await jsonRequest(url, init)) as Record<string, unknown>;
+    const parsed = instagramProfileSchema.safeParse({
+      postsCount: raw.media_count,
+      followersCount: raw.followers_count,
+      followingCount: raw.follows_count,
+    });
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function readInstagramMedia(
   accountId: string,
   token: string,

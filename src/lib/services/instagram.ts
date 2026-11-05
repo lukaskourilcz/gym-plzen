@@ -12,6 +12,8 @@ import {
   INSTAGRAM_MAX_POSTS,
   INSTAGRAM_SYNC_MINUTES,
   INSTAGRAM_PROBLEMS,
+  INSTAGRAM_PROFILE_KEY,
+  instagramProfileSchema,
   isInstagramPermalink,
   type InstagramAdminState,
   type InstagramFeed,
@@ -24,6 +26,7 @@ import {
   InstagramError,
   INSTAGRAM_UNLIMITED_EXPIRY,
   readInstagramMedia,
+  readInstagramCounters,
   refreshFacebookUserToken,
   refreshInstagramToken,
 } from "@/lib/integrations/instagram";
@@ -41,6 +44,18 @@ const publicColumns = {
   publishedAt: instagramMedia.publishedAt,
   hidden: instagramMedia.hidden,
 };
+function profileFromSetting(value: unknown, accountId: string | undefined) {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    !("accountId" in value) ||
+    value.accountId !== accountId ||
+    !("profile" in value)
+  )
+    return null;
+  const parsed = instagramProfileSchema.safeParse(value.profile);
+  return parsed.success ? parsed.data : null;
+}
 function posts(
   rows: {
     id: string;
@@ -76,6 +91,7 @@ export async function loadInstagramFeed(): Promise<
     if (!enabled) return { enabled: false, posts: [], validUntil: null };
     const [connection] = await tx
       .select({
+        accountId: instagramConnection.accountId,
         expiresAt: instagramConnection.expiresAt,
         lastSyncedAt: instagramConnection.lastSyncedAt,
         problem: instagramConnection.lastProblem,
@@ -101,9 +117,14 @@ export async function loadInstagramFeed(): Promise<
       )
       .orderBy(desc(instagramMedia.publishedAt), desc(instagramMedia.id))
       .limit(INSTAGRAM_MAX_POSTS);
+    const [cachedProfile] = await tx
+      .select({ value: siteSetting.value })
+      .from(siteSetting)
+      .where(eq(siteSetting.key, INSTAGRAM_PROFILE_KEY));
     return {
       enabled: true,
       posts: posts(rows),
+      profile: profileFromSetting(cachedProfile?.value, connection.accountId),
       validUntil: new Date(
         Math.min(
           connection.expiresAt.getTime(),
@@ -122,6 +143,7 @@ export async function getInstagramAdminState(): Promise<InstagramAdminState> {
     const [connection] = await tx
       .select({
         username: instagramConnection.username,
+        accountId: instagramConnection.accountId,
         expiresAt: instagramConnection.expiresAt,
         lastSyncedAt: instagramConnection.lastSyncedAt,
         lastProblem: instagramConnection.lastProblem,
@@ -137,6 +159,10 @@ export async function getInstagramAdminState(): Promise<InstagramAdminState> {
         ? "authorization"
         : (INSTAGRAM_PROBLEMS.find((p) => p === connection?.lastProblem) ??
           null);
+    const [cachedProfile] = await tx
+      .select({ value: siteSetting.value })
+      .from(siteSetting)
+      .where(eq(siteSetting.key, INSTAGRAM_PROFILE_KEY));
     return {
       configured: instagramConfigured(),
       connected: Boolean(connection),
@@ -150,6 +176,7 @@ export async function getInstagramAdminState(): Promise<InstagramAdminState> {
       lastSyncedAt: connection?.lastSyncedAt?.toISOString() ?? null,
       problem,
       posts: posts(rows),
+      profile: profileFromSetting(cachedProfile?.value, connection?.accountId),
     };
   });
 }
@@ -189,6 +216,9 @@ export async function connectInstagram(
       .from(instagramConnection);
     if (before && before.accountId !== accountId)
       await tx.delete(instagramConnection);
+    await tx
+      .delete(siteSetting)
+      .where(eq(siteSetting.key, INSTAGRAM_PROFILE_KEY));
     const value = {
       id: "main",
       accountId,
@@ -237,6 +267,9 @@ export async function disconnectInstagram(request?: {
     )
       return;
     await tx.delete(instagramConnection); // FK cascade removes only Instagram media.
+    await tx
+      .delete(siteSetting)
+      .where(eq(siteSetting.key, INSTAGRAM_PROFILE_KEY));
   });
 }
 export async function setInstagramHidden(id: string, hidden: boolean) {
@@ -316,6 +349,11 @@ export async function syncInstagram({
       token,
       grant.provider !== "instagram",
     );
+    const profile = await readInstagramCounters(
+      connection.accountId,
+      token,
+      grant.provider !== "instagram",
+    );
     const committed = await db.transaction(async (tx) => {
       await tx.execute(
         sql`select pg_advisory_xact_lock(hashtext('instagram:connection'))`,
@@ -326,6 +364,13 @@ export async function syncInstagram({
         .where(eq(instagramConnection.leaseId, leaseId))
         .for("update");
       if (!current) return false;
+      if (profile) {
+        const value = { accountId: connection.accountId, profile };
+        await tx
+          .insert(siteSetting)
+          .values({ key: INSTAGRAM_PROFILE_KEY, value })
+          .onConflictDoUpdate({ target: siteSetting.key, set: { value } });
+      }
       await tx.update(instagramMedia).set({ available: false });
       for (const m of media)
         await tx

@@ -1,0 +1,200 @@
+.instagram-panel {
+  overflow: hidden;
+  background: #fff;
+  color: #111;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.instagram-profile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  padding: 20px;
+}
+
+.instagram-profile-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.instagram-avatar {
+  display: block;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  padding: 4px;
+  background: linear-gradient(40deg, #f99b4a 15%, #dd3071 50%, #c72e8d 85%);
+}
+
+.instagram-avatar > span {
+  display: flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #14201d;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.instagram-profile-stats {
+  display: flex;
+  gap: 20px;
+  text-align: center;
+}
+
+.instagram-follow {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  background: #0078cc;
+  color: #fff;
+  font-size: 14px;
+  line-height: 20px;
+  text-decoration: none;
+}
+
+.instagram-follow:hover {
+  background: #006ab5;
+}
+
+.instagram-gallery {
+  position: relative;
+  overflow: hidden;
+}
+
+.instagram-rail {
+  display: flex;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.instagram-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.instagram-slide {
+  display: grid;
+  width: 100%;
+  flex: 0 0 100%;
+  align-content: start;
+  scroll-snap-align: start;
+}
+
+.instagram-post {
+  position: relative;
+  display: block;
+  min-width: 0;
+  align-self: start;
+  padding: 0;
+  border: 0;
+  background: #fff;
+  color: #fff;
+  cursor: pointer;
+}
+
+.instagram-post-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgb(0 0 0 / 80%);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.instagram-post:hover .instagram-post-overlay,
+.instagram-post:focus-visible .instagram-post-overlay {
+  opacity: 1;
+}
+
+.instagram-arrow {
+  position: absolute;
+  top: 50%;
+  display: flex;
+  width: 44px;
+  height: 60px;
+  align-items: center;
+  border: 0;
+  background: rgb(0 0 0 / 85%);
+  color: #fff;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.instagram-arrow-prev {
+  left: 0;
+  justify-content: flex-start;
+  padding-left: 8px;
+  border-radius: 0 30px 30px 0;
+}
+
+.instagram-arrow-next {
+  right: 0;
+  justify-content: flex-end;
+  padding-right: 8px;
+  border-radius: 30px 0 0 30px;
+}
+
+.instagram-arrow:disabled {
+  visibility: hidden;
+}
+
+.instagram-follow:focus-visible,
+.instagram-arrow:focus-visible,
+.instagram-dialog-arrow:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -4px;
+}
+
+.instagram-post:focus-visible {
+  z-index: 1;
+  outline: 3px solid #fff;
+  outline-offset: -3px;
+}
+
+.instagram-post-dialog > div:first-child {
+  align-items: center;
+  padding: 12px 20px;
+}
+
+.instagram-post-dialog > div:first-child h2 {
+  font-size: 16px;
+}
+
+.instagram-dialog-arrow {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 4px;
+}
+
+.instagram-dialog-arrow:disabled {
+  opacity: 0.3;
+}
+
+@media (max-width: 600px) {
+  .instagram-profile {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .instagram-post-overlay {
+    transition: none;
+  }
+}

@@ -107,7 +107,6 @@ export default async function AdminDashboard({
     ? demoData.messages.slice(0, 12)
     : recentMessages;
 
-  const upcoming = todaysReservations.filter((r) => r.startsAt > now);
   const memberNotes = demo
     ? new Map<string, string>()
     : await getMemberNotes([
@@ -120,17 +119,13 @@ export default async function AdminDashboard({
   return (
     <div>
       <PageHeader title="Dnes" detail={capitalise(DAY_FORMAT.format(now))} />
-      <dl className="admin-inline-stats mb-6" aria-label="Dnešní přehled">
+      <dl
+        className="admin-inline-stats admin-inline-stats--spread mb-6"
+        aria-label="Dnešní přehled"
+      >
         <div>
           <dt>Dnešní rezervace:</dt>
-          <dd>
-            {todaysReservations.length}
-            {upcoming[0] && (
-              <span className="ml-1 text-xs font-normal text-muted-foreground">
-                · další {formatTime(upcoming[0].startsAt)}
-              </span>
-            )}
-          </dd>
+          <dd>{todaysReservations.length}</dd>
         </div>
         <div>
           <dt>Dnešní tržba:</dt>
