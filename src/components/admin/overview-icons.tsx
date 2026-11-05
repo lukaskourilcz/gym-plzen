@@ -12,9 +12,11 @@ import { cn } from "@/lib/utils";
 export function OverviewStatus({
   active,
   label,
+  error = false,
 }: {
   active: boolean;
   label: string;
+  error?: boolean;
 }) {
   const Icon = active ? Check : X;
   return (
@@ -26,7 +28,11 @@ export function OverviewStatus({
           aria-label={label}
           className={cn(
             "inline-flex size-11 items-center justify-center rounded-md",
-            active ? "text-success" : "text-muted-foreground",
+            error
+              ? "text-destructive"
+              : active
+                ? "text-success"
+                : "text-muted-foreground",
           )}
         >
           <Icon aria-hidden="true" className="size-4" />

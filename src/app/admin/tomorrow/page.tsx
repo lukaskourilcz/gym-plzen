@@ -132,13 +132,29 @@ export default async function TomorrowPage() {
                         }
                       />
                     </TableCell>
-                    <TableCell>{CODE_LABEL[row.codeCheck]}</TableCell>
-                    <TableCell>{DELIVERY_LABEL[row.email]}</TableCell>
+                    <TableCell>
+                      {row.codeProblem
+                        ? "Chyba přípravy kódu"
+                        : CODE_LABEL[row.codeCheck]}
+                    </TableCell>
+                    <TableCell>
+                      {row.email === "not_applicable"
+                        ? "Chybí e-mail zákazníka"
+                        : DELIVERY_LABEL[row.email]}
+                    </TableCell>
                     <TableCell>
                       <OverviewStatus
-                        active={row.whatsAppEnabled}
+                        active={
+                          row.whatsAppEnabled &&
+                          !["failed", "sent_early"].includes(row.whatsApp)
+                        }
+                        error={["failed", "sent_early"].includes(row.whatsApp)}
                         label={
-                          row.whatsAppEnabled ? "Používá se" : "Nepoužívá se"
+                          ["failed", "sent_early"].includes(row.whatsApp)
+                            ? `${DELIVERY_LABEL[row.whatsApp]} (WhatsApp)`
+                            : row.whatsAppEnabled
+                              ? "Používá se"
+                              : "Nepoužívá se"
                         }
                       />
                     </TableCell>
@@ -211,22 +227,36 @@ export default async function TomorrowPage() {
                     <div>
                       <dt className="text-muted-foreground">Kód a Nuki</dt>
                       <dd className="font-semibold">
-                        {CODE_LABEL[row.codeCheck]}
+                        {row.codeProblem
+                          ? "Chyba přípravy kódu"
+                          : CODE_LABEL[row.codeCheck]}
                       </dd>
                     </div>
                     <div>
                       <dt className="text-muted-foreground">E-mail s kódem</dt>
                       <dd className="font-semibold">
-                        {DELIVERY_LABEL[row.email]}
+                        {row.email === "not_applicable"
+                          ? "Chybí e-mail zákazníka"
+                          : DELIVERY_LABEL[row.email]}
                       </dd>
                     </div>
                     <div>
                       <dt className="text-muted-foreground">WhatsApp</dt>
                       <dd className="font-semibold">
                         <OverviewStatus
-                          active={row.whatsAppEnabled}
+                          active={
+                            row.whatsAppEnabled &&
+                            !["failed", "sent_early"].includes(row.whatsApp)
+                          }
+                          error={["failed", "sent_early"].includes(
+                            row.whatsApp,
+                          )}
                           label={
-                            row.whatsAppEnabled ? "Používá se" : "Nepoužívá se"
+                            ["failed", "sent_early"].includes(row.whatsApp)
+                              ? `${DELIVERY_LABEL[row.whatsApp]} (WhatsApp)`
+                              : row.whatsAppEnabled
+                                ? "Používá se"
+                                : "Nepoužívá se"
                           }
                         />
                       </dd>

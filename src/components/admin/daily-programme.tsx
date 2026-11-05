@@ -146,6 +146,7 @@ export function DailyProgrammeRow({
           type="button"
           variant="ghost"
           size="icon"
+          className="bg-transparent hover:bg-foreground/5"
           aria-label={`Podrobnosti rezervace: ${booking.name}, ${time}`}
           aria-expanded={expanded}
           aria-controls={detailsId}
