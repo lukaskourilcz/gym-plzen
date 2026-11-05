@@ -21,7 +21,7 @@ import { MemberNoteEditor } from "@/components/admin/member-note-editor";
 import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowUpRight } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { IconLink } from "@/components/admin/ui/icon-button";
 import { activity, loyalty, members, reservations } from "@/lib/services";
 import {
@@ -498,7 +498,6 @@ export default async function MemberProfilePage({
                 </TableCell>
                 <TableCell>
                   <IconLink
-                    icon={ArrowUpRight}
                     href={`/admin/messages/${m.archiveId ?? m.id}`}
                     aria-label={`Otevřít zprávu: ${formatMessageKind(m.kind)}, ${formatDateTime(m.createdAt)}`}
                   />

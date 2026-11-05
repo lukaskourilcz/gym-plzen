@@ -18,7 +18,6 @@ import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import { importRecentEmails } from "./actions";
 import { Button } from "@/components/admin/ui/button";
 import { IconLink } from "@/components/admin/ui/icon-button";
-import { ArrowUpRight } from "lucide-react";
 import {
   formatChannel,
   formatDateTime,
@@ -162,7 +161,6 @@ export default async function MessagesPage({
               <TableCell>{email.subject}</TableCell>
               <TableCell>
                 <IconLink
-                  icon={ArrowUpRight}
                   href={`/admin/messages/${email.id}`}
                   aria-label="Zobrazit e-mail"
                 />
@@ -235,7 +233,6 @@ export default async function MessagesPage({
               </TableCell>
               <TableCell>
                 <IconLink
-                  icon={ArrowUpRight}
                   href={`/admin/messages/${m.id}`}
                   aria-label={`Otevřít zprávu: ${formatMessageKind(m.kind)}`}
                 />

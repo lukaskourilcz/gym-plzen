@@ -1,5 +1,7 @@
 "use client";
 
+import { ArrowUpRight } from "lucide-react";
+
 import {
   IconButton as BoardIconButton,
   IconLinkButton as BoardIconLink,
@@ -31,12 +33,16 @@ export function IconButton({ className, ...props }: IconButtonProps) {
   );
 }
 
-export function IconLink({ className, ...props }: IconLinkButtonProps) {
+export function IconLink({
+  className,
+  ...props
+}: Omit<IconLinkButtonProps, "icon">) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <BoardIconLink
           {...props}
+          icon={ArrowUpRight}
           data-ui="icon-button"
           className={cx(
             "size-11 rounded-md border-transparent bg-transparent shadow-none",
