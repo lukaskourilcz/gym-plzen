@@ -107,6 +107,7 @@
 }
 
 .admin-shell :where(th):not(.content-canvas *, .fc *) {
+  position: relative;
   padding: 0.875rem 1rem;
   height: auto;
   font-size: 0.75rem;
