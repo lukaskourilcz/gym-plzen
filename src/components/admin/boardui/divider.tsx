@@ -4,8 +4,10 @@ import { cx, sortCx } from "@/components/admin/boardui/cx";
 export type DividerVariant = "single" | "double" | "fill";
 export type DividerAlign = "start" | "center" | "end";
 
-export interface DividerProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, "children"> {
+export interface DividerProps extends Omit<
+  HTMLAttributes<HTMLDivElement>,
+  "children"
+> {
   /** Single hairline, two framing hairlines, or a soft filled strip. */
   variant?: DividerVariant;
   /** Positions the divider content while keeping the remaining line flexible. */

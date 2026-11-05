@@ -174,7 +174,7 @@ export default async function DocumentsPage({
                           </span>
                         )}
                       </td>
-                      <td className="py-3 pr-4">
+                      <td className="py-3 pr-4 text-right tabular-nums">
                         {czk(row.totalCents, row.vatRatePercent > 0)}
                       </td>
                       <td className="py-3 pr-4 text-muted-foreground">

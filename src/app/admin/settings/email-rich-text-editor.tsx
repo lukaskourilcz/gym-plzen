@@ -91,6 +91,7 @@ export function EmailRichTextEditor({
         className="flex flex-wrap items-center gap-1 border-b border-border p-2"
       >
         <select
+          data-ui="select"
           aria-label="Styl textu"
           className="min-h-11 rounded-md border border-input bg-card py-2 pl-3 pr-8 text-sm"
           value={active?.heading ?? "paragraph"}

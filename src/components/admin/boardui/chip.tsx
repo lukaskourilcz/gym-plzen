@@ -27,7 +27,17 @@ import { cx, sortCx } from "@/components/admin/boardui/cx";
  */
 
 type ChipVariant = "bold" | "subtle" | "caption";
-export type ChipColor = "orange" | "lime" | "rose" | "yellow" | "cyan" | "blue" | "purple" | "neutral" | "gray" | "soft";
+export type ChipColor =
+  | "orange"
+  | "lime"
+  | "rose"
+  | "yellow"
+  | "cyan"
+  | "blue"
+  | "purple"
+  | "neutral"
+  | "gray"
+  | "soft";
 
 /** Background and text pair per colour, shared with Tag Group's tags. */
 export const CHIP_COLORS: Record<ChipColor, string> = {
@@ -69,7 +79,12 @@ export function Chip({
   return (
     <span
       ref={ref}
-      className={cx(styles.base, styles.variant[variant], styles.color[color], className)}
+      className={cx(
+        styles.base,
+        styles.variant[variant],
+        styles.color[color],
+        className,
+      )}
       {...props}
     />
   );

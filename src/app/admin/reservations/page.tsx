@@ -205,7 +205,7 @@ export default async function ReservationsPage({
                   {participantsEnabled ? participantLabel(r.extraPeople) : ""}
                 </span>
               </TableCell>
-              <TableCell>
+              <TableCell className="text-right tabular-nums">
                 {r.additionalPeoplePaidCents > 0 ? (
                   <span className="block text-xs text-muted-foreground">
                     Doplatek za doprovod{" "}

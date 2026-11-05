@@ -2,7 +2,7 @@
   "retrieved": "2026-11-05",
   "license": "MIT",
   "source": "https://github.com/BoardUI/boardui",
-  "adaptations": "Import paths only. Directional icon helper uses the existing Lucide icon set. NAVI tokens and native-form adapters are separate from upstream source.",
+  "adaptations": "Local import paths and repository formatting. Directional icon helper uses the existing Lucide icon set. NAVI tokens and native-form adapters are separate from upstream source.",
   "files": [
     {
       "item": "button",

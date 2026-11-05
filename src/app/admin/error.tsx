@@ -8,7 +8,7 @@ export default function AdminError({ reset }: { reset: () => void }) {
   return (
     <div
       role="alert"
-      className="max-w-2xl border border-destructive/35 bg-card p-6 shadow-sm"
+      className="max-w-2xl border border-destructive/35 bg-card p-6"
     >
       <AlertTriangle
         aria-hidden="true"

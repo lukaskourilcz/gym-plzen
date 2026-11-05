@@ -10,7 +10,7 @@ export default function AdminCalendarLoading() {
         <Skeleton className="mt-2 h-4 w-3/5 max-w-lg" />
       </div>
 
-      <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
+      <div className="rounded-lg border border-border bg-card p-3">
         <div className="grid gap-3 sm:grid-cols-[auto_1fr_auto] sm:items-center">
           <Skeleton className="h-7 w-44 sm:order-2 sm:justify-self-center" />
           <div className="order-2 flex gap-2 sm:order-1">

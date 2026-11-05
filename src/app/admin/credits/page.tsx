@@ -146,7 +146,7 @@ export default async function CreditsPage({
                 </span>
               </TableCell>
               <TableCell>{row.email}</TableCell>
-              <TableCell className="font-medium tabular-nums">
+              <TableCell className="font-medium tabular-nums text-right tabular-nums">
                 {formatMoney(row.balance - row.reserved)}
               </TableCell>
               <TableCell>

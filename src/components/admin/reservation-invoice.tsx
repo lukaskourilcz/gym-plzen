@@ -42,6 +42,7 @@ export function ReservationInvoice({
         Příjemce faktury
       </label>
       <select
+        data-ui="select"
         id={id}
         value={destination}
         disabled={pending || !state.eligible}

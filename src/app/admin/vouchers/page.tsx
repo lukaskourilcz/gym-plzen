@@ -131,7 +131,7 @@ export default async function VouchersPage({
             return (
               <TableRow key={row.id}>
                 <TableCell className="font-semibold">{row.code}</TableCell>
-                <TableCell>
+                <TableCell className="text-right tabular-nums">
                   {row.kind === "percentage"
                     ? `${row.value} %`
                     : formatMoney(row.value)}

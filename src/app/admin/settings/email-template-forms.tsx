@@ -298,7 +298,7 @@ export function EmailTemplateForms({
             {preview.subject}
           </p>
           <div
-            className="bg-card shadow-sm"
+            className="bg-card"
             data-testid="email-template-preview"
             dangerouslySetInnerHTML={{
               __html: emailTemplateToHtml(
