@@ -7,6 +7,7 @@
 
 .instagram-profile {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: 40px;
@@ -15,6 +16,7 @@
 
 .instagram-profile-identity {
   display: flex;
+  max-width: 100%;
   align-items: center;
   gap: 12px;
 }
@@ -90,6 +92,10 @@
   scroll-snap-align: start;
 }
 
+.instagram-profile-identity > div {
+  min-width: 0;
+}
+
 .instagram-post {
   position: relative;
   display: block;
@@ -97,7 +103,7 @@
   align-self: start;
   padding: 0;
   border: 0;
-  background: #fff;
+  background: transparent;
   color: #fff;
   cursor: pointer;
 }
@@ -202,6 +208,7 @@
 
 .instagram-profile-name {
   display: inline-block;
+  overflow-wrap: anywhere;
   min-height: 24px;
 }
 
@@ -214,4 +221,27 @@
 .instagram-profile-name:focus-visible {
   outline: 2px solid var(--foreground);
   outline-offset: 4px;
+}
+
+.instagram-engagement {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.instagram-engagement > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 479px) {
+  .instagram-post-overlay > span:last-child {
+    -webkit-line-clamp: 3;
+  }
 }

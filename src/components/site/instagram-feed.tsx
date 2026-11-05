@@ -9,6 +9,8 @@ import {
   Layers,
   Play,
   ImageOff,
+  Heart,
+  MessageCircle,
 } from "lucide-react";
 import { InstagramIcon as Instagram } from "@/components/site/social-icons";
 import {
@@ -27,6 +29,40 @@ export type InstagramCopy = {
   fallback: ReactNode;
 };
 
+function engagementLabel(post: InstagramPost) {
+  return [
+    typeof post.likeCount === "number"
+      ? `To se mi líbí: ${post.likeCount.toLocaleString("cs-CZ")}`
+      : null,
+    typeof post.commentsCount === "number"
+      ? `Komentáře: ${post.commentsCount.toLocaleString("cs-CZ")}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
+function InstagramEngagement({ post }: { post: InstagramPost }) {
+  const label = engagementLabel(post);
+  if (!label) return null;
+  return (
+    <span className="instagram-engagement" role="img" aria-label={label}>
+      {typeof post.likeCount === "number" && (
+        <span>
+          <Heart className="size-5 fill-current" aria-hidden="true" />
+          {post.likeCount.toLocaleString("cs-CZ")}
+        </span>
+      )}
+      {typeof post.commentsCount === "number" && (
+        <span>
+          <MessageCircle className="size-5 fill-current" aria-hidden="true" />
+          {post.commentsCount.toLocaleString("cs-CZ")}
+        </span>
+      )}
+    </span>
+  );
+}
+
 export function InstagramThumbnail({ post }: { post: InstagramPost }) {
   const [failed, setFailed] = useState(false);
   return (
@@ -44,7 +80,7 @@ export function InstagramThumbnail({ post }: { post: InstagramPost }) {
               : "Příspěvek NAVI Private Gym"
           }
           fill
-          sizes="(max-width: 479px) 100vw, (max-width: 767px) 50vw, 320px"
+          sizes="(max-width: 359px) 100vw, (max-width: 659px) 50vw, 320px"
           unoptimized
           loading="lazy"
           className="object-cover transition-transform duration-300 motion-reduce:transition-none motion-safe:group-hover:scale-110"
@@ -256,14 +292,18 @@ export function InstagramFeed({
                         className="instagram-post group"
                         onClick={() => setSelectedId(post.id)}
                         aria-haspopup="dialog"
-                        aria-label={`Zobrazit příspěvek: ${post.caption.slice(0, 140) || "NAVI Private Gym"}`}
+                        aria-label={`Zobrazit příspěvek: ${post.caption.slice(0, 140) || "NAVI Private Gym"}${engagementLabel(post) ? `. ${engagementLabel(post)}` : ""}`}
                       >
                         <InstagramThumbnail post={post} />
                         <span
                           className="instagram-post-overlay"
                           aria-hidden="true"
                         >
-                          <Instagram className="mx-auto mb-3 size-6" />
+                          {engagementLabel(post) ? (
+                            <InstagramEngagement post={post} />
+                          ) : (
+                            <Instagram className="mx-auto mb-3 size-6" />
+                          )}
                           <span className="line-clamp-5 text-sm leading-6">
                             {post.caption}
                           </span>
@@ -316,6 +356,7 @@ export function InstagramFeed({
         >
           <InstagramThumbnail key={selected.id} post={selected} />
           <div className="p-5">
+            <InstagramEngagement post={selected} />
             <p className="whitespace-pre-wrap break-words text-sm leading-6">
               {selected.caption}
             </p>
