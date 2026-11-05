@@ -80,6 +80,12 @@
   margin-bottom: 0.5rem;
 }
 
+/* Checkbox rows share the form helpers with the public site. Only the admin
+   receives the quieter label weight. */
+.admin-shell form :where(label):not(.content-canvas *) {
+  font-weight: 500;
+}
+
 .admin-shell
   :where(
     [data-ui="input"],
