@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminDialog } from "@/components/admin/dialog";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import { PricingPeriodForm } from "./pricing-period-form";
 
 export function PricingPeriodCreate() {

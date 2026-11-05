@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import {
   billingProfileSchema,
   brandingSchema,
@@ -165,7 +165,7 @@ export function SitePhotosForm({
       </p>
 
       <fieldset className="mb-6">
-        <legend className="mb-2 text-sm font-extrabold">
+        <legend className="mb-2 text-sm font-semibold">
           Galerie na úvodní stránce
         </legend>
         {[0, 1, 2, 3].map((index) => (
@@ -185,7 +185,7 @@ export function SitePhotosForm({
       </fieldset>
 
       <fieldset className="mb-6">
-        <legend className="mb-2 text-sm font-extrabold">
+        <legend className="mb-2 text-sm font-semibold">
           Fotografie zón na stránce Vybavení
         </legend>
         {[0, 1, 2, 3, 4, 5].map((index) => (

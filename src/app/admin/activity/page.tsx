@@ -15,7 +15,7 @@ import Link from "next/link";
 import { activity } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/admin/ui/badge";
 import {
   Table,
   TableBody,
@@ -113,7 +113,7 @@ export default async function ActivityPage({
                 {entry.memberId ? (
                   <Link
                     href={`/admin/members/${entry.memberId}`}
-                    className="inline-flex min-h-11 items-center font-bold text-accent-foreground hover:underline"
+                    className="inline-flex min-h-11 items-center font-medium text-accent-foreground hover:underline"
                   >
                     Profil člena
                     <span className="sr-only">

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AdminDialog } from "./dialog";
 import { useActionForm } from "./use-action-form";
 import { Field, FormFeedback, SubmitButton } from "./form-controls";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { updateMemberNoteSchema } from "@/lib/validations/members";
 import { updateMemberNoteAction } from "@/app/admin/members/actions";

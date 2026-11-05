@@ -36,6 +36,7 @@ export function Notice({
   return (
     <div
       role={role}
+      data-ui="notice"
       className={cn(
         "flex gap-3 rounded-md border p-4 text-sm leading-relaxed",
         styles[tone],

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import { FormFeedback } from "@/components/admin/form-controls";
 import { useActionForm } from "@/components/admin/use-action-form";
 import { deletePricingPeriodSchema } from "@/lib/validations/memberships";

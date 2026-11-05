@@ -7,7 +7,7 @@ import { uuidSchema } from "@/lib/validations/common";
 import { formatMoney, formatDateTime } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
 import { CreditEditor } from "@/components/admin/credit-editor";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 export default async function GuestWalletPage({
   params,
 }: {
@@ -37,7 +37,7 @@ export default async function GuestWalletPage({
           Zpět na kredity
         </Button>
       </PageHeader>
-      <p className="my-5 text-3xl font-bold">
+      <p className="my-5 text-3xl font-medium">
         {formatMoney(account.balanceCents - account.reservedCents)}
       </p>
       <CreditEditor
@@ -46,7 +46,7 @@ export default async function GuestWalletPage({
         balance={account.balanceCents}
         reserved={account.reservedCents}
       />
-      <h2 className="mt-6 text-xl font-bold">Historie kreditů</h2>
+      <h2 className="mt-6 text-xl font-medium">Historie kreditů</h2>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead>

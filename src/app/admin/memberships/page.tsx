@@ -35,8 +35,8 @@ import { loadDemoData } from "@/lib/demo/dummy";
 import type { PricingPeriod } from "@/lib/db/types";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
 import { PageHeader } from "@/components/admin/page-header";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/admin/ui/badge";
+import { Button } from "@/components/admin/ui/button";
 import {
   Card,
   CardContent,

@@ -2,7 +2,7 @@
 
 import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import { createAndSendInvoiceAction } from "@/app/admin/doklady/actions";
 import {
   INVOICE_OPERATOR_EMAIL,
@@ -33,7 +33,7 @@ export function ReservationInvoice({
       {documentId && (
         <a
           href={`/admin/doklady/${documentId}/pdf`}
-          className="inline-flex min-h-11 items-center text-sm font-bold underline"
+          className="inline-flex min-h-11 items-center text-sm font-medium underline"
         >
           Stáhnout PDF{state.invoiceNumber ? ` · ${state.invoiceNumber}` : ""}
         </a>
@@ -42,6 +42,7 @@ export function ReservationInvoice({
         Příjemce faktury
       </label>
       <select
+        data-ui="select"
         id={id}
         value={destination}
         disabled={pending || !state.eligible}

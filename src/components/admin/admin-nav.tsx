@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isNavigationItemActive } from "@/lib/navigation";
+import { Divider } from "./boardui/divider";
 
 const NAV_GROUPS = [
   {
@@ -115,7 +116,7 @@ export function AdminNav() {
         aria-expanded={open}
         aria-controls="admin-navigation"
         onClick={() => setOpen((value) => !value)}
-        className="flex min-h-11 w-full items-center justify-between rounded-md border border-white/15 px-3 text-left font-bold text-white lg:hidden"
+        className="flex min-h-11 w-full items-center justify-between rounded-md border border-white/15 px-3 text-left font-medium text-white lg:hidden"
       >
         <span>
           Menu administrace
@@ -158,9 +159,9 @@ export function AdminNav() {
                     aria-current={active ? "page" : undefined}
                     onClick={() => setOpen(false)}
                     className={cn(
-                      "flex min-h-11 items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-semibold transition-colors",
+                      "flex min-h-11 items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-normal transition-colors",
                       active
-                        ? "bg-white/15 text-white"
+                        ? "bg-white/10 font-semibold text-white"
                         : "text-white/80 hover:bg-white/10 hover:text-white",
                     )}
                   >
@@ -187,15 +188,16 @@ export function AdminNav() {
                   ) || undefined
                 }
               >
-                <summary className="min-h-11 cursor-pointer rounded-md px-2.5 py-3 font-semibold text-white/80 hover:bg-white/10">
+                <summary className="min-h-11 cursor-pointer rounded-md px-2.5 py-3 font-medium text-white/80 hover:bg-white/10">
                   {group.label}
                 </summary>
+                <Divider className="mb-2 bg-white/10" />
                 {links}
               </details>
             );
           return (
             <div key={group.label}>
-              <div className="mb-1 px-2.5 text-xs font-extrabold uppercase tracking-[.14em] text-white/75">
+              <div className="mb-1 px-2.5 text-[11px] font-medium uppercase tracking-[.1em] text-white/75">
                 {group.label}
               </div>
               {links}

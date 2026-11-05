@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import { setVoucherActiveAction } from "./actions";
 
 export function VoucherStatusButton({

@@ -16,7 +16,7 @@ import type { Result } from "@/lib/helpers/result";
 import { receiveAction } from "@/lib/helpers/action-response";
 import { AdminSwitch } from "@/components/admin/switch";
 import { AdminDialog } from "@/components/admin/dialog";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import { FormFeedback } from "@/components/admin/form-controls";
 import { InstagramThumbnail } from "@/components/site/instagram-feed";
 import {

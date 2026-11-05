@@ -4,8 +4,8 @@ import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { AdminDialog } from "@/components/admin/dialog";
 import { FormFeedback } from "@/components/admin/form-controls";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/admin/ui/badge";
+import { Button } from "@/components/admin/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   formatMoney,

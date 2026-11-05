@@ -14,8 +14,8 @@ import { requireAdmin } from "@/lib/auth/guards";
 import { vouchers } from "@/lib/services";
 import { formatDateTime, formatMoney } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
-import { StatCard } from "@/components/admin/stat-card";
-import { Badge } from "@/components/ui/badge";
+import { StatCard, StatGroup } from "@/components/admin/stat-card";
+import { Badge } from "@/components/admin/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -70,11 +70,11 @@ export default async function VouchersPage({
         title="Vouchery"
         description="Slevové kódy se ověřují při rezervaci a výsledná částka se předává platební bráně Comgate."
       />
-      <div className="mb-8 flex flex-wrap gap-4">
+      <StatGroup className="mb-8 flex flex-wrap gap-4">
         <StatCard label="Voucherů celkem" value={totals.total} />
         <StatCard label="Aktivních" value={totals.active} />
         <StatCard label="Dokončených použití" value={totals.redeemed} />
-      </div>
+      </StatGroup>
 
       <Card className="mb-8 max-w-3xl">
         <CardHeader>
@@ -130,8 +130,8 @@ export default async function VouchersPage({
             const state = voucherState(row, now);
             return (
               <TableRow key={row.id}>
-                <TableCell className="font-extrabold">{row.code}</TableCell>
-                <TableCell>
+                <TableCell className="font-semibold">{row.code}</TableCell>
+                <TableCell className="text-right tabular-nums">
                   {row.kind === "percentage"
                     ? `${row.value} %`
                     : formatMoney(row.value)}

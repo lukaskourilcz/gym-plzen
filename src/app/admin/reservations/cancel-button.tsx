@@ -4,7 +4,7 @@ import { useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useActionForm } from "@/components/admin/use-action-form";
 import { FormFeedback } from "@/components/admin/form-controls";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cancelReservationSchema } from "@/lib/validations/reservations";

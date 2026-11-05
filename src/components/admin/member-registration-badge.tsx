@@ -1,5 +1,5 @@
 import { UserRound, UserRoundMinus } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/admin/ui/badge";
 
 export function MemberRegistrationBadge({
   registered,

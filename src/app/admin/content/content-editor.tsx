@@ -19,7 +19,7 @@ import {
   editPublicTextSchema,
   type EditPublicTextValues,
 } from "@/lib/validations/cms";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import { Notice } from "@/components/ui/notice";
 import { Textarea } from "@/components/ui/textarea";
 import { AdminDialog } from "@/components/admin/dialog";

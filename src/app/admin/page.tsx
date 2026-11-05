@@ -29,8 +29,8 @@ import {
 import { aggregateDayOverview, pragueDayBounds } from "@/lib/services/stats";
 import { loadDemoData } from "@/lib/demo/dummy";
 import { PageHeader } from "@/components/admin/page-header";
-import { StatCard } from "@/components/admin/stat-card";
-import { Badge } from "@/components/ui/badge";
+import { StatCard, StatGroup } from "@/components/admin/stat-card";
+import { Badge } from "@/components/admin/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
 
@@ -134,7 +134,7 @@ export default async function AdminDashboard({
   return (
     <div>
       <PageHeader title="Dnes" detail={capitalise(DAY_FORMAT.format(now))} />
-      <div className="mb-8 flex flex-wrap gap-4">
+      <StatGroup className="mb-8 flex flex-wrap gap-4">
         <StatCard
           label={
             upcoming[0]
@@ -153,14 +153,14 @@ export default async function AdminDashboard({
         />
         <StatCard label="Neuzavřená upozornění" value={openCount} />
         <StatCard label="Nedoručené zprávy" value={failedMessages.length} />
-      </div>
+      </StatGroup>
 
       <div className="grid items-start gap-8 lg:grid-cols-2">
         <section aria-labelledby="today-programme">
           <h2 id="today-programme" className="mb-3 text-lg font-semibold">
             Dnešní program
           </h2>
-          <div className="grid gap-2">
+          <div data-ui="programme-list" className="grid gap-2">
             {todaysReservations.map((r) => {
               const running = r.startsAt <= now && now < r.endsAt;
               const code = codeStates.get(r.id);
@@ -168,13 +168,14 @@ export default async function AdminDashboard({
                 <Card
                   key={r.id}
                   data-reservation-id={r.id}
+                  data-running={running || undefined}
                   className={cn(
                     running && "border-primary",
                     code?.used && "border-success/40 bg-success/10",
                   )}
                 >
                   <CardContent className="flex flex-wrap items-center gap-3 p-4">
-                    <span className="font-bold tabular-nums">
+                    <span className="font-medium tabular-nums">
                       {formatTimeRange(r.startsAt, r.endsAt)}
                     </span>
                     <span className="min-w-32 flex-1 text-sm text-muted-foreground">
@@ -235,7 +236,7 @@ export default async function AdminDashboard({
                     aria-hidden="true"
                     className="size-4 shrink-0 text-accent-foreground"
                   />
-                  <span className="font-bold tabular-nums">
+                  <span className="font-medium tabular-nums">
                     {formatTime(entry.occurredAt)}
                   </span>
                   <span className="min-w-0 break-words text-muted-foreground">
@@ -286,9 +287,9 @@ export default async function AdminDashboard({
             <dl className="grid grid-cols-3 gap-3 rounded-lg border border-border bg-card p-4 text-sm">
               <div>
                 <dt className="text-muted-foreground">Rezervace</dt>
-                <dd className="mt-1 text-2xl font-bold">
+                <dd className="mt-1 text-2xl font-medium">
                   {day.last7}{" "}
-                  <span className="text-sm font-bold text-muted-foreground">
+                  <span className="text-sm font-medium text-muted-foreground">
                     {trend === 0
                       ? "beze změny"
                       : `${trend > 0 ? "+" : ""}${trend}`}
@@ -297,13 +298,13 @@ export default async function AdminDashboard({
               </div>
               <div>
                 <dt className="text-muted-foreground">Storna</dt>
-                <dd className="mt-1 text-2xl font-bold">
+                <dd className="mt-1 text-2xl font-medium">
                   {day.cancelledLast7}
                 </dd>
               </div>
               <div>
                 <dt className="text-muted-foreground">Nedorazili</dt>
-                <dd className="mt-1 text-2xl font-bold">{day.noShowLast7}</dd>
+                <dd className="mt-1 text-2xl font-medium">{day.noShowLast7}</dd>
               </div>
             </dl>
             <p className="mt-2 text-sm">
@@ -345,7 +346,7 @@ export default async function AdminDashboard({
                     className="mt-0.5 size-4 shrink-0 text-destructive"
                   />
                   <div>
-                    <div className="font-bold">
+                    <div className="font-medium">
                       Nedoručeno: {message.channel}
                     </div>
                     <div className="text-muted-foreground">

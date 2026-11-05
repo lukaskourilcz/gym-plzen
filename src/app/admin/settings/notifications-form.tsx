@@ -63,7 +63,7 @@ export function OperatorNotificationsForm({
       </p>
 
       <fieldset className="mb-6">
-        <legend className="mb-2 text-sm font-extrabold">
+        <legend className="mb-2 text-sm font-semibold">
           Události, o kterých chcete vědět
         </legend>
         {OPERATOR_EVENT_DEFINITIONS.map((event) => (

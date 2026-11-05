@@ -11,7 +11,7 @@ import {
   FormFeedback,
   SubmitButton,
 } from "@/components/admin/form-controls";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Notice } from "@/components/ui/notice";
@@ -87,7 +87,7 @@ export function BlockPrices({
       aria-labelledby="block-prices-heading"
       className="mb-8 rounded-lg border border-border bg-card p-5 sm:p-6"
     >
-      <h2 id="block-prices-heading" className="text-xl font-bold">
+      <h2 id="block-prices-heading" className="text-xl font-medium">
         Ceny podle času
       </h2>
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">

@@ -3,7 +3,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Ban, Pencil, Check } from "lucide-react";
 import { AdminDialog } from "@/components/admin/dialog";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -116,7 +116,7 @@ export function BlockingManager({
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2
             id="blocking-templates"
-            className="text-xl font-bold tracking-tight"
+            className="text-xl font-medium tracking-tight"
           >
             Šablony blokací
           </h2>
@@ -198,7 +198,7 @@ export function BlockingManager({
       <section aria-labelledby="blocking-history">
         <h2
           id="blocking-history"
-          className="mb-4 text-xl font-bold tracking-tight"
+          className="mb-4 text-xl font-medium tracking-tight"
         >
           Použité blokace
         </h2>

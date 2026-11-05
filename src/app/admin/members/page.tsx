@@ -27,7 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/admin/ui/badge";
 import { MemberRegistrationBadge } from "@/components/admin/member-registration-badge";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
 

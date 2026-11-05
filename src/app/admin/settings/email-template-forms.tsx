@@ -28,7 +28,7 @@ import {
   type EmailTemplateTestValues,
   type EmailTemplateValues,
 } from "@/lib/validations/settings";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormFeedback } from "@/components/admin/form-controls";
@@ -289,16 +289,16 @@ export function EmailTemplateForms({
       </div>
 
       <div className="border-t border-border pt-6 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0">
-        <h4 className="text-base font-bold">Náhled</h4>
+        <h4 className="text-base font-medium">Náhled</h4>
         <p className="mt-1 text-sm text-muted-foreground">
           Ukázková data: Klára, pondělí 3. srpna v 18:00 a kód 482 916.
         </p>
         <div className="mt-4 overflow-hidden border border-border bg-secondary/35 p-3">
-          <p className="mb-3 break-words text-sm font-bold">
+          <p className="mb-3 break-words text-sm font-medium">
             {preview.subject}
           </p>
           <div
-            className="bg-card shadow-sm"
+            className="bg-card"
             data-testid="email-template-preview"
             dangerouslySetInnerHTML={{
               __html: emailTemplateToHtml(

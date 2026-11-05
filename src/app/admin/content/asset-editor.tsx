@@ -54,7 +54,7 @@ export function AssetEditor({
         setSuccess("Změna je uložená a projeví se na webu.");
       }}
     >
-      <label className="grid gap-2 text-sm font-bold">
+      <label className="grid gap-2 text-sm font-medium">
         {asset.label}
         <Input
           value={current}

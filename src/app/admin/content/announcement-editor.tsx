@@ -7,7 +7,7 @@ import { receiveAction } from "@/lib/helpers/action-response";
 import { AdminSwitch } from "@/components/admin/switch";
 import { AdminDialog } from "@/components/admin/dialog";
 import { FormFeedback, SubmitButton } from "@/components/admin/form-controls";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { saveAnnouncementAction } from "./actions";
 import "./content-canvas.css";
@@ -162,7 +162,7 @@ export function AnnouncementEditor({
           aria-label="Upravitelné rozložení: Oznamovací lišta"
         >
           <div className="bg-gold px-4 py-3 text-center text-gold-foreground">
-            <p className="text-sm font-extrabold leading-6 sm:text-base">
+            <p className="text-sm font-semibold leading-6 sm:text-base">
               {value.title}
               {pencil("title")}
             </p>

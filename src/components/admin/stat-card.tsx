@@ -1,4 +1,13 @@
-import { Card, CardContent } from "@/components/ui/card";
+import type { HTMLAttributes } from "react";
+import { cn } from "@/lib/utils";
+
+/** A shared, quiet metric surface; values remain separate semantic items. */
+export function StatGroup({
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  return <div data-ui="stat-group" className={cn(className)} {...props} />;
+}
 
 /** A single KPI tile : one number with a label. Shared by dashboard + statistics. */
 export function StatCard({
@@ -9,11 +18,9 @@ export function StatCard({
   value: number | string;
 }) {
   return (
-    <Card className="min-w-40 flex-1">
-      <CardContent className="p-4">
-        <div className="text-3xl font-bold tracking-tight">{value}</div>
-        <div className="mt-1 text-sm text-muted-foreground">{label}</div>
-      </CardContent>
-    </Card>
+    <div data-ui="stat-card">
+      <div data-ui="stat-label">{label}</div>
+      <div data-ui="stat-value">{value}</div>
+    </div>
   );
 }

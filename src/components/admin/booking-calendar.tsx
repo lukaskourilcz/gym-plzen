@@ -11,7 +11,7 @@ import luxonPlugin from "@fullcalendar/luxon3";
 import csLocale from "@fullcalendar/core/locales/cs";
 import type { DatesSetArg, EventInput } from "@fullcalendar/core";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import { AdminMemberName } from "@/components/admin/member-name";
 import { cn } from "@/lib/utils";
 import {

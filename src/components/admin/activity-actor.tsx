@@ -12,7 +12,7 @@ export function ActivityActor({
 }) {
   return (
     <span>
-      <span className="font-bold">{ACTOR_LABELS[entry.actorType]}</span>
+      <span className="font-medium">{ACTOR_LABELS[entry.actorType]}</span>
       {entry.actorLabel ? (
         <span className="block text-xs text-muted-foreground">
           <AdminMemberName name={entry.actorLabel} note={note} />

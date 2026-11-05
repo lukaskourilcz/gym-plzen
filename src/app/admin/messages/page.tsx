@@ -16,7 +16,7 @@ import { requireAdmin } from "@/lib/auth/guards";
 import { AdminMemberName } from "@/components/admin/member-name";
 import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import { importRecentEmails } from "./actions";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import {
   formatChannel,
   formatDateTime,
@@ -131,7 +131,7 @@ export default async function MessagesPage({
         placeholder="Jméno, e-mail nebo předmět"
         dateLabel="Odesláno"
       />
-      <h2 className="mb-3 text-xl font-bold">Odeslané e-maily</h2>
+      <h2 className="mb-3 text-xl font-medium">Odeslané e-maily</h2>
       <AdminListTotal total={emailTotal} />
       <Table label="Odeslané e-maily">
         <TableHeader>
@@ -187,7 +187,7 @@ export default async function MessagesPage({
         pageKey="emailPage"
         label="Stránkování e-mailů"
       />
-      <h2 className="mb-3 mt-8 text-xl font-bold">
+      <h2 className="mb-3 mt-8 text-xl font-medium">
         Ostatní zprávy a záznamy bez náhledu
       </h2>
       <AdminListTotal total={totalCount} />

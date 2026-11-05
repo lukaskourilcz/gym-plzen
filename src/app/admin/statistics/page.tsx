@@ -2,7 +2,7 @@ import { requireAdmin } from "@/lib/auth/guards";
 import { getStats, type Bucket } from "@/lib/services/stats";
 import { loadDemoData } from "@/lib/demo/dummy";
 import { PageHeader } from "@/components/admin/page-header";
-import { StatCard } from "@/components/admin/stat-card";
+import { StatCard, StatGroup } from "@/components/admin/stat-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
 
@@ -21,13 +21,13 @@ export default async function StatisticsPage() {
   return (
     <div>
       <PageHeader title="Statistiky" />
-      <div className="mb-8 flex flex-wrap gap-4">
+      <StatGroup className="mb-8 flex flex-wrap gap-4">
         <StatCard label="Rezervací celkem" value={stats.total} />
         <StatCard label="Za posledních 30 dní" value={stats.last30} />
         <StatCard label="Potvrzené" value={stats.confirmed} />
         <StatCard label="Zrušené" value={stats.cancelled} />
         <StatCard label="Nedostavení" value={stats.noShow} />
-      </div>
+      </StatGroup>
 
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         <ChartCard

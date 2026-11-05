@@ -14,8 +14,8 @@ import { requireAdmin } from "@/lib/auth/guards";
 import { newsletter } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
-import { StatCard } from "@/components/admin/stat-card";
-import { Badge } from "@/components/ui/badge";
+import { StatCard, StatGroup } from "@/components/admin/stat-card";
+import { Badge } from "@/components/admin/ui/badge";
 import {
   Table,
   TableBody,
@@ -55,10 +55,10 @@ export default async function NewsletterPage({
         title="Odběratelé novinek"
         description="E-mailové adresy získané přes formulář pod mapou na úvodní stránce. Do každého e-mailu s novinkami vložte odběrateli jeho odkaz pro odhlášení."
       />
-      <div className="mb-8 flex flex-wrap gap-4">
+      <StatGroup className="mb-8 flex flex-wrap gap-4">
         <StatCard label="Odběratelů celkem" value={totals.total} />
         <StatCard label="Aktivních" value={totals.active} />
-      </div>
+      </StatGroup>
       <AdminListFilters
         path="/admin/newsletter"
         filters={filters}
