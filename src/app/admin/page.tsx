@@ -19,7 +19,6 @@ import { formatDateTime, formatMoney, formatTime } from "@/lib/helpers/format";
 import { aggregateDayOverview, pragueDayBounds } from "@/lib/services/stats";
 import { loadDemoData } from "@/lib/demo/dummy";
 import { PageHeader } from "@/components/admin/page-header";
-import { StatCard, StatGroup } from "@/components/admin/stat-card";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
 
 export const metadata = { title: "Dnes" };
@@ -121,26 +120,38 @@ export default async function AdminDashboard({
   return (
     <div>
       <PageHeader title="Dnes" detail={capitalise(DAY_FORMAT.format(now))} />
-      <StatGroup className="mb-8 flex flex-wrap gap-4">
-        <StatCard
-          label={
-            upcoming[0]
-              ? `Dnešní rezervace · další ${formatTime(upcoming[0].startsAt)}`
-              : "Dnešní rezervace"
-          }
-          value={todaysReservations.length}
-        />
-        <StatCard
-          label={
-            day.freeEntries > 0
-              ? `Dnešní tržba · ${day.freeEntries} bez platby`
-              : "Dnešní tržba"
-          }
-          value={formatMoney(day.revenueCents)}
-        />
-        <StatCard label="Neuzavřená upozornění" value={openCount} />
-        <StatCard label="Nedoručené zprávy" value={failedMessages.length} />
-      </StatGroup>
+      <dl className="admin-inline-stats mb-6" aria-label="Dnešní přehled">
+        <div>
+          <dt>Dnešní rezervace:</dt>
+          <dd>
+            {todaysReservations.length}
+            {upcoming[0] && (
+              <span className="ml-1 text-xs font-normal text-muted-foreground">
+                · další {formatTime(upcoming[0].startsAt)}
+              </span>
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt>Dnešní tržba:</dt>
+          <dd>
+            {formatMoney(day.revenueCents)}
+            {day.freeEntries > 0 && (
+              <span className="ml-1 text-xs font-normal text-muted-foreground">
+                · {day.freeEntries} bez platby
+              </span>
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt>Neuzavřená upozornění:</dt>
+          <dd>{openCount}</dd>
+        </div>
+        <div>
+          <dt>Nedoručené zprávy:</dt>
+          <dd>{failedMessages.length}</dd>
+        </div>
+      </dl>
 
       <div className="grid items-start gap-8 lg:grid-cols-2">
         <section aria-labelledby="today-programme">

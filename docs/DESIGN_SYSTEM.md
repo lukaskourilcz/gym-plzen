@@ -406,13 +406,14 @@ shrink-0 accent-primary`, the pointer and hover treatment every control
   breaker and 20 rows by default, with 50 and 100 as alternatives. Changing
   filters, sorting or page size resets pagination. Shared pagination retains
   list state and the independent page numbers of other tables on the screen.
-- Each table displays the total number of matching records before pagination.
+- Each table displays the total number of matching records before pagination,
+  in its heading or in a separate total where the heading has no count.
   Database window counts use the same filters as the rows; an empty later page
   retrieves the matching total without exposing unbounded data. Global finance
   and loyalty summaries remain independent of table filters.
-- The daily programme contains confirmed reservations only. Sent and used code
-  badges require recorded delivery or successful keypad evidence. A used code
-  adds a success tint to the reservation card; text also conveys the state.
+- The daily programme contains confirmed and finished reservations. Sent and used
+  code icons require recorded delivery or successful keypad evidence. A used code
+  adds a success tint; expandable text also conveys the state.
 - Navigation exposes the current route with `aria-current`. Mobile navigation
   has a labelled toggle, closes with Escape and restores focus when closed.
 - The first focusable control is a native skip link to the route-level `main`.
@@ -844,10 +845,10 @@ nevytváří zákaznický účet a nevolá poskytovatele plateb ani zpráv.
 
 ### Zákaznická upozornění
 
-Administrace → Upozornění (`/admin/notices`) používá statické náhledy skutečných
+Administrace → Obsah webu → Upozornění (`/admin/content?section=notices`) používá statické náhledy skutečných
 zákaznických dialogů, rozdělené podle účelu. Tužka u každého textu otevře
 `AdminDialog`. Náhled nemontuje formuláře rezervací ani správce cookies.
-Zákaznické písmo je omezené na `.admin-shell .content-canvas`; navigace a editor
+Původní `/admin/notices` přesměruje na tuto část; samostatná navigační položka není potřeba. Zákaznické písmo je omezené na `.admin-shell .content-canvas`; navigace a editor
 používají systémovou typografii. Podmíněné texty jsou dostupné pod „Další stavy a
 popisky“. Automatické údaje jsou vysvětlené pod náhledem; povinné značky nelze
 odstranit. Uložení mění pouze jednu povolenou položku veřejného obsahu.
@@ -897,8 +898,10 @@ balance example; no gallery control may mutate a wallet.
 
 ### Daily attendance and compact administration
 
-The daily programme always states whether the current code is prepared, sent
-and used. A successful keypad event is the attendance evidence; app unlocks
+The daily programme has a single compact header with time, name, three labelled
+status icons and a disclosure button. Green rows default to collapsed; other
+rows default to expanded. Manual choices persist through clock updates and
+background refreshes. Details explain whether the code is prepared, sent and used. A successful keypad event is the attendance evidence; app unlocks
 and failed keypad attempts are not. During a slot, its elapsed portion fills
 green after a verified entry, red while an existing code remains unused, and
 amber when no usable code exists. Completed rows retain their full fill.
@@ -943,3 +946,9 @@ preview has no active authentication link or booking form. The original source
 retains `{freeEntryEvery}` while the preview shows the actual loyalty cadence;
 its rules and the authentication return destination remain controlled by the
 booking flow and are explained under **Co se načítá odjinud**.
+
+Dnes and Zítra use inline label/value summaries. Tomorrow tables use compact
+rows with 44px action targets: green means all work due now is ready, yellow
+means expected preparation/delivery or payment is pending, and red identifies
+a failed check. Delivery scheduled for T-60 is expected and does not prevent a
+verified, prepared booking from being green.

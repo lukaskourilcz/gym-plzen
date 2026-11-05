@@ -39,6 +39,59 @@ test("daily headings keep the date smaller and regular inside one H1", async ({
     expect(styles.text).not.toContain("|");
   }
 });
+test("daily programme keeps one compact line and defaults disclosures to the reservation state", async ({
+  page,
+}, info) => {
+  await page.goto("/admin/design-system");
+  const sample = page.getByRole("list", {
+    name: "Ukázkový denní program",
+    exact: true,
+  });
+  const success = sample.locator('[data-reservation-id="sample-success"]');
+  const failed = sample.locator('[data-reservation-id="sample-missing"]');
+  const upcoming = sample.locator('[data-reservation-id="sample-future"]');
+  const toggle = success.getByRole("button", { name: /Podrobnosti rezervace/ });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  expect((await success.boundingBox())!.height).toBeLessThanOrEqual(54);
+  await expect(
+    success.getByRole("img", { name: "Kód vytvořen", exact: true }),
+  ).toBeVisible();
+  await expect(
+    success.getByText("Kód použit při odemčení zámku.", { exact: true }),
+  ).not.toBeVisible();
+  await expect(
+    failed.getByRole("button", { name: /Podrobnosti rezervace/ }),
+  ).toHaveAttribute("aria-expanded", "true");
+  await expect(
+    upcoming.getByRole("button", { name: /Podrobnosti rezervace/ }),
+  ).toHaveAttribute("aria-expanded", "true");
+  await toggle.focus();
+  await toggle.press("Enter");
+  await expect(
+    success.getByText("Kód použit při odemčení zámku.", { exact: true }),
+  ).toBeVisible();
+  await toggle.press("Enter");
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect((await success.boundingBox())!.height).toBeLessThanOrEqual(54);
+    const heading = success.locator(".admin-programme-heading");
+    expect(
+      await heading.evaluate((el) => el.scrollWidth - el.clientWidth),
+    ).toBeLessThanOrEqual(1);
+    await sample.screenshot({
+      path: info.outputPath(`compact-programme-${width}.png`),
+    });
+  }
+  expect(
+    (
+      await new AxeBuilder({ page })
+        .include('[aria-label="Ukázkový denní program"]')
+        .analyze()
+    ).violations,
+  ).toEqual([]);
+});
+
 async function unchanged(before: unknown[], emails: number) {
   expect(await sql`select * from reservation order by id`).toEqual(before);
   expect((await sql`select count(*)::int as n from email_archive`)[0]!.n).toBe(
@@ -51,7 +104,7 @@ test("tomorrow offers a desktop table, icon tooltips and mobile cards without ch
 }) => {
   const tomorrow = addDaysToDateKey(dateKeyInTimeZone(new Date()), 1);
   await sql`insert into profiles(id,email,full_name,phone,notify_by_whatsapp,note) values (${memberId},${prefix + "@example.test"},'Zítřejší klient','+420777000111',true,'Poznámka do zítřejšího přehledu')`;
-  const start = localDateTimeToDate(tomorrow, 600);
+  const start = localDateTimeToDate(tomorrow, 0);
   const [booking] =
     await sql`insert into reservation(user_id,starts_at,ends_at,status,contact_name,contact_email)
     values (${memberId},${start},${new Date(start.getTime() + 75 * 60_000)},'confirmed',${prefix + " member"},${prefix + "@example.test"}) returning id`;
@@ -80,6 +133,8 @@ test("tomorrow offers a desktop table, icon tooltips and mobile cards without ch
       "Profil zákazníka",
     ]);
     const row = table.getByRole("row").filter({ hasText: prefix + " member" });
+    await expect(row).toHaveAttribute("data-readiness", "error");
+    expect((await row.boundingBox())!.height).toBeLessThanOrEqual(54);
     await expect(
       row.getByRole("link", { name: prefix + " member", exact: true }),
     ).toHaveAttribute("href", `/admin/members/${memberId}`);
@@ -102,6 +157,7 @@ test("tomorrow offers a desktop table, icon tooltips and mobile cards without ch
       row.getByRole("button", { name: /Poznámka k zákazníkovi/ }),
     ).toBeVisible();
     const guest = table.getByRole("row").filter({ hasText: prefix + " guest" });
+    await expect(guest).toHaveAttribute("data-readiness", "waiting");
     await expect(
       guest.getByRole("img", { name: "Nepoužívá se", exact: true }),
     ).toBeVisible();
@@ -176,6 +232,14 @@ test("today paginates all entries by twenty and uses compact gaps beside a long 
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       /^Dnes \p{L}+ \d{1,2}\./u,
     );
+    const summary = page.locator('dl[aria-label="Dnešní přehled"]');
+    const tops = await summary
+      .locator(":scope > div")
+      .evaluateAll((items) =>
+        items.map((el) => Math.round(el.getBoundingClientRect().top)),
+      );
+    expect(new Set(tops).size).toBe(1);
+    expect((await summary.boundingBox())!.height).toBeLessThan(75);
     const programme = page.locator(
       'section[aria-labelledby="today-programme"]',
     );

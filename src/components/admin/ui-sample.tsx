@@ -10,6 +10,9 @@ import { History } from "lucide-react";
 import { IconButton } from "./ui/icon-button";
 import { DialogPagination } from "./ui/pagination";
 import { AdminDialog } from "./dialog";
+import { DailyProgrammeRow } from "./daily-programme";
+
+const SAMPLE_NOW = Date.parse("2026-11-05T10:00:00Z");
 
 /** Local gallery example: exercises native form semantics without a server action. */
 export function AdminUiSample() {
@@ -84,6 +87,52 @@ export function AdminUiSample() {
           onClick={() => setHistoryOpen(true)}
         />
       </div>
+      <h3 className="mb-3 mt-6">Kompaktní denní program · ukázka</h3>
+      <ul
+        role="list"
+        aria-label="Ukázkový denní program"
+        data-ui="programme-list"
+      >
+        {[
+          {
+            id: "sample-success",
+            name: "Ukázkový úspěšný vstup",
+            used: true,
+            future: false,
+          },
+          {
+            id: "sample-missing",
+            name: "Ukázkový nepotvrzený vstup",
+            used: false,
+            future: false,
+          },
+          {
+            id: "sample-future",
+            name: "Ukázková budoucí rezervace",
+            used: false,
+            future: true,
+          },
+        ].map((sample) => (
+          <DailyProgrammeRow
+            key={sample.id}
+            now={SAMPLE_NOW}
+            booking={{
+              id: sample.id,
+              name: sample.name,
+              startsAt: sample.future
+                ? "2026-11-05T11:00:00Z"
+                : "2026-11-05T09:00:00Z",
+              endsAt: sample.future
+                ? "2026-11-05T12:00:00Z"
+                : "2026-11-05T11:00:00Z",
+              free: false,
+              codeCreated: true,
+              codeSent: !sample.future,
+              codeUsed: sample.used,
+            }}
+          />
+        ))}
+      </ul>
       {historyOpen && (
         <AdminDialog
           title="Ukázka historie kreditů"

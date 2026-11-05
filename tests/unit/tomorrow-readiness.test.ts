@@ -3,10 +3,50 @@ import test from "node:test";
 import {
   checkTomorrowCode,
   checkTomorrowDelivery,
+  tomorrowReadiness,
 } from "../../src/lib/helpers/tomorrow-readiness";
 import { hashCode } from "../../src/lib/helpers/crypto";
 
 const startsAt = new Date("2026-10-01T08:00:00Z");
+
+test("tomorrow colours distinguish readiness, normal waiting and actual failures", () => {
+  const ready = {
+    status: "confirmed",
+    codeCheck: "match",
+    email: "scheduled",
+    whatsApp: "not_applicable",
+    whatsAppEnabled: false,
+  } as const;
+  assert.equal(tomorrowReadiness(ready).state, "ready");
+  for (const codeCheck of ["scheduled", "preparing"] as const)
+    assert.equal(tomorrowReadiness({ ...ready, codeCheck }).state, "waiting");
+  for (const codeCheck of ["missing", "mismatch", "unavailable"] as const)
+    assert.equal(tomorrowReadiness({ ...ready, codeCheck }).state, "error");
+  assert.equal(
+    tomorrowReadiness({ ...ready, codeProblem: true }).state,
+    "error",
+  );
+  for (const email of ["failed", "sent_early", "not_applicable"] as const)
+    assert.equal(tomorrowReadiness({ ...ready, email }).state, "error");
+  assert.equal(
+    tomorrowReadiness({ ...ready, email: "queued" }).state,
+    "waiting",
+  );
+  assert.equal(
+    tomorrowReadiness({
+      ...ready,
+      status: "pending",
+      codeCheck: "awaiting_payment",
+      email: "awaiting_payment",
+    }).state,
+    "waiting",
+  );
+  assert.equal(
+    tomorrowReadiness({ ...ready, whatsAppEnabled: true, whatsApp: "failed" })
+      .state,
+    "error",
+  );
+});
 const now = new Date("2026-09-30T18:00:00Z");
 const code = {
   status: "scheduled",

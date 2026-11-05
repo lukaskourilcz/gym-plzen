@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useId, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Clock3, KeyRound, Mail, DoorOpen } from "lucide-react";
+import { ChevronDown, KeyRound, Mail, DoorOpen } from "lucide-react";
 import { AdminMemberName } from "./member-name";
 import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
 import { formatTimeRange } from "@/lib/helpers/format";
 import { programmeProgress } from "@/lib/helpers/programme-progress";
 
@@ -57,94 +58,137 @@ export function DailyProgramme({
       </p>
     );
   return (
-    <div data-ui="programme-list" role="list" aria-label="Dnešní program">
-      {bookings.map((booking) => {
-        const state = programmeProgress(booking, now);
-        return (
-          <article
-            key={booking.id}
-            role="listitem"
-            data-reservation-id={booking.id}
-            data-attendance={state.tone}
-            className="admin-programme-row"
-            style={
-              { "--programme-progress": `${state.progress}%` } as CSSProperties
-            }
-          >
-            <div className="relative flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-              <span className="font-medium tabular-nums">
-                {formatTimeRange(
-                  new Date(booking.startsAt),
-                  new Date(booking.endsAt),
-                )}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {state.label}
-              </span>
-            </div>
-            <div className="relative mt-1 flex flex-wrap items-center gap-2">
-              <AdminMemberName
-                name={booking.name}
-                note={booking.note}
-                href={booking.memberHref}
-              />
-              {booking.free && <Badge variant="muted">Zdarma</Badge>}
-            </div>
-            <dl
-              className="relative mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs"
-              aria-label="Stav vstupního kódu"
-            >
-              <CodeState
-                icon={KeyRound}
-                label="Kód"
-                done={booking.codeCreated}
-                text={booking.codeCreated ? "Kód vytvořen" : "Kód nepřipraven"}
-              />
-              <CodeState
-                icon={Mail}
-                label="Odeslání"
-                done={booking.codeSent}
-                text={booking.codeSent ? "Kód odeslán" : "Kód neodeslán"}
-              />
-              <CodeState
-                icon={DoorOpen}
-                label="Použití"
-                done={booking.codeUsed}
-                text={booking.codeUsed ? "Kód použit" : "Kód zatím nepoužit"}
-              />
-            </dl>
-          </article>
-        );
-      })}
-    </div>
+    <ul data-ui="programme-list" role="list" aria-label="Dnešní program">
+      {bookings.map((booking) => (
+        <DailyProgrammeRow key={booking.id} booking={booking} now={now} />
+      ))}
+    </ul>
   );
 }
 
-function CodeState({
-  icon: Icon,
-  label,
-  done,
-  text,
+export function DailyProgrammeRow({
+  booking,
+  now,
 }: {
-  icon: typeof KeyRound;
-  label: string;
-  done: boolean;
-  text: string;
+  booking: ProgrammeBooking;
+  now: number;
 }) {
-  const Status = done ? Check : Clock3;
+  const state = programmeProgress(booking, now);
+  const [manualExpanded, setManualExpanded] = useState<boolean | null>(null);
+  const expanded = manualExpanded ?? state.tone !== "success";
+  const detailsId = useId();
+  const time = formatTimeRange(
+    new Date(booking.startsAt),
+    new Date(booking.endsAt),
+  );
+  const codes = [
+    {
+      icon: KeyRound,
+      done: booking.codeCreated,
+      label: booking.codeCreated ? "Kód vytvořen" : "Kód nepřipraven",
+      description: booking.codeCreated
+        ? "Kód vytvořen pro tento termín."
+        : "Kód zatím není připraven pro tento termín.",
+    },
+    {
+      icon: Mail,
+      done: booking.codeSent,
+      label: booking.codeSent ? "Kód odeslán" : "Kód neodeslán",
+      description: booking.codeSent
+        ? "Kód odeslán zákazníkovi."
+        : "Kód zatím nebyl odeslán. Odesílá se hodinu před začátkem.",
+    },
+    {
+      icon: DoorOpen,
+      done: booking.codeUsed,
+      label: booking.codeUsed ? "Kód použit" : "Kód zatím nepoužit",
+      description: booking.codeUsed
+        ? "Kód použit při odemčení zámku."
+        : "Použití kódu při odemčení zatím nebylo zaznamenáno.",
+    },
+  ];
   return (
-    <div className="flex items-center gap-1.5">
-      <dt className="sr-only">{label}</dt>
-      <dd className="inline-flex items-center gap-1">
-        <Icon className="size-3.5 text-muted-foreground" aria-hidden />
-        <Status
-          className={
-            done ? "size-3.5 text-primary" : "size-3.5 text-muted-foreground"
-          }
-          aria-hidden
-        />
-        {text}
-      </dd>
-    </div>
+    <li
+      data-reservation-id={booking.id}
+      data-attendance={state.tone}
+      className="admin-programme-row"
+      style={{ "--programme-progress": `${state.progress}%` } as CSSProperties}
+    >
+      <div className="admin-programme-heading relative">
+        <span className="whitespace-nowrap text-xs font-medium tabular-nums sm:text-[13px]">
+          {time}
+        </span>
+        <div className="min-w-0" title={booking.name}>
+          <AdminMemberName
+            className="admin-programme-name"
+            name={booking.name}
+            note={booking.note}
+            href={booking.memberHref}
+          />
+        </div>
+        <span
+          className="inline-flex items-center gap-1.5"
+          aria-label="Stav vstupního kódu"
+        >
+          {codes.map(({ icon: Icon, label, done }) => (
+            <span
+              key={label}
+              role="img"
+              aria-label={label}
+              title={label}
+              className={done ? "text-primary" : "text-muted-foreground"}
+            >
+              <Icon className="size-3.5" aria-hidden />
+            </span>
+          ))}
+        </span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="bg-transparent hover:bg-foreground/5"
+          aria-label={`Podrobnosti rezervace: ${booking.name}, ${time}`}
+          aria-expanded={expanded}
+          aria-controls={detailsId}
+          onClick={() => setManualExpanded(!expanded)}
+        >
+          <ChevronDown
+            className={expanded ? "rotate-180" : undefined}
+            aria-hidden
+          />
+        </Button>
+      </div>
+      <div
+        id={detailsId}
+        hidden={!expanded}
+        className="relative border-t border-border/60 px-3 pb-3 pt-2"
+      >
+        <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span>{state.label}</span>
+          {booking.free && <Badge variant="muted">Zdarma</Badge>}
+        </div>
+        <dl
+          className="flex flex-wrap gap-x-4 gap-y-2 text-xs"
+          aria-label="Podrobnosti vstupního kódu"
+        >
+          {codes.map(({ icon: Icon, label, description, done }) => (
+            <div key={label} className="flex min-w-0 items-start gap-1.5">
+              <dt className="sr-only">{label}</dt>
+              <dd className="flex items-start gap-1.5">
+                <Icon
+                  className={
+                    done
+                      ? "mt-0.5 size-3.5 shrink-0 text-primary"
+                      : "mt-0.5 size-3.5 shrink-0 text-muted-foreground"
+                  }
+                  aria-hidden
+                />
+                <span>{description}</span>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </li>
   );
 }

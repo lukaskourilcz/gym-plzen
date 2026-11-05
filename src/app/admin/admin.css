@@ -208,6 +208,18 @@
   font-variant-numeric: tabular-nums;
 }
 
+.admin-shell [data-readiness="ready"] {
+  background-color: color-mix(in srgb, var(--success) 12%, var(--card));
+}
+
+.admin-shell [data-readiness="error"] {
+  background-color: color-mix(in srgb, var(--destructive) 10%, var(--card));
+}
+
+.admin-shell [data-readiness="waiting"] {
+  background-color: color-mix(in srgb, var(--warning) 12%, var(--card));
+}
+
 .admin-shell [data-ui="list-filters"] label {
   font-size: 0.75rem;
   font-weight: 500;
@@ -244,7 +256,28 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  padding: 1rem;
+  padding: 0;
+}
+
+.admin-shell .admin-programme-heading {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content 2.75rem;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 3.25rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.75rem;
+}
+
+.admin-shell .admin-programme-name {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.admin-shell .admin-programme-name > :is(a, span) {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .admin-shell .admin-programme-row + .admin-programme-row {

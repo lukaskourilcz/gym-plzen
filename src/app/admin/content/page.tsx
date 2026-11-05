@@ -5,6 +5,8 @@ import { loadSiteContent, SITE_DEFAULTS } from "@/lib/content/site";
 import { PageHeader } from "@/components/admin/page-header";
 import { ContentEditor } from "./content-editor";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
+import { defaultPublicNotices } from "@/lib/config/public-notices";
+import { loadPublicNotices } from "@/lib/services/public-notices";
 
 export const metadata = { title: "Obsah webu" };
 export const dynamic = "force-dynamic";
@@ -13,7 +15,7 @@ export const dynamic = "force-dynamic";
 export default async function ContentPage() {
   await requireAdmin();
   const demo = await hasDemoAdminSession();
-  const [content, instagram] = await Promise.all([
+  const [content, instagram, notices] = await Promise.all([
     loadSiteContent("cs", { strict: !demo, defaultsOnly: demo }),
     demo
       ? Promise.resolve({
@@ -27,6 +29,7 @@ export default async function ContentPage() {
           problem: null,
         })
       : getInstagramAdminState(),
+    demo ? Promise.resolve(defaultPublicNotices()) : loadPublicNotices(),
   ]);
   const values = Object.fromEntries(
     Object.keys(SITE_DEFAULTS).map((key) => [
@@ -60,6 +63,7 @@ export default async function ContentPage() {
     <div>
       <PageHeader title="Obsah webu" />
       <ContentEditor
+        notices={notices}
         instagram={instagram}
         announcement={content.announcement}
         values={values}

@@ -20,7 +20,6 @@ import {
   ListChecks,
   Mail,
   MessageCircle,
-  MessageSquareWarning,
   Palette,
   ReceiptText,
   Settings,
@@ -59,7 +58,6 @@ const NAV_GROUPS = [
     label: "Web a komunikace",
     items: [
       ["/admin/content", "Obsah webu", FileText],
-      ["/admin/notices", "Upozornění", MessageSquareWarning],
       ["/customer-preview", "Ukázat web jako registrovaný zákazník", Eye],
       ["/admin/emails", "E-maily", Mail],
       ["/admin/newsletter", "Odběratelé novinek", Mail],
