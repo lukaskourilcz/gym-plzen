@@ -1,7 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import { Upload } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import { FormFeedback } from "@/components/admin/form-controls";
 import { uploadFileAction } from "../settings/actions";
 import { receiveAction } from "@/lib/helpers/action-response";

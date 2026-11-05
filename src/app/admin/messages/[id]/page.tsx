@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getAdminEmail } from "@/lib/services/messages";
 import { formatDateTime } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Detail odeslaného e-mailu" };

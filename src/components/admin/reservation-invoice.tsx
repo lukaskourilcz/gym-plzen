@@ -2,7 +2,7 @@
 
 import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import { createAndSendInvoiceAction } from "@/app/admin/doklady/actions";
 import {
   INVOICE_OPERATOR_EMAIL,

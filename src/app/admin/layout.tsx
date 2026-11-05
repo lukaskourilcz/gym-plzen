@@ -1,3 +1,4 @@
+import "./admin.css";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/guards";
 import { SignOutButton } from "@/components/admin/sign-out-button";
@@ -18,7 +19,7 @@ export default async function AdminLayout({
   const admin = await requireAdmin();
 
   return (
-    <div className="admin-shell min-h-screen bg-secondary/35 lg:flex">
+    <div className="admin-shell min-h-screen bg-background lg:flex">
       <aside className="border-b border-white/10 bg-ink px-4 py-3 text-white lg:fixed lg:inset-y-0 lg:flex lg:w-[248px] lg:flex-col lg:border-r lg:border-b-0 lg:px-3.5 lg:py-5">
         <div className="flex items-center justify-between gap-4">
           <Link
@@ -35,11 +36,11 @@ export default async function AdminLayout({
         </div>
         <AdminNav />
         <div className="mt-auto hidden items-center gap-2.5 border-t border-white/10 px-2.5 pb-1 pt-3.5 lg:flex">
-          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white/12 text-xs font-extrabold text-gold">
+          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white/12 text-xs font-medium text-gold">
             A
           </span>
           <div className="min-w-0 text-xs">
-            <div className="truncate font-bold text-white/80">
+            <div className="truncate font-medium text-white/80">
               {admin.email}
             </div>
             <SignOutButton className="text-gold" />
@@ -49,7 +50,7 @@ export default async function AdminLayout({
       <main
         id="main-content"
         tabIndex={-1}
-        className="min-w-0 w-full p-4 sm:p-6 lg:ml-[248px] lg:w-[calc(100%_-_248px)] lg:px-8 lg:pb-12 lg:pt-7"
+        className="min-w-0 w-full p-4 sm:p-6 lg:ml-[248px] lg:w-[calc(100%_-_248px)] lg:px-10 lg:pb-12 lg:pt-8"
       >
         {admin.isDemo ? <DemoBanner /> : null}
         <TooltipProvider delayDuration={200}>{children}</TooltipProvider>

@@ -23,6 +23,7 @@ export function Table({
       className="w-full overflow-x-auto rounded-lg border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <table
+        data-ui="table"
         className={cn("w-full caption-bottom text-sm", className)}
         {...props}
       />
@@ -36,6 +37,7 @@ export function TableHeader({
 }: React.ComponentProps<"thead">) {
   return (
     <thead
+      data-ui="table-header"
       className={cn("bg-muted/60 [&_tr]:border-b", className)}
       {...props}
     />
@@ -66,6 +68,7 @@ export function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
 export function TableHead({ className, ...props }: React.ComponentProps<"th">) {
   return (
     <th
+      data-ui="table-head"
       className={cn(
         "h-10 px-3 text-left align-middle font-semibold text-muted-foreground",
         className,
@@ -77,6 +80,10 @@ export function TableHead({ className, ...props }: React.ComponentProps<"th">) {
 
 export function TableCell({ className, ...props }: React.ComponentProps<"td">) {
   return (
-    <td className={cn("px-3 py-2.5 align-middle", className)} {...props} />
+    <td
+      data-ui="table-cell"
+      className={cn("px-3 py-2.5 align-middle", className)}
+      {...props}
+    />
   );
 }

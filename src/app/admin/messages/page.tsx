@@ -16,7 +16,7 @@ import { requireAdmin } from "@/lib/auth/guards";
 import { AdminMemberName } from "@/components/admin/member-name";
 import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import { importRecentEmails } from "./actions";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import {
   formatChannel,
   formatDateTime,

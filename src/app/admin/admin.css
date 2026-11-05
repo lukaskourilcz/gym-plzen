@@ -1,0 +1,173 @@
+@import "../../components/admin/boardui/tokens.css";
+
+/* Shared administration surface. Public pages and CMS preview canvases retain
+   their own typography, actions and brand styling. */
+.admin-shell {
+  --admin-danger-surface: color-mix(
+    in srgb,
+    var(--destructive) 10%,
+    var(--card)
+  );
+  --admin-warning-surface: color-mix(in srgb, var(--warning) 12%, var(--card));
+  --admin-warning-text: var(--warning);
+  background: var(--background);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.admin-shell #main-content {
+  min-width: 0;
+}
+
+.admin-shell h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.admin-shell :where(h2, h3):not(.content-canvas *) {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+.admin-shell :where([data-ui="button"]):not(.content-canvas *) {
+  min-height: 2.75rem;
+  border-radius: var(--radius-control);
+  font-size: 0.875rem;
+  font-weight: 500;
+  box-shadow: none;
+}
+
+.admin-shell :where([data-ui="card"]):not(.content-canvas *) {
+  box-shadow: none;
+  border-color: var(--border);
+  border-radius: var(--radius-card);
+}
+
+.admin-shell :where([data-ui="card-header"]):not(.content-canvas *) {
+  gap: 0.5rem;
+  padding: 1.5rem;
+}
+
+.admin-shell :where([data-ui="card-description"]):not(.content-canvas *) {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  max-width: 48rem;
+}
+
+.admin-shell
+  :where([data-ui="input"], [data-ui="select"], [data-ui="textarea"]):not(
+    .content-canvas *
+  ) {
+  min-height: 2.75rem;
+  border-radius: var(--radius-control);
+  background-color: var(--card);
+  font-weight: 400;
+  box-shadow: none;
+}
+
+.admin-shell :where([data-ui="textarea"]):not(.content-canvas *) {
+  min-height: 6rem;
+  line-height: 1.6;
+}
+
+.admin-shell :where([data-ui="label"]):not(.content-canvas *) {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.admin-shell
+  :where(
+    [data-ui="input"],
+    [data-ui="select"],
+    [data-ui="textarea"]
+  ):focus-visible:not(.content-canvas *) {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.admin-shell :where([data-ui="table"]):not(.content-canvas *) {
+  background: var(--card);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.admin-shell :where([data-ui="table-header"]):not(.content-canvas *) {
+  background: transparent;
+}
+
+.admin-shell :where([data-ui="table-head"]):not(.content-canvas *) {
+  padding: 0.875rem 1rem;
+  height: auto;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.admin-shell :where([data-ui="table-cell"]):not(.content-canvas *) {
+  padding: 1rem;
+}
+
+.admin-shell [data-ui="stat-group"] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: 0;
+  overflow: hidden;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+}
+
+.admin-shell [data-ui="stat-card"] {
+  min-width: 0;
+  padding: 1.5rem;
+}
+
+.admin-shell [data-ui="stat-card"] + [data-ui="stat-card"] {
+  border-inline-start: 1px solid var(--border);
+}
+
+.admin-shell [data-ui="stat-label"] {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.admin-shell [data-ui="stat-value"] {
+  margin-top: 0.5rem;
+  font-size: 1.875rem;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.admin-shell [data-ui="list-filters"] {
+  background: var(--card);
+  border-radius: var(--radius-card);
+  padding: 1.25rem;
+}
+
+.admin-shell [data-ui="list-filters"] label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  gap: 0.5rem;
+}
+
+@media (max-width: 639px) {
+  .admin-shell [data-ui="stat-group"] {
+    grid-template-columns: 1fr;
+  }
+  .admin-shell [data-ui="stat-card"] {
+    padding: 1.25rem;
+  }
+  .admin-shell [data-ui="stat-card"] + [data-ui="stat-card"] {
+    border-inline-start: 0;
+    border-top: 1px solid var(--border);
+  }
+}

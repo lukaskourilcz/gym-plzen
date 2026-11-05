@@ -7,6 +7,7 @@ export const Input = React.forwardRef<
   React.ComponentProps<"input">
 >(({ className, type, ...props }, ref) => (
   <input
+    data-ui="input"
     ref={ref}
     type={type}
     className={cn(

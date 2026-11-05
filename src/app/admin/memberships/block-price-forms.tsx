@@ -11,7 +11,7 @@ import {
   FormFeedback,
   SubmitButton,
 } from "@/components/admin/form-controls";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Notice } from "@/components/ui/notice";

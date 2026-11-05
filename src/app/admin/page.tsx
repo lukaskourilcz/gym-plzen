@@ -30,7 +30,7 @@ import { aggregateDayOverview, pragueDayBounds } from "@/lib/services/stats";
 import { loadDemoData } from "@/lib/demo/dummy";
 import { PageHeader } from "@/components/admin/page-header";
 import { StatCard } from "@/components/admin/stat-card";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/admin/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
 

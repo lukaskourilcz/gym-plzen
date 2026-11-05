@@ -55,9 +55,15 @@ export function Button({ className, variant, size, ...props }: ButtonProps) {
   const classes = cn(buttonVariants({ variant, size }), className);
   if ("href" in props && props.href !== undefined) {
     const { href, ...rest } = props;
-    return <Link href={href} className={classes} {...rest} />;
+    return <Link data-ui="button" href={href} className={classes} {...rest} />;
   }
-  return <button className={classes} {...(props as ButtonAsButton)} />;
+  return (
+    <button
+      data-ui="button"
+      className={classes}
+      {...(props as ButtonAsButton)}
+    />
+  );
 }
 
 export { buttonVariants };

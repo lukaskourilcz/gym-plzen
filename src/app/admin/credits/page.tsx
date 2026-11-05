@@ -11,7 +11,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { CreditEditor } from "@/components/admin/credit-editor";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import {
   Table,
   TableHeader,

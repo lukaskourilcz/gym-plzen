@@ -15,7 +15,7 @@ import Link from "next/link";
 import { activity } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/admin/ui/badge";
 import {
   Table,
   TableBody,

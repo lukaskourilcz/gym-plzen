@@ -7,7 +7,7 @@ import { uuidSchema } from "@/lib/validations/common";
 import { formatMoney, formatDateTime } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
 import { CreditEditor } from "@/components/admin/credit-editor";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 export default async function GuestWalletPage({
   params,
 }: {

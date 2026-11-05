@@ -1,5 +1,5 @@
 import { adminSortOptions } from "./list-sort-options";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import {
@@ -64,6 +64,7 @@ export function AdminListFilters({
       action={path}
       method="get"
       aria-label="Filtry"
+      data-ui="list-filters"
       className="mb-5 rounded-xl border border-border bg-card p-4"
     >
       <div className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4">

@@ -15,7 +15,7 @@ import { newsletter } from "@/lib/services";
 import { formatDateTime } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
 import { StatCard } from "@/components/admin/stat-card";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/admin/ui/badge";
 import {
   Table,
   TableBody,

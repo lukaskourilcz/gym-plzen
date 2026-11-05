@@ -19,7 +19,7 @@ import { listAdminAccessCodes } from "@/lib/services/admin-access-codes";
 import { accessCodeStatusLabel } from "@/lib/helpers/access-code-status";
 import { formatDateTime, formatStatus } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import {
   Table,
   TableBody,

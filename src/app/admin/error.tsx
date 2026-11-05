@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 
 /** Honest failure state for protected operational pages. */
 export default function AdminError({ reset }: { reset: () => void }) {

@@ -7,7 +7,7 @@ import {
   FormFeedback,
   SubmitButton,
 } from "@/components/admin/form-controls";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import { Input } from "@/components/ui/input";
 import { pricingPeriodSchema } from "@/lib/validations/memberships";
 import { savePricingPeriodAction } from "./actions";

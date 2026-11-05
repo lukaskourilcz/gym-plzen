@@ -12,7 +12,7 @@ import {
   Undo2,
   Redo2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import type { EmailDocument } from "@/lib/config/email-document";
 import "./email-rich-text-editor.css";
 

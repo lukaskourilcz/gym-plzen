@@ -28,7 +28,7 @@ import {
   type EmailTemplateTestValues,
   type EmailTemplateValues,
 } from "@/lib/validations/settings";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormFeedback } from "@/components/admin/form-controls";

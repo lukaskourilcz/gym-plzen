@@ -7,7 +7,7 @@ import { receiveAction } from "@/lib/helpers/action-response";
 import { AdminSwitch } from "@/components/admin/switch";
 import { AdminDialog } from "@/components/admin/dialog";
 import { FormFeedback, SubmitButton } from "@/components/admin/form-controls";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/admin/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { saveAnnouncementAction } from "./actions";
 import "./content-canvas.css";
