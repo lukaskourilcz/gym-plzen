@@ -44,6 +44,18 @@ const publicColumns = {
   publishedAt: instagramMedia.publishedAt,
   hidden: instagramMedia.hidden,
 };
+function profileFromSetting(value: unknown, accountId: string | undefined) {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    !("accountId" in value) ||
+    value.accountId !== accountId ||
+    !("profile" in value)
+  )
+    return null;
+  const parsed = instagramProfileSchema.safeParse(value.profile);
+  return parsed.success ? parsed.data : null;
+}
 function posts(
   rows: {
     id: string;
@@ -109,16 +121,10 @@ export async function loadInstagramFeed(): Promise<
       .select({ value: siteSetting.value })
       .from(siteSetting)
       .where(eq(siteSetting.key, INSTAGRAM_PROFILE_KEY));
-    const stored = cachedProfile?.value as
-      { accountId?: string; profile?: unknown } | undefined;
-    const profile = instagramProfileSchema.safeParse(stored?.profile);
     return {
       enabled: true,
       posts: posts(rows),
-      profile:
-        stored?.accountId === connection.accountId && profile.success
-          ? profile.data
-          : null,
+      profile: profileFromSetting(cachedProfile?.value, connection.accountId),
       validUntil: new Date(
         Math.min(
           connection.expiresAt.getTime(),
@@ -137,6 +143,7 @@ export async function getInstagramAdminState(): Promise<InstagramAdminState> {
     const [connection] = await tx
       .select({
         username: instagramConnection.username,
+        accountId: instagramConnection.accountId,
         expiresAt: instagramConnection.expiresAt,
         lastSyncedAt: instagramConnection.lastSyncedAt,
         lastProblem: instagramConnection.lastProblem,
@@ -152,6 +159,10 @@ export async function getInstagramAdminState(): Promise<InstagramAdminState> {
         ? "authorization"
         : (INSTAGRAM_PROBLEMS.find((p) => p === connection?.lastProblem) ??
           null);
+    const [cachedProfile] = await tx
+      .select({ value: siteSetting.value })
+      .from(siteSetting)
+      .where(eq(siteSetting.key, INSTAGRAM_PROFILE_KEY));
     return {
       configured: instagramConfigured(),
       connected: Boolean(connection),
@@ -165,6 +176,7 @@ export async function getInstagramAdminState(): Promise<InstagramAdminState> {
       lastSyncedAt: connection?.lastSyncedAt?.toISOString() ?? null,
       problem,
       posts: posts(rows),
+      profile: profileFromSetting(cachedProfile?.value, connection?.accountId),
     };
   });
 }

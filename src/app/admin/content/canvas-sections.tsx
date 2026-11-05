@@ -24,11 +24,13 @@ const eyebrow =
 const padding = "p-5 @2xl:p-8 @4xl:p-12";
 
 function InstagramPreview() {
-  const posts = useCanvas().instagramPosts ?? [];
+  const canvas = useCanvas();
+  const posts = canvas.instagramPosts ?? [];
   return (
     <>
       <InstagramFeed
         posts={posts}
+        profile={canvas.instagramProfile}
         preview
         copy={{
           title: <Text field="home.instagram.title" />,

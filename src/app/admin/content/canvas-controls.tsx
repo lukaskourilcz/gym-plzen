@@ -22,6 +22,7 @@ export interface ContentPreviewData {
 }
 export interface CanvasContextValue {
   instagramPosts?: import("@/lib/config/instagram").InstagramPost[];
+  instagramProfile?: import("@/lib/config/instagram").InstagramProfile | null;
   preview: ContentPreviewData;
   assets: Record<string, string>;
   onEdit: (item: ContentEditorItem) => void;
