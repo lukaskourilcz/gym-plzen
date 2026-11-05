@@ -150,12 +150,12 @@ test("incidents explain the actual cause, link to the reservation/member/message
     const recent = page.getByRole("heading", {
       name: "Nedávno uzavřené incidenty",
     });
-    await expect(recent).toBeVisible();
+    await expect(recent).toHaveCount(0);
     await expect(
       page.getByText("Ukázková kontrola doručovacího kontaktu.", {
         exact: true,
       }),
-    ).toBeVisible();
+    ).toHaveCount(0);
     expect(await sql`select * from reservation order by id`).toEqual(before);
     expect(await sql`select * from access_code order by id`).toEqual(codes);
     expect(await sql`select * from message_delivery order by id`).toEqual(

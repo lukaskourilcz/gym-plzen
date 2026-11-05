@@ -13,6 +13,7 @@ import {
   dashboardAlerts,
   raiseAlert,
   resolveAlertById,
+  resolveAllOpenAlerts,
 } from "../../src/lib/services/alerts";
 import {
   closePipeline,
@@ -231,6 +232,54 @@ describe("specific operational incidents", { skip: !databaseReady }, () => {
     assert.equal(result.failure!.code, "email_rate_limited");
     assert.equal(result.deliveries[0]!.failureReason, "resend_http_429");
   });
+  test("manual resolution needs no note, bulk closes only its snapshot and preserves customer/provider data", async () => {
+    await booking();
+    const [first] = await rows<{ id: string }>(
+      "insert into system_alert(title,created_at) values ('First',$1) returning id",
+      [new Date(now.getTime() - 1000)],
+    );
+    const [later] = await rows<{ id: string }>(
+      "insert into system_alert(title,created_at) values ('Later',$1) returning id",
+      [new Date(now.getTime() + 1000)],
+    );
+    const snapshot = () =>
+      Promise.all([
+        rows("select * from reservation"),
+        rows("select * from access_code"),
+        rows("select * from payment"),
+        rows("select * from message_delivery"),
+        rows("select * from email_archive"),
+      ]);
+    const before = await snapshot();
+    await resolveAllOpenAlerts(now);
+    await resolveAllOpenAlerts(now);
+    const [closed] = await rows<{ resolved_at: Date; context: unknown }>(
+      "select * from system_alert where id=$1",
+      [first!.id],
+    );
+    assert.ok(closed!.resolved_at);
+    assert.deepEqual(
+      incidentUpdates(closed!.context).map((u) => u.kind),
+      ["manual"],
+    );
+    const [open] = await rows<{ resolved_at: Date | null }>(
+      "select resolved_at from system_alert where id=$1",
+      [later!.id],
+    );
+    assert.equal(open!.resolved_at, null);
+    await resolveAlertById(later!.id, "   ");
+    const [manual] = await rows<{ context: unknown }>(
+      "select context from system_alert where id=$1",
+      [later!.id],
+    );
+    assert.equal(
+      incidentUpdates(manual!.context).at(-1)?.message,
+      "Incident uzavřen správcem.",
+    );
+    assert.deepEqual(await snapshot(), before);
+    assert.equal(resend.sent.length, 0);
+  });
+
   test("missing mail configuration is specific and never attempts a real provider", async () => {
     const b = await booking(),
       key = env.RESEND_API_KEY;

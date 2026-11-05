@@ -1,4 +1,4 @@
-import { CreditWalletPanel } from "@/components/credit-wallet-panel";
+import { AdminCreditWalletPanel } from "@/components/admin/credit-wallet-panel";
 import {
   AdminListTotal,
   AdminListFilters,
@@ -22,6 +22,7 @@ import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { IconLink } from "@/components/admin/ui/icon-button";
 import { activity, loyalty, members, reservations } from "@/lib/services";
 import {
   formatChannel,
@@ -34,7 +35,6 @@ import {
   formatTimeRange,
 } from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
-import { StatCard, StatGroup } from "@/components/admin/stat-card";
 import { Badge } from "@/components/admin/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -87,6 +87,7 @@ async function loadDemoMember(id: string) {
       .filter((row) => row.userId === id)
       .map((row) => ({
         ...row,
+        archiveId: null,
         totalCount: data.messages.filter((m) => m.userId === id).length,
       })),
     entries: [],
@@ -225,24 +226,26 @@ export default async function MemberProfilePage({
           <MemberNoteEditor userId={id} name={name} note={profile?.note} />
         ) : null}
       </PageHeader>
-      {!demo ? <CreditWalletPanel userId={id} admin /> : null}
+      {!demo ? <AdminCreditWalletPanel userId={id} /> : null}
 
-      <StatGroup className="mb-8 flex flex-wrap gap-4">
-        <StatCard label="Návštěv celkem" value={status.totalEntries} />
-        <StatCard
-          label={
-            status.nextEntryIsFree
-              ? "Do vstupu zdarma · další vstup je zdarma"
-              : "Do vstupu zdarma"
-          }
-          value={status.nextEntryIsFree ? 0 : status.entriesUntilFree}
-        />
-        <StatCard
-          label="Vstupů zdarma získáno"
-          value={status.freeEntriesEarned}
-        />
-        <StatCard label="Zaplaceno celkem" value={formatMoney(spentCents)} />
-      </StatGroup>
+      <dl className="admin-inline-stats mb-6" aria-label="Přehled člena">
+        <div>
+          <dt>Návštěv celkem:</dt>
+          <dd>{status.totalEntries}</dd>
+        </div>
+        <div>
+          <dt>Do vstupu zdarma zbývá:</dt>
+          <dd>{status.nextEntryIsFree ? 0 : status.entriesUntilFree}</dd>
+        </div>
+        <div>
+          <dt>Vstupů zdarma získáno:</dt>
+          <dd>{status.freeEntriesEarned}</dd>
+        </div>
+        <div>
+          <dt>Zaplaceno celkem:</dt>
+          <dd>{formatMoney(spentCents)}</dd>
+        </div>
+      </dl>
 
       <section aria-labelledby="member-details">
         <h2 id="member-details" className="sr-only">
@@ -320,10 +323,9 @@ export default async function MemberProfilePage({
       />
       <section aria-labelledby="member-reservations" className="mt-10">
         <h2 id="member-reservations" className="mb-3 text-lg font-semibold">
-          Rezervace ({totals.count})
+          Rezervace ({historyPage.totalCount})
         </h2>
-        <AdminListTotal total={historyPage.totalCount} />
-        <Table label="Rezervace člena">
+        <Table label="Rezervace člena" data-density="compact">
           <TableHeader>
             <TableRow>
               <TableHead>Termín</TableHead>
@@ -373,14 +375,15 @@ export default async function MemberProfilePage({
                   )}
                 </TableCell>
                 <TableCell>
-                  {row.invoiceNumber ?? (
-                    <span className="text-muted-foreground">Bez dokladu</span>
-                  )}
-                  {!demo && invoiceStates.has(row.id) && (
+                  {!demo && invoiceStates.has(row.id) ? (
                     <ReservationInvoice
                       reservationId={row.id}
                       state={invoiceStates.get(row.id)!}
                     />
+                  ) : (
+                    <span className="text-muted-foreground">
+                      {row.invoiceNumber ?? "Bez dokladu"}
+                    </span>
                   )}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
@@ -462,9 +465,8 @@ export default async function MemberProfilePage({
 
       <section aria-labelledby="member-messages" className="mt-10">
         <h2 id="member-messages" className="mb-3 text-lg font-semibold">
-          Odeslané zprávy
+          Odeslané zprávy ({deliveryPage.totalCount})
         </h2>
-        <AdminListTotal total={deliveryPage.totalCount} />
         <Table label="Zprávy odeslané členovi">
           <TableHeader>
             <TableRow>
@@ -473,6 +475,9 @@ export default async function MemberProfilePage({
               <TableHead>Typ</TableHead>
               <TableHead>Příjemce</TableHead>
               <TableHead>Stav</TableHead>
+              <TableHead>
+                <span className="sr-only">Detail zprávy</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -491,11 +496,17 @@ export default async function MemberProfilePage({
                 >
                   {formatStatus(m.status)}
                 </TableCell>
+                <TableCell>
+                  <IconLink
+                    href={`/admin/messages/${m.archiveId ?? m.id}`}
+                    aria-label={`Otevřít zprávu: ${formatMessageKind(m.kind)}, ${formatDateTime(m.createdAt)}`}
+                  />
+                </TableCell>
               </TableRow>
             ))}
             {deliveries.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-muted-foreground">
+                <TableCell colSpan={6} className="text-muted-foreground">
                   Zatím žádná zpráva.
                 </TableCell>
               </TableRow>

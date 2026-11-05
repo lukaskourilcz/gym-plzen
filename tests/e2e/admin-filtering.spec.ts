@@ -201,7 +201,7 @@ test.describe("admin filtering and pagination", () => {
     );
   });
 
-  test("today contains confirmed bookings only, marks sent codes and turns verified keypad use green", async ({
+  test("today keeps confirmed and finished bookings, explicit code states and elapsed attendance colours", async ({
     page,
   }, testInfo) => {
     await page.goto("/admin");
@@ -212,21 +212,21 @@ test.describe("admin filtering and pagination", () => {
       programme
         .locator("[data-reservation-id]")
         .filter({ has: page.getByText(`e2e-programme-${n}`, { exact: true }) });
-    for (const n of [0, 1, 2, 3])
+    for (const n of [0, 1, 2, 3, 6, 7])
       await expect(
         programme.getByText(`e2e-programme-${n}`, { exact: true }),
       ).toBeVisible();
-    for (const n of [4, 5, 6, 7])
+    for (const n of [4, 5])
       await expect(
         programme.getByText(`e2e-programme-${n}`, { exact: true }),
       ).toHaveCount(0);
     await expect(card(0)).toContainText("Kód odeslán");
     await expect(card(0)).toContainText("Kód použit");
-    await expect(card(0)).toHaveClass(/bg-success\/10/);
+    await expect(card(0)).toHaveAttribute("data-attendance", "success");
     await expect(card(1)).toContainText("Kód odeslán");
     for (const n of [1, 2, 3]) {
       await expect(card(n)).not.toContainText("Kód použit");
-      await expect(card(n)).not.toHaveClass(/bg-success\/10/);
+      await expect(card(n)).not.toHaveAttribute("data-attendance", "success");
     }
     for (const n of [2, 3])
       await expect(card(n)).not.toContainText("Kód odeslán");

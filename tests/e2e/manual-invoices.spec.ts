@@ -61,6 +61,9 @@ test.describe("manual invoices in administration", () => {
     page,
   }) => {
     await page.goto(`/admin/reservations?id=${reservationId}`);
+    await page
+      .getByRole("button", { name: "Spravovat fakturu", exact: true })
+      .click();
     const select = page.getByRole("combobox", { name: "Příjemce faktury" });
     await expect(select).toHaveValue("operator");
     await page
@@ -84,6 +87,9 @@ test.describe("manual invoices in administration", () => {
       .click();
     await expect(page.getByRole("status")).toContainText(email);
     await page.reload();
+    await page
+      .getByRole("button", { name: "Spravovat fakturu", exact: true })
+      .click();
     await select.selectOption("both");
     await page
       .getByRole("button", { name: "Vytvořit a poslat fakturu", exact: true })
@@ -131,11 +137,14 @@ test.describe("manual invoices in administration", () => {
     await page.goto(`/admin/members/${profileId}`);
     await expect(
       page.getByRole("button", {
-        name: "Vytvořit a poslat fakturu",
+        name: "Spravovat fakturu",
         exact: true,
       }),
     ).toHaveCount(2);
     await page.goto(`/admin/reservations?id=${freeId}`);
+    await page
+      .getByRole("button", { name: "Spravovat fakturu", exact: true })
+      .click();
     await expect(
       page.getByRole("button", {
         name: "Vytvořit a poslat fakturu",
@@ -147,6 +156,9 @@ test.describe("manual invoices in administration", () => {
     ).toBeVisible();
     await page.setViewportSize({ width: 390, height: 900 });
     await page.goto(`/admin/reservations?id=${reservationId}`);
+    await page
+      .getByRole("button", { name: "Spravovat fakturu", exact: true })
+      .click();
     await page
       .getByRole("combobox", { name: "Příjemce faktury" })
       .scrollIntoViewIfNeeded();
@@ -169,6 +181,9 @@ test.describe("manual invoices in administration", () => {
     page,
   }) => {
     await page.goto(`/admin/reservations?id=${reservationId}`);
+    await page
+      .getByRole("button", { name: "Spravovat fakturu", exact: true })
+      .click();
     const request = page.waitForRequest(
       (r) => r.method() === "POST" && !!r.headers()["next-action"],
     );
@@ -227,6 +242,9 @@ test.describe("manual invoices in administration", () => {
     page,
   }) => {
     await page.goto(`/admin/reservations?id=${reservationId}`);
+    await page
+      .getByRole("button", { name: "Spravovat fakturu", exact: true })
+      .click();
     await page
       .getByRole("button", { name: "Vytvořit a poslat fakturu", exact: true })
       .click();

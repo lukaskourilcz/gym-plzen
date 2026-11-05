@@ -4,6 +4,23 @@ import { revalidatePath } from "next/cache";
 import { assertAdmin } from "@/lib/auth/guards";
 import { defineAction } from "@/lib/helpers/action";
 import { adjustCustomerCredit } from "@/lib/services/credit-admin";
+import { adminCreditHistory } from "@/lib/services/admin-credit-history";
+
+const readHistory = defineAction({
+  schema: z.object({
+    userId: z.string().uuid(),
+    page: z.number().int().min(1).max(10000),
+  }),
+  authorize: assertAdmin,
+  handler: async ({ userId, page }) => adminCreditHistory(userId, page),
+});
+
+export async function readCreditHistoryAction(input: {
+  userId: string;
+  page: number;
+}) {
+  return readHistory(input);
+}
 const action = defineAction({
   schema: z
     .object({

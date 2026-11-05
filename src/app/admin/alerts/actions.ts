@@ -10,7 +10,7 @@ import { alerts } from "@/lib/services";
 
 const resolveAlertSchema = z.object({
   id: uuidSchema,
-  note: z.string().trim().min(1, "Napište, jak byl incident vyřešen.").max(500),
+  note: z.string().trim().max(500).optional().default(""),
 });
 
 /**
@@ -29,7 +29,31 @@ const resolveImpl = defineAction({
 });
 
 export async function resolveAlertAction(
-  input: z.infer<typeof resolveAlertSchema>,
+  input: z.input<typeof resolveAlertSchema>,
 ): Promise<Result<null>> {
   return resolveImpl(input);
+}
+
+const resolveAllSchema = z.object({
+  before: z.string().datetime(),
+  note: z.string().trim().max(500).optional().default(""),
+});
+const resolveAllImpl = defineAction({
+  schema: resolveAllSchema,
+  authorize: assertAdmin,
+  handler: async ({ before, note }) => {
+    await alerts.resolveAllOpenAlerts(
+      new Date(Math.min(Date.parse(before), Date.now())),
+      note,
+    );
+    revalidatePath("/admin/alerts");
+    revalidatePath("/admin");
+    return null;
+  },
+});
+
+export async function resolveAllAlertsAction(
+  input: z.input<typeof resolveAllSchema>,
+): Promise<Result<null>> {
+  return resolveAllImpl(input);
 }

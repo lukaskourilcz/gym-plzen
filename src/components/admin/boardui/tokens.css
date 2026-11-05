@@ -5,11 +5,14 @@
   --color-text-secondary: var(--muted-foreground);
   --color-text-tertiary: var(--muted-foreground);
   --color-text-white: var(--primary-foreground);
+  --color-foreground-icon-primary: var(--foreground);
+  --color-icon-button-disabled-foreground: var(--muted-foreground);
   --color-background-primary-default: var(--card);
   --color-background-primary-hover: var(--secondary);
   --color-background-primary-active: var(--muted);
   --color-background-primary-disabled: var(--muted);
   --color-background-secondary-default: var(--secondary);
+  --color-background-secondary-hover: var(--muted);
   --color-background-tertiary-default: var(--muted);
   --color-border-button-default: var(--border);
   --color-border-button-hover: var(--input);

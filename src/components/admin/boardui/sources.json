@@ -2,7 +2,7 @@
   "retrieved": "2026-11-05",
   "license": "MIT",
   "source": "https://github.com/BoardUI/boardui",
-  "adaptations": "Local import paths and repository formatting. Directional icon helper uses the existing Lucide icon set. NAVI tokens and native-form adapters are separate from upstream source.",
+  "adaptations": "Local import paths and repository formatting. Directional icon helper uses the existing Lucide icon set. NAVI tokens and native-form adapters are separate from upstream source. IconButton and Pagination use local imports and Lucide glyphs. Pagination omits upstream demo-copy context and localizes page labels to Czech; native controls, range algorithm and responsive behavior remain upstream.",
   "files": [
     {
       "item": "button",
@@ -27,6 +27,18 @@
       "url": "https://www.boardui.com/r/cx.json",
       "originalPath": "utils/cx.ts",
       "sha256": "db35ea5afa8b2e0fd51319bc49288c4df7c98ec53440b43903636a32e3319d9d"
+    },
+    {
+      "item": "icon-button",
+      "url": "https://www.boardui.com/r/icon-button.json",
+      "originalPath": "components/base/buttons/icon-button.tsx",
+      "sha256": "f418df039e41ab65368500c6bd05719fe196c7cc1057f2a30cda2b0411aae662"
+    },
+    {
+      "item": "pagination",
+      "url": "https://www.boardui.com/r/pagination.json",
+      "originalPath": "components/base/pagination/pagination.tsx",
+      "sha256": "944b90dbb2bd2b16c1438fc4382c8c0643b1cfb954c984b96a169407f3f52644"
     }
   ]
 }

@@ -396,6 +396,7 @@ export function memberMessagePage(
     .select({
       totalCount: adminTotalCount,
       id: messageDelivery.id,
+      archiveId: emailArchive.id,
       createdAt: messageDelivery.createdAt,
       sentAt: messageDelivery.sentAt,
       channel: messageDelivery.channel,
@@ -404,6 +405,13 @@ export function memberMessagePage(
       status: messageDelivery.status,
     })
     .from(messageDelivery)
+    .leftJoin(
+      emailArchive,
+      and(
+        eq(emailArchive.providerMessageId, messageDelivery.providerMessageId),
+        gt(emailArchive.sentAt, emailRetentionCutoff()),
+      ),
+    )
     .where(
       and(
         eq(messageDelivery.userId, userId),

@@ -107,6 +107,7 @@
 }
 
 .admin-shell :where(th):not(.content-canvas *, .fc *) {
+  position: relative;
   padding: 0.875rem 1rem;
   height: auto;
   font-size: 0.75rem;
@@ -119,6 +120,10 @@
 
 /* Keep the bounded history dense while retaining 44px action targets. */
 .admin-shell section[aria-labelledby="blocking-history"] :where(td) {
+  padding-block: 0.25rem;
+}
+
+.admin-shell table[data-density="compact"] :where(td) {
   padding-block: 0.25rem;
 }
 
@@ -161,6 +166,46 @@
   background: var(--card);
   border-radius: var(--radius-card);
   padding: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.admin-shell [data-ui="icon-button"] {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  box-shadow: none;
+}
+
+.admin-shell [data-ui="dialog-pagination"] button {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  font-family: inherit;
+  box-shadow: none;
+}
+
+.admin-shell .admin-inline-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--card);
+}
+
+.admin-shell .admin-inline-stats > div {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  align-items: baseline;
+}
+
+.admin-shell .admin-inline-stats dt {
+  color: var(--muted-foreground);
+}
+
+.admin-shell .admin-inline-stats dd {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 
 .admin-shell [data-ui="list-filters"] label {
@@ -195,8 +240,39 @@
   border-top: 1px solid var(--border);
 }
 
-.admin-shell [data-ui="programme-list"] > [data-running] {
-  background-color: var(--accent);
+.admin-shell .admin-programme-row {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 1rem;
+}
+
+.admin-shell .admin-programme-row + .admin-programme-row {
+  border-top: 1px solid var(--border);
+}
+
+.admin-shell .admin-programme-row::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: var(--programme-progress);
+  background: var(--programme-colour, transparent);
+  pointer-events: none;
+}
+
+.admin-shell .admin-programme-row[data-attendance="success"] {
+  --programme-colour: color-mix(in srgb, var(--success) 14%, var(--card));
+  background-color: color-mix(in srgb, var(--success) 4%, var(--card));
+}
+
+.admin-shell .admin-programme-row[data-attendance="danger"] {
+  --programme-colour: color-mix(in srgb, var(--destructive) 10%, var(--card));
+  background-color: color-mix(in srgb, var(--destructive) 4%, var(--card));
+}
+
+.admin-shell .admin-programme-row[data-attendance="warning"] {
+  --programme-colour: color-mix(in srgb, var(--warning) 10%, var(--card));
+  background-color: color-mix(in srgb, var(--warning) 4%, var(--card));
 }
 
 .admin-shell .admin-opening-hours {

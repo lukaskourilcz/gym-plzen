@@ -34,7 +34,7 @@ export async function programmeCodeStates(reservationIds: string[]) {
     .where(
       and(
         inArray(accessCode.reservationId, reservationIds),
-        eq(reservation.status, "confirmed"),
+        inArray(reservation.status, ["confirmed", "completed", "no_show"]),
         ne(accessCode.status, "revoked"),
         ne(accessCode.status, "failed"),
         eq(accessCode.validFrom, reservation.startsAt),
