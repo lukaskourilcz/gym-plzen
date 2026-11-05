@@ -80,6 +80,7 @@ beforeEach(async () => {
     unifiedAssignmentsEmpty: false,
     facebookUserLogin: false,
     profileFailure: false,
+    postStatsFailure: false,
     granularTargets: ["17841427246422536"],
     media: defaultMedia(),
     delay: 0,
@@ -372,6 +373,10 @@ dbTest(
       followingCount: 315,
     });
     assert.equal(feed.posts[0]!.kind, "VIDEO");
+    assert.equal(feed.posts[0]!.likeCount, 42);
+    assert.equal(feed.posts[0]!.commentsCount, 7);
+    assert.equal(feed.posts[1]!.likeCount, 0);
+    assert.equal(feed.posts[1]!.commentsCount, 0);
     const serialized = JSON.stringify([feed, await getInstagramAdminState()]);
     assert.doesNotMatch(
       serialized,
@@ -399,11 +404,63 @@ dbTest(
         .length,
       0,
     );
+    assert.equal(
+      (
+        await rows(
+          "select * from site_setting where key='instagram.post-stats'",
+        )
+      ).length,
+      0,
+    );
     assert.deepEqual(await snapshot(), before);
     assert.equal(resend.sent.length, 0);
     assert.equal(comgate.creates.length, 0);
   },
 );
+dbTest(
+  "post engagement preserves real zeroes, expires stale data and never invents missing counts",
+  async () => {
+    mock.state.postStatsFailure = true;
+    await connect();
+    assert.equal((await syncInstagram({ force: true })).synced, true);
+    assert.equal((await loadInstagramFeed()).posts[0]!.likeCount, null);
+    assert.equal((await loadInstagramFeed()).posts[0]!.commentsCount, null);
+    mock.state.postStatsFailure = false;
+    delete (mock.state.media[0] as { like_count?: number }).like_count;
+    await allowSync();
+    assert.equal((await syncInstagram({ force: true })).synced, true);
+    assert.equal((await loadInstagramFeed()).posts[0]!.likeCount, null);
+    assert.equal((await loadInstagramFeed()).posts[0]!.commentsCount, 7);
+    mock.state.media = defaultMedia();
+    await allowSync();
+    assert.equal((await syncInstagram({ force: true })).synced, true);
+    assert.equal((await loadInstagramFeed()).posts[0]!.likeCount, 42);
+    mock.state.postStatsFailure = true;
+    await allowSync();
+    assert.equal((await syncInstagram({ force: true })).synced, true);
+    assert.equal((await loadInstagramFeed()).posts[0]!.likeCount, 42);
+    await rows(
+      "update site_setting set value=jsonb_set(value,'{accountId}','\"9999\"'::jsonb) where key='instagram.post-stats'",
+    );
+    assert.equal((await loadInstagramFeed()).posts[0]!.likeCount, null);
+    await rows(
+      "update site_setting set value=jsonb_set(jsonb_set(value,'{accountId}','\"5678\"'::jsonb),'{fetchedAt}',$1::jsonb) where key='instagram.post-stats'",
+      [JSON.stringify(new Date(Date.now() - 2 * 86400_000).toISOString())],
+    );
+    assert.equal((await loadInstagramFeed()).posts[0]!.likeCount, null);
+    assert.equal((await loadInstagramFeed()).posts.length, 12);
+    await disconnectInstagram();
+    assert.equal(
+      (
+        await rows(
+          "select * from site_setting where key='instagram.post-stats'",
+        )
+      ).length,
+      0,
+    );
+  },
+);
+
 dbTest(
   "optional profile counters fail independently and never invent counts",
   async () => {
@@ -500,6 +557,14 @@ dbTest(
     await disconnectInstagram();
     await pending;
     assert.equal((await rows("select * from instagram_media")).length, 0);
+    assert.equal(
+      (
+        await rows(
+          "select * from site_setting where key='instagram.post-stats'",
+        )
+      ).length,
+      0,
+    );
     mock.state.delay = 0;
     await connect();
     await disconnectInstagram({

@@ -89,6 +89,28 @@ test("Instagram connects via local OAuth, shows lazy private thumbnails, hides p
       "1 240",
       "315",
     ]);
+    const profileLink = section.getByRole("link", {
+      name: "NAVI | Private Gym Plzeň",
+      exact: true,
+    });
+    const avatarLink = section.getByRole("link", {
+      name: "Profil NAVI | Private Gym Plzeň na Instagramu",
+      exact: true,
+    });
+    for (const link of [profileLink, avatarLink]) {
+      await expect(link).toHaveAttribute(
+        "href",
+        "https://www.instagram.com/navi_plzen/",
+      );
+      await expect(link).toHaveAttribute("target", "_blank");
+    }
+    expect(
+      await section
+        .locator(".instagram-panel")
+        .evaluate((el) => getComputedStyle(el).backgroundColor),
+    ).toBe(
+      await section.evaluate((el) => getComputedStyle(el).backgroundColor),
+    );
     const image = links.first().locator("img");
     await expect(image).toHaveAttribute("loading", "lazy");
     await expect
@@ -121,17 +143,51 @@ test("Instagram connects via local OAuth, shows lazy private thumbnails, hides p
         ),
     ).toBe(true);
     await publicPage.setViewportSize({ width: 1440, height: 1000 });
-    await expect(section.locator(".instagram-slide").first()).toHaveCSS(
-      "grid-template-columns",
-      "288px 288px 288px 288px",
+    await expect
+      .poll(() =>
+        section
+          .locator(".instagram-slide")
+          .first()
+          .evaluate(
+            (el) => getComputedStyle(el).gridTemplateColumns.split(" ").length,
+          ),
+      )
+      .toBe(5);
+    // Full-width reference layout: five columns, two rows and no gutters.
+    expect((await section.locator(".instagram-gallery").boundingBox())!.x).toBe(
+      0,
     );
-    // Reference layout: four columns, two rows and no gutters.
+    expect(
+      (await section.locator(".instagram-gallery").boundingBox())!.width,
+    ).toBe(
+      await publicPage.evaluate(() => document.documentElement.clientWidth),
+    );
     const first = (await links.nth(0).boundingBox())!;
     const second = (await links.nth(1).boundingBox())!;
-    const below = (await links.nth(4).boundingBox())!;
+    const below = (await links.nth(5).boundingBox())!;
     expect(first.height / first.width).toBeCloseTo(1, 2);
     expect(second.x - (first.x + first.width)).toBeCloseTo(0, 0);
     expect(below.y - (first.y + first.height)).toBeCloseTo(0, 0);
+    await links.first().hover();
+    await expect(links.first().locator(".instagram-post-overlay")).toHaveCSS(
+      "opacity",
+      "1",
+    );
+    await expect(
+      links.first().locator(".instagram-engagement > span"),
+    ).toHaveText(["42", "7"]);
+    await expect(links.first()).toHaveAccessibleName(
+      /To se mi líbí: 42, Komentáře: 7/,
+    );
+    await section.screenshot({
+      path: test.info().outputPath("instagram-hover.jpg"),
+      type: "jpeg",
+      quality: 90,
+    });
+    await links.nth(1).hover();
+    await expect(
+      links.nth(1).locator(".instagram-engagement > span"),
+    ).toHaveText(["0", "0"]);
     const next = section.getByRole("button", {
       name: "Další příspěvky",
       exact: true,
@@ -176,39 +232,53 @@ test("Instagram connects via local OAuth, shows lazy private thumbnails, hides p
       quality: 90,
     });
     await publicPage.setViewportSize({ width: 390, height: 844 });
-    await expect(section.locator(".instagram-slide").first()).toHaveCSS(
-      "grid-template-columns",
-      "350px",
+    await expect
+      .poll(() =>
+        section
+          .locator(".instagram-slide")
+          .first()
+          .evaluate(
+            (el) => getComputedStyle(el).gridTemplateColumns.split(" ").length,
+          ),
+      )
+      .toBe(2);
+    expect((await section.locator(".instagram-gallery").boundingBox())!.x).toBe(
+      0,
+    );
+    expect(
+      (await section.locator(".instagram-gallery").boundingBox())!.width,
+    ).toBe(
+      await publicPage.evaluate(() => document.documentElement.clientWidth),
     );
     const mobileTile = (await links.nth(0).boundingBox())!;
     expect(mobileTile.height / mobileTile.width).toBeCloseTo(1, 2);
-    expect((await links.nth(1).boundingBox())!.y).toBeCloseTo(
+    expect((await links.nth(2).boundingBox())!.y).toBeCloseTo(
       mobileTile.y + mobileTile.height,
       0,
     );
     await next.focus();
     await publicPage.keyboard.press("Enter");
-    await expect(section.getByText("Strana 2 z 6", { exact: true })).toHaveText(
-      "Strana 2 z 6",
+    await expect(section.getByText("Strana 2 z 3", { exact: true })).toHaveText(
+      "Strana 2 z 3",
     );
     await expect
       .poll(() =>
         rail.evaluate((el) => Math.abs(el.scrollLeft - el.clientWidth)),
       )
       .toBeLessThan(1);
-    await links.nth(2).click();
+    await links.nth(4).click();
     const dialog = publicPage.getByRole("dialog");
     await expect(dialog).toBeVisible();
     await expect(
       dialog.getByRole("link", { name: "Otevřít na Instagramu" }),
-    ).toHaveAttribute("href", "https://www.instagram.com/p/TEST_2/");
+    ).toHaveAttribute("href", "https://www.instagram.com/p/TEST_4/");
     const modalA11y = await new AxeBuilder({ page: publicPage })
       .include("dialog")
       .analyze();
     expect(modalA11y.violations).toEqual([]);
     await publicPage.keyboard.press("Escape");
     await expect(dialog).toHaveCount(0);
-    await expect(links.nth(2)).toBeFocused();
+    await expect(links.nth(4)).toBeFocused();
     await expect
       .poll(() =>
         rail.evaluate((el) => Math.abs(el.scrollLeft - el.clientWidth)),
@@ -216,8 +286,8 @@ test("Instagram connects via local OAuth, shows lazy private thumbnails, hides p
       .toBeLessThan(1);
     // Returning focus to a tile must never cover the navigation arrows.
     await next.click({ timeout: 5000 });
-    await expect(section.getByText("Strana 3 z 6", { exact: true })).toHaveText(
-      "Strana 3 z 6",
+    await expect(section.getByText("Strana 3 z 3", { exact: true })).toHaveText(
+      "Strana 3 z 3",
     );
     await expect
       .poll(() =>
@@ -247,6 +317,38 @@ test("Instagram connects via local OAuth, shows lazy private thumbnails, hides p
       .include("#instagram")
       .analyze();
     expect(results.violations).toEqual([]);
+    for (const [width, expectedColumns] of [
+      [320, 1],
+      [768, 3],
+      [1920, 6],
+    ]) {
+      await publicPage.setViewportSize({ width: width!, height: 1200 });
+      await expect
+        .poll(() =>
+          section
+            .locator(".instagram-slide")
+            .first()
+            .evaluate(
+              (el) =>
+                getComputedStyle(el).gridTemplateColumns.split(" ").length,
+            ),
+        )
+        .toBe(expectedColumns);
+      const gallery = (await section
+        .locator(".instagram-gallery")
+        .boundingBox())!;
+      expect(gallery.x).toBe(0);
+      expect(gallery.width).toBe(
+        await publicPage.evaluate(() => document.documentElement.clientWidth),
+      );
+      expect(
+        await publicPage.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      ).toBe(true);
+      await expect(profileLink).toBeVisible();
+      await expect(avatarLink).toBeVisible();
+    }
     await page
       .getByText("Vybrat viditelné příspěvky", { exact: false })
       .click();
