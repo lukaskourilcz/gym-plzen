@@ -624,6 +624,49 @@ it never silently shifts with a changed schedule. Companion fees show an immedia
 one-/two-person example. Public booking uses labelled required native radios
 for alone, +1 or +2. The kit shows the admin pattern at `/admin/design-system`.
 
+### BoardUI administration components
+
+The administrative visual layer uses the free BoardUI Button, Chip, Divider
+and `cx` source in `src/components/admin/boardui` (MIT). `sources.json` records
+upstream URLs, retrieval date and original content hashes. Do not run BoardUI
+`init` over the existing application: the full global reset, palette and
+application templates are deliberately not installed.
+
+`src/app/admin/admin.css` imports the BoardUI semantic token bridge and scopes
+all appearance changes to `.admin-shell`. Public UI primitives expose neutral
+`data-ui` hooks, with no public style changes. Public previews inside
+`.content-canvas` are excluded. Preserve the original public action styles in
+those canvases; use `components/admin/ui/button` and `badge` for admin actions.
+Native inputs, selects, table markup, form registration and GET filters remain
+unchanged. The Button adapter preserves implicit native submit behavior,
+explicit non-submit actions, disabled states and Next.js links.
+
+- Start each screen directly with `PageHeader`; do not add a breadcrumb bar or
+  another application toolbar above it. Keep contextual back links in the page.
+- Use a 28px/600 page title, 16px/600 section titles, 14px body, and 12–13px
+  supporting text. Reserve heavier weight for headings and key values.
+- Desktop content uses 40px side spacing; compact screens use the existing
+  responsive shell spacing. Use 24px within grouped surfaces and 24–32px
+  between sections, without additional card shadows.
+- Use `StatGroup` for adjacent metrics and `StatCard` for label/value pairs.
+  They share one bordered surface, separated by hairlines. On phones they
+  use two columns, with labels allowed to wrap; metric values use tabular figures.
+- Buttons and native fields have at least 44px touch height. BoardUI's default
+  blue gradients are mapped to flat NAVI green and semantic status colours.
+  Long action labels must wrap rather than clip. Fields use 16px on phones.
+- Tables share quiet header copy and 16px cell padding, with horizontal scrolling
+  contained in the named keyboard-focusable region. Preserve native semantic
+  table headers and functional error/status colours.
+- Opening hours share aligned desktop columns; each day retains its own native
+  form, label, validation, save result and action. Tablet/phone rows reflow into
+  a labelled grid. Never combine saves or alter the schedule during a visual edit.
+- Body copy and routine badges use normal/medium weight. Show priority through
+  hierarchy and explicit status text; retain colour for actionable warnings and
+  failures. Never hide a status solely to simplify a screenshot.
+
+The protected `/admin/design-system` gallery includes the live BoardUI actions,
+metric group, native fields and the administration patterns above.
+
 ### Internal member notes
 
 Members have a separate "Přidat poznámku" / "Upravit poznámku" dialog, in the

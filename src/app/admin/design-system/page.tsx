@@ -36,6 +36,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { CheckboxRow } from "@/components/admin/form-controls";
 import { MemberRegistrationBadge } from "@/components/admin/member-registration-badge";
 import { AdminMemberName } from "@/components/admin/member-name";
+import { AdminUiSample } from "@/components/admin/ui-sample";
 
 export const metadata = { title: "Design systém" };
 
@@ -71,6 +72,7 @@ export default async function DesignSystemPage() {
         detail="Doplňující kontext"
         description="Referenční galerie komponent. Pravidla a tokeny jsou v docs/DESIGN_SYSTEM.md."
       />
+      <AdminUiSample />
       <section
         aria-label="Kreditní zůstatek"
         className="my-6 rounded-lg border border-border bg-card p-6"

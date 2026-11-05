@@ -23,7 +23,7 @@ export function buttonVariants({
     buttonStyles.base,
     buttonStyles.size.medium,
     buttonStyles.variant[variants[variant ?? "default"]],
-    "admin-button min-h-11 gap-2 rounded-md px-4 py-2 font-medium shadow-none [&>span]:min-w-0 [&>span]:gap-2 [&_svg]:size-4 [&_svg]:shrink-0",
+    "admin-button h-auto min-h-11 min-w-0 gap-2 whitespace-normal rounded-md px-4 py-2 font-medium shadow-none [&>span]:min-w-0 [&>span]:shrink [&>span]:gap-2 [&>span]:whitespace-normal [&_svg]:size-4 [&_svg]:shrink-0",
     size === "lg" && "min-h-12 px-6",
     size === "icon" && "size-11 px-0",
     variant === "ink" && "bg-ink text-ink-foreground hover:bg-ink/90",

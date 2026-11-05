@@ -97,7 +97,7 @@ export function CheckboxRow({
     <div className="mb-3 last:mb-0">
       <label
         htmlFor={id}
-        className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-medium hover:text-accent-foreground"
+        className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-bold hover:text-accent-foreground"
       >
         <input
           id={id}

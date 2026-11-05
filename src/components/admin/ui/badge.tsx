@@ -16,9 +16,8 @@ export function Badge({
       color={variant === "default" || variant === "accent" ? "lime" : "soft"}
       data-ui="badge"
       className={cx(
-        "rounded-sm px-2 py-1 text-xs font-medium whitespace-normal",
-        variant === "outline" &&
-          "border border-border bg-transparent text-foreground",
+        "gap-1.5 rounded-sm px-2 py-1 text-xs font-medium whitespace-normal",
+        variant === "outline" && "bg-transparent text-muted-foreground",
         className,
       )}
     />
