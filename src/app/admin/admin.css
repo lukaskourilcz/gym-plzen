@@ -208,6 +208,53 @@
   font-variant-numeric: tabular-nums;
 }
 
+.admin-shell .admin-inline-stats--spread {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: 0;
+}
+
+.admin-shell .admin-inline-stats--spread > div {
+  position: relative;
+  justify-content: center;
+  padding-inline: 1rem;
+}
+
+.admin-shell .admin-inline-stats--spread > div + div::before {
+  position: absolute;
+  inset-inline-start: 0;
+  top: 50%;
+  height: 1rem;
+  border-inline-start: 1px solid var(--muted-foreground);
+  content: "";
+  transform: translateY(-50%);
+}
+
+@media (max-width: 1100px) {
+  .admin-shell .admin-inline-stats--spread {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-shell .admin-inline-stats--spread > div:nth-child(3)::before {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-shell .admin-inline-stats--spread {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-shell .admin-inline-stats--spread > div {
+    justify-content: space-between;
+    padding-inline: 0;
+  }
+
+  .admin-shell .admin-inline-stats--spread > div + div::before {
+    display: none;
+  }
+}
+
 .admin-shell [data-readiness="ready"] {
   background-color: color-mix(in srgb, var(--success) 12%, var(--card));
 }
