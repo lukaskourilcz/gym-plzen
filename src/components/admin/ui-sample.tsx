@@ -88,7 +88,7 @@ export function AdminUiSample() {
         />
       </div>
       <h3 className="mb-3 mt-6">Kompaktní denní program · ukázka</h3>
-      <div
+      <ul
         role="list"
         aria-label="Ukázkový denní program"
         data-ui="programme-list"
@@ -132,7 +132,7 @@ export function AdminUiSample() {
             }}
           />
         ))}
-      </div>
+      </ul>
       {historyOpen && (
         <AdminDialog
           title="Ukázka historie kreditů"

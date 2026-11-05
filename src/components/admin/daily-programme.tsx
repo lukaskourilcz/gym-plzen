@@ -58,11 +58,11 @@ export function DailyProgramme({
       </p>
     );
   return (
-    <div data-ui="programme-list" role="list" aria-label="Dnešní program">
+    <ul data-ui="programme-list" role="list" aria-label="Dnešní program">
       {bookings.map((booking) => (
         <DailyProgrammeRow key={booking.id} booking={booking} now={now} />
       ))}
-    </div>
+    </ul>
   );
 }
 
@@ -108,8 +108,7 @@ export function DailyProgrammeRow({
     },
   ];
   return (
-    <article
-      role="listitem"
+    <li
       data-reservation-id={booking.id}
       data-attendance={state.tone}
       className="admin-programme-row"
@@ -189,6 +188,6 @@ export function DailyProgrammeRow({
           ))}
         </dl>
       </div>
-    </article>
+    </li>
   );
 }
