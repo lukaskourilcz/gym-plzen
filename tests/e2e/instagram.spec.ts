@@ -214,6 +214,24 @@ test("Instagram connects via local OAuth, shows lazy private thumbnails, hides p
         rail.evaluate((el) => Math.abs(el.scrollLeft - el.clientWidth)),
       )
       .toBeLessThan(1);
+    // Returning focus to a tile must never cover the navigation arrows.
+    await next.click({ timeout: 5000 });
+    await expect(section.getByText("Strana 3 z 6", { exact: true })).toHaveText(
+      "Strana 3 z 6",
+    );
+    await expect
+      .poll(() =>
+        rail.evaluate((el) => Math.abs(el.scrollLeft - 2 * el.clientWidth)),
+      )
+      .toBeLessThan(1);
+    await section
+      .getByRole("button", { name: "Předchozí příspěvky", exact: true })
+      .click();
+    await expect
+      .poll(() =>
+        rail.evaluate((el) => Math.abs(el.scrollLeft - el.clientWidth)),
+      )
+      .toBeLessThan(1);
     await publicPage.mouse.move(0, 0);
     await section.screenshot({
       path: test.info().outputPath("instagram-mobile.jpg"),

@@ -122,6 +122,7 @@
 
 .instagram-arrow {
   position: absolute;
+  z-index: 2;
   top: 50%;
   display: flex;
   width: 44px;
