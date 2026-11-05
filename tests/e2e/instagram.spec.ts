@@ -120,11 +120,11 @@ test("Instagram connects via local OAuth, shows lazy private thumbnails, hides p
         ),
     ).toBe(true);
     await publicPage.setViewportSize({ width: 1440, height: 1000 });
-    // Instagram's profile grid: 3:4 tiles, 1px apart, from a 720 × 960 source.
+    // Square tiles, 1px apart, with the cached source cropped by object-cover.
     const first = (await links.nth(0).boundingBox())!;
     const second = (await links.nth(1).boundingBox())!;
     const below = (await links.nth(6).boundingBox())!;
-    expect(first.height / first.width).toBeCloseTo(4 / 3, 2);
+    expect(first.height / first.width).toBeCloseTo(1, 2);
     expect(second.x - (first.x + first.width)).toBeCloseTo(1, 0);
     expect(below.y - (first.y + first.height)).toBeCloseTo(1, 0);
     expect(
@@ -145,6 +145,8 @@ test("Instagram connects via local OAuth, shows lazy private thumbnails, hides p
       quality: 90,
     });
     await publicPage.setViewportSize({ width: 390, height: 844 });
+    const mobileTile = (await links.nth(0).boundingBox())!;
+    expect(mobileTile.height / mobileTile.width).toBeCloseTo(1, 2);
     await expect(links.nth(3)).toBeVisible();
     await expect(links.nth(4)).toBeHidden();
     await section.getByRole("button", { name: "Zobrazit další" }).click();

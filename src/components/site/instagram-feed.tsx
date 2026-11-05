@@ -20,7 +20,7 @@ export type InstagramCopy = {
 export function InstagramThumbnail({ post }: { post: InstagramPost }) {
   const [failed, setFailed] = useState(false);
   return (
-    <div className="relative aspect-[3/4] overflow-hidden bg-primary/10">
+    <div className="relative aspect-square overflow-hidden bg-primary/10">
       {failed || post.hidden ? (
         <div className="absolute inset-0 flex items-center justify-center text-primary">
           <ImageOff className="size-7" aria-hidden="true" />
@@ -102,7 +102,7 @@ export function InstagramFeed({
         </div>
         {posts.length ? (
           <>
-            {/* Like Instagram's profile grid: 3:4 tiles separated by 1px. */}
+            {/* Square thumbnails separated by 1px. */}
             <div className="grid grid-cols-2 gap-px md:grid-cols-6">
               {posts.slice(0, 12).map((post, i) => (
                 <div
