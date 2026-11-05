@@ -165,7 +165,7 @@ export default async function ReservationsPage({
         />
       ) : null}
       <AdminListTotal total={totalCount} label="Celkem rezervací" />
-      <Table>
+      <Table data-density="compact" label="Rezervace">
         <TableHeader>
           <TableRow>
             <TableHead>Začátek</TableHead>

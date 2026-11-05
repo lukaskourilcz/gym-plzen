@@ -325,7 +325,7 @@ export default async function MemberProfilePage({
         <h2 id="member-reservations" className="mb-3 text-lg font-semibold">
           Rezervace ({historyPage.totalCount})
         </h2>
-        <Table label="Rezervace člena">
+        <Table label="Rezervace člena" data-density="compact">
           <TableHeader>
             <TableRow>
               <TableHead>Termín</TableHead>

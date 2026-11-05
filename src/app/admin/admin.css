@@ -122,6 +122,10 @@
   padding-block: 0.25rem;
 }
 
+.admin-shell table[data-density="compact"] :where(td) {
+  padding-block: 0.25rem;
+}
+
 .admin-shell [data-ui="stat-group"] {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
@@ -257,14 +261,17 @@
 
 .admin-shell .admin-programme-row[data-attendance="success"] {
   --programme-colour: color-mix(in srgb, var(--success) 14%, var(--card));
+  background-color: color-mix(in srgb, var(--success) 4%, var(--card));
 }
 
 .admin-shell .admin-programme-row[data-attendance="danger"] {
   --programme-colour: color-mix(in srgb, var(--destructive) 10%, var(--card));
+  background-color: color-mix(in srgb, var(--destructive) 4%, var(--card));
 }
 
 .admin-shell .admin-programme-row[data-attendance="warning"] {
   --programme-colour: color-mix(in srgb, var(--warning) 10%, var(--card));
+  background-color: color-mix(in srgb, var(--warning) 4%, var(--card));
 }
 
 .admin-shell .admin-opening-hours {
