@@ -1,0 +1,32 @@
+{
+  "retrieved": "2026-11-05",
+  "license": "MIT",
+  "source": "https://github.com/BoardUI/boardui",
+  "adaptations": "Import paths only. Directional icon helper uses the existing Lucide icon set. NAVI tokens and native-form adapters are separate from upstream source.",
+  "files": [
+    {
+      "item": "button",
+      "url": "https://www.boardui.com/r/button.json",
+      "originalPath": "components/base/buttons/button.tsx",
+      "sha256": "b147c988c73dd8c226ab6ede3d7019eac9a7125191bbd646fcdd25bea803ca41"
+    },
+    {
+      "item": "chip",
+      "url": "https://www.boardui.com/r/chip.json",
+      "originalPath": "components/base/badges/chip.tsx",
+      "sha256": "31d08c816ce85c3175800fecd40225c3e469c401ec6dcbc804ae93d3f0e39775"
+    },
+    {
+      "item": "divider",
+      "url": "https://www.boardui.com/r/divider.json",
+      "originalPath": "components/base/divider/divider.tsx",
+      "sha256": "ed2abe1e2e29e925c63c6d1ea0971e19f4549fe6fea0daca3373d47a87500338"
+    },
+    {
+      "item": "cx",
+      "url": "https://www.boardui.com/r/cx.json",
+      "originalPath": "utils/cx.ts",
+      "sha256": "db35ea5afa8b2e0fd51319bc49288c4df7c98ec53440b43903636a32e3319d9d"
+    }
+  ]
+}

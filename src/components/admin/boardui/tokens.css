@@ -1,0 +1,54 @@
+/* BoardUI's semantic component tokens, mapped to NAVI only in the admin shell.
+   The public site's theme, typography and component variants are unchanged. */
+@theme inline {
+  --color-text-primary: var(--foreground);
+  --color-text-secondary: var(--muted-foreground);
+  --color-text-tertiary: var(--muted-foreground);
+  --color-text-white: var(--primary-foreground);
+  --color-background-primary-default: var(--card);
+  --color-background-primary-hover: var(--secondary);
+  --color-background-primary-active: var(--muted);
+  --color-background-primary-disabled: var(--muted);
+  --color-background-secondary-default: var(--secondary);
+  --color-background-tertiary-default: var(--muted);
+  --color-border-button-default: var(--border);
+  --color-border-button-hover: var(--input);
+  --color-border-button-active: var(--input);
+  --color-border-focus-ring: var(--ring);
+  --color-separator-border: var(--border);
+  --color-button-primary: var(--primary);
+  --color-button-primary-disabled-foreground: var(--primary-foreground);
+  --color-button-danger: var(--destructive);
+  --color-foreground-disabled-danger: var(--destructive-foreground);
+  --color-button-ghost-background: var(--card);
+  --color-button-ghost-foreground: var(--accent-foreground);
+  --color-button-ghost-hover: var(--accent);
+  --color-button-ghost-active: var(--accent);
+  --color-button-ghost-disabled: var(--muted);
+  --color-button-ghost-disabled-foreground: var(--muted-foreground);
+  --color-status-lime-background: var(--accent);
+  --color-status-lime-text: var(--accent-foreground);
+  --color-status-rose-background: var(--admin-danger-surface);
+  --color-status-rose-text: var(--destructive);
+  --color-status-yellow-background: var(--admin-warning-surface);
+  --color-status-yellow-text: var(--admin-warning-text);
+  --radius-2lg: var(--radius-control);
+}
+
+@utility text-body-medium {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+@utility text-caption-1-medium {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+@utility text-caption-1-semibold {
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
