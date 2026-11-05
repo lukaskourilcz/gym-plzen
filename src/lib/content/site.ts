@@ -151,7 +151,7 @@ export function publicWhatsApp(phone?: string | null) {
 
 export const SITE_DEFAULTS = {
   ...REGISTRATION_NOTICE_DEFAULTS,
-  "home.instagram.title": "NAVI na Instagramu",
+  "home.instagram.title": "NAVI | Private Gym Plzeň",
   "home.instagram.button": "Sleduj nás",
   "home.instagram.fallback":
     "Podívej se, co je u nás nového, na Instagramu @navi_plzen.",

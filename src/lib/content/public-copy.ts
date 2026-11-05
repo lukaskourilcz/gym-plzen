@@ -1,5 +1,6 @@
 /** Only exact superseded public copy; never rewrite custom CMS or legal text. */
 const REVISIONS: Readonly<Record<string, string>> = {
+  "NAVI na Instagramu": "NAVI | Private Gym Plzeň",
   "Akční cena platí pro návštěvy v akčním období.":
     "Akční cena pro návštěvy do {promoEndsAt}.",
   "Rezervujte si celé samoobslužné fitness v Plzni jen pro sebe a svůj doprovod.":

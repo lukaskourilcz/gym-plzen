@@ -17,7 +17,6 @@ import {
   type InstagramPost,
   type InstagramProfile,
 } from "@/lib/config/instagram";
-import { Container } from "@/components/ui/container";
 import { Dialog } from "@/components/ui/dialog";
 import { BrandMark } from "./brand";
 import "./instagram-feed.css";
@@ -138,152 +137,177 @@ export function InstagramFeed({
       aria-label="Instagram NAVI"
       className="instagram-feed scroll-mt-[var(--header-h)] bg-background py-10 sm:py-14"
     >
-      <Container>
-        <div className="instagram-panel">
-          <div className="instagram-profile">
-            <div className="instagram-profile-identity">
+      <div className="instagram-panel">
+        <div className="instagram-profile">
+          <div className="instagram-profile-identity">
+            {preview ? (
               <span className="instagram-avatar" aria-hidden="true">
                 <span>
                   <BrandMark decorative className="size-8 text-gold" />
                 </span>
               </span>
-              <div>
-                <h2 className="text-base font-bold leading-6">{copy.title}</h2>
-                <p className="text-xs leading-5 text-neutral-600">
-                  @{INSTAGRAM_USERNAME}
-                </p>
-              </div>
-            </div>
-            {profile && (
-              <dl
-                className="instagram-profile-stats"
-                aria-label="Statistiky instagramového profilu"
-              >
-                {[
-                  ["Příspěvky", profile.postsCount],
-                  ["Sledující", profile.followersCount],
-                  ["Sleduje", profile.followingCount],
-                ].map(([label, value]) => (
-                  <div key={label} className="flex flex-col">
-                    <dt className="text-xs text-neutral-600">{label}</dt>
-                    <dd className="order-first text-sm font-bold">
-                      {typeof value === "number"
-                        ? value.toLocaleString("cs-CZ")
-                        : value}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            )}
-            {preview ? (
-              <span className="instagram-follow">
-                <Instagram className="size-4" aria-hidden="true" />
-                {copy.button}
-              </span>
             ) : (
               <a
+                className="instagram-avatar"
                 href={INSTAGRAM_PROFILE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="instagram-follow"
+                aria-label="Profil NAVI | Private Gym Plzeň na Instagramu"
               >
-                <Instagram className="size-4" aria-hidden="true" />
-                {copy.button}
+                <span>
+                  <BrandMark decorative className="size-8 text-gold" />
+                </span>
               </a>
             )}
-          </div>
-          {visiblePosts.length ? (
-            <div
-              className="instagram-gallery"
-              role="region"
-              aria-roledescription="karusel"
-              aria-label="Příspěvky z Instagramu"
-            >
-              <div
-                ref={rail}
-                id={railId}
-                className="instagram-rail"
-                onScroll={(event) => {
-                  const el = event.currentTarget;
-                  setPage(Math.round(el.scrollLeft / el.clientWidth));
-                }}
-              >
-                {pages.map((items, i) => (
-                  <div
-                    key={i}
-                    className="instagram-slide"
-                    role="group"
-                    aria-roledescription="snímek"
-                    aria-label={`${i + 1} z ${pages.length}`}
-                    style={{
-                      gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-                    }}
+            <div>
+              <h2 className="text-base font-bold leading-6">
+                {preview ? (
+                  copy.title
+                ) : (
+                  <a
+                    className="instagram-profile-name"
+                    href={INSTAGRAM_PROFILE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
-                    {items.map((post) =>
-                      preview ? (
-                        <div key={post.id}>
-                          <InstagramThumbnail post={post} />
-                        </div>
-                      ) : (
-                        <button
-                          key={post.id}
-                          type="button"
-                          className="instagram-post group"
-                          onClick={() => setSelectedId(post.id)}
-                          aria-haspopup="dialog"
-                          aria-label={`Zobrazit příspěvek: ${post.caption.slice(0, 140) || "NAVI Private Gym"}`}
-                        >
-                          <InstagramThumbnail post={post} />
-                          <span
-                            className="instagram-post-overlay"
-                            aria-hidden="true"
-                          >
-                            <Instagram className="mx-auto mb-3 size-6" />
-                            <span className="line-clamp-5 text-sm leading-6">
-                              {post.caption}
-                            </span>
-                          </span>
-                        </button>
-                      ),
-                    )}
-                  </div>
-                ))}
-              </div>
-              {!preview && pages.length > 1 && (
-                <>
-                  <button
-                    type="button"
-                    className="instagram-arrow instagram-arrow-prev"
-                    aria-label="Předchozí příspěvky"
-                    aria-controls={railId}
-                    disabled={page === 0}
-                    onClick={() => moveTo(page - 1)}
-                  >
-                    <ChevronLeft className="size-5" aria-hidden="true" />
-                  </button>
-                  <button
-                    type="button"
-                    className="instagram-arrow instagram-arrow-next"
-                    aria-label="Další příspěvky"
-                    aria-controls={railId}
-                    disabled={page >= pages.length - 1}
-                    onClick={() => moveTo(page + 1)}
-                  >
-                    <ChevronRight className="size-5" aria-hidden="true" />
-                  </button>
-                </>
-              )}
-              <span className="sr-only" aria-live="polite" aria-atomic="true">
-                Strana {Math.min(page + 1, pages.length)} z {pages.length}
-              </span>
+                    {copy.title}
+                  </a>
+                )}
+              </h2>
+              <p className="text-xs leading-5 text-neutral-600">
+                @{INSTAGRAM_USERNAME}
+              </p>
             </div>
+          </div>
+          {profile && (
+            <dl
+              className="instagram-profile-stats"
+              aria-label="Statistiky instagramového profilu"
+            >
+              {[
+                ["Příspěvky", profile.postsCount],
+                ["Sledující", profile.followersCount],
+                ["Sleduje", profile.followingCount],
+              ].map(([label, value]) => (
+                <div key={label} className="flex flex-col">
+                  <dt className="text-xs text-neutral-600">{label}</dt>
+                  <dd className="order-first text-sm font-bold">
+                    {typeof value === "number"
+                      ? value.toLocaleString("cs-CZ")
+                      : value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          {preview ? (
+            <span className="instagram-follow">
+              <Instagram className="size-4" aria-hidden="true" />
+              {copy.button}
+            </span>
           ) : (
-            <p className="px-5 py-8 text-sm leading-6 text-neutral-600">
-              {copy.fallback}
-            </p>
+            <a
+              href={INSTAGRAM_PROFILE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="instagram-follow"
+            >
+              <Instagram className="size-4" aria-hidden="true" />
+              {copy.button}
+            </a>
           )}
         </div>
-      </Container>
+        {visiblePosts.length ? (
+          <div
+            className="instagram-gallery"
+            role="region"
+            aria-roledescription="karusel"
+            aria-label="Příspěvky z Instagramu"
+          >
+            <div
+              ref={rail}
+              id={railId}
+              className="instagram-rail"
+              onScroll={(event) => {
+                const el = event.currentTarget;
+                setPage(Math.round(el.scrollLeft / el.clientWidth));
+              }}
+            >
+              {pages.map((items, i) => (
+                <div
+                  key={i}
+                  className="instagram-slide"
+                  role="group"
+                  aria-roledescription="snímek"
+                  aria-label={`${i + 1} z ${pages.length}`}
+                  style={{
+                    gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+                  }}
+                >
+                  {items.map((post) =>
+                    preview ? (
+                      <div key={post.id}>
+                        <InstagramThumbnail post={post} />
+                      </div>
+                    ) : (
+                      <button
+                        key={post.id}
+                        type="button"
+                        className="instagram-post group"
+                        onClick={() => setSelectedId(post.id)}
+                        aria-haspopup="dialog"
+                        aria-label={`Zobrazit příspěvek: ${post.caption.slice(0, 140) || "NAVI Private Gym"}`}
+                      >
+                        <InstagramThumbnail post={post} />
+                        <span
+                          className="instagram-post-overlay"
+                          aria-hidden="true"
+                        >
+                          <Instagram className="mx-auto mb-3 size-6" />
+                          <span className="line-clamp-5 text-sm leading-6">
+                            {post.caption}
+                          </span>
+                        </span>
+                      </button>
+                    ),
+                  )}
+                </div>
+              ))}
+            </div>
+            {!preview && pages.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  className="instagram-arrow instagram-arrow-prev"
+                  aria-label="Předchozí příspěvky"
+                  aria-controls={railId}
+                  disabled={page === 0}
+                  onClick={() => moveTo(page - 1)}
+                >
+                  <ChevronLeft className="size-5" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="instagram-arrow instagram-arrow-next"
+                  aria-label="Další příspěvky"
+                  aria-controls={railId}
+                  disabled={page >= pages.length - 1}
+                  onClick={() => moveTo(page + 1)}
+                >
+                  <ChevronRight className="size-5" aria-hidden="true" />
+                </button>
+              </>
+            )}
+            <span className="sr-only" aria-live="polite" aria-atomic="true">
+              Strana {Math.min(page + 1, pages.length)} z {pages.length}
+            </span>
+          </div>
+        ) : (
+          <p className="px-5 py-8 text-sm leading-6 text-neutral-600">
+            {copy.fallback}
+          </p>
+        )}
+      </div>
       {selected && !preview && (
         <Dialog
           title={`@${INSTAGRAM_USERNAME}`}
