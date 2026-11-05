@@ -39,7 +39,18 @@ async function edit(page: Page, label: string, text: string) {
 test("all public dialog states are editable in static, accessible previews without business writes", async ({
   page,
 }) => {
-  await page.goto("/admin/content?section=notices");
+  await page.goto("/admin/notices");
+  await expect(page).toHaveURL(/\/admin\/content\?section=notices$/);
+  await expect(
+    page
+      .getByRole("navigation", { name: "Administrace", exact: true })
+      .locator('a[href="/admin/notices"]'),
+  ).toHaveCount(0);
+  await expect(
+    page
+      .getByRole("navigation", { name: "Části webu" })
+      .getByRole("link", { name: "Upozornění", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
   const before = await businessState();
   const settings = await sql`select * from site_setting order by key`;
   const posts: string[] = [];

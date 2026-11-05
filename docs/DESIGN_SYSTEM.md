@@ -897,8 +897,10 @@ balance example; no gallery control may mutate a wallet.
 
 ### Daily attendance and compact administration
 
-The daily programme always states whether the current code is prepared, sent
-and used. A successful keypad event is the attendance evidence; app unlocks
+The daily programme has a single compact header with time, name, three labelled
+status icons and a disclosure button. Green rows default to collapsed; other
+rows default to expanded. Manual choices persist through clock updates and
+background refreshes. Details explain whether the code is prepared, sent and used. A successful keypad event is the attendance evidence; app unlocks
 and failed keypad attempts are not. During a slot, its elapsed portion fills
 green after a verified entry, red while an existing code remains unused, and
 amber when no usable code exists. Completed rows retain their full fill.
@@ -943,3 +945,9 @@ preview has no active authentication link or booking form. The original source
 retains `{freeEntryEvery}` while the preview shows the actual loyalty cadence;
 its rules and the authentication return destination remain controlled by the
 booking flow and are explained under **Co se načítá odjinud**.
+
+Dnes and Zítra use inline label/value summaries. Tomorrow tables use compact
+rows with 44px action targets: green means all work due now is ready, yellow
+means expected preparation/delivery or payment is pending, and red identifies
+a failed check. Delivery scheduled for T-60 is expected and does not prevent a
+verified, prepared booking from being green.

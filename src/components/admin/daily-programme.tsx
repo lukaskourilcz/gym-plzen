@@ -60,13 +60,13 @@ export function DailyProgramme({
   return (
     <div data-ui="programme-list" role="list" aria-label="Dnešní program">
       {bookings.map((booking) => (
-        <ProgrammeRow key={booking.id} booking={booking} now={now} />
+        <DailyProgrammeRow key={booking.id} booking={booking} now={now} />
       ))}
     </div>
   );
 }
 
-function ProgrammeRow({
+export function DailyProgrammeRow({
   booking,
   now,
 }: {

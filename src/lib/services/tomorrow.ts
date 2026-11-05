@@ -15,6 +15,8 @@ import {
   checkTomorrowCode,
   checkTomorrowDelivery,
   tomorrowReadiness,
+  type CodeCheck,
+  type DeliveryCheck,
 } from "@/lib/helpers/tomorrow-readiness";
 import { readKeypadCodes } from "@/lib/integrations/nuki";
 
@@ -89,11 +91,11 @@ export async function getTomorrowOverview(now = new Date()) {
         .at(-1) ?? null;
     const emailDelivery = latest("email");
     const whatsAppDelivery = latest("whatsapp");
-    const codeCheck =
+    const codeCheck: CodeCheck | "awaiting_payment" =
       booking.status === "confirmed"
         ? checkTomorrowCode(booking.startsAt, code, nuki, now)
         : "awaiting_payment";
-    const email =
+    const email: DeliveryCheck | "awaiting_payment" =
       booking.status === "confirmed"
         ? checkTomorrowDelivery(
             booking.startsAt,
@@ -103,7 +105,7 @@ export async function getTomorrowOverview(now = new Date()) {
             emailDelivery?.sentAt ?? null,
           )
         : "awaiting_payment";
-    const whatsApp =
+    const whatsApp: DeliveryCheck | "awaiting_payment" =
       booking.status === "confirmed"
         ? checkTomorrowDelivery(
             booking.startsAt,
