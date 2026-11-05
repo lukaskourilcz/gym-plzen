@@ -110,11 +110,21 @@ test("BoardUI adapters preserve native submit, explicit buttons, disabled states
   expect(
     await submit.evaluate((element) => getComputedStyle(element).fontWeight),
   ).toBe("500");
-  expect(
-    await submit.evaluate(
-      (element) => getComputedStyle(element).backgroundColor,
-    ),
-  ).toBe("rgb(0, 69, 52)");
+  await page.mouse.move(0, 0);
+  // CSS transitions may serialize intermediate colours as oklab(). Compare
+  // the settled rendered colour, independent of CSS colour serialization.
+  await expect
+    .poll(() =>
+      submit.evaluate((element) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = 1;
+        const context = canvas.getContext("2d")!;
+        context.fillStyle = getComputedStyle(element).backgroundColor;
+        context.fillRect(0, 0, 1, 1);
+        return [...context.getImageData(0, 0, 1, 1).data];
+      }),
+    )
+    .toEqual([0, 69, 52, 255]);
   await page.locator('a.admin-button[href="/admin/schedule"]').first().click();
   await expect(page).toHaveURL(/\/admin\/schedule$/);
   await expect(
