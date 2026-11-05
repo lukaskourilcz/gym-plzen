@@ -947,7 +947,7 @@ retains `{freeEntryEvery}` while the preview shows the actual loyalty cadence;
 its rules and the authentication return destination remain controlled by the
 booking flow and are explained under **Co se načítá odjinud**.
 
-Dnes and Zítra use inline label/value summaries. Dnes spreads its four metrics
+Dnes and Zítra use the same full-width inline label/value summaries. Both spread their metrics
 across the full available width with decorative vertical separators and no
 next-reservation teaser; narrow screens wrap into two or one columns.
 Tomorrow tables use compact
