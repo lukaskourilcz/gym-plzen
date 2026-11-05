@@ -323,7 +323,7 @@ export default async function MemberProfilePage({
       />
       <section aria-labelledby="member-reservations" className="mt-10">
         <h2 id="member-reservations" className="mb-3 text-lg font-semibold">
-          Rezervace ({totals.count})
+          Rezervace ({historyPage.totalCount})
         </h2>
         <Table label="Rezervace člena">
           <TableHeader>

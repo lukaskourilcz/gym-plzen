@@ -159,7 +159,9 @@ test("admin can grant, edit and remove credit with an audit trail", async ({
     page.getByRole("region", { name: "Kreditní peněženka" }),
   ).toContainText("500 Kč");
   const adminWallet = page.getByRole("region", { name: "Kreditní peněženka" });
-  await adminWallet.getByText("Historie kreditů", { exact: true }).click();
+  await adminWallet
+    .getByRole("button", { name: "Historie kreditů", exact: true })
+    .click();
   await expect(
     adminWallet.getByRole("columnheader", { name: "Provedl" }),
   ).toBeVisible();

@@ -6,11 +6,17 @@ import { Badge } from "./ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StatCard, StatGroup } from "./stat-card";
+import { History } from "lucide-react";
+import { IconButton } from "./ui/icon-button";
+import { DialogPagination } from "./ui/pagination";
+import { AdminDialog } from "./dialog";
 
 /** Local gallery example: exercises native form semantics without a server action. */
 export function AdminUiSample() {
   const [price, setPrice] = useState("229");
   const [message, setMessage] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
   return (
     <section className="my-8" aria-labelledby="kit-boardui">
       <h2 id="kit-boardui" className="mb-2">
@@ -68,6 +74,32 @@ export function AdminUiSample() {
           Otevírací doba a bloky →
         </Button>
       </div>
+      <div className="mt-6 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card px-5 py-3">
+        <span className="text-muted-foreground">Kredity zákazníka:</span>
+        <span className="font-medium">0 Kč</span>
+        <IconButton
+          icon={History}
+          aria-label="Ukázka historie kreditů"
+          aria-haspopup="dialog"
+          onClick={() => setHistoryOpen(true)}
+        />
+      </div>
+      {historyOpen && (
+        <AdminDialog
+          title="Ukázka historie kreditů"
+          onClose={() => setHistoryOpen(false)}
+        >
+          <p className="my-4 text-sm">
+            Ukázková stránka {historyPage}. Galerie nemění skutečná data.
+          </p>
+          <DialogPagination
+            aria-label="Ukázkové stránkování historie"
+            page={historyPage}
+            totalPages={3}
+            onChange={setHistoryPage}
+          />
+        </AdminDialog>
+      )}
     </section>
   );
 }

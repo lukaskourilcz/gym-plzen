@@ -872,8 +872,13 @@ preserves public brand typography while the controls use the admin system font.
 
 ### Credit balances and financial corrections
 
-Credits use one prominent available balance, a separate reserved amount, and an
-expandable chronological ledger. Monetary columns use tabular numerals and keep
+The admin member profile uses one compact row: available credits, a BoardUI
+history icon immediately after the balance, and the manage-credits action.
+History opens in the standard native dialog and loads 20 entries at a time
+through an admin-authorized, read-only action. BoardUI Pagination handles the
+responsive page controls. Reserved credits remain visible when nonzero;
+settlement PDFs remain available inside the history dialog. The public wallet
+keeps its existing presentation. Monetary columns use tabular numerals and keep
 the sign visible. The administration list is filtered on the server, paginated
 20/page and scrolls horizontally on compact screens. Customer screens keep the
 public brand typography; only new wallet/payment controls are added.
@@ -889,6 +894,31 @@ credit gained. The primary action names the actual financial effect. A payment
 awaiting verification has its own status panel with a refresh action, while the
 original term remains valid. The admin component gallery contains an inert
 balance example; no gallery control may mutate a wallet.
+
+### Daily attendance and compact administration
+
+The daily programme always states whether the current code is prepared, sent
+and used. A successful keypad event is the attendance evidence; app unlocks
+and failed keypad attempts are not. During a slot, its elapsed portion fills
+green after a verified entry, red while an existing code remains unused, and
+amber when no usable code exists. Completed rows retain their full fill.
+Labels accompany the colours; this presentation does not change attendance,
+payments or reservations. Visible dashboards refresh their read-only data once
+a minute and update their local clock every 15 seconds.
+
+The daily screen contains open incidents only. Individual and bulk resolution
+accept an optional note and retain the manual closing event. Bulk resolution
+closes only incidents created by the displayed snapshot; newer incidents remain
+open. It does not issue refunds, send messages or change access codes.
+
+Member statistics use inline label/value pairs. Counts belong in section
+headings rather than a duplicate total; the main reservations screen retains
+“Celkem rezervací”. Reservation invoice cells show the document state and one
+BoardUI icon action; recipient selection and explicit sending happen inside a
+dialog. Message icons open the matching retained e-mail archive, or a delivery
+detail without a body when no retained archive exists. Filter panels maintain
+at least 24px separation from preceding detail blocks. Public pages and CMS
+preview canvases retain their design.
 
 ### Rich e-mail authoring
 
