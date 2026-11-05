@@ -5,6 +5,8 @@
   --color-text-secondary: var(--muted-foreground);
   --color-text-tertiary: var(--muted-foreground);
   --color-text-white: var(--primary-foreground);
+  --color-foreground-icon-primary: var(--foreground);
+  --color-icon-button-disabled-foreground: var(--muted-foreground);
   --color-background-primary-default: var(--card);
   --color-background-primary-hover: var(--secondary);
   --color-background-primary-active: var(--muted);

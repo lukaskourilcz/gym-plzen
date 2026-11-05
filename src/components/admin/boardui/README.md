@@ -1,6 +1,6 @@
 # BoardUI in NAVI administration
 
-Button, Chip, Divider and the class-merging helper are installed as source from
+Button, IconButton, Chip, Divider, Pagination and the class-merging helper are installed as source from
 BoardUI's public registry. `sources.json` records the URLs and original content
 hashes; `LICENSE` preserves the upstream MIT notice.
 
