@@ -40,7 +40,13 @@ const variableLabels: Record<string, string> = {
 };
 
 /** Static renderings only. No live dialogs, consent managers, forms or providers mount in the canvas. */
-export function NoticesEditor({ initial }: { initial: PublicNotices }) {
+export function NoticesEditor({
+  initial,
+  embedded = false,
+}: {
+  initial: PublicNotices;
+  embedded?: boolean;
+}) {
   const [active, setActive] = useState<NoticeId>("cancellation");
   const [notices, setNotices] = useState(initial);
   const [editing, setEditing] = useState<string | null>(null);
@@ -148,10 +154,18 @@ export function NoticesEditor({ initial }: { initial: PublicNotices }) {
     setSaved("Text je uložený a zveřejněný na webu.");
   }
   return (
-    <div className="grid items-start gap-6 xl:grid-cols-[220px_minmax(0,1fr)]">
+    <div
+      className={cn(
+        "grid min-w-0 items-start gap-6",
+        !embedded && "xl:grid-cols-[220px_minmax(0,1fr)]",
+      )}
+    >
       <nav
         aria-label="Zákaznická upozornění"
-        className="flex gap-2 overflow-x-auto pb-2 xl:grid"
+        className={cn(
+          "flex min-w-0 gap-2 overflow-x-auto pb-2",
+          !embedded && "xl:grid",
+        )}
       >
         {NOTICE_DEFINITIONS.map((d) => (
           <button

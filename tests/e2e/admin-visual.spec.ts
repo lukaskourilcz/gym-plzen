@@ -44,7 +44,7 @@ test("every navigation section fits desktop, tablet and phone without a breadcru
     .evaluateAll((links) => [
       ...new Set(links.map((link) => link.getAttribute("href")!)),
     ]);
-  expect(routes).toHaveLength(25);
+  expect(routes).toHaveLength(24);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   for (const width of [1440, 768, 390]) {

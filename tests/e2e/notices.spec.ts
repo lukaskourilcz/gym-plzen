@@ -39,7 +39,7 @@ async function edit(page: Page, label: string, text: string) {
 test("all public dialog states are editable in static, accessible previews without business writes", async ({
   page,
 }) => {
-  await page.goto("/admin/notices");
+  await page.goto("/admin/content?section=notices");
   const before = await businessState();
   const settings = await sql`select * from site_setting order by key`;
   const posts: string[] = [];
@@ -113,7 +113,7 @@ test("admin copy appears in real and simulated cancellations; actions align with
   });
   const publicPage = await customer.newPage();
   try {
-    await page.goto("/admin/notices");
+    await page.goto("/admin/content?section=notices");
     await edit(page, "Nadpis", "Opravdu chcete zrušit tento vstup?");
     await publicPage.goto("/account");
     await publicPage
@@ -188,7 +188,7 @@ test("admin copy appears in real and simulated cancellations; actions align with
       await sql`select * from site_setting where key<>${key} order by key`,
     ).toEqual(otherSettings);
   } finally {
-    await page.goto("/admin/notices");
+    await page.goto("/admin/content?section=notices");
     await edit(
       page,
       "Nadpis",
@@ -211,7 +211,7 @@ test("cookie copy is public while consent stays unchanged; customer and anonymou
   const [previous] = await sql`select * from site_setting where key=${key}`;
   const before = await businessState();
   try {
-    await page.goto("/admin/notices");
+    await page.goto("/admin/content?section=notices");
     await page
       .getByRole("navigation", { name: "Zákaznická upozornění" })
       .getByRole("button", {
@@ -270,7 +270,7 @@ test("cookie copy is public while consent stays unchanged; customer and anonymou
     }
     expect(await businessState()).toEqual(before);
   } finally {
-    await page.goto("/admin/notices");
+    await page.goto("/admin/content?section=notices");
     await page
       .getByRole("navigation", { name: "Zákaznická upozornění" })
       .getByRole("button", {
@@ -292,7 +292,7 @@ test("cookie copy is public while consent stays unchanged; customer and anonymou
 test("missing refund facts and interrupted save preserve text and data", async ({
   page,
 }) => {
-  await page.goto("/admin/notices");
+  await page.goto("/admin/content?section=notices");
   const settings = await sql`select * from site_setting order by key`;
   await page
     .getByRole("button", {
@@ -314,7 +314,7 @@ test("missing refund facts and interrupted save preserve text and data", async (
   await page
     .getByRole("textbox", { name: "Text", exact: true })
     .fill("Rozepsaná změna");
-  await page.route("**/admin/notices**", (route) =>
+  await page.route("**/admin/content**", (route) =>
     route.request().method() === "POST"
       ? route.abort("failed")
       : route.continue(),
@@ -330,7 +330,7 @@ test("missing refund facts and interrupted save preserve text and data", async (
     page.getByRole("button", { name: "Uložit text", exact: true }),
   ).toBeDisabled();
   expect(await sql`select * from site_setting order by key`).toEqual(settings);
-  await page.unroute("**/admin/notices**");
+  await page.unroute("**/admin/content**");
   await page
     .getByRole("button", { name: "Obnovit a ověřit stav", exact: true })
     .click();

@@ -844,10 +844,10 @@ nevytváří zákaznický účet a nevolá poskytovatele plateb ani zpráv.
 
 ### Zákaznická upozornění
 
-Administrace → Upozornění (`/admin/notices`) používá statické náhledy skutečných
+Administrace → Obsah webu → Upozornění (`/admin/content?section=notices`) používá statické náhledy skutečných
 zákaznických dialogů, rozdělené podle účelu. Tužka u každého textu otevře
 `AdminDialog`. Náhled nemontuje formuláře rezervací ani správce cookies.
-Zákaznické písmo je omezené na `.admin-shell .content-canvas`; navigace a editor
+Původní `/admin/notices` přesměruje na tuto část; samostatná navigační položka není potřeba. Zákaznické písmo je omezené na `.admin-shell .content-canvas`; navigace a editor
 používají systémovou typografii. Podmíněné texty jsou dostupné pod „Další stavy a
 popisky“. Automatické údaje jsou vysvětlené pod náhledem; povinné značky nelze
 odstranit. Uložení mění pouze jednu povolenou položku veřejného obsahu.

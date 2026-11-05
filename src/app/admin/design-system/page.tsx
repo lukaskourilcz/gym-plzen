@@ -124,7 +124,11 @@ export default async function DesignSystemPage() {
           se doplňují systémem. Akce storna tvoří na větší obrazovce jeden řádek
           stejně širokých tlačítek, na mobilu jeden sloupec.
         </p>
-        <Button href="/admin/notices" variant="outline" className="mt-4">
+        <Button
+          href="/admin/content?section=notices"
+          variant="outline"
+          className="mt-4"
+        >
           Otevřít Upozornění
         </Button>
       </section>

@@ -33,15 +33,19 @@ import type { Announcement } from "@/lib/config/opening";
 import type { InstagramAdminState } from "@/lib/config/instagram";
 import { InstagramEditor } from "./instagram-editor";
 import { AnnouncementEditor } from "./announcement-editor";
+import { NoticesEditor } from "../notices/notices-editor";
+import type { PublicNotices } from "@/lib/config/public-notices";
 
 /** Focus one website section at a time, with a visual reference and explicit data sources. */
 export function ContentEditor({
+  notices,
   announcement,
   instagram: initialInstagram,
   values,
   assets,
   preview,
 }: {
+  notices: PublicNotices;
   announcement: Announcement;
   instagram: InstagramAdminState;
   values: Record<string, string>;
@@ -51,6 +55,7 @@ export function ContentEditor({
   const [instagram, setInstagram] = useState(initialInstagram);
   const params = useSearchParams();
   const active = params.get("section") ?? "hero";
+  const noticesActive = active === "notices";
   const section =
     CONTENT_EDITOR_SECTIONS.find(
       (s) => CONTENT_VISUALS[s.title]?.id === active,
@@ -101,67 +106,84 @@ export function ContentEditor({
             key={s.title}
             href={`/admin/content?section=${CONTENT_VISUALS[s.title]!.id}`}
             scroll={false}
-            aria-current={s.title === section.title ? "page" : undefined}
-            className={`flex min-h-11 shrink-0 items-center rounded-md border px-3 py-2 text-sm font-semibold transition-colors ${s.title === section.title ? "border-primary/25 bg-primary/10 text-primary" : "border-transparent hover:bg-secondary"}`}
+            aria-current={
+              !noticesActive && s.title === section.title ? "page" : undefined
+            }
+            className={`flex min-h-11 shrink-0 items-center rounded-md border px-3 py-2 text-sm font-semibold transition-colors ${!noticesActive && s.title === section.title ? "border-primary/25 bg-primary/10 text-primary" : "border-transparent hover:bg-secondary"}`}
           >
             {s.title}
           </Link>
         ))}
+        <Link
+          href="/admin/content?section=notices"
+          scroll={false}
+          aria-current={noticesActive ? "page" : undefined}
+          className={`flex min-h-11 shrink-0 items-center rounded-md border px-3 py-2 text-sm font-semibold ${noticesActive ? "border-primary/25 bg-primary/10 text-primary" : "border-transparent hover:bg-secondary"}`}
+        >
+          Upozornění
+        </Link>
       </nav>
-      <section aria-label={section.title} className="min-w-0">
-        <div className="mb-4 flex justify-end">
-          <Button
-            href={visual.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            variant="outline"
-          >
-            Otevřít na webu
-            <ArrowUpRight aria-hidden="true" />
-          </Button>
-        </div>
-        {visual.id === "instagram" && (
-          <InstagramEditor value={instagram} onChange={setInstagram} />
-        )}
-        {visual.id === "opening" ? (
-          <AnnouncementEditor initialValue={announcement} />
-        ) : (
-          <ContentCanvas
-            instagramPosts={instagram.posts
-              .filter((p) => !p.hidden)
-              .slice(0, 12)}
-            section={section}
-            preview={{ ...preview, texts: rendered }}
-            assets={images}
-            onEdit={startEditing}
-            onEditAsset={setEditingAsset}
-          />
-        )}
-        {visual.dependencies.length ? (
-          <details className="mt-5 rounded-lg border border-border bg-card p-4">
-            <summary className="cursor-pointer font-semibold">
-              Co se načítá odjinud
-            </summary>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              {visual.dependencies.map((dependency) => (
-                <div key={dependency.label}>
-                  <p className="text-sm font-semibold">{dependency.label}</p>
-                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                    {dependency.description}
-                  </p>
-                  <Link
-                    href={dependency.href}
-                    className="mt-1 inline-flex min-h-9 items-center gap-1 text-sm font-semibold text-primary underline"
-                  >
-                    {dependency.linkLabel}
-                    <ArrowUpRight aria-hidden="true" className="size-3.5" />
-                  </Link>
-                </div>
-              ))}
-            </div>
-          </details>
-        ) : null}
-      </section>
+      {noticesActive ? (
+        <section aria-label="Upozornění" className="min-w-0">
+          <h2 className="mb-4">Upozornění</h2>
+          <NoticesEditor initial={notices} embedded />
+        </section>
+      ) : (
+        <section aria-label={section.title} className="min-w-0">
+          <div className="mb-4 flex justify-end">
+            <Button
+              href={visual.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="outline"
+            >
+              Otevřít na webu
+              <ArrowUpRight aria-hidden="true" />
+            </Button>
+          </div>
+          {visual.id === "instagram" && (
+            <InstagramEditor value={instagram} onChange={setInstagram} />
+          )}
+          {visual.id === "opening" ? (
+            <AnnouncementEditor initialValue={announcement} />
+          ) : (
+            <ContentCanvas
+              instagramPosts={instagram.posts
+                .filter((p) => !p.hidden)
+                .slice(0, 12)}
+              section={section}
+              preview={{ ...preview, texts: rendered }}
+              assets={images}
+              onEdit={startEditing}
+              onEditAsset={setEditingAsset}
+            />
+          )}
+          {visual.dependencies.length ? (
+            <details className="mt-5 rounded-lg border border-border bg-card p-4">
+              <summary className="cursor-pointer font-semibold">
+                Co se načítá odjinud
+              </summary>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                {visual.dependencies.map((dependency) => (
+                  <div key={dependency.label}>
+                    <p className="text-sm font-semibold">{dependency.label}</p>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      {dependency.description}
+                    </p>
+                    <Link
+                      href={dependency.href}
+                      className="mt-1 inline-flex min-h-9 items-center gap-1 text-sm font-semibold text-primary underline"
+                    >
+                      {dependency.linkLabel}
+                      <ArrowUpRight aria-hidden="true" className="size-3.5" />
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </details>
+          ) : null}
+        </section>
+      )}
       {editingAsset ? (
         <AdminDialog
           title={`Upravit: ${editingAsset.label}`}
