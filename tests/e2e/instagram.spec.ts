@@ -82,7 +82,9 @@ test("Instagram connects via local OAuth, shows lazy private thumbnails, hides p
     await page.reload();
     await publicPage.goto("/#instagram");
     await section.scrollIntoViewIfNeeded();
-    const links = section.getByRole("button", { name: /Zobrazit příspěvek:/ });
+    const links = section.getByRole("link", {
+      name: /Otevřít příspěvek na Instagramu:/,
+    });
     await expect(links).toHaveCount(12);
     await expect(section.getByRole("definition")).toHaveText([
       "98",
@@ -179,6 +181,24 @@ test("Instagram connects via local OAuth, shows lazy private thumbnails, hides p
     await expect(links.first()).toHaveAccessibleName(
       /To se mi líbí: 42, Komentáře: 7/,
     );
+    expect(
+      await links
+        .first()
+        .locator(".instagram-caption")
+        .evaluate((el) => (el as HTMLElement).innerText),
+    ).toBe(
+      "Ukázkový příspěvek 1 —\nTrénink jen pro tebe. 🙂\n#navi #plzen\n#privategym",
+    );
+    expect(
+      await links
+        .first()
+        .locator(".instagram-caption")
+        .evaluate((el) => getComputedStyle(el).textAlign),
+    ).toBe("center");
+    await expect(links.first().locator(".lucide-heart")).toHaveAttribute(
+      "fill",
+      "none",
+    );
     await section.screenshot({
       path: test.info().outputPath("instagram-hover.jpg"),
       type: "jpeg",
@@ -266,25 +286,39 @@ test("Instagram connects via local OAuth, shows lazy private thumbnails, hides p
         rail.evaluate((el) => Math.abs(el.scrollLeft - el.clientWidth)),
       )
       .toBeLessThan(1);
+    for (const [index, post] of (await links.all()).entries()) {
+      await expect(post).toHaveAttribute(
+        "href",
+        `https://www.instagram.com/${index === 0 ? "reel" : "p"}/TEST_${index}/`,
+      );
+      await expect(post).toHaveAttribute("target", "_blank");
+      await expect(post).toHaveAttribute("rel", "noopener noreferrer");
+    }
+    await publicPage.context().route("https://www.instagram.com/**", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "text/html",
+        body: "<!doctype html><title>Local original post</title>",
+      }),
+    );
+    const popupPromise = publicPage.context().waitForEvent("page");
     await links.nth(4).click();
-    const dialog = publicPage.getByRole("dialog");
-    await expect(dialog).toBeVisible();
-    await expect(
-      dialog.getByRole("link", { name: "Otevřít na Instagramu" }),
-    ).toHaveAttribute("href", "https://www.instagram.com/p/TEST_4/");
-    const modalA11y = await new AxeBuilder({ page: publicPage })
-      .include("dialog")
-      .analyze();
-    expect(modalA11y.violations).toEqual([]);
-    await publicPage.keyboard.press("Escape");
-    await expect(dialog).toHaveCount(0);
+    const popup = await popupPromise;
+    await expect(popup).toHaveURL("https://www.instagram.com/p/TEST_4/");
+    await expect(popup).toHaveTitle("Local original post");
+    await expect(publicPage.getByRole("dialog")).toHaveCount(0);
+    await popup.close();
+    await publicPage.context().unroute("https://www.instagram.com/**");
+    await links.nth(4).focus();
+    await publicPage.keyboard.press("Tab");
+    await publicPage.keyboard.press("Shift+Tab");
     await expect(links.nth(4)).toBeFocused();
-    await expect
-      .poll(() =>
-        rail.evaluate((el) => Math.abs(el.scrollLeft - el.clientWidth)),
-      )
-      .toBeLessThan(1);
-    // Returning focus to a tile must never cover the navigation arrows.
+    await expect(links.nth(4).locator(".instagram-post-overlay")).toHaveCSS(
+      "opacity",
+      "1",
+    );
+
+    // A focused post link must never cover the navigation arrows.
     await next.click({ timeout: 5000 });
     await expect(section.getByText("Strana 3 z 3", { exact: true })).toHaveText(
       "Strana 3 z 3",
@@ -365,7 +399,7 @@ test("Instagram connects via local OAuth, shows lazy private thumbnails, hides p
     ).toBeVisible();
     await publicPage.reload();
     await expect(
-      section.getByRole("button", { name: /Ukázkový příspěvek 1 —/ }),
+      section.getByRole("link", { name: /Ukázkový příspěvek 1 —/ }),
     ).toHaveCount(0);
     const hiddenImage = await publicPage.request.get(
       "/api/instagram/media/100",
