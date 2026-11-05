@@ -7,31 +7,18 @@ import {
   splitPage,
 } from "@/lib/helpers/pagination";
 import { programmeCodeStates } from "@/lib/services/admin-programme";
-import { cn } from "@/lib/utils";
+import { DailyProgramme } from "@/components/admin/daily-programme";
 import { requireAdmin } from "@/lib/auth/guards";
 import { AdminMemberName } from "@/components/admin/member-name";
 import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import Link from "next/link";
-import {
-  AlertTriangle,
-  CircleCheck,
-  DoorOpen,
-  MailWarning,
-} from "lucide-react";
+import { AlertTriangle, DoorOpen, MailWarning } from "lucide-react";
 import { alerts, entryLog, messages, stats } from "@/lib/services";
-import {
-  formatDateTime,
-  formatMoney,
-  formatStatus,
-  formatTime,
-  formatTimeRange,
-} from "@/lib/helpers/format";
+import { formatDateTime, formatMoney, formatTime } from "@/lib/helpers/format";
 import { aggregateDayOverview, pragueDayBounds } from "@/lib/services/stats";
 import { loadDemoData } from "@/lib/demo/dummy";
 import { PageHeader } from "@/components/admin/page-header";
 import { StatCard, StatGroup } from "@/components/admin/stat-card";
-import { Badge } from "@/components/admin/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { hasDemoAdminSession } from "@/lib/auth/demo";
 
 export const metadata = { title: "Dnes" };
@@ -85,8 +72,8 @@ export default async function AdminDashboard({
   const day = demoData
     ? aggregateDayOverview(demoData.reservations, now)
     : overview;
-  const todaysReservations = day.reservations.filter(
-    (r) => r.status === "confirmed",
+  const todaysReservations = day.reservations.filter((r) =>
+    ["confirmed", "completed", "no_show"].includes(r.status),
   );
   const codeStates = demo
     ? new Map<string, { sent: boolean; used: boolean }>()
@@ -127,9 +114,8 @@ export default async function AdminDashboard({
         ...todaysReservations.map((r) => r.userId),
         ...entries.map((entry) => entry.userId),
       ]);
-  const { open: openAlerts, openCount, recentClosed } = incidentOverview;
+  const { open: openAlerts, openCount } = incidentOverview;
   const failedMessages = messageRows.filter((m) => m.status === "failed");
-  const trend = day.last7 - day.previous7;
 
   return (
     <div>
@@ -160,57 +146,21 @@ export default async function AdminDashboard({
           <h2 id="today-programme" className="mb-3 text-lg font-semibold">
             Dnešní program
           </h2>
-          <div data-ui="programme-list" className="grid gap-2">
-            {todaysReservations.map((r) => {
-              const running = r.startsAt <= now && now < r.endsAt;
-              const code = codeStates.get(r.id);
-              return (
-                <Card
-                  key={r.id}
-                  data-reservation-id={r.id}
-                  data-running={running || undefined}
-                  className={cn(
-                    running && "border-primary",
-                    code?.used && "border-success/40 bg-success/10",
-                  )}
-                >
-                  <CardContent className="flex flex-wrap items-center gap-3 p-4">
-                    <span className="font-medium tabular-nums">
-                      {formatTimeRange(r.startsAt, r.endsAt)}
-                    </span>
-                    <span className="min-w-32 flex-1 text-sm text-muted-foreground">
-                      <AdminMemberName
-                        name={r.contactName ?? r.contactEmail ?? "Neuvedeno"}
-                        note={memberNotes.get(r.userId ?? "")}
-                        href={
-                          r.userId ? `/admin/members/${r.userId}` : undefined
-                        }
-                      />
-                    </span>
-                    {code?.sent && <Badge variant="outline">Kód odeslán</Badge>}
-                    {code?.used && (
-                      <Badge
-                        variant="outline"
-                        className="border-transparent bg-success text-success-foreground"
-                      >
-                        Kód použit
-                      </Badge>
-                    )}
-                    {running && <Badge variant="accent">Právě probíhá</Badge>}
-                    {r.priceCents === 0 && (
-                      <Badge variant="muted">Zdarma (věrnost)</Badge>
-                    )}
-                    <Badge variant="outline">{formatStatus(r.status)}</Badge>
-                  </CardContent>
-                </Card>
-              );
-            })}
-            {todaysReservations.length === 0 && (
-              <p className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
-                Na dnešek nemáte žádnou rezervaci.
-              </p>
-            )}
-          </div>
+          <DailyProgramme
+            initialNow={now.getTime()}
+            bookings={todaysReservations.map((r) => ({
+              id: r.id,
+              startsAt: r.startsAt.toISOString(),
+              endsAt: r.endsAt.toISOString(),
+              name: r.contactName ?? r.contactEmail ?? "Neuvedeno",
+              memberHref: r.userId ? `/admin/members/${r.userId}` : undefined,
+              note: memberNotes.get(r.userId ?? ""),
+              free: r.priceCents === 0,
+              codeCreated: codeStates.has(r.id),
+              codeSent: codeStates.get(r.id)?.sent ?? false,
+              codeUsed: codeStates.get(r.id)?.used ?? false,
+            }))}
+          />
           <p className="mt-3 text-sm">
             <Link
               href="/admin/reservations"
@@ -280,43 +230,6 @@ export default async function AdminDashboard({
             </p>
           </section>
 
-          <section aria-labelledby="week-kpis">
-            <h2 id="week-kpis" className="mb-3 text-lg font-semibold">
-              Posledních 7 dní
-            </h2>
-            <dl className="grid grid-cols-3 gap-3 rounded-lg border border-border bg-card p-4 text-sm">
-              <div>
-                <dt className="text-muted-foreground">Rezervace</dt>
-                <dd className="mt-1 text-2xl font-medium">
-                  {day.last7}{" "}
-                  <span className="text-sm font-medium text-muted-foreground">
-                    {trend === 0
-                      ? "beze změny"
-                      : `${trend > 0 ? "+" : ""}${trend}`}
-                  </span>
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Storna</dt>
-                <dd className="mt-1 text-2xl font-medium">
-                  {day.cancelledLast7}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Nedorazili</dt>
-                <dd className="mt-1 text-2xl font-medium">{day.noShowLast7}</dd>
-              </div>
-            </dl>
-            <p className="mt-2 text-sm">
-              <Link
-                href="/admin/statistics"
-                className="text-accent-foreground hover:underline"
-              >
-                Podrobné statistiky →
-              </Link>
-            </p>
-          </section>
-
           <section aria-labelledby="today-activity">
             <h2 id="today-activity" className="mb-3 text-lg font-semibold">
               Co vyžaduje pozornost
@@ -361,27 +274,6 @@ export default async function AdminDashboard({
                 </p>
               )}
             </div>
-            {recentClosed.length ? (
-              <div className="mt-4 space-y-2">
-                <h3 className="text-sm font-semibold">
-                  Nedávno uzavřené incidenty
-                </h3>
-                {recentClosed.map((alert) => (
-                  <div
-                    key={alert.id}
-                    className="flex items-start gap-3 rounded-md border bg-card px-4 py-3"
-                  >
-                    <CircleCheck
-                      aria-hidden="true"
-                      className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                    />
-                    <div className="min-w-0">
-                      <IncidentDetails alert={alert} compact />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : null}
           </section>
         </div>
       </div>

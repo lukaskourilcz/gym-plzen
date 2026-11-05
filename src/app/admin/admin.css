@@ -195,8 +195,36 @@
   border-top: 1px solid var(--border);
 }
 
-.admin-shell [data-ui="programme-list"] > [data-running] {
-  background-color: var(--accent);
+.admin-shell .admin-programme-row {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 1rem;
+}
+
+.admin-shell .admin-programme-row + .admin-programme-row {
+  border-top: 1px solid var(--border);
+}
+
+.admin-shell .admin-programme-row::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: var(--programme-progress);
+  background: var(--programme-colour, transparent);
+  pointer-events: none;
+}
+
+.admin-shell .admin-programme-row[data-attendance="success"] {
+  --programme-colour: color-mix(in srgb, var(--success) 14%, var(--card));
+}
+
+.admin-shell .admin-programme-row[data-attendance="danger"] {
+  --programme-colour: color-mix(in srgb, var(--destructive) 10%, var(--card));
+}
+
+.admin-shell .admin-programme-row[data-attendance="warning"] {
+  --programme-colour: color-mix(in srgb, var(--warning) 10%, var(--card));
 }
 
 .admin-shell .admin-opening-hours {

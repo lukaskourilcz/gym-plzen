@@ -214,20 +214,16 @@ test("today paginates all entries by twenty and uses compact gaps beside a long 
       nav.getByRole("link", { name: "Další", exact: true }),
     ).toHaveCount(0);
     const gaps = await page.evaluate(() => {
-      const sections = ["today-entries", "week-kpis", "today-activity"].map(
-        (id) =>
-          document
-            .querySelector(`section[aria-labelledby="${id}"]`)!
-            .getBoundingClientRect(),
+      const sections = ["today-entries", "today-activity"].map((id) =>
+        document
+          .querySelector(`section[aria-labelledby="${id}"]`)!
+          .getBoundingClientRect(),
       );
       const programme = document
         .querySelector('section[aria-labelledby="today-programme"]')!
         .getBoundingClientRect();
       return {
-        vertical: [
-          sections[1]!.top - sections[0]!.bottom,
-          sections[2]!.top - sections[1]!.bottom,
-        ],
+        vertical: [sections[1]!.top - sections[0]!.bottom],
         horizontal: sections[0]!.left - programme.right,
       };
     });
