@@ -79,6 +79,7 @@ beforeEach(async () => {
     unifiedBusinessId: "3333",
     unifiedAssignmentsEmpty: false,
     facebookUserLogin: false,
+    profileFailure: false,
     granularTargets: ["17841427246422536"],
     media: defaultMedia(),
     delay: 0,
@@ -365,6 +366,11 @@ dbTest(
     assert.equal((await syncInstagram({ force: true })).synced, true);
     const feed = await loadInstagramFeed();
     assert.equal(feed.posts.length, 12);
+    assert.deepEqual(feed.profile, {
+      postsCount: 98,
+      followersCount: 1240,
+      followingCount: 315,
+    });
     assert.equal(feed.posts[0]!.kind, "VIDEO");
     const serialized = JSON.stringify([feed, await getInstagramAdminState()]);
     assert.doesNotMatch(
@@ -388,11 +394,39 @@ dbTest(
     await disconnectInstagram();
     assert.equal((await rows("select * from instagram_media")).length, 0);
     assert.equal((await loadInstagramFeed()).posts.length, 0);
+    assert.equal(
+      (await rows("select * from site_setting where key='instagram.profile'"))
+        .length,
+      0,
+    );
     assert.deepEqual(await snapshot(), before);
     assert.equal(resend.sent.length, 0);
     assert.equal(comgate.creates.length, 0);
   },
 );
+dbTest(
+  "optional profile counters fail independently and never invent counts",
+  async () => {
+    await connect();
+    mock.state.profileFailure = true;
+    assert.equal((await syncInstagram({ force: true })).synced, true);
+    assert.equal((await loadInstagramFeed()).profile, null);
+    assert.equal((await loadInstagramFeed()).posts.length, 12);
+    mock.state.profileFailure = false;
+    await allowSync();
+    assert.equal((await syncInstagram({ force: true })).synced, true);
+    assert.equal((await loadInstagramFeed()).profile?.followersCount, 1240);
+    mock.state.profileFailure = true;
+    await allowSync();
+    assert.equal((await syncInstagram({ force: true })).synced, true);
+    assert.equal((await loadInstagramFeed()).profile?.followersCount, 1240);
+    await rows(
+      'update site_setting set value = \'{"accountId":"other","profile":{"postsCount":9,"followersCount":9,"followingCount":9}}\'::jsonb where key=\'instagram.profile\'',
+    );
+    assert.equal((await loadInstagramFeed()).profile, null);
+  },
+);
+
 dbTest(
   "provider outage preserves last valid posts but authorization loss and 24h expiry hide them",
   async () => {
