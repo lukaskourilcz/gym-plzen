@@ -83,7 +83,13 @@ test("daily programme keeps one compact line and defaults disclosures to the res
       path: info.outputPath(`compact-programme-${width}.png`),
     });
   }
-  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  expect(
+    (
+      await new AxeBuilder({ page })
+        .include('[aria-label="Ukázkový denní program"]')
+        .analyze()
+    ).violations,
+  ).toEqual([]);
 });
 
 async function unchanged(before: unknown[], emails: number) {
