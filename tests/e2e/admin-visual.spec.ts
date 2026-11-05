@@ -57,6 +57,9 @@ test("every navigation section fits desktop, tablet and phone without a breadcru
         page.getByText("Administrace se nepodařila načíst"),
       ).toHaveCount(0);
       await expect(
+        page.getByText("Data se nepodařilo načíst", { exact: true }),
+      ).toHaveCount(0);
+      await expect(
         page.getByRole("navigation", { name: /breadcrumb/i }),
       ).toHaveCount(0);
       const overflow = await page.evaluate(
@@ -107,6 +110,11 @@ test("BoardUI adapters preserve native submit, explicit buttons, disabled states
   expect(
     await submit.evaluate((element) => getComputedStyle(element).fontWeight),
   ).toBe("500");
+  expect(
+    await submit.evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    ),
+  ).toBe("rgb(0, 69, 52)");
   await page.locator('a.admin-button[href="/admin/schedule"]').first().click();
   await expect(page).toHaveURL(/\/admin\/schedule$/);
   await expect(

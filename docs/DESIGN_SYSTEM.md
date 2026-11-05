@@ -632,8 +632,9 @@ upstream URLs, retrieval date and original content hashes. Do not run BoardUI
 `init` over the existing application: the full global reset, palette and
 application templates are deliberately not installed.
 
-`src/app/admin/admin.css` imports the BoardUI semantic token bridge and scopes
-all appearance changes to `.admin-shell`. Public UI primitives expose neutral
+`src/app/globals.css` registers the BoardUI semantic utility names in the
+existing Tailwind compilation. `src/app/admin/admin.css` scopes all appearance
+changes to `.admin-shell`. Public UI primitives expose neutral
 `data-ui` hooks, with no public style changes. Public previews inside
 `.content-canvas` are excluded. Preserve the original public action styles in
 those canvases; use `components/admin/ui/button` and `badge` for admin actions.

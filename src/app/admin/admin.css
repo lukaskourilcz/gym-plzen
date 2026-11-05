@@ -1,5 +1,3 @@
-@import "../../components/admin/boardui/tokens.css";
-
 /* Shared administration surface. Public pages and CMS preview canvases retain
    their own typography, actions and brand styling. */
 .admin-shell {
