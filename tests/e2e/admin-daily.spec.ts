@@ -98,7 +98,7 @@ test("tomorrow offers a desktop table, icon tooltips and mobile cards without ch
 }) => {
   const tomorrow = addDaysToDateKey(dateKeyInTimeZone(new Date()), 1);
   await sql`insert into profiles(id,email,full_name,phone,notify_by_whatsapp,note) values (${memberId},${prefix + "@example.test"},'Zítřejší klient','+420777000111',true,'Poznámka do zítřejšího přehledu')`;
-  const start = localDateTimeToDate(tomorrow, 600);
+  const start = localDateTimeToDate(tomorrow, 0);
   const [booking] =
     await sql`insert into reservation(user_id,starts_at,ends_at,status,contact_name,contact_email)
     values (${memberId},${start},${new Date(start.getTime() + 75 * 60_000)},'confirmed',${prefix + " member"},${prefix + "@example.test"}) returning id`;
@@ -127,6 +127,8 @@ test("tomorrow offers a desktop table, icon tooltips and mobile cards without ch
       "Profil zákazníka",
     ]);
     const row = table.getByRole("row").filter({ hasText: prefix + " member" });
+    await expect(row).toHaveAttribute("data-readiness", "error");
+    expect((await row.boundingBox())!.height).toBeLessThanOrEqual(54);
     await expect(
       row.getByRole("link", { name: prefix + " member", exact: true }),
     ).toHaveAttribute("href", `/admin/members/${memberId}`);
@@ -149,6 +151,7 @@ test("tomorrow offers a desktop table, icon tooltips and mobile cards without ch
       row.getByRole("button", { name: /Poznámka k zákazníkovi/ }),
     ).toBeVisible();
     const guest = table.getByRole("row").filter({ hasText: prefix + " guest" });
+    await expect(guest).toHaveAttribute("data-readiness", "waiting");
     await expect(
       guest.getByRole("img", { name: "Nepoužívá se", exact: true }),
     ).toBeVisible();

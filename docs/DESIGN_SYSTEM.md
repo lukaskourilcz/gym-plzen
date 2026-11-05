@@ -406,13 +406,14 @@ shrink-0 accent-primary`, the pointer and hover treatment every control
   breaker and 20 rows by default, with 50 and 100 as alternatives. Changing
   filters, sorting or page size resets pagination. Shared pagination retains
   list state and the independent page numbers of other tables on the screen.
-- Each table displays the total number of matching records before pagination.
+- Each table displays the total number of matching records before pagination,
+  in its heading or in a separate total where the heading has no count.
   Database window counts use the same filters as the rows; an empty later page
   retrieves the matching total without exposing unbounded data. Global finance
   and loyalty summaries remain independent of table filters.
-- The daily programme contains confirmed reservations only. Sent and used code
-  badges require recorded delivery or successful keypad evidence. A used code
-  adds a success tint to the reservation card; text also conveys the state.
+- The daily programme contains confirmed and finished reservations. Sent and used
+  code icons require recorded delivery or successful keypad evidence. A used code
+  adds a success tint; expandable text also conveys the state.
 - Navigation exposes the current route with `aria-current`. Mobile navigation
   has a labelled toggle, closes with Escape and restores focus when closed.
 - The first focusable control is a native skip link to the route-level `main`.
