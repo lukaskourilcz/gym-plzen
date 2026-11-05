@@ -1,7 +1,12 @@
 import { requireAdmin } from "@/lib/auth/guards";
-import { notFound } from "next/navigation";
-import { getAdminEmail } from "@/lib/services/messages";
-import { formatDateTime } from "@/lib/helpers/format";
+import { notFound, redirect } from "next/navigation";
+import { getAdminEmail, getAdminMessage } from "@/lib/services/messages";
+import {
+  formatChannel,
+  formatDateTime,
+  formatMessageKind,
+  formatStatus,
+} from "@/lib/helpers/format";
 import { PageHeader } from "@/components/admin/page-header";
 import { Button } from "@/components/admin/ui/button";
 
@@ -16,7 +21,77 @@ export default async function EmailDetailPage({
   await requireAdmin();
   const { id } = await params;
   const email = await getAdminEmail(id);
-  if (!email) notFound();
+  if (!email) {
+    const message = await getAdminMessage(id);
+    if (!message) notFound();
+    if (message.archiveId) redirect(`/admin/messages/${message.archiveId}`);
+    return (
+      <div>
+        <Button href="/admin/messages" variant="outline" className="mb-6">
+          Zpět na odeslané zprávy
+        </Button>
+        <PageHeader
+          title={formatMessageKind(message.kind)}
+          description="Detail doručení zprávy"
+        />
+        <dl className="grid gap-3 rounded-lg border border-border bg-card p-6 text-sm">
+          <div>
+            <dt className="text-muted-foreground">Příjemce</dt>
+            <dd>{message.recipient}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Kanál</dt>
+            <dd>{formatChannel(message.channel)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Stav</dt>
+            <dd>{formatStatus(message.status)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Vytvořeno</dt>
+            <dd>{formatDateTime(message.createdAt)}</dd>
+          </div>
+          {message.sentAt && (
+            <div>
+              <dt className="text-muted-foreground">Odesláno</dt>
+              <dd>{formatDateTime(message.sentAt)}</dd>
+            </div>
+          )}
+          {message.deliveredAt && (
+            <div>
+              <dt className="text-muted-foreground">Doručeno</dt>
+              <dd>{formatDateTime(message.deliveredAt)}</dd>
+            </div>
+          )}
+          {message.readAt && (
+            <div>
+              <dt className="text-muted-foreground">Přečteno</dt>
+              <dd>{formatDateTime(message.readAt)}</dd>
+            </div>
+          )}
+        </dl>
+        <p className="mt-4 text-sm text-muted-foreground">
+          Obsah této zprávy není v archivu dostupný. Náhledy e-mailů se
+          uchovávají 30 dnů.
+        </p>
+        <div className="mt-5 flex flex-wrap gap-3">
+          {message.reservationId && (
+            <Button
+              href={`/admin/reservations?id=${message.reservationId}`}
+              variant="outline"
+            >
+              Otevřít rezervaci
+            </Button>
+          )}
+          {message.userId && (
+            <Button href={`/admin/members/${message.userId}`} variant="outline">
+              Profil zákazníka
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
   return (
     <div>
       <Button href="/admin/messages" variant="outline" className="mb-6">

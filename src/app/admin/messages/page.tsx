@@ -17,6 +17,8 @@ import { AdminMemberName } from "@/components/admin/member-name";
 import { getMemberNotes } from "@/lib/services/admin-member-notes";
 import { importRecentEmails } from "./actions";
 import { Button } from "@/components/admin/ui/button";
+import { IconLink } from "@/components/admin/ui/icon-button";
+import { ArrowUpRight } from "lucide-react";
 import {
   formatChannel,
   formatDateTime,
@@ -159,13 +161,11 @@ export default async function MessagesPage({
               </TableCell>
               <TableCell>{email.subject}</TableCell>
               <TableCell>
-                <Button
+                <IconLink
+                  icon={ArrowUpRight}
                   href={`/admin/messages/${email.id}`}
-                  variant="outline"
-                  size="sm"
-                >
-                  Zobrazit e-mail
-                </Button>
+                  aria-label="Zobrazit e-mail"
+                />
               </TableCell>
             </TableRow>
           ))}
@@ -199,6 +199,9 @@ export default async function MessagesPage({
             <TableHead>Typ</TableHead>
             <TableHead>Příjemce</TableHead>
             <TableHead>Stav</TableHead>
+            <TableHead>
+              <span className="sr-only">Detail zprávy</span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -230,11 +233,18 @@ export default async function MessagesPage({
                 {formatStatus(m.status)}
                 {m.failureReason ? ` (${m.failureReason})` : ""}
               </TableCell>
+              <TableCell>
+                <IconLink
+                  icon={ArrowUpRight}
+                  href={`/admin/messages/${m.id}`}
+                  aria-label={`Otevřít zprávu: ${formatMessageKind(m.kind)}`}
+                />
+              </TableCell>
             </TableRow>
           ))}
           {rows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="text-muted-foreground">
+              <TableCell colSpan={6} className="text-muted-foreground">
                 Zatím žádné zprávy.
               </TableCell>
             </TableRow>

@@ -121,6 +121,42 @@ export async function getAdminEmail(id: string) {
   return email ?? null;
 }
 
+/** Delivery metadata only: never expose providerResponse (which can contain an outbox payload/PIN). */
+export async function getAdminMessage(id: string) {
+  const { assertAdmin } = await import("@/lib/auth/guards");
+  await assertAdmin();
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+  )
+    return null;
+  const [message] = await db
+    .select({
+      id: messageDelivery.id,
+      channel: messageDelivery.channel,
+      kind: messageDelivery.kind,
+      recipient: messageDelivery.recipient,
+      status: messageDelivery.status,
+      createdAt: messageDelivery.createdAt,
+      sentAt: messageDelivery.sentAt,
+      deliveredAt: messageDelivery.deliveredAt,
+      readAt: messageDelivery.readAt,
+      reservationId: messageDelivery.reservationId,
+      userId: messageDelivery.userId,
+      archiveId: emailArchive.id,
+    })
+    .from(messageDelivery)
+    .leftJoin(
+      emailArchive,
+      and(
+        eq(emailArchive.providerMessageId, messageDelivery.providerMessageId),
+        gt(emailArchive.sentAt, emailRetentionCutoff()),
+      ),
+    )
+    .where(eq(messageDelivery.id, id))
+    .limit(1);
+  return message ?? null;
+}
+
 /** Attempts without a retained body, including SMS/WhatsApp and send failures. */
 export async function listUnarchivedRecent(limit = 200) {
   const { assertAdmin } = await import("@/lib/auth/guards");
