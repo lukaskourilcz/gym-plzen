@@ -59,7 +59,7 @@ export function ResolveAlertButton({
           title="Uzavřít incident"
           description={
             refund
-              ? "Ověřte stav vrácení platby v Comgate a zapište výsledek kontroly."
+              ? "Před uzavřením ověřte stav vrácení platby v Comgate."
               : title
           }
           onClose={() => setOpen(false)}
@@ -68,12 +68,11 @@ export function ResolveAlertButton({
           <form onSubmit={resolve} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor={noteId} className="text-sm font-medium">
-                Jak byl incident vyřešen?
+                Jak byl incident vyřešen? (nepovinné)
               </label>
               <Textarea
                 id={noteId}
                 name="note"
-                required
                 maxLength={500}
                 data-initial-focus
                 disabled={pending}

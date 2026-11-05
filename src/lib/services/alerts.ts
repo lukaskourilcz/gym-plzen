@@ -8,6 +8,7 @@ import {
   gt,
   inArray,
   isNull,
+  lte,
   sql,
   type SQL,
 } from "drizzle-orm";
@@ -233,13 +234,25 @@ export async function deliverPendingAlerts(limit = 10): Promise<number> {
 }
 
 /** Close one alert the operator has dealt with. */
-export async function resolveAlertById(
-  id: string,
-  note: string,
-): Promise<void> {
+export async function resolveAlertById(id: string, note = ""): Promise<void> {
   await closeAlerts(
     eq(systemAlert.id, id),
-    { kind: "manual", message: note },
+    { kind: "manual", message: note.trim() || "Incident uzavřen správcem." },
+    db,
+  );
+}
+
+/** Close the operator's snapshot only; later incidents must remain visible. */
+export async function resolveAllOpenAlerts(
+  before: Date,
+  note = "",
+): Promise<void> {
+  await closeAlerts(
+    lte(systemAlert.createdAt, before),
+    {
+      kind: "manual",
+      message: note.trim() || "Incident uzavřen správcem hromadně.",
+    },
     db,
   );
 }

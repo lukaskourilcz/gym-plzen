@@ -1,4 +1,5 @@
 import { IncidentDetails } from "@/components/admin/incident-details";
+import { ResolveAllAlertsButton } from "./alerts/resolve-all-alerts-button";
 import { Pagination } from "@/components/ui/pagination";
 import {
   pageFromParam,
@@ -234,6 +235,12 @@ export default async function AdminDashboard({
             <h2 id="today-activity" className="mb-3 text-lg font-semibold">
               Co vyžaduje pozornost
             </h2>
+            <div className="mb-4">
+              <ResolveAllAlertsButton
+                count={openCount}
+                before={now.toISOString()}
+              />
+            </div>
             <div className="grid gap-2">
               {openAlerts.map((alert) => (
                 <div
