@@ -70,6 +70,7 @@ describe(
     before(startProviders);
     after(stopEverything);
     beforeEach(async (t) => {
+      if (!("mock" in t)) throw new Error("Expected test context");
       // Keep booking fixtures away from the midnight closing/shower boundary.
       t.mock.timers.enable({
         apis: ["Date"],

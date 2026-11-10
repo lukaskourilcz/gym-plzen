@@ -224,20 +224,25 @@ export function preparationFailure(
   detail?: string,
 ): PipelineFailure {
   return {
-    code: isNukiReadFailureReason(reason)
-      ? reason
-      : detail?.includes("Missing required environment") ||
-          detail?.includes("ACCESS_CODE_ENCRYPTION_KEY") ||
-          detail?.includes("NUKI_SMARTLOCK_ID") ||
-          detail?.includes("NUKI_API_TOKEN")
+    code:
+      detail?.includes("Missing required environment") ||
+      detail?.includes("ACCESS_CODE_ENCRYPTION_KEY") ||
+      detail?.includes("NUKI_SMARTLOCK_ID") ||
+      detail?.includes("NUKI_API_TOKEN")
         ? "code_configuration_missing"
-        : reason === "device_offline"
-          ? "lock_offline"
-          : reason === "provider_rejected"
-            ? "lock_rejected"
-            : ["awaiting_device", "provisioning_unknown"].includes(reason ?? "")
-              ? "code_unconfirmed"
-              : "code_preparation_failed",
+        : isNukiReadFailureReason(detail)
+          ? detail
+          : isNukiReadFailureReason(reason)
+            ? reason
+            : reason === "device_offline"
+              ? "lock_offline"
+              : reason === "provider_rejected"
+                ? "lock_rejected"
+                : ["awaiting_device", "provisioning_unknown"].includes(
+                      reason ?? "",
+                    )
+                  ? "code_unconfirmed"
+                  : "code_preparation_failed",
     detail: detail ?? reason ?? undefined,
   };
 }
