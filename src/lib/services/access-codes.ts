@@ -1,3 +1,4 @@
+import { NukiReadError } from "@/lib/helpers/nuki-errors";
 import { randomUUID } from "node:crypto";
 import {
   and,
@@ -139,13 +140,20 @@ export async function recoverAccessCode(
     row.lockId ?? requireEnv("NUKI_SMARTLOCK_ID").NUKI_SMARTLOCK_ID;
   if (!row.lockId) row = await update(row.id, { lockId });
   const client = durableNukiClient(lockId);
-  const probe = () =>
-    client.inspect({
-      codeHash: row.codeHash,
-      allowedFrom: row.validFrom,
-      allowedUntil: row.validUntil,
-      nukiAuthId: row.nukiAuthId,
-    });
+  const probe = async () => {
+    try {
+      return await client.inspect({
+        codeHash: row.codeHash,
+        allowedFrom: row.validFrom,
+        allowedUntil: row.validUntil,
+        nukiAuthId: row.nukiAuthId,
+      });
+    } catch (error) {
+      if (error instanceof NukiReadError)
+        await update(row.id, { failureReason: error.reason, status: "failed" });
+      throw error;
+    }
+  };
   let inspected = await probe();
   if (inspected.state === "rejected") {
     // Nuki reports failure explicitly. Remove that failed operation before retry.

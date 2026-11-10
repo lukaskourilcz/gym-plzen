@@ -69,7 +69,13 @@ describe(
   () => {
     before(startProviders);
     after(stopEverything);
-    beforeEach(async () => {
+    beforeEach(async (t) => {
+      if (!("mock" in t)) throw new Error("Expected test context");
+      // Keep booking fixtures away from the midnight closing/shower boundary.
+      t.mock.timers.enable({
+        apis: ["Date"],
+        now: new Date("2030-10-01T10:00:00Z"),
+      });
       await resetDatabase();
       await seedProfile(ADMIN);
     });

@@ -38,6 +38,7 @@ let online = true,
   putCount = 0,
   mode: "ok" | "lost" | "rejected" | "pending" = "ok",
   deleteWorks = true;
+let readFailure: number | "network" | null = null;
 let auths: Array<Record<string, unknown>> = [];
 let emails: Array<{ at: number; body: string }> = [];
 const key = "ab".repeat(32);
@@ -100,6 +101,13 @@ describe(
           return nativeFetch(url, options);
         }
         nukiCalls++;
+        if (!options?.method && readFailure) {
+          if (readFailure === "network") throw new Error("token=private-value");
+          return Response.json(
+            { message: "token=private-value", code: 123456 },
+            { status: readFailure },
+          );
+        }
         if (options?.method === "PUT") {
           putCount++;
           if (mode === "rejected")
@@ -150,6 +158,7 @@ describe(
       auths = [];
       mode = "ok";
       deleteWorks = true;
+      readFailure = null;
     });
     async function movableBooking() {
       const user = {
@@ -185,6 +194,47 @@ describe(
       )[0]!;
     }
 
+    test("API outages persist the correct reservation diagnosis and recover the same intent without duplicate PUTs", async () => {
+      const cases = [
+        [503, "nuki_api_unavailable"],
+        [401, "nuki_access_denied"],
+        [429, "nuki_rate_limited"],
+        ["network", "nuki_connection_unknown"],
+      ] as const;
+      for (const [index, [failure, reason]] of cases.entries()) {
+        const id = await booking(30 + index * 120);
+        readFailure = failure;
+        const putsBefore = putCount;
+        for (let n = 0; n < 5; n++) await fulfillReservation(id);
+        const [stored] = await rows<{ id: string; failure_reason: string }>(
+          "select id,failure_reason from access_code where reservation_id=$1",
+          [id],
+        );
+        assert.equal(stored!.failure_reason, reason);
+        assert.equal(putCount, putsBefore);
+        const [alert] = await rows<{ context: { incident: { code: string } } }>(
+          "select context from system_alert where dedupe_key=$1 and resolved_at is null",
+          [`reservation:${id}:code_created`],
+        );
+        assert.equal(alert!.context.incident.code, reason);
+        assert.ok(!JSON.stringify(alert).includes("private-value"));
+        assert.ok(!JSON.stringify(alert).includes("123456"));
+        readFailure = null;
+        await fulfillReservation(id);
+        assert.equal((await code(id)).id, stored!.id);
+        assert.equal((await code(id)).provision_state, "ready");
+        assert.equal(putCount, putsBefore + 1);
+        assert.equal(
+          (
+            await rows(
+              "select id from system_alert where dedupe_key=$1 and resolved_at is null",
+              [`reservation:${id}:code_created`],
+            )
+          ).length,
+          0,
+        );
+      }
+    });
     test("missing contact is diagnosed at 24h, one incident escalates at delivery time, and repairing the contact delivers the same PIN once", async (t) => {
       const id = await booking(1441);
       await rows("update reservation set contact_email=null where id=$1", [id]);

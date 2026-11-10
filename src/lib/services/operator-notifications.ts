@@ -1,3 +1,4 @@
+import { parseNukiDiagnosis } from "@/lib/helpers/nuki-diagnostics";
 import { parseIncident } from "@/lib/config/incidents";
 import { randomUUID } from "node:crypto";
 import { and, asc, eq, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
@@ -497,6 +498,10 @@ export async function notifyAlert(alert: SystemAlert): Promise<boolean> {
           ? (alert.context as Record<string, unknown>)
           : {};
       const stage = context.incidentNotificationStage;
+      if (parseNukiDiagnosis(context)) {
+        const revision = context.nukiDiagnosisRevision;
+        return `${alert.id}:nuki:${typeof revision === "number" && Number.isSafeInteger(revision) && revision > 0 ? revision : 1}`;
+      }
       return parseIncident(alert.context) &&
         (stage === "warning" || stage === "critical")
         ? `${alert.id}:${stage}`

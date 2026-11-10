@@ -175,3 +175,53 @@ test("technical details redact PINs, email, phone, bearer credentials and labele
   ])
     assert.ok(!encoded.includes(secret), secret);
 });
+
+test("reservation preparation retains Nuki API diagnoses instead of stale device-offline reasons", () => {
+  for (const reason of [
+    "nuki_api_unavailable",
+    "nuki_access_denied",
+    "nuki_rate_limited",
+    "nuki_connection_unknown",
+    "nuki_response_unknown",
+  ] as const) {
+    assert.equal(preparationFailure(reason, reason).code, reason);
+    const view = incidentPresentation({
+      title: "old title",
+      body: null,
+      context: buildReservationIncident({
+        booking: {
+          id,
+          userId: null,
+          contactName: null,
+          startsAt: now,
+          endsAt: new Date(+now + 3600000),
+        },
+        step: "code_created",
+        failure: preparationFailure(reason),
+        attempts: 5,
+        nextRetryAt: null,
+        now,
+      }).context,
+    });
+    assert.ok(view.title.includes("Nuki"));
+    assert.ok(!view.title.includes("odpojený zámek"));
+  }
+});
+
+test("a current diagnostic overrides a saved failure from an earlier retry", () => {
+  assert.equal(
+    preparationFailure("device_offline", "nuki_api_unavailable").code,
+    "nuki_api_unavailable",
+  );
+  assert.equal(
+    preparationFailure("nuki_access_denied", "nuki_rate_limited").code,
+    "nuki_rate_limited",
+  );
+  assert.equal(
+    preparationFailure(
+      "nuki_api_unavailable",
+      "Missing required environment variable(s): NUKI_API_TOKEN",
+    ).code,
+    "code_configuration_missing",
+  );
+});
