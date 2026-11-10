@@ -165,3 +165,49 @@ test("pending provisioning remains unknown; invalid PIN is rejected before netwo
   });
   assert.equal(calls, 4);
 });
+
+test("durable code inspection retains API failure reasons without exposing raw provider errors", async () => {
+  const { createDurableNukiClient } =
+    await import("../../src/lib/integrations/nuki");
+  const { HttpError } = await import("../../src/lib/helpers/http");
+  const { NukiReadError } = await import("../../src/lib/helpers/nuki-errors");
+  for (const [status, reason] of [
+    [503, "nuki_api_unavailable"],
+    [401, "nuki_access_denied"],
+    [429, "nuki_rate_limited"],
+    [0, "nuki_connection_unknown"],
+  ] as const) {
+    const request: typeof httpRequest = async () => {
+      throw status
+        ? new HttpError("Bearer secret", status, { code: 123456 })
+        : new Error("token=secret");
+    };
+    const client = createDurableNukiClient(
+      { token: "secret", lockId: "123" },
+      request,
+    );
+    await assert.rejects(client.inspect(identity), (error) => {
+      assert.ok(error instanceof NukiReadError);
+      assert.equal(error.reason, reason);
+      assert.equal(error.message, reason);
+      return true;
+    });
+  }
+});
+test("durable code inspection never labels malformed device data or unknown server states offline", async () => {
+  const { createDurableNukiClient } =
+    await import("../../src/lib/integrations/nuki");
+  const { NukiReadError } = await import("../../src/lib/helpers/nuki-errors");
+  for (const device of [null, {}, { serverState: 1 }, { serverState: "4" }]) {
+    const request: typeof httpRequest = async <T>() => device as T;
+    await assert.rejects(
+      createDurableNukiClient(
+        { token: "test", lockId: "123" },
+        request,
+      ).inspect(identity),
+      (error) =>
+        error instanceof NukiReadError &&
+        error.reason === "nuki_response_unknown",
+    );
+  }
+});

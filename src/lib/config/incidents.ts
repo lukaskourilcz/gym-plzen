@@ -1,5 +1,14 @@
+import {
+  NUKI_READ_FAILURES,
+  isNukiReadFailureReason,
+} from "@/lib/helpers/nuki-errors";
 import { z } from "zod";
 
+const nukiCodeImpact = {
+  impact:
+    "Příprava vstupního kódu čeká na ověření v Nuki. Již potvrzené kódy tato chyba sama neoznačuje za nefunkční.",
+  retryable: true,
+};
 /** Stable diagnostic codes; client-facing sentences never depend on raw provider text. */
 export const INCIDENTS = {
   contact_missing_all: {
@@ -21,9 +30,31 @@ export const INCIDENTS = {
       "Ověřte adresu zákazníka a předejte rezervaci správci systému k doplnění doručovacího e-mailu. E-mail v profilu člena se do starší rezervace automaticky nepřepisuje.",
     retryable: false,
   },
+  nuki_api_unavailable: {
+    ...NUKI_READ_FAILURES.nuki_api_unavailable,
+    ...nukiCodeImpact,
+  },
+  nuki_access_denied: {
+    ...NUKI_READ_FAILURES.nuki_access_denied,
+    ...nukiCodeImpact,
+    retryable: false,
+  },
+  nuki_rate_limited: {
+    ...NUKI_READ_FAILURES.nuki_rate_limited,
+    ...nukiCodeImpact,
+  },
+  nuki_connection_unknown: {
+    ...NUKI_READ_FAILURES.nuki_connection_unknown,
+    ...nukiCodeImpact,
+  },
+  nuki_response_unknown: {
+    ...NUKI_READ_FAILURES.nuki_response_unknown,
+    ...nukiCodeImpact,
+  },
   lock_offline: {
-    title: "Zámek je nedostupný — kód není potvrzený",
-    cause: "Při kontrole Nuki nebylo možné ověřit dostupnost zámku.",
+    title: "Nuki hlásí odpojený zámek — kód není potvrzený",
+    cause:
+      "Nuki API odpovědělo a hlásí zámek offline. Příčina může být v napájení nebo připojení zámku; fyzická porucha není potvrzená.",
     impact:
       "Správný kód a jeho platnost zatím nejsou potvrzené. Systém kvůli tomu nevytváří další odlišný kód.",
     action:
@@ -193,11 +224,12 @@ export function preparationFailure(
   detail?: string,
 ): PipelineFailure {
   return {
-    code:
-      detail?.includes("Missing required environment") ||
-      detail?.includes("ACCESS_CODE_ENCRYPTION_KEY") ||
-      detail?.includes("NUKI_SMARTLOCK_ID") ||
-      detail?.includes("NUKI_API_TOKEN")
+    code: isNukiReadFailureReason(reason)
+      ? reason
+      : detail?.includes("Missing required environment") ||
+          detail?.includes("ACCESS_CODE_ENCRYPTION_KEY") ||
+          detail?.includes("NUKI_SMARTLOCK_ID") ||
+          detail?.includes("NUKI_API_TOKEN")
         ? "code_configuration_missing"
         : reason === "device_offline"
           ? "lock_offline"

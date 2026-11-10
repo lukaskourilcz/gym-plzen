@@ -1,3 +1,4 @@
+import { NukiReadError, nukiReadError } from "@/lib/helpers/nuki-errors";
 import { hasEnv, requireEnv } from "@/lib/env";
 import { httpRequest, HttpError } from "@/lib/helpers/http";
 import { hashCode } from "@/lib/helpers/crypto";
@@ -317,16 +318,26 @@ export function createDurableNukiClient(
 ) {
   const base = `${API_BASE}/smartlock/${config.lockId}`;
   const headers = { authorization: `Bearer ${config.token}` };
-  const read = <T>(path: string) =>
-    request<T>(`${base}${path}`, {
-      headers,
-      cache: "no-store",
-      timeoutMs: 5000,
-    });
+  const read = async <T>(path: string): Promise<T> => {
+    try {
+      return await request<T>(`${base}${path}`, {
+        headers,
+        cache: "no-store",
+        timeoutMs: 5000,
+        retries: 0,
+      });
+    } catch (error) {
+      throw nukiReadError(error);
+    }
+  };
   async function inspect(identity: CodeIdentity): Promise<IntentInspection> {
-    const device = await read<{ serverState: number }>("");
-    if (device.serverState !== 0) return { state: "offline" };
+    const device = await read<{ serverState?: unknown } | null>("");
+    if (device?.serverState === 4) return { state: "offline" };
+    if (device?.serverState !== 0)
+      throw new NukiReadError("nuki_response_unknown");
     const auths = await read<NukiAuth[]>("/auth");
+    if (!Array.isArray(auths) || auths.some((a) => !a || typeof a !== "object"))
+      throw new NukiReadError("nuki_response_unknown");
     const matches = auths.filter(
       (a) =>
         a.type === NUKI_TYPE_KEYPAD &&
@@ -437,7 +448,7 @@ export async function readLockConnectivity(): Promise<
     );
     return device.serverState === 0
       ? "online"
-      : typeof device.serverState === "number"
+      : device.serverState === 4
         ? "offline"
         : "unknown";
   } catch {

@@ -149,7 +149,7 @@ describe("specific operational incidents", { skip: !databaseReady }, () => {
     );
     assert.match(
       incidentUpdates(recovered.context)[0]!.message,
-      /ověřit dostupnost zámku/,
+      /Nuki API odpovědělo a hlásí zámek offline/,
     );
     assert.match(
       incidentUpdates(recovered.context)[1]!.message,
