@@ -1,3 +1,9 @@
+import {
+  parseNukiDiagnosis,
+  describeNukiDiagnosis,
+  NUKI_HEALTH_IMPACT,
+  NUKI_STATUS_URL,
+} from "./nuki-diagnostics";
 import { z } from "zod";
 import {
   INCIDENTS,
@@ -16,6 +22,8 @@ function validId(value: unknown) {
 /** Read old records conservatively: history cannot prove a missing contact. */
 export function incidentPresentation(alert: AlertLike) {
   const incident = parseIncident(alert.context);
+  const nukiDiagnosis = parseNukiDiagnosis(alert.context);
+  const nuki = nukiDiagnosis ? describeNukiDiagnosis(nukiDiagnosis) : null;
   const root =
     alert.context && typeof alert.context === "object"
       ? (alert.context as Record<string, unknown>)
@@ -43,12 +51,16 @@ export function incidentPresentation(alert: AlertLike) {
   return {
     incident,
     reservationId,
-    title: description?.title ?? redactIncidentDetail(alert.title),
+    title:
+      description?.title ?? nuki?.title ?? redactIncidentDetail(alert.title),
     cause:
       description?.cause ??
+      (nuki ? `${nuki.cause}\n${nuki.evidence}` : null) ??
       (alert.body ? redactIncidentDetail(alert.body) : null),
-    impact: description?.impact ?? null,
-    action: description?.action ?? null,
+    impact: description?.impact ?? (nuki ? NUKI_HEALTH_IMPACT : null),
+    action:
+      description?.action ??
+      (nuki ? `${nuki.action} Stav služby: ${NUKI_STATUS_URL}` : null),
     phase: incident
       ? INCIDENT_PHASES[incident.step]
       : legacyStep

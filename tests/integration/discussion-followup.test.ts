@@ -2,6 +2,7 @@ import {
   databaseReady,
   resetDatabase,
   rows,
+  setSetting,
   startProviders,
   stopEverything,
   resend,
@@ -101,7 +102,15 @@ describe("discussion followup", { skip: !databaseReady }, () => {
     globalThis.fetch = async (url, opts) =>
       String(url).startsWith("https://api.nuki.io/")
         ? Response.json({ serverState: online ? 0 : 4 })
-        : nativeFetch(url, opts);
+        : String(url).startsWith("https://status.nuki.io/")
+          ? Response.json({
+              components: [
+                "Nuki Web",
+                "Nuki REST API",
+                "Nuki Remote Access",
+              ].map((name) => ({ name, status: "operational" })),
+            })
+          : nativeFetch(url, opts);
     const start = new Date("2030-10-01T10:00:00Z");
     await monitorLockConnectivity(start);
     assert.equal(
@@ -133,6 +142,117 @@ describe("discussion followup", { skip: !databaseReady }, () => {
       0,
     );
     globalThis.fetch = nativeFetch;
+  });
+  test("an open lock alert follows the cloud diagnosis, notifies only a change and resolves after both recover", async () => {
+    env.NUKI_API_TOKEN = "test-only";
+    env.NUKI_SMARTLOCK_ID = "test-health";
+    await rows("delete from site_setting where key='nuki-health:test-health'");
+    await setSetting("notifications.operator", {
+      recipients: "operator@example.test",
+      events: {
+        systemAlert: true,
+        reservationConfirmed: false,
+        reservationCancelled: false,
+        reservationRescheduled: false,
+        memberRegistered: false,
+      },
+    });
+    let state = 4;
+    let incident = false;
+    globalThis.fetch = async (url, opts) => {
+      if (String(url).startsWith("https://api.nuki.io/"))
+        return Response.json({ serverState: state });
+      if (String(url).startsWith("https://status.nuki.io/"))
+        return Response.json({
+          components: ["Nuki Web", "Nuki REST API", "Nuki Remote Access"].map(
+            (name) => ({
+              name,
+              status:
+                incident && name === "Nuki Web"
+                  ? "degraded_performance"
+                  : "operational",
+            }),
+          ),
+        });
+      return nativeFetch(url, opts);
+    };
+    const start = new Date("2030-10-01T10:00:00Z");
+    const check = (minutes: number) =>
+      monitorLockConnectivity(new Date(+start + minutes * 60_000));
+    await check(0);
+    await check(15);
+    const getAlert = async () =>
+      (
+        await rows<{
+          title: string;
+          context: {
+            nukiDiagnosis: { code: string; lockState: string };
+            incidentUpdates: { message: string }[];
+          };
+          resolved_at: Date | null;
+          notified_at: Date | null;
+        }>(
+          "select title,context,resolved_at,notified_at from system_alert where dedupe_key='nuki-health:test-health'",
+        )
+      )[0]!;
+    const first = await getAlert();
+    assert.match(first.title, /odpojený zámek/);
+    assert.equal(first.context.nukiDiagnosis.code, "lock_offline");
+    const sent = resend.sent.length;
+    assert.equal(sent, 1);
+    await check(20);
+    assert.equal(resend.sent.length, sent);
+    incident = true;
+    await check(25);
+    const changed = await getAlert();
+    assert.match(changed.title, /incident služby/);
+    assert.equal(changed.context.nukiDiagnosis.code, "service_incident");
+    assert.equal(changed.context.nukiDiagnosis.lockState, "offline");
+    assert.ok(
+      changed.context.incidentUpdates.some((u) =>
+        u.message.includes("Veřejný stav Nuki"),
+      ),
+    );
+    assert.equal(resend.sent.length, sent + 1);
+    await check(30);
+    assert.equal(resend.sent.length, sent + 1);
+    state = 0;
+    await check(35);
+    assert.equal((await getAlert()).resolved_at, null);
+    incident = false;
+    await check(40);
+    assert.ok((await getAlert()).resolved_at);
+    assert.equal(
+      (
+        await rows(
+          "select id from system_alert where dedupe_key='nuki-health:test-health'",
+        )
+      ).length,
+      1,
+    );
+  });
+  test("a healthy online lock is not alerted just because the status page is unreachable", async () => {
+    env.NUKI_API_TOKEN = "test-only";
+    env.NUKI_SMARTLOCK_ID = "test-health";
+    await rows("delete from site_setting where key='nuki-health:test-health'");
+    globalThis.fetch = async (url, opts) => {
+      if (String(url).startsWith("https://api.nuki.io/"))
+        return Response.json({ serverState: 0 });
+      if (String(url).startsWith("https://status.nuki.io/"))
+        throw new Error("status unavailable");
+      return nativeFetch(url, opts);
+    };
+    const start = new Date("2030-10-01T10:00:00Z");
+    await monitorLockConnectivity(start);
+    await monitorLockConnectivity(new Date(+start + 20 * 60_000));
+    assert.equal(
+      (
+        await rows(
+          "select id from system_alert where dedupe_key='nuki-health:test-health'",
+        )
+      ).length,
+      0,
+    );
   });
   test("only a member who opted in with a phone gets the PIN on WhatsApp", async () => {
     env.ZERNIO_API_KEY = "test";

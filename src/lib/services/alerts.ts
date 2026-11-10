@@ -25,6 +25,10 @@ import {
   type IncidentUpdate,
 } from "@/lib/config/incident-updates";
 import { redactIncidentDetail } from "@/lib/helpers/redaction";
+import {
+  parseNukiDiagnosis,
+  NUKI_HEALTH_DESCRIPTIONS,
+} from "@/lib/helpers/nuki-diagnostics";
 
 /**
  * Operational alerting. Any failure in the reliability pipeline (or an uptime
@@ -76,9 +80,12 @@ async function raiseAlertUnlocked(
 ): Promise<SystemAlert | null> {
   try {
     const incoming = parseIncident(params.context);
+    const incomingNuki = parseNukiDiagnosis(params.context);
     const diagnosis = incoming
       ? `${incoming.attempts ? `Pokus č. ${incoming.attempts}. ` : ""}${INCIDENTS[incoming.code].cause}`
-      : null;
+      : incomingNuki
+        ? NUKI_HEALTH_DESCRIPTIONS[incomingNuki.code].cause
+        : null;
     if (params.dedupeKey) {
       const [existing] = await db
         .select()
@@ -92,9 +99,28 @@ async function raiseAlertUnlocked(
         .limit(1);
       if (existing) {
         const previous = parseIncident(existing.context);
+        const previousNuki = parseNukiDiagnosis(existing.context);
+        const diagnosisChanged = Boolean(
+          incomingNuki &&
+          (incomingNuki.code !== previousNuki?.code ||
+            incomingNuki.lockState !== previousNuki?.lockState),
+        );
+        const hasDiagnosis = Boolean(incoming || incomingNuki);
+        const existingRevision =
+          existing.context &&
+          typeof existing.context === "object" &&
+          "nukiDiagnosisRevision" in existing.context
+            ? existing.context.nukiDiagnosisRevision
+            : 0;
+        const nukiRevision =
+          typeof existingRevision === "number" &&
+          Number.isSafeInteger(existingRevision) &&
+          existingRevision > 0
+            ? existingRevision
+            : 0;
         const severityRank = { info: 0, warning: 1, critical: 2 };
         const escalated =
-          Boolean(incoming) &&
+          hasDiagnosis &&
           severityRank[params.severity ?? "warning"] >
             severityRank[existing.severity];
         const update: IncidentUpdate = {
@@ -106,7 +132,14 @@ async function raiseAlertUnlocked(
           ...(existing.context && typeof existing.context === "object"
             ? existing.context
             : {}),
-          ...(incoming ? params.context : {}),
+          ...(hasDiagnosis ? params.context : {}),
+          ...(incomingNuki
+            ? {
+                nukiDiagnosisRevision: diagnosisChanged
+                  ? nukiRevision + 1
+                  : nukiRevision || 1,
+              }
+            : {}),
           ...(escalated ? { incidentNotificationStage: params.severity } : {}),
           ...(incoming
             ? {
@@ -130,11 +163,12 @@ async function raiseAlertUnlocked(
         const [updated] = await db
           .update(systemAlert)
           .set({
-            title: incoming ? params.title : existing.title,
-            body: incoming ? (params.body ?? existing.body) : existing.body,
+            title: hasDiagnosis ? params.title : existing.title,
+            body: hasDiagnosis ? (params.body ?? existing.body) : existing.body,
             context,
             severity: escalated ? params.severity : existing.severity,
-            notifiedAt: escalated ? null : existing.notifiedAt,
+            notifiedAt:
+              escalated || diagnosisChanged ? null : existing.notifiedAt,
           })
           .where(
             and(
@@ -143,7 +177,7 @@ async function raiseAlertUnlocked(
             ),
           )
           .returning();
-        if (updated && escalated) await deliver(updated);
+        if (updated && (escalated || diagnosisChanged)) await deliver(updated);
         return updated ?? existing;
       }
     }
@@ -157,6 +191,7 @@ async function raiseAlertUnlocked(
         dedupeKey: params.dedupeKey,
         context: {
           ...params.context,
+          ...(incomingNuki ? { nukiDiagnosisRevision: 1 } : {}),
           incidentUpdates: [
             {
               at: new Date().toISOString(),

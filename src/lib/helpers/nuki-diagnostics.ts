@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { HttpError } from "./http";
 
+export const NUKI_HEALTH_IMPACT =
+  "Nové kódy mohou čekat na potvrzení; jejich připravenost ověřte u nejbližších rezervací. Již ověřené kódy nejsou tímto hlášením označené za nefunkční.";
 export const NUKI_STATUS_URL = "https://status.nuki.io";
 export const NUKI_HEALTH_DESCRIPTIONS = {
   online: {
@@ -154,17 +156,23 @@ export function describeNukiDiagnosis(diagnosis: NukiDiagnosis) {
       : diagnosis.serviceStatus === "operational"
         ? "bez zveřejněného incidentu (nevylučuje místní problém)"
         : "veřejný stav se nepodařilo ověřit";
+  const evidence = [
+    `Zámek: ${lock}.`,
+    `Služba Nuki: ${service}.`,
+    diagnosis.apiHttpStatus
+      ? `Odpověď Nuki API: HTTP ${diagnosis.apiHttpStatus}.`
+      : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
   return {
     ...description,
+    evidence,
     body: [
       description.cause,
-      `Zámek: ${lock}.`,
-      `Služba Nuki: ${service}.`,
-      diagnosis.apiHttpStatus
-        ? `Odpověď Nuki API: HTTP ${diagnosis.apiHttpStatus}.`
-        : null,
+      evidence,
       `Co udělat: ${description.action}`,
-      "Nové kódy mohou čekat na potvrzení; jejich připravenost ověřte u nejbližších rezervací. Již ověřené kódy nejsou tímto hlášením označené za nefunkční.",
+      NUKI_HEALTH_IMPACT,
       `Stav služby: ${NUKI_STATUS_URL}`,
     ]
       .filter(Boolean)

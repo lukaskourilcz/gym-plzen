@@ -144,3 +144,18 @@ test("a relevant public incident is recorded even with an online lock, without c
     null,
   );
 });
+
+test("admin presentation retains the diagnosis, evidence and action without truncating the notification body", async () => {
+  const { incidentPresentation } =
+    await import("../../src/lib/helpers/incident-presentation");
+  const diagnosis = await probe(new HttpError("request failed", 503, null));
+  const view = incidentPresentation({
+    title: "old title",
+    body: "old body",
+    context: { nukiDiagnosis: diagnosis },
+  });
+  assert.equal(view.title, "Nuki Web/API vrací chybu služby");
+  assert.match(view.cause!, /HTTP 503/);
+  assert.match(view.action!, /https:\/\/status.nuki.io/);
+  assert.match(view.impact!, /Již ověřené kódy/);
+});
