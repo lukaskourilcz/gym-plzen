@@ -69,7 +69,12 @@ describe(
   () => {
     before(startProviders);
     after(stopEverything);
-    beforeEach(async () => {
+    beforeEach(async (t) => {
+      // Keep booking fixtures away from the midnight closing/shower boundary.
+      t.mock.timers.enable({
+        apis: ["Date"],
+        now: new Date("2030-10-01T10:00:00Z"),
+      });
       await resetDatabase();
       await seedProfile(ADMIN);
     });
